@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver", "Neo4j.Driver\Neo4j.Driver.csproj", "{F5E54582-C024-4B99-AFEB-CA9638617BA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Tests", "Neo4j.Driver.Tests\Neo4j.Driver.Tests.csproj", "{5642BD95-BF3C-4DFE-B5E5-1456EC9119BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.IntegrationTests", "Neo4j.Driver.IntegrationTests\Neo4j.Driver.IntegrationTests.csproj", "{02F68DF2-0047-4B04-93B6-521BD12B5D45}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F5E54582-C024-4B99-AFEB-CA9638617BA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5E54582-C024-4B99-AFEB-CA9638617BA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5E54582-C024-4B99-AFEB-CA9638617BA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5E54582-C024-4B99-AFEB-CA9638617BA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5642BD95-BF3C-4DFE-B5E5-1456EC9119BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5642BD95-BF3C-4DFE-B5E5-1456EC9119BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5642BD95-BF3C-4DFE-B5E5-1456EC9119BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5642BD95-BF3C-4DFE-B5E5-1456EC9119BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02F68DF2-0047-4B04-93B6-521BD12B5D45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02F68DF2-0047-4B04-93B6-521BD12B5D45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02F68DF2-0047-4B04-93B6-521BD12B5D45}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02F68DF2-0047-4B04-93B6-521BD12B5D45}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
