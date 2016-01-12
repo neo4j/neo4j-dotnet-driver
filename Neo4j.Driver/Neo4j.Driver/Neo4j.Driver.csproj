@@ -34,14 +34,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="interal\connector\SocketClient.cs" />
-    <Compile Include="interal\packstream\BigEndianTargetBitConverter.cs" />
-    <Compile Include="interal\packstream\BitConverterBase.cs" />
+    <Compile Include="internal\connector\SocketClient.cs" />
+    <Compile Include="internal\packstream\BigEndianTargetBitConverter.cs" />
+    <Compile Include="internal\packstream\BitConverterBase.cs" />
     <Compile Include="Config.cs" />
-    <Compile Include="interal\connector\Connection.cs" />
+    <Compile Include="internal\connector\Connection.cs" />
     <Compile Include="Driver.cs" />
     <Compile Include="GraphDatabase.cs" />
-    <Compile Include="interal\InternalSession.cs" />
+    <Compile Include="internal\InternalSession.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Result.cs" />
     <Compile Include="Session.cs" />
@@ -60,7 +60,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="interal\messaging\" />
+    <Folder Include="internal\messaging\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
