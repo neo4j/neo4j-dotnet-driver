@@ -16,28 +16,13 @@
 //  limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Neo4j.Driver
 {
-    public class InternalSession : ISession
+    public interface IConnection : IDisposable
     {
-        private readonly IConnection _connection;
+        void Init(string clientName);
 
-        public InternalSession(Uri url, Config config)
-        {
-            _connection = new SocketConnection(url, config);
-        }
-
-        public void Dispose()
-        {
-//            throw new NotImplementedException();
-        }
-
-        public Task<Result> Run(string statement, IDictionary<string, object> statementParameters = null)
-        {
-            throw new NotImplementedException();
-        }
+        void Sync();
     }
 }

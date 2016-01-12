@@ -2,11 +2,10 @@
 
 namespace Neo4j.Driver
 {
-    public class Driver :IDisposable
+    public class Driver : IDisposable
     {
         private readonly Config _config;
         private readonly Uri _url;
-
 
         internal Driver(Uri url, Config config)
         {
@@ -14,15 +13,30 @@ namespace Neo4j.Driver
             _config = config;
         }
 
-        public Session Session()
+        protected virtual void Dispose(bool isDisposing)
         {
-            return new InternalSession(_url, _config);
+            
         }
 
+        /// <summary>
+        ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
-            // TODO close all the connections
-            //throw new NotImplementedException();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        ///     Establish a session with Neo4j instance
+        /// </summary>
+        /// <returns>
+        ///     An <see cref="ISession" /> that could be used to <see cref="ISession.Run" /> a statement or begin a
+        ///     transaction
+        /// </returns>
+        public ISession Session()
+        {
+            return new InternalSession(_url, _config);
         }
     }
 }

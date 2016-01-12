@@ -15,29 +15,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Neo4j.Driver
+namespace Neo4j.Driver.Internal.messaging
 {
-    public class InternalSession : ISession
+    public class InitMessage
     {
-        private readonly IConnection _connection;
-
-        public InternalSession(Uri url, Config config)
+        public InitMessage(string clientName)
         {
-            _connection = new SocketConnection(url, config);
+            ClientName = clientName;
         }
 
-        public void Dispose()
-        {
-//            throw new NotImplementedException();
-        }
-
-        public Task<Result> Run(string statement, IDictionary<string, object> statementParameters = null)
-        {
-            throw new NotImplementedException();
-        }
+        public string ClientName { get; }
     }
 }
