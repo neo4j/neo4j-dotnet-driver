@@ -17,57 +17,74 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.messaging;
 using Sockets.Plugin;
+using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
 {
-    public class SocketClient
+    public class SocketClient : ISocketClient, IDisposable
     {
         private readonly Config _config;
         private readonly Uri _url;
-        private IPacker _packer;
+        private IWriter _writer;
+        private IReader _reader;
 
-        public SocketClient(Uri url, Config config)
+        private static BigEndianTargetBitConverter BitConverter => new BigEndianTargetBitConverter();
+        private readonly ITcpSocketClient _tcpSocketClient;
+
+        public SocketClient(Uri url, Config config, ITcpSocketClient socketClient = null)
         {
             _url = url;
             _config = config;
+            _tcpSocketClient = socketClient ?? new TcpSocketClient();
         }
-
-        private static BigEndianTargetBitConverter BitConverter => new BigEndianTargetBitConverter();
-        private TcpSocketClient TcpSocketClient { get; set; }
 
         public async Task Start()
         {
-            var tcpSocketClient = new TcpSocketClient();
-            await tcpSocketClient.ConnectAsync(_url.Host, _url.Port).ConfigureAwait(false);
+            await _tcpSocketClient.ConnectAsync(_url.Host, _url.Port).ConfigureAwait(false);
 
-            TcpSocketClient = tcpSocketClient;
             var version = await DoHandshake().ConfigureAwait(false);
 
             if (version != 1)
                 throw new NotSupportedException("The Neo4j Server doesn't support this client.");
 
-            _packer = new PackStreamV1Packer(TcpSocketClient, BitConverter);
+            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, BitConverter);
+            _writer = formatV1.Writer;
+            _reader = formatV1.Reader;
 
-//            Send(new InitMessage("hello world!"));
         }
 
         public async Task Stop()
         {
-            if (TcpSocketClient != null)
+            if (_tcpSocketClient != null)
             {
-                await TcpSocketClient.DisconnectAsync().ConfigureAwait(false);
-                TcpSocketClient.Dispose();
+                await _tcpSocketClient.DisconnectAsync().ConfigureAwait(false);
+                _tcpSocketClient.Dispose();
             }
         }
 
-        public void Send(InitMessage message)
+        public void Send(IEnumerable<IMessage> messages, IMessageResponseHandler responseHandler)
         {
-            _packer.Pack(message);
-            _packer.Flush();
+            foreach (var message in messages)
+            {
+                _writer.Write(message);
+            }
+            
+            _writer.Flush();
+            // read?
+
+
+            Receive( responseHandler);
+        }
+
+        private void Receive(IMessageResponseHandler responseHandler)
+        {
+            while (!responseHandler.QueueIsEmpty() )
+                _reader.Read( responseHandler );
+            //Read 1 message
+            //Send to handler,
+            //While messages read < messages handled keep doing above.
         }
 
         private async Task<int> DoHandshake()
@@ -76,12 +93,12 @@ namespace Neo4j.Driver
 
             var data = PackVersions(supportedVersion);
             //            Logger.Log($"Sending Handshake... {string.Join(",", data)}");
-            await TcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
-            await TcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
+            await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+            await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
 
             data = new byte[4];
             //            Logger.Log("Receiving Handshake Reponse...");
-            await TcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
+            await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
 
             //            Logger.Log($"Handshake Raw = {string.Join(",", data)}");
 
@@ -107,13 +124,16 @@ namespace Neo4j.Driver
         {
             return BitConverter.ToInt32(data);
         }
-    }
 
-    public static class SocketExtensions
-    {
-        public static void Write(this Stream stream, byte[] bytes)
+        protected virtual void Dispose(bool isDisposing)
         {
-            stream.Write(bytes, 0, bytes.Length);
+            _tcpSocketClient.DisconnectAsync().Wait();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

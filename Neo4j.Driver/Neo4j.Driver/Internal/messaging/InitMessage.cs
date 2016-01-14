@@ -17,13 +17,17 @@
 
 namespace Neo4j.Driver.Internal.messaging
 {
-    public class InitMessage
+    public class InitMessage : IMessage
     {
-        public InitMessage(string clientName)
+        public InitMessage(string clientNameAndVersion)
         {
-            ClientName = clientName;
+            ClientNameAndVersion = clientNameAndVersion;
         }
 
-        public string ClientName { get; }
+        public string ClientNameAndVersion { get; }
+        public void Dispatch(IMessageRequestHandler messageRequestHandler)
+        {
+            messageRequestHandler.HandleInitMessage( ClientNameAndVersion );
+        }
     }
 }

@@ -37,6 +37,6 @@ namespace Neo4j.Driver
     public interface ISession : IDisposable
     {
         // TODO
-        Task<Result> Run(string statement, IDictionary<string, object> statementParameters = null);
+        Result Run(string statement, IDictionary<string, object> statementParameters = null);
     }
 }

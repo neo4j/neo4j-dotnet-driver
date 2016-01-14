@@ -15,7 +15,7 @@ namespace Neo4j.Driver
 
         protected virtual void Dispose(bool isDisposing)
         {
-            
+            // left empty on purpose
         }
 
         /// <summary>

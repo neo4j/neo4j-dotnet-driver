@@ -14,30 +14,20 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-using System;
-using System.Threading.Tasks;
-using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests
+using System.Diagnostics.Contracts;
+
+namespace Neo4j.Driver
 {
-    public class ConnectionTest
+    public interface IWriter
     {
-        [Fact]
-        public void ShouldDoHandShake()
-        {
-            using (var driver = GraphDatabase.Driver("http://localhost:7687"))
-            {
-                using (var session = driver.Session())
-                {
-                    session.Run("RETURN 1");
-                    
-                }
-            }
-        }
+        void Write(IMessage message);
+        void Flush();
+    }
 
-        [Fact]
-        public void DoesNothing()
-        {
-        }
+    public interface IReader
+    {
+        bool HasNext();
+        void Read(IMessageResponseHandler responseHandler);
     }
 }

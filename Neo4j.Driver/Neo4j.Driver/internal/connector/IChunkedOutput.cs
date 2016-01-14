@@ -19,14 +19,14 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
 {
-    public interface IChunker
+    public interface IChunkedOutput
     {
-        IChunker Write(byte b, params byte[] bytes);
-        IChunker Write(byte[] bytes);
-        IChunker Flush();
+        IChunkedOutput Write(byte b, params byte[] bytes);
+        IChunkedOutput Write(byte[] bytes);
+        IChunkedOutput Flush();
     }
 
-    public class PackStreamV1Chunker : IChunker
+    public class PackStreamV1ChunkedOutput : IChunkedOutput
     {
         public const int BufferSize = 1024*8;
         private readonly BitConverterBase _bitConverter;
@@ -34,13 +34,13 @@ namespace Neo4j.Driver
         private byte[] _buffer; //new byte[1024*8];
         private int _pos = -1;
 
-        public PackStreamV1Chunker(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
+        public PackStreamV1ChunkedOutput(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
         {
             _tcpSocketClient = tcpSocketClient;
             _bitConverter = bitConverter;
         }
 
-        public IChunker Write(byte b, params byte[] bytes)
+        public IChunkedOutput Write(byte b, params byte[] bytes)
         {
             var bytesLength = bytes?.Length ?? 0;
             Ensure(1 + bytesLength);
@@ -54,7 +54,7 @@ namespace Neo4j.Driver
             return this;
         }
 
-        public IChunker Write(byte[] bytes)
+        public IChunkedOutput Write(byte[] bytes)
         {
             if (bytes == null)
                 return this;
@@ -66,7 +66,7 @@ namespace Neo4j.Driver
             return this;
         }
 
-        public IChunker Flush()
+        public IChunkedOutput Flush()
         {
             WriteShort((short) (_pos - 2), _buffer, 0); // size of this chunk pos+2 or pos-2
             WriteShort(0, _buffer, _pos); // pending 00 00

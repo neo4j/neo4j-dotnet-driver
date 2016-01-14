@@ -35,10 +35,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Internal\connector\IChunker.cs" />
-    <Compile Include="Internal\connector\IPacker.cs" />
+    <Compile Include="Internal\connector\IChunkedOutput.cs" />
+    <Compile Include="Internal\connector\ISocketClient.cs" />
+    <Compile Include="Internal\connector\IWriter.cs" />
+    <Compile Include="Internal\connector\PackStreamMessageFormatV1.cs" />
+    <Compile Include="Internal\connector\PackStreamV1ChunkedInput.cs" />
     <Compile Include="Internal\connector\SocketClient.cs" />
+    <Compile Include="Internal\connector\SocketExtensions.cs" />
+    <Compile Include="Internal\MessageResponseHandler.cs" />
+    <Compile Include="Internal\messaging\IMessage.cs" />
+    <Compile Include="Internal\messaging\IMessageRequestHandler.cs" />
     <Compile Include="Internal\messaging\InitMessage.cs" />
+    <Compile Include="Internal\messaging\PullAllMessage.cs" />
     <Compile Include="Internal\packstream\BigEndianTargetBitConverter.cs" />
     <Compile Include="Internal\packstream\BitConverterBase.cs" />
     <Compile Include="Config.cs" />
@@ -46,6 +54,8 @@
     <Compile Include="Driver.cs" />
     <Compile Include="GraphDatabase.cs" />
     <Compile Include="Internal\InternalSession.cs" />
+    <Compile Include="Internal\messaging\RunMessage.cs" />
+    <Compile Include="Internal\result\ResultBuilder.cs" />
     <Compile Include="Internal\SocketConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Result.cs" />

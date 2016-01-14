@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
 {
@@ -35,9 +36,14 @@ namespace Neo4j.Driver
 //            throw new NotImplementedException();
         }
 
-        public Task<Result> Run(string statement, IDictionary<string, object> statementParameters = null)
+        public Result Run(string statement, IDictionary<string, object> statementParameters = null)
         {
-            throw new NotImplementedException();
+            var resultBuilder = new ResultBuilder();
+            _connection.Run(resultBuilder, statement, statementParameters);
+            _connection.PullAll(resultBuilder);
+            _connection.Sync();
+
+            return resultBuilder.Build();
         }
     }
 }

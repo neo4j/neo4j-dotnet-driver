@@ -17,22 +17,61 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Linq;
 using Neo4j.Driver.Internal.messaging;
+using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
 {
     internal class SocketConnection : IConnection
     {
-        private SocketClient _client;
-        private Config config;
-        private Uri url;
+        private readonly ISocketClient _client;
+
+        private readonly Queue<IMessage> _messages = new Queue<IMessage>();
+        private readonly IMessageResponseHandler _messageHandler = new MessageResponseHandler();
+
+        private int _requestCounter;
+
+        public SocketConnection(ISocketClient socketClient)
+        {
+            _client = socketClient;
+            var t = _client.Start();
+            t.Wait();
+
+            // add init message by default
+            Init("dotNet-driver/1.0.0");
+        }
 
         public SocketConnection(Uri url, Config config)
+            : this(new SocketClient(url, config))
+        {}
+
+        internal IReadOnlyList<IMessage> Messages => _messages.ToList();
+
+        public void Dispose()
         {
-            this.url = url;
-            this.config = config;
-            _client = new SocketClient( url, config);
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public void Sync()
+        {
+            if (_messages.Count == 0)
+            {
+                return;
+            }
+
+            _client.Send(_messages, _messageHandler);
+            ClearQueue(); // clear sending queue
+
+        }
+
+        public void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> statementParameters = null)
+        {
+            var runMessage = new RunMessage(statement, statementParameters);
+            Enqueue(runMessage, resultBuilder);
+//            _messageHandler.RegisterResultBuilder(resultBuilder);
+            
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -44,32 +83,31 @@ namespace Neo4j.Driver
             t.Wait();
         }
 
-        public void Dispose()
+        private void ClearQueue()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            _requestCounter = 0;
+            _messages.Clear();
         }
 
-        public void Init(string clientName)
+        private void Init(string clientName)
         {
-            var initMessage = new InitMessage(clientName);
-            _client.Send(initMessage);
+            Enqueue(new InitMessage(clientName));
+            //_client.Send(initMessage);
         }
 
-        public void Sync()
+        public void PullAll(ResultBuilder resultBuilder)
         {
-            throw new NotImplementedException();
+            Enqueue(new PullAllMessage(), resultBuilder);
+//            _messageHandler.RegisterResultBuilder(resultBuilder);
+            //_resultCollector.AddMessage(PullAllMessage)
         }
 
-        public async Task<Result> Run(string statement, IDictionary<string, object> statementParameters = null)
+        private int Enqueue(IMessage message, ResultBuilder resultBuilder = null)
         {
-            /*
-            1. Pack statement
-            2. Chunk the packed statement
-            3. connection.SOMETHING(chunkedData);
-            */
-            //await TcpSocketClient.WriteStream.WriteAsync(0x21);
-            throw new NotImplementedException();
+            _messages.Enqueue(message);
+            _requestCounter ++;
+            _messageHandler.Register(message, resultBuilder);
+            return _requestCounter;
         }
     }
 }

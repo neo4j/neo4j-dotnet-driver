@@ -16,6 +16,7 @@
 //  limitations under the License.
 using System;
 using System.IO;
+using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.messaging;
 using Sockets.Plugin.Abstractions;
@@ -25,50 +26,64 @@ namespace Neo4j.Driver.Tests
 {
     public class PackStreamV1PackerTests
     {
-        [Fact]
-        public void PacksInitMessageCorrectly()
+        public class WriterV1
         {
-            var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-            var mockStream = new Mock<Stream>();
-            var receieved = string.Empty;
+            [Fact]
+            public void PacksInitMessageCorrectly()
+            {
+                var mockTcpSocketClient = new Mock<ITcpSocketClient>();
+                var mockStream = new Mock<Stream>();
+                var received = string.Empty;
 
-            mockStream
-                .Setup(s => s.Write(It.IsAny<byte[]>(), 0, It.IsAny<int>()))
-                .Callback<byte[], int, int>((buffer, start, size) => receieved = $"{buffer.ToHexString(start, size)}");
+                mockStream
+                    .Setup(s => s.Write(It.IsAny<byte[]>(), 0, It.IsAny<int>()))
+                    .Callback<byte[], int, int>((buffer, start, size) => received = $"{buffer.ToHexString(start, size)}");
 
-            mockTcpSocketClient
-                .Setup(t => t.WriteStream)
-                .Returns(mockStream.Object);
+                mockTcpSocketClient
+                    .Setup(t => t.WriteStream)
+                    .Returns(mockStream.Object);
 
-            var packer = new PackStreamV1Packer(mockTcpSocketClient.Object, new BigEndianTargetBitConverter());
-            packer.HandleInitMessage(new InitMessage("a"));
-            packer.Flush();
+                var writer =
+                    new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter()).Writer;
+                writer.Write(new InitMessage("a"));
+                writer.Flush();
 
-            byte[] expectedBytes =
-                new byte[] {0x00, 0x04, 0xB1, 0x01, 0x81, 0x61, 0x00, 0x00}.PadRight(PackStreamV1Chunker.BufferSize);
-            mockStream.Verify(c => c.Write(expectedBytes, 0, It.IsAny<int>()), Times.Once,
-                $"Recieved {receieved}{Environment.NewLine}Expected {expectedBytes.ToHexString(0, 8)}");
-        }
-    }
-
-    public static class ByteExtensions
-    {
-        public static byte[] PadRight(this byte[] bytes, int totalSize)
-        {
-            var output = new byte[totalSize];
-            Array.Copy(bytes, output, bytes.Length);
-            return output;
+                byte[] expectedBytes =
+                    new byte[] {0x00, 0x04, 0xB1, 0x01, 0x81, 0x61, 0x00, 0x00}.PadRight(
+                        PackStreamV1ChunkedOutput.BufferSize);
+                mockStream.Verify(c => c.Write(expectedBytes, 0, It.IsAny<int>()), Times.Once,
+                    $"Received {received}{Environment.NewLine}Expected {expectedBytes.ToHexString(0, 8)}");
+            }
         }
 
-        public static string ToHexString(this byte[] bytes, int start, int size)
+        private static void SetupResponse(Mock<ITcpSocketClient> mock, byte[] response )
         {
-            if (bytes == null)
-                return "NULL";
+            var memoryStream = new MemoryStream();
+            memoryStream.Write(response );
+            memoryStream.Flush();
+            memoryStream.Position = 0;
+            mock.Setup(c => c.ReadStream).Returns(memoryStream);
+        }
 
-            var destination = new byte[size];
-            Array.Copy(bytes, start, destination, 0, size);
+        public class ReaderV1Tests
+        {
+            public class ReadMethod
+            {
+                [Fact]
+                //todo - verify properly.
+                public void UnpacksStructHeaderCorrectly()
+                {
+                    var mockTcpSocketClient = new Mock<ITcpSocketClient>();
 
-            return BitConverter.ToString(destination).Replace("-", " ");
+                    var bytes = TestHelper.StringToByteArray("00 03 b1 70 a0 00 00");
+                    SetupResponse(mockTcpSocketClient, bytes);//new byte[]{ 0x00, 0x03, 0xb1, 0x70,0xa0, 0x00, 0x00 });
+
+                    var reader = 
+                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter()).Reader;
+                    reader.Read(new Mock<IMessageResponseHandler>().Object);
+                    mockTcpSocketClient.Object.ReadStream.Position.Should().Be(7);
+                }
+            } 
         }
     }
 }
