@@ -183,4 +183,9 @@ $RECYCLE.BIN/
 # Visual Studio 2014 CTP
 **/*.sln.ide
 
+# NCrunch
+*.ncrunch*
+_NCrunch_*
+.*crunch*.local.xml
+
 *.vs\

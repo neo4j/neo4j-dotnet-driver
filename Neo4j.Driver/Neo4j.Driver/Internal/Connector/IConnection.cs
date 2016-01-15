@@ -16,42 +16,14 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.result;
 
-namespace Neo4j.Driver.Internal.result
+namespace Neo4j.Driver
 {
-    public class ResultBuilder
+    public interface IConnection : IDisposable
     {
-        private IDictionary<string, object> _meta;
-        //handles success
-
-        void keys(String[] names)
-        {
-            
-        }
-
-        void record(object[] fields)
-        {
-            
-        }
-
-        public Result Build()
-        {
-            //
-            throw new NotImplementedException();
-        }
-
-        public void CollectMeta(IDictionary<string, object> meta)
-        {
-            if (meta == null)
-            {
-                return;
-            }
-            //
-            _meta = meta;
-        }
+        void Sync();
+        void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> statementParameters = null);
+        void PullAll(ResultBuilder resultBuilder);
     }
 }

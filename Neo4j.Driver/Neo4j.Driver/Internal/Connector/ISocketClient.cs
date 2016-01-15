@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2002-2016 "Neo Technology,"
+//  Copyright (c) 2002-2016 "Neo Technology,"
 //  Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 //  This file is part of Neo4j.
@@ -14,44 +14,15 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.result
+namespace Neo4j.Driver
 {
-    public class ResultBuilder
+    public interface ISocketClient
     {
-        private IDictionary<string, object> _meta;
-        //handles success
-
-        void keys(String[] names)
-        {
-            
-        }
-
-        void record(object[] fields)
-        {
-            
-        }
-
-        public Result Build()
-        {
-            //
-            throw new NotImplementedException();
-        }
-
-        public void CollectMeta(IDictionary<string, object> meta)
-        {
-            if (meta == null)
-            {
-                return;
-            }
-            //
-            _meta = meta;
-        }
+        Task Start();
+        Task Stop();
+        void Send(IEnumerable<IMessage> messages, IMessageResponseHandler responseHandler);
     }
 }

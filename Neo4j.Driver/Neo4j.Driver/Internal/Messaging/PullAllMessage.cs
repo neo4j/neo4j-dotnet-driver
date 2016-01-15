@@ -16,42 +16,17 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.result
+namespace Neo4j.Driver.Internal.messaging
 {
-    public class ResultBuilder
+    class PullAllMessage : IMessage
     {
-        private IDictionary<string, object> _meta;
-        //handles success
-
-        void keys(String[] names)
+        public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {
-            
-        }
-
-        void record(object[] fields)
-        {
-            
-        }
-
-        public Result Build()
-        {
-            //
-            throw new NotImplementedException();
-        }
-
-        public void CollectMeta(IDictionary<string, object> meta)
-        {
-            if (meta == null)
-            {
-                return;
-            }
-            //
-            _meta = meta;
+            messageRequestHandler.HandlePullAllMessage();
         }
     }
 }

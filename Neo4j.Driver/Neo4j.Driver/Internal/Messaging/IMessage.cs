@@ -14,19 +14,10 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-using System.Diagnostics.Contracts;
-
 namespace Neo4j.Driver
 {
-    public interface IWriter
+    public interface IMessage
     {
-        void Write(IMessage message);
-        void Flush();
-    }
-
-    public interface IReader
-    {
-        bool HasNext();
-        void Read(IMessageResponseHandler responseHandler);
+        void Dispatch(IMessageRequestHandler messageRequestHandler);
     }
 }

@@ -14,44 +14,19 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Neo4j.Driver.Internal.result
+namespace Neo4j.Driver.Internal.messaging
 {
-    public class ResultBuilder
+    public class InitMessage : IMessage
     {
-        private IDictionary<string, object> _meta;
-        //handles success
-
-        void keys(String[] names)
+        public InitMessage(string clientNameAndVersion)
         {
-            
+            ClientNameAndVersion = clientNameAndVersion;
         }
 
-        void record(object[] fields)
+        public string ClientNameAndVersion { get; }
+        public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {
-            
-        }
-
-        public Result Build()
-        {
-            //
-            throw new NotImplementedException();
-        }
-
-        public void CollectMeta(IDictionary<string, object> meta)
-        {
-            if (meta == null)
-            {
-                return;
-            }
-            //
-            _meta = meta;
+            messageRequestHandler.HandleInitMessage( ClientNameAndVersion );
         }
     }
 }
