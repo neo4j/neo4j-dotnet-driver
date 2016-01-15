@@ -37,11 +37,13 @@
   <ItemGroup>
     <Compile Include="Exceptions\Neo4jException.cs" />
     <Compile Include="Exceptions\Throw.cs" />
+    <Compile Include="Internal\connector\IChunkedInput.cs" />
     <Compile Include="Internal\connector\IChunkedOutput.cs" />
     <Compile Include="Internal\connector\ISocketClient.cs" />
     <Compile Include="Internal\connector\IWriter.cs" />
     <Compile Include="Internal\connector\PackStreamMessageFormatV1.cs" />
     <Compile Include="Internal\connector\PackStreamV1ChunkedInput.cs" />
+    <Compile Include="Internal\connector\PackStreamV1ChunkedOutput.cs" />
     <Compile Include="Internal\connector\SocketClient.cs" />
     <Compile Include="Internal\connector\SocketExtensions.cs" />
     <Compile Include="Internal\MessageResponseHandler.cs" />

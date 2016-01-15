@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Tests
                     var reader = 
                         new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter()).Reader;
                     reader.Read(new Mock<IMessageResponseHandler>().Object);
-                    mockTcpSocketClient.Object.ReadStream.Position.Should().Be(5);
+                    mockTcpSocketClient.Object.ReadStream.Position.Should().Be(7);
                 }
             } 
         }

@@ -1,4 +1,4 @@
-﻿//  Copyright (c) 2002-2016 "Neo Technology,"
+//  Copyright (c) 2002-2016 "Neo Technology,"
 //  Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 //  This file is part of Neo4j.
@@ -16,8 +16,14 @@
 //  limitations under the License.
 namespace Neo4j.Driver
 {
-    public interface IMessage
+    public interface IChunkedInput
     {
-        void Dispatch(IMessageRequestHandler messageRequestHandler);
+        sbyte ReadSByte();
+        byte ReadByte();
+        short ReadShort();
+        int ReadInt();
+        void ReadBytes(byte[] buffer, int size = 0, int? length = null);
+        byte PeekByte();
+        void ReadMessageEnding();
     }
 }
