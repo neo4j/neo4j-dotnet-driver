@@ -35,6 +35,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\Neo4jException.cs" />
+    <Compile Include="Exceptions\Throw.cs" />
     <Compile Include="Internal\connector\IChunkedOutput.cs" />
     <Compile Include="Internal\connector\ISocketClient.cs" />
     <Compile Include="Internal\connector\IWriter.cs" />

@@ -86,23 +86,31 @@ namespace Neo4j.Driver
                     _chunkBuffer.Enqueue(chunk[i]);
                 }
 
-                // tail 00 00 
-                ReadSpecifiedSize(_headTailBuffer);
-                if (_headTailBuffer.Equals(Tail))
-                {
-                    //TODO: Convert to Neo4j Exception.
-                    throw new InvalidOperationException("Not chunked correctly");
-                }
             }
         }
 
         private void ReadSpecifiedSize(byte[] buffer)
         {
+            if (buffer.Length == 0)
+            {
+                return;
+            }
             var numberOfbytesRead = _tcpSocketClient.ReadStream.Read(buffer);
             if (numberOfbytesRead != buffer.Length)
             {
                 //TODO: Convert to Neo4j Exception.
                 throw new InvalidOperationException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
+            }
+        }
+
+        private void ReadTail()
+        {
+            // tail 00 00 
+            ReadSpecifiedSize(_headTailBuffer);
+            if (_headTailBuffer.Equals(Tail))
+            {
+                //TODO: Convert to Neo4j Exception.
+                throw new InvalidOperationException("Not chunked correctly");
             }
         }
     }

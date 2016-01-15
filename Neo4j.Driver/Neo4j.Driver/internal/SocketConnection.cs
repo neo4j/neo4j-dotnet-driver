@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.result;
 
@@ -26,14 +27,16 @@ namespace Neo4j.Driver
     internal class SocketConnection : IConnection
     {
         private readonly ISocketClient _client;
+        private readonly IMessageResponseHandler _messageHandler;
 
         private readonly Queue<IMessage> _messages = new Queue<IMessage>();
-        private readonly IMessageResponseHandler _messageHandler = new MessageResponseHandler();
+        internal IReadOnlyList<IMessage> Messages => _messages.ToList();
 
-        private int _requestCounter;
-
-        public SocketConnection(ISocketClient socketClient)
+        public SocketConnection(ISocketClient socketClient, IMessageResponseHandler messageResponseHandler = null)
         {
+            Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
+            _messageHandler = messageResponseHandler ?? new MessageResponseHandler();
+
             _client = socketClient;
             var t = _client.Start();
             t.Wait();
@@ -44,9 +47,8 @@ namespace Neo4j.Driver
 
         public SocketConnection(Uri url, Config config)
             : this(new SocketClient(url, config))
-        {}
-
-        internal IReadOnlyList<IMessage> Messages => _messages.ToList();
+        {
+        }
 
         public void Dispose()
         {
@@ -63,15 +65,18 @@ namespace Neo4j.Driver
 
             _client.Send(_messages, _messageHandler);
             ClearQueue(); // clear sending queue
-
         }
 
-        public void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> statementParameters = null)
+        public void Run(ResultBuilder resultBuilder, string statement,
+            IDictionary<string, object> statementParameters = null)
         {
             var runMessage = new RunMessage(statement, statementParameters);
             Enqueue(runMessage, resultBuilder);
-//            _messageHandler.RegisterResultBuilder(resultBuilder);
-            
+        }
+
+        public void PullAll(ResultBuilder resultBuilder)
+        {
+            Enqueue(new PullAllMessage(), resultBuilder);
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -85,29 +90,18 @@ namespace Neo4j.Driver
 
         private void ClearQueue()
         {
-            _requestCounter = 0;
             _messages.Clear();
         }
 
         private void Init(string clientName)
         {
             Enqueue(new InitMessage(clientName));
-            //_client.Send(initMessage);
         }
 
-        public void PullAll(ResultBuilder resultBuilder)
-        {
-            Enqueue(new PullAllMessage(), resultBuilder);
-//            _messageHandler.RegisterResultBuilder(resultBuilder);
-            //_resultCollector.AddMessage(PullAllMessage)
-        }
-
-        private int Enqueue(IMessage message, ResultBuilder resultBuilder = null)
+        private void Enqueue(IMessage message, ResultBuilder resultBuilder = null)
         {
             _messages.Enqueue(message);
-            _requestCounter ++;
             _messageHandler.Register(message, resultBuilder);
-            return _requestCounter;
         }
     }
 }

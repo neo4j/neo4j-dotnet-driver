@@ -412,6 +412,12 @@ namespace Neo4j.Driver
             {
                 PackStructHeader(1, MSG_INIT);
                 Pack(clientNameAndVersion);
+                PackMessageTail();
+            }
+
+            private void PackMessageTail()
+            {
+                _chunkedOutput.WriteMessageEnding();
             }
 
             public void HandleRunMessage(string statement, IDictionary<string, object> parameters)
@@ -419,11 +425,13 @@ namespace Neo4j.Driver
                 PackStructHeader(2, MSG_RUN);
                 Pack(statement);
                 PackRawMap(parameters);
+                PackMessageTail();
             }
 
             public void HandlePullAllMessage()
             {
                 PackStructHeader(0, MSG_PULL_ALL);
+                PackMessageTail();
             }
 
             private void PackRawMap(IDictionary<string, object> dictionary)

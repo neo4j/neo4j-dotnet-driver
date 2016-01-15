@@ -24,6 +24,7 @@ namespace Neo4j.Driver
         IChunkedOutput Write(byte b, params byte[] bytes);
         IChunkedOutput Write(byte[] bytes);
         IChunkedOutput Flush();
+        IChunkedOutput WriteMessageEnding();
     }
 
     public class PackStreamV1ChunkedOutput : IChunkedOutput
@@ -33,6 +34,9 @@ namespace Neo4j.Driver
         private readonly ITcpSocketClient _tcpSocketClient;
         private byte[] _buffer; //new byte[1024*8];
         private int _pos = -1;
+        private int _chunkLength = 0;
+        private int _chunkHeaderPosition = 0;
+        private bool _isInChunk = false;
 
         public PackStreamV1ChunkedOutput(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
         {
@@ -44,12 +48,10 @@ namespace Neo4j.Driver
         {
             var bytesLength = bytes?.Length ?? 0;
             Ensure(1 + bytesLength);
-            _buffer[_pos] = b;
-            _pos ++;
+            WriteBytes(new[] { b});
             if (bytes != null)
             {
-                bytes.CopyTo(_buffer, _pos);
-                _pos += bytesLength;
+                WriteBytes(bytes);
             }
             return this;
         }
@@ -61,21 +63,42 @@ namespace Neo4j.Driver
 
             var bytesLength = bytes.Length;
             Ensure(bytesLength);
-            bytes.CopyTo(_buffer, _pos);
-            _pos += bytesLength;
+            WriteBytes(bytes);
             return this;
         }
 
         public IChunkedOutput Flush()
         {
-            WriteShort((short) (_pos - 2), _buffer, 0); // size of this chunk pos+2 or pos-2
-            WriteShort(0, _buffer, _pos); // pending 00 00
-            _pos += 2;
             _tcpSocketClient.WriteStream.Write(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Flush();
             _buffer = null;
             _pos = -1;
             return this;
+        }
+
+        public IChunkedOutput WriteMessageEnding()
+        {
+            WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition); // size of this chunk pos-2
+            WriteShort(0, _buffer, _pos); // pending 00 00
+
+            _pos += 2;
+            EndChunk();
+            return this;
+        }
+
+        private void EndChunk()
+        {
+            _chunkLength = 0;
+            _chunkHeaderPosition = _pos;
+            _isInChunk = false;
+        }
+
+        private void WriteBytes(byte[] bytes)
+        {
+            _isInChunk = true;
+            bytes.CopyTo(_buffer, _pos);
+            _pos += bytes.Length;
+            _chunkLength += bytes.Length;
         }
 
         private void Ensure(int size)
@@ -86,8 +109,12 @@ namespace Neo4j.Driver
                 _buffer = new byte[BufferSize];
                 _pos = 2; // reserve two bytes for chunk header
             }
+            else if (!_isInChunk)
+            {
+                _pos += 2;
+            }
 
-            if (_buffer.Length - _pos < size + 2) // not enough to add [size] and a chunk ending (00 00)
+            if (_buffer.Length - _pos < size + 2) // not enough to add [size] and a message ending (00 00)
             {
                 Flush();
             }

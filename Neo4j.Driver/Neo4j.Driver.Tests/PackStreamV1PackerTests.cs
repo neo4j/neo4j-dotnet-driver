@@ -56,15 +56,6 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        private static void SetupResponse(Mock<ITcpSocketClient> mock, byte[] response )
-        {
-            var memoryStream = new MemoryStream();
-            memoryStream.Write(response );
-            memoryStream.Flush();
-            memoryStream.Position = 0;
-            mock.Setup(c => c.ReadStream).Returns(memoryStream);
-        }
-
         public class ReaderV1Tests
         {
             public class ReadMethod
@@ -75,13 +66,13 @@ namespace Neo4j.Driver.Tests
                 {
                     var mockTcpSocketClient = new Mock<ITcpSocketClient>();
 
-                    var bytes = TestHelper.StringToByteArray("00 03 b1 70 a0 00 00");
-                    SetupResponse(mockTcpSocketClient, bytes);//new byte[]{ 0x00, 0x03, 0xb1, 0x70,0xa0, 0x00, 0x00 });
+                    var bytes = "00 03 b1 70 a0 00 00".ToByteArray();
+                    TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);//new byte[]{ 0x00, 0x03, 0xb1, 0x70,0xa0, 0x00, 0x00 });
 
                     var reader = 
                         new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter()).Reader;
                     reader.Read(new Mock<IMessageResponseHandler>().Object);
-                    mockTcpSocketClient.Object.ReadStream.Position.Should().Be(7);
+                    mockTcpSocketClient.Object.ReadStream.Position.Should().Be(5);
                 }
             } 
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests
 {
@@ -20,6 +21,20 @@ namespace Neo4j.Driver.Tests
             Array.Copy(bytes, start, destination, 0, size);
 
             return BitConverter.ToString(destination).Replace("-", " ");
+        }
+
+        /// <summary>
+        /// Takes the format: 00 00 00 and converts to a byte array.
+        /// </summary>
+        /// <param name="hex"></param>
+        /// <returns></returns>
+        public static byte[] ToByteArray(this string hex)
+        {
+            hex = hex.Replace(" ", "").Replace(Environment.NewLine, "");
+            return Enumerable.Range(0, hex.Length)
+                .Where(x => x % 2 == 0)
+                .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                .ToArray();
         }
     }
 }
