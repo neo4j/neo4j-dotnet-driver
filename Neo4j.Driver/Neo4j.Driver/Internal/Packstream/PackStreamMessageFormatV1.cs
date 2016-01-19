@@ -81,7 +81,7 @@ namespace Neo4j.Driver
 //                        unpackPullAllMessage(handler);
                         break;
                     case MSG_RECORD:
-//                        unpackRecordMessage(handler);
+                        UnpackRecordMessage(responseHandler);
                         break;
                     case MSG_SUCCESS:
                         UnpackSuccessMessage(responseHandler);
@@ -99,6 +99,17 @@ namespace Neo4j.Driver
                         throw new IOException("Unknown message type: " + type);
                 }
                 UnPackMessageTail();
+            }
+
+            private void UnpackRecordMessage(IMessageResponseHandler responseHandler)
+            {
+                int fieldCount = (int)UnpackListHeader();
+                dynamic[] fields = new dynamic[fieldCount];
+                for (int i = 0; i < fieldCount; i++)
+                {
+                    fields[i] = UnpackValue();
+                }
+                responseHandler.HandleRecordMessage(fields);
             }
 
             private void UnPackMessageTail()
@@ -129,7 +140,7 @@ namespace Neo4j.Driver
                 return map;
             }
 
-            private object UnpackValue()
+            public dynamic UnpackValue()
             {
                 var type = PeekNextType();
                 switch (type)
@@ -140,8 +151,8 @@ namespace Neo4j.Driver
 //                        return value(unpacker.unpackNull());
 //                    case BOOLEAN:
 //                        return value(unpacker.unpackBoolean());
-//                    case INTEGER:
-//                        return value(unpacker.unpackLong());
+                    case PackType.Integer:
+                        return UnpackLong();
 //                    case FLOAT:
 //                        return value(unpacker.unpackDouble());
                     case PackType.String:
@@ -179,6 +190,21 @@ namespace Neo4j.Driver
 //                        }
                 }
                 throw new IOException("Unknown value type: " + type);
+            }
+
+            private dynamic UnpackLong()
+            {
+                byte markerByte = _chunkedInput.ReadByte();
+                if ((sbyte)markerByte >= MINUS_2_TO_THE_4) { return (sbyte)markerByte; }
+                switch (markerByte)
+                {
+                    case INT_8: return _chunkedInput.ReadSByte();
+                    case INT_16: return _chunkedInput.ReadShort();
+                    case INT_32: return _chunkedInput.ReadInt();
+                    case INT_64: return _chunkedInput.ReadLong();
+                    default: throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        $"Expected an integer, but got: {markerByte.ToString("X2")}");
+                }
             }
 
             private long UnpackListHeader()

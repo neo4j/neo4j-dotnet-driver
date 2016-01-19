@@ -43,6 +43,7 @@
       <HintPath>..\packages\FluentAssertions.4.2.1\lib\net45\FluentAssertions.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Moq, Version=4.2.1510.2205, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
       <HintPath>..\packages\Moq.4.2.1510.2205\lib\net40\Moq.dll</HintPath>
       <Private>True</Private>
@@ -84,6 +85,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="ResultCursorTests.cs" />
     <Compile Include="TestUtil\ByteExtensions.cs" />
     <Compile Include="ChunkedInputTests.cs" />
     <Compile Include="PackStreamV1PackerTests.cs" />

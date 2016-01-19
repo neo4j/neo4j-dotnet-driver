@@ -35,7 +35,7 @@ namespace Neo4j.Driver
 //            throw new NotImplementedException();
         }
 
-        public Result Run(string statement, IDictionary<string, object> statementParameters = null)
+        public ResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
         {
             var resultBuilder = new ResultBuilder();
             _connection.Run(resultBuilder, statement, statementParameters);

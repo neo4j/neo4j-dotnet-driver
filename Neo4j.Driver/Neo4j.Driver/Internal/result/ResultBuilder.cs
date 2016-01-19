@@ -25,23 +25,19 @@ namespace Neo4j.Driver.Internal.result
 {
     public class ResultBuilder
     {
-        private IDictionary<string, object> _meta;
-        //handles success
+        private IDictionary<string, dynamic> _meta;
+        private string[] _keys;
+        private IList<Record> _records = new List<Record>(); 
 
-        void keys(String[] names)
+        public void Record(dynamic[] fields)
         {
-            
+            Record record = new Record( _keys, fields);
+            _records.Add( record );
         }
 
-        void record(object[] fields)
+        public ResultCursor Build()
         {
-            
-        }
-
-        public Result Build()
-        {
-            //
-            throw new NotImplementedException();
+            return new ResultCursor(_records, _keys);
         }
 
         public void CollectMeta(IDictionary<string, object> meta)
@@ -50,8 +46,23 @@ namespace Neo4j.Driver.Internal.result
             {
                 return;
             }
-            //
             _meta = meta;
+
+            CollectKeys( meta );
+        }
+
+        private void CollectKeys(IDictionary<string, object> meta)
+        {
+            const string keysName = "fields";
+
+            var keys =  (meta[keysName] as IList<object>)?.Cast<string>();
+            if (keys == null)
+            {
+                _keys = new string[0];
+                return; 
+            }
+
+            _keys = keys.ToArray();
         }
     }
 }

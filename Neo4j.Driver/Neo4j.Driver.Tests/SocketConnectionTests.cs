@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
             {
-                var exception = Record.Exception(() => new SocketConnection(null));
+                var exception = Xunit.Record.Exception(() => new SocketConnection(null));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<ArgumentNullException>();
             }

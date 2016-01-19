@@ -15,6 +15,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System.Collections.Generic;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.result;
 
@@ -23,12 +24,12 @@ namespace Neo4j.Driver
     internal class MessageResponseHandler : IMessageResponseHandler
     {
         private readonly Queue<ResultBuilder> _resultBuilders = new Queue<ResultBuilder>();
-        private readonly Queue<IMessage> _messages = new Queue<IMessage>() ;
+        private readonly Queue<IMessage> _sentMessages = new Queue<IMessage>() ;
         private ResultBuilder _currentResultBuilder;
 
         public void HandleSuccessMessage(IDictionary<string, object> meta)
         {
-            var message = _messages.Dequeue();
+            var message = _sentMessages.Dequeue();
             if (message is InitMessage)
             {
                 return;
@@ -46,14 +47,9 @@ namespace Neo4j.Driver
 
         }
 
-        public void HandleRecordMessage()
-        {
-//            _currentResultBuilder.AddRecord();
-        }
-
         public void Register(IMessage message, ResultBuilder resultBuilder = null)
         {
-            _messages.Enqueue(message);
+            _sentMessages.Enqueue(message);
             if (resultBuilder != null)
             {
                 _resultBuilders.Enqueue(resultBuilder);
@@ -62,7 +58,21 @@ namespace Neo4j.Driver
 
         public bool QueueIsEmpty()
         {
-            return _messages.Count == 0;
+            return _sentMessages.Count == 0;
+        }
+
+        public void HandleRecordMessage(dynamic[] fields)
+        {
+            //TODO: Should error if no keys??
+            var message = _sentMessages.Dequeue();
+            if (!(message is PullAllMessage))
+            {
+                Throw.ArgumentException.IfNotEqual(message.GetType(), typeof(PullAllMessage), "Dequeued Messages", "Expected Messages");
+            }
+
+            var builder = _resultBuilders.Dequeue();
+            Throw.ArgumentException.IfNotEqual( builder, _currentResultBuilder, "Dequeued builder", "Expected builder");
+            _currentResultBuilder.Record( fields);
         }
     }
 }

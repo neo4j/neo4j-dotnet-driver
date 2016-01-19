@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Tests
 
         public async Task ExpectException<T>(Func<Task> func) where T : Exception
         {
-            var exception = await Record.ExceptionAsync(() => func());
+            var exception = await Xunit.Record.ExceptionAsync(() => func());
             Assert.NotNull(exception);
             Assert.IsType<T>(exception);
         }

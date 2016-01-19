@@ -15,6 +15,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
+using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver.Exceptions
 {
@@ -33,6 +34,38 @@ namespace Neo4j.Driver.Exceptions
                 {
                     throw new System.ArgumentNullException(paramName);
                 }
+            }
+        }
+
+        public static class ArgumentException
+        {
+            public static void IfNotEqual(int first, int second, string firstParam, string secondParam)
+            {
+                If(() => first != second, first, second, firstParam, secondParam);
+            }
+
+            internal static void IfNotEqual(object first, object second, string firstParam, string secondParam)
+            {
+                if (first == null && second == null)
+                    return;
+                
+
+                If( () => first == null || second == null || !first.Equals(second), first, second, firstParam,secondParam);
+            }
+
+            public static void If(Func<bool> func, object first, object second, string firstParam, string secondParam)
+            {
+                if(func())
+                throw new System.ArgumentException($"{firstParam} ({first}) did not equal {secondParam} ({second})");
+            }
+        }
+
+        public static class ArgumentOutOfRangeException
+        {
+            public static void IfValueLessThan(long value, long limit, string parameterName)
+            {
+                if(value < limit)
+                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) must be greater than {limit}.");
             }
         }
     }

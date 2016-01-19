@@ -15,6 +15,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
+using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
 using Moq;
@@ -73,6 +74,63 @@ namespace Neo4j.Driver.Tests
                         new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter()).Reader;
                     reader.Read(new Mock<IMessageResponseHandler>().Object);
                     mockTcpSocketClient.Object.ReadStream.Position.Should().Be(7);
+                }
+
+                [Theory]
+                [InlineData(2147483648, new byte[] { 0xCB, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00 })]
+                [InlineData(9223372036854775807, new byte[] { 0xCB, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF })]
+                public void UnpackLongCorrectly(long expected, byte[] data)
+                {
+                    UnpackNumCorrectly(expected, data);
+                }
+
+                [Theory]
+                [InlineData(32768, new byte[] { 0xCA, 0x00, 0x00, 0x80, 0x00 })]
+                public void UnpackIntCorrectly(int expected, byte[] data)
+                {
+                    UnpackNumCorrectly(expected, data);
+                }
+
+                [Theory]
+                [InlineData(-16, new byte[] { 0xF0 })]
+                [InlineData(42, new byte[] { 0x2A })]
+                [InlineData(127, new byte[] { 0x7F })]
+                public void UnpackTinyIntCorrectly(sbyte value, byte[] expected)
+                {
+                    UnpackNumCorrectly(value, expected);
+                }
+
+                [Theory]
+                [InlineData(-128, new byte[] { 0xC8, 0x80 })]
+                [InlineData(-17, new byte[] { 0xC8, 0xEF })]
+                public void UnpackInt8Correctly(sbyte value, byte[] expected)
+                {
+                    UnpackNumCorrectly(value, expected);
+                }
+
+                [Theory]
+                [InlineData(128, new byte[] { 0xC9, 0x00, 0x80 })]
+                public void UnpackShortCorrectly(short value, byte[] expected)
+                {
+                    UnpackNumCorrectly(value, expected);
+                }
+
+                private void UnpackNumCorrectly(dynamic expected, byte[] data)
+                {
+                    var mockTcpSocketClient = new Mock<ITcpSocketClient>();
+
+                    List<byte> bytes = new List<byte>
+                    {
+                        0x00, (byte)data.Length
+                    };
+                    bytes.AddRange(data);
+
+                    TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes.ToArray());
+
+                    PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
+                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter()).Reader;
+                    var real = reader.UnpackValue();
+                    Assert.Equal(expected, real);
                 }
             } 
         }

@@ -55,5 +55,6 @@ namespace Neo4j.Driver
 //        void RegisterMessage(IMessage message);
         void Register(IMessage message, ResultBuilder resultBuilder = null);
         bool QueueIsEmpty();
+        void HandleRecordMessage(dynamic[] fields);
     }
 }

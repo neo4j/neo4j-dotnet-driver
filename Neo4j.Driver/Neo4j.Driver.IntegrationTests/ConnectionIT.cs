@@ -15,12 +15,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
+using System.Linq;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class ConnectionTest
+    public class ConnectionIT
     {
         [Fact]
         public void ShouldDoHandShake()
@@ -29,8 +32,13 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 using (var session = driver.Session())
                 {
-                    session.Run("RETURN 1");
-                    
+                    var resultCursor = session.Run("RETURN 2 as Number" );
+                    resultCursor.Keys.Should().Contain("Number");
+                    resultCursor.Keys.Count.Should().Be(1);
+                 //   resultCursor.Records.Count.Should().Be(1);
+//                    var record = resultCursor.Records.First();
+//                    Assert.Equal(2, record.Values["Number"]);
+//                    Assert.IsType<sbyte>(record.Values["Number"]);
                 }
             }
         }

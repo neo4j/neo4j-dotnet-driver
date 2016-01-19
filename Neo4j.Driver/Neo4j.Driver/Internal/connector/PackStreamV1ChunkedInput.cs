@@ -16,6 +16,7 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Extensions;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
@@ -49,12 +50,23 @@ namespace Neo4j.Driver
 
         public short ReadShort()
         {
-            throw new NotImplementedException();
+            Ensure(2);
+            return _bitConverter.ToInt16(_chunkBuffer.DequeueToArray(2));
         }
 
         public int ReadInt()
         {
-            throw new NotImplementedException();
+            Ensure(4);
+            return _bitConverter.ToInt32(_chunkBuffer.DequeueToArray(4));
+        }
+
+        public long ReadLong()
+        {
+            Ensure(8);
+
+            var bytes = _chunkBuffer.DequeueToArray(8);
+
+            return _bitConverter.ToInt64(bytes);
         }
 
         public void ReadBytes(byte[] buffer, int offset = 0, int? length = null)
@@ -119,5 +131,6 @@ namespace Neo4j.Driver
                 throw new InvalidOperationException("Not chunked correctly");
             }
         }
+
     }
 }
