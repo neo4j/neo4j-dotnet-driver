@@ -16,8 +16,12 @@
 //  limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
@@ -71,7 +75,7 @@ namespace Neo4j.Driver
 
                 switch (type)
                 {
-                    case MSG_RUN:
+/*                    case MSG_RUN:
 //                        unpackRunMessage(handler);
                         break;
                     case MSG_DISCARD_ALL:
@@ -79,7 +83,7 @@ namespace Neo4j.Driver
                         break;
                     case MSG_PULL_ALL:
 //                        unpackPullAllMessage(handler);
-                        break;
+                        break;*/
                     case MSG_RECORD:
                         UnpackRecordMessage(responseHandler);
                         break;
@@ -87,18 +91,26 @@ namespace Neo4j.Driver
                         UnpackSuccessMessage(responseHandler);
                         break;
                     case MSG_FAILURE:
-//                        unpackFailureMessage(handler);
+                        UnpackFailureMessage(responseHandler);
                         break;
-                    case MSG_IGNORED:
-//                        unpackIgnoredMessage(handler);
-                        break;
-                    case MSG_INIT:
-//                        unpackInitMessage(handler);
-                        break;
+//                    case MSG_IGNORED:
+////                        unpackIgnoredMessage(handler);
+//                        break;
+//                    case MSG_INIT:
+////                        unpackInitMessage(handler);
+//                        break;
                     default:
                         throw new IOException("Unknown message type: " + type);
                 }
                 UnPackMessageTail();
+            }
+
+            private void UnpackFailureMessage(IMessageResponseHandler responseHandler)
+            {
+                var values = UnpackMap();
+                var code = values["code"]?.ToString(); // TODO
+                var message = values["message"]?.ToString();
+                responseHandler.HandleFailureMessage(code, message);
             }
 
             private void UnpackRecordMessage(IMessageResponseHandler responseHandler)
@@ -158,10 +170,10 @@ namespace Neo4j.Driver
                     case PackType.String:
                         return UnpackString();
 
-//                    case MAP:
-//                        {
-//                            return new MapValue(unpackMap());
-//                        }
+                    case PackType.Map:
+                    {
+                        return UnpackMap();
+                    }
                     case PackType.List:
                     {
                         var size = (int) UnpackListHeader();
@@ -189,7 +201,7 @@ namespace Neo4j.Driver
 //                            }
 //                        }
                 }
-                throw new IOException("Unknown value type: " + type);
+                throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
             }
 
             private dynamic UnpackLong()
@@ -475,19 +487,100 @@ namespace Neo4j.Driver
                 var type = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
                 if (type == typeof (long) || type == typeof (int) || type == typeof (short) || type == typeof (sbyte))
                 {
-                    PackLong(Convert.ToInt64(value));
+                    Pack(Convert.ToInt64(value));
                 }
-//                Run("MATCH (n:Movie) WHERE n.Title = {titleParam} AND n.Year = {ageParam} RETURN n", 
-//                    new {
-//                        titleParam = "MyMovie",
-//                        yearParam = myclass.Year
-//                    });
-//                
+                else if (value is bool)
+                {
+                    Pack((bool)value);
+                }
+                else if (type == typeof (double) || type == typeof (float) || type == typeof(decimal))
+                {
+                    Pack(Convert.ToDouble(value));
+                }
+                else if (value is string)
+                {
+                    Pack((string) value);
+                }
+                else if (value is IList)
+                {
+                    Pack((IList)value);
+                }
+                else if (value is IDictionary<string, object>)
+                {
+                    PackRawMap((IDictionary<string, object>) value);
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value.GetType(),
+                        $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
+
+                }
+
             }
 
-            private void PackLong(long value)
+            private void Pack(IList value)
             {
-                throw new NotImplementedException();
+                PackListHeader(value.Count);
+                foreach (var item in value)
+                {
+                    PackValue(item);
+                }
+            }
+
+
+
+            public void Pack(double value)
+            {
+                _chunkedOutput.Write(FLOAT_64).Write(_bitConverter.GetBytes(value));
+            }
+
+            public void Pack(bool value)
+            {
+                _chunkedOutput.Write( value ? TRUE : FALSE );
+            }
+
+            private void Pack(long value)
+            {
+                if (value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
+                {
+                    _chunkedOutput.Write((byte) value);
+                }
+                else if (value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4)
+                {
+                    _chunkedOutput.Write(INT_8, (byte) value);
+                }
+                else if (value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15)
+                {
+                    _chunkedOutput.Write(INT_16).Write(_bitConverter.GetBytes((short) value));
+                }
+                else if (value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31)
+                {
+                    _chunkedOutput.Write(INT_32).Write(_bitConverter.GetBytes((int) value));
+                }
+                else
+                {
+                    _chunkedOutput.Write(INT_64).Write(_bitConverter.GetBytes(value));
+                }
+            }
+
+            private void PackListHeader(int size)
+            {
+                if (size < 0x10)
+                {
+                    _chunkedOutput.Write((byte)(TINY_LIST | size));
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    _chunkedOutput.Write(LIST_8).Write((byte)size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    _chunkedOutput.Write(LIST_16).Write(_bitConverter.GetBytes((short)size));
+                }
+                else
+                {
+                    _chunkedOutput.Write(LIST_32).Write(_bitConverter.GetBytes(size));
+                }
             }
 
             private void PackMapHeader(int size)

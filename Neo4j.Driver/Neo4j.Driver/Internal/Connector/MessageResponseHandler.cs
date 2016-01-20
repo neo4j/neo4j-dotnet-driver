@@ -43,8 +43,17 @@ namespace Neo4j.Driver
             // deq and save
             _currentResultBuilder = _resultBuilders.Dequeue();
             _currentResultBuilder.CollectMeta(meta);
-            
+        }
 
+        public void HandleFailureMessage(string code, string message)
+        {
+
+            throw new System.NotImplementedException();
+        }
+
+        public void HandleIgnoredMessage()
+        {
+            throw new System.NotImplementedException();
         }
 
         public void Register(IMessage message, ResultBuilder resultBuilder = null)
@@ -64,14 +73,14 @@ namespace Neo4j.Driver
         public void HandleRecordMessage(dynamic[] fields)
         {
             //TODO: Should error if no keys??
-            var message = _sentMessages.Dequeue();
-            if (!(message is PullAllMessage))
-            {
-                Throw.ArgumentException.IfNotEqual(message.GetType(), typeof(PullAllMessage), "Dequeued Messages", "Expected Messages");
-            }
+            //var message = _sentMessages.Dequeue();
+//            if (!(message is PullAllMessage))
+//            {
+//                Throw.ArgumentException.IfNotEqual(message.GetType(), typeof(PullAllMessage), "Dequeued Messages", "Expected Messages");
+//            }
 
-            var builder = _resultBuilders.Dequeue();
-            Throw.ArgumentException.IfNotEqual( builder, _currentResultBuilder, "Dequeued builder", "Expected builder");
+            //var builder = _resultBuilders.Dequeue();
+            //Throw.ArgumentException.IfNotEqual( builder, _currentResultBuilder, "Dequeued builder", "Expected builder");
             _currentResultBuilder.Record( fields);
         }
     }

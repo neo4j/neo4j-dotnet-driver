@@ -46,13 +46,8 @@ namespace Neo4j.Driver
     {
         void HandleSuccessMessage(IDictionary<string, object> meta);
 
-//        void HandleRecordMessage(object[] fields);
-//
-//        void HandleFailureMessage(string code, string message);
-//
-//        void HandleIgnoredMessage();
-//        void RegisterResultBuilder(ResultBuilder resultBuilder);
-//        void RegisterMessage(IMessage message);
+        void HandleFailureMessage(string code, string message);
+        void HandleIgnoredMessage();
         void Register(IMessage message, ResultBuilder resultBuilder = null);
         bool QueueIsEmpty();
         void HandleRecordMessage(dynamic[] fields);

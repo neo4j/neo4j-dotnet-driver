@@ -86,6 +86,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="ConnectionIT.cs" />
+    <Compile Include="Examples.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

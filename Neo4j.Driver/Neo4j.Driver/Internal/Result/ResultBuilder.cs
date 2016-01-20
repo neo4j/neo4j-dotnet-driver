@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.result
 {
     public class ResultBuilder
     {
-        private IDictionary<string, dynamic> _meta;
+        //private IDictionary<string, dynamic> _meta;
         private string[] _keys;
         private IList<Record> _records = new List<Record>(); 
 
@@ -46,23 +46,25 @@ namespace Neo4j.Driver.Internal.result
             {
                 return;
             }
-            _meta = meta;
+            //_meta = meta;
 
             CollectKeys( meta );
         }
 
         private void CollectKeys(IDictionary<string, object> meta)
         {
-            const string keysName = "fields";
-
-            var keys =  (meta[keysName] as IList<object>)?.Cast<string>();
-            if (keys == null)
+            const string fieldsName = "fields";
+            if (meta.ContainsKey(fieldsName))
             {
-                _keys = new string[0];
-                return; 
-            }
+                var keys = (meta[fieldsName] as IList<object>)?.Cast<string>();
+                if (keys == null)
+                {
+                    _keys = new string[0];
+                    return;
+                }
 
-            _keys = keys.ToArray();
+                _keys = keys.ToArray();
+            }
         }
     }
 }

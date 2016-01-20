@@ -80,7 +80,7 @@ namespace Neo4j.Driver
         private void Receive(IMessageResponseHandler responseHandler)
         {
             while (!responseHandler.QueueIsEmpty() )
-                _reader.Read( responseHandler );
+                _reader.Read( responseHandler);
             //Read 1 message
             //Send to handler,
             //While messages read < messages handled keep doing above.

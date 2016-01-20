@@ -85,6 +85,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="PeekingEnumeratorTests.cs" />
     <Compile Include="ResultCursorTests.cs" />
     <Compile Include="TestUtil\ByteExtensions.cs" />
     <Compile Include="ChunkedInputTests.cs" />

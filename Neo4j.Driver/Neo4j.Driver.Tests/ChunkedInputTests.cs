@@ -57,6 +57,7 @@ namespace Neo4j.Driver.Tests
                 chunkedInput.ReadBytes( actual );
                 actual.Should().Equal(correctValue);
             }
+
         }
     }
 }

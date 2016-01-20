@@ -14,6 +14,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+using System.Collections.Generic;
+using System.Diagnostics;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
@@ -58,12 +61,25 @@ namespace Neo4j.Driver
             return this;
         }
 
+        // TODO move to somewhere
+        private static string ToHexString(byte[] bytes, int offset, int length)
+        {
+            List<string> hexes = new List<string>();
+            for(int i = offset; i < offset + length; i ++)
+            {
+                hexes.Add(bytes[i].ToString("X2"));
+            }
+            return string.Join(" ", hexes);
+        }
+
         public IChunkedOutput Flush()
         {
+            var hex = ToHexString(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Write(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Flush();
             _buffer = null;
             _pos = -1;
+            _chunkHeaderPosition = 0;
             return this;
         }
 
