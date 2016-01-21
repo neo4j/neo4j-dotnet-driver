@@ -20,7 +20,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void RunExample()
         {
-            //tag::minimum-snippet[]
+            //tag::minimal-example[]
             Driver driver = GraphDatabase.Driver("bolt://localhost:7687");
             ISession session = driver.Session();
 
@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             session.Dispose();
             driver.Dispose();
-            //end::minimum-snippet[]
+            //end::minimal-example[]
         }
     }
 }
