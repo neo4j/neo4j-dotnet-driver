@@ -21,7 +21,7 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
 {
-    public class PackStreamV1ChunkedInput : IChunkedInput
+    public class ChunkedInputStream : IInputStream
     {
         private const int ChunkSize = 1024*8; // TODO: 2 * chunk_size of server
         public static byte[] Tail = {0x00, 0x00};
@@ -30,7 +30,7 @@ namespace Neo4j.Driver
         private readonly byte[] _headTailBuffer = new byte[2];
         private readonly ITcpSocketClient _tcpSocketClient;
 
-        public PackStreamV1ChunkedInput(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
+        public ChunkedInputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
         {
             _tcpSocketClient = tcpSocketClient;
             _bitConverter = bitConverter;
@@ -67,6 +67,15 @@ namespace Neo4j.Driver
             var bytes = _chunkBuffer.DequeueToArray(8);
 
             return _bitConverter.ToInt64(bytes);
+        }
+
+        public double ReadDouble()
+        {
+            Ensure(8);
+
+            var bytes = _chunkBuffer.DequeueToArray(8);
+
+            return _bitConverter.ToDouble(bytes);
         }
 
         public void ReadBytes(byte[] buffer, int offset = 0, int? length = null)

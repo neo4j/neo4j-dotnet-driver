@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Tests
                     0x61, 0x67, 0x65, 0x20, 0x31, 0xA0, 0x00, 0x00
                 };
                 var expectedLength = expectedBytes.Length;
-                expectedBytes = expectedBytes.PadRight(PackStreamV1ChunkedOutput.BufferSize);
+                expectedBytes = expectedBytes.PadRight(ChunkedOutputStream.BufferSize);
 
                 var messageHandler = new MessageResponseHandler();
                 messageHandler.Register(new InitMessage("MyClient/1.0"));

@@ -16,7 +16,7 @@
 //  limitations under the License.
 namespace Neo4j.Driver
 {
-    public interface IChunkedInput
+    public interface IInputStream
     {
         sbyte ReadSByte();
         byte ReadByte();
@@ -26,5 +26,6 @@ namespace Neo4j.Driver
         byte PeekByte();
         void ReadMessageEnding();
         long ReadLong();
+        double ReadDouble();
     }
 }

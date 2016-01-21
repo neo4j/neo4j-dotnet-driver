@@ -85,6 +85,9 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="PackStream\PackStreamTests.cs" />
+    <Compile Include="PackStream\UnpackerTests.cs" />
+    <Compile Include="PackStream\PackerTests.cs" />
     <Compile Include="PeekingEnumeratorTests.cs" />
     <Compile Include="ResultCursorTests.cs" />
     <Compile Include="TestUtil\ByteExtensions.cs" />

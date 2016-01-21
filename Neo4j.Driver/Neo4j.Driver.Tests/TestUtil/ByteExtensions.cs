@@ -29,10 +29,16 @@ namespace Neo4j.Driver.Tests
             return output;
         }
 
-        public static string ToHexString(this byte[] bytes, int start, int size)
+        public static string ToHexString(this byte[] bytes, int start, int size = -1)
         {
             if (bytes == null)
                 return "NULL";
+
+            if (size < 0)
+            {
+                size = bytes.Length;
+            }
+           
 
             var destination = new byte[size];
             Array.Copy(bytes, start, destination, 0, size);

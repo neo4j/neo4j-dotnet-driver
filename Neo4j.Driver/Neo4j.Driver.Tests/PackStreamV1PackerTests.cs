@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Tests
 
                 }
 
-                public void VerifyWrite(byte[] bytes, int bufferSize = PackStreamV1ChunkedOutput.BufferSize)
+                public void VerifyWrite(byte[] bytes, int bufferSize = ChunkedOutputStream.BufferSize)
                 {
                     byte[] expectedBytes = bytes.PadRight(bufferSize);
                     MockStream.Verify(c => c.Write(expectedBytes, 0, It.IsAny<int>()), Times.Once,

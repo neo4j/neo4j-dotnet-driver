@@ -19,9 +19,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
@@ -33,8 +30,8 @@ namespace Neo4j.Driver
         public PackStreamMessageFormatV1(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
         {
             _bitConverter = bitConverter;
-            Writer = new WriterV1(new PackStreamV1ChunkedOutput(tcpSocketClient, bitConverter));
-            Reader = new ReaderV1(new PackStreamV1ChunkedInput(tcpSocketClient, bitConverter));
+            Writer = new WriterV1(new ChunkedOutputStream(tcpSocketClient, bitConverter));
+            Reader = new ReaderV1(new ChunkedInputStream(tcpSocketClient, bitConverter));
         }
 
         public IWriter Writer { get; }
@@ -42,25 +39,16 @@ namespace Neo4j.Driver
 
         public class ReaderV1 : IReader
         {
-            public enum PackType
-            {
-                Null,
-                Boolean,
-                Integer,
-                Float,
-                Bytes,
-                String,
-                List,
-                Map,
-                Struct
-            }
+
 
             private static readonly IDictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
-            private readonly IChunkedInput _chunkedInput;
+            private readonly IInputStream _inputStream;
+            private readonly PackStream.Unpacker _unpacker;
 
-            public ReaderV1(IChunkedInput chunkedInput)
+            public ReaderV1(IInputStream inputStream)
             {
-                _chunkedInput = chunkedInput;
+                _inputStream = inputStream;
+                _unpacker = new PackStream.Unpacker(_inputStream, _bitConverter);
             }
 
             public bool HasNext()
@@ -70,8 +58,8 @@ namespace Neo4j.Driver
 
             public void Read(IMessageResponseHandler responseHandler)
             {
-                UnpackStructHeader();
-                var type = UnpackStructSignature();
+                _unpacker.UnpackStructHeader();
+                var type = _unpacker.UnpackStructSignature();
 
                 switch (type)
                 {
@@ -104,6 +92,60 @@ namespace Neo4j.Driver
                 }
                 UnPackMessageTail();
             }
+            public dynamic UnpackValue()
+            {
+                var type = _unpacker.PeekNextType();
+                switch (type)
+                {
+                    //                    case BYTES:
+                    //                        break;
+                    //                    case NULL:
+                    //                        return value(unpacker.unpackNull());
+                    //                    case BOOLEAN:
+                    //                        return value(unpacker.unpackBoolean());
+                    case PackStream.PackType.Integer:
+                        return _unpacker.UnpackLong();
+                    //                    case FLOAT:
+                    //                        return value(unpacker.unpackDouble());
+                    case PackStream.PackType.String:
+                        return _unpacker.UnpackString();
+
+                    case PackStream.PackType.Map:
+                        {
+                            return UnpackMap();
+                        }
+                    case PackStream.PackType.List:
+                        {
+                            var size = (int)_unpacker.UnpackListHeader();
+                            var vals = new object[size];
+                            for (var j = 0; j < size; j++)
+                            {
+                                vals[j] = UnpackValue();
+                            }
+                            return new List<object>(vals);
+                        }
+                        //                    case STRUCT:
+                        //                        {
+                        //                            long size = unpacker.unpackStructHeader();
+                        //                            switch (unpacker.unpackStructSignature())
+                        //                            {
+                        //                                case NODE:
+                        //                                    ensureCorrectStructSize("NODE", NODE_FIELDS, size);
+                        //                                    return new NodeValue(unpackNode());
+                        //                                case RELATIONSHIP:
+                        //                                    ensureCorrectStructSize("RELATIONSHIP", 5, size);
+                        //                                    return unpackRelationship();
+                        //                                case PATH:
+                        //                                    ensureCorrectStructSize("PATH", 3, size);
+                        //                                    return unpackPath();
+                        //                            }
+                        //                        }
+                }
+                throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
+            }
+
+
+
 
             private void UnpackFailureMessage(IMessageResponseHandler responseHandler)
             {
@@ -115,7 +157,7 @@ namespace Neo4j.Driver
 
             private void UnpackRecordMessage(IMessageResponseHandler responseHandler)
             {
-                int fieldCount = (int)UnpackListHeader();
+                int fieldCount = (int)_unpacker.UnpackListHeader();
                 dynamic[] fields = new dynamic[fieldCount];
                 for (int i = 0; i < fieldCount; i++)
                 {
@@ -126,7 +168,7 @@ namespace Neo4j.Driver
 
             private void UnPackMessageTail()
             {
-                _chunkedInput.ReadMessageEnding();
+                _inputStream.ReadMessageEnding();
             }
 
             private void UnpackSuccessMessage(IMessageResponseHandler responseHandler)
@@ -138,7 +180,7 @@ namespace Neo4j.Driver
             //TODO should this be readonly?
             private IDictionary<string, object> UnpackMap()
             {
-                var size = (int) UnpackMapHeader();
+                var size = (int)_unpacker.UnpackMapHeader();
                 if (size == 0)
                 {
                     return EmptyStringValueMap;
@@ -146,297 +188,44 @@ namespace Neo4j.Driver
                 IDictionary<string, object> map = new Dictionary<string, object>(size);
                 for (var i = 0; i < size; i++)
                 {
-                    var key = UnpackString();
+                    var key = _unpacker.UnpackString();
                     map.Add(key, UnpackValue());
                 }
                 return map;
             }
 
-            public dynamic UnpackValue()
-            {
-                var type = PeekNextType();
-                switch (type)
-                {
-//                    case BYTES:
-//                        break;
-//                    case NULL:
-//                        return value(unpacker.unpackNull());
-//                    case BOOLEAN:
-//                        return value(unpacker.unpackBoolean());
-                    case PackType.Integer:
-                        return UnpackLong();
-//                    case FLOAT:
-//                        return value(unpacker.unpackDouble());
-                    case PackType.String:
-                        return UnpackString();
 
-                    case PackType.Map:
-                    {
-                        return UnpackMap();
-                    }
-                    case PackType.List:
-                    {
-                        var size = (int) UnpackListHeader();
-                        var vals = new object[size];
-                        for (var j = 0; j < size; j++)
-                        {
-                            vals[j] = UnpackValue();
-                        }
-                        return new List<object>(vals);
-                    }
-//                    case STRUCT:
-//                        {
-//                            long size = unpacker.unpackStructHeader();
-//                            switch (unpacker.unpackStructSignature())
-//                            {
-//                                case NODE:
-//                                    ensureCorrectStructSize("NODE", NODE_FIELDS, size);
-//                                    return new NodeValue(unpackNode());
-//                                case RELATIONSHIP:
-//                                    ensureCorrectStructSize("RELATIONSHIP", 5, size);
-//                                    return unpackRelationship();
-//                                case PATH:
-//                                    ensureCorrectStructSize("PATH", 3, size);
-//                                    return unpackPath();
-//                            }
-//                        }
-                }
-                throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
-            }
-
-            private dynamic UnpackLong()
-            {
-                byte markerByte = _chunkedInput.ReadByte();
-                if ((sbyte)markerByte >= MINUS_2_TO_THE_4) { return (sbyte)markerByte; }
-                switch (markerByte)
-                {
-                    case INT_8: return _chunkedInput.ReadSByte();
-                    case INT_16: return _chunkedInput.ReadShort();
-                    case INT_32: return _chunkedInput.ReadInt();
-                    case INT_64: return _chunkedInput.ReadLong();
-                    default: throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
-                        $"Expected an integer, but got: {markerByte.ToString("X2")}");
-                }
-            }
-
-            private long UnpackListHeader()
-            {
-                var markerByte = _chunkedInput.ReadByte();
-                var markerHighNibble = (byte) (markerByte & 0xF0);
-                var markerLowNibble = (byte) (markerByte & 0x0F);
-
-                if (markerHighNibble == TINY_LIST)
-                {
-                    return markerLowNibble;
-                }
-                switch (markerByte)
-                {
-                    case LIST_8:
-                        return UnpackUint8();
-                    case LIST_16:
-                        return UnpackUint16();
-                    case LIST_32:
-                        return UnpackUint32();
-                    default:
-                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
-                            $"Expected a list, but got: {(markerByte & 0xFF).ToString("X2")}");
-                }
-            }
-
-            private PackType PeekNextType()
-            {
-                var markerByte = _chunkedInput.PeekByte();
-                var markerHighNibble = (byte) (markerByte & 0xF0);
-
-                switch (markerHighNibble)
-                {
-                    case TINY_STRING:
-                        return PackType.String;
-                    case TINY_LIST:
-                        return PackType.List;
-                    case TINY_MAP:
-                        return PackType.Map;
-                    case TINY_STRUCT:
-                        return PackType.Struct;
-                }
-
-                switch (markerByte)
-                {
-                    case NULL:
-                        return PackType.Null;
-                    case TRUE:
-                    case FALSE:
-                        return PackType.Boolean;
-                    case FLOAT_64:
-                        return PackType.Float;
-                    case BYTES_8:
-                    case BYTES_16:
-                    case BYTES_32:
-                        return PackType.Bytes;
-                    case STRING_8:
-                    case STRING_16:
-                    case STRING_32:
-                        return PackType.String;
-                    case LIST_8:
-                    case LIST_16:
-                    case LIST_32:
-                        return PackType.List;
-                    case MAP_8:
-                    case MAP_16:
-                    case MAP_32:
-                        return PackType.Map;
-                    case STRUCT_8:
-                    case STRUCT_16:
-                        return PackType.Struct;
-                    default:
-                        return PackType.Integer;
-                }
-            }
-
-
-            private string UnpackString()
-            {
-                var markerByte = _chunkedInput.ReadByte();
-                if (markerByte == TINY_STRING) // Note no mask, so we compare to 0x80.
-                {
-                    return string.Empty;
-                }
-
-                return _bitConverter.ToString(UnpackUtf8(markerByte));
-            }
-
-            private byte[] UnpackUtf8(byte markerByte)
-            {
-                var markerHighNibble = (byte) (markerByte & 0xF0);
-                var markerLowNibble = (byte) (markerByte & 0x0F);
-
-                if (markerHighNibble == TINY_STRING)
-                {
-                    return UnpackBytes(markerLowNibble);
-                }
-                switch (markerByte)
-                {
-                    case STRING_8:
-                        return UnpackBytes(UnpackUint8());
-                    case STRING_16:
-                        return UnpackBytes(UnpackUint16());
-                    case STRING_32:
-                    {
-                        var size = UnpackUint32();
-                        if (size <= int.MaxValue)
-                        {
-                            return UnpackBytes((int) size);
-                        }
-                        throw new ArgumentOutOfRangeException("STRING_32 too long for Java");
-                    }
-                    default:
-                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
-                            $"Expected a string, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
-                }
-            }
-
-            private byte[] UnpackBytes(int size)
-            {
-                var heapBuffer = new byte[size];
-                _chunkedInput.ReadBytes(heapBuffer);
-                return heapBuffer;
-            }
-
-            private long UnpackMapHeader()
-            {
-                var markerByte = _chunkedInput.ReadByte();
-                var markerHighNibble = (byte) (markerByte & 0xF0);
-                var markerLowNibble = (byte) (markerByte & 0x0F);
-
-                if (markerHighNibble == TINY_MAP)
-                {
-                    return markerLowNibble;
-                }
-                switch (markerByte)
-                {
-                    case MAP_8:
-                        return UnpackUint8();
-                    case MAP_16:
-                        return UnpackUint16();
-                    case MAP_32:
-                        return UnpackUint32();
-                    default:
-                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
-                            $"Expected a map, but got: {markerByte.ToString("X2")}");
-                }
-            }
-
-            private long UnpackUint32()
-            {
-                return _chunkedInput.ReadInt() & 0xFFFFFFFFL;
-            }
-
-
-            private byte UnpackStructSignature()
-            {
-                return _chunkedInput.ReadByte();
-            }
-
-            private long UnpackStructHeader()
-            {
-                var markerByte = _chunkedInput.ReadByte();
-                var markerHighNibble = (byte) (markerByte & 0xF0);
-                var markerLowNibble = (byte) (markerByte & 0x0F);
-
-                if (markerHighNibble == TINY_STRUCT)
-                {
-                    return markerLowNibble;
-                }
-                switch (markerByte)
-                {
-                    case STRUCT_8:
-                        return UnpackUint8();
-                    case STRUCT_16:
-                        return UnpackUint16();
-                    default:
-                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
-                            $"Expected a struct, but got: {markerByte.ToString("X2")}");
-                }
-            }
-
-            private int UnpackUint8()
-            {
-                return _chunkedInput.ReadByte() & 0xFF;
-            }
-
-            private int UnpackUint16()
-            {
-                return _chunkedInput.ReadShort() & 0xFFFF;
-            }
         }
 
         public class WriterV1 : IWriter, IMessageRequestHandler
         {
-            private readonly IChunkedOutput _chunkedOutput;
+            private readonly IOutputStream _outputStream;
+            private readonly PackStream.Packer _packer;
 
-            public WriterV1(IChunkedOutput chunkedOutput)
+            public WriterV1(IOutputStream outputStream)
             {
-                _chunkedOutput = chunkedOutput;
+                _outputStream = outputStream;
+                _packer = new PackStream.Packer(_outputStream, _bitConverter);
             }
 
             public void HandleInitMessage(string clientNameAndVersion)
             {
-                PackStructHeader(1, MSG_INIT);
-                Pack(clientNameAndVersion);
+                _packer.PackStructHeader(1, MSG_INIT);
+                _packer.Pack(clientNameAndVersion);
                 PackMessageTail();
             }
 
             public void HandleRunMessage(string statement, IDictionary<string, object> parameters)
             {
-                PackStructHeader(2, MSG_RUN);
-                Pack(statement);
+                _packer.PackStructHeader(2, MSG_RUN);
+                _packer.Pack(statement);
                 PackRawMap(parameters);
                 PackMessageTail();
             }
 
             public void HandlePullAllMessage()
             {
-                PackStructHeader(0, MSG_PULL_ALL);
+                _packer.PackStructHeader(0, MSG_PULL_ALL);
                 PackMessageTail();
             }
 
@@ -448,36 +237,37 @@ namespace Neo4j.Driver
 
             public void Flush()
             {
-                _chunkedOutput.Flush();
+                _outputStream.Flush();
             }
 
             private void PackMessageTail()
             {
-                _chunkedOutput.WriteMessageEnding();
+                _outputStream.WriteMessageEnding();
             }
 
             private void PackRawMap(IDictionary<string, object> dictionary)
             {
                 if (dictionary == null || dictionary.Count == 0)
                 {
-                    PackMapHeader(0);
+                    _packer.PackMapHeader(0);
                     return;
                 }
 
-                PackMapHeader(dictionary.Count);
+                _packer.PackMapHeader(dictionary.Count);
                 foreach (var item in dictionary)
                 {
-                    Pack(item.Key);
+                    _packer.Pack(item.Key);
                     PackValue(item.Value);
                 }
             }
+
 
             private void PackValue(object value)
             {
                 // TODO when we need params in run
                 if (value == null)
                 {
-                    PackNull();
+                    _packer.PackNull();
                     return;
                 }
 
@@ -487,23 +277,23 @@ namespace Neo4j.Driver
                 var type = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
                 if (type == typeof (long) || type == typeof (int) || type == typeof (short) || type == typeof (sbyte))
                 {
-                    Pack(Convert.ToInt64(value));
+                    _packer.Pack(Convert.ToInt64(value));
                 }
                 else if (value is bool)
                 {
-                    Pack((bool)value);
+                    _packer.Pack((bool) value);
                 }
-                else if (type == typeof (double) || type == typeof (float) || type == typeof(decimal))
+                else if (type == typeof (double) || type == typeof (float) || type == typeof (decimal))
                 {
-                    Pack(Convert.ToDouble(value));
+                    _packer.Pack(Convert.ToDouble(value));
                 }
                 else if (value is string)
                 {
-                    Pack((string) value);
+                    _packer.Pack((string) value);
                 }
                 else if (value is IList)
                 {
-                    Pack((IList)value);
+                    _packer.Pack((IList) value);
                 }
                 else if (value is IDictionary<string, object>)
                 {
@@ -517,174 +307,11 @@ namespace Neo4j.Driver
                 }
 
             }
-
-            private void Pack(IList value)
-            {
-                PackListHeader(value.Count);
-                foreach (var item in value)
-                {
-                    PackValue(item);
-                }
-            }
-
-
-
-            public void Pack(double value)
-            {
-                _chunkedOutput.Write(FLOAT_64).Write(_bitConverter.GetBytes(value));
-            }
-
-            public void Pack(bool value)
-            {
-                _chunkedOutput.Write( value ? TRUE : FALSE );
-            }
-
-            private void Pack(long value)
-            {
-                if (value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
-                {
-                    _chunkedOutput.Write((byte) value);
-                }
-                else if (value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4)
-                {
-                    _chunkedOutput.Write(INT_8, (byte) value);
-                }
-                else if (value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15)
-                {
-                    _chunkedOutput.Write(INT_16).Write(_bitConverter.GetBytes((short) value));
-                }
-                else if (value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31)
-                {
-                    _chunkedOutput.Write(INT_32).Write(_bitConverter.GetBytes((int) value));
-                }
-                else
-                {
-                    _chunkedOutput.Write(INT_64).Write(_bitConverter.GetBytes(value));
-                }
-            }
-
-            private void PackListHeader(int size)
-            {
-                if (size < 0x10)
-                {
-                    _chunkedOutput.Write((byte)(TINY_LIST | size));
-                }
-                else if (size <= byte.MaxValue)
-                {
-                    _chunkedOutput.Write(LIST_8).Write((byte)size);
-                }
-                else if (size <= short.MaxValue)
-                {
-                    _chunkedOutput.Write(LIST_16).Write(_bitConverter.GetBytes((short)size));
-                }
-                else
-                {
-                    _chunkedOutput.Write(LIST_32).Write(_bitConverter.GetBytes(size));
-                }
-            }
-
-            private void PackMapHeader(int size)
-            {
-                if (size < 0x10)
-                {
-                    _chunkedOutput.Write((byte) (TINY_MAP | size));
-                }
-                else if (size <= byte.MaxValue)
-                {
-                    _chunkedOutput.Write(MAP_8, (byte) size);
-                }
-                else if (size <= short.MaxValue)
-                {
-                    _chunkedOutput.Write(MAP_16, _bitConverter.GetBytes((short) size));
-                }
-                else
-                {
-                    _chunkedOutput.Write(MAP_32, _bitConverter.GetBytes(size));
-                }
-            }
-
-            public void Pack(string value)
-            {
-                if (value == null)
-                {
-                    PackNull();
-                    return;
-                }
-
-                var bytes = _bitConverter.GetBytes(value);
-                PackStringHeader(bytes.Length);
-                _chunkedOutput.Write(bytes);
-            }
-
-            private void PackNull()
-            {
-                _chunkedOutput.Write(NULL);
-            }
-
-            public void PackStringHeader(int size)
-            {
-                if (size < 0x10)
-                {
-                    _chunkedOutput.Write((byte) (TINY_STRING | size));
-                }
-                else if (size <= byte.MaxValue)
-                {
-                    _chunkedOutput.Write(STRING_8, (byte) size);
-                }
-                else if (size <= short.MaxValue)
-                {
-                    _chunkedOutput.Write(STRING_16, _bitConverter.GetBytes((short) size));
-                }
-                else
-                {
-                    _chunkedOutput.Write(STRING_32, _bitConverter.GetBytes(size));
-                }
-            }
-
-            private void PackStructHeader(int size, byte signature)
-            {
-                if (size < 0x10)
-                {
-                    _chunkedOutput.Write((byte) (TINY_STRUCT | size), signature);
-                }
-                else if (size <= byte.MaxValue)
-                {
-                    _chunkedOutput.Write(STRUCT_8, (byte) size, signature);
-                }
-                else if (size <= short.MaxValue)
-                {
-                    _chunkedOutput.Write(STRUCT_16, _bitConverter.GetBytes((short) size)).Write(signature);
-                }
-                else
-                    throw new ArgumentOutOfRangeException(nameof(size), size,
-                        $"Structures cannot have more than {short.MaxValue} fields");
-            }
-
-            //                out.writeByte(BYTES_32)
-            //            {
-            //            else
-            //            }
-            //                   .writeShort((short)size);
-            //                out.writeByte(BYTES_16)
-            //                return new byte[] { BYTES_16, };
-            //            {
-            //            if ( size <= short.MaxValue )
-            //            }
-            //                return new byte[] {BYTES_8,(byte)size };
-            //            {
-            //            if ( size <= byte.MaxValue )
-            //        {
-            //        public byte[] PackBytesHeader(int size)
-
-            //
-            //                   .writeInt(size);
-            //            }
-            //        }
         }
 
         #region Consts
 
-        public const byte MSG_INIT = 0x01;
+            public const byte MSG_INIT = 0x01;
         public const byte MSG_ACK_FAILURE = 0x0F;
         public const byte MSG_RUN = 0x10;
         public const byte MSG_DISCARD_ALL = 0x2F;
@@ -700,66 +327,66 @@ namespace Neo4j.Driver
         public const byte UNBOUND_RELATIONSHIP = (byte) 'r';
         public const byte PATH = (byte) 'P';
 
-        public const byte TINY_STRING = 0x80;
-        public const byte TINY_LIST = 0x90;
-        public const byte TINY_MAP = 0xA0;
-        public const byte TINY_STRUCT = 0xB0;
-        public const byte NULL = 0xC0;
-        public const byte FLOAT_64 = 0xC1;
-        public const byte FALSE = 0xC2;
-        public const byte TRUE = 0xC3;
-        public const byte RESERVED_C4 = 0xC4;
-        public const byte RESERVED_C5 = 0xC5;
-        public const byte RESERVED_C6 = 0xC6;
-        public const byte RESERVED_C7 = 0xC7;
-        public const byte INT_8 = 0xC8;
-        public const byte INT_16 = 0xC9;
-        public const byte INT_32 = 0xCA;
-        public const byte INT_64 = 0xCB;
-        public const byte BYTES_8 = 0xCC;
-        public const byte BYTES_16 = 0xCD;
-        public const byte BYTES_32 = 0xCE;
-        public const byte RESERVED_CF = 0xCF;
-        public const byte STRING_8 = 0xD0;
-        public const byte STRING_16 = 0xD1;
-        public const byte STRING_32 = 0xD2;
-        public const byte RESERVED_D3 = 0xD3;
-        public const byte LIST_8 = 0xD4;
-        public const byte LIST_16 = 0xD5;
-        public const byte LIST_32 = 0xD6;
-        public const byte RESERVED_D7 = 0xD7;
-        public const byte MAP_8 = 0xD8;
-        public const byte MAP_16 = 0xD9;
-        public const byte MAP_32 = 0xDA;
-        public const byte RESERVED_DB = 0xDB;
-        public const byte STRUCT_8 = 0xDC;
-        public const byte STRUCT_16 = 0xDD;
-        public const byte RESERVED_DE = 0xDE; // TODO STRUCT_32? or the class javadoc is wrong?
-        public const byte RESERVED_DF = 0xDF;
-        public const byte RESERVED_E0 = 0xE0;
-        public const byte RESERVED_E1 = 0xE1;
-        public const byte RESERVED_E2 = 0xE2;
-        public const byte RESERVED_E3 = 0xE3;
-        public const byte RESERVED_E4 = 0xE4;
-        public const byte RESERVED_E5 = 0xE5;
-        public const byte RESERVED_E6 = 0xE6;
-        public const byte RESERVED_E7 = 0xE7;
-        public const byte RESERVED_E8 = 0xE8;
-        public const byte RESERVED_E9 = 0xE9;
-        public const byte RESERVED_EA = 0xEA;
-        public const byte RESERVED_EB = 0xEB;
-        public const byte RESERVED_EC = 0xEC;
-        public const byte RESERVED_ED = 0xED;
-        public const byte RESERVED_EE = 0xEE;
-        public const byte RESERVED_EF = 0xEF;
-
-        private const long PLUS_2_TO_THE_31 = 2147483648L;
-        private const long PLUS_2_TO_THE_15 = 32768L;
-        private const long PLUS_2_TO_THE_7 = 128L;
-        private const long MINUS_2_TO_THE_4 = -16L;
-        private const long MINUS_2_TO_THE_7 = -128L;
-        private const long MINUS_2_TO_THE_15 = -32768L;
-        private const long MINUS_2_TO_THE_31 = -2147483648L;
+//        public const byte TINY_STRING = 0x80;
+//        public const byte TINY_LIST = 0x90;
+//        public const byte TINY_MAP = 0xA0;
+//        public const byte TINY_STRUCT = 0xB0;
+//        public const byte NULL = 0xC0;
+//        public const byte FLOAT_64 = 0xC1;
+//        public const byte FALSE = 0xC2;
+//        public const byte TRUE = 0xC3;
+//        public const byte RESERVED_C4 = 0xC4;
+//        public const byte RESERVED_C5 = 0xC5;
+//        public const byte RESERVED_C6 = 0xC6;
+//        public const byte RESERVED_C7 = 0xC7;
+//        public const byte INT_8 = 0xC8;
+//        public const byte INT_16 = 0xC9;
+//        public const byte INT_32 = 0xCA;
+//        public const byte INT_64 = 0xCB;
+//        public const byte BYTES_8 = 0xCC;
+//        public const byte BYTES_16 = 0xCD;
+//        public const byte BYTES_32 = 0xCE;
+//        public const byte RESERVED_CF = 0xCF;
+//        public const byte STRING_8 = 0xD0;
+//        public const byte STRING_16 = 0xD1;
+//        public const byte STRING_32 = 0xD2;
+//        public const byte RESERVED_D3 = 0xD3;
+//        public const byte LIST_8 = 0xD4;
+//        public const byte LIST_16 = 0xD5;
+//        public const byte LIST_32 = 0xD6;
+//        public const byte RESERVED_D7 = 0xD7;
+//        public const byte MAP_8 = 0xD8;
+//        public const byte MAP_16 = 0xD9;
+//        public const byte MAP_32 = 0xDA;
+//        public const byte RESERVED_DB = 0xDB;
+//        public const byte STRUCT_8 = 0xDC;
+//        public const byte STRUCT_16 = 0xDD;
+//        public const byte RESERVED_DE = 0xDE; // TODO STRUCT_32? or the class javadoc is wrong?
+//        public const byte RESERVED_DF = 0xDF;
+//        public const byte RESERVED_E0 = 0xE0;
+//        public const byte RESERVED_E1 = 0xE1;
+//        public const byte RESERVED_E2 = 0xE2;
+//        public const byte RESERVED_E3 = 0xE3;
+//        public const byte RESERVED_E4 = 0xE4;
+//        public const byte RESERVED_E5 = 0xE5;
+//        public const byte RESERVED_E6 = 0xE6;
+//        public const byte RESERVED_E7 = 0xE7;
+//        public const byte RESERVED_E8 = 0xE8;
+//        public const byte RESERVED_E9 = 0xE9;
+//        public const byte RESERVED_EA = 0xEA;
+//        public const byte RESERVED_EB = 0xEB;
+//        public const byte RESERVED_EC = 0xEC;
+//        public const byte RESERVED_ED = 0xED;
+//        public const byte RESERVED_EE = 0xEE;
+//        public const byte RESERVED_EF = 0xEF;
+//
+//        private const long PLUS_2_TO_THE_31 = 2147483648L;
+//        private const long PLUS_2_TO_THE_15 = 32768L;
+//        private const long PLUS_2_TO_THE_7 = 128L;
+//        private const long MINUS_2_TO_THE_4 = -16L;
+//        private const long MINUS_2_TO_THE_7 = -128L;
+//        private const long MINUS_2_TO_THE_15 = -32768L;
+//        private const long MINUS_2_TO_THE_31 = -2147483648L;
 
         #endregion Consts
     }

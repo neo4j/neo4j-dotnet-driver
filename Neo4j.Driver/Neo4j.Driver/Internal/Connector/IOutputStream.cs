@@ -16,11 +16,11 @@
 //  limitations under the License.
 namespace Neo4j.Driver
 {
-    public interface IChunkedOutput
+    public interface IOutputStream
     {
-        IChunkedOutput Write(byte b, params byte[] bytes);
-        IChunkedOutput Write(byte[] bytes);
-        IChunkedOutput Flush();
-        IChunkedOutput WriteMessageEnding();
+        IOutputStream Write(byte b, params byte[] bytes);
+        IOutputStream Write(byte[] bytes);
+        IOutputStream Flush();
+        IOutputStream WriteMessageEnding();
     }
 }

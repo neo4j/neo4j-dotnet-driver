@@ -21,7 +21,7 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
 {
-    public class PackStreamV1ChunkedOutput : IChunkedOutput
+    public class ChunkedOutputStream : IOutputStream
     {
         public const int BufferSize = 1024*8;
         private readonly BitConverterBase _bitConverter;
@@ -32,13 +32,13 @@ namespace Neo4j.Driver
         private int _chunkHeaderPosition = 0;
         private bool _isInChunk = false;
 
-        public PackStreamV1ChunkedOutput(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
+        public ChunkedOutputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
         {
             _tcpSocketClient = tcpSocketClient;
             _bitConverter = bitConverter;
         }
 
-        public IChunkedOutput Write(byte b, params byte[] bytes)
+        public IOutputStream Write(byte b, params byte[] bytes)
         {
             var bytesLength = bytes?.Length ?? 0;
             Ensure(1 + bytesLength);
@@ -50,7 +50,7 @@ namespace Neo4j.Driver
             return this;
         }
 
-        public IChunkedOutput Write(byte[] bytes)
+        public IOutputStream Write(byte[] bytes)
         {
             if (bytes == null)
                 return this;
@@ -72,7 +72,7 @@ namespace Neo4j.Driver
             return string.Join(" ", hexes);
         }
 
-        public IChunkedOutput Flush()
+        public IOutputStream Flush()
         {
             var hex = ToHexString(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Write(_buffer, 0, _pos);
@@ -83,7 +83,7 @@ namespace Neo4j.Driver
             return this;
         }
 
-        public IChunkedOutput WriteMessageEnding()
+        public IOutputStream WriteMessageEnding()
         {
             WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition); // size of this chunk pos-2
             WriteShort(0, _buffer, _pos); // pending 00 00

@@ -15,8 +15,668 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Neo4j.Driver;
+
 namespace Neo4j.Driver
 {
+    public class PackStream
+    {
+        public enum PackType
+        {
+            Null,
+            Boolean,
+            Integer,
+            Float,
+            Bytes,
+            String,
+            List,
+            Map,
+            Struct
+        }
+
+        #region Consts
+        public const byte TINY_STRING = 0x80;
+        public const byte TINY_LIST = 0x90;
+        public const byte TINY_MAP = 0xA0;
+        public const byte TINY_STRUCT = 0xB0;
+        public const byte NULL = 0xC0;
+        public const byte FLOAT_64 = 0xC1;
+        public const byte FALSE = 0xC2;
+        public const byte TRUE = 0xC3;
+        public const byte RESERVED_C4 = 0xC4;
+        public const byte RESERVED_C5 = 0xC5;
+        public const byte RESERVED_C6 = 0xC6;
+        public const byte RESERVED_C7 = 0xC7;
+        public const byte INT_8 = 0xC8;
+        public const byte INT_16 = 0xC9;
+        public const byte INT_32 = 0xCA;
+        public const byte INT_64 = 0xCB;
+        public const byte BYTES_8 = 0xCC;
+        public const byte BYTES_16 = 0xCD;
+        public const byte BYTES_32 = 0xCE;
+        public const byte RESERVED_CF = 0xCF;
+        public const byte STRING_8 = 0xD0;
+        public const byte STRING_16 = 0xD1;
+        public const byte STRING_32 = 0xD2;
+        public const byte RESERVED_D3 = 0xD3;
+        public const byte LIST_8 = 0xD4;
+        public const byte LIST_16 = 0xD5;
+        public const byte LIST_32 = 0xD6;
+        public const byte RESERVED_D7 = 0xD7;
+        public const byte MAP_8 = 0xD8;
+        public const byte MAP_16 = 0xD9;
+        public const byte MAP_32 = 0xDA;
+        public const byte RESERVED_DB = 0xDB;
+        public const byte STRUCT_8 = 0xDC;
+        public const byte STRUCT_16 = 0xDD;
+        public const byte RESERVED_DE = 0xDE; // TODO STRUCT_32?
+        public const byte RESERVED_DF = 0xDF;
+        public const byte RESERVED_E0 = 0xE0;
+        public const byte RESERVED_E1 = 0xE1;
+        public const byte RESERVED_E2 = 0xE2;
+        public const byte RESERVED_E3 = 0xE3;
+        public const byte RESERVED_E4 = 0xE4;
+        public const byte RESERVED_E5 = 0xE5;
+        public const byte RESERVED_E6 = 0xE6;
+        public const byte RESERVED_E7 = 0xE7;
+        public const byte RESERVED_E8 = 0xE8;
+        public const byte RESERVED_E9 = 0xE9;
+        public const byte RESERVED_EA = 0xEA;
+        public const byte RESERVED_EB = 0xEB;
+        public const byte RESERVED_EC = 0xEC;
+        public const byte RESERVED_ED = 0xED;
+        public const byte RESERVED_EE = 0xEE;
+        public const byte RESERVED_EF = 0xEF;
+
+        internal const long PLUS_2_TO_THE_31 = 2147483648L;
+        internal const long PLUS_2_TO_THE_15 = 32768L;
+        internal const long PLUS_2_TO_THE_7 = 128L;
+        internal const long MINUS_2_TO_THE_4 = -16L;
+        internal const long MINUS_2_TO_THE_7 = -128L;
+        internal const long MINUS_2_TO_THE_15 = -32768L;
+        internal const long MINUS_2_TO_THE_31 = -2147483648L;
+        #endregion Consts
+
+        public class Packer
+        {
+
+            private readonly IOutputStream _out;
+            private static BitConverterBase _bitConverter;
+
+            public Packer(IOutputStream outputStream, BitConverterBase converter)
+            {
+                _out = outputStream;
+                _bitConverter = converter;
+            }
+
+            public void PackNull()
+            {
+                _out.Write(NULL);
+            }
+
+            public void PackRaw(byte[] data)
+            {
+                _out.Write(data);
+            }
+
+            public void Pack(long value)
+            {
+                if (value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
+                {
+                    _out.Write((byte) value);
+                }
+                else if (value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4)
+                {
+                    _out.Write(INT_8).Write(_bitConverter.GetBytes((byte)value));// (byte) value;
+                }
+                else if (value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15)
+                {
+                    _out.Write(INT_16).Write(_bitConverter.GetBytes((short) value));
+                }
+                else if (value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31)
+                {
+                    _out.Write(INT_32).Write(_bitConverter.GetBytes((int) value));
+                }
+                else
+                {
+                    _out.Write(INT_64).Write(_bitConverter.GetBytes(value));
+                }
+            }
+
+            public void Pack(double value)
+            {
+                _out.Write(FLOAT_64).Write(_bitConverter.GetBytes(value));
+            }
+
+            public void Pack(bool value)
+            {
+                _out.Write(value ? TRUE : FALSE);
+            }
+
+            public void Pack(string value)
+            {
+                if (value == null)
+                {
+                    PackNull();
+                    return;
+                }
+
+                var bytes = _bitConverter.GetBytes(value);
+                PackStringHeader(bytes.Length);
+                _out.Write(bytes);
+            }
+
+            public void Pack(byte[] values)
+            {
+                if (values == null)
+                {
+                    PackNull();
+                }
+                else
+                {
+                    PackBytesHeader(values.Length);
+                    PackRaw(values);
+                }
+            }
+
+            public void Pack(object value)
+            {
+                if (value == null)
+                {
+                    PackNull();
+                }
+                else if (value is bool)
+                {
+                    Pack((bool) value);
+                }
+                //else if (value is boolean[] ) { Pack(singletonList(value)); }
+                else if (value is byte)
+                {
+                    Pack((byte) value);
+                }
+                else if (value is byte[])
+                {
+                    Pack((byte[]) value);
+                }
+                else if (value is short)
+                {
+                    Pack((short) value);
+                }
+                //else if (value is short[] ) { Pack(singletonList(value)); }
+                else if (value is int)
+                {
+                    Pack((int) value);
+                }
+                //else if (value is int[] ) { Pack(singletonList(value)); }
+                else if (value is long)
+                {
+                    Pack((long) value);
+                }
+                //else if (value is long[] ) { Pack(singletonList(value)); }
+                else if (value is float)
+                {
+                    Pack((float) value);
+                }
+                //else if (value is float[] ) { Pack(singletonList(value)); }
+                else if (value is double)
+                {
+                    Pack((double) value);
+                }
+                //else if (value is double[] ) { Pack(singletonList(value)); }
+                else if (value is char)
+                {
+                    Pack(value.ToString());
+                }
+                //else if (value is char[] ) { Pack(new String((char[])value)); }
+                else if (value is string)
+                {
+                    Pack((string) value);
+                }
+                //else if (value is String[] ) { Pack(singletonList(value)); }
+                else if (value is IList)
+                {
+                    Pack((IList) value);
+                }
+                else if (value is IDictionary)
+                {
+                    Pack((IDictionary) value);
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value.GetType(),
+                        $"Cannot understand{nameof(value)} with type {value.GetType().FullName}");
+                }
+            }
+
+            public void Pack(IList value)
+            {
+                PackListHeader(value.Count);
+                foreach (var item in value)
+                {
+                    Pack(item);
+                }
+            }
+
+            public void Pack<K, V>(IDictionary<K, V> values)
+            {
+                if (values == null)
+                {
+                    PackNull();
+                }
+                else
+                {
+                    PackMapHeader(values.Count);
+                    foreach (var value in values)
+                    {
+                        Pack(value.Key);
+                        Pack(value.Value);
+                    }
+                }
+            }
+
+            public void PackBytesHeader(int size)
+            {
+                if (size <= byte.MaxValue)
+                {
+                    _out.Write(BYTES_8)
+                        .Write((byte) size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    _out.Write(BYTES_16)
+                        .Write(_bitConverter.GetBytes((short) size));
+                }
+                else
+                {
+                    _out.Write(BYTES_32)
+                        .Write(_bitConverter.GetBytes(size));
+                }
+            }
+
+            public void PackListHeader(int size)
+            {
+                if (size < 0x10)
+                {
+                    _out.Write((byte) (TINY_LIST | size));
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    _out.Write(LIST_8).Write((byte) size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    _out.Write(LIST_16).Write(_bitConverter.GetBytes((short) size));
+                }
+                else
+                {
+                    _out.Write(LIST_32).Write(_bitConverter.GetBytes(size));
+                }
+            }
+
+            public void PackMapHeader(int size)
+            {
+                if (size < 0x10)
+                {
+                    _out.Write((byte) (TINY_MAP | size));
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    _out.Write(MAP_8, (byte) size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    _out.Write(MAP_16, _bitConverter.GetBytes((short) size));
+                }
+                else
+                {
+                    _out.Write(MAP_32, _bitConverter.GetBytes(size));
+                }
+            }
+
+            public void PackStringHeader(int size)
+            {
+                if (size < 0x10)
+                {
+                    _out.Write((byte) (TINY_STRING | size));
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    _out.Write(STRING_8, (byte) size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    _out.Write(STRING_16, _bitConverter.GetBytes((short) size));
+                }
+                else
+                {
+                    _out.Write(STRING_32, _bitConverter.GetBytes(size));
+                }
+            }
+
+            public void PackStructHeader(int size, byte signature)
+            {
+                if (size < 0x10)
+                {
+                    _out.Write((byte) (TINY_STRUCT | size), signature);
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    _out.Write(STRUCT_8, (byte) size, signature);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    _out.Write(STRUCT_16, _bitConverter.GetBytes((short) size)).Write(signature);
+                }
+                else
+                    throw new ArgumentOutOfRangeException(nameof(size), size,
+                        $"Structures cannot have more than {short.MaxValue} fields");
+            }
+        }
+
+
+        public class Unpacker
+        {
+            private readonly IInputStream _in;
+            private static BitConverterBase _bitConverter;
+
+            public Unpacker(IInputStream inputStream, BitConverterBase converter)
+            {
+                _in = inputStream;
+                _bitConverter = converter;
+            }
+
+            public object UnpackNull()
+            {
+                byte markerByte = _in.ReadByte();
+                if (markerByte != NULL)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        $"Expected a null, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+                return null;
+            }
+
+            public bool UnpackBoolean()
+            {
+                byte markerByte = _in.ReadByte();
+                switch (markerByte)
+                {
+                    case TRUE:
+                        return true;
+                    case FALSE:
+                        return false;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                            $"Expected a boolean, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
+            public long UnpackLong()
+            {
+                byte markerByte = _in.ReadByte();
+                if ((sbyte) markerByte >= MINUS_2_TO_THE_4)
+                {
+                    return (sbyte) markerByte;
+                }
+                switch (markerByte)
+                {
+                    case INT_8:
+                        return _in.ReadSByte();
+                    case INT_16:
+                        return _in.ReadShort();
+                    case INT_32:
+                        return _in.ReadInt();
+                    case INT_64:
+                        return _in.ReadLong();
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                            $"Expected an integer, but got: 0x{markerByte.ToString("X2")}");
+                }
+            }
+
+            public double UnpackDouble()
+            {
+                byte markerByte = _in.ReadByte();
+                if (markerByte == FLOAT_64)
+                {
+                    return _in.ReadDouble();
+                }
+                throw new ArgumentOutOfRangeException( nameof(markerByte), markerByte,
+                    $"Expected a double, but got: 0x{markerByte.ToString("X2")}");
+            }
+
+            public string UnpackString()
+            {
+                var markerByte = _in.ReadByte();
+                if (markerByte == TINY_STRING) // Note no mask, so we compare to 0x80.
+                {
+                    return string.Empty;
+                }
+
+                return _bitConverter.ToString(UnpackUtf8(markerByte));
+            }
+
+            public byte[] UnpackBytes()
+            {
+                byte markerByte = _in.ReadByte();
+
+                switch (markerByte)
+                {
+                    case BYTES_8:
+                        return UnpackBytes(UnpackUint8());
+                    case BYTES_16:
+                        return UnpackBytes(UnpackUint16());
+                    case BYTES_32:
+                    {
+                        long size = UnpackUint32();
+                        if (size <= int.MaxValue)
+                        {
+                            return UnpackBytes((int) size);
+                        }
+                        else
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(size), size,
+                                $"BYTES_32 {size} too long for PackStream");
+                        }
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                            $"Expected binary data, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
+            private byte[] UnpackBytes(int size)
+            {
+                var heapBuffer = new byte[size];
+                _in.ReadBytes(heapBuffer);
+                return heapBuffer;
+            }
+
+            private byte[] UnpackUtf8(byte markerByte)
+            {
+                var markerHighNibble = (byte) (markerByte & 0xF0);
+                var markerLowNibble = (byte) (markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_STRING)
+                {
+                    return UnpackBytes(markerLowNibble);
+                }
+                switch (markerByte)
+                {
+                    case STRING_8:
+                        return UnpackBytes(UnpackUint8());
+                    case STRING_16:
+                        return UnpackBytes(UnpackUint16());
+                    case STRING_32:
+                    {
+                        var size = UnpackUint32();
+                        if (size <= int.MaxValue)
+                        {
+                            return UnpackBytes((int) size);
+                        }
+                        throw new ArgumentOutOfRangeException(nameof(size), size, 
+                            $"STRING_32 {size} too long for PackStream");
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                            $"Expected a string, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
+            public long UnpackMapHeader()
+            {
+                var markerByte = _in.ReadByte();
+                var markerHighNibble = (byte) (markerByte & 0xF0);
+                var markerLowNibble = (byte) (markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_MAP)
+                {
+                    return markerLowNibble;
+                }
+                switch (markerByte)
+                {
+                    case MAP_8:
+                        return UnpackUint8();
+                    case MAP_16:
+                        return UnpackUint16();
+                    case MAP_32:
+                        return UnpackUint32();
+                    default:
+                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
+                            $"Expected a map, but got: {markerByte.ToString("X2")}");
+                }
+            }
+
+            public long UnpackListHeader()
+            {
+                var markerByte = _in.ReadByte();
+                var markerHighNibble = (byte)(markerByte & 0xF0);
+                var markerLowNibble = (byte)(markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_LIST)
+                {
+                    return markerLowNibble;
+                }
+                switch (markerByte)
+                {
+                    case LIST_8:
+                        return UnpackUint8();
+                    case LIST_16:
+                        return UnpackUint16();
+                    case LIST_32:
+                        return UnpackUint32();
+                    default:
+                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
+                            $"Expected a list, but got: {(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
+            public byte UnpackStructSignature()
+            {
+                return _in.ReadByte();
+            }
+
+            public long UnpackStructHeader()
+            {
+                var markerByte = _in.ReadByte();
+                var markerHighNibble = (byte) (markerByte & 0xF0);
+                var markerLowNibble = (byte) (markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_STRUCT)
+                {
+                    return markerLowNibble;
+                }
+                switch (markerByte)
+                {
+                    case STRUCT_8:
+                        return UnpackUint8();
+                    case STRUCT_16:
+                        return UnpackUint16();
+                    default:
+                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
+                            $"Expected a struct, but got: {markerByte.ToString("X2")}");
+                }
+            }
+
+            public PackType PeekNextType()
+            {
+                var markerByte = _in.PeekByte();
+                var markerHighNibble = (byte)(markerByte & 0xF0);
+
+                switch (markerHighNibble)
+                {
+                    case TINY_STRING:
+                        return PackType.String;
+                    case TINY_LIST:
+                        return PackType.List;
+                    case TINY_MAP:
+                        return PackType.Map;
+                    case TINY_STRUCT:
+                        return PackType.Struct;
+                }
+
+                if ((sbyte)markerByte >= MINUS_2_TO_THE_4)
+                    return PackType.Integer;
+
+                switch (markerByte)
+                {
+                    case NULL:
+                        return PackType.Null;
+                    case TRUE:
+                    case FALSE:
+                        return PackType.Boolean;
+                    case FLOAT_64:
+                        return PackType.Float;
+                    case BYTES_8:
+                    case BYTES_16:
+                    case BYTES_32:
+                        return PackType.Bytes;
+                    case STRING_8:
+                    case STRING_16:
+                    case STRING_32:
+                        return PackType.String;
+                    case LIST_8:
+                    case LIST_16:
+                    case LIST_32:
+                        return PackType.List;
+                    case MAP_8:
+                    case MAP_16:
+                    case MAP_32:
+                        return PackType.Map;
+                    case STRUCT_8:
+                    case STRUCT_16:
+                        return PackType.Struct;
+                    case INT_8:
+                    case INT_16:
+                    case INT_32:
+                    case INT_64:
+                        return PackType.Integer;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                            $"Unknown type 0x{markerByte.ToString("X2")}");
+                }
+            }
+
+            private int UnpackUint8()
+            {
+                return _in.ReadByte() & 0xFF;
+            }
+
+            private int UnpackUint16()
+            {
+                return _in.ReadShort() & 0xFFFF;
+            }
+
+            private long UnpackUint32()
+            {
+                return _in.ReadInt() & 0xFFFFFFFFL;
+            }
+        }
+    }
+
     public interface IWriter
     {
         void Write(IMessage message);
