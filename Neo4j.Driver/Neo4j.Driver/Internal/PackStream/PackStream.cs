@@ -91,13 +91,13 @@ namespace Neo4j.Driver
         public const byte RESERVED_EE = 0xEE;
         public const byte RESERVED_EF = 0xEF;
 
-        internal const long PLUS_2_TO_THE_31 = 2147483648L;
-        internal const long PLUS_2_TO_THE_15 = 32768L;
-        internal const long PLUS_2_TO_THE_7 = 128L;
-        internal const long MINUS_2_TO_THE_4 = -16L;
-        internal const long MINUS_2_TO_THE_7 = -128L;
-        internal const long MINUS_2_TO_THE_15 = -32768L;
-        internal const long MINUS_2_TO_THE_31 = -2147483648L;
+        public const long PLUS_2_TO_THE_31 = 2147483648L;
+        public const long PLUS_2_TO_THE_15 = 32768L;
+        public const long PLUS_2_TO_THE_7 = 128L;
+        public const long MINUS_2_TO_THE_4 = -16L;
+        public const long MINUS_2_TO_THE_7 = -128L;
+        public const long MINUS_2_TO_THE_15 = -32768L;
+        public const long MINUS_2_TO_THE_31 = -2147483648L;
         #endregion Consts
 
         public class Packer
@@ -117,7 +117,7 @@ namespace Neo4j.Driver
                 _out.Write(NULL);
             }
 
-            public void PackRaw(byte[] data)
+            private void PackRaw(byte[] data)
             {
                 _out.Write(data);
             }
@@ -192,49 +192,31 @@ namespace Neo4j.Driver
                 {
                     Pack((bool) value);
                 }
-                //else if (value is boolean[] ) { Pack(singletonList(value)); }
-                else if (value is byte)
+
+                else if (value is sbyte || value is byte || value is short || value is int || value is long)
                 {
-                    Pack((byte) value);
+                    Pack(Convert.ToInt64(value));
                 }
                 else if (value is byte[])
                 {
                     Pack((byte[]) value);
                 }
-                else if (value is short)
-                {
-                    Pack((short) value);
-                }
-                //else if (value is short[] ) { Pack(singletonList(value)); }
-                else if (value is int)
-                {
-                    Pack((int) value);
-                }
-                //else if (value is int[] ) { Pack(singletonList(value)); }
-                else if (value is long)
-                {
-                    Pack((long) value);
-                }
                 //else if (value is long[] ) { Pack(singletonList(value)); }
-                else if (value is float)
+                else if (value is float || value is double || value is decimal)
                 {
-                    Pack((float) value);
+                    Pack(Convert.ToDouble(value));
                 }
                 //else if (value is float[] ) { Pack(singletonList(value)); }
-                else if (value is double)
-                {
-                    Pack((double) value);
-                }
                 //else if (value is double[] ) { Pack(singletonList(value)); }
-                else if (value is char)
+                else if (value is char || value is string)
                 {
                     Pack(value.ToString());
                 }
                 //else if (value is char[] ) { Pack(new String((char[])value)); }
-                else if (value is string)
-                {
-                    Pack((string) value);
-                }
+//                else if (value is string)
+//                {
+//                    Pack((string) value);
+//                }
                 //else if (value is String[] ) { Pack(singletonList(value)); }
                 else if (value is IList)
                 {
@@ -253,6 +235,11 @@ namespace Neo4j.Driver
 
             public void Pack(IList value)
             {
+                if (value == null)
+                {
+                    PackNull();
+                    return;
+                }
                 PackListHeader(value.Count);
                 foreach (var item in value)
                 {
@@ -260,7 +247,7 @@ namespace Neo4j.Driver
                 }
             }
 
-            public void Pack<K, V>(IDictionary<K, V> values)
+            public void Pack(IDictionary values)
             {
                 if (values == null)
                 {
@@ -269,10 +256,10 @@ namespace Neo4j.Driver
                 else
                 {
                     PackMapHeader(values.Count);
-                    foreach (var value in values)
+                    foreach (var key in values.Keys)
                     {
-                        Pack(value.Key);
-                        Pack(value.Value);
+                        Pack(key);
+                        Pack(values[key]);
                     }
                 }
             }
@@ -281,18 +268,15 @@ namespace Neo4j.Driver
             {
                 if (size <= byte.MaxValue)
                 {
-                    _out.Write(BYTES_8)
-                        .Write((byte) size);
+                    _out.Write(BYTES_8,(byte)size);
                 }
                 else if (size <= short.MaxValue)
                 {
-                    _out.Write(BYTES_16)
-                        .Write(_bitConverter.GetBytes((short) size));
+                    _out.Write(BYTES_16,_bitConverter.GetBytes((short) size));
                 }
                 else
                 {
-                    _out.Write(BYTES_32)
-                        .Write(_bitConverter.GetBytes(size));
+                    _out.Write(BYTES_32, _bitConverter.GetBytes(size));
                 }
             }
 
@@ -304,15 +288,15 @@ namespace Neo4j.Driver
                 }
                 else if (size <= byte.MaxValue)
                 {
-                    _out.Write(LIST_8).Write((byte) size);
+                    _out.Write(LIST_8, (byte) size);
                 }
                 else if (size <= short.MaxValue)
                 {
-                    _out.Write(LIST_16).Write(_bitConverter.GetBytes((short) size));
+                    _out.Write(LIST_16, _bitConverter.GetBytes((short) size));
                 }
                 else
                 {
-                    _out.Write(LIST_32).Write(_bitConverter.GetBytes(size));
+                    _out.Write(LIST_32, _bitConverter.GetBytes(size));
                 }
             }
 
@@ -375,7 +359,6 @@ namespace Neo4j.Driver
                         $"Structures cannot have more than {short.MaxValue} fields");
             }
         }
-
 
         public class Unpacker
         {

@@ -92,7 +92,7 @@ namespace Neo4j.Driver
                 }
                 UnPackMessageTail();
             }
-            public dynamic UnpackValue()
+            public dynamic UnpackValue() //TODO
             {
                 var type = _unpacker.PeekNextType();
                 switch (type)
@@ -232,7 +232,6 @@ namespace Neo4j.Driver
             public void Write(IMessage message)
             {
                 message.Dispatch(this);
-//                HandleInitMessage(message);
             }
 
             public void Flush()
@@ -265,46 +264,7 @@ namespace Neo4j.Driver
             private void PackValue(object value)
             {
                 // TODO when we need params in run
-                if (value == null)
-                {
-                    _packer.PackNull();
-                    return;
-                }
-
-                //If we bring in Nullable<int> (shorthand = int?) we want the underlying type, 
-                // here we get the underlying type, BUT if it's *not* a nullable, we just get
-                // the normal type.  
-                var type = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
-                if (type == typeof (long) || type == typeof (int) || type == typeof (short) || type == typeof (sbyte))
-                {
-                    _packer.Pack(Convert.ToInt64(value));
-                }
-                else if (value is bool)
-                {
-                    _packer.Pack((bool) value);
-                }
-                else if (type == typeof (double) || type == typeof (float) || type == typeof (decimal))
-                {
-                    _packer.Pack(Convert.ToDouble(value));
-                }
-                else if (value is string)
-                {
-                    _packer.Pack((string) value);
-                }
-                else if (value is IList)
-                {
-                    _packer.Pack((IList) value);
-                }
-                else if (value is IDictionary<string, object>)
-                {
-                    PackRawMap((IDictionary<string, object>) value);
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value.GetType(),
-                        $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
-
-                }
+                _packer.Pack(value);
 
             }
         }
@@ -326,67 +286,6 @@ namespace Neo4j.Driver
         public const byte RELATIONSHIP = (byte) 'R';
         public const byte UNBOUND_RELATIONSHIP = (byte) 'r';
         public const byte PATH = (byte) 'P';
-
-//        public const byte TINY_STRING = 0x80;
-//        public const byte TINY_LIST = 0x90;
-//        public const byte TINY_MAP = 0xA0;
-//        public const byte TINY_STRUCT = 0xB0;
-//        public const byte NULL = 0xC0;
-//        public const byte FLOAT_64 = 0xC1;
-//        public const byte FALSE = 0xC2;
-//        public const byte TRUE = 0xC3;
-//        public const byte RESERVED_C4 = 0xC4;
-//        public const byte RESERVED_C5 = 0xC5;
-//        public const byte RESERVED_C6 = 0xC6;
-//        public const byte RESERVED_C7 = 0xC7;
-//        public const byte INT_8 = 0xC8;
-//        public const byte INT_16 = 0xC9;
-//        public const byte INT_32 = 0xCA;
-//        public const byte INT_64 = 0xCB;
-//        public const byte BYTES_8 = 0xCC;
-//        public const byte BYTES_16 = 0xCD;
-//        public const byte BYTES_32 = 0xCE;
-//        public const byte RESERVED_CF = 0xCF;
-//        public const byte STRING_8 = 0xD0;
-//        public const byte STRING_16 = 0xD1;
-//        public const byte STRING_32 = 0xD2;
-//        public const byte RESERVED_D3 = 0xD3;
-//        public const byte LIST_8 = 0xD4;
-//        public const byte LIST_16 = 0xD5;
-//        public const byte LIST_32 = 0xD6;
-//        public const byte RESERVED_D7 = 0xD7;
-//        public const byte MAP_8 = 0xD8;
-//        public const byte MAP_16 = 0xD9;
-//        public const byte MAP_32 = 0xDA;
-//        public const byte RESERVED_DB = 0xDB;
-//        public const byte STRUCT_8 = 0xDC;
-//        public const byte STRUCT_16 = 0xDD;
-//        public const byte RESERVED_DE = 0xDE; // TODO STRUCT_32? or the class javadoc is wrong?
-//        public const byte RESERVED_DF = 0xDF;
-//        public const byte RESERVED_E0 = 0xE0;
-//        public const byte RESERVED_E1 = 0xE1;
-//        public const byte RESERVED_E2 = 0xE2;
-//        public const byte RESERVED_E3 = 0xE3;
-//        public const byte RESERVED_E4 = 0xE4;
-//        public const byte RESERVED_E5 = 0xE5;
-//        public const byte RESERVED_E6 = 0xE6;
-//        public const byte RESERVED_E7 = 0xE7;
-//        public const byte RESERVED_E8 = 0xE8;
-//        public const byte RESERVED_E9 = 0xE9;
-//        public const byte RESERVED_EA = 0xEA;
-//        public const byte RESERVED_EB = 0xEB;
-//        public const byte RESERVED_EC = 0xEC;
-//        public const byte RESERVED_ED = 0xED;
-//        public const byte RESERVED_EE = 0xEE;
-//        public const byte RESERVED_EF = 0xEF;
-//
-//        private const long PLUS_2_TO_THE_31 = 2147483648L;
-//        private const long PLUS_2_TO_THE_15 = 32768L;
-//        private const long PLUS_2_TO_THE_7 = 128L;
-//        private const long MINUS_2_TO_THE_4 = -16L;
-//        private const long MINUS_2_TO_THE_7 = -128L;
-//        private const long MINUS_2_TO_THE_15 = -32768L;
-//        private const long MINUS_2_TO_THE_31 = -2147483648L;
 
         #endregion Consts
     }
