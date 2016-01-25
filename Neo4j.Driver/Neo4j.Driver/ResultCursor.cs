@@ -90,8 +90,7 @@ namespace Neo4j.Driver
             return Keys.Select(key => new KeyValuePair<string, dynamic>(key, _current.Values[key])).ToList();
         }
 
-        //Suck it Java
-        public IEnumerable<Record> Records()
+        public IEnumerable<Record> Stream()
         {
             while (Next())
             {

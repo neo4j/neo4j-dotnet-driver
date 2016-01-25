@@ -16,7 +16,6 @@
 //  limitations under the License.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
@@ -83,7 +82,7 @@ namespace Neo4j.Driver
             return this;
         }
 
-        public IOutputStream WriteMessageEnding()
+        public IOutputStream WriteMessageTail()
         {
             WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition); // size of this chunk pos-2
             WriteShort(0, _buffer, _pos); // pending 00 00

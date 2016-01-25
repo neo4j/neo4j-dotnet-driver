@@ -14,6 +14,7 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
 using System;
 using System.Runtime.Serialization;
 
@@ -26,13 +27,68 @@ namespace Neo4j.Driver.Exceptions
         {
         }
 
-        public Neo4jException(string message)
+        public Neo4jException(string code, string message)
             : base(message)
+        {
+            Code = code;
+        }
+
+        public Neo4jException(string code, string message, Exception innerException)
+            : base(message, innerException)
+        {
+            Code = code;
+        }
+
+        public string Code { get; set; }
+    }
+
+    [DataContract]
+    public class ClientException : Neo4jException
+    {
+        public ClientException()
         {
         }
 
-        public Neo4jException(string message, Exception innerException)
-            : base(message, innerException)
+        public ClientException(string code, string message) : base(code, message)
+        {
+        }
+
+        public ClientException(string code, string message, Exception innerException)
+            : base(code, message, innerException)
+        {
+        }
+    }
+
+    [DataContract]
+    public class TransientException : Neo4jException
+    {
+        public TransientException()
+        {
+        }
+
+        public TransientException(string code, string message) : base(code, message)
+        {
+        }
+
+        public TransientException(string code, string message, Exception innerException)
+            : base(code, message, innerException)
+        {
+        }
+    }
+
+    [DataContract]
+    public class DatabaseException : Neo4jException
+    {
+        public DatabaseException()
+        {
+        }
+
+        public DatabaseException(string code, string message) : base(code, message)
+        {
+        }
+
+        public DatabaseException(string code, string message, Exception innerException)
+            : base(code, message, innerException)
         {
         }
     }

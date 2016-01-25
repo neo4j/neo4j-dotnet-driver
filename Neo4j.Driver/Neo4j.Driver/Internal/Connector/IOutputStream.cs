@@ -21,6 +21,5 @@ namespace Neo4j.Driver
         IOutputStream Write(byte b, params byte[] bytes);
         IOutputStream Write(byte[] bytes);
         IOutputStream Flush();
-        IOutputStream WriteMessageEnding();
     }
 }

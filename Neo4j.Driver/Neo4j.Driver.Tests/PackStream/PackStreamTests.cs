@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests
 //                throw new NotImplementedException();
 //            }
 //
-//            public void ReadMessageEnding()
+//            public void ReadMessageTail()
 //            {
 //                throw new NotImplementedException();
 //            }

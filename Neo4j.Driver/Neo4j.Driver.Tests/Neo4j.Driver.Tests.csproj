@@ -92,7 +92,7 @@
     <Compile Include="ResultCursorTests.cs" />
     <Compile Include="TestUtil\ByteExtensions.cs" />
     <Compile Include="ChunkedInputTests.cs" />
-    <Compile Include="PackStreamV1PackerTests.cs" />
+    <Compile Include="PackStreamMessageFormatV1Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestUtil\SocketClientTestHarness.cs" />
     <Compile Include="SocketClientTests.cs" />

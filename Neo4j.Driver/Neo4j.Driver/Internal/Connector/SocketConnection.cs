@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.messaging;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
@@ -41,7 +42,7 @@ namespace Neo4j.Driver
             t.Wait();
 
             // add init message by default
-            Init("dotNet-driver/1.0.0");
+            Enqueue(new InitMessage("dotNet-driver/1.0.0"));
         }
 
         public SocketConnection(Uri url, Config config)
@@ -64,6 +65,13 @@ namespace Neo4j.Driver
 
             _client.Send(_messages, _messageHandler);
             ClearQueue(); // clear sending queue
+
+            if (_messageHandler.HasError)
+            {
+                Enqueue(new ResetMessage());
+                throw _messageHandler.Error;
+            }
+
         }
 
         public void Run(ResultBuilder resultBuilder, string statement,
@@ -90,11 +98,6 @@ namespace Neo4j.Driver
         private void ClearQueue()
         {
             _messages.Clear();
-        }
-
-        private void Init(string clientName)
-        {
-            Enqueue(new InitMessage(clientName));
         }
 
         private void Enqueue(IMessage message, ResultBuilder resultBuilder = null)

@@ -16,6 +16,7 @@
 //  limitations under the License.
 using System.Collections;
 using System.Collections.Generic;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
@@ -23,33 +24,24 @@ namespace Neo4j.Driver
     public interface IMessageRequestHandler
     {
         void HandleInitMessage(string clientNameAndVersion);
-
         void HandleRunMessage(string statement, IDictionary<string, object> parameters);
-
         void HandlePullAllMessage();
+        //void HandleDiscardAllMessage();
+        void HandleResetMessage();
 
-        /*void HandleDiscardAllMessage();
-
-        void HandleAckFailureMessage();
-
-        // Responses
-        void HandleSuccessMessage(IDictionary<string, object> meta);
-
-        void HandleRecordMessage(object[] fields);
-
-        void HandleFailureMessage(string code, string message);
-
-        void HandleIgnoredMessage();*/
+       
     }
 
     public interface IMessageResponseHandler
     {
         void HandleSuccessMessage(IDictionary<string, object> meta);
-
         void HandleFailureMessage(string code, string message);
         void HandleIgnoredMessage();
+        void HandleRecordMessage(dynamic[] fields);
+
         void Register(IMessage message, ResultBuilder resultBuilder = null);
         bool QueueIsEmpty();
-        void HandleRecordMessage(dynamic[] fields);
+        bool HasError { get; }
+        Neo4jException Error { get; }
     }
 }

@@ -24,7 +24,6 @@ namespace Neo4j.Driver
         int ReadInt();
         void ReadBytes(byte[] buffer, int size = 0, int? length = null);
         byte PeekByte();
-        void ReadMessageEnding();
         long ReadLong();
         double ReadDouble();
     }

@@ -35,8 +35,8 @@ namespace Neo4j.Driver.IntegrationTests
                     var resultCursor = session.Run("RETURN 2 as Number" );
                     resultCursor.Keys.Should().Contain("Number");
                     resultCursor.Keys.Count.Should().Be(1);
-                 //   resultCursor.Records.Count.Should().Be(1);
-//                    var record = resultCursor.Records.First();
+                 //   resultCursor.Stream.Count.Should().Be(1);
+//                    var record = resultCursor.Stream.First();
 //                    Assert.Equal(2, record.Values["Number"]);
 //                    Assert.IsType<sbyte>(record.Values["Number"]);
                 }

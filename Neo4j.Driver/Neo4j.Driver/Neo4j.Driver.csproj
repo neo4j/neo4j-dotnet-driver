@@ -41,6 +41,9 @@
     <Compile Include="Internal\Connector\IInputStream.cs" />
     <Compile Include="Internal\Connector\IOutputStream.cs" />
     <Compile Include="Internal\Connector\ISocketClient.cs" />
+    <Compile Include="IEntity.cs" />
+    <Compile Include="Internal\InternalNode.cs" />
+    <Compile Include="Internal\Messaging\ResetMessage.cs" />
     <Compile Include="Internal\Packstream\PackStream.cs" />
     <Compile Include="Internal\Packstream\PackStreamMessageFormatV1.cs" />
     <Compile Include="Internal\Connector\ChunkedInputStream.cs" />

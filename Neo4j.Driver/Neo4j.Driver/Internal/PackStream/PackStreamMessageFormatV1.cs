@@ -19,7 +19,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Internal;
 using Sockets.Plugin.Abstractions;
+using static Neo4j.Driver.Exceptions.Throw.ArgumentException;
+using static Neo4j.Driver.PackStream;
 
 namespace Neo4j.Driver
 {
@@ -39,21 +44,14 @@ namespace Neo4j.Driver
 
         public class ReaderV1 : IReader
         {
+            private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
+            private readonly ChunkedInputStream _inputStream;
+            private readonly Unpacker _unpacker;
 
-
-            private static readonly IDictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
-            private readonly IInputStream _inputStream;
-            private readonly PackStream.Unpacker _unpacker;
-
-            public ReaderV1(IInputStream inputStream)
+            public ReaderV1(ChunkedInputStream inputStream)
             {
                 _inputStream = inputStream;
-                _unpacker = new PackStream.Unpacker(_inputStream, _bitConverter);
-            }
-
-            public bool HasNext()
-            {
-                throw new NotImplementedException();
+                _unpacker = new Unpacker(_inputStream, _bitConverter);
             }
 
             public void Read(IMessageResponseHandler responseHandler)
@@ -63,15 +61,6 @@ namespace Neo4j.Driver
 
                 switch (type)
                 {
-/*                    case MSG_RUN:
-//                        unpackRunMessage(handler);
-                        break;
-                    case MSG_DISCARD_ALL:
-//                        unpackDiscardAllMessage(handler);
-                        break;
-                    case MSG_PULL_ALL:
-//                        unpackPullAllMessage(handler);
-                        break;*/
                     case MSG_RECORD:
                         UnpackRecordMessage(responseHandler);
                         break;
@@ -81,70 +70,150 @@ namespace Neo4j.Driver
                     case MSG_FAILURE:
                         UnpackFailureMessage(responseHandler);
                         break;
-//                    case MSG_IGNORED:
-////                        unpackIgnoredMessage(handler);
-//                        break;
-//                    case MSG_INIT:
-////                        unpackInitMessage(handler);
-//                        break;
+                    case MSG_IGNORED:
+                        UnpackIgnoredMessage(responseHandler);
+                        break;
                     default:
                         throw new IOException("Unknown message type: " + type);
                 }
                 UnPackMessageTail();
             }
+
             public dynamic UnpackValue() //TODO
             {
                 var type = _unpacker.PeekNextType();
                 switch (type)
                 {
-                    //                    case BYTES:
-                    //                        break;
-                    //                    case NULL:
-                    //                        return value(unpacker.unpackNull());
-                    //                    case BOOLEAN:
-                    //                        return value(unpacker.unpackBoolean());
-                    case PackStream.PackType.Integer:
+                    case PackType.Bytes:
+                        break;
+                    case PackType.Null:
+                        return _unpacker.UnpackNull();
+                    case PackType.Boolean:
+                        return _unpacker.UnpackBoolean();
+                    case PackType.Integer:
                         return _unpacker.UnpackLong();
-                    //                    case FLOAT:
-                    //                        return value(unpacker.unpackDouble());
-                    case PackStream.PackType.String:
+                    case PackType.Float:
+                        return _unpacker.UnpackDouble();
+                    case PackType.String:
                         return _unpacker.UnpackString();
-
-                    case PackStream.PackType.Map:
+                    case PackType.Map:
+                        return UnpackMap();
+                    case PackType.List:
+                        return UnpackList();
+                    case PackType.Struct:
+                        long size = _unpacker.UnpackStructHeader();
+                        switch (_unpacker.UnpackStructSignature())
                         {
-                            return UnpackMap();
+                            case NODE:
+                                IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
+                                return UnpackNode();
+                            case RELATIONSHIP:
+                                IfNotEqual(RelationshipFields, size, nameof(RelationshipFields), nameof(size));
+                                return UnpackRelationship();
+                            case PATH:
+                                IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
+                                return UnpackPath();
                         }
-                    case PackStream.PackType.List:
-                        {
-                            var size = (int)_unpacker.UnpackListHeader();
-                            var vals = new object[size];
-                            for (var j = 0; j < size; j++)
-                            {
-                                vals[j] = UnpackValue();
-                            }
-                            return new List<object>(vals);
-                        }
-                        //                    case STRUCT:
-                        //                        {
-                        //                            long size = unpacker.unpackStructHeader();
-                        //                            switch (unpacker.unpackStructSignature())
-                        //                            {
-                        //                                case NODE:
-                        //                                    ensureCorrectStructSize("NODE", NODE_FIELDS, size);
-                        //                                    return new NodeValue(unpackNode());
-                        //                                case RELATIONSHIP:
-                        //                                    ensureCorrectStructSize("RELATIONSHIP", 5, size);
-                        //                                    return unpackRelationship();
-                        //                                case PATH:
-                        //                                    ensureCorrectStructSize("PATH", 3, size);
-                        //                                    return unpackPath();
-                        //                            }
-                        //                        }
+                        break;
                 }
                 throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
             }
 
+            private IPath UnpackPath()
+            { 
+                // List of unique nodes
+                var uniqNodes = new INode[(int) _unpacker.UnpackListHeader()];
+                for(int i = 0; i < uniqNodes.Length; i ++)
+                {
+                    IfNotEqual(NodeFields, _unpacker.UnpackStructHeader(), nameof(NodeFields), $"received{nameof(NodeFields)}");
+                    IfNotEqual(NODE, _unpacker.UnpackStructSignature(),nameof(NODE), $"received{nameof(NODE)}");
+                    uniqNodes[i]=UnpackNode();
+                }
 
+                // List of unique relationships, without start/end information
+                var uniqRels = new InternalRelationship[(int)_unpacker.UnpackListHeader()];
+                for (int i = 0; i < uniqRels.Length; i++)
+                {
+                    IfNotEqual( UnboundRelationshipFields, _unpacker.UnpackStructHeader(), nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
+                    IfNotEqual(UNBOUND_RELATIONSHIP, _unpacker.UnpackStructSignature(), nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
+                    var urn = _unpacker.UnpackLong();
+                    var relType = _unpacker.UnpackString();
+                    var props = UnpackMap();
+                    uniqRels[i]=new InternalRelationship(new InternalIdentity(urn), null, null, relType, props);
+                }
+
+                // Path sequence
+                var length = (int)_unpacker.UnpackListHeader();
+
+                // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in their "path order"
+                var segments = new ISegment[length / 2];
+                var nodes = new INode[segments.Length + 1];
+                var rels = new IRelationship[segments.Length];
+
+                var prevNode = uniqNodes[0];
+                INode nextNode; // Start node is always 0, and isn't encoded in the sequence
+                InternalRelationship rel;
+                nodes[0] = prevNode;
+                for (int i = 0; i < segments.Length; i++)
+                {
+                    int relIdx = (int)_unpacker.UnpackLong();
+                    nextNode = uniqNodes[(int)_unpacker.UnpackLong()];
+                    // Negative rel index means this rel was traversed "inversed" from its direction
+                    if (relIdx < 0)
+                    {
+                        rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
+                        rel.SetStartAndEnd(nextNode.Identity, prevNode.Identity);
+                    }
+                    else
+                    {
+                        rel = uniqRels[relIdx - 1];
+                        rel.SetStartAndEnd(prevNode.Identity, nextNode.Identity);
+                    }
+
+                    nodes[i + 1] = nextNode;
+                    rels[i] = rel;
+                    segments[i] = new InternalSegment(prevNode, rel, nextNode);
+                    prevNode = nextNode;
+                }
+                return new InternalPath(segments.ToList(), nodes.ToList(),rels.ToList());
+            }
+
+            private IRelationship UnpackRelationship()
+            {
+                var urn = _unpacker.UnpackLong();
+                var startUrn = _unpacker.UnpackLong();
+                var endUrn = _unpacker.UnpackLong();
+                var relType = _unpacker.UnpackString();
+                var props = UnpackMap();
+
+                return new InternalRelationship(urn, startUrn, endUrn, relType, props);
+            }
+
+            private INode UnpackNode()
+            {
+                var urn = _unpacker.UnpackLong();
+
+                var numLabels = (int)_unpacker.UnpackListHeader();
+                var labels = new List<string>(numLabels);
+                for (var i = 0; i < numLabels; i++)
+                {
+                    labels.Add(_unpacker.UnpackString());
+                }
+                var numProps = (int)_unpacker.UnpackMapHeader();
+                var props = new Dictionary<string, object>(numProps);
+                for (var j = 0; j < numProps; j++)
+                {
+                    var key = _unpacker.UnpackString();
+                    props.Add(key, UnpackValue());
+                }
+
+                return new InternalNode(urn, labels, props);
+            }
+
+            private void UnpackIgnoredMessage(IMessageResponseHandler responseHandler)
+            {
+                responseHandler.HandleIgnoredMessage();
+            }
 
 
             private void UnpackFailureMessage(IMessageResponseHandler responseHandler)
@@ -168,7 +237,7 @@ namespace Neo4j.Driver
 
             private void UnPackMessageTail()
             {
-                _inputStream.ReadMessageEnding();
+                _inputStream.ReadMessageTail();
             }
 
             private void UnpackSuccessMessage(IMessageResponseHandler responseHandler)
@@ -178,14 +247,14 @@ namespace Neo4j.Driver
             }
 
             //TODO should this be readonly?
-            private IDictionary<string, object> UnpackMap()
+            private Dictionary<string, object> UnpackMap()
             {
                 var size = (int)_unpacker.UnpackMapHeader();
                 if (size == 0)
                 {
                     return EmptyStringValueMap;
                 }
-                IDictionary<string, object> map = new Dictionary<string, object>(size);
+                var map = new Dictionary<string, object>(size);
                 for (var i = 0; i < size; i++)
                 {
                     var key = _unpacker.UnpackString();
@@ -194,18 +263,28 @@ namespace Neo4j.Driver
                 return map;
             }
 
-
+            private IList<object> UnpackList()
+            {
+                var size = (int)_unpacker.UnpackListHeader();
+                var vals = new object[size];
+                for (var j = 0; j < size; j++)
+                {
+                    vals[j] = UnpackValue();
+                }
+                return new List<object>(vals);
+            }
         }
 
         public class WriterV1 : IWriter, IMessageRequestHandler
         {
-            private readonly IOutputStream _outputStream;
-            private readonly PackStream.Packer _packer;
+            private readonly ChunkedOutputStream _outputStream;
+            private readonly Packer _packer;
+            
 
-            public WriterV1(IOutputStream outputStream)
+            public WriterV1(ChunkedOutputStream outputStream)
             {
                 _outputStream = outputStream;
-                _packer = new PackStream.Packer(_outputStream, _bitConverter);
+                _packer = new Packer(_outputStream, _bitConverter);
             }
 
             public void HandleInitMessage(string clientNameAndVersion)
@@ -229,6 +308,12 @@ namespace Neo4j.Driver
                 PackMessageTail();
             }
 
+            public void HandleResetMessage()
+            {
+                _packer.PackStructHeader( 0, MSG_ACK_FAILURE );
+                PackMessageTail();
+            }
+
             public void Write(IMessage message)
             {
                 message.Dispatch(this);
@@ -241,7 +326,7 @@ namespace Neo4j.Driver
 
             private void PackMessageTail()
             {
-                _outputStream.WriteMessageEnding();
+                _outputStream.WriteMessageTail();
             }
 
             private void PackRawMap(IDictionary<string, object> dictionary)
@@ -263,15 +348,14 @@ namespace Neo4j.Driver
 
             private void PackValue(object value)
             {
-                // TODO when we need params in run
                 _packer.Pack(value);
-
+                // the driver should never pack node, relationship or path
             }
         }
 
         #region Consts
 
-            public const byte MSG_INIT = 0x01;
+        public const byte MSG_INIT = 0x01;
         public const byte MSG_ACK_FAILURE = 0x0F;
         public const byte MSG_RUN = 0x10;
         public const byte MSG_DISCARD_ALL = 0x2F;
@@ -286,6 +370,11 @@ namespace Neo4j.Driver
         public const byte RELATIONSHIP = (byte) 'R';
         public const byte UNBOUND_RELATIONSHIP = (byte) 'r';
         public const byte PATH = (byte) 'P';
+
+        public const long NodeFields = 3;
+        public const long RelationshipFields = 5;
+        public const long UnboundRelationshipFields = 3;
+        public const long PathFields = 3;
 
         #endregion Consts
     }

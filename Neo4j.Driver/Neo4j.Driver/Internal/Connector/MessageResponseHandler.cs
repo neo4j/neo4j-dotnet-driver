@@ -24,64 +24,66 @@ namespace Neo4j.Driver
     internal class MessageResponseHandler : IMessageResponseHandler
     {
         private readonly Queue<ResultBuilder> _resultBuilders = new Queue<ResultBuilder>();
-        private readonly Queue<IMessage> _sentMessages = new Queue<IMessage>() ;
+        protected readonly Queue<IMessage> _sentMessages = new Queue<IMessage>() ;
         private ResultBuilder _currentResultBuilder;
+        public Neo4jException Error { get; internal set; }
+        public bool HasError => Error != null;
 
         public void HandleSuccessMessage(IDictionary<string, object> meta)
         {
-            var message = _sentMessages.Dequeue();
-            if (message is InitMessage)
-            {
-                return;
-                // do nothing
-            }
-
-            // suc for run 
-            // deq and save
-
-            // suc for pull all
-            // deq and save
+            _sentMessages.Dequeue();
             _currentResultBuilder = _resultBuilders.Dequeue();
-            _currentResultBuilder.CollectMeta(meta);
-        }
-
-        public void HandleFailureMessage(string code, string message)
-        {
-
-            throw new System.NotImplementedException();
-        }
-
-        public void HandleIgnoredMessage()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void Register(IMessage message, ResultBuilder resultBuilder = null)
-        {
-            _sentMessages.Enqueue(message);
-            if (resultBuilder != null)
-            {
-                _resultBuilders.Enqueue(resultBuilder);
-            }
-        }
-
-        public bool QueueIsEmpty()
-        {
-            return _sentMessages.Count == 0;
+            _currentResultBuilder?.CollectMeta(meta);
         }
 
         public void HandleRecordMessage(dynamic[] fields)
         {
             //TODO: Should error if no keys??
-            //var message = _sentMessages.Dequeue();
-//            if (!(message is PullAllMessage))
-//            {
-//                Throw.ArgumentException.IfNotEqual(message.GetType(), typeof(PullAllMessage), "Dequeued Messages", "Expected Messages");
-//            }
-
-            //var builder = _resultBuilders.Dequeue();
-            //Throw.ArgumentException.IfNotEqual( builder, _currentResultBuilder, "Dequeued builder", "Expected builder");
             _currentResultBuilder.Record( fields);
+        }
+
+        public void HandleFailureMessage(string code, string message)
+        {
+            string[] parts = code.Split('.');
+            string classification = parts[1].ToLowerInvariant();
+            switch (classification)
+            {
+                case "clienterror":
+                    Error = new ClientException(code, message);
+                    break;
+                case "transienterror":
+                    Error = new TransientException(code, message);
+                    break;
+                default:
+                    Error = new DatabaseException(code, message);
+                    break;
+            }
+            _sentMessages.Dequeue();
+            _resultBuilders.Dequeue();
+
+//            if (parts[2].ToLowerInvariant() == "request")
+//            {
+//                _sentMessages.Clear();
+//                _resultBuilders.Clear();
+//            }
+        }
+
+        public void HandleIgnoredMessage()
+        {
+            _sentMessages.Dequeue();
+            _resultBuilders.Dequeue();
+        }
+
+        public void Register(IMessage message, ResultBuilder resultBuilder = null)
+        {
+            _sentMessages.Enqueue(message);
+            _resultBuilders.Enqueue(resultBuilder);
+            
+        }
+
+        public bool QueueIsEmpty()
+        {
+            return _sentMessages.Count == 0;
         }
     }
 }

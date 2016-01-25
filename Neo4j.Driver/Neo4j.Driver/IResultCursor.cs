@@ -4,7 +4,7 @@ namespace Neo4j.Driver
 {
     public interface IResultCursor
     {
-        IEnumerable<Record> Records();
+        IEnumerable<Record> Stream();
         //        ResultSummary summarize();
         Record Record();
         long Position();

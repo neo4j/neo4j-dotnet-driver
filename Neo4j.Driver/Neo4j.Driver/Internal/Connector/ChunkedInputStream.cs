@@ -130,7 +130,7 @@ namespace Neo4j.Driver
             }
         }
 
-        public void ReadMessageEnding()
+        public void ReadMessageTail()
         {
             // tail 00 00 
             ReadSpecifiedSize(_headTailBuffer);

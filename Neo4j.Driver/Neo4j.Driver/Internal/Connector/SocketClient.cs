@@ -71,16 +71,24 @@ namespace Neo4j.Driver
             }
             
             _writer.Flush();
-            // read?
 
-
-            Receive( responseHandler);
+            Receive(responseHandler);
         }
 
         private void Receive(IMessageResponseHandler responseHandler)
         {
-            while (!responseHandler.QueueIsEmpty() )
-                _reader.Read( responseHandler);
+            while (!responseHandler.QueueIsEmpty())
+            {
+                _reader.Read(responseHandler);
+                if (responseHandler.HasError)
+                {
+                    if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))
+                    {
+                        Stop().Wait();
+                        throw responseHandler.Error;
+                    }
+                }
+            }
             //Read 1 message
             //Send to handler,
             //While messages read < messages handled keep doing above.

@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecords()
             {
                 var cursor = ResultCreator.CreateResult(2,2);
-                var records = cursor.Records().ToList();
+                var records = cursor.Stream().ToList();
                 records.Count.Should().Be(2);
                 Assert.Equal(0, records[0].Values["str0"]);
                 Assert.Equal(1, records[1].Values["str1"]);

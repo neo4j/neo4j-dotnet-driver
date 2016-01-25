@@ -370,7 +370,7 @@ namespace Neo4j.Driver.Tests
                 }
 
                 [Fact]
-                public void ShouldPacKAsList()
+                public void ShouldPackAsList()
                 {
                     var mocks = new Mocks();
                     var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
@@ -388,9 +388,25 @@ namespace Neo4j.Driver.Tests
                     mocks.VerifyWrite(new byte[] {97});
                 }
 
-//
                 [Fact]
-                public void ShouldPacKAsDictionary()
+                public void ShouldPackArrayAsList()
+                {
+                    var mocks = new Mocks();
+                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+
+                    int[] list = new int[2];
+                    list[0]=1;
+                    list[1]=2;
+                    u.Pack((object)list);
+
+                    mocks.VerifyWrite((byte)(PackStream.TINY_LIST | list.Length));
+                    mocks.VerifyWrite((byte)1);
+                    mocks.VerifyWrite((byte)2);
+                }
+
+                //
+                [Fact]
+                public void ShouldPackAsDictionary()
                 {
                     var mocks = new Mocks();
                     var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());

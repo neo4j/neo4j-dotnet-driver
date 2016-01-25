@@ -15,8 +15,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.result;
 using Xunit;
@@ -94,6 +98,170 @@ namespace Neo4j.Driver.Tests
                     harness.VerifyWriteStreamUsages(2 /*write + flush*/);
 
                     harness.VerifyWriteStreamContent(expectedBytes, expectedLength);
+                }
+            }
+
+            [Fact]
+            public async Task ShouldCreateExceptionWhenErrorReceivedFromDatabase()
+            {
+                using (var harness = new SocketClientTestHarness(FakeUri, null))
+                {
+                    var messages = new IMessage[] { new RunMessage("This will cause a syntax error") };
+                    var messageHandler = new MessageResponseHandler();
+                    messageHandler.Register(new InitMessage("MyClient/1.0"));
+                    messageHandler.Register(messages[0], new ResultBuilder());
+
+                    harness.SetupReadStream("00 00 00 01"
+                                            + "00 03 b1 70 a0 00 00"
+                                            + "00a0b17fa284636f6465d0274e656f2e436c69656e744572726f722e53746174656d656e742e496e76616c696453796e746178876d657373616765d065496e76616c696420696e707574202754273a206578706563746564203c696e69743e20286c696e6520312c20636f6c756d6e203120286f66667365743a203029290a22546869732077696c6c20636175736520612073796e746178206572726f72220a205e0000");
+
+                    harness.SetupWriteStream();
+
+                    await harness.Client.Start();
+                    harness.ResetCalls();
+
+                    // When
+                    harness.Client.Send(messages, messageHandler);
+
+                    // Then
+                    harness.VerifyWriteStreamUsages(2 /*write + flush*/);
+
+                    messageHandler.HasError.Should().BeTrue();
+                    messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
+                    messageHandler.Error.Message.Should().Be("Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
+                }
+            }
+
+            private class TestResponseHandler : IMessageResponseHandler
+            {
+                private readonly MessageResponseHandler _messageHandler;
+                public int FailureMessageCalled { get; private set; }
+                public int IgnoreMessageCalled { get; private set; }
+
+                public TestResponseHandler()
+                {
+                    _messageHandler = new MessageResponseHandler();
+                }
+
+
+                public void HandleSuccessMessage(IDictionary<string, object> meta)
+                {
+                    _messageHandler.HandleSuccessMessage(meta);
+                }
+
+                public void HandleFailureMessage(string code, string message)
+                {
+                    FailureMessageCalled++;
+                    _messageHandler.HandleFailureMessage(code, message);
+                }
+
+                public void HandleIgnoredMessage()
+                {
+                    IgnoreMessageCalled++;
+                    _messageHandler.HandleIgnoredMessage();
+                }
+
+                public void HandleRecordMessage(dynamic[] fields)
+                {
+                    _messageHandler.HandleRecordMessage(fields);
+                }
+
+                public void Register(IMessage message, ResultBuilder resultBuilder = null)
+                {
+                    _messageHandler.Register(message, resultBuilder);
+                }
+
+                public bool QueueIsEmpty()
+                {
+                    return _messageHandler.QueueIsEmpty();
+                }
+
+                public bool HasError => _messageHandler.HasError;
+
+                public Neo4jException Error
+                {
+                    get { return _messageHandler.Error; }
+                    set { _messageHandler.Error = value; }
+                }
+            }
+
+            [Fact]
+            public async Task ShouldIgnorePullAllWhenErrorHappenedDuringRun()
+            {
+                using (var harness = new SocketClientTestHarness(FakeUri, null))
+                {
+                    var messages = new IMessage[]
+                    {
+                        new RunMessage("This will cause a syntax error"),
+                        new PullAllMessage()
+                    };
+
+                    var messageHandler = new TestResponseHandler();
+
+                    messageHandler.Register(new InitMessage("MyClient/1.0"));
+                    messageHandler.Register(messages[0], new ResultBuilder());
+                    messageHandler.Register(messages[1], new ResultBuilder());
+
+                    harness.SetupReadStream("00 00 00 01" +
+                                            "00 03 b1 70 a0 00 00" +
+                                            "00a0b17fa284636f6465d0274e656f2e436c69656e744572726f722e53746174656d656e742e496e76616c696453796e746178876d657373616765d065496e76616c696420696e707574202754273a206578706563746564203c696e69743e20286c696e6520312c20636f6c756d6e203120286f66667365743a203029290a22546869732077696c6c20636175736520612073796e746178206572726f72220a205e0000" +
+                                            "00 02 b0 7e 00 00");
+
+                    harness.SetupWriteStream();
+
+                    await harness.Client.Start();
+                    harness.ResetCalls();
+
+
+                    // When
+                    harness.Client.Send(messages, messageHandler);
+
+                    // Then
+                    harness.VerifyWriteStreamUsages(2 /*write + flush*/);
+
+                    messageHandler.HasError.Should().BeTrue();
+                    messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
+                    messageHandler.Error.Message.Should()
+                        .Be(
+                            "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
+                    messageHandler.QueueIsEmpty().Should().BeTrue();
+                    messageHandler.FailureMessageCalled.Should().Be(1);
+                    messageHandler.IgnoreMessageCalled.Should().Be(1);
+                }
+            }
+
+            [Fact]
+            public async Task ShouldStopClientAndThrowExceptionWhenProtocolErrorOccurs()
+            {
+                using (var harness = new SocketClientTestHarness(FakeUri, null))
+                {
+                    var messages = new IMessage[]
+                    {
+                        new RunMessage("This will cause a syntax error"),
+                        new PullAllMessage()
+                    };
+
+                    var messageHandler = new TestResponseHandler();
+
+                    messageHandler.Register(new InitMessage("MyClient/1.0"));
+                    messageHandler.Register(messages[0], new ResultBuilder());
+                    messageHandler.Register(messages[1], new ResultBuilder());
+
+                    harness.SetupReadStream("00 00 00 01" +
+                                            "00 03 b1 70 a0 00 00");
+
+                    harness.SetupWriteStream();
+
+                    await harness.Client.Start();
+
+                    messageHandler.Error = new ClientException("Neo.ClientError.Request.Invalid", "Test Message");
+
+                    // When
+                    var ex = Xunit.Record.Exception(() => harness.Client.Send(messages, messageHandler));
+                    ex.Should().BeOfType<ClientException>();
+
+                    harness.MockTcpSocketClient.Verify(x => x.DisconnectAsync(), Times.Once);
+                    harness.MockTcpSocketClient.Verify(x => x.Dispose(), Times.Once);
                 }
             }
         }

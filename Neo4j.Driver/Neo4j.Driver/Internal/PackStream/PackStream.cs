@@ -201,23 +201,14 @@ namespace Neo4j.Driver
                 {
                     Pack((byte[]) value);
                 }
-                //else if (value is long[] ) { Pack(singletonList(value)); }
                 else if (value is float || value is double || value is decimal)
                 {
                     Pack(Convert.ToDouble(value));
                 }
-                //else if (value is float[] ) { Pack(singletonList(value)); }
-                //else if (value is double[] ) { Pack(singletonList(value)); }
                 else if (value is char || value is string)
                 {
                     Pack(value.ToString());
                 }
-                //else if (value is char[] ) { Pack(new String((char[])value)); }
-//                else if (value is string)
-//                {
-//                    Pack((string) value);
-//                }
-                //else if (value is String[] ) { Pack(singletonList(value)); }
                 else if (value is IList)
                 {
                     Pack((IList) value);
@@ -657,6 +648,7 @@ namespace Neo4j.Driver
             {
                 return _in.ReadInt() & 0xFFFFFFFFL;
             }
+
         }
     }
 
@@ -668,7 +660,7 @@ namespace Neo4j.Driver
 
     public interface IReader
     {
-        bool HasNext();
+//        bool HasNext();
         void Read(IMessageResponseHandler responseHandler);
     }
 }
