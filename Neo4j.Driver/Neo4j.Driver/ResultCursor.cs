@@ -78,15 +78,23 @@ namespace Neo4j.Driver
 
         public IReadOnlyDictionary<string, dynamic> Values()
         {
-            return _current?.Values;
-        } 
+            EnsureCurrentIsCalled();
+            return _current.Values;
+        }
+
+        private void EnsureCurrentIsCalled()
+        {
+            if (!HasRecord())
+            {
+                throw new InvalidOperationException(
+                    "In order to access the fields of a record in a result, " +
+                    "you must first call next() to point the result to the next record in the result stream.");
+            }
+        }
 
         public IReadOnlyList<KeyValuePair<string, dynamic>> OrderedValues()
         {
-            if (_current == null)
-            {
-                return null;
-            }
+            EnsureCurrentIsCalled();
             return Keys.Select(key => new KeyValuePair<string, dynamic>(key, _current.Values[key])).ToList();
         }
 
@@ -129,15 +137,9 @@ namespace Neo4j.Driver
         /// <returns></returns>
         public Record Record()
         {
-            if (HasRecord())
-            {
-                return _current;
-            }
-            else
-            {
-                throw new InvalidOperationException("In order to access the fields of a record in a result, " +
-                                                    "you must first call next() to point the result to the next record in the result stream.");
-            }
+            EnsureCurrentIsCalled();
+            return _current;
+           
         }
 
         public long Position()

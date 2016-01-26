@@ -1,5 +1,6 @@
 ﻿//tag::minimal-example-import[]
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -18,6 +19,7 @@ namespace Examples
         public Examples(ITestOutputHelper output)
         {
             this.output = output;
+            ClearDatabase();
         }
 
         [Fact]
@@ -92,9 +94,10 @@ namespace Examples
         {
             var driver = GraphDatabase.Driver("bolt://localhost:7687");
             var session = driver.Session();
+            session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::result-cursor[]
-            var result = session.Run("CREATE (p:Person { name: {name} }) RETURN p.age",
+            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
             while (result.Next())
@@ -115,9 +118,10 @@ namespace Examples
         {
             var driver = GraphDatabase.Driver("bolt://localhost:7687");
             var session = driver.Session();
+            session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::retain-result-query[]
-            var result = session.Run("CREATE (p:Person { name: {name} }) RETURN p.age",
+            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
             var records = result.Stream().ToList();
@@ -141,9 +145,10 @@ namespace Examples
         {
             var driver = GraphDatabase.Driver("bolt://localhost:7687");
             var session = driver.Session();
+            session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::retain-result-process[]
-            var result = session.Run("CREATE (p:Person { name: {name} }) RETURN p.age",
+            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
             var records = result.Stream().ToList();
@@ -170,11 +175,9 @@ namespace Examples
             var session = driver.Session();
 
             //tag::handle-cypher-error[]
-            var result = session.Run("This will cause a syntax error");
-
             try
             {
-                result.Stream().ToList();
+                session.Run("This will cause a syntax error");
             }
             catch (ClientException ex)
             {
@@ -185,9 +188,54 @@ namespace Examples
             driver.Dispose();
         }
 
+        [Fact]
+        public void TransactionCommit()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost:7687");
+            var session = driver.Session();
+
+            //tag::transaction-commit[]
+            using (ITransaction tx = session.BeginTransaction())
+            {
+                tx.Run("CREATE (p:Person { name: 'The One', age: 22 })");
+                tx.Success();
+            }
+            //end::transaction-commit[]
+
+            driver.Dispose();
+        }
+
+        [Fact]
+        public void TransactionRollback()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost:7687");
+            var session = driver.Session();
+
+            //tag::transaction-rollback[]
+            using (ITransaction tx = session.BeginTransaction())
+            {
+                tx.Run("CREATE (p:Person { name: 'The One' })");
+                tx.Failure();
+            }
+            //end::transaction-rollback[]
+
+            driver.Dispose();
+        }
+
+        private void ClearDatabase()
+        {
+
+            Driver driver = GraphDatabase.Driver("bolt://localhost:7687");
+            var session = driver.Session();
+            var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
+            while (result.Next())
+            {
+                // consume
+            }
+            driver.Dispose();
+        }
+
         /*
-        # tag::transaction-commit[]
-        # tag::transaction-rollback[]
         # tag::result-summary-query-profile[]
         # tag::result-summary-notifications[]
         # tag::tls-require-encryption[]

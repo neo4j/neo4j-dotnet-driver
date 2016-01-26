@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.result
     public class ResultBuilder
     {
         //private IDictionary<string, dynamic> _meta;
-        private string[] _keys;
+        private string[] _keys = new string[0];
         private IList<Record> _records = new List<Record>(); 
 
         public void Record(dynamic[] fields)

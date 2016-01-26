@@ -60,12 +60,6 @@ namespace Neo4j.Driver
             }
             _sentMessages.Dequeue();
             _resultBuilders.Dequeue();
-
-//            if (parts[2].ToLowerInvariant() == "request")
-//            {
-//                _sentMessages.Clear();
-//                _resultBuilders.Clear();
-//            }
         }
 
         public void HandleIgnoredMessage()

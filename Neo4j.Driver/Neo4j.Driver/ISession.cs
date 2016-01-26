@@ -34,9 +34,21 @@ namespace Neo4j.Driver
     /// Session objects are not thread safe, if you want to run concurrent operations against the database,
     /// simply create multiple sessions objects.
     /// </summary>
-    public interface ISession : IDisposable
+    public interface ISession : IStatementRunner
     {
         // TODO
+        ITransaction BeginTransaction();
+    }
+
+    public interface IStatementRunner : IDisposable
+    {
         ResultCursor Run(string statement, IDictionary<string, object> statementParameters = null);
+    }
+
+
+    public interface ITransaction : IStatementRunner
+    {
+        void Success();
+        void Failure();
     }
 }

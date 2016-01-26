@@ -17,12 +17,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.result;
+using Sockets.Plugin;
+using Sockets.Plugin.Abstractions;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -273,9 +276,12 @@ namespace Neo4j.Driver.Tests
             {
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
+                    harness.SetupReadStream("00 00 00 01");
+                    await harness.Client.Start();
                     await harness.Client.Stop();
                     harness.MockTcpSocketClient.Verify(s => s.DisconnectAsync(), Times.Once);
                     harness.MockTcpSocketClient.Verify(s => s.Dispose(), Times.Once);
+                    harness.Client.IsOpen.Should().BeFalse();
                 }
             }
         }

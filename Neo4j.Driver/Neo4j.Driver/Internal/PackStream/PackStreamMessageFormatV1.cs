@@ -308,6 +308,12 @@ namespace Neo4j.Driver
                 PackMessageTail();
             }
 
+            public void HandleDiscardAllMessage()
+            {
+                _packer.PackStructHeader(0, MSG_DISCARD_ALL);
+                PackMessageTail();
+            }
+
             public void HandleResetMessage()
             {
                 _packer.PackStructHeader( 0, MSG_ACK_FAILURE );

@@ -26,10 +26,8 @@ namespace Neo4j.Driver
         void HandleInitMessage(string clientNameAndVersion);
         void HandleRunMessage(string statement, IDictionary<string, object> parameters);
         void HandlePullAllMessage();
-        //void HandleDiscardAllMessage();
+        void HandleDiscardAllMessage();
         void HandleResetMessage();
-
-       
     }
 
     public interface IMessageResponseHandler

@@ -86,6 +86,14 @@ namespace Neo4j.Driver
             Enqueue(new PullAllMessage(), resultBuilder);
         }
 
+        public void DiscardAll()
+        {
+            Enqueue(new DiscardAllMessage());
+        }
+
+        public bool IsOpen => _client.IsOpen;
+        
+
         protected virtual void Dispose(bool isDisposing)
         {
             if (!isDisposing)

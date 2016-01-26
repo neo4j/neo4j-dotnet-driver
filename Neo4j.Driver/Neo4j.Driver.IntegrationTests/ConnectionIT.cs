@@ -20,11 +20,20 @@ using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
     public class ConnectionIT
     {
+
+        private readonly ITestOutputHelper output;
+
+        public ConnectionIT(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
         [Fact]
         public void ShouldDoHandShake()
         {
@@ -44,8 +53,24 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Fact]
-        public void DoesNothing()
+        public void ShouldBeAbleToRunMultiStatementsInOneTransaction()
         {
+            using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
+            using (var session = driver.Session())
+            using (var tx = session.BeginTransaction())
+            {
+                // clean db
+                tx.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
+                var result = tx.Run("CREATE (n {name:'Steve Brook'}) RETURN n.name");
+
+                while (result.Next())
+                {
+                    foreach (var keyValuePair in result.Values())
+                    {
+                        output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");
+                    }
+                }
+            }
         }
     }
 }

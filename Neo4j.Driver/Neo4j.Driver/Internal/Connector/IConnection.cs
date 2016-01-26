@@ -25,5 +25,7 @@ namespace Neo4j.Driver
         void Sync();
         void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> statementParameters = null);
         void PullAll(ResultBuilder resultBuilder);
+        void DiscardAll();
+        bool IsOpen { get; }
     }
 }

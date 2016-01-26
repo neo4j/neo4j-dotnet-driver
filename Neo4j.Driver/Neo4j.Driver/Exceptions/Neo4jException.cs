@@ -45,7 +45,13 @@ namespace Neo4j.Driver.Exceptions
     [DataContract]
     public class ClientException : Neo4jException
     {
+        private string v;
+
         public ClientException()
+        {
+        }
+
+        public ClientException(string message) : base(null, message)
         {
         }
 

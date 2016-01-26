@@ -16,6 +16,7 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Sockets.Plugin;
 using Sockets.Plugin.Abstractions;
@@ -42,6 +43,7 @@ namespace Neo4j.Driver
         public async Task Start()
         {
             await _tcpSocketClient.ConnectAsync(_url.Host, _url.Port).ConfigureAwait(false);
+            IsOpen = true;
 
             var version = await DoHandshake().ConfigureAwait(false);
 
@@ -56,11 +58,13 @@ namespace Neo4j.Driver
 
         public async Task Stop()
         {
-            if (_tcpSocketClient != null)
+            if (IsOpen && _tcpSocketClient != null)
             {
                 await _tcpSocketClient.DisconnectAsync().ConfigureAwait(false);
                 _tcpSocketClient.Dispose();
+                
             }
+            IsOpen = false;
         }
 
         public void Send(IEnumerable<IMessage> messages, IMessageResponseHandler responseHandler)
@@ -74,6 +78,8 @@ namespace Neo4j.Driver
 
             Receive(responseHandler);
         }
+
+        public bool IsOpen { get; private set; }
 
         private void Receive(IMessageResponseHandler responseHandler)
         {
@@ -134,7 +140,10 @@ namespace Neo4j.Driver
 
         protected virtual void Dispose(bool isDisposing)
         {
-            _tcpSocketClient.DisconnectAsync().Wait();
+            if (!isDisposing)
+                return;
+
+            Stop().Wait();
         }
 
         public void Dispose()
