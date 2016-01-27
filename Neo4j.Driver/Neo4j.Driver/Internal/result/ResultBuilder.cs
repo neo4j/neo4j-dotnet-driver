@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Internal.result
 
         private void CollectPlan(IDictionary<string, object> meta, string name)
         {
-            if (meta == null || meta.Count == 0 || !meta.ContainsKey(name))
+            if (meta == null || !meta.ContainsKey(name))
             {
                 return;
             }
@@ -140,15 +140,36 @@ namespace Neo4j.Driver.Internal.result
             return new Plan(operationType, args, identifiers.ToList(), childPlans);
         }
 
+        private IProfiledPlan CollectProfile(IDictionary<string, object> profileDict)
+        {
+            if (profileDict == null || profileDict.Count == 0)
+            {
+                return null;
+            }
+            var operationType = profileDict.GetValue("operatorType", string.Empty);
+            var args = profileDict.GetValue("args", new Dictionary<string, object>());
+            var identifiers = profileDict.GetValue("identifiers", new List<object>()).Cast<string>();
+            var dbHits = profileDict.GetValue("dbHits", 0L);
+            var rows = profileDict.GetValue("rows", 0L);
+            var children = profileDict.GetValue("children", new List<object>());
+
+            var childPlans = children
+                .Select(child => child as IDictionary<string, object>)
+                .Select(CollectProfile)
+                .Where(childProfile => childProfile != null)
+                .ToList();
+            return new ProfiledPlan(operationType, args, identifiers.ToList(), childPlans, dbHits, rows);
+        }
+
 
         private void CollectProfile(IDictionary<string, object> meta, string name)
         {
-            // TODO
             if (!meta.ContainsKey(name))
             {
                 return;
             }
-            throw new System.NotImplementedException();
+            var profiledPlan = meta[name] as IDictionary<string, object>;
+            _summaryBuilder.Profile = CollectProfile(profiledPlan);
         }
 
         private void CollectNotifications(IDictionary<string, object> meta, string name)
@@ -167,9 +188,10 @@ namespace Neo4j.Driver.Internal.result
 
                 var posValue = value.GetValue("position", new Dictionary<string, object>());
 
-                var position = new InputPosition(posValue.GetValue("offset", 0),
-                    posValue.GetValue("line", 0),
-                    posValue.GetValue("column", 0));
+                var position = new InputPosition(
+                    (int)posValue.GetValue("offset", 0L),
+                    (int)posValue.GetValue("line", 0L),
+                    (int)posValue.GetValue("column", 0L));
                 notifiactions.Add(new Notification(code, title, description, position));
             }
             _summaryBuilder.Notifications = notifiactions;

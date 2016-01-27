@@ -14,6 +14,6 @@ namespace Neo4j.Driver
         ///
         long Records { get; }
 
-        new IList<IProfiledPlan> Children();
+        new IList<IProfiledPlan> Children { get; }
     }
 }

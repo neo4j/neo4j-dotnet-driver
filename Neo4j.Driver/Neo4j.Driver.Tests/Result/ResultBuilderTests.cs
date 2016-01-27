@@ -18,7 +18,7 @@ namespace Neo4j.Driver.Tests.Result
             {
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"fields", new List<object> {"fieldKey1", "fieldKey2", "fieldKey3"} } };
+                { {"fields", new List<object> {"fieldKey1", "fieldKey2", "fieldKey3"} },{"type", "r" } };
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests.Result
             {
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"stats", new Dictionary<string, object> { {"nodes-created", 10}, {"nodes-deleted", 5} } } };
+                { {"type", "r" }, {"stats", new Dictionary<string, object> { {"nodes-created", 10}, {"nodes-deleted", 5} } } };
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
@@ -57,6 +57,7 @@ namespace Neo4j.Driver.Tests.Result
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {
+                    {"type", "r" },
                     {
                         "notifications", new List<object>
                         {
@@ -67,7 +68,7 @@ namespace Neo4j.Driver.Tests.Result
                                 {
                                     "position", new Dictionary<string, object>
                                     {
-                                        {"offset", 11}
+                                        {"offset", 11L}
                                     }
                                 }
                             }
@@ -102,7 +103,8 @@ namespace Neo4j.Driver.Tests.Result
             {
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"plan", new Dictionary<string, object>
+                {   {"type", "r" },
+                    { "plan", new Dictionary<string, object>
                 {
                     {"operatorType", "X"}
                 } } };
@@ -122,7 +124,7 @@ namespace Neo4j.Driver.Tests.Result
             {
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"plan", new Dictionary<string, object>
+                { {"type", "r" }, {"plan", new Dictionary<string, object>
                 {
                     {"operatorType", "X"},
                     { "args", new Dictionary<string, object> { {"a", 1}, {"b", "lala"} } },
@@ -158,9 +160,56 @@ namespace Neo4j.Driver.Tests.Result
                 var children = plan.Children;
                 children.Should().HaveCount(2);
                 children[0].OperatorType.Should().Be("tt");
-                children[0].Children.Should().BeNull();// TODO 
+                children[0].Children.Should().BeEmpty();
                 children[1].Children.Should().HaveCount(1);
-                children[1].Children[1].OperatorType.Should().Be("Y");
+                children[1].Children[0].OperatorType.Should().Be("Y");
+            }
+
+            [Fact]
+            public void ShouldCollectProfiledPlanThatContainsProfiledPlans()
+            {
+                var builder = new ResultBuilder();
+                IDictionary<string, object> meta = new Dictionary<string, object>
+                { {"type", "r" }, {"profile", new Dictionary<string, object>
+                {
+                    {"operatorType", "X"},
+                    { "args", new Dictionary<string, object> { {"a", 1}, {"b", "lala"} } },
+                    { "identifiers", new List<object> {"id1", "id2"} },
+                    { "children", new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            { "operatorType", "tt"},
+                            { "children", new List<object>()}
+                        },
+                        new Dictionary<string, object>
+                        {
+                            { "children", new List<object>
+                            {
+                               new Dictionary<string, object> { { "operatorType", "Y"} }
+                            } }
+                        }
+                        }
+                    }
+                } } };
+                builder.CollectMeta(meta);
+
+                var result = builder.Build();
+                var profile = result.Summarize().Profile;
+                profile.DbHits.Should().Be(0L);
+                profile.OperatorType.Should().Be("X");
+                profile.Arguments.Should().ContainKey("a");
+                profile.Arguments["a"].Should().Be(1);
+                profile.Arguments.Should().ContainKey("b");
+                profile.Arguments["b"].Should().Be("lala");
+                profile.Identifiers.Should().ContainInOrder("id1", "id2");
+                profile.Children.Should().NotBeNull();
+                var children = profile.Children;
+                children.Should().HaveCount(2);
+                children[0].OperatorType.Should().Be("tt");
+                children[0].Children.Should().BeEmpty();
+                children[1].Children.Should().HaveCount(1);
+                children[1].Children[0].OperatorType.Should().Be("Y");
             }
         }
     }

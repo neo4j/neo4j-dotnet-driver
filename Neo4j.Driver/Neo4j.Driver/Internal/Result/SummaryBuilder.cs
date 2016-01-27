@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Extensions;
 
 namespace Neo4j.Driver.Internal.result
 {
@@ -25,12 +28,14 @@ namespace Neo4j.Driver.Internal.result
         {
             public ResultSumamry(SummaryBuilder builder)
             {
+                Throw.ArgumentNullException.IfNull(builder.Statement, nameof(builder.Statement));
+                //Throw.ArgumentNullException.IfNull(builder.StatementType, nameof(builder.StatementType));
                 Statement = builder.Statement;
                 StatementType = builder.StatementType;
-                UpdateStatistics = builder.UpdateStatistics;
+                UpdateStatistics = builder.UpdateStatistics ?? new UpdateStatistics();
                 Plan = builder.Plan;
                 Profile = builder.Profile;
-                Notifications = builder.Notifications;
+                Notifications = builder.Notifications ?? new List<INotification>();
             }
 
             public Statement Statement { get; }
@@ -41,12 +46,21 @@ namespace Neo4j.Driver.Internal.result
             public IPlan Plan { get; }
             public IProfiledPlan Profile { get; }
             public IList<INotification> Notifications { get; }
+
+            public override string ToString()
+            {
+                return $"{GetType().Name}{{{nameof(Statement)}={Statement}, " +
+                       $"{nameof(UpdateStatistics)}={UpdateStatistics}, " +
+                       $"{nameof(StatementType)}={StatementType}, " +
+                       $"{nameof(Plan)}={Plan}, " +
+                       $"{nameof(Profile)}={Profile}, " +
+                       $"{nameof(Notifications)}={Notifications.ToContentString()}}}";
+            }
         }
     }
 
     public class Plan : IPlan
     {
-    
         public Plan(string operationType, Dictionary<string, object> args, IList<string> identifiers, List<IPlan> childPlans)
         {
             OperatorType = operationType;
@@ -59,10 +73,56 @@ namespace Neo4j.Driver.Internal.result
         public IDictionary<string, object> Arguments { get; }
         public IList<string> Identifiers { get; }
         public IList<IPlan> Children { get; }
+
+        public override string ToString()
+        {
+            return $"{GetType().Name}{{{nameof(OperatorType)}={OperatorType}, " +
+                   $"{nameof(Arguments)}={Arguments.ToContentString()}, " +
+                   $"{nameof(Identifiers)}={Identifiers.ToContentString()}, " +
+                   $"{nameof(Children)}={Children.ToContentString()}}}";
+        }
+    }
+
+    public class ProfiledPlan : IProfiledPlan
+    {
+        public ProfiledPlan(string operatorType, IDictionary<string, object> arguments, IList<string> identifiers, IList<IProfiledPlan> children, long dbHits, long records)
+        {
+            OperatorType = operatorType;
+            Arguments = arguments;
+            Identifiers = identifiers;
+            Children = children;
+            DbHits = dbHits;
+            Records = records;
+        }
+
+        public string OperatorType { get; }
+
+        public IDictionary<string, object> Arguments { get; }
+
+        public IList<string> Identifiers { get; }
+
+        IList<IPlan> IPlan.Children { get { throw new InvalidOperationException("This is a profiled plan.");} }
+
+        public IList<IProfiledPlan> Children { get; }
+
+        public long DbHits { get; }
+
+        public long Records { get; }
+
+        public override string ToString()
+        {
+            return $"{GetType().Name}{{{nameof(OperatorType)}={OperatorType}, " +
+                   $"{nameof(Arguments)}={Arguments.ToContentString()}, " +
+                   $"{nameof(Identifiers)}={Identifiers.ToContentString()}, " +
+                   $"{nameof(DbHits)}={DbHits}, " +
+                   $"{nameof(Records)}={Records}, " +
+                   $"{nameof(Children)}={Children.ToContentString()}}}";
+        }
     }
 
     public class UpdateStatistics : IUpdateStatistics
     {
+
         public bool ContainsUpdates => (
             IsPositive(NodesCreated)
             || IsPositive(NodesDeleted)
@@ -87,6 +147,9 @@ namespace Neo4j.Driver.Internal.result
         public int ConstraintsAdded { get; }
         public int ConstraintsRemoved { get; }
 
+        public UpdateStatistics():this(0,0,0,0,0,0,0,0,0,0,0)
+        { }
+
         public UpdateStatistics(int nodesCreated, int nodesDeleted, int relationshipsCreated, int relationshipsDeleted, int propertiesSet, int labelsAdded, int labelsRemoved, int indexesAdded, int indexesRemoved, int constraintsAdded, int constraintsRemoved)
         {
             NodesCreated = nodesCreated;
@@ -106,6 +169,21 @@ namespace Neo4j.Driver.Internal.result
         {
             return value > 0;
         }
+        public override string ToString()
+        {
+            return $"{GetType().Name}{{{nameof(NodesCreated)}={NodesCreated}, " +
+                   $"{nameof(NodesDeleted)}={NodesDeleted}, " +
+                   $"{nameof(RelationshipsCreated)}={RelationshipsCreated}, " +
+                   $"{nameof(RelationshipsDeleted)}={RelationshipsDeleted}, " +
+                   $"{nameof(PropertiesSet)}={PropertiesSet}, " +
+                   $"{nameof(LabelsAdded)}={LabelsAdded}, " +
+                   $"{nameof(LabelsRemoved)}={LabelsRemoved}, " +
+                   $"{nameof(IndexesAdded)}={IndexesAdded}, " +
+                   $"{nameof(IndexesRemoved)}={IndexesRemoved}, " +
+                   $"{nameof(ConstraintsAdded)}={ConstraintsAdded}, " +
+                   $"{nameof(ConstraintsRemoved)}={ConstraintsRemoved}}}";
+        }
+
     }
 
     public class Notification : INotification
@@ -122,6 +200,15 @@ namespace Neo4j.Driver.Internal.result
             Description = description;
             Position = position;
         }
+
+        public override string ToString()
+        {
+            return $"{GetType().Name}{{{nameof(Code)}={Code}, " +
+                   $"{nameof(Title)}={Title}, " +
+                   $"{nameof(Description)}={Description}, " +
+                   $"{nameof(Position)}={Position}}}";
+        }
+
     }
 
     public class InputPosition : IInputPosition
@@ -135,6 +222,13 @@ namespace Neo4j.Driver.Internal.result
             Offset = offset;
             Line = line;
             Column = column;
+        }
+
+        public override string ToString()
+        {
+            return $"{GetType().Name}{{{nameof(Offset)}={Offset}, " +
+                   $"{nameof(Line)}={Line}, " +
+                   $"{nameof(Column)}={Column}}}";
         }
     }
 }

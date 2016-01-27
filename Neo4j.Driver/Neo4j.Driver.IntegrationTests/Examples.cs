@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using Neo4j.Driver;
 using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Extensions;
 //end::minimal-example-import[]
 using Xunit;
 using Xunit.Abstractions;
@@ -234,9 +235,27 @@ namespace Examples
 
             IResultSummary summary = result.Summarize();
 
-            output.WriteLine(summary.StatementType);
-            output.WriteLine(summary.Profile);
+            output.WriteLine(summary.StatementType.ToString());
+            output.WriteLine(summary.Profile.ToString());
             //end::result-summary-query-profile[]
+
+            driver.Dispose();
+        }
+
+        [Fact]
+        public void ResultSummaryNotifications()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost:7687");
+            var session = driver.Session();
+
+            //tag::result-summary-notifications[]
+            var summary = session.Run("EXPLAIN MATCH (a), (b) RETURN a,b").Summarize();
+
+            foreach (var notification in summary.Notifications)
+            {
+                output.WriteLine(notification.ToString());
+            }
+            //end::result-summary-notifications[]
 
             driver.Dispose();
         }
@@ -254,8 +273,6 @@ namespace Examples
         }
 
         /*
-        # tag::result-summary-query-profile[]
-        # tag::result-summary-notifications[]
         # tag::tls-require-encryption[]
         # tag::tls-trust-on-first-use[]
         # tag::tls-signed[]

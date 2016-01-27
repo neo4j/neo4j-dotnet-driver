@@ -8,6 +8,7 @@ namespace Neo4j.Driver
 {
     public enum StatementType
     {
+        Unknown,
         ReadOnly,
         ReadWrite,
         WriteOnly,
