@@ -85,7 +85,8 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
-    <Compile Include="InternalSessionTests.cs" />
+    <Compile Include="Result\ResultBuilderTests.cs" />
+    <Compile Include="SessionTests.cs" />
     <Compile Include="PackStream\PackStreamTests.cs" />
     <Compile Include="PackStream\UnpackerTests.cs" />
     <Compile Include="PackStream\PackerTests.cs" />
@@ -95,11 +96,12 @@
     <Compile Include="Connector\ChunkedInputTests.cs" />
     <Compile Include="PackStream\PackStreamMessageFormatV1Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestUtil\ExtensionsTests.cs" />
     <Compile Include="TestUtil\SocketClientTestHarness.cs" />
     <Compile Include="Connector\SocketClientTests.cs" />
     <Compile Include="Connector\SocketConnectionTests.cs" />
     <Compile Include="TestUtil\TestHelper.cs" />
-    <Compile Include="InternalTransactionTests.cs" />
+    <Compile Include="TransactionTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj">

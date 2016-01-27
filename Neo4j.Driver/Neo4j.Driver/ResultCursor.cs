@@ -27,7 +27,7 @@ namespace Neo4j.Driver
     /// </summary>
     public class ResultCursor : IExtendedResultCursor, IResultRecordAccessor, IResources
     {
-        //private readonly ResultSummary summary;
+        private readonly IResultSummary _summary;
         private readonly IPeekingEnumerator<Record> _enumerator;
         private List<string> _keys;
         public IReadOnlyList<string>  Keys => _keys;
@@ -36,19 +36,21 @@ namespace Neo4j.Driver
         private Record _current;
         private bool _open = true;
 
-        internal ResultCursor( IPeekingEnumerator<Record> recordEnumerator, string[] keys)
+        internal ResultCursor(string[] keys, IPeekingEnumerator<Record> recordEnumerator)
         {
-            _enumerator = recordEnumerator;
             _keys = new List<string>(keys);
+            _enumerator = recordEnumerator;
+            _summary = null;
         }
 
-        public ResultCursor(IEnumerable<Record> records, string[] keys)
+        public ResultCursor(string[] keys, IEnumerable<Record> records, IResultSummary sumamry=null)
         {
-            Throw.ArgumentNullException.IfNull(records, nameof(records));
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
+            Throw.ArgumentNullException.IfNull(records, nameof(records));
 
-            _enumerator = new PeekingEnumerator<Record>(records.GetEnumerator());
             _keys = new List<string>(keys);
+            _enumerator = new PeekingEnumerator<Record>(records.GetEnumerator());
+            _summary = sumamry;
         }
 
         public dynamic Value(int index)
@@ -104,6 +106,16 @@ namespace Neo4j.Driver
             {
                 yield return _current;
             }
+        }
+
+        public IResultSummary Summarize()
+        {
+            while (Next())
+            {
+                // consume
+            }
+            _enumerator.Discard();
+            return _summary;
         }
 
         public bool Next()

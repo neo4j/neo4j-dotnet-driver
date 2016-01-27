@@ -5,13 +5,13 @@ using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
 {
-    public class InternalTransaction : ITransaction
+    public class Transaction : ITransaction
     {
         private State _state = State.Active;
         private readonly IConnection _connection;
         public bool Finished { get; private set; }
 
-        public InternalTransaction(IConnection connection)
+        public Transaction(IConnection connection)
         {
             _connection = connection;
             Finished = false;
@@ -86,13 +86,13 @@ namespace Neo4j.Driver
 
             try
             {
-                ResultBuilder resultBuilder = new ResultBuilder();
+                ResultBuilder resultBuilder = new ResultBuilder(statement, statementParameters);
                 _connection.Run(resultBuilder, statement, statementParameters);
                 _connection.PullAll(resultBuilder);
                 _connection.Sync();
                 return resultBuilder.Build();
             }
-            catch (Neo4jException e)
+            catch (Neo4jException)
             {
                 _state = State.Failed;
                 throw;

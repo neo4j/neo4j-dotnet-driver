@@ -222,9 +222,27 @@ namespace Examples
             driver.Dispose();
         }
 
+        [Fact]
+        public void ResultSummaryQueryProfile()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost:7687");
+            var session = driver.Session();
+
+            //tag::result-summary-query-profile[]
+            var result = session.Run("PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+                            new Dictionary<string, object> { { "name", "The One" } });
+
+            IResultSummary summary = result.Summarize();
+
+            output.WriteLine(summary.StatementType);
+            output.WriteLine(summary.Profile);
+            //end::result-summary-query-profile[]
+
+            driver.Dispose();
+        }
+
         private void ClearDatabase()
         {
-
             Driver driver = GraphDatabase.Driver("bolt://localhost:7687");
             var session = driver.Session();
             var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");

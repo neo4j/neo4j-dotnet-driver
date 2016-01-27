@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class InternalSessionTests
+    public class SessionTests
     {
         public class RunMethod
         {
@@ -16,7 +16,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
                 session.Run("lalalal");
 
                 mockConn.Verify(x => x.Run(It.IsAny<ResultBuilder>(), "lalalal", null), Times.Once);
@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
                 session.BeginTransaction();
                 var error = Xunit.Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
                 tx = session.BeginTransaction();
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
 
                 var error = Xunit.Record.Exception(() => session.Run("lalal"));
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
 
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
 
                 var error = Xunit.Record.Exception(() => session.Run("lalal"));
                 error.Should().BeOfType<ClientException>();
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
 
                 var error = Xunit.Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldDisposeConnOnDispose()
             {
                 var mockConn = new Mock<IConnection>();
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
                 session.Dispose();
 
                 mockConn.Verify(x => x.Dispose(), Times.Once);
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new InternalSession(null, null, mockConn.Object);
+                var session = new Session(null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
                 session.Dispose();
 

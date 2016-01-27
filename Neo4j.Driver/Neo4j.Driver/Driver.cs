@@ -52,7 +52,7 @@ namespace Neo4j.Driver
         /// </returns>
         public ISession Session()
         {
-            return new InternalSession(_url, _config);
+            return new Session(_url, _config);
         }
     }
 }

@@ -18,5 +18,10 @@ namespace Neo4j.Driver.Extensions
             }
             return output;
         }
+      
+        public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue )
+        {
+            return dict.ContainsKey(key) ? (T)dict[key] : defaultValue;
+        }
     }
 }

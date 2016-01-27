@@ -22,12 +22,12 @@ using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
 {
-    public class InternalSession : ISession
+    public class Session : ISession
     {
         private readonly IConnection _connection;
-        private InternalTransaction _transaction;
+        private Transaction _transaction;
 
-        public InternalSession(Uri url, Config config, IConnection conn = null)
+        public Session(Uri url, Config config, IConnection conn = null)
         {
             _connection = conn ?? new SocketConnection(url, config);
         }
@@ -62,7 +62,7 @@ namespace Neo4j.Driver
         public ResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
         {
             EnsureConnectionIsValid();
-            var resultBuilder = new ResultBuilder();
+            var resultBuilder = new ResultBuilder(statement, statementParameters);
             _connection.Run(resultBuilder, statement, statementParameters);
             _connection.PullAll(resultBuilder);
             _connection.Sync();
@@ -73,7 +73,7 @@ namespace Neo4j.Driver
         public ITransaction BeginTransaction()
         {
             EnsureConnectionIsValid();
-            _transaction = new InternalTransaction(_connection);
+            _transaction = new Transaction(_connection);
             return _transaction;
         }
 

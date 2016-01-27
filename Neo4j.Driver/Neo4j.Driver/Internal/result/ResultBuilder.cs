@@ -14,12 +14,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-using System;
+
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Extensions;
+using static Neo4j.Driver.StatementType;
 
 namespace Neo4j.Driver.Internal.result
 {
@@ -27,17 +27,27 @@ namespace Neo4j.Driver.Internal.result
     {
         //private IDictionary<string, dynamic> _meta;
         private string[] _keys = new string[0];
-        private IList<Record> _records = new List<Record>(); 
+        private readonly IList<Record> _records = new List<Record>();
+        private readonly SummaryBuilder _summaryBuilder;
+
+        internal ResultBuilder() : this(null, null)
+        {
+        }
+
+        public ResultBuilder(string statement, IDictionary<string, object> parameters)
+        {
+            _summaryBuilder = new SummaryBuilder(new Statement(statement, parameters));
+        }
 
         public void Record(dynamic[] fields)
         {
-            Record record = new Record( _keys, fields);
-            _records.Add( record );
+            var record = new Record(_keys, fields);
+            _records.Add(record);
         }
 
         public ResultCursor Build()
         {
-            return new ResultCursor(_records, _keys);
+            return new ResultCursor(_keys, _records, _summaryBuilder.Build());
         }
 
         public void CollectMeta(IDictionary<string, object> meta)
@@ -46,24 +56,144 @@ namespace Neo4j.Driver.Internal.result
             {
                 return;
             }
-            //_meta = meta;
 
-            CollectKeys( meta );
+            CollectKeys(meta, "fields");
+            CollectType(meta, "type");
+            CollectStatistics(meta, "stats");
+            CollectPlan(meta, "plan");
+            CollectProfile(meta, "profile");
+            CollectNotifications(meta, "notifications");
         }
 
-        private void CollectKeys(IDictionary<string, object> meta)
-        {
-            const string fieldsName = "fields";
-            if (meta.ContainsKey(fieldsName))
-            {
-                var keys = (meta[fieldsName] as IList<object>)?.Cast<string>();
-                if (keys == null)
-                {
-                    _keys = new string[0];
-                    return;
-                }
 
-                _keys = keys.ToArray();
+        private void CollectKeys(IDictionary<string, object> meta, string name)
+        {
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+
+            var keys = meta.GetValue(name, new List<object>()).Cast<string>();
+            _keys = keys.ToArray();
+        }
+
+        private void CollectType(IDictionary<string, object> meta, string name)
+        {
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            var type = meta[name] as string;
+            _summaryBuilder.StatementType = FromCode(type);
+        }
+
+        private void CollectStatistics(IDictionary<string, object> meta, string name)
+        {
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            var stats = meta[name] as IDictionary<string, object>;
+
+            _summaryBuilder.UpdateStatistics = new UpdateStatistics(
+                StatsValue(stats, "nodes-created"),
+                StatsValue(stats, "nodes-deleted"),
+                StatsValue(stats, "relationships-created"),
+                StatsValue(stats, "relationships-deleted"),
+                StatsValue(stats, "properties-set"),
+                StatsValue(stats, "labels-added"),
+                StatsValue(stats, "labels-removed"),
+                StatsValue(stats, "indexes-added"),
+                StatsValue(stats, "indexes-removed"),
+                StatsValue(stats, "constraints-added"),
+                StatsValue(stats, "constraints-removed"));
+        }
+
+        private void CollectPlan(IDictionary<string, object> meta, string name)
+        {
+            if (meta == null || meta.Count == 0 || !meta.ContainsKey(name))
+            {
+                return;
+            }
+            var planDict = meta[name] as IDictionary<string, object>;
+            _summaryBuilder.Plan = CollectPlan(planDict);
+        }
+
+        //private const string MetaName_Plan = "plan";
+
+        private IPlan CollectPlan(IDictionary<string, object> planDict)
+        {
+            if (planDict == null || planDict.Count == 0)
+            {
+                return null;
+            }
+            var operationType = planDict.GetValue("operatorType", string.Empty);
+            var args = planDict.GetValue("args", new Dictionary<string, object>());
+            var identifiers = planDict.GetValue("identifiers", new List<object>()).Cast<string>();
+            var children = planDict.GetValue("children", new List<object>());
+
+            var childPlans = children
+                .Select(child => child as IDictionary<string, object>)
+                .Select(CollectPlan)
+                .Where(childPlan => childPlan != null)
+                .ToList();
+            return new Plan(operationType, args, identifiers.ToList(), childPlans);
+        }
+
+
+        private void CollectProfile(IDictionary<string, object> meta, string name)
+        {
+            // TODO
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            throw new System.NotImplementedException();
+        }
+
+        private void CollectNotifications(IDictionary<string, object> meta, string name)
+        {
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            var list = (meta[name] as List<object>).Cast<IDictionary<string, object>>();
+            var notifiactions = new List<INotification>();
+            foreach (var value in list)
+            {
+                var code = value.GetValue("code", string.Empty);
+                var title = value.GetValue("title", string.Empty);
+                var description = value.GetValue("description", string.Empty);
+
+                var posValue = value.GetValue("position", new Dictionary<string, object>());
+
+                var position = new InputPosition(posValue.GetValue("offset", 0),
+                    posValue.GetValue("line", 0),
+                    posValue.GetValue("column", 0));
+                notifiactions.Add(new Notification(code, title, description, position));
+            }
+            _summaryBuilder.Notifications = notifiactions;
+        }
+
+        private static int StatsValue(IDictionary<string, object> stats, string name)
+        {
+            return stats.GetValue(name, 0);
+        }
+
+        private static StatementType FromCode(string type)
+        {
+            switch (type)
+            {
+                case "r":
+                    return ReadOnly;
+                case "rw":
+                    return ReadWrite;
+                case "w":
+                    return WriteOnly;
+                case "s":
+                    return SchemaWrite;
+                default:
+                    throw new ClientException("Unknown statement type: `" + type + "`.");
             }
         }
     }

@@ -87,7 +87,6 @@
   <ItemGroup>
     <Compile Include="ConnectionIT.cs" />
     <Compile Include="Examples.cs" />
-    <Compile Include="Neo4jRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

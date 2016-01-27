@@ -4,11 +4,11 @@ using System.Linq;
 
 namespace Neo4j.Driver.Internal
 {
-    public class InternalNode : INode, IEquatable<INode>
+    public class Node : INode, IEquatable<INode>
     {
-        public InternalNode(long id, IReadOnlyList<string> lables, IReadOnlyDictionary<string, object> prop)
+        public Node(long id, IReadOnlyList<string> lables, IReadOnlyDictionary<string, object> prop)
         {
-            Identity = new InternalIdentity(id);
+            Identity = new Identity(id);
             Labels = lables;
             Properties = prop;
         }
@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((InternalNode) obj);
+            return Equals((Node) obj);
         }
 
         public override int GetHashCode()
@@ -45,19 +45,19 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    public class InternalRelationship : IRelationship, IEquatable<IRelationship>
+    public class Relationship : IRelationship, IEquatable<IRelationship>
     {
-        public InternalRelationship(long id, long startId, long endId, string relType,
+        public Relationship(long id, long startId, long endId, string relType,
             IReadOnlyDictionary<string, object> props)
         {
-            Identity = new InternalIdentity(id);
-            Start = new InternalIdentity(startId);
-            End = new InternalIdentity(endId);
+            Identity = new Identity(id);
+            Start = new Identity(startId);
+            End = new Identity(endId);
             Type = relType;
             Properties = props;
         }
 
-        public InternalRelationship(IIdentity id, IIdentity start, IIdentity end, string relType,
+        public Relationship(IIdentity id, IIdentity start, IIdentity end, string relType,
             IReadOnlyDictionary<string, object> props)
         {
             Identity = id;
@@ -92,7 +92,7 @@ namespace Neo4j.Driver.Internal
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((InternalRelationship) obj);
+            return Equals((Relationship) obj);
         }
 
         public override int GetHashCode()
@@ -115,9 +115,9 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    public class InternalIdentity : IIdentity, IEquatable<IIdentity>
+    public class Identity : IIdentity, IEquatable<IIdentity>
     {
-        public InternalIdentity(long id)
+        public Identity(long id)
         {
             Id = id;
         }
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Internal
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((InternalIdentity) obj);
+            return Equals((Identity) obj);
         }
 
         public override int GetHashCode()
@@ -143,9 +143,9 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    public class InternalSegment : ISegment
+    public class Segment : ISegment
     {
-        public InternalSegment(INode start, IRelationship rel, INode end)
+        public Segment(INode start, IRelationship rel, INode end)
         {
             Start = start;
             Relationship = rel;
@@ -157,11 +157,11 @@ namespace Neo4j.Driver.Internal
         public IRelationship Relationship { get; }
     }
 
-    public class InternalPath : IPath
+    public class Path : IPath
     {
         private readonly IReadOnlyList<ISegment> _segments;
 
-        public InternalPath(IReadOnlyList<ISegment> segments, IReadOnlyList<INode> nodes,
+        public Path(IReadOnlyList<ISegment> segments, IReadOnlyList<INode> nodes,
             IReadOnlyList<IRelationship> relationships)
         {
             _segments = segments;

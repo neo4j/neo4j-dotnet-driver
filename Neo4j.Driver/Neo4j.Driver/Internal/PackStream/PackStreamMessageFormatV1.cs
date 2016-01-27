@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal;
 using Sockets.Plugin.Abstractions;
 using static Neo4j.Driver.Exceptions.Throw.ArgumentException;
 using static Neo4j.Driver.PackStream;
+using Path = Neo4j.Driver.Internal.Path;
 
 namespace Neo4j.Driver
 {
@@ -131,7 +132,7 @@ namespace Neo4j.Driver
                 }
 
                 // List of unique relationships, without start/end information
-                var uniqRels = new InternalRelationship[(int)_unpacker.UnpackListHeader()];
+                var uniqRels = new Relationship[(int)_unpacker.UnpackListHeader()];
                 for (int i = 0; i < uniqRels.Length; i++)
                 {
                     IfNotEqual( UnboundRelationshipFields, _unpacker.UnpackStructHeader(), nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
@@ -139,7 +140,7 @@ namespace Neo4j.Driver
                     var urn = _unpacker.UnpackLong();
                     var relType = _unpacker.UnpackString();
                     var props = UnpackMap();
-                    uniqRels[i]=new InternalRelationship(new InternalIdentity(urn), null, null, relType, props);
+                    uniqRels[i]=new Relationship(new Identity(urn), null, null, relType, props);
                 }
 
                 // Path sequence
@@ -152,7 +153,7 @@ namespace Neo4j.Driver
 
                 var prevNode = uniqNodes[0];
                 INode nextNode; // Start node is always 0, and isn't encoded in the sequence
-                InternalRelationship rel;
+                Relationship rel;
                 nodes[0] = prevNode;
                 for (int i = 0; i < segments.Length; i++)
                 {
@@ -172,10 +173,10 @@ namespace Neo4j.Driver
 
                     nodes[i + 1] = nextNode;
                     rels[i] = rel;
-                    segments[i] = new InternalSegment(prevNode, rel, nextNode);
+                    segments[i] = new Segment(prevNode, rel, nextNode);
                     prevNode = nextNode;
                 }
-                return new InternalPath(segments.ToList(), nodes.ToList(),rels.ToList());
+                return new Path(segments.ToList(), nodes.ToList(),rels.ToList());
             }
 
             private IRelationship UnpackRelationship()
@@ -186,7 +187,7 @@ namespace Neo4j.Driver
                 var relType = _unpacker.UnpackString();
                 var props = UnpackMap();
 
-                return new InternalRelationship(urn, startUrn, endUrn, relType, props);
+                return new Relationship(urn, startUrn, endUrn, relType, props);
             }
 
             private INode UnpackNode()
@@ -207,7 +208,7 @@ namespace Neo4j.Driver
                     props.Add(key, UnpackValue());
                 }
 
-                return new InternalNode(urn, labels, props);
+                return new Node(urn, labels, props);
             }
 
             private void UnpackIgnoredMessage(IMessageResponseHandler responseHandler)

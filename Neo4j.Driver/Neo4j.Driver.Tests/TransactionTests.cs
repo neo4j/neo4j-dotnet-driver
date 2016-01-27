@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class InternalTransactionTests
+    public class TransactionTests
     {
         public class Constructor
         {
@@ -19,7 +19,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldRunBeginAndDiscardAll()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new InternalTransaction(mockConn.Object);
+                var tx = new Transaction(mockConn.Object);
 
                 mockConn.Verify(x=>x.Run(null, "BEGIN", null), Times.Once);
                 mockConn.Verify(x=>x.DiscardAll(), Times.Once);
@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldRunPullAllSync()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new InternalTransaction(mockConn.Object);
+                var tx = new Transaction(mockConn.Object);
 
                 tx.Run("lalala");
 
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldThrowExceptionIfPreviousTxFailed()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new InternalTransaction(mockConn.Object);
+                var tx = new Transaction(mockConn.Object);
 
                 try
                 {
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldThrowExceptionIfFailedToRunAndFetchResult()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new InternalTransaction(mockConn.Object);
+                var tx = new Transaction(mockConn.Object);
                    
                 mockConn.Setup(x => x.Run(It.IsAny<ResultBuilder>(), It.IsAny<string>(), null))
                         .Throws<Neo4jException>();
@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCommitOnSuccess()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new InternalTransaction(mockConn.Object);
+                var tx = new Transaction(mockConn.Object);
 
                 mockConn.ResetCalls();
                 tx.Success();
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldRollbackOnFailure()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new InternalTransaction(mockConn.Object);
+                var tx = new Transaction(mockConn.Object);
 
                 mockConn.ResetCalls();
                 tx.Success();
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldRollbackOnNoExplicitSuccess()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new InternalTransaction(mockConn.Object);
+                var tx = new Transaction(mockConn.Object);
 
                 mockConn.ResetCalls();
                 // Even if success is called, but if failure is called afterwards, then we rollback

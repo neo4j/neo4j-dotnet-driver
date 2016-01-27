@@ -691,20 +691,20 @@ namespace Neo4j.Driver.Tests
 
                     private static class TestNodes
                     {
-                        public static INode Alice = new InternalNode(1001L,
+                        public static INode Alice = new Node(1001L,
                             new List<string> {"Person", "Employee"},
                             new Dictionary<string, object> {{"name", "Alice"}, {"age", 33l}});
 
-                        public static INode Bob = new InternalNode(1002L,
+                        public static INode Bob = new Node(1002L,
                             new List<string> {"Person", "Employee"},
                             new Dictionary<string, object> {{"name", "Bob"}, {"age", 44l}});
 
-                        public static INode Carol = new InternalNode(
+                        public static INode Carol = new Node(
                             1003L,
                             new List<string> {"Person"},
                             new Dictionary<string, object> {{"name", "Carol"}});
 
-                        public static INode Dave = new InternalNode(
+                        public static INode Dave = new Node(
                             1004L,
                             new List<string>(),
                             new Dictionary<string, object> {{"name", "Dave"}});
@@ -725,27 +725,27 @@ namespace Neo4j.Driver.Tests
 
                         // IRelationships
                         public static IRelationship AliceKnowsBob =
-                            new InternalRelationship(new InternalIdentity(12L), TestNodes.Alice.Identity,
+                            new Relationship(new Identity(12L), TestNodes.Alice.Identity,
                                 TestNodes.Bob.Identity, KNOWS,
                                 new Dictionary<string, object> {{"since", 1999L}});
 
                         public static IRelationship AliceLikesCarol =
-                            new InternalRelationship(new InternalIdentity(13L), TestNodes.Alice.Identity,
+                            new Relationship(new Identity(13L), TestNodes.Alice.Identity,
                                 TestNodes.Carol.Identity, LIKES,
                                 new Dictionary<string, object>());
 
                         public static IRelationship CarolDislikesBob =
-                            new InternalRelationship(new InternalIdentity(32L), TestNodes.Carol.Identity,
+                            new Relationship(new Identity(32L), TestNodes.Carol.Identity,
                                 TestNodes.Bob.Identity, DISLIKES,
                                 new Dictionary<string, object>());
 
                         public static IRelationship CarolMarriedToDave =
-                            new InternalRelationship(new InternalIdentity(34L), TestNodes.Carol.Identity,
+                            new Relationship(new Identity(34L), TestNodes.Carol.Identity,
                                 TestNodes.Dave.Identity, MARRIED_TO,
                                 new Dictionary<string, object>());
 
                         public static IRelationship DaveWorksForDave =
-                            new InternalRelationship(new InternalIdentity(44L), TestNodes.Dave.Identity,
+                            new Relationship(new Identity(44L), TestNodes.Dave.Identity,
                                 TestNodes.Dave.Identity, WORKS_FOR,
                                 new Dictionary<string, object>());
                     }

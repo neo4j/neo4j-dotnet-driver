@@ -36,7 +36,6 @@ namespace Neo4j.Driver
     /// </summary>
     public interface ISession : IStatementRunner
     {
-        // TODO
         ITransaction BeginTransaction();
     }
 

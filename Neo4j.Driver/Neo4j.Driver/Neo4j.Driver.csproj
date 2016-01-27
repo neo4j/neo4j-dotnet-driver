@@ -38,12 +38,13 @@
     <Compile Include="Exceptions\Neo4jException.cs" />
     <Compile Include="Exceptions\Throw.cs" />
     <Compile Include="Extensions\Extensions.cs" />
+    <Compile Include="INotification.cs" />
     <Compile Include="Internal\Connector\IInputStream.cs" />
     <Compile Include="Internal\Connector\IOutputStream.cs" />
     <Compile Include="Internal\Connector\ISocketClient.cs" />
     <Compile Include="IEntity.cs" />
-    <Compile Include="Internal\InternalNode.cs" />
-    <Compile Include="Internal\InternalTransaction.cs" />
+    <Compile Include="Internal\Node.cs" />
+    <Compile Include="Internal\Transaction.cs" />
     <Compile Include="Internal\Messaging\DiscardAllMessage.cs" />
     <Compile Include="Internal\Messaging\ResetMessage.cs" />
     <Compile Include="Internal\Packstream\PackStream.cs" />
@@ -63,17 +64,23 @@
     <Compile Include="Internal\Connector\IConnection.cs" />
     <Compile Include="Driver.cs" />
     <Compile Include="GraphDatabase.cs" />
-    <Compile Include="Internal\InternalSession.cs" />
+    <Compile Include="Internal\Session.cs" />
     <Compile Include="Internal\Messaging\RunMessage.cs" />
     <Compile Include="Internal\Result\ResultBuilder.cs" />
     <Compile Include="Internal\Connector\SocketConnection.cs" />
+    <Compile Include="Internal\Result\SummaryBuilder.cs" />
+    <Compile Include="IPlan.cs" />
+    <Compile Include="IProfiledPlan.cs" />
     <Compile Include="IResultCursor.cs" />
     <Compile Include="IResultRecordAccessor.cs" />
+    <Compile Include="IResultSummary.cs" />
     <Compile Include="PeekingEnumerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Record.cs" />
     <Compile Include="ResultCursor.cs" />
     <Compile Include="ISession.cs" />
+    <Compile Include="Statement.cs" />
+    <Compile Include="IUpdateStatistics.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Sockets.Plugin, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">

@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests
                 records.Add(new Record(keys.ToArray(), values.ToArray()));
             }
             
-            return new ResultCursor(records, keys.ToArray());
+            return new ResultCursor(keys.ToArray(), records);
         }
     }
     public class ResultCursorTests
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfRecordsIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new ResultCursor((IEnumerable<Record>)null, new string[] {"test"}));
+                var ex = Xunit.Record.Exception(() => new ResultCursor(new string[] {"test"}, (IEnumerable<Record>)null));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfKeysIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new ResultCursor(new List<Record>(), null));
+                var ex = Xunit.Record.Exception(() => new ResultCursor(null, new List<Record>()));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetKeysProperlyIfKeysNotNull()
             {
-                var result = new ResultCursor(new List<Record>(), new string[] {"test"});
+                var result = new ResultCursor(new string[] {"test"}, new List<Record>());
                 result.Keys.Should().HaveCount(1);
                 result.Keys.Should().Contain("test");
             }
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldGetEnumeratorFromRecords()
             {
                 Mock<IEnumerable<Record>> mock = new Mock<IEnumerable<Record>>();
-                var cursor = new ResultCursor(mock.Object, new string[] {"test"});
+                var cursor = new ResultCursor(new string[] {"test"}, mock.Object);
 
                 mock.Verify(x => x.GetEnumerator(), Times.Once);
             }
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tests
             {
                 Mock<IPeekingEnumerator<Record>> mock = new Mock<IPeekingEnumerator<Record>>();
 
-                var cursor = new ResultCursor(mock.Object, new string[] { "test" });
+                var cursor = new ResultCursor(new string[] { "test" }, mock.Object);
                 cursor.Close();
                 mock.Verify(x => x.Discard(), Times.Once);
             }
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Tests
             {
                 Mock<IPeekingEnumerator<Record>> mock = new Mock<IPeekingEnumerator<Record>>();
                 mock.Setup(x => x.HasNext()).Returns(true);
-                var cursor = new ResultCursor(mock.Object, new string[] { "test" });
+                var cursor = new ResultCursor(new string[] { "test" }, mock.Object);
 
                 cursor.Next().Should().BeTrue();
                 mock.Verify(x => x.HasNext(), Times.Once);
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Tests
             {
                 Mock<IPeekingEnumerator<Record>> mock = new Mock<IPeekingEnumerator<Record>>();
                 mock.Setup(x => x.HasNext()).Returns(false);
-                var cursor = new ResultCursor(mock.Object, new string[] { "test" });
+                var cursor = new ResultCursor(new string[] { "test" }, mock.Object);
 
                 cursor.Next().Should().BeFalse();
                 mock.Verify(x => x.HasNext(), Times.Once);
