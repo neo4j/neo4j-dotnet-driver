@@ -186,6 +186,9 @@ namespace Neo4j.Driver.Internal.result
 
     }
 
+    /// <summary>
+    /// This is a notifcation
+    /// </summary>
     public class Notification : INotification
     {
         public string Code { get; }

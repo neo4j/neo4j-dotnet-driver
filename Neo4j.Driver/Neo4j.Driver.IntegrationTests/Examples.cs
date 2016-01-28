@@ -7,12 +7,14 @@ using System.Threading;
 using Neo4j.Driver;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
+using Neo4j.Driver.IntegrationTests;
 //end::minimal-example-import[]
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Examples
 {
+    [Collection(IntegrationCollection.CollectionName)]
     public class Examples
     {
         private readonly ITestOutputHelper output;

@@ -24,6 +24,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
+    [Collection(IntegrationCollection.CollectionName)]
     public class ConnectionIT
     {
 
