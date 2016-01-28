@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// The base class for Node and Relationship
+    /// </summary>
     public interface IEntity
     {
         IIdentity Identity { get; }
