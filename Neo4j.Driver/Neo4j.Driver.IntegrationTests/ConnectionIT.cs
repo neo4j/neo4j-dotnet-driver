@@ -27,18 +27,22 @@ namespace Neo4j.Driver.IntegrationTests
     [Collection(IntegrationCollection.CollectionName)]
     public class ConnectionIT
     {
+        private int Port { get; set; }
+        private string ServerEndPoint => $"bolt://localhost:{Port}";
+
 
         private readonly ITestOutputHelper output;
 
-        public ConnectionIT(ITestOutputHelper output)
+        public ConnectionIT(ITestOutputHelper output, IntegrationTestFixture fixture)
         {
             this.output = output;
+            Port = fixture.Port;
         }
 
         [Fact]
         public void ShouldDoHandShake()
         {
-            using (var driver = GraphDatabase.Driver("http://localhost:7687"))
+            using (var driver = GraphDatabase.Driver(ServerEndPoint))
             {
                 using (var session = driver.Session())
                 {

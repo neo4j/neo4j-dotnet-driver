@@ -14,10 +14,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
@@ -25,8 +23,10 @@ namespace Neo4j.Driver.IntegrationTests
     public class IntegrationTestFixture : IDisposable
     {
         private readonly Neo4jInstaller _installer = new Neo4jInstaller();
+        public int Port { get; private set; }
         public IntegrationTestFixture()
         {
+            Port = 7687;
             _installer.DownloadNeo4j().Wait();
             try
             {
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests
                 throw;
             }
         }
-        
+
         public void Dispose()
         {
             try
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public static float BytesToMegabytes(this long bytes)
         {
-            return (bytes / 1024f) / 1024f;
+            return bytes/1024f/1024f;
         }
     }
 }
