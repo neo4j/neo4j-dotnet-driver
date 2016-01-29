@@ -32,6 +32,7 @@ namespace Neo4j.Driver.Tests
 
         public SocketClientTestHarness(Uri uri, Config config = null)
         {
+            if (config == null) config = Config.DefaultConfig;
             MockTcpSocketClient = new Mock<ITcpSocketClient>();
             MockWriteStream = TestHelper.TcpSocketClientSetup.CreateWriteStreamMock(MockTcpSocketClient);
             Client = new SocketClient(uri, config, MockTcpSocketClient.Object);

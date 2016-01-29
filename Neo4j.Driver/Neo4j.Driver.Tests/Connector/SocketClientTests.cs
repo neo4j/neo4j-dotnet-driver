@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
         public class StartMethod
         {
             [Fact]
-            public async Task ShouldConnectToTheServer()
+            public async Task ShouldConnectWithoutTlsToTheServer()
             {
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {

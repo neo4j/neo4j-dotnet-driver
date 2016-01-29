@@ -199,7 +199,7 @@ namespace Neo4j.Driver.Internal.result
 
         private static int StatsValue(IDictionary<string, object> stats, string name)
         {
-            return stats.GetValue(name, 0);
+            return (int)stats.GetValue(name, 0L);
         }
 
         private static StatementType FromCode(string type)

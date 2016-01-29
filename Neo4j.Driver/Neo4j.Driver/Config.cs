@@ -19,15 +19,52 @@ namespace Neo4j.Driver
     /// <summary>
     /// Use this class to config the <see cref="Driver"/> in a certain way
     /// </summary>
-    public class Config
+    public class Config 
     {
+        private Config() { }
+
+        static Config()
+        {
+            DefaultConfig = new Config { TlsEnabled = false };
+        }
+
         /// <summary>
         /// Returns the default configuration for the <see cref="Driver"/>
         /// </summary>
-        /// <returns>The default configuration for the <see cref="Driver"/></returns>
-        public static Config DefaultConfig()
+        /// <value>The default configuration for the
+        ///   <see cref="Driver"/></value>
+        public static Config DefaultConfig { get; }
+
+        public static IConfigBuilder Builder => new ConfigBuilder(new Config());
+
+        public bool TlsEnabled { get; private set; }
+
+        private class ConfigBuilder : IConfigBuilder
         {
-            return null;
+            private Config _config;
+
+            internal ConfigBuilder(Config config)
+            {
+                _config = config;
+            }
+
+            public IConfigBuilder WithTlsEnabled(bool enableTls)
+            {
+                _config.TlsEnabled = enableTls;
+                return this;
+            }
+
+            public Config ToConfig()
+            {
+                return _config;
+            }
         }
     }
+    public interface IConfigBuilder
+    {
+        Config ToConfig();
+        IConfigBuilder WithTlsEnabled(bool enableTls);
+    }
+
+  
 }

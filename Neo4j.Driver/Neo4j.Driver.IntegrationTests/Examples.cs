@@ -41,19 +41,17 @@ namespace Examples
         public void MinimalExample()
         {
             //tag::minimal-example[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687");
-            var session = driver.Session();
-
-            session.Run("CREATE (neo:Person {name:'Neo', age:23})");
-
-            var result = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
-            while (result.Next())
+            using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
+            using (var session = driver.Session())
             {
-                output.WriteLine($"Neo is {result.Value("p.age")} years old.");
-            }
+                session.Run("CREATE (neo:Person {name:'Neo', age:23})");
 
-            session.Dispose();
-            driver.Dispose();
+                var result = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
+                while (result.Next())
+                {
+                    output.WriteLine($"Neo is {result.Value("p.age")} years old.");
+                }
+            }
             //end::minimal-example[]
         }
 
@@ -70,7 +68,7 @@ namespace Examples
         public void Configuration()
         {
             //tag::configuration[]
-            var driver = GraphDatabase.Driver("bolt:localhost:7687", Config.DefaultConfig());
+            var driver = GraphDatabase.Driver("bolt:localhost:7687", Config.DefaultConfig);
             //end::configuration[]
             driver.Dispose();
         }
@@ -84,8 +82,8 @@ namespace Examples
             //tag::statement[]
             var result = session.Run("CREATE (p:Person { name: {name} })",
                 new Dictionary<string, object> {{"name", "The One"}});
-            //var theOnesCreated = result.Summarize().UpdateStatistics.NodesCreated;
-            //output.WriteLine($"There were {theOnesCreated} the ones created.");
+            var theOnesCreated = result.Summarize().UpdateStatistics.NodesCreated;
+            output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement[]
             driver.Dispose();
         }
@@ -98,8 +96,8 @@ namespace Examples
 
             //tag::statement-without-parameters[]
             var result = session.Run("CREATE (p:Person { name: 'The One' })");
-            //var theOnesCreated = result.Summarize().UpdateStatistics.NodesCreated;
-            //output.WriteLine($"There were {theOnesCreated} the ones created.");
+            var theOnesCreated = result.Summarize().UpdateStatistics.NodesCreated;
+            output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement-without-parameters[]
             driver.Dispose();
         }
@@ -174,7 +172,6 @@ namespace Examples
             {
                 foreach (var keyValuePair in record.Values)
                 {
-                    // do more things on the record??
                     output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");
                 }
             }
@@ -230,7 +227,7 @@ namespace Examples
             using (ITransaction tx = session.BeginTransaction())
             {
                 tx.Run("CREATE (p:Person { name: 'The One' })");
-                tx.Failure();
+                // optional to explicitly call tx.Failure();
             }
             //end::transaction-rollback[]
 
@@ -274,6 +271,25 @@ namespace Examples
             driver.Dispose();
         }
 
+        [Fact(Skip = "Requires server certificate to be installed on host system.")]
+        public void TlsRequireEncryption()
+        {
+            //tag::tls-require-encryption[]
+            // .Net driver by default use tls-signed
+            var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithTlsEnabled(true).ToConfig());
+            //end::tls-require-encryption[]
+            driver.Dispose();
+        }
+
+        [Fact(Skip = "Requires server certificate to be installed on host system.")]
+        public void TlsSigned()
+        {
+            //tag::tls-signed[]
+            var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithTlsEnabled(true).ToConfig());
+            //end::tls-signed[]
+            driver.Dispose();
+        }
+
         private void ClearDatabase()
         {
             Driver driver = GraphDatabase.Driver("bolt://localhost:7687");
@@ -286,10 +302,9 @@ namespace Examples
             driver.Dispose();
         }
 
-        /*
-        # tag::tls-require-encryption[]
-        # tag::tls-trust-on-first-use[]
-        # tag::tls-signed[]
-        */
+        //tag::tls-trust-on-first-use[]
+        // Not supported in .Net driver
+        //end::tls-trust-on-first-use[]
+
     }
 }

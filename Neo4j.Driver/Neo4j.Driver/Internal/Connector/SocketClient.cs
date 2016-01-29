@@ -16,7 +16,6 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Sockets.Plugin;
 using Sockets.Plugin.Abstractions;
@@ -42,7 +41,7 @@ namespace Neo4j.Driver
 
         public async Task Start()
         {
-            await _tcpSocketClient.ConnectAsync(_url.Host, _url.Port).ConfigureAwait(false);
+            await _tcpSocketClient.ConnectAsync(_url.Host, _url.Port, _config.TlsEnabled).ConfigureAwait(false);
             IsOpen = true;
 
             var version = await DoHandshake().ConfigureAwait(false);

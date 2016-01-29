@@ -34,7 +34,7 @@ namespace Neo4j.Driver
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c></exception>
         public static Driver Driver(Uri uri, Config config = null)
         {
-            return new Driver(uri, config ?? Config.DefaultConfig());
+            return new Driver(uri, config ?? Config.DefaultConfig);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Neo4j.Driver
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c></exception>
         public static Driver Driver(string uri, Config config = null)
         {
-            return Driver(new Uri(uri), config ?? Config.DefaultConfig());
+            return Driver(new Uri(uri), config ?? Config.DefaultConfig);
         }
     }
 }

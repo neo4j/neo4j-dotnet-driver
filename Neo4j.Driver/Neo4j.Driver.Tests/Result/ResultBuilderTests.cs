@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests.Result
             {
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"type", "r" }, {"stats", new Dictionary<string, object> { {"nodes-created", 10}, {"nodes-deleted", 5} } } };
+                { {"type", "r" }, {"stats", new Dictionary<string, object> { {"nodes-created", 10L}, {"nodes-deleted", 5L} } } };
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
