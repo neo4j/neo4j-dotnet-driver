@@ -14,17 +14,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-using System;
-using System.Linq;
-using System.Runtime.Remoting.Metadata.W3cXsd2001;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    using System.Diagnostics.Contracts;
 
     [Collection(IntegrationCollection.CollectionName)]
     public class ConnectionIT
