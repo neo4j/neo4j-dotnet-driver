@@ -117,10 +117,13 @@ namespace Neo4j.Driver.IntegrationTests
             var moduleLocation = Path.Combine(extractedLocation, "bin\\Neo4j-Management\\Neo4j-Management.psm1");
 
             InitialSessionState initial = InitialSessionState.CreateDefault();
+#if ! BUILDSERVER
             initial.ExecutionPolicy = ExecutionPolicy.RemoteSigned;
+#endif
             initial.ImportPSModule(new[] { moduleLocation });
             _runspace = RunspaceFactory.CreateRunspace(initial);
             _runspace.Open();
+
         }
 
         private static void ExtractZip(string filename)

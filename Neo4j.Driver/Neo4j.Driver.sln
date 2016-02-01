@@ -9,6 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Tests", "Neo4j
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.IntegrationTests", "Neo4j.Driver.IntegrationTests\Neo4j.Driver.IntegrationTests.csproj", "{02F68DF2-0047-4B04-93B6-521BD12B5D45}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{622A94AD-BC4D-4162-AE43-A5CA055F24FC}"
+	ProjectSection(SolutionItems) = preProject
+		Neo4j.Driver.nuspec = Neo4j.Driver.nuspec
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
