@@ -47,5 +47,6 @@ namespace Neo4j.Driver.Extensions
             var output = enumerable.Select(item => $"{item}");
             return $"[{string.Join(", ", output)}]";
         }
+
     }
 }

@@ -28,6 +28,8 @@ namespace Neo4j.Driver.Tests
 {
     public class SocketConnectionTests
     {
+        private static ILogger Logger {  get { return new Mock<ILogger>().Object; } }
+
         public class Construction
         {
             [Fact]
@@ -35,7 +37,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockClient = new Mock<ISocketClient>();
                 // ReSharper disable once ObjectCreationAsStatement
-                new SocketConnection(mockClient.Object);
+                new SocketConnection(mockClient.Object, Logger);
 
                 mockClient.Verify(c=>c.Start(), Times.Once);
             }
@@ -44,7 +46,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldEnqueuesInitMessage()
             {
                 var mockClient = new Mock<ISocketClient>();
-                var socketConnection = new SocketConnection(mockClient.Object);
+                var socketConnection = new SocketConnection(mockClient.Object, Logger);
 
                 //socketConnection.Init("testclient");
                 socketConnection.Messages.Should().HaveCount(1);
@@ -55,7 +57,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
             {
-                var exception = Xunit.Record.Exception(() => new SocketConnection(null));
+                var exception = Xunit.Record.Exception(() => new SocketConnection(null, Logger));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -67,7 +69,7 @@ namespace Neo4j.Driver.Tests
             public void StopsTheClient()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object);
+                var con = new SocketConnection(mock.Object, Logger);
 
                 con.Dispose();
                 mock.Verify(c => c.Stop(), Times.Once);
@@ -80,22 +82,22 @@ namespace Neo4j.Driver.Tests
             public void DoesNothing_IfMessagesEmpty()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object);
+                var con = new SocketConnection(mock.Object, Logger);
 
                 con.Sync();
                 mock.Reset();
                 con.Sync();
-                mock.Verify(c => c.Send( It.IsAny<IEnumerable<IMessage>>(), It.IsAny<IMessageResponseHandler>()), Times.Never);
+                mock.Verify(c => c.Send( It.IsAny<IEnumerable<IRequestMessage>>(), It.IsAny<IMessageResponseHandler>()), Times.Never);
             }
 
             [Fact]
             public void SendsMessageAndClearsQueue_WhenMessageOnQueue()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object);
+                var con = new SocketConnection(mock.Object, Logger);
 
                 con.Sync();
-                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IMessage>>(), It.IsAny<IMessageResponseHandler>()), Times.Once);
+                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>(), It.IsAny<IMessageResponseHandler>()), Times.Once);
                 con.Messages.Count.Should().Be(0);
             }
         }
@@ -107,7 +109,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = MockSocketClient;
-                var con = new SocketConnection(mock.Object);
+                var con = new SocketConnection(mock.Object, Logger);
 
                 // When
                 con.Run(new ResultBuilder(), "a statement");
@@ -123,7 +125,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, mockResponseHandler.Object);
+                var con = new SocketConnection(mock.Object, Logger, mockResponseHandler.Object);
 
                 var rb = new ResultBuilder();
                 con.Run(rb, "statement");
@@ -142,7 +144,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object);
+                var con = new SocketConnection(mock.Object, Logger);
 
                 // When
                 con.PullAll(new ResultBuilder());
@@ -157,7 +159,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, mockResponseHandler.Object);
+                var con = new SocketConnection(mock.Object, Logger, mockResponseHandler.Object);
 
                 var rb = new ResultBuilder();
                 con.PullAll(rb);

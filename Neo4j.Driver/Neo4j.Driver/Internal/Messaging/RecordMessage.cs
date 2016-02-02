@@ -6,16 +6,18 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    class ResetMessage:IRequestMessage
+    class RecordMessage : IMessage
     {
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
+        private dynamic[] fields;
+
+        public RecordMessage(dynamic[] fields)
         {
-            messageRequestHandler.HandleResetMessage();
+            this.fields = fields;
         }
 
         public override string ToString()
         {
-            return "RESET";
+            return $"RECORD {fields.ValueToString()}";
         }
     }
 }

@@ -29,24 +29,24 @@ namespace Neo4j.Driver
         private readonly ISocketClient _client;
         private readonly IMessageResponseHandler _messageHandler;
 
-        private readonly Queue<IMessage> _messages = new Queue<IMessage>();
-        internal IReadOnlyList<IMessage> Messages => _messages.ToList();
+        private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
+        internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
-        public SocketConnection(ISocketClient socketClient, IMessageResponseHandler messageResponseHandler = null)
+        public SocketConnection(ISocketClient socketClient, ILogger logger, IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
-            _messageHandler = messageResponseHandler ?? new MessageResponseHandler();
+            _messageHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
 
             _client = socketClient;
             var t = _client.Start();
             t.Wait();
 
-            // add init message by default
+            // add init requestMessage by default
             Enqueue(new InitMessage("dotNet-driver/1.0.0"));
         }
 
         public SocketConnection(Uri url, Config config)
-            : this(new SocketClient(url, config))
+            : this(new SocketClient(url, config), config?.Logger)
         {
         }
 
@@ -108,10 +108,10 @@ namespace Neo4j.Driver
             _messages.Clear();
         }
 
-        private void Enqueue(IMessage message, ResultBuilder resultBuilder = null)
+        private void Enqueue(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
         {
-            _messages.Enqueue(message);
-            _messageHandler.Register(message, resultBuilder);
+            _messages.Enqueue(requestMessage);
+            _messageHandler.Register(requestMessage, resultBuilder);
         }
     }
 }

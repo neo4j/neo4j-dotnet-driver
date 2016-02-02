@@ -654,7 +654,7 @@ namespace Neo4j.Driver
 
     public interface IWriter
     {
-        void Write(IMessage message);
+        void Write(IRequestMessage requestMessage);
         void Flush();
     }
 

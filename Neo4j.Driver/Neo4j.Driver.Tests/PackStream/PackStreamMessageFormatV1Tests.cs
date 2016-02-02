@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 writer.Write(new InitMessage("a"));
                 writer.Flush();
 
@@ -84,7 +84,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 writer.Write(new RunMessage("RETURN 1 AS num"));
                 writer.Flush();
                 mocks.VerifyWrite(
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"integer", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -186,7 +186,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -218,7 +218,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -268,7 +268,7 @@ namespace Neo4j.Driver.Tests
                 var mocks = new Mocks();
 
                 var writer =
-                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter()).Writer;
+                    new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
                 var values = new Dictionary<string, object> {{"value", value}};
 
                 writer.Write(new RunMessage("", values));
@@ -292,7 +292,7 @@ namespace Neo4j.Driver.Tests
                         //new byte[]{ 0x00, 0x03, 0xb1, 0x70,0xa0, 0x00, 0x00 });
 
                     var reader =
-                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                             .Reader;
                     reader.Read(new Mock<IMessageResponseHandler>().Object);
                     mockTcpSocketClient.Object.ReadStream.Position.Should().Be(7);
@@ -354,7 +354,7 @@ namespace Neo4j.Driver.Tests
                     TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes.ToArray());
 
                     PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                             .Reader;
                     var real = reader.UnpackValue();
                     Assert.Equal(expected, real);
@@ -370,7 +370,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var real = reader.UnpackValue();
                         IRelationship rel = real as IRelationship;
@@ -391,7 +391,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var node = reader.UnpackValue();
                         INode n = node as INode;
@@ -410,7 +410,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -436,7 +436,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -462,7 +462,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -490,7 +490,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -523,7 +523,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -567,7 +567,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -613,7 +613,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -659,7 +659,7 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter())
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;

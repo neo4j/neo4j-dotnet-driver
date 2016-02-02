@@ -42,7 +42,9 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void ShouldDoHandShake()
         {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint))
+            using (var driver = GraphDatabase.Driver(
+                ServerEndPoint, 
+                Config.Builder.WithLogger( new DebugLogger {Level = LogLevel.Trace}).ToConfig()))
             {
                 using (var session = driver.Session())
                 {

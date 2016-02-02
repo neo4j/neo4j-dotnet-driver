@@ -37,7 +37,7 @@ namespace Neo4j.Driver
         void HandleIgnoredMessage();
         void HandleRecordMessage(dynamic[] fields);
 
-        void Register(IMessage message, ResultBuilder resultBuilder = null);
+        void Register(IRequestMessage requestMessage, ResultBuilder resultBuilder = null);
         bool QueueIsEmpty();
         bool HasError { get; }
         Neo4jException Error { get; }

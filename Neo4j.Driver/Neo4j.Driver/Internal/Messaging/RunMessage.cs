@@ -15,10 +15,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System.Collections.Generic;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
 {
-    internal class RunMessage : IMessage
+    internal class RunMessage : IRequestMessage
     {
         private readonly string _statement;
         private readonly IDictionary<string, object> _statementParameters;
@@ -32,6 +33,11 @@ namespace Neo4j.Driver
         public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {
             messageRequestHandler.HandleRunMessage( _statement, _statementParameters );
+        }
+
+        public override string ToString()
+        {
+            return $"RUN `{_statement}` {_statementParameters.ValueToString()}";
         }
     }
 }

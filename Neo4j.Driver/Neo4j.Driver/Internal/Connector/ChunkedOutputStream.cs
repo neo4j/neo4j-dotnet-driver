@@ -30,11 +30,13 @@ namespace Neo4j.Driver
         private int _chunkLength = 0;
         private int _chunkHeaderPosition = 0;
         private bool _isInChunk = false;
+        private readonly ILogger _logger;
 
-        public ChunkedOutputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
+        public ChunkedOutputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger)
         {
             _tcpSocketClient = tcpSocketClient;
             _bitConverter = bitConverter;
+            _logger = logger;
         }
 
         public IOutputStream Write(byte b, params byte[] bytes)
@@ -73,6 +75,7 @@ namespace Neo4j.Driver
 
         public IOutputStream Flush()
         {
+            _logger?.Trace("C: ", _buffer, 0, _pos);
             var hex = ToHexString(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Write(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Flush();

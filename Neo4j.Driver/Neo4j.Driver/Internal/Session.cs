@@ -22,17 +22,18 @@ using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
 {
-    public class Session : ISession
+    public class Session : LoggerBase, ISession
     {
         private readonly IConnection _connection;
         private Transaction _transaction;
 
         public Session(Uri url, Config config, IConnection conn = null)
+            : base(config?.Logger)
         {
-            _connection = conn ?? new SocketConnection(url, config);
+            _connection = TryExecute(() => conn ?? new SocketConnection(url, config));
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
             {
@@ -51,6 +52,7 @@ namespace Neo4j.Driver
                 }
             }
             _connection.Dispose();
+            base.Dispose(isDisposing);
         }
 
         public void Dispose()
@@ -61,20 +63,26 @@ namespace Neo4j.Driver
 
         public ResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
         {
-            EnsureConnectionIsValid();
-            var resultBuilder = new ResultBuilder(statement, statementParameters);
-            _connection.Run(resultBuilder, statement, statementParameters);
-            _connection.PullAll(resultBuilder);
-            _connection.Sync();
+            return TryExecute(() =>
+            {
+                EnsureConnectionIsValid();
+                var resultBuilder = new ResultBuilder(statement, statementParameters);
+                _connection.Run(resultBuilder, statement, statementParameters);
+                _connection.PullAll(resultBuilder);
+                _connection.Sync();
 
-            return resultBuilder.Build();
+                return resultBuilder.Build();
+            });
         }
 
         public ITransaction BeginTransaction()
         {
-            EnsureConnectionIsValid();
-            _transaction = new Transaction(_connection);
-            return _transaction;
+            return TryExecute(() =>
+            {
+                EnsureConnectionIsValid();
+                _transaction = new Transaction(_connection);
+                return _transaction;
+            });
         }
 
         private void EnsureConnectionIsValid()

@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver
 {
     public static class ByteExtensions
     {
@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Tests
             return output;
         }
 
-        public static string ToHexString(this byte[] bytes, int start, int size = -1)
+        public static string ToHexString(this byte[] bytes, int start = 0, int size = -1, bool showX = false)
         {
             if (bytes == null)
                 return "NULL";
@@ -42,8 +42,12 @@ namespace Neo4j.Driver.Tests
 
             var destination = new byte[size];
             Array.Copy(bytes, start, destination, 0, size);
+            var output = BitConverter.ToString(destination);
 
-            return BitConverter.ToString(destination).Replace("-", " ");
+            if (showX)
+                return $"0x{output.Replace("-", ", 0x")}";
+                
+            return output.Replace("-", " ");
         }
 
         /// <summary>

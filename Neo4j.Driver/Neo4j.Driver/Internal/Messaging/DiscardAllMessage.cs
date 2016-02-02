@@ -6,11 +6,16 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    class DiscardAllMessage:IMessage
+    class DiscardAllMessage:IRequestMessage
     {
         public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {
             messageRequestHandler.HandleDiscardAllMessage();
+        }
+
+        public override string ToString()
+        {
+            return "DISCARDALL";
         }
     }
 }

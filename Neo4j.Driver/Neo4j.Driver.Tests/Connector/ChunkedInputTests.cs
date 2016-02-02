@@ -17,8 +17,11 @@
 using System.IO;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Extensions;
+using Neo4j.Driver.Internal;
 using Sockets.Plugin.Abstractions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Tests
 {
@@ -36,7 +39,7 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, response);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter());
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null);
                 var actual = chunkedInput.ReadSByte();
                 actual.Should().Be(correctValue); //, $"Got: {actual}, expected: {correctValue}");
             }
@@ -44,6 +47,13 @@ namespace Neo4j.Driver.Tests
 
         public class ReadBytesMethod
         {
+            private ITestOutputHelper _output;
+
+            public ReadBytesMethod(ITestOutputHelper output)
+            {
+                _output = output;
+            }
+
             [Theory]
             //-----------------------|---head1--|----|---head2---|-----------|--msg end--|
             [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02})]
@@ -52,12 +62,30 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter());
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null);
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes( actual );
                 actual.Should().Equal(correctValue);
             }
+            [Theory]
+            //-----------------------|---head1--|----|---head2---|-----------|--msg end--|
+            [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 })]
+            public void ShouldLogBytes(byte[] input, byte[] correctValue)
+            {
+                var clientMock = new Mock<ITcpSocketClient>();
+                var loggerMock = new Mock<ILogger>();
+                loggerMock.Setup(x => x.Trace(It.IsAny<string>(), It.IsAny<object[]>()))
+                    .Callback<string, object[]>((s, o) => _output.WriteLine(s +  ((byte[])o[0]).ToHexString(showX:true)));
+                TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), loggerMock.Object);
+                byte[] actual = new byte[3];
+                chunkedInput.ReadBytes(actual);
+                actual.Should().Equal(correctValue);
+                loggerMock.Verify(x => x.Trace("S: ", It.IsAny<byte[]>()), Times.Exactly(4));
+            }
         }
+
+      
     }
 }

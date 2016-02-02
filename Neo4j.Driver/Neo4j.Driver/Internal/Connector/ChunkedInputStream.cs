@@ -29,11 +29,13 @@ namespace Neo4j.Driver
         private readonly Queue<byte> _chunkBuffer = new Queue<byte>(ChunkSize); // TODO
         private readonly byte[] _headTailBuffer = new byte[2];
         private readonly ITcpSocketClient _tcpSocketClient;
+        private readonly ILogger _logger;
 
-        public ChunkedInputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
+        public ChunkedInputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger)
         {
             _tcpSocketClient = tcpSocketClient;
             _bitConverter = bitConverter;
+            _logger = logger;
         }
 
         public sbyte ReadSByte()
@@ -128,6 +130,8 @@ namespace Neo4j.Driver
                 //TODO: Convert to Neo4j Exception.
                 throw new InvalidOperationException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
             }
+
+            _logger?.Trace("S: ", buffer);
         }
 
         public void ReadMessageTail()

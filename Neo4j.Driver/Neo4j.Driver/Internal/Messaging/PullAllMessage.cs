@@ -22,11 +22,16 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.messaging
 {
-    class PullAllMessage : IMessage
+    class PullAllMessage : IRequestMessage
     {
         public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {
             messageRequestHandler.HandlePullAllMessage();
+        }
+
+        public override string ToString()
+        {
+            return "PULLALL";
         }
     }
 }

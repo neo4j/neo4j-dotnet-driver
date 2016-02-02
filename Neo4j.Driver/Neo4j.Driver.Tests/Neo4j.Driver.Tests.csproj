@@ -87,6 +87,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="Messaging\MessageTests.cs" />
     <Compile Include="Result\ResultBuilderTests.cs" />
     <Compile Include="SessionTests.cs" />
     <Compile Include="PackStream\PackStreamTests.cs" />
@@ -94,7 +95,6 @@
     <Compile Include="PackStream\PackerTests.cs" />
     <Compile Include="Result\PeekingEnumeratorTests.cs" />
     <Compile Include="Result\ResultCursorTests.cs" />
-    <Compile Include="TestUtil\ByteExtensions.cs" />
     <Compile Include="Connector\ChunkedInputTests.cs" />
     <Compile Include="PackStream\PackStreamMessageFormatV1Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

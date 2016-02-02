@@ -25,7 +25,7 @@ namespace Neo4j.Driver
 
         static Config()
         {
-            DefaultConfig = new Config { TlsEnabled = false };
+            DefaultConfig = new Config { TlsEnabled = false, Logger = new DebugLogger {Level = LogLevel.Info} };
         }
 
         /// <summary>
@@ -38,6 +38,8 @@ namespace Neo4j.Driver
         public static IConfigBuilder Builder => new ConfigBuilder(new Config());
 
         public bool TlsEnabled { get; private set; }
+
+        public ILogger Logger { get; private set; }
 
         private class ConfigBuilder : IConfigBuilder
         {
@@ -54,6 +56,12 @@ namespace Neo4j.Driver
                 return this;
             }
 
+            public IConfigBuilder WithLogger(ILogger logger)
+            {
+                _config.Logger = logger;
+                return this;
+            }
+
             public Config ToConfig()
             {
                 return _config;
@@ -64,6 +72,7 @@ namespace Neo4j.Driver
     {
         Config ToConfig();
         IConfigBuilder WithTlsEnabled(bool enableTls);
+        IConfigBuilder WithLogger(ILogger logger);
     }
 
   

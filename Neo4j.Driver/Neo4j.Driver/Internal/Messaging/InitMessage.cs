@@ -16,7 +16,7 @@
 //  limitations under the License.
 namespace Neo4j.Driver.Internal.messaging
 {
-    public class InitMessage : IMessage
+    public class InitMessage : IRequestMessage
     {
         public InitMessage(string clientNameAndVersion)
         {
@@ -27,6 +27,11 @@ namespace Neo4j.Driver.Internal.messaging
         public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {
             messageRequestHandler.HandleInitMessage( ClientNameAndVersion );
+        }
+
+        public override string ToString()
+        {
+            return $"INIT `{ClientNameAndVersion}`";
         }
     }
 }

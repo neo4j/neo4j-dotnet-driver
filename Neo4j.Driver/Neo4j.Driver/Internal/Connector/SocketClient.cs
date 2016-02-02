@@ -14,6 +14,7 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -22,15 +23,13 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
 {
-    public class SocketClient : ISocketClient, IDisposable
+    public class SocketClient :  ISocketClient, IDisposable
     {
         private readonly Config _config;
-        private readonly Uri _url;
-        private IWriter _writer;
-        private IReader _reader;
-
-        private static BigEndianTargetBitConverter BitConverter => new BigEndianTargetBitConverter();
         private readonly ITcpSocketClient _tcpSocketClient;
+        private readonly Uri _url;
+        private IReader _reader;
+        private IWriter _writer;
 
         public SocketClient(Uri url, Config config, ITcpSocketClient socketClient = null)
         {
@@ -39,20 +38,31 @@ namespace Neo4j.Driver
             _tcpSocketClient = socketClient ?? new TcpSocketClient();
         }
 
+        private static BigEndianTargetBitConverter BitConverter => new BigEndianTargetBitConverter();
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         public async Task Start()
         {
             await _tcpSocketClient.ConnectAsync(_url.Host, _url.Port, _config.TlsEnabled).ConfigureAwait(false);
             IsOpen = true;
+            _config.Logger?.Debug($"~~ [CONNECT] {_url}");
 
             var version = await DoHandshake().ConfigureAwait(false);
 
             if (version != 1)
+            {
                 throw new NotSupportedException("The Neo4j Server doesn't support this client.");
+            }
+           _config.Logger?.Debug("S: [HANDSHAKE] 1");
 
-            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, BitConverter);
+            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, BitConverter, _config.Logger);
             _writer = formatV1.Writer;
             _reader = formatV1.Reader;
-
         }
 
         public async Task Stop()
@@ -61,18 +71,19 @@ namespace Neo4j.Driver
             {
                 await _tcpSocketClient.DisconnectAsync().ConfigureAwait(false);
                 _tcpSocketClient.Dispose();
-                
             }
             IsOpen = false;
         }
 
-        public void Send(IEnumerable<IMessage> messages, IMessageResponseHandler responseHandler)
+        public void Send(IEnumerable<IRequestMessage> messages, IMessageResponseHandler responseHandler)
         {
             foreach (var message in messages)
             {
                 _writer.Write(message);
+                _config.Logger?.Debug("C: ", message);
+                //_config.Logger.Trace("C: ", )
             }
-            
+
             _writer.Flush();
 
             Receive(responseHandler);
@@ -101,8 +112,9 @@ namespace Neo4j.Driver
 
         private async Task<int> DoHandshake()
         {
+            _config.Logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
             int[] supportedVersion = {1, 0, 0, 0};
-
+            
             var data = PackVersions(supportedVersion);
             //            Logger.Log($"Sending Handshake... {string.Join(",", data)}");
             await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
@@ -143,12 +155,6 @@ namespace Neo4j.Driver
                 return;
 
             Stop().Wait();
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

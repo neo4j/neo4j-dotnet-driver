@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldSendMessagesAsExpected()
             {
                 // Given
-                var messages = new IMessage[] {new RunMessage("Run message 1"), new RunMessage("Run message 1")};
+                var messages = new IRequestMessage[] {new RunMessage("Run message 1"), new RunMessage("Run message 1")};
                 byte[] expectedBytes =
                 {
                     0x00, 0x11, 0xB2, 0x10, 0x8D, 0x52, 0x75, 0x6E, 0x20, 0x6D, 0x65, 0x73, 0x73,
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Tests
             {
                 using (var harness = new SocketClientTestHarness(FakeUri, null))
                 {
-                    var messages = new IMessage[] { new RunMessage("This will cause a syntax error") };
+                    var messages = new IRequestMessage[] { new RunMessage("This will cause a syntax error") };
                     var messageHandler = new MessageResponseHandler();
                     messageHandler.Register(new InitMessage("MyClient/1.0"));
                     messageHandler.Register(messages[0], new ResultBuilder());
@@ -169,9 +169,9 @@ namespace Neo4j.Driver.Tests
                     _messageHandler.HandleRecordMessage(fields);
                 }
 
-                public void Register(IMessage message, ResultBuilder resultBuilder = null)
+                public void Register(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
                 {
-                    _messageHandler.Register(message, resultBuilder);
+                    _messageHandler.Register(requestMessage, resultBuilder);
                 }
 
                 public bool QueueIsEmpty()
@@ -193,7 +193,7 @@ namespace Neo4j.Driver.Tests
             {
                 using (var harness = new SocketClientTestHarness(FakeUri, null))
                 {
-                    var messages = new IMessage[]
+                    var messages = new IRequestMessage[]
                     {
                         new RunMessage("This will cause a syntax error"),
                         new PullAllMessage()
@@ -238,7 +238,7 @@ namespace Neo4j.Driver.Tests
             {
                 using (var harness = new SocketClientTestHarness(FakeUri, null))
                 {
-                    var messages = new IMessage[]
+                    var messages = new IRequestMessage[]
                     {
                         new RunMessage("This will cause a syntax error"),
                         new PullAllMessage()

@@ -17,6 +17,7 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.messaging;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
@@ -24,8 +25,17 @@ namespace Neo4j.Driver
     internal class MessageResponseHandler : IMessageResponseHandler
     {
         private readonly Queue<ResultBuilder> _resultBuilders = new Queue<ResultBuilder>();
-        protected readonly Queue<IMessage> _sentMessages = new Queue<IMessage>() ;
+        protected readonly Queue<IRequestMessage> _sentMessages = new Queue<IRequestMessage>() ;
         private ResultBuilder _currentResultBuilder;
+        private ILogger _logger;
+
+        public MessageResponseHandler(){}
+
+        public MessageResponseHandler(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         public Neo4jException Error { get; internal set; }
         public bool HasError => Error != null;
 
@@ -34,12 +44,14 @@ namespace Neo4j.Driver
             _sentMessages.Dequeue();
             _currentResultBuilder = _resultBuilders.Dequeue();
             _currentResultBuilder?.CollectMeta(meta);
+            _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 
         public void HandleRecordMessage(dynamic[] fields)
         {
             //TODO: Should error if no keys??
             _currentResultBuilder.Record(fields);
+            _logger?.Debug("S: ", new RecordMessage( fields ));
         }
 
         public void HandleFailureMessage(string code, string message)
@@ -60,17 +72,19 @@ namespace Neo4j.Driver
             }
             _sentMessages.Dequeue();
             _resultBuilders.Dequeue();
+            _logger?.Debug("S: ", new FailureMessage(code, message));
         }
 
         public void HandleIgnoredMessage()
         {
             _sentMessages.Dequeue();
             _resultBuilders.Dequeue();
+            _logger?.Debug("S: ", new IgnoredMessage());
         }
 
-        public void Register(IMessage message, ResultBuilder resultBuilder = null)
+        public void Register(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
         {
-            _sentMessages.Enqueue(message);
+            _sentMessages.Enqueue(requestMessage);
             _resultBuilders.Enqueue(resultBuilder);
             
         }

@@ -33,11 +33,11 @@ namespace Neo4j.Driver
     {
         private static BitConverterBase _bitConverter;
 
-        public PackStreamMessageFormatV1(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter)
+        public PackStreamMessageFormatV1(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger)
         {
             _bitConverter = bitConverter;
-            Writer = new WriterV1(new ChunkedOutputStream(tcpSocketClient, bitConverter));
-            Reader = new ReaderV1(new ChunkedInputStream(tcpSocketClient, bitConverter));
+            Writer = new WriterV1(new ChunkedOutputStream(tcpSocketClient, bitConverter, logger));
+            Reader = new ReaderV1(new ChunkedInputStream(tcpSocketClient, bitConverter, logger));
         }
 
         public IWriter Writer { get; }
@@ -75,7 +75,7 @@ namespace Neo4j.Driver
                         UnpackIgnoredMessage(responseHandler);
                         break;
                     default:
-                        throw new IOException("Unknown message type: " + type);
+                        throw new IOException("Unknown requestMessage type: " + type);
                 }
                 UnPackMessageTail();
             }
@@ -321,9 +321,9 @@ namespace Neo4j.Driver
                 PackMessageTail();
             }
 
-            public void Write(IMessage message)
+            public void Write(IRequestMessage requestMessage)
             {
-                message.Dispatch(this);
+                requestMessage.Dispatch(this);
             }
 
             public void Flush()

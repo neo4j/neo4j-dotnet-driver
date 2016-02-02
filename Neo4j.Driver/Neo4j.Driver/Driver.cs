@@ -18,12 +18,12 @@ using System;
 
 namespace Neo4j.Driver
 {
-    public class Driver : IDisposable
+    public class Driver : LoggerBase, IDisposable
     {
         private readonly Config _config;
         private readonly Uri _url;
 
-        internal Driver(Uri url, Config config)
+        internal Driver(Uri url, Config config) : base(config?.Logger)
         {
             _url = url;
             _config = config;
@@ -31,7 +31,10 @@ namespace Neo4j.Driver
 
         protected virtual void Dispose(bool isDisposing)
         {
-            // left empty on purpose
+           
+            if (!isDisposing)
+                return;
+            Logger?.Dispose();
         }
 
         /// <summary>

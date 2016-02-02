@@ -23,7 +23,7 @@ namespace Neo4j.Driver
     {
         Task Start();
         Task Stop();
-        void Send(IEnumerable<IMessage> messages, IMessageResponseHandler responseHandler);
+        void Send(IEnumerable<IRequestMessage> messages, IMessageResponseHandler responseHandler);
         bool IsOpen { get; }
     }
 }
