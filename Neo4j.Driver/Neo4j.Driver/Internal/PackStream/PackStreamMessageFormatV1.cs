@@ -317,7 +317,7 @@ namespace Neo4j.Driver
 
             public void HandleResetMessage()
             {
-                _packer.PackStructHeader( 0, MSG_ACK_FAILURE );
+                _packer.PackStructHeader( 0, MSG_RESET );
                 PackMessageTail();
             }
 
@@ -363,7 +363,7 @@ namespace Neo4j.Driver
         #region Consts
 
         public const byte MSG_INIT = 0x01;
-        public const byte MSG_ACK_FAILURE = 0x0F;
+        public const byte MSG_RESET = 0x0F;
         public const byte MSG_RUN = 0x10;
         public const byte MSG_DISCARD_ALL = 0x2F;
         public const byte MSG_PULL_ALL = 0x3F;

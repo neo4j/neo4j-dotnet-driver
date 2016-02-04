@@ -42,7 +42,7 @@ namespace Neo4j.Driver
             t.Wait();
 
             // add init requestMessage by default
-            Enqueue(new InitMessage("dotNet-driver/1.0.0"));
+            Enqueue(new InitMessage("neo4j-dotnet/1.0.0"));
         }
 
         public SocketConnection(Uri url, Config config)
