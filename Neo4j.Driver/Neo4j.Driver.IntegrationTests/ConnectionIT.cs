@@ -24,6 +24,8 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
+    using System.Diagnostics.Contracts;
+
     [Collection(IntegrationCollection.CollectionName)]
     public class ConnectionIT
     {
@@ -59,10 +61,23 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
+
+        [Fact]
+        public void GetsSummary()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            using (var session = driver.Session())
+            {
+                var cursor = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
+                var stats = cursor.Summarize().UpdateStatistics;
+                output.WriteLine(stats.ToString());
+            }
+        }
+
         [Fact]
         public void ShouldBeAbleToRunMultiStatementsInOneTransaction()
         {
-            using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
+            using (var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Trace}).ToConfig()))
             using (var session = driver.Session())
             using (var tx = session.BeginTransaction())
             {

@@ -95,7 +95,16 @@ namespace Neo4j.Driver
         {
             while (!responseHandler.QueueIsEmpty())
             {
-                _reader.Read(responseHandler);
+                try
+                {
+                    _reader.Read(responseHandler);
+                }
+                catch (Exception ex)
+                {
+                    _config.Logger.Error("Unable to unpack message from server, connection has been terminated.", ex);
+                    Stop().Wait();
+                    throw;
+                }
                 if (responseHandler.HasError)
                 {
                     if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))

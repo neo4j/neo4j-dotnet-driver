@@ -22,28 +22,26 @@ namespace Neo4j.Driver
     {
         private readonly Config _config;
         private readonly Uri _url;
+        public Uri Uri => _url;
 
         internal Driver(Uri url, Config config) : base(config?.Logger)
         {
+            if (url.Scheme.ToLowerInvariant() == "bolt" && url.Port == -1)
+            {
+                var builder = new UriBuilder(url.Scheme, url.Host, 7687);
+                url = builder.Uri;
+            }
+
             _url = url;
             _config = config;
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        protected override void Dispose(bool isDisposing)
         {
            
             if (!isDisposing)
                 return;
             Logger?.Dispose();
-        }
-
-        /// <summary>
-        ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>

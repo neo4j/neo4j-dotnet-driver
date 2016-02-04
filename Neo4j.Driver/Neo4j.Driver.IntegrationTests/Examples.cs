@@ -18,14 +18,15 @@ using System.Collections.Generic;
 using System.Linq;
 //tag::minimal-example-import[]
 using Neo4j.Driver;
-//end::minimal-example-import[]
 using Neo4j.Driver.Exceptions;
+//end::minimal-example-import[]
 using Neo4j.Driver.IntegrationTests;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Examples
 {
+
     [Collection(IntegrationCollection.CollectionName)]
     public class Examples
     {
@@ -41,15 +42,15 @@ namespace Examples
         public void MinimalExample()
         {
             //tag::minimal-example[]
-            using (var driver = GraphDatabase.Driver("bolt://localhost:7687"))
+            using (var driver = GraphDatabase.Driver("bolt://localhost"))
             using (var session = driver.Session())
             {
                 session.Run("CREATE (neo:Person {name:'Neo', age:23})");
 
-                var result = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
-                while (result.Next())
+                var cursor = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
+                while (cursor.Next())
                 {
-                    output.WriteLine($"Neo is {result.Value("p.age")} years old.");
+                    output.WriteLine($"Neo is {cursor.Value("p.age")} years old.");
                 }
             }
             //end::minimal-example[]
@@ -80,9 +81,8 @@ namespace Examples
             var session = driver.Session();
            
             //tag::statement[]
-            var result = session.Run("CREATE (p:Person { name: {name} })",
-                new Dictionary<string, object> {{"name", "The One"}});
-            var theOnesCreated = result.Summarize().UpdateStatistics.NodesCreated;
+            var cursor = session.Run("CREATE (p:Person { name: {name} })", new Dictionary<string, object> {{"name", "The One"}});
+            var theOnesCreated = cursor.Summarize().UpdateStatistics.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement[]
             driver.Dispose();
@@ -95,8 +95,8 @@ namespace Examples
             var session = driver.Session();
 
             //tag::statement-without-parameters[]
-            var result = session.Run("CREATE (p:Person { name: 'The One' })");
-            var theOnesCreated = result.Summarize().UpdateStatistics.NodesCreated;
+            var cursor = session.Run("CREATE (p:Person { name: 'The One' })");
+            var theOnesCreated = cursor.Summarize().UpdateStatistics.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement-without-parameters[]
             driver.Dispose();
@@ -110,13 +110,13 @@ namespace Examples
             session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::result-cursor[]
-            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
+            var cursor = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
-            while (result.Next())
+            while (cursor.Next())
             {
-                output.WriteLine($"Record: {result.Position()}");
-                foreach (var keyValuePair in result.Values())
+                output.WriteLine($"Record: {cursor.Position()}");
+                foreach (var keyValuePair in cursor.Values())
                 {
                     output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");
                 }
@@ -134,10 +134,10 @@ namespace Examples
             session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::retain-result-query[]
-            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
+            var cursor = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
-            var records = result.Stream().ToList();
+            var records = cursor.Stream().ToList();
 
             session.Dispose();
 
@@ -161,10 +161,10 @@ namespace Examples
             session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::retain-result-process[]
-            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
+            var cursor = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
-            var records = result.Stream().ToList();
+            var records = cursor.Stream().ToList();
 
             session.Dispose();
 
@@ -241,10 +241,10 @@ namespace Examples
             var session = driver.Session();
 
             //tag::result-summary-query-profile[]
-            var result = session.Run("PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+            var cursor = session.Run("PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
                             new Dictionary<string, object> { { "name", "The One" } });
 
-            IResultSummary summary = result.Summarize();
+            IResultSummary summary = cursor.Summarize();
 
             output.WriteLine(summary.StatementType.ToString());
             output.WriteLine(summary.Profile.ToString());
@@ -294,8 +294,8 @@ namespace Examples
         {
             Driver driver = GraphDatabase.Driver("bolt://localhost:7687");
             var session = driver.Session();
-            var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
-            while (result.Next())
+            var cursor = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
+            while (cursor.Next())
             {
                 // consume
             }
