@@ -16,6 +16,7 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
 using Sockets.Plugin.Abstractions;
 
@@ -111,7 +112,7 @@ namespace Neo4j.Driver
                 var chunkSize = _bitConverter.ToInt16(_headTailBuffer);
 
                 // chunk
-                var chunk = new byte[chunkSize]; // TODO use a single buffer somehow
+                var chunk = new byte[chunkSize];
                 ReadSpecifiedSize(chunk);
                 for (var i = 0; i < chunkSize; i ++)
                 {
@@ -130,8 +131,7 @@ namespace Neo4j.Driver
             var numberOfbytesRead = _tcpSocketClient.ReadStream.Read(buffer);
             if (numberOfbytesRead != buffer.Length)
             {
-                //TODO: Convert to Neo4j Exception.
-                throw new InvalidOperationException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
+                throw new Neo4jException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
             }
 
             _logger?.Trace("S: ", buffer);
@@ -143,8 +143,7 @@ namespace Neo4j.Driver
             ReadSpecifiedSize(_headTailBuffer);
             if (_headTailBuffer.Equals(Tail))
             {
-                //TODO: Convert to Neo4j Exception.
-                throw new InvalidOperationException("Not chunked correctly");
+                throw new Neo4jException("Not chunked correctly");
             }
         }
 

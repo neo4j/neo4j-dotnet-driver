@@ -80,7 +80,6 @@ namespace Neo4j.Driver
             {
                 _writer.Write(message);
                 _config.Logger?.Debug("C: ", message);
-                //_config.Logger.Trace("C: ", )
             }
 
             _writer.Flush();

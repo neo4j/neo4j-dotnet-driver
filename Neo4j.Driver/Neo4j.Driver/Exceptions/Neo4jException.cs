@@ -26,6 +26,9 @@ namespace Neo4j.Driver.Exceptions
         {
         }
 
+        public Neo4jException(string message) : this(null, message)
+        {
+        }
         public Neo4jException(string code, string message)
             : base(message)
         {
@@ -48,7 +51,7 @@ namespace Neo4j.Driver.Exceptions
         {
         }
 
-        public ClientException(string message) : base(null, message)
+        public ClientException(string message) : base(message)
         {
         }
 

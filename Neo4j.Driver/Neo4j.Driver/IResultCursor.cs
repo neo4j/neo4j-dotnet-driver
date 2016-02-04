@@ -21,7 +21,7 @@ namespace Neo4j.Driver
     public interface IResultCursor
     {
         IEnumerable<Record> Stream();
-        IResultSummary Summarize();
+        IResultSummary Summary { get; }
         Record Record();
         long Position();
         bool Next();

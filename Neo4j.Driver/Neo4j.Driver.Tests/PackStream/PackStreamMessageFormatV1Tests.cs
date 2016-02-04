@@ -279,25 +279,6 @@ namespace Neo4j.Driver.Tests
 
         public class ReaderV1Tests
         {
-            public class ReadMethod
-            {
-                [Fact]
-                //todo - verify properly.
-                public void UnpacksStructHeaderCorrectly()
-                {
-                    var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-
-                    var bytes = "00 03 b1 70 a0 00 00".ToByteArray();
-                    TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
-                        //new byte[]{ 0x00, 0x03, 0xb1, 0x70,0xa0, 0x00, 0x00 });
-
-                    var reader =
-                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
-                            .Reader;
-                    reader.Read(new Mock<IMessageResponseHandler>().Object);
-                    mockTcpSocketClient.Object.ReadStream.Position.Should().Be(7);
-                }
-            }
 
             public class UnpackValueMethod
             {

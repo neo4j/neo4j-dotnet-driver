@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests.Result
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
-                result.Summarize().StatementType.Should().Be(StatementType.ReadOnly);
+                result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
             }
 
             [Fact]
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests.Result
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
-                var statistics = result.Summarize().UpdateStatistics;
+                var statistics = result.Summary.UpdateStatistics;
                 statistics.NodesCreated.Should().Be(10);
 
             }
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Tests.Result
                 InputPosition position = new InputPosition(0,0,0);
 
                 var result = builder.Build();
-                var notifications = result.Summarize().Notifications;
+                var notifications = result.Summary.Notifications;
                 notifications.Should().HaveCount(2);
                 notifications[0].Code.Should().Be("CODE");
                 notifications[0].Title.Should().Be("TITLE");
@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Tests.Result
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
-                var plan = result.Summarize().Plan;
+                var plan = result.Summary.Plan;
                 plan.OperatorType.Should().Be("X");
                 plan.Arguments.Should().BeEmpty();
                 plan.Children.Should().BeEmpty();
@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Tests.Result
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
-                var plan = result.Summarize().Plan;
+                var plan = result.Summary.Plan;
                 plan.OperatorType.Should().Be("X");
                 plan.Arguments.Should().ContainKey("a");
                 plan.Arguments["a"].Should().Be(1);
@@ -211,7 +211,7 @@ namespace Neo4j.Driver.Tests.Result
                 builder.CollectMeta(meta);
 
                 var result = builder.Build();
-                var profile = result.Summarize().Profile;
+                var profile = result.Summary.Profile;
                 profile.DbHits.Should().Be(0L);
                 profile.OperatorType.Should().Be("X");
                 profile.Arguments.Should().ContainKey("a");

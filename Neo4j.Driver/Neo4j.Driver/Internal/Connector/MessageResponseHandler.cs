@@ -49,7 +49,6 @@ namespace Neo4j.Driver
 
         public void HandleRecordMessage(dynamic[] fields)
         {
-            //TODO: Should error if no keys??
             _currentResultBuilder.Record(fields);
             _logger?.Debug("S: ", new RecordMessage( fields ));
         }

@@ -50,7 +50,7 @@ namespace Examples
                 var cursor = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
                 while (cursor.Next())
                 {
-                    output.WriteLine($"Neo is {cursor.Value("p.age")} years old.");
+                    output.WriteLine($"Neo is {cursor.Get("p.age")} years old.");
                 }
             }
             //end::minimal-example[]
@@ -82,7 +82,7 @@ namespace Examples
            
             //tag::statement[]
             var cursor = session.Run("CREATE (p:Person { name: {name} })", new Dictionary<string, object> {{"name", "The One"}});
-            var theOnesCreated = cursor.Summarize().UpdateStatistics.NodesCreated;
+            var theOnesCreated = cursor.Summary.UpdateStatistics.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement[]
             driver.Dispose();
@@ -96,7 +96,7 @@ namespace Examples
 
             //tag::statement-without-parameters[]
             var cursor = session.Run("CREATE (p:Person { name: 'The One' })");
-            var theOnesCreated = cursor.Summarize().UpdateStatistics.NodesCreated;
+            var theOnesCreated = cursor.Summary.UpdateStatistics.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement-without-parameters[]
             driver.Dispose();
@@ -244,7 +244,7 @@ namespace Examples
             var cursor = session.Run("PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
                             new Dictionary<string, object> { { "name", "The One" } });
 
-            IResultSummary summary = cursor.Summarize();
+            IResultSummary summary = cursor.Summary;
 
             output.WriteLine(summary.StatementType.ToString());
             output.WriteLine(summary.Profile.ToString());
@@ -260,7 +260,7 @@ namespace Examples
             var session = driver.Session();
 
             //tag::result-summary-notifications[]
-            var summary = session.Run("EXPLAIN MATCH (a), (b) RETURN a,b").Summarize();
+            var summary = session.Run("EXPLAIN MATCH (a), (b) RETURN a,b").Summary;
 
             foreach (var notification in summary.Notifications)
             {

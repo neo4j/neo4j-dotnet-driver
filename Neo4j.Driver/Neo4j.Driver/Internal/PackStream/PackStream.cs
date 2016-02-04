@@ -71,7 +71,7 @@ namespace Neo4j.Driver
         public const byte RESERVED_DB = 0xDB;
         public const byte STRUCT_8 = 0xDC;
         public const byte STRUCT_16 = 0xDD;
-        public const byte RESERVED_DE = 0xDE; // TODO STRUCT_32?
+        public const byte RESERVED_DE = 0xDE;
         public const byte RESERVED_DF = 0xDF;
         public const byte RESERVED_E0 = 0xE0;
         public const byte RESERVED_E1 = 0xE1;

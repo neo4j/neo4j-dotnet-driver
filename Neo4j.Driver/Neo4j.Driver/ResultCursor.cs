@@ -52,12 +52,12 @@ namespace Neo4j.Driver
             _summary = sumamry;
         }
 
-        public dynamic Value(int index)
+        public dynamic Get(int index)
         {
             return _current[index];
         }
 
-        public dynamic Value(string key)
+        public dynamic Get(string key)
         {
             return _current[key];
         }
@@ -107,14 +107,17 @@ namespace Neo4j.Driver
             }
         }
 
-        public IResultSummary Summarize()
+        public IResultSummary Summary
         {
-            while (Next())
+            get
             {
-                // consume
+                if (!AtEnd())
+                {
+                    throw new ClientException("Cannot get summary before reading all records.");
+                }
+                _enumerator.Discard();
+                return _summary;
             }
-            _enumerator.Discard();
-            return _summary;
         }
 
         public bool Next()
@@ -212,7 +215,6 @@ namespace Neo4j.Driver
             return First() && AtEnd();
         }
 
-        //TODO: Does DIPS expect exception here?
         public Record Peek()
         {
             return _enumerator.Peek();

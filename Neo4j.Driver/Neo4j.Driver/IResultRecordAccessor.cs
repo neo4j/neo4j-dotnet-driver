@@ -20,8 +20,8 @@ namespace Neo4j.Driver
 {
     public interface IResultRecordAccessor
     {
-        dynamic Value(int index);
-        dynamic Value(string key);
+        dynamic Get(int index);
+        dynamic Get(string key);
         bool ContainsKey(string key);
         IReadOnlyList<string> Keys { get; }
         int Index(string key);

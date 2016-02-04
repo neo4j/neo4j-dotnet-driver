@@ -24,7 +24,6 @@ namespace Neo4j.Driver
     /// </summary>
     public class BigEndianTargetBitConverter : BitConverterBase
     {
-        // TODO make this static so that we could get the util methods everywhere
         /// <summary>
         ///     Converts the bytes to big endian.
         /// </summary>

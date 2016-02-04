@@ -22,7 +22,7 @@ namespace Neo4j.Driver
 {
     public class Record
     {
-        public dynamic this[int index] => Values[Values.Keys.ToList()[index]]; // TODO
+        public dynamic this[int index] => Values[Values.Keys.ToList()[index]];
         public dynamic this[string key] => Values[key];
 
         public IReadOnlyDictionary<string, dynamic> Values { get; }

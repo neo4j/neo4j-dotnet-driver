@@ -79,7 +79,7 @@ namespace Neo4j.Driver
                 UnPackMessageTail();
             }
 
-            public dynamic UnpackValue() //TODO
+            public dynamic UnpackValue()
             {
                 var type = _unpacker.PeekNextType();
                 switch (type)
@@ -219,7 +219,7 @@ namespace Neo4j.Driver
             private void UnpackFailureMessage(IMessageResponseHandler responseHandler)
             {
                 var values = UnpackMap();
-                var code = values["code"]?.ToString(); // TODO
+                var code = values["code"]?.ToString();
                 var message = values["message"]?.ToString();
                 responseHandler.HandleFailureMessage(code, message);
             }
@@ -246,7 +246,6 @@ namespace Neo4j.Driver
                 responseHandler.HandleSuccessMessage(map);
             }
 
-            //TODO should this be readonly?
             private Dictionary<string, object> UnpackMap()
             {
                 var size = (int)_unpacker.UnpackMapHeader();

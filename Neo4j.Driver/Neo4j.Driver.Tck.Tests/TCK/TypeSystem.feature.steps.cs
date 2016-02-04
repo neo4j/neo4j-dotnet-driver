@@ -176,7 +176,7 @@ namespace Neo4j.Driver.IntegrationTests.TCK
         {
             // param : input
             _result.Single().Should().BeTrue();
-            var actual = _result.Value(0);
+            var actual = _result.Get(0);
             AssertEqual(_expected, actual);
         }
 
