@@ -45,11 +45,11 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class ReadBytesMethod
+        public class MultipleChunksTests
         {
-            private ITestOutputHelper _output;
+            private readonly ITestOutputHelper _output;
 
-            public ReadBytesMethod(ITestOutputHelper output)
+            public MultipleChunksTests(ITestOutputHelper output)
             {
                 _output = output;
             }
@@ -83,6 +83,20 @@ namespace Neo4j.Driver.Tests
                 chunkedInput.ReadBytes(actual);
                 actual.Should().Equal(correctValue);
                 loggerMock.Verify(x => x.Trace("S: ", It.IsAny<byte[]>()), Times.Exactly(4));
+            }
+
+            [Theory]
+            //-----------------------|---head1--|----|---head2---|-----------|--msg end--|
+            [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 })]
+            public void ShouldReadMessageBiggerThanChunkSize(byte[] input, byte[] correctValue)
+            {
+                var clientMock = new Mock<ITcpSocketClient>();
+                TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
+
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null, 1);
+                byte[] actual = new byte[3];
+                chunkedInput.ReadBytes(actual);
+                actual.Should().Equal(correctValue);
             }
         }
 

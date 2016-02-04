@@ -42,7 +42,7 @@ namespace Examples
         public void MinimalExample()
         {
             //tag::minimal-example[]
-            using (var driver = GraphDatabase.Driver("bolt://localhost"))
+            using (var driver = GraphDatabase.Driver("bolt://localhost", Config.Builder.WithLogger(new DebugLogger {Level=LogLevel.Trace}).ToConfig()))
             using (var session = driver.Session())
             {
                 session.Run("CREATE (neo:Person {name:'Neo', age:23})");

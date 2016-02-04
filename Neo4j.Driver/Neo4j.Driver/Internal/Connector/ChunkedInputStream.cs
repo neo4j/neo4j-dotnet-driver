@@ -23,19 +23,22 @@ namespace Neo4j.Driver
 {
     public class ChunkedInputStream : IInputStream
     {
-        private const int ChunkSize = 1024*8; // TODO: 2 * chunk_size of server
+        private const int ChunkSize = 1024*8; 
         public static byte[] Tail = {0x00, 0x00};
         private readonly BitConverterBase _bitConverter;
-        private readonly Queue<byte> _chunkBuffer = new Queue<byte>(ChunkSize); // TODO
+        private readonly Queue<byte> _chunkBuffer; 
         private readonly byte[] _headTailBuffer = new byte[2];
         private readonly ITcpSocketClient _tcpSocketClient;
         private readonly ILogger _logger;
 
-        public ChunkedInputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger)
+
+
+        public ChunkedInputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger, int? chunkSize = ChunkSize)
         {
             _tcpSocketClient = tcpSocketClient;
             _bitConverter = bitConverter;
             _logger = logger;
+            _chunkBuffer = new Queue<byte>(chunkSize.Value);
         }
 
         public sbyte ReadSByte()

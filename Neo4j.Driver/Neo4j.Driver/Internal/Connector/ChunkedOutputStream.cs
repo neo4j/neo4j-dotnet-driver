@@ -14,15 +14,17 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
+using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Exceptions;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver
 {
     public class ChunkedOutputStream : IOutputStream
     {
-        public const int BufferSize = 1024*8;
+        internal const int BufferSize = 1024*8;
+        private readonly int _chunkSize;
         private readonly BitConverterBase _bitConverter;
         private readonly ITcpSocketClient _tcpSocketClient;
         private byte[] _buffer; //new byte[1024*8];
@@ -32,11 +34,14 @@ namespace Neo4j.Driver
         private bool _isInChunk = false;
         private readonly ILogger _logger;
 
-        public ChunkedOutputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger)
+        public ChunkedOutputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger, int? chunkSize = BufferSize)
         {
             _tcpSocketClient = tcpSocketClient;
             _bitConverter = bitConverter;
             _logger = logger;
+            Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize.Value, 8, nameof(chunkSize));
+
+            _chunkSize = chunkSize.Value;
         }
 
         public IOutputStream Write(byte b, params byte[] bytes)
@@ -57,65 +62,67 @@ namespace Neo4j.Driver
                 return this;
 
             var bytesLength = bytes.Length;
-            Ensure(bytesLength);
-            WriteBytes(bytes);
+            var sentSize = 0;
+            while (sentSize < bytes.Length)
+            {
+                var sizeToSend = Math.Min(_chunkSize - 4, bytesLength-sentSize);
+                Ensure(sizeToSend);
+                WriteBytes(bytes, sentSize, sizeToSend);
+                sentSize += sizeToSend;
+            }
             return this;
         }
 
-        // TODO move to somewhere
-        private static string ToHexString(byte[] bytes, int offset, int length)
-        {
-            List<string> hexes = new List<string>();
-            for(int i = offset; i < offset + length; i ++)
-            {
-                hexes.Add(bytes[i].ToString("X2"));
-            }
-            return string.Join(" ", hexes);
-        }
 
         public IOutputStream Flush()
         {
+            WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition); // size of this chunk pos-2
+            CloseChunk();
+            _chunkHeaderPosition = 0;
             _logger?.Trace("C: ", _buffer, 0, _pos);
-            var hex = ToHexString(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Write(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Flush();
             _buffer = null;
             _pos = -1;
-            _chunkHeaderPosition = 0;
+            
             return this;
         }
 
         public IOutputStream WriteMessageTail()
         {
-            WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition); // size of this chunk pos-2
+            WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition);
             WriteShort(0, _buffer, _pos); // pending 00 00
 
             _pos += 2;
-            EndChunk();
+            _chunkHeaderPosition = _pos;
+            CloseChunk();
             return this;
         }
 
-        private void EndChunk()
+        private void CloseChunk()
         {
             _chunkLength = 0;
-            _chunkHeaderPosition = _pos;
             _isInChunk = false;
         }
 
-        private void WriteBytes(byte[] bytes)
+        private void WriteBytes(byte[] bytes, int offset = 0, int? length = null)
         {
             _isInChunk = true;
-            bytes.CopyTo(_buffer, _pos);
-            _pos += bytes.Length;
-            _chunkLength += bytes.Length;
+            Array.Copy(bytes, offset, _buffer, _pos, length??bytes.Length);
+           // bytes.CopyTo(_buffer, _pos);
+            _pos += length??bytes.Length;
+            _chunkLength += length ?? bytes.Length;
         }
 
         private void Ensure(int size)
         {
+            if (size >= _chunkSize)
+                return;
+
             if (_buffer == null)
             {
                 /*New _buffer - start of a new chunk*/
-                _buffer = new byte[BufferSize];
+                _buffer = new byte[_chunkSize];
                 _pos = 2; // reserve two bytes for chunk header
             }
             else if (!_isInChunk)
@@ -126,6 +133,7 @@ namespace Neo4j.Driver
             if (_buffer.Length - _pos < size + 2) // not enough to add [size] and a message ending (00 00)
             {
                 Flush();
+                Ensure(size);
             }
         }
 
