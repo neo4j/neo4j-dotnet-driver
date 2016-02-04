@@ -27,15 +27,15 @@ namespace Neo4j.Driver.IntegrationTests
         public IntegrationTestFixture()
         {
             Port = 7687;
-            _installer.DownloadNeo4j().Wait();
             try
             {
+                _installer.DownloadNeo4j().Wait();
                 _installer.InstallServer();
                 _installer.StartServer();
             }
             catch
             {
-                Dispose();
+                try { Dispose(); } catch { /*Do nothing*/ }
                 throw;
             }
         }

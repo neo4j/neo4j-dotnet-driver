@@ -107,7 +107,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var archive = ZipFile.OpenRead(filename))
             {
-                return archive.Entries.First().FullName;
+                return archive.Entries.Where(a => a.Name == string.Empty).OrderBy(a => a.FullName.Length).First().FullName;
             }
         }
 
