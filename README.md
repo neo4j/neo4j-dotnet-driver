@@ -19,6 +19,20 @@ Connect to a Neo4j 3.0.0+ database
         var cursor = session.Run("CREATE (n) RETURN n");
     }
 
+# Getting the Driver
+
+The Neo4j Driver is distributed exclusively via Nuget and can be added to your project via the Package Manager.
+
+## Milestones
+
+* Coming soon
+
+## Snapshots
+
+Snapshot builds are available at our [MyGet feed](https://www.myget.org/feed/neo4j-driver-snapshots/package/nuget/Neo4j.Driver), add the feed to your Nuget Sources
+
+* [https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json](https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json)
+
 # Building
 
 ## Visual Studio Version

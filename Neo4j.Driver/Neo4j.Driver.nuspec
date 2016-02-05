@@ -12,7 +12,8 @@
     <description>The official .NET driver for the Neo4j Graph Database over the Bolt protocol.</description>
     <summary>The official .NET driver for the Neo4j Graph Database over the Bolt protocol.</summary>
     <copyright>Copyright 2016</copyright>
-    <tags>Cypher, NoSql, Graph, Bolt, Neo4j</tags>
+    <iconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</iconUrl>
+    <tags>Cypher NoSql Graph Bolt Neo4j</tags>
     <dependencies>
       <group targetFramework="net45">
         <dependency id="rda.SocketsForPCL" version="1.2.2" />
