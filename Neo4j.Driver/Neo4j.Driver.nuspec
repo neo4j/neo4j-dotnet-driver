@@ -6,7 +6,7 @@
     <title>Neo4j Driver</title>
     <authors>Neo4j</authors>
     <owners>Neo4j</owners>
-    <licenseUrl>https://github.com/neo4j/neo4j-dotnet-driver/LICENSE</licenseUrl>
+    <licenseUrl>https://raw.githubusercontent.com/neo4j/neo4j-dotnet-driver/1.0/LICENSE</licenseUrl>
     <projectUrl>https://github.com/neo4j/neo4j-dotnet-driver</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The official .NET driver for the Neo4j Graph Database over the Bolt protocol.</description>

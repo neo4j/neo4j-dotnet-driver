@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.result;
@@ -35,7 +36,7 @@ namespace Neo4j.Driver.Tests.Result
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"fields", new List<object> {"fieldKey1", "fieldKey2", "fieldKey3"} },{"type", "r" } };
-                builder.CollectMeta(meta);
+                builder.CollectFields(meta);
 
                 var result = builder.Build();
                 result.Keys.Should().ContainInOrder("fieldKey1", "fieldKey2", "fieldKey3");
@@ -47,7 +48,7 @@ namespace Neo4j.Driver.Tests.Result
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"type", "r" } };
-                builder.CollectMeta(meta);
+                builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
                 result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
@@ -59,7 +60,7 @@ namespace Neo4j.Driver.Tests.Result
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"type", "r" }, {"stats", new Dictionary<string, object> { {"nodes-created", 10L}, {"nodes-deleted", 5L} } } };
-                builder.CollectMeta(meta);
+                builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
                 var statistics = result.Summary.UpdateStatistics;
@@ -92,7 +93,7 @@ namespace Neo4j.Driver.Tests.Result
                     }
                 };
 
-                builder.CollectMeta(meta);
+                builder.CollectSummaryMeta(meta);
 
                 InputPosition position = new InputPosition(0,0,0);
 
@@ -124,7 +125,7 @@ namespace Neo4j.Driver.Tests.Result
                 {
                     {"operatorType", "X"}
                 } } };
-                builder.CollectMeta(meta);
+                builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
                 var plan = result.Summary.Plan;
@@ -162,7 +163,7 @@ namespace Neo4j.Driver.Tests.Result
                         }
                     }
                 } } };
-                builder.CollectMeta(meta);
+                builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
                 var plan = result.Summary.Plan;
@@ -208,7 +209,7 @@ namespace Neo4j.Driver.Tests.Result
                         }
                     }
                 } } };
-                builder.CollectMeta(meta);
+                builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
                 var profile = result.Summary.Profile;
@@ -226,6 +227,41 @@ namespace Neo4j.Driver.Tests.Result
                 children[0].Children.Should().BeEmpty();
                 children[1].Children.Should().HaveCount(1);
                 children[1].Children[0].OperatorType.Should().Be("Y");
+            }
+        }
+
+        public class BuildMethod
+        {
+            [Fact]
+            public void ShouldStreamResults()
+            {
+                var builder = new ResultBuilder();
+                builder.CollectFields(new Dictionary<string, object> { { "fields", new List<object> {"x"}}});
+               var cursor = builder.Build();
+
+                int count = 0;
+                var t = Task.Factory.StartNew(() =>
+                {
+                    // ReSharper disable once LoopCanBeConvertedToQuery
+                    foreach (var item in cursor.Stream())
+                    {
+                        count++;
+                    }
+                    count.Should().Be(3);
+                });
+                builder.Record(new dynamic[] {123});
+                Thread.Sleep(1000);
+                builder.Record(new dynamic[] { 123 });
+                builder.Record(new dynamic[] { 123 });
+                                Thread.Sleep(1000);
+                builder.CollectSummaryMeta(null);
+//                while (count < 1)
+//                {
+//                    Thread.Sleep(10);
+//                }
+
+                ////record10,-------- summary
+                t.Wait();
             }
         }
     }

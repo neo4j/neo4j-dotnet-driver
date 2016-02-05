@@ -16,6 +16,7 @@
 //  limitations under the License.
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
 using static Neo4j.Driver.StatementType;
@@ -28,6 +29,7 @@ namespace Neo4j.Driver.Internal.result
         private string[] _keys = new string[0];
         private readonly IList<Record> _records = new List<Record>();
         private readonly SummaryBuilder _summaryBuilder;
+        private bool _noMoreRecords = false;
 
         internal ResultBuilder() : this(null, null)
         {
@@ -44,19 +46,52 @@ namespace Neo4j.Driver.Internal.result
             _records.Add(record);
         }
 
-        public ResultCursor Build()
+        public void NoMoreRecords()
         {
-            return new ResultCursor(_keys, _records, _summaryBuilder.Build());
+            _noMoreRecords = true;
         }
 
-        public void CollectMeta(IDictionary<string, object> meta)
+        // do not change this code!!!
+        private IEnumerable<Record> RecordsStream()
+        {
+            int index = 0;
+
+            while (!_noMoreRecords || index <= _records.Count)
+            {
+                while (index == _records.Count)
+                {
+                    Task.Delay(50).Wait();
+                    if (_noMoreRecords && index == _records.Count)
+                        yield break;
+                }
+
+                yield return _records[index];
+                index++;
+            }
+        } 
+
+        public ResultCursor Build()
+        {
+            return new ResultCursor(_keys, RecordsStream(), () => _summaryBuilder.Build()); // TODO
+        }
+
+        public void CollectFields(IDictionary<string, object> meta)
         {
             if (meta == null)
             {
                 return;
             }
-
             CollectKeys(meta, "fields");
+        }
+
+        public void CollectSummaryMeta(IDictionary<string, object> meta)
+        {
+            NoMoreRecords();
+            if (meta == null)
+            {
+                return;
+            }
+
             CollectType(meta, "type");
             CollectStatistics(meta, "stats");
             CollectPlan(meta, "plan");

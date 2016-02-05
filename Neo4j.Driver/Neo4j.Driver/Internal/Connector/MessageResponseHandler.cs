@@ -43,7 +43,17 @@ namespace Neo4j.Driver
         {
             _sentMessages.Dequeue();
             _currentResultBuilder = _resultBuilders.Dequeue();
-            _currentResultBuilder?.CollectMeta(meta);
+            if (meta.ContainsKey("fields"))
+            {
+                // first success
+                _currentResultBuilder?.CollectFields(meta);
+            }
+            else
+            {
+                // second success
+                // before summary method is called
+                _currentResultBuilder?.CollectSummaryMeta(meta);
+            }
             _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 
