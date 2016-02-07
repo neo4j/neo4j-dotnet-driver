@@ -21,11 +21,11 @@ Connect to a Neo4j 3.0.0+ database
 
 # Getting the Driver
 
-The Neo4j Driver is distributed exclusively via Nuget and can be added to your project via the Package Manager.
+The Neo4j Driver is distributed exclusively via [Nuget](https://www.nuget.org/packages/Neo4j.Driver) and can be added to your project via the Package Manager.
 
 ## Milestones
 
-* Coming soon
+* Pre-releases could also be found at NuGet for trying out. 
 
 ## Snapshots
 
