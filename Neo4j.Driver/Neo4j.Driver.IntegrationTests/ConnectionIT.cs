@@ -64,7 +64,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (var session = driver.Session())
             {
                 var cursor = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
-                var stats = cursor.Summary.UpdateStatistics;
+                var stats = cursor.Summary.Counters;
                 output.WriteLine(stats.ToString());
             }
         }

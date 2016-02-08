@@ -25,11 +25,10 @@ namespace Neo4j.Driver.Internal.result
 {
     public class ResultBuilder
     {
-        //private IDictionary<string, dynamic> _meta;
         private string[] _keys = new string[0];
         private readonly IList<Record> _records = new List<Record>();
         private readonly SummaryBuilder _summaryBuilder;
-        private bool _noMoreRecords = false;
+        internal bool HasMoreRecords { get; private set; } = true;
 
         internal ResultBuilder() : this(null, null)
         {
@@ -46,22 +45,16 @@ namespace Neo4j.Driver.Internal.result
             _records.Add(record);
         }
 
-        public void NoMoreRecords()
-        {
-            _noMoreRecords = true;
-        }
-
-        // do not change this code!!!
         private IEnumerable<Record> RecordsStream()
         {
             int index = 0;
 
-            while (!_noMoreRecords || index <= _records.Count)
+            while (HasMoreRecords || index <= _records.Count)
             {
                 while (index == _records.Count)
                 {
                     Task.Delay(50).Wait();
-                    if (_noMoreRecords && index == _records.Count)
+                    if (!HasMoreRecords && index == _records.Count)
                         yield break;
                 }
 
@@ -72,7 +65,7 @@ namespace Neo4j.Driver.Internal.result
 
         public ResultCursor Build()
         {
-            return new ResultCursor(_keys, RecordsStream(), () => _summaryBuilder.Build()); // TODO
+            return new ResultCursor(_keys, RecordsStream(), () => _summaryBuilder.Build());
         }
 
         public void CollectFields(IDictionary<string, object> meta)
@@ -86,14 +79,14 @@ namespace Neo4j.Driver.Internal.result
 
         public void CollectSummaryMeta(IDictionary<string, object> meta)
         {
-            NoMoreRecords();
+            HasMoreRecords = false;
             if (meta == null)
             {
                 return;
             }
 
             CollectType(meta, "type");
-            CollectStatistics(meta, "stats");
+            CollectCounters(meta, "stats");
             CollectPlan(meta, "plan");
             CollectProfile(meta, "profile");
             CollectNotifications(meta, "notifications");
@@ -121,7 +114,7 @@ namespace Neo4j.Driver.Internal.result
             _summaryBuilder.StatementType = FromCode(type);
         }
 
-        private void CollectStatistics(IDictionary<string, object> meta, string name)
+        private void CollectCounters(IDictionary<string, object> meta, string name)
         {
             if (!meta.ContainsKey(name))
             {
@@ -129,18 +122,18 @@ namespace Neo4j.Driver.Internal.result
             }
             var stats = meta[name] as IDictionary<string, object>;
 
-            _summaryBuilder.UpdateStatistics = new UpdateStatistics(
-                StatsValue(stats, "nodes-created"),
-                StatsValue(stats, "nodes-deleted"),
-                StatsValue(stats, "relationships-created"),
-                StatsValue(stats, "relationships-deleted"),
-                StatsValue(stats, "properties-set"),
-                StatsValue(stats, "labels-added"),
-                StatsValue(stats, "labels-removed"),
-                StatsValue(stats, "indexes-added"),
-                StatsValue(stats, "indexes-removed"),
-                StatsValue(stats, "constraints-added"),
-                StatsValue(stats, "constraints-removed"));
+            _summaryBuilder.Counters = new Counters(
+                CountersValue(stats, "nodes-created"),
+                CountersValue(stats, "nodes-deleted"),
+                CountersValue(stats, "relationships-created"),
+                CountersValue(stats, "relationships-deleted"),
+                CountersValue(stats, "properties-set"),
+                CountersValue(stats, "labels-added"),
+                CountersValue(stats, "labels-removed"),
+                CountersValue(stats, "indexes-added"),
+                CountersValue(stats, "indexes-removed"),
+                CountersValue(stats, "constraints-added"),
+                CountersValue(stats, "constraints-removed"));
         }
 
         private void CollectPlan(IDictionary<string, object> meta, string name)
@@ -149,22 +142,22 @@ namespace Neo4j.Driver.Internal.result
             {
                 return;
             }
-            var planDict = meta[name] as IDictionary<string, object>;
-            _summaryBuilder.Plan = CollectPlan(planDict);
+            var planDictionary = meta[name] as IDictionary<string, object>;
+            _summaryBuilder.Plan = CollectPlan(planDictionary);
         }
 
-        //private const string MetaName_Plan = "plan";
 
-        private IPlan CollectPlan(IDictionary<string, object> planDict)
+        private static IPlan CollectPlan(IDictionary<string, object> planDictionary)
         {
-            if (planDict == null || planDict.Count == 0)
+            if (planDictionary == null || planDictionary.Count == 0)
             {
                 return null;
             }
-            var operationType = planDict.GetValue("operatorType", string.Empty);
-            var args = planDict.GetValue("args", new Dictionary<string, object>());
-            var identifiers = planDict.GetValue("identifiers", new List<object>()).Cast<string>();
-            var children = planDict.GetValue("children", new List<object>());
+
+            var operationType = planDictionary.GetMandatoryValue<string>("operatorType");
+            var args = planDictionary.GetValue("args", new Dictionary<string, object>());
+            var identifiers = planDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
+            var children = planDictionary.GetValue("children", new List<object>());
 
             var childPlans = children
                 .Select(child => child as IDictionary<string, object>)
@@ -174,18 +167,18 @@ namespace Neo4j.Driver.Internal.result
             return new Plan(operationType, args, identifiers.ToList(), childPlans);
         }
 
-        private IProfiledPlan CollectProfile(IDictionary<string, object> profileDict)
+        private static IProfiledPlan CollectProfile(IDictionary<string, object> profileDictionary)
         {
-            if (profileDict == null || profileDict.Count == 0)
+            if (profileDictionary == null || profileDictionary.Count == 0)
             {
                 return null;
             }
-            var operationType = profileDict.GetValue("operatorType", string.Empty);
-            var args = profileDict.GetValue("args", new Dictionary<string, object>());
-            var identifiers = profileDict.GetValue("identifiers", new List<object>()).Cast<string>();
-            var dbHits = profileDict.GetValue("dbHits", 0L);
-            var rows = profileDict.GetValue("rows", 0L);
-            var children = profileDict.GetValue("children", new List<object>());
+            var operationType = profileDictionary.GetMandatoryValue<string>("operatorType");
+            var args = profileDictionary.GetValue("args", new Dictionary<string, object>());
+            var identifiers = profileDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
+            var dbHits = profileDictionary.GetMandatoryValue<long>("dbHits");
+            var rows = profileDictionary.GetMandatoryValue<long>("rows");
+            var children = profileDictionary.GetValue("children", new List<object>());
 
             var childPlans = children
                 .Select(child => child as IDictionary<string, object>)
@@ -213,7 +206,7 @@ namespace Neo4j.Driver.Internal.result
                 return;
             }
             var list = (meta[name] as List<object>).Cast<IDictionary<string, object>>();
-            var notifiactions = new List<INotification>();
+            var notifications = new List<INotification>();
             foreach (var value in list)
             {
                 var code = value.GetValue("code", string.Empty);
@@ -226,19 +219,19 @@ namespace Neo4j.Driver.Internal.result
                     (int)posValue.GetValue("offset", 0L),
                     (int)posValue.GetValue("line", 0L),
                     (int)posValue.GetValue("column", 0L));
-                notifiactions.Add(new Notification(code, title, description, position));
+                notifications.Add(new Notification(code, title, description, position));
             }
-            _summaryBuilder.Notifications = notifiactions;
+            _summaryBuilder.Notifications = notifications;
         }
 
-        private static int StatsValue(IDictionary<string, object> stats, string name)
+        private static int CountersValue(IDictionary<string, object> counters, string name)
         {
-            return (int)stats.GetValue(name, 0L);
+            return (int)counters.GetValue(name, 0L);
         }
 
         private static StatementType FromCode(string type)
         {
-            switch (type)
+            switch (type.ToLowerInvariant())
             {
                 case "r":
                     return ReadOnly;
