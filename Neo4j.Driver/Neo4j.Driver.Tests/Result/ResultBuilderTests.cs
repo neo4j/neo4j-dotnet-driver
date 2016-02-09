@@ -141,28 +141,37 @@ namespace Neo4j.Driver.Tests.Result
             {
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"type", "r" }, {"plan", new Dictionary<string, object>
                 {
-                    {"operatorType", "X"},
-                    { "args", new Dictionary<string, object> { {"a", 1}, {"b", "lala"} } },
-                    { "identifiers", new List<object> {"id1", "id2"} },
-                    { "children", new List<object>
+                    {"type", "r"},
                     {
-                        new Dictionary<string, object>
+                        "plan", new Dictionary<string, object>
                         {
-                            { "operatorType", "tt"},
-                            { "children", new List<object>()}
-                        },
-                        new Dictionary<string, object>
-                        {
-                            { "children", new List<object>
+                            {"operatorType", "X"},
+                            {"args", new Dictionary<string, object> {{"a", 1}, {"b", "lala"}}},
+                            {"identifiers", new List<object> {"id1", "id2"}},
                             {
-                               new Dictionary<string, object> { { "operatorType", "Y"} }
-                            } }
-                        }
+                                "children", new List<object>
+                                {
+                                    new Dictionary<string, object>
+                                    {
+                                        {"operatorType", "tt"},
+                                        {"children", new List<object>()}
+                                    },
+                                    new Dictionary<string, object>
+                                    {
+                                        { "operatorType", "Z" },
+                                        {
+                                            "children", new List<object>
+                                            {
+                                                new Dictionary<string, object> {{"operatorType", "Y"}}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                } } };
+                };
                 builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
@@ -187,33 +196,53 @@ namespace Neo4j.Driver.Tests.Result
             {
                 var builder = new ResultBuilder();
                 IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"type", "r" }, {"profile", new Dictionary<string, object>
                 {
-                    {"operatorType", "X"},
-                    { "args", new Dictionary<string, object> { {"a", 1}, {"b", "lala"} } },
-                    { "identifiers", new List<object> {"id1", "id2"} },
-                    { "children", new List<object>
+                    {"type", "r"},
                     {
-                        new Dictionary<string, object>
+                        "profile", new Dictionary<string, object>
                         {
-                            { "operatorType", "tt"},
-                            { "children", new List<object>()}
-                        },
-                        new Dictionary<string, object>
-                        {
-                            { "children", new List<object>
+                            {"operatorType", "X"},
+                            {"args", new Dictionary<string, object> {{"a", 1}, {"b", "lala"}}},
+                            {"dbHits", 1L},
+                            {"rows", 1L},
+                            {"identifiers", new List<object> {"id1", "id2"}},
                             {
-                               new Dictionary<string, object> { { "operatorType", "Y"} }
-                            } }
-                        }
+                                "children", new List<object>
+                                {
+                                    new Dictionary<string, object>
+                                    {
+                                        {"dbHits", 1L},
+                                        {"rows", 1L},
+                                        {"operatorType", "tt"},
+                                        {"children", new List<object>()}
+                                    },
+                                    new Dictionary<string, object>
+                                    {
+                                        {"dbHits", 1L},
+                                        {"rows", 1L},
+                                        {"operatorType", "Z"},
+                                        {
+                                            "children", new List<object>
+                                            {
+                                                new Dictionary<string, object>
+                                                {
+                                                    {"dbHits", 1L},
+                                                    {"rows", 1L},
+                                                    { "operatorType", "Y"}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                } } };
+                };
                 builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
                 var profile = result.Summary.Profile;
-                profile.DbHits.Should().Be(0L);
+                profile.DbHits.Should().Be(1L);
                 profile.OperatorType.Should().Be("X");
                 profile.Arguments.Should().ContainKey("a");
                 profile.Arguments["a"].Should().Be(1);
