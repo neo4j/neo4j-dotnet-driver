@@ -43,24 +43,14 @@ namespace Neo4j.Driver
             _summary = null;
         }
 
-//        public ResultCursor(string[] keys, IEnumerable<Record> records, IResultSummary sumamry=null)
-//        {
-//            Throw.ArgumentNullException.IfNull(keys, nameof(keys));
-//            Throw.ArgumentNullException.IfNull(records, nameof(records));
-//
-//            _keys = new List<string>(keys);
-//            _enumerator = new PeekingEnumerator<Record>(records.GetEnumerator());
-//            _summary = sumamry;
-//        }
-
-        public ResultCursor(string[] keys, IEnumerable<Record> records, Func<IResultSummary> getSumamry = null)
+        public ResultCursor(string[] keys, IEnumerable<Record> records, Func<IResultSummary> getSummary = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
             Throw.ArgumentNullException.IfNull(records, nameof(records));
 
             _keys = new List<string>(keys);
             _enumerator = new PeekingEnumerator<Record>(records.GetEnumerator());
-            _getSummary = getSumamry;
+            _getSummary = getSummary;
         }
 
         public dynamic Get(int index)
@@ -148,10 +138,7 @@ namespace Neo4j.Driver
                 }
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         public bool HasRecord()

@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.result
     {
         public Statement Statement { private get; set; }
         public StatementType StatementType { private get; set; }
-        public IUpdateStatistics UpdateStatistics { private get; set; }
+        public ICounters Counters { private get; set; }
         public IPlan Plan { private get; set; }
         public IProfiledPlan Profile { private get; set; }
         public IList<INotification> Notifications { private get; set; }
@@ -37,25 +37,25 @@ namespace Neo4j.Driver.Internal.result
 
         public IResultSummary Build()
         {
-            return new ResultSumamry(this);
+            return new ResultSummary(this);
         }
 
-        private class ResultSumamry:IResultSummary
+        private class ResultSummary:IResultSummary
         {
-            public ResultSumamry(SummaryBuilder builder)
+            public ResultSummary(SummaryBuilder builder)
             {
                 Throw.ArgumentNullException.IfNull(builder.Statement, nameof(builder.Statement));
                 //Throw.ArgumentNullException.IfNull(builder.StatementType, nameof(builder.StatementType));
                 Statement = builder.Statement;
                 StatementType = builder.StatementType;
-                UpdateStatistics = builder.UpdateStatistics ?? new UpdateStatistics();
+                Counters = builder.Counters ?? new Counters();
                 Plan = builder.Plan;
                 Profile = builder.Profile;
                 Notifications = builder.Notifications ?? new List<INotification>();
             }
 
             public Statement Statement { get; }
-            public IUpdateStatistics UpdateStatistics { get; }
+            public ICounters Counters { get; }
             public StatementType StatementType { get; }
             public bool HasPlan => Plan != null;
             public bool HasProfile => Profile != null;
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.result
             public override string ToString()
             {
                 return $"{GetType().Name}{{{nameof(Statement)}={Statement}, " +
-                       $"{nameof(UpdateStatistics)}={UpdateStatistics}, " +
+                       $"{nameof(Counters)}={Counters}, " +
                        $"{nameof(StatementType)}={StatementType}, " +
                        $"{nameof(Plan)}={Plan}, " +
                        $"{nameof(Profile)}={Profile}, " +
@@ -136,7 +136,7 @@ namespace Neo4j.Driver.Internal.result
         }
     }
 
-    public class UpdateStatistics : IUpdateStatistics
+    public class Counters : ICounters
     {
 
         public bool ContainsUpdates => (
@@ -163,10 +163,10 @@ namespace Neo4j.Driver.Internal.result
         public int ConstraintsAdded { get; }
         public int ConstraintsRemoved { get; }
 
-        public UpdateStatistics():this(0,0,0,0,0,0,0,0,0,0,0)
+        public Counters():this(0,0,0,0,0,0,0,0,0,0,0)
         { }
 
-        public UpdateStatistics(int nodesCreated, int nodesDeleted, int relationshipsCreated, int relationshipsDeleted, int propertiesSet, int labelsAdded, int labelsRemoved, int indexesAdded, int indexesRemoved, int constraintsAdded, int constraintsRemoved)
+        public Counters(int nodesCreated, int nodesDeleted, int relationshipsCreated, int relationshipsDeleted, int propertiesSet, int labelsAdded, int labelsRemoved, int indexesAdded, int indexesRemoved, int constraintsAdded, int constraintsRemoved)
         {
             NodesCreated = nodesCreated;
             NodesDeleted = nodesDeleted;

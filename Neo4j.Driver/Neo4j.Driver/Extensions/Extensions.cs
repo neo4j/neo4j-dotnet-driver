@@ -19,6 +19,8 @@ using System.Linq;
 
 namespace Neo4j.Driver.Extensions
 {
+    using Neo4j.Driver.Exceptions;
+
     public static class Extensions
     {
         public static T[] DequeueToArray<T>(this Queue<T> queue, int length)
@@ -29,6 +31,14 @@ namespace Neo4j.Driver.Extensions
                 output[i] = queue.Dequeue();
             }
             return output;
+        }
+
+        public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key)
+        {
+            if(!dictionary.ContainsKey(key))
+                throw new Neo4jException($"Required property '{key}' is not in the response.");
+
+            return (T) dictionary[key];
         }
 
         public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue)

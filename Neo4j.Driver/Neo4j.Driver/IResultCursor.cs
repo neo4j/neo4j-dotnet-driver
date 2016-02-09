@@ -22,19 +22,24 @@ namespace Neo4j.Driver
     {
         IEnumerable<Record> Stream();
         IResultSummary Summary { get; }
+        //TODO: Property?
+        //TODO: Name --> Current?
         Record Record();
+        //TODO: Property?
         long Position();
         bool Next();
     }
 
     public interface IExtendedResultCursor : IResultCursor
     {
+        //TODO: Property?
         bool AtEnd();
         long Skip(long records);
         long Limit(long records);
         bool First();
         bool Single();
         Record Peek();
+        //TODO: Do we need this?
         IList<Record> List();
     }
 }
