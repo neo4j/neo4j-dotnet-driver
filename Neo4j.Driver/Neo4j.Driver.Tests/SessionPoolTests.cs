@@ -41,6 +41,33 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public void ShouldCreateNewSessionWhenQueueOnlyContainsUnhealthySessions()
+            {
+                var mock = new Mock<IConnection>();
+                var sessions = new ConcurrentQueue<IPooledSession>();
+                Guid unhealthyId = Guid.NewGuid();
+                var unhealthyMock = new Mock<IPooledSession>();
+                unhealthyMock.Setup(x => x.IsHealthy()).Returns(false);
+                unhealthyMock.Setup(x => x.Id).Returns(unhealthyId);
+
+                sessions.Enqueue(unhealthyMock.Object);
+                var pool = new SessionPool(sessions, TestUri,mock.Object );
+
+                pool.NumberOfAvailableSessions.Should().Be(1);
+                pool.NumberOfInUseSessions.Should().Be(0);
+
+                var session = pool.GetSession();
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(1);
+                unhealthyMock.Verify(x => x.Reset(), Times.Never);
+                unhealthyMock.Verify(x => x.Close(), Times.Once);
+
+                session.Should().NotBeNull();
+                ((IPooledSession)session).Id.Should().NotBe(unhealthyId);
+            }
+
+            [Fact]
             public void ShouldReuseOldSessionWhenHealthySessionInQueue()
             {
                 var sessions = new ConcurrentQueue<IPooledSession>();

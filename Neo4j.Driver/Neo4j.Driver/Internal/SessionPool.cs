@@ -23,9 +23,9 @@ namespace Neo4j.Driver.Internal
     {
         private readonly ConcurrentQueue<IPooledSession> _availableSessions = new ConcurrentQueue<IPooledSession>();
         private readonly ConcurrentDictionary<Guid, IPooledSession> _inUseSessions = new ConcurrentDictionary<Guid, IPooledSession>();
-        private Uri _uri;
-        private Config _config;
-        private IConnection _connection;
+        private readonly Uri _uri;
+        private readonly Config _config;
+        private readonly IConnection _connection;
 
         internal int NumberOfInUseSessions => _inUseSessions.Count;
         internal int NumberOfAvailableSessions => _availableSessions.Count;
@@ -37,11 +37,12 @@ namespace Neo4j.Driver.Internal
             _connection = connection;
         }
 
-        internal SessionPool(ConcurrentQueue<IPooledSession> availableSessions) : this(null, null, null)
+        internal SessionPool(ConcurrentQueue<IPooledSession> availableSessions, Uri uri = null, IConnection connection = null) 
+            : this(null, uri, null, connection)
         {
             _availableSessions = availableSessions;
         }
-        internal SessionPool(ConcurrentDictionary<Guid, IPooledSession> inUseDictionary) : this(null, null, null)
+        internal SessionPool(ConcurrentDictionary<Guid, IPooledSession> inUseDictionary) : this(null, null, null, null)
         {
             _inUseSessions = inUseDictionary;
         }
@@ -51,15 +52,10 @@ namespace Neo4j.Driver.Internal
             IPooledSession session;
             if (!_availableSessions.TryDequeue(out session) )
             {
-                // create a new one and put it in inUse
-                // return
                 var newSession = new Session(_uri, _config, _connection, Release);
                 return _inUseSessions.GetOrAdd(newSession.Id, newSession);
             }
             
-            //Check if healthy
-            //if not return GetSession();
-            //Else reset, add to dictionary, return
             if (!session.IsHealthy())
             {
                 session.Close();
@@ -73,17 +69,18 @@ namespace Neo4j.Driver.Internal
         public void Release(Guid sessionId)
         {
             IPooledSession session;
-            if (_inUseSessions.TryRemove(sessionId, out session))
+            if (!_inUseSessions.TryRemove(sessionId, out session))
             {
-                if (session.IsHealthy())
-                {
-                    _availableSessions.Enqueue(session);
-                }
-                else
-                {
-                    //release resources by session
-                    session.Close();
-                }
+                return;
+            }
+            if (session.IsHealthy())
+            {
+                _availableSessions.Enqueue(session);
+            }
+            else
+            {
+                //release resources by session
+                session.Close();
             }
         }
     }

@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.Internal.messaging;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 using Sockets.Plugin;
 using Sockets.Plugin.Abstractions;
@@ -169,7 +169,7 @@ namespace Neo4j.Driver.Tests
                     _messageHandler.HandleRecordMessage(fields);
                 }
 
-                public void Register(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
+                public void Register(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
                 {
                     _messageHandler.Register(requestMessage, resultBuilder);
                 }

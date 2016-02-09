@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 

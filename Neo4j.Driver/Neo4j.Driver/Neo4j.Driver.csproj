@@ -56,6 +56,7 @@
     <Compile Include="Internal\Messaging\SuccessMessage.cs" />
     <Compile Include="Internal\Messaging\FailureMessage.cs" />
     <Compile Include="Internal\Node.cs" />
+    <Compile Include="Internal\Result\IResultBuilder.cs" />
     <Compile Include="Internal\SessionPool.cs" />
     <Compile Include="Internal\Transaction.cs" />
     <Compile Include="Internal\Messaging\DiscardAllMessage.cs" />
@@ -106,7 +107,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Collections.Concurrent">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETPortable\v4.5\System.Collections.Concurrent.dll</HintPath>
+      <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETPortable\v4.5\System.Collections.Concurrent.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
