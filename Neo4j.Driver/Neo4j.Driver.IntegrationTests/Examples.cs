@@ -82,7 +82,7 @@ namespace Examples
            
             //tag::statement[]
             var cursor = session.Run("CREATE (p:Person { name: {name} })", new Dictionary<string, object> {{"name", "The One"}});
-            var theOnesCreated = cursor.Summary.UpdateStatistics.NodesCreated;
+            var theOnesCreated = cursor.Summary.Counters.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement[]
             driver.Dispose();
@@ -96,7 +96,7 @@ namespace Examples
 
             //tag::statement-without-parameters[]
             var cursor = session.Run("CREATE (p:Person { name: 'The One' })");
-            var theOnesCreated = cursor.Summary.UpdateStatistics.NodesCreated;
+            var theOnesCreated = cursor.Summary.Counters.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement-without-parameters[]
             driver.Dispose();

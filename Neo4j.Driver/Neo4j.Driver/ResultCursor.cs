@@ -26,7 +26,7 @@ namespace Neo4j.Driver
     /// </summary>
     public class ResultCursor : IExtendedResultCursor, IResultRecordAccessor, IResources
     {
-        private readonly IResultSummary _summary;
+        private IResultSummary _summary;
         private readonly IPeekingEnumerator<Record> _enumerator;
         private List<string> _keys;
         public IReadOnlyList<string>  Keys => _keys;
@@ -34,6 +34,7 @@ namespace Neo4j.Driver
         private long _limit = -1;
         private Record _current;
         private bool _open = true;
+        private Func<IResultSummary> _getSummary; 
 
         internal ResultCursor(string[] keys, IPeekingEnumerator<Record> recordEnumerator)
         {
@@ -42,14 +43,14 @@ namespace Neo4j.Driver
             _summary = null;
         }
 
-        public ResultCursor(string[] keys, IEnumerable<Record> records, IResultSummary sumamry=null)
+        public ResultCursor(string[] keys, IEnumerable<Record> records, Func<IResultSummary> getSummary = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
             Throw.ArgumentNullException.IfNull(records, nameof(records));
 
             _keys = new List<string>(keys);
             _enumerator = new PeekingEnumerator<Record>(records.GetEnumerator());
-            _summary = sumamry;
+            _getSummary = getSummary;
         }
 
         public dynamic Get(int index)
@@ -116,6 +117,10 @@ namespace Neo4j.Driver
                     throw new ClientException("Cannot get summary before reading all records.");
                 }
                 _enumerator.Discard();
+                if (_summary == null && _getSummary != null)
+                {
+                    _summary = _getSummary();
+                }
                 return _summary;
             }
         }
@@ -133,10 +138,7 @@ namespace Neo4j.Driver
                 }
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         public bool HasRecord()

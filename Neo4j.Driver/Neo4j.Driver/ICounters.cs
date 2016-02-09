@@ -16,7 +16,7 @@
 //  limitations under the License.
 namespace Neo4j.Driver
 {
-    public interface IUpdateStatistics
+    public interface ICounters
     {
         /// 
         /// Whether there were any updates at all, eg. any of the counters are greater than 0.
