@@ -20,7 +20,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.messaging;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 using Xunit;
 
@@ -165,6 +167,59 @@ namespace Neo4j.Driver.Tests
                 con.PullAll(rb);
 
                 mockResponseHandler.Verify(h => h.Register(It.IsAny<PullAllMessage>(), rb), Times.Once);
+            }
+        }
+
+        public class ResetMethod
+        {
+            [Fact]
+            public void ShouldClearSendingMessagesMessageHandlerAndEnqueueResetMessage()
+            {
+                var mock = MockSocketClient;
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                var con = new SocketConnection(mock.Object, Logger, mockResponseHandler.Object);
+
+                con.Reset();
+                var messages = con.Messages;
+                messages.Count.Should().Be(1);
+                messages[0].Should().BeOfType<ResetMessage>();
+                mockResponseHandler.Verify(x=>x.Clear());
+            }
+        }
+
+        public class HasUnrecoverableError
+        {
+            [Fact]
+            public void ShouldReportErrorIfIsTransientException()
+            {
+                var mock = MockSocketClient;
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                var con = new SocketConnection(mock.Object, Logger, mockResponseHandler.Object);
+
+                mockResponseHandler.Setup(x => x.Error).Returns(new TransientException("BLAH", "lalala"));
+                con.HasUnrecoverableError.Should().BeTrue();
+            }
+
+            [Fact]
+            public void ShouldReportErrorIfIsDatabaseException()
+            {
+                var mock = MockSocketClient;
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                var con = new SocketConnection(mock.Object, Logger, mockResponseHandler.Object);
+
+                mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException("BLAH", "lalala"));
+                con.HasUnrecoverableError.Should().BeTrue();
+            }
+
+            [Fact]
+            public void ShouldNotReportErrorIfIsOtherExceptions()
+            {
+                var mock = MockSocketClient;
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                var con = new SocketConnection(mock.Object, Logger, mockResponseHandler.Object);
+
+                mockResponseHandler.Setup(x => x.Error).Returns(new ClientException("BLAH", "lalala"));
+                con.HasUnrecoverableError.Should().BeFalse();
             }
         }
     }

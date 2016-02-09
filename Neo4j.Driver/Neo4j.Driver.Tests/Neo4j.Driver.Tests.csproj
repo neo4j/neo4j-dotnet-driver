@@ -91,6 +91,7 @@
     <Compile Include="DriverTests.cs" />
     <Compile Include="Messaging\MessageTests.cs" />
     <Compile Include="Result\ResultBuilderTests.cs" />
+    <Compile Include="SessionPoolTests.cs" />
     <Compile Include="SessionTests.cs" />
     <Compile Include="PackStream\PackStreamTests.cs" />
     <Compile Include="PackStream\UnpackerTests.cs" />

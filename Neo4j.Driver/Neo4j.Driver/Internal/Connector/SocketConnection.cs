@@ -74,6 +74,9 @@ namespace Neo4j.Driver
 
         }
 
+        public bool HasUnrecoverableError
+         => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
+
         public void Run(ResultBuilder resultBuilder, string statement,
             IDictionary<string, object> statementParameters = null)
         {
@@ -89,6 +92,13 @@ namespace Neo4j.Driver
         public void DiscardAll()
         {
             Enqueue(new DiscardAllMessage());
+        }
+
+        public void Reset()
+        {
+            ClearQueue();
+            _messageHandler.Clear();
+            Enqueue(new ResetMessage());
         }
 
         public bool IsOpen => _client.IsOpen;

@@ -174,6 +174,11 @@ namespace Neo4j.Driver.Tests
                     _messageHandler.Register(requestMessage, resultBuilder);
                 }
 
+                public void Clear()
+                {
+                    throw new NotImplementedException();
+                }
+
                 public bool QueueIsEmpty()
                 {
                     return _messageHandler.QueueIsEmpty();

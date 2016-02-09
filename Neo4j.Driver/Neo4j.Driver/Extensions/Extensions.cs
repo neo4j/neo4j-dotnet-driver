@@ -16,11 +16,10 @@
 //  limitations under the License.
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Exceptions;
 
 namespace Neo4j.Driver.Extensions
 {
-    using Neo4j.Driver.Exceptions;
-
     public static class Extensions
     {
         public static T[] DequeueToArray<T>(this Queue<T> queue, int length)

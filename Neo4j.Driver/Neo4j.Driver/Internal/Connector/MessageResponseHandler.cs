@@ -98,6 +98,13 @@ namespace Neo4j.Driver
             
         }
 
+        public void Clear()
+        {
+            _resultBuilders.Clear();
+            _sentMessages.Clear();
+            _currentResultBuilder = null;
+        }
+
         public bool QueueIsEmpty()
         {
             return _sentMessages.Count == 0;
