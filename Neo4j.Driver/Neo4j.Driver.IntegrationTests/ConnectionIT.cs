@@ -20,6 +20,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
+    using System.Linq;
 
     [Collection(IntegrationCollection.CollectionName)]
     public class ConnectionIT
@@ -87,6 +88,23 @@ namespace Neo4j.Driver.IntegrationTests
                         output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public void BuffersResultsOfOneQuerySoTheyCanBeReadAfterAnotherSubsequentQueryHasBeenParsed()
+        {
+            using (var driver = GraphDatabase.Driver("bolt://localhost"))
+            using (var session = driver.Session())
+            {
+                var cursor1 = session.Run("unwind range(1,3) as n RETURN n");
+                var cursor2 = session.Run("unwind range(4,6) as n RETURN n");
+
+                var result2All = cursor2.Stream().ToList();
+                var result1All = cursor1.Stream().ToList();
+
+                result2All.Select(r => (int)r.Values["n"]).Should().ContainInOrder(4, 5, 6);
+                result1All.Select(r => (int)r.Values["n"]).Should().ContainInOrder(1, 2, 3);
             }
         }
     }

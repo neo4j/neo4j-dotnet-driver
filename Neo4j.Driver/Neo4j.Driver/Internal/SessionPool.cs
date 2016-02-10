@@ -15,17 +15,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal
 {
     internal class SessionPool : LoggerBase
     {
-        private readonly ConcurrentQueue<IPooledSession> _availableSessions = new ConcurrentQueue<IPooledSession>();
-        private readonly ConcurrentDictionary<Guid, IPooledSession> _inUseSessions = new ConcurrentDictionary<Guid, IPooledSession>();
-        private Uri _uri;
-        private Config _config;
-        private IConnection _connection;
+        private readonly Queue<IPooledSession> _availableSessions = new Queue<IPooledSession>();
+        private readonly Dictionary<Guid, IPooledSession> _inUseSessions = new Dictionary<Guid, IPooledSession>();
+        private readonly Uri _uri;
+        private readonly Config _config;
+        private readonly IConnection _connection;
 
         internal int NumberOfInUseSessions => _inUseSessions.Count;
         internal int NumberOfAvailableSessions => _availableSessions.Count;
@@ -37,29 +37,32 @@ namespace Neo4j.Driver.Internal
             _connection = connection;
         }
 
-        internal SessionPool(ConcurrentQueue<IPooledSession> availableSessions) : this(null, null, null)
+        internal SessionPool(Queue<IPooledSession> availableSessions, Uri uri = null, IConnection connection = null) 
+            : this(null, uri, null, connection)
         {
             _availableSessions = availableSessions;
         }
-        internal SessionPool(ConcurrentDictionary<Guid, IPooledSession> inUseDictionary) : this(null, null, null)
+        internal SessionPool(Dictionary<Guid, IPooledSession> inUseDictionary) : this(null, null, null, null)
         {
             _inUseSessions = inUseDictionary;
         }
 
         public ISession GetSession()
         {
-            IPooledSession session;
-            if (!_availableSessions.TryDequeue(out session) )
+            IPooledSession session = null;
+            lock (_availableSessions)
             {
-                // create a new one and put it in inUse
-                // return
-                var newSession = new Session(_uri, _config, _connection, Release);
-                return _inUseSessions.GetOrAdd(newSession.Id, newSession);
+                if(_availableSessions.Count != 0)
+                session = _availableSessions.Dequeue();
             }
-            
-            //Check if healthy
-            //if not return GetSession();
-            //Else reset, add to dictionary, return
+
+            if (session == null)
+            {
+                session = new Session(_uri, _config, _connection, Release);
+                _inUseSessions.Add(session.Id, session);
+                return session;
+            }
+           
             if (!session.IsHealthy())
             {
                 session.Close();
@@ -67,23 +70,34 @@ namespace Neo4j.Driver.Internal
             }
 
             session.Reset();
-            return _inUseSessions.GetOrAdd(session.Id, session);
+            _inUseSessions.Add(session.Id, session);
+            return session;
         }
 
         public void Release(Guid sessionId)
         {
             IPooledSession session;
-            if (_inUseSessions.TryRemove(sessionId, out session))
+            if (!_inUseSessions.ContainsKey(sessionId))
             {
-                if (session.IsHealthy())
-                {
+                return;
+            }
+
+            lock (_inUseSessions)
+            {
+                session = _inUseSessions[sessionId];
+                _inUseSessions.Remove(sessionId);
+            }
+
+          
+            if (session.IsHealthy())
+            {
+                lock (_availableSessions) 
                     _availableSessions.Enqueue(session);
-                }
-                else
-                {
-                    //release resources by session
-                    session.Close();
-                }
+            }
+            else
+            {
+                //release resources by session
+                session.Close();
             }
         }
     }

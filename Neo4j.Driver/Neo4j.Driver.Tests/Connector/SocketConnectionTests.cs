@@ -21,7 +21,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 using Xunit;

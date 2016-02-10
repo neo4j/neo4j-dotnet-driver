@@ -147,7 +147,7 @@ namespace Neo4j.Driver.Tests
                 cursor.Next().Should().BeTrue();
                 mock.Verify(x => x.HasNext(), Times.Once);
                 mock.Verify(x => x.Next(), Times.Once);
-                cursor.Position().Should().Be(0);
+                cursor.Position.Should().Be(0);
             }
 
             [Fact]
@@ -160,7 +160,7 @@ namespace Neo4j.Driver.Tests
                 cursor.Next().Should().BeFalse();
                 mock.Verify(x => x.HasNext(), Times.Once);
                 mock.Verify(x => x.Next(), Times.Never);
-                cursor.Position().Should().Be(-1);
+                cursor.Position.Should().Be(-1);
             }
 
             [Fact(Skip = "Pending API Review")]
@@ -331,7 +331,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldThrowClientExceptionWhenNotAtEnd()
             {
                 var cursor = ResultCreator.CreateResult(1, 1);
-                cursor.AtEnd().Should().BeFalse();
+                cursor.AtEnd.Should().BeFalse();
 
                 var ex = Xunit.Record.Exception(() => cursor.Summary);
                 ex.Should().BeOfType<ClientException>();

@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -41,9 +41,36 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public void ShouldCreateNewSessionWhenQueueOnlyContainsUnhealthySessions()
+            {
+                var mock = new Mock<IConnection>();
+                var sessions = new Queue<IPooledSession>();
+                Guid unhealthyId = Guid.NewGuid();
+                var unhealthyMock = new Mock<IPooledSession>();
+                unhealthyMock.Setup(x => x.IsHealthy()).Returns(false);
+                unhealthyMock.Setup(x => x.Id).Returns(unhealthyId);
+
+                sessions.Enqueue(unhealthyMock.Object);
+                var pool = new SessionPool(sessions, TestUri,mock.Object );
+
+                pool.NumberOfAvailableSessions.Should().Be(1);
+                pool.NumberOfInUseSessions.Should().Be(0);
+
+                var session = pool.GetSession();
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(1);
+                unhealthyMock.Verify(x => x.Reset(), Times.Never);
+                unhealthyMock.Verify(x => x.Close(), Times.Once);
+
+                session.Should().NotBeNull();
+                ((IPooledSession)session).Id.Should().NotBe(unhealthyId);
+            }
+
+            [Fact]
             public void ShouldReuseOldSessionWhenHealthySessionInQueue()
             {
-                var sessions = new ConcurrentQueue<IPooledSession>();
+                var sessions = new Queue<IPooledSession>();
                 var mock = new Mock<IPooledSession>();
                 mock.Setup(x => x.IsHealthy()).Returns(true);
 
@@ -61,64 +88,71 @@ namespace Neo4j.Driver.Tests
                 session.Should().Be(mock.Object);
             }
 
-
-            [Fact]
-            public void ShouldReturnFromQueueWhenUsingMultipleThreads()
+            [Theory]
+            [InlineData(1)]
+            [InlineData(2)]
+            [InlineData(5)]
+            [InlineData(10)]
+            [InlineData(50)]
+            public void ShouldGetNewSessionsWhenBeingUsedConcurrentlyBy(int numberOfThreads)
             {
-                var id1 = Guid.NewGuid();
-                var id2 = Guid.NewGuid();
-                var sessions = new ConcurrentQueue<IPooledSession>();
-                var mock1 = new Mock<IPooledSession>();
-                mock1.Setup(x => x.IsHealthy()).Returns(true);
-                mock1.Setup(x => x.Id).Returns(id1);
+                var ids = new List<Guid>();
+                for (int i = 0; i < numberOfThreads; i++)
+                {
+                    ids.Add(Guid.NewGuid());
+                }
 
-                var mock2 = new Mock<IPooledSession>();
-                mock2.Setup(x => x.IsHealthy()).Returns(true);
-                mock2.Setup(x => x.Id).Returns(id2);
-
-                sessions.Enqueue(mock1.Object);
-                sessions.Enqueue(mock2.Object);
+                var mockSessions = new Queue<Mock<IPooledSession>>();
+                var sessions = new Queue<IPooledSession>();
+                for (int i = 0; i < numberOfThreads; i++)
+                {
+                    var mock = new Mock<IPooledSession>();
+                    mock.Setup(x => x.IsHealthy()).Returns(true);
+                    mock.Setup(x => x.Id).Returns(ids[i]);
+                    sessions.Enqueue(mock.Object);
+                    mockSessions.Enqueue(mock);
+                }
+                
                 var pool = new SessionPool(sessions);
 
-                pool.NumberOfAvailableSessions.Should().Be(2);
+                pool.NumberOfAvailableSessions.Should().Be(numberOfThreads);
                 pool.NumberOfInUseSessions.Should().Be(0);
 
-                Guid t1Id = Guid.Empty, t2Id = Guid.Empty;
-
-                var tasks = new[]
+                var receivedIds = new List<Guid>();
+                
+                var tasks = new Task[numberOfThreads];
+                for (int i = 0; i < numberOfThreads; i++)
                 {
-                    Task.Run(() =>
-                    {
-                        Task.Delay(500);
-                        var session = pool.GetSession();
-                        t1Id = ((IPooledSession) session).Id;
-                    }),
-                    Task.Run(() =>
-                    {
-                        Task.Delay(500);
-                        var session = pool.GetSession();
-                        t2Id = ((IPooledSession) session).Id;
-                    })
-                };
+                    tasks[i] =
+                        Task.Run(() =>
+                        {
+                            Task.Delay(500);
+                            var session = pool.GetSession();
+                            receivedIds.Add(((IPooledSession) session).Id);
+                        });
+                }
 
                 Task.WaitAll(tasks);
 
-                t1Id.Should().NotBe(t2Id);
-                var ids = new[] {id1, id2};
-                ids.Should().Contain(t1Id);
-                ids.Should().Contain(t2Id);
+                receivedIds.Count.Should().Be(numberOfThreads);
+                foreach (var receivedId in receivedIds)
+                {
+                    receivedIds.Should().ContainSingle(x => x == receivedId);
+                    ids.Should().Contain(receivedId);
+                }
 
-                pool.NumberOfAvailableSessions.Should().Be(0);
-                pool.NumberOfInUseSessions.Should().Be(2);
-                mock1.Verify(x => x.Reset(), Times.Once);
-                mock2.Verify(x => x.Reset(), Times.Once);
+                foreach (var mock in mockSessions)
+                {
+                    mock.Verify(x => x.Reset(), Times.Once);
+                }
             }
+
 
 
             [Fact]
             public void ShouldReuseHealthySessionWhenHealthySessionInQueue()
             {
-                var sessions = new ConcurrentQueue<IPooledSession>();
+                var sessions = new Queue<IPooledSession>();
                 var healthyMock = new Mock<IPooledSession>();
                 healthyMock.Setup(x => x.IsHealthy()).Returns(true);
                 var unhealthyMock = new Mock<IPooledSession>();
@@ -152,8 +186,8 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.IsHealthy()).Returns(true);
                 var id = new Guid();
 
-                var inUseSessions = new ConcurrentDictionary<Guid, IPooledSession>();
-                inUseSessions.GetOrAdd(id, mock.Object);
+                var inUseSessions = new Dictionary<Guid, IPooledSession>();
+                inUseSessions.Add(id, mock.Object);
                 var pool = new SessionPool(inUseSessions);
 
                 pool.NumberOfAvailableSessions.Should().Be(0);
@@ -172,8 +206,8 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.IsHealthy()).Returns(false);
                 var id = new Guid();
 
-                var inUseSessions = new ConcurrentDictionary<Guid, IPooledSession>();
-                inUseSessions.GetOrAdd(id, mock.Object);
+                var inUseSessions = new Dictionary<Guid, IPooledSession>();
+                inUseSessions.Add(id, mock.Object);
                 var pool = new SessionPool(inUseSessions);
 
                 pool.NumberOfAvailableSessions.Should().Be(0);
