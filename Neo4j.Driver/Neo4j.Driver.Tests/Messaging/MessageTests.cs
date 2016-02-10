@@ -20,7 +20,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 using Xunit.Extensions;

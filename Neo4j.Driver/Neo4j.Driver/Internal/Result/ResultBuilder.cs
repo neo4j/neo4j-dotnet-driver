@@ -23,14 +23,14 @@ using static Neo4j.Driver.StatementType;
 
 namespace Neo4j.Driver.Internal.result
 {
-    public class ResultBuilder
+    public class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
         private readonly IList<Record> _records = new List<Record>();
         private readonly SummaryBuilder _summaryBuilder;
         internal bool HasMoreRecords { get; private set; } = true;
 
-        internal ResultBuilder() : this(null, null)
+        public ResultBuilder() : this(null, null)
         {
         }
 

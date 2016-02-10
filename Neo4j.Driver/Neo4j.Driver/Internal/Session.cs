@@ -16,21 +16,23 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.result;
 
 namespace Neo4j.Driver
 {
-    public class Session : LoggerBase, ISession
+    public class Session : LoggerBase, IPooledSession
     {
         private readonly IConnection _connection;
         private Transaction _transaction;
+        private readonly Action<Guid> _releaseAction;
 
-        public Session(Uri url, Config config, IConnection conn = null)
+        public Session(Uri url, Config config, IConnection conn = null, Action<Guid> releaseAction = null )
             : base(config?.Logger)
         {
             _connection = TryExecute(() => conn ?? new SocketConnection(url, config));
+            _releaseAction = releaseAction ?? (x => {}); 
         }
 
         protected override void Dispose(bool isDisposing)
@@ -51,8 +53,10 @@ namespace Neo4j.Driver
                     // Best-effort
                 }
             }
-            _connection.Dispose();
+
+            _releaseAction(Id);
             base.Dispose(isDisposing);
+            
         }
 
         public void Dispose()
@@ -112,6 +116,32 @@ namespace Neo4j.Driver
                 throw new ClientException("Please close the currently open transaction object before running " +
                                            "more statements/transactions in the current session.");
             }
+        }
+
+        public Guid Id { get; } = Guid.NewGuid();
+        public bool IsHealthy()
+        {
+            if (!_connection.IsOpen)
+            {
+                return false;
+            }
+            if (_connection.HasUnrecoverableError)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public void Reset()
+        {
+            _connection.Reset();
+            _connection.Sync();
+        }
+
+        public void Close()
+        {
+            Dispose(true);
+            _connection.Dispose();
         }
     }
 }

@@ -19,13 +19,17 @@ namespace Neo4j.Driver
     /// <summary>
     /// Use this class to config the <see cref="Driver"/> in a certain way
     /// </summary>
-    public class Config 
+    public class Config
     {
-        private Config() { }
-
+        public const int InfiniteSessionPoolSize = 0;
         static Config()
         {
-            DefaultConfig = new Config { TlsEnabled = false, Logger = new DebugLogger {Level = LogLevel.Info} };
+            DefaultConfig = new Config
+            {
+                TlsEnabled = false,
+                Logger = new DebugLogger {Level = LogLevel.Info},
+                MaxSessionPoolSize = 20
+            };
         }
 
         /// <summary>
@@ -37,9 +41,11 @@ namespace Neo4j.Driver
 
         public static IConfigBuilder Builder => new ConfigBuilder(new Config());
 
-        public bool TlsEnabled { get; private set; }
+        public bool TlsEnabled { get; set; }
 
-        public ILogger Logger { get; private set; }
+        public ILogger Logger { get; set; }
+
+        public int MaxSessionPoolSize { get; set; }
 
         private class ConfigBuilder : IConfigBuilder
         {
@@ -62,6 +68,12 @@ namespace Neo4j.Driver
                 return this;
             }
 
+            public IConfigBuilder WithMaxSessionPoolSize(int size)
+            {
+                _config.MaxSessionPoolSize = size;
+                return this;
+            }
+
             public Config ToConfig()
             {
                 return _config;
@@ -73,6 +85,7 @@ namespace Neo4j.Driver
         Config ToConfig();
         IConfigBuilder WithTlsEnabled(bool enableTls);
         IConfigBuilder WithLogger(ILogger logger);
+        IConfigBuilder WithMaxSessionPoolSize(int size);
     }
 
   

@@ -14,9 +14,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
 using System.Collections.Generic;
 using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 
@@ -24,12 +24,18 @@ namespace Neo4j.Driver
 {
     internal class MessageResponseHandler : IMessageResponseHandler
     {
-        private readonly Queue<ResultBuilder> _resultBuilders = new Queue<ResultBuilder>();
-        protected readonly Queue<IRequestMessage> _sentMessages = new Queue<IRequestMessage>() ;
-        private ResultBuilder _currentResultBuilder;
-        private ILogger _logger;
+        private readonly ILogger _logger;
+        private readonly Queue<IResultBuilder> _resultBuilders = new Queue<IResultBuilder>();
+        private readonly Queue<IRequestMessage> _sentMessages = new Queue<IRequestMessage>();
+        internal IResultBuilder CurrentResultBuilder { get; private set; }
 
-        public MessageResponseHandler(){}
+        internal Queue<IResultBuilder> ResultBuilders => new Queue<IResultBuilder>(_resultBuilders);
+        internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_sentMessages); 
+        
+
+        public MessageResponseHandler()
+        {
+        }
 
         public MessageResponseHandler(ILogger logger)
         {
@@ -42,31 +48,31 @@ namespace Neo4j.Driver
         public void HandleSuccessMessage(IDictionary<string, object> meta)
         {
             _sentMessages.Dequeue();
-            _currentResultBuilder = _resultBuilders.Dequeue();
+            CurrentResultBuilder = _resultBuilders.Dequeue();
             if (meta.ContainsKey("fields"))
             {
                 // first success
-                _currentResultBuilder?.CollectFields(meta);
+                CurrentResultBuilder?.CollectFields(meta);
             }
             else
             {
                 // second success
                 // before summary method is called
-                _currentResultBuilder?.CollectSummaryMeta(meta);
+                CurrentResultBuilder?.CollectSummaryMeta(meta);
             }
             _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 
         public void HandleRecordMessage(dynamic[] fields)
         {
-            _currentResultBuilder.Record(fields);
-            _logger?.Debug("S: ", new RecordMessage( fields ));
+            CurrentResultBuilder.Record(fields);
+            _logger?.Debug("S: ", new RecordMessage(fields));
         }
 
         public void HandleFailureMessage(string code, string message)
         {
-            string[] parts = code.Split('.');
-            string classification = parts[1].ToLowerInvariant();
+            var parts = code.Split('.');
+            var classification = parts[1].ToLowerInvariant();
             switch (classification)
             {
                 case "clienterror":
@@ -91,11 +97,17 @@ namespace Neo4j.Driver
             _logger?.Debug("S: ", new IgnoredMessage());
         }
 
-        public void Register(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
+        public void Register(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
             _sentMessages.Enqueue(requestMessage);
             _resultBuilders.Enqueue(resultBuilder);
-            
+        }
+
+        public void Clear()
+        {
+            _resultBuilders.Clear();
+            _sentMessages.Clear();
+            CurrentResultBuilder = null;
         }
 
         public bool QueueIsEmpty()

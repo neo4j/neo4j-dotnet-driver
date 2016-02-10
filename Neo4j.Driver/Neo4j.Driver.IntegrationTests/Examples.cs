@@ -115,7 +115,7 @@ namespace Examples
 
             while (cursor.Next())
             {
-                output.WriteLine($"Record: {cursor.Position()}");
+                output.WriteLine($"Record: {cursor.Position}");
                 foreach (var keyValuePair in cursor.Values())
                 {
                     output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");

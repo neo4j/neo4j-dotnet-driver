@@ -112,7 +112,7 @@ namespace Neo4j.Driver
         {
             get
             {
-                if (!AtEnd())
+                if (!AtEnd)
                 {
                     throw new ClientException("Cannot get summary before reading all records.");
                 }
@@ -158,10 +158,13 @@ namespace Neo4j.Driver
            
         }
 
-        public long Position()
+        public long Position
         {
-            AssertOpen();
-            return _position;
+            get
+            {
+                AssertOpen();
+                return _position;
+            }
         }
 
         private void AssertOpen()
@@ -172,10 +175,13 @@ namespace Neo4j.Driver
             }
         }
 
-        public bool AtEnd()
+        public bool AtEnd
         {
-            AssertOpen();
-            return !_enumerator.HasNext();
+            get
+            {
+                AssertOpen();
+                return !_enumerator.HasNext();
+            }
         }
 
         public long Skip(long size)
@@ -208,13 +214,13 @@ namespace Neo4j.Driver
 
         public bool First()
         {
-            long pos = Position();
+            long pos = Position;
             return pos < 0 ? Next() : pos == 0;
         }
 
         public bool Single()
         {
-            return First() && AtEnd();
+            return First() && AtEnd;
         }
 
         public Record Peek()
@@ -225,33 +231,6 @@ namespace Neo4j.Driver
         private bool IsEmpty()
         {
             return _position == -1 && !_enumerator.HasNext();
-        }
-
-        public IList<Record> List()
-        {
-            return List(r => r);
-        }
-
-        public IList<T> List<T>(Func<Record, T> mapFunction)
-        {
-            if (IsEmpty())
-            {
-                AssertOpen();
-                return new List<T>();
-            }
-            if (First())
-            {
-                var result = new List<T>();
-                do
-                {
-                    result.Add(mapFunction(_current));
-                } while (Next());
-                _enumerator.Discard();
-                return result;
-            }
-
-            throw new InvalidOperationException(
-                $"Can't retain records when cursor is not pointing at the first record (currently at position {_position})");
         }
 
         protected virtual void Dispose(bool isDisposing)
