@@ -37,14 +37,16 @@ namespace Neo4j.Driver.Internal
             _connection = connection;
         }
 
-        internal SessionPool(Queue<IPooledSession> availableSessions, Uri uri = null, IConnection connection = null) 
-            : this(null, uri, null, connection)
+        internal SessionPool(
+            Queue<IPooledSession> availableSessions, 
+            Dictionary<Guid, IPooledSession> inUseDictionary, 
+            Uri uri = null, 
+            IConnection connection = null, 
+            ILogger logger = null) 
+            : this(logger, uri, null, connection)
         {
-            _availableSessions = availableSessions;
-        }
-        internal SessionPool(Dictionary<Guid, IPooledSession> inUseDictionary) : this(null, null, null, null)
-        {
-            _inUseSessions = inUseDictionary;
+            _availableSessions = availableSessions ?? new Queue<IPooledSession>();
+            _inUseSessions = inUseDictionary ?? new Dictionary<Guid, IPooledSession>();
         }
 
         public ISession GetSession()
@@ -59,7 +61,10 @@ namespace Neo4j.Driver.Internal
             if (session == null)
             {
                 session = new Session(_uri, _config, _connection, Release);
-                _inUseSessions.Add(session.Id, session);
+                lock (_inUseSessions)
+                {
+                    _inUseSessions.Add(session.Id, session);
+                }
                 return session;
             }
            
@@ -70,25 +75,27 @@ namespace Neo4j.Driver.Internal
             }
 
             session.Reset();
-            _inUseSessions.Add(session.Id, session);
+            lock (_inUseSessions)
+            {
+                _inUseSessions.Add(session.Id, session);
+            }
             return session;
         }
 
         public void Release(Guid sessionId)
         {
             IPooledSession session;
-            if (!_inUseSessions.ContainsKey(sessionId))
-            {
-                return;
-            }
-
             lock (_inUseSessions)
             {
+                if (!_inUseSessions.ContainsKey(sessionId))
+                {
+                    return;
+                }
+
                 session = _inUseSessions[sessionId];
                 _inUseSessions.Remove(sessionId);
             }
 
-          
             if (session.IsHealthy())
             {
                 lock (_availableSessions) 
@@ -99,6 +106,36 @@ namespace Neo4j.Driver.Internal
                 //release resources by session
                 session.Close();
             }
+        }
+
+        protected override void Dispose(bool isDisposing)
+        {
+            if (!isDisposing)
+            {
+                return;
+            }
+
+            lock (_inUseSessions)
+            { 
+                var sessions =  new List<IPooledSession>(_inUseSessions.Values);
+                _inUseSessions.Clear();
+                foreach (var inUseSession in sessions)
+                {
+                    Logger?.Info($"Disposing In Use Session {inUseSession.Id}");
+                    inUseSession.Close();
+                }
+            }
+            lock (_availableSessions)
+            {
+                while (_availableSessions.Count > 0)
+                {
+                    var session = _availableSessions.Dequeue();
+                    Logger?.Info($"Disposing Available Session {session.Id}");
+                    session.Close();
+                }
+            }
+
+            base.Dispose(true);
         }
     }
 

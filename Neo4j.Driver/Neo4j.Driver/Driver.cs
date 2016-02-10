@@ -44,6 +44,8 @@ namespace Neo4j.Driver
            
             if (!isDisposing)
                 return;
+            _sessionPool?.Dispose();
+            _sessionPool = null;
             Logger?.Dispose();
         }
 

@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Tests
 {
@@ -30,6 +31,13 @@ namespace Neo4j.Driver.Tests
 
         public class GetSessionMethod
         {
+            private readonly ITestOutputHelper _output;
+
+            public GetSessionMethod(ITestOutputHelper output)
+            {
+                _output = output;
+            }
+
             [Fact]
             public void ShouldCreateNewSessionWhenQueueIsEmpty()
             {
@@ -51,7 +59,7 @@ namespace Neo4j.Driver.Tests
                 unhealthyMock.Setup(x => x.Id).Returns(unhealthyId);
 
                 sessions.Enqueue(unhealthyMock.Object);
-                var pool = new SessionPool(sessions, TestUri,mock.Object );
+                var pool = new SessionPool(sessions,null, TestUri,mock.Object );
 
                 pool.NumberOfAvailableSessions.Should().Be(1);
                 pool.NumberOfInUseSessions.Should().Be(0);
@@ -75,7 +83,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.IsHealthy()).Returns(true);
 
                 sessions.Enqueue(mock.Object);
-                var pool = new SessionPool(sessions);
+                var pool = new SessionPool(sessions, null);
 
                 pool.NumberOfAvailableSessions.Should().Be(1);
                 pool.NumberOfInUseSessions.Should().Be(0);
@@ -93,7 +101,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(2)]
             [InlineData(5)]
             [InlineData(10)]
-            [InlineData(50)]
+            [InlineData(500)]
             public void ShouldGetNewSessionsWhenBeingUsedConcurrentlyBy(int numberOfThreads)
             {
                 var ids = new List<Guid>();
@@ -112,8 +120,8 @@ namespace Neo4j.Driver.Tests
                     sessions.Enqueue(mock.Object);
                     mockSessions.Enqueue(mock);
                 }
-                
-                var pool = new SessionPool(sessions);
+
+                var pool = new SessionPool(sessions, null);
 
                 pool.NumberOfAvailableSessions.Should().Be(numberOfThreads);
                 pool.NumberOfInUseSessions.Should().Be(0);
@@ -123,12 +131,20 @@ namespace Neo4j.Driver.Tests
                 var tasks = new Task[numberOfThreads];
                 for (int i = 0; i < numberOfThreads; i++)
                 {
-                    tasks[i] =
-                        Task.Run(() =>
-                        {
-                            Task.Delay(500);
-                            var session = pool.GetSession();
-                            receivedIds.Add(((IPooledSession) session).Id);
+                    int localI = i;
+                    tasks[localI] =
+                        Task.Run(() =>{
+                            try
+                            {
+                                Task.Delay(500);
+                                var session = pool.GetSession();
+                                lock(receivedIds)
+                                    receivedIds.Add(((IPooledSession) session).Id);
+                            }
+                            catch (Exception ex)
+                            {
+                                _output.WriteLine($"Task[{localI}] died: {ex}");
+                            }
                         });
                 }
 
@@ -160,7 +176,7 @@ namespace Neo4j.Driver.Tests
 
                 sessions.Enqueue(unhealthyMock.Object);
                 sessions.Enqueue(healthyMock.Object);
-                var pool = new SessionPool(sessions);
+                var pool = new SessionPool(sessions, null);
 
                 pool.NumberOfAvailableSessions.Should().Be(2);
                 pool.NumberOfInUseSessions.Should().Be(0);
@@ -188,7 +204,7 @@ namespace Neo4j.Driver.Tests
 
                 var inUseSessions = new Dictionary<Guid, IPooledSession>();
                 inUseSessions.Add(id, mock.Object);
-                var pool = new SessionPool(inUseSessions);
+                var pool = new SessionPool(null, inUseSessions);
 
                 pool.NumberOfAvailableSessions.Should().Be(0);
                 pool.NumberOfInUseSessions.Should().Be(1);
@@ -208,7 +224,7 @@ namespace Neo4j.Driver.Tests
 
                 var inUseSessions = new Dictionary<Guid, IPooledSession>();
                 inUseSessions.Add(id, mock.Object);
-                var pool = new SessionPool(inUseSessions);
+                var pool = new SessionPool(null, inUseSessions);
 
                 pool.NumberOfAvailableSessions.Should().Be(0);
                 pool.NumberOfInUseSessions.Should().Be(1);
@@ -218,6 +234,59 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableSessions.Should().Be(0);
                 pool.NumberOfInUseSessions.Should().Be(0);
                 mock.Verify(x=>x.Close(), Times.Once);
+            }
+        }
+
+        public class DisposeMethod
+        {
+            [Fact]
+            public void ShouldReleaseAll()
+            {
+                var mock = new Mock<IPooledSession>();
+                mock.Setup(x => x.IsHealthy()).Returns(true);
+                var id = Guid.NewGuid();
+                var inUseSessions = new Dictionary<Guid, IPooledSession>();
+                inUseSessions.Add(id, mock.Object);
+
+                var sessions = new Queue<IPooledSession>();
+                var mock1 = new Mock<IPooledSession>();
+                mock1.Setup(x => x.IsHealthy()).Returns(true);
+
+                sessions.Enqueue(mock1.Object);
+
+                var pool = new SessionPool(sessions, inUseSessions);
+                pool.NumberOfAvailableSessions.Should().Be(1);
+                pool.NumberOfInUseSessions.Should().Be(1);
+
+                pool.Dispose();
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(0);
+
+            }
+
+            [Fact]
+            public void ShouldLogInUseAndAvailableSessionIds()
+            {
+                var mockLogger = new Mock<ILogger>();
+                var mock = new Mock<IPooledSession>();
+                mock.Setup(x => x.IsHealthy()).Returns(true);
+                var id = Guid.NewGuid();
+                var inUseSessions = new Dictionary<Guid, IPooledSession>();
+                inUseSessions.Add(id, mock.Object);
+
+                var sessions = new Queue<IPooledSession>();
+                var mock1 = new Mock<IPooledSession>();
+                mock1.Setup(x => x.IsHealthy()).Returns(true);
+
+                sessions.Enqueue(mock1.Object);
+
+                var pool = new SessionPool(sessions, inUseSessions, logger: mockLogger.Object);
+               
+                pool.Dispose();
+
+                mockLogger.Verify(x => x.Info(It.Is<string>(actual => actual.StartsWith("Disposing In Use"))), Times.Once);
+                mockLogger.Verify(x => x.Info(It.Is<string>(actual => actual.StartsWith("Disposing Available"))), Times.Once);
             }
         }
     }
