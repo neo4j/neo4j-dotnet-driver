@@ -15,14 +15,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal
 {
     internal class SessionPool : LoggerBase
     {
-        private readonly ConcurrentQueue<IPooledSession> _availableSessions = new ConcurrentQueue<IPooledSession>();
-        private readonly ConcurrentDictionary<Guid, IPooledSession> _inUseSessions = new ConcurrentDictionary<Guid, IPooledSession>();
+        private readonly Queue<IPooledSession> _availableSessions = new Queue<IPooledSession>();
+        private readonly Dictionary<Guid, IPooledSession> _inUseSessions = new Dictionary<Guid, IPooledSession>();
         private readonly Uri _uri;
         private readonly Config _config;
         private readonly IConnection _connection;
@@ -37,25 +37,32 @@ namespace Neo4j.Driver.Internal
             _connection = connection;
         }
 
-        internal SessionPool(ConcurrentQueue<IPooledSession> availableSessions, Uri uri = null, IConnection connection = null) 
+        internal SessionPool(Queue<IPooledSession> availableSessions, Uri uri = null, IConnection connection = null) 
             : this(null, uri, null, connection)
         {
             _availableSessions = availableSessions;
         }
-        internal SessionPool(ConcurrentDictionary<Guid, IPooledSession> inUseDictionary) : this(null, null, null, null)
+        internal SessionPool(Dictionary<Guid, IPooledSession> inUseDictionary) : this(null, null, null, null)
         {
             _inUseSessions = inUseDictionary;
         }
 
         public ISession GetSession()
         {
-            IPooledSession session;
-            if (!_availableSessions.TryDequeue(out session) )
+            IPooledSession session = null;
+            lock (_availableSessions)
             {
-                var newSession = new Session(_uri, _config, _connection, Release);
-                return _inUseSessions.GetOrAdd(newSession.Id, newSession);
+                if(_availableSessions.Count != 0)
+                session = _availableSessions.Dequeue();
             }
-            
+
+            if (session == null)
+            {
+                session = new Session(_uri, _config, _connection, Release);
+                _inUseSessions.Add(session.Id, session);
+                return session;
+            }
+           
             if (!session.IsHealthy())
             {
                 session.Close();
@@ -63,19 +70,29 @@ namespace Neo4j.Driver.Internal
             }
 
             session.Reset();
-            return _inUseSessions.GetOrAdd(session.Id, session);
+            _inUseSessions.Add(session.Id, session);
+            return session;
         }
 
         public void Release(Guid sessionId)
         {
             IPooledSession session;
-            if (!_inUseSessions.TryRemove(sessionId, out session))
+            if (!_inUseSessions.ContainsKey(sessionId))
             {
                 return;
             }
+
+            lock (_inUseSessions)
+            {
+                session = _inUseSessions[sessionId];
+                _inUseSessions.Remove(sessionId);
+            }
+
+          
             if (session.IsHealthy())
             {
-                _availableSessions.Enqueue(session);
+                lock (_availableSessions) 
+                    _availableSessions.Enqueue(session);
             }
             else
             {
