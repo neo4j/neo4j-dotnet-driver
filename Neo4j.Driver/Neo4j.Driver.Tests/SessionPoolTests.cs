@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Tests
 {
@@ -30,6 +31,13 @@ namespace Neo4j.Driver.Tests
 
         public class GetSessionMethod
         {
+            private readonly ITestOutputHelper _output;
+
+            public GetSessionMethod(ITestOutputHelper output)
+            {
+                _output = output;
+            }
+
             [Fact]
             public void ShouldCreateNewSessionWhenQueueIsEmpty()
             {
@@ -93,7 +101,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(2)]
             [InlineData(5)]
             [InlineData(10)]
-            [InlineData(50)]
+            [InlineData(500)]
             public void ShouldGetNewSessionsWhenBeingUsedConcurrentlyBy(int numberOfThreads)
             {
                 var ids = new List<Guid>();
@@ -112,7 +120,7 @@ namespace Neo4j.Driver.Tests
                     sessions.Enqueue(mock.Object);
                     mockSessions.Enqueue(mock);
                 }
-                
+
                 var pool = new SessionPool(sessions);
 
                 pool.NumberOfAvailableSessions.Should().Be(numberOfThreads);
@@ -123,12 +131,19 @@ namespace Neo4j.Driver.Tests
                 var tasks = new Task[numberOfThreads];
                 for (int i = 0; i < numberOfThreads; i++)
                 {
-                    tasks[i] =
-                        Task.Run(() =>
-                        {
-                            Task.Delay(500);
-                            var session = pool.GetSession();
-                            receivedIds.Add(((IPooledSession) session).Id);
+                    int localI = i;
+                    tasks[localI] =
+                        Task.Run(() =>{
+                            try
+                            {
+                                Task.Delay(500);
+                                var session = pool.GetSession();
+                                receivedIds.Add(((IPooledSession) session).Id);
+                            }
+                            catch (Exception ex)
+                            {
+                                _output.WriteLine($"Task[{localI}] died: {ex}");
+                            }
                         });
                 }
 
