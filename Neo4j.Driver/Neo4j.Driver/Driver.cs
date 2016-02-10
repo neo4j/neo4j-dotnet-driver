@@ -15,25 +15,28 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
 {
     public class Driver : LoggerBase, IDisposable
     {
         private readonly Config _config;
-        private readonly Uri _url;
-        public Uri Uri => _url;
+        private readonly Uri _uri;
+        public Uri Uri => _uri;
+        private SessionPool _sessionPool;
 
-        internal Driver(Uri url, Config config) : base(config?.Logger)
+        internal Driver(Uri uri, Config config) : base(config?.Logger)
         {
-            if (url.Scheme.ToLowerInvariant() == "bolt" && url.Port == -1)
+            if (uri.Scheme.ToLowerInvariant() == "bolt" && uri.Port == -1)
             {
-                var builder = new UriBuilder(url.Scheme, url.Host, 7687);
-                url = builder.Uri;
+                var builder = new UriBuilder(uri.Scheme, uri.Host, 7687);
+                uri = builder.Uri;
             }
 
-            _url = url;
+            _uri = uri;
             _config = config;
+            _sessionPool = new SessionPool(config.Logger, uri, config);
         }
 
         protected override void Dispose(bool isDisposing)
@@ -53,7 +56,7 @@ namespace Neo4j.Driver
         /// </returns>
         public ISession Session()
         {
-            return new Session(_url, _config);
+            return _sessionPool.GetSession();
         }
     }
 }

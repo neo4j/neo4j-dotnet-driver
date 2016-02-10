@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.Internal.messaging;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.result;
 
@@ -74,6 +73,9 @@ namespace Neo4j.Driver
 
         }
 
+        public bool HasUnrecoverableError
+         => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
+
         public void Run(ResultBuilder resultBuilder, string statement,
             IDictionary<string, object> statementParameters = null)
         {
@@ -89,6 +91,13 @@ namespace Neo4j.Driver
         public void DiscardAll()
         {
             Enqueue(new DiscardAllMessage());
+        }
+
+        public void Reset()
+        {
+            ClearQueue();
+            _messageHandler.Clear();
+            Enqueue(new ResetMessage());
         }
 
         public bool IsOpen => _client.IsOpen;

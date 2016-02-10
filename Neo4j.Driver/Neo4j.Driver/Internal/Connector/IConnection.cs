@@ -26,6 +26,8 @@ namespace Neo4j.Driver
         void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> statementParameters = null);
         void PullAll(ResultBuilder resultBuilder);
         void DiscardAll();
+        void Reset();
         bool IsOpen { get; }
+        bool HasUnrecoverableError { get; }
     }
 }
