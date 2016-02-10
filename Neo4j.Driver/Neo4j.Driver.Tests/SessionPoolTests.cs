@@ -94,17 +94,17 @@ namespace Neo4j.Driver.Tests
             [InlineData(5)]
             [InlineData(10)]
             [InlineData(50)]
-            public void GenerateThreads(int number)
+            public void ShouldGetNewSessionsWhenBeingUsedConcurrentlyBy(int numberOfThreads)
             {
                 var ids = new List<Guid>();
-                for (int i = 0; i < number; i++)
+                for (int i = 0; i < numberOfThreads; i++)
                 {
                     ids.Add(Guid.NewGuid());
                 }
 
                 var mockSessions = new Queue<Mock<IPooledSession>>();
                 var sessions = new Queue<IPooledSession>();
-                for (int i = 0; i < number; i++)
+                for (int i = 0; i < numberOfThreads; i++)
                 {
                     var mock = new Mock<IPooledSession>();
                     mock.Setup(x => x.IsHealthy()).Returns(true);
@@ -115,13 +115,13 @@ namespace Neo4j.Driver.Tests
                 
                 var pool = new SessionPool(sessions);
 
-                pool.NumberOfAvailableSessions.Should().Be(number);
+                pool.NumberOfAvailableSessions.Should().Be(numberOfThreads);
                 pool.NumberOfInUseSessions.Should().Be(0);
 
                 var receivedIds = new List<Guid>();
                 
-                var tasks = new Task[number];
-                for (int i = 0; i < number; i++)
+                var tasks = new Task[numberOfThreads];
+                for (int i = 0; i < numberOfThreads; i++)
                 {
                     tasks[i] =
                         Task.Run(() =>
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Tests
 
                 Task.WaitAll(tasks);
 
-                receivedIds.Count.Should().Be(number);
+                receivedIds.Count.Should().Be(numberOfThreads);
                 foreach (var receivedId in receivedIds)
                 {
                     receivedIds.Should().ContainSingle(x => x == receivedId);
