@@ -18,6 +18,8 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Moq;
+using Neo4j.Driver.Extensions;
+using Neo4j.Driver.Internal.Connector;
 using Sockets.Plugin.Abstractions;
 using Xunit;
 

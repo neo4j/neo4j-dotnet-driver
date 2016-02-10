@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal
 {

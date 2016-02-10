@@ -21,7 +21,7 @@ using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
 using static Neo4j.Driver.StatementType;
 
-namespace Neo4j.Driver.Internal.result
+namespace Neo4j.Driver.Internal.Result
 {
     public class ResultBuilder : IResultBuilder
     {

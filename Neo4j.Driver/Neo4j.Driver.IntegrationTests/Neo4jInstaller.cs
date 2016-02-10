@@ -145,6 +145,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void StartServer()
         {
             RunPowershellCommand("Start-Neo4jServer");
+            Task.Delay(10000);
         }
 
         public void StopServer()

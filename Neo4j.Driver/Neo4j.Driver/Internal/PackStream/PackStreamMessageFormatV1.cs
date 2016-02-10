@@ -14,19 +14,17 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Messaging;
 using Sockets.Plugin.Abstractions;
-using static Neo4j.Driver.Exceptions.Throw.ArgumentException;
-using static Neo4j.Driver.PackStream;
-using Path = Neo4j.Driver.Internal.Path;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.Internal.Packstream
 {
     public class PackStreamMessageFormatV1
     {
@@ -46,12 +44,12 @@ namespace Neo4j.Driver
         {
             private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
             private readonly ChunkedInputStream _inputStream;
-            private readonly Unpacker _unpacker;
+            private readonly PackStream.Unpacker _unpacker;
 
             public ReaderV1(ChunkedInputStream inputStream)
             {
                 _inputStream = inputStream;
-                _unpacker = new Unpacker(_inputStream, _bitConverter);
+                _unpacker = new PackStream.Unpacker(_inputStream, _bitConverter);
             }
 
             public void Read(IMessageResponseHandler responseHandler)
@@ -84,34 +82,34 @@ namespace Neo4j.Driver
                 var type = _unpacker.PeekNextType();
                 switch (type)
                 {
-                    case PackType.Bytes:
+                    case PackStream.PackType.Bytes:
                         break;
-                    case PackType.Null:
+                    case PackStream.PackType.Null:
                         return _unpacker.UnpackNull();
-                    case PackType.Boolean:
+                    case PackStream.PackType.Boolean:
                         return _unpacker.UnpackBoolean();
-                    case PackType.Integer:
+                    case PackStream.PackType.Integer:
                         return _unpacker.UnpackLong();
-                    case PackType.Float:
+                    case PackStream.PackType.Float:
                         return _unpacker.UnpackDouble();
-                    case PackType.String:
+                    case PackStream.PackType.String:
                         return _unpacker.UnpackString();
-                    case PackType.Map:
+                    case PackStream.PackType.Map:
                         return UnpackMap();
-                    case PackType.List:
+                    case PackStream.PackType.List:
                         return UnpackList();
-                    case PackType.Struct:
+                    case PackStream.PackType.Struct:
                         long size = _unpacker.UnpackStructHeader();
                         switch (_unpacker.UnpackStructSignature())
                         {
                             case NODE:
-                                IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
+                                Throw.ArgumentException.IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
                                 return UnpackNode();
                             case RELATIONSHIP:
-                                IfNotEqual(RelationshipFields, size, nameof(RelationshipFields), nameof(size));
+                                Throw.ArgumentException.IfNotEqual(RelationshipFields, size, nameof(RelationshipFields), nameof(size));
                                 return UnpackRelationship();
                             case PATH:
-                                IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
+                                Throw.ArgumentException.IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
                                 return UnpackPath();
                         }
                         break;
@@ -125,8 +123,8 @@ namespace Neo4j.Driver
                 var uniqNodes = new INode[(int) _unpacker.UnpackListHeader()];
                 for(int i = 0; i < uniqNodes.Length; i ++)
                 {
-                    IfNotEqual(NodeFields, _unpacker.UnpackStructHeader(), nameof(NodeFields), $"received{nameof(NodeFields)}");
-                    IfNotEqual(NODE, _unpacker.UnpackStructSignature(),nameof(NODE), $"received{nameof(NODE)}");
+                    Throw.ArgumentException.IfNotEqual(NodeFields, _unpacker.UnpackStructHeader(), nameof(NodeFields), $"received{nameof(NodeFields)}");
+                    Throw.ArgumentException.IfNotEqual(NODE, _unpacker.UnpackStructSignature(),nameof(NODE), $"received{nameof(NODE)}");
                     uniqNodes[i]=UnpackNode();
                 }
 
@@ -134,8 +132,8 @@ namespace Neo4j.Driver
                 var uniqRels = new Relationship[(int)_unpacker.UnpackListHeader()];
                 for (int i = 0; i < uniqRels.Length; i++)
                 {
-                    IfNotEqual( UnboundRelationshipFields, _unpacker.UnpackStructHeader(), nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
-                    IfNotEqual(UNBOUND_RELATIONSHIP, _unpacker.UnpackStructSignature(), nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
+                    Throw.ArgumentException.IfNotEqual( UnboundRelationshipFields, _unpacker.UnpackStructHeader(), nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
+                    Throw.ArgumentException.IfNotEqual(UNBOUND_RELATIONSHIP, _unpacker.UnpackStructSignature(), nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
                     var urn = _unpacker.UnpackLong();
                     var relType = _unpacker.UnpackString();
                     var props = UnpackMap();
@@ -277,13 +275,13 @@ namespace Neo4j.Driver
         public class WriterV1 : IWriter, IMessageRequestHandler
         {
             private readonly ChunkedOutputStream _outputStream;
-            private readonly Packer _packer;
+            private readonly PackStream.Packer _packer;
             
 
             public WriterV1(ChunkedOutputStream outputStream)
             {
                 _outputStream = outputStream;
-                _packer = new Packer(_outputStream, _bitConverter);
+                _packer = new PackStream.Packer(_outputStream, _bitConverter);
             }
 
             public void HandleInitMessage(string clientNameAndVersion)

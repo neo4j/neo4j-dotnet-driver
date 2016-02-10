@@ -18,9 +18,9 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.result;
+using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.Internal.Connector
 {
     internal class MessageResponseHandler : IMessageResponseHandler
     {

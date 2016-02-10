@@ -25,7 +25,7 @@ The Neo4j Driver is distributed exclusively via Nuget and can be added to your p
 
 ## Milestones
 
-* Coming soon
+Available on [Nuget](https://www.nuget.org/packages/Neo4j.Driver)
 
 ## Snapshots
 
@@ -37,7 +37,7 @@ Snapshot builds are available at our [MyGet feed](https://www.myget.org/feed/neo
 
 ## Visual Studio Version
 
-The driver is written in C# 6 so will require Visual Studio 2015 (community edition):
+The driver is written in C# 6 so will require Visual Studio 2015 (community edition).
 
 ## Integration Tests
 

@@ -21,8 +21,11 @@ using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Extensions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Packstream;
 using Sockets.Plugin.Abstractions;
 using Xunit;
 

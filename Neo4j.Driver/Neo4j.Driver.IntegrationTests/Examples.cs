@@ -21,6 +21,7 @@ using Neo4j.Driver;
 using Neo4j.Driver.Exceptions;
 //end::minimal-example-import[]
 using Neo4j.Driver.IntegrationTests;
+using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 
