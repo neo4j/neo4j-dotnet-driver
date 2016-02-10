@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
@@ -39,10 +40,25 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public void ShouldThrowExceptionWhenMaximumPoolSizeReached()
+            {
+                var mock = new Mock<IConnection>();
+                var config = new Config {MaxSessionPoolSize = 2};
+                var pool = new SessionPool(null, TestUri, config, mock.Object);
+                pool.GetSession();
+                pool.GetSession();
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(2);
+
+                var ex = Xunit.Record.Exception(() => pool.GetSession());
+                ex.Should().BeOfType<ClientException>();
+            }
+
+            [Fact]
             public void ShouldCreateNewSessionWhenQueueIsEmpty()
             {
                 var mock = new Mock<IConnection>();
-                var pool = new SessionPool(null, TestUri, null, mock.Object);
+                var pool = new SessionPool(null, TestUri, Config.DefaultConfig, mock.Object);
                 pool.GetSession();
                 pool.NumberOfAvailableSessions.Should().Be(0);
                 pool.NumberOfInUseSessions.Should().Be(1);
@@ -120,7 +136,7 @@ namespace Neo4j.Driver.Tests
                     sessions.Enqueue(mock.Object);
                     mockSessions.Enqueue(mock);
                 }
-
+                
                 var pool = new SessionPool(sessions, null);
 
                 pool.NumberOfAvailableSessions.Should().Be(numberOfThreads);
@@ -161,6 +177,7 @@ namespace Neo4j.Driver.Tests
                 {
                     mock.Verify(x => x.Reset(), Times.Once);
                 }
+
             }
 
 

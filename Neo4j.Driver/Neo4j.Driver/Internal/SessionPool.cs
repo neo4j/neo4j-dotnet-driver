@@ -16,6 +16,8 @@
 //  limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Neo4j.Driver.Exceptions;
 
 namespace Neo4j.Driver.Internal
 {
@@ -26,6 +28,8 @@ namespace Neo4j.Driver.Internal
         private readonly Uri _uri;
         private readonly Config _config;
         private readonly IConnection _connection;
+        private readonly int _maxSessionPoolSize;
+        private int _currentPoolSize;
 
         internal int NumberOfInUseSessions => _inUseSessions.Count;
         internal int NumberOfAvailableSessions => _availableSessions.Count;
@@ -35,15 +39,16 @@ namespace Neo4j.Driver.Internal
             _uri = uri;
             _config = config;
             _connection = connection;
+            _maxSessionPoolSize = config.MaxSessionPoolSize;
         }
 
         internal SessionPool(
-            Queue<IPooledSession> availableSessions, 
-            Dictionary<Guid, IPooledSession> inUseDictionary, 
-            Uri uri = null, 
-            IConnection connection = null, 
-            ILogger logger = null) 
-            : this(logger, uri, null, connection)
+            Queue<IPooledSession> availableSessions,
+            Dictionary<Guid, IPooledSession> inUseDictionary,
+            Uri uri = null,
+            IConnection connection = null,
+            ILogger logger = null)
+            : this(logger, uri, Config.DefaultConfig, connection)
         {
             _availableSessions = availableSessions ?? new Queue<IPooledSession>();
             _inUseSessions = inUseDictionary ?? new Dictionary<Guid, IPooledSession>();
@@ -51,61 +56,75 @@ namespace Neo4j.Driver.Internal
 
         public ISession GetSession()
         {
-            IPooledSession session = null;
-            lock (_availableSessions)
+            return TryExecute(() =>
             {
-                if(_availableSessions.Count != 0)
-                session = _availableSessions.Dequeue();
-            }
+                IPooledSession session = null;
+                lock (_availableSessions)
+                {
+                    if (_availableSessions.Count != 0)
+                        session = _availableSessions.Dequeue();
+                }
 
-            if (session == null)
-            {
-                session = new Session(_uri, _config, _connection, Release);
+                if (_maxSessionPoolSize > Config.InfiniteSessionPoolSize && _currentPoolSize >= _maxSessionPoolSize)
+                {
+                    throw new ClientException($"Maximum session pool size ({_maxSessionPoolSize}) reached.");
+                }
+
+                if (session == null)
+                {
+                    session = new Session(_uri, _config, _connection, Release);
+                    Interlocked.Increment(ref _currentPoolSize);
+                    lock (_inUseSessions)
+                    {
+                        _inUseSessions.Add(session.Id, session);
+                    }
+                    return session;
+                }
+
+                if (!session.IsHealthy())
+                {
+                    session.Close();
+                    Interlocked.Decrement(ref _currentPoolSize);
+                    return GetSession();
+                }
+
+                session.Reset();
                 lock (_inUseSessions)
                 {
                     _inUseSessions.Add(session.Id, session);
                 }
                 return session;
-            }
-           
-            if (!session.IsHealthy())
-            {
-                session.Close();
-                return GetSession();
-            }
-
-            session.Reset();
-            lock (_inUseSessions)
-            {
-                _inUseSessions.Add(session.Id, session);
-            }
-            return session;
+            });
         }
 
         public void Release(Guid sessionId)
         {
-            IPooledSession session;
-            lock (_inUseSessions)
+            TryExecute(() =>
             {
-                if (!_inUseSessions.ContainsKey(sessionId))
+                IPooledSession session;
+                lock (_inUseSessions)
                 {
-                    return;
+                    if (!_inUseSessions.ContainsKey(sessionId))
+                    {
+                        return;
+                    }
+
+                    session = _inUseSessions[sessionId];
+                    _inUseSessions.Remove(sessionId);
                 }
 
-                session = _inUseSessions[sessionId];
-                _inUseSessions.Remove(sessionId);
-            }
-
-            if (session.IsHealthy())
-            {
-                lock (_availableSessions) 
-                    _availableSessions.Enqueue(session);
-            }
-            else
-            {
-                //release resources by session
-                session.Close();
-            }
+                if (session.IsHealthy())
+                {
+                    lock (_availableSessions)
+                        _availableSessions.Enqueue(session);
+                }
+                else
+                {
+                    Interlocked.Decrement(ref _currentPoolSize);
+                    //release resources by session
+                    session.Close();
+                }
+            });
         }
 
         protected override void Dispose(bool isDisposing)
@@ -115,29 +134,32 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            lock (_inUseSessions)
-            { 
-                var sessions =  new List<IPooledSession>(_inUseSessions.Values);
-                _inUseSessions.Clear();
-                foreach (var inUseSession in sessions)
-                {
-                    Logger?.Info($"Disposing In Use Session {inUseSession.Id}");
-                    inUseSession.Close();
-                }
-            }
-            lock (_availableSessions)
+            TryExecute(() =>
             {
-                while (_availableSessions.Count > 0)
+                lock (_inUseSessions)
                 {
-                    var session = _availableSessions.Dequeue();
-                    Logger?.Info($"Disposing Available Session {session.Id}");
-                    session.Close();
+                    var sessions = new List<IPooledSession>(_inUseSessions.Values);
+                    _inUseSessions.Clear();
+                    foreach (var inUseSession in sessions)
+                    {
+                        Logger?.Info($"Disposing In Use Session {inUseSession.Id}");
+                        inUseSession.Close();
+                    }
                 }
-            }
-
+                lock (_availableSessions)
+                {
+                    while (_availableSessions.Count > 0)
+                    {
+                        var session = _availableSessions.Dequeue();
+                        Logger?.Info($"Disposing Available Session {session.Id}");
+                        session.Close();
+                    }
+                }
+            });
             base.Dispose(true);
         }
     }
+
 
     public interface IPooledSession : ISession
     {

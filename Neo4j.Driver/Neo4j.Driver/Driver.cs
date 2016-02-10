@@ -60,5 +60,6 @@ namespace Neo4j.Driver
         {
             return _sessionPool.GetSession();
         }
+
     }
 }

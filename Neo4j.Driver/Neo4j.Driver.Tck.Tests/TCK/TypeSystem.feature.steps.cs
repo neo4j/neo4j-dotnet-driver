@@ -59,7 +59,9 @@ namespace Neo4j.Driver.IntegrationTests.TCK
                 try { AfterScenario(); } catch { /*Do Nothing*/ }
                 throw;
             }
-            Driver = GraphDatabase.Driver(Url);
+            var config = Config.DefaultConfig;
+            config.MaxSessionPoolSize = Config.InfiniteSessionPoolSize;
+            Driver = GraphDatabase.Driver(Url, config);
         }
 
         [AfterTestRun]
