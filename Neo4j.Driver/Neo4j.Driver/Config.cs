@@ -31,7 +31,7 @@ namespace Neo4j.Driver
             {
                 TlsEnabled = false,
                 Logger = new DebugLogger {Level = LogLevel.Info},
-                MaxSessionPoolSize = 20
+                IdleSessionPoolSize = 20
             };
         }
 
@@ -48,11 +48,11 @@ namespace Neo4j.Driver
 
         public ILogger Logger { get; set; }
 
-        public int MaxSessionPoolSize { get; set; }
+        public int IdleSessionPoolSize { get; set; }
 
         private class ConfigBuilder : IConfigBuilder
         {
-            private Config _config;
+            private readonly Config _config;
 
             internal ConfigBuilder(Config config)
             {
@@ -73,7 +73,7 @@ namespace Neo4j.Driver
 
             public IConfigBuilder WithMaxSessionPoolSize(int size)
             {
-                _config.MaxSessionPoolSize = size;
+                _config.IdleSessionPoolSize = size;
                 return this;
             }
 

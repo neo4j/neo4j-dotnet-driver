@@ -120,17 +120,21 @@ namespace Neo4j.Driver.Internal
         }
 
         public Guid Id { get; } = Guid.NewGuid();
-        public bool IsHealthy()
+
+        public bool IsHealthy
         {
-            if (!_connection.IsOpen)
+            get
             {
-                return false;
+                if (!_connection.IsOpen)
+                {
+                    return false;
+                }
+                if (_connection.HasUnrecoverableError)
+                {
+                    return false;
+                }
+                return true;
             }
-            if (_connection.HasUnrecoverableError)
-            {
-                return false;
-            }
-            return true;
         }
 
         public void Reset()

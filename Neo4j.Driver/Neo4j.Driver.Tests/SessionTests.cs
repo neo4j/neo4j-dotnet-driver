@@ -167,7 +167,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.HasUnrecoverableError).Returns(false);
 
                 var session = new Session(null, null, mock.Object);
-                session.IsHealthy().Should().BeFalse();
+                session.IsHealthy.Should().BeFalse();
             }
 
             [Fact]
@@ -178,7 +178,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.HasUnrecoverableError).Returns(true);
 
                 var session = new Session(null, null, mock.Object);
-                session.IsHealthy().Should().BeFalse();
+                session.IsHealthy.Should().BeFalse();
             }
 
             [Fact]
@@ -189,7 +189,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.HasUnrecoverableError).Returns(false);
 
                 var session = new Session(null, null, mock.Object);
-                session.IsHealthy().Should().BeTrue();
+                session.IsHealthy.Should().BeTrue();
             }
         }
     }
