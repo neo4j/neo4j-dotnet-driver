@@ -18,6 +18,9 @@ using System;
 
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// The logging levels that could be used by a logger.
+    /// </summary>
     public enum LogLevel
     {
         None,
@@ -29,17 +32,30 @@ namespace Neo4j.Driver
 
     public interface ILogger : IDisposable
     {
+        /// <summary>Log a message at <see cref="LogLevel.Error"/> level.</summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="cause">The cause of the error.</param>
+        /// <param name="restOfMessage">Any restOfMessage parts of the message.</param>
         void Error(string message, Exception cause = null, params object[] restOfMessage);
 
-        /// <summary>Log a message at info level.</summary>
+        /// <summary>Log a message at <see cref="LogLevel.Info"/> level.</summary>
         /// <param name="message">The message.</param>
-        /// <param name="restOfMessage">Any restOfMessage parts of the message, including (but not limited to) Sent Messages and Received Messages.</param>
+        /// <param name="restOfMessage">Any restOfMessage parts of the message.</param>
         void Info(string message, params object[] restOfMessage);
 
+        /// <summary>Log a message at <see cref="LogLevel.Debug"/> level.</summary>
+        /// <param name="message">The message.</param>
+        /// <param name="restOfMessage">Any restOfMessage parts of the message, including (but not limited to) Sent Messages and Received Messages.</param>
         void Debug(string message, params object[] restOfMessage);
 
+        /// <summary>Log a message at <see cref="LogLevel.Trace"/> level</summary>
+        /// <param name="message">The message.</param>
+        /// <param name="restOfMessage">Any restOfMessage parts of the message, including (but not limited to) bytes sent and received over the connection.</param>
         void Trace(string message, params object[] restOfMessage);
 
+        /// <summary>
+        /// Gets and sets the level of this <see cref="ILogger"/>
+        /// </summary>
         LogLevel Level { get; set; }
     }
 }

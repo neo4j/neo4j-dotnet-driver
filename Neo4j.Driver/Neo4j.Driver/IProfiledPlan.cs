@@ -18,16 +18,20 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// This is the same as a regular <see cref="IPlan"/> - except this plan has been executed, meaning it also contains detailed information about how much work each
+    /// step of the plan incurred on the database.
+    /// </summary>
     public interface IProfiledPlan:IPlan
     {
-        ///
-        /// Return the number of times this part of the plan touched the underlying data stores
-        ///
+        /// <summary>
+        /// Gets the number of times this part of the plan touched the underlying data stores
+        /// </summary>
         long DbHits { get; }
 
-        ///
-        ///Return the number of records this part of the plan produced
-        ///
+        /// <summary>
+        /// Gets the number of records this part of the plan produced
+        /// </summary>
         long Records { get; }
 
         new IList<IProfiledPlan> Children { get; }

@@ -19,14 +19,28 @@ using Neo4j.Driver.Extensions;
 
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// An executable statement, i.e. the statements' text and its parameters.
+    /// </summary>
     public class Statement
     {
+        /// <summary>
+        /// Gets the statement's template.
+        /// </summary>
         public string Template { get; }
+        /// <summary>
+        /// Gets the statement's parameters.
+        /// </summary>
         public IReadOnlyDictionary<string, object> Parameters { get; }
 
-        public Statement(string temp, IDictionary<string, object> parameters = null)
+        /// <summary>
+        /// Create a statemete
+        /// </summary>
+        /// <param name="template">The statement's template</param>
+        /// <param name="parameters">The statement's parameters</param>
+        public Statement(string template, IDictionary<string, object> parameters = null)
         {
-            Template = temp;
+            Template = template;
             Parameters = parameters == null ? new Dictionary<string, object>() : new Dictionary<string, object>(parameters);
         }
 

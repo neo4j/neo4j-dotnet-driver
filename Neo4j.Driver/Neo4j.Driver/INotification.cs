@@ -16,45 +16,53 @@
 //  limitations under the License.
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// Representation for notifications found when executing a statement.
+    /// 
+    /// A notification can be visualized in a client pinpointing problems or other information about the statement.
+    /// </summary>
     public interface INotification
     {
-        ///
+        /// <summary>
         ///Returns a notification code for the discovered issue.
-        ///
+        /// </summary>
         string Code { get; }
 
-        ///
+        /// <summary>
         ///Returns a short summary of the notification.
-        ///
+        /// </summary>
         string Title { get; }
 
-        ///
+        /// <summary>
         ///Returns a longer description of the notification.
-        ///
+        /// </summary>
         string Description { get; }
 
         ///
         ///The position in the statement where this notification points to.
         ///Not all notifications have a unique position to point to and in that case the position would be set to null.
-        ///
+        /// </summary>
         IInputPosition Position { get; }
     }
 
+    /// <summary>
+    /// An input position refers to a specific character in a statement.
+    /// </summary>
     public interface IInputPosition
     {
-        ///
+        /// <summary>
         /// The character offset referred to by this position; offset numbers start at 0.
-        ///
+        /// </summary>
         int Offset { get; }
 
-        ///
+        /// <summary>
         /// The line number referred to by the position; line numbers start at 1.
-        ///
+        /// </summary>
         int Line { get; }
 
-        ///
+        /// <summary>
         /// The column number referred to by the position; column numbers start at 1.
-        ///
+        /// </summary>
         int Column { get; }
     }
 }

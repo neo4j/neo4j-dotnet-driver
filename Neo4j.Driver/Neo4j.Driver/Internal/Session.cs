@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal
             GC.SuppressFinalize(this);
         }
 
-        public ResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
+        public IResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
         {
             return TryExecute(() =>
             {
