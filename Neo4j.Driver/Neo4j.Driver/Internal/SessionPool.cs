@@ -1,23 +1,22 @@
-﻿//  Copyright (c) 2002-2016 "Neo Technology,"
-//  Network Engine for Objects in Lund AB [http://neotechnology.com]
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
-//  This file is part of Neo4j.
+// This file is part of Neo4j.
 // 
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 // 
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 // 
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal
@@ -29,8 +28,7 @@ namespace Neo4j.Driver.Internal
         private readonly Uri _uri;
         private readonly Config _config;
         private readonly IConnection _connection;
-        private readonly int _maxSessionPoolSize;
-        private int _currentPoolSize;
+        private readonly int _idleSessionPoolSize;
 
         internal int NumberOfInUseSessions => _inUseSessions.Count;
         internal int NumberOfAvailableSessions => _availableSessions.Count;
@@ -40,13 +38,12 @@ namespace Neo4j.Driver.Internal
             _uri = uri;
             _config = config;
             _connection = connection;
-            _maxSessionPoolSize = config.MaxSessionPoolSize;
+            _idleSessionPoolSize = config.IdleSessionPoolSize;
         }
 
         internal SessionPool(
             Queue<IPooledSession> availableSessions,
-            Dictionary<Guid, IPooledSession> inUseDictionary,
-            Uri uri = null,
+            Dictionary<Guid, IPooledSession> inUseDictionary, Uri uri = null,
             IConnection connection = null,
             ILogger logger = null)
             : this(logger, uri, Config.DefaultConfig, connection)
@@ -66,15 +63,9 @@ namespace Neo4j.Driver.Internal
                         session = _availableSessions.Dequeue();
                 }
 
-                if (_maxSessionPoolSize > Config.InfiniteSessionPoolSize && _currentPoolSize >= _maxSessionPoolSize)
-                {
-                    throw new ClientException($"Maximum session pool size ({_maxSessionPoolSize}) reached.");
-                }
-
                 if (session == null)
                 {
                     session = new Session(_uri, _config, _connection, Release);
-                    Interlocked.Increment(ref _currentPoolSize);
                     lock (_inUseSessions)
                     {
                         _inUseSessions.Add(session.Id, session);
@@ -82,10 +73,9 @@ namespace Neo4j.Driver.Internal
                     return session;
                 }
 
-                if (!session.IsHealthy())
+                if (!session.IsHealthy)
                 {
                     session.Close();
-                    Interlocked.Decrement(ref _currentPoolSize);
                     return GetSession();
                 }
 
@@ -114,14 +104,18 @@ namespace Neo4j.Driver.Internal
                     _inUseSessions.Remove(sessionId);
                 }
 
-                if (session.IsHealthy())
+                if (session.IsHealthy)
                 {
                     lock (_availableSessions)
-                        _availableSessions.Enqueue(session);
+                    {
+                        if (_availableSessions.Count < _idleSessionPoolSize)
+                        {
+                            _availableSessions.Enqueue(session);
+                        }
+                    }
                 }
                 else
                 {
-                    Interlocked.Decrement(ref _currentPoolSize);
                     //release resources by session
                     session.Close();
                 }
@@ -165,7 +159,7 @@ namespace Neo4j.Driver.Internal
     public interface IPooledSession : ISession
     {
         Guid Id { get; }
-        bool IsHealthy();
+        bool IsHealthy { get; }
         void Reset();
         void Close();
     }

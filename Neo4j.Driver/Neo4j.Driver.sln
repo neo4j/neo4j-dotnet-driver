@@ -19,8 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Tck.Tests", "Neo4j.Driver.Tck.Tests\Neo4j.Driver.Tck.Tests.csproj", "{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}"
 EndProject
-Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "Neo4j.Driver.Sandcastle", "..\Neo4j.Driver.Sandcastle.shfbproj", "{E4682985-DABF-462A-997E-DEBDFB01EDE9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,10 +41,6 @@ Global
 		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E4682985-DABF-462A-997E-DEBDFB01EDE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E4682985-DABF-462A-997E-DEBDFB01EDE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E4682985-DABF-462A-997E-DEBDFB01EDE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E4682985-DABF-462A-997E-DEBDFB01EDE9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
