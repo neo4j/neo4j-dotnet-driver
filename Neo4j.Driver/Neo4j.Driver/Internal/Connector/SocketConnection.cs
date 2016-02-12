@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
@@ -38,8 +39,7 @@ namespace Neo4j.Driver.Internal.Connector
             _messageHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
 
             _client = socketClient;
-            var t = _client.Start();
-            t.Wait();
+            Task.Run(() => _client.Start()).Wait();
 
             // add init requestMessage by default
             Enqueue(new InitMessage("neo4j-dotnet/1.0.0"));
@@ -109,8 +109,7 @@ namespace Neo4j.Driver.Internal.Connector
             if (!isDisposing)
                 return;
 
-            var t = _client.Stop();
-            t.Wait();
+            Task.Run(() => _client.Stop()).Wait();
         }
 
         private void ClearQueue()
