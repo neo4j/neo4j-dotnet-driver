@@ -103,14 +103,14 @@ namespace Neo4j.Driver.Internal.Connector
                 catch (Exception ex)
                 {
                     _config.Logger.Error("Unable to unpack message from server, connection has been terminated.", ex);
-                    Stop().Wait();
+                    Task.Run(() => Stop()).Wait();
                     throw;
                 }
                 if (responseHandler.HasError)
                 {
                     if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))
                     {
-                        Stop().Wait();
+                        Task.Run(() => Stop()).Wait();
                         throw responseHandler.Error;
                     }
                 }
@@ -164,7 +164,7 @@ namespace Neo4j.Driver.Internal.Connector
             if (!isDisposing)
                 return;
 
-            Stop().Wait();
+            Task.Run(() => Stop()).Wait();
         }
     }
 }
