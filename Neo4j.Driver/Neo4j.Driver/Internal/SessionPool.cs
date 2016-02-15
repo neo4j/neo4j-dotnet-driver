@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Internal
                 {
                     lock (_availableSessions)
                     {
-                        if (_availableSessions.Count < _idleSessionPoolSize)
+                        if (_availableSessions.Count < _idleSessionPoolSize || _idleSessionPoolSize == Config.InfiniteIdleSessionPoolSize)
                         {
                             _availableSessions.Enqueue(session);
                         }

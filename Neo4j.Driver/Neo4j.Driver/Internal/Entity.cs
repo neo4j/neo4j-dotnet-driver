@@ -160,6 +160,14 @@ namespace Neo4j.Driver.Internal
         }
     }
 
+
+    public interface ISegment
+    {
+        INode Start { get; }
+        INode End { get; }
+        IRelationship Relationship { get; }
+    }
+
     public class Segment : ISegment
     {
         public Segment(INode start, IRelationship rel, INode end)

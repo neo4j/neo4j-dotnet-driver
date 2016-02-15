@@ -42,7 +42,7 @@
   <ItemGroup>
     <Compile Include="Internal\DebugLogger.cs" />
     <Compile Include="Exceptions\Neo4jException.cs" />
-    <Compile Include="Exceptions\Throw.cs" />
+    <Compile Include="Extensions\Throw.cs" />
     <Compile Include="Extensions\ByteExtensions.cs" />
     <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="INotification.cs" />
@@ -52,11 +52,11 @@
     <Compile Include="Internal\Connector\IOutputStream.cs" />
     <Compile Include="Internal\Connector\ISocketClient.cs" />
     <Compile Include="IEntity.cs" />
-    <Compile Include="Internal\Connector\LoggerBase.cs" />
+    <Compile Include="Internal\LoggerBase.cs" />
     <Compile Include="Internal\Messaging\RecordMessage.cs" />
     <Compile Include="Internal\Messaging\SuccessMessage.cs" />
     <Compile Include="Internal\Messaging\FailureMessage.cs" />
-    <Compile Include="Internal\Node.cs" />
+    <Compile Include="Internal\Entity.cs" />
     <Compile Include="Internal\Result\IResultBuilder.cs" />
     <Compile Include="Internal\SessionPool.cs" />
     <Compile Include="Internal\Transaction.cs" />
@@ -86,14 +86,15 @@
     <Compile Include="Internal\Result\SummaryBuilder.cs" />
     <Compile Include="IPlan.cs" />
     <Compile Include="IProfiledPlan.cs" />
+    <Compile Include="IRecord.cs" />
     <Compile Include="IResultCursor.cs" />
     <Compile Include="IResultRecordAccessor.cs" />
     <Compile Include="IResultSummary.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="Internal\PeekingEnumerator.cs" />
+    <Compile Include="Internal\Result\PeekingEnumerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Record.cs" />
-    <Compile Include="ResultCursor.cs" />
+    <Compile Include="Internal\Result\Record.cs" />
+    <Compile Include="Internal\Result\ResultCursor.cs" />
     <Compile Include="ISession.cs" />
     <Compile Include="Statement.cs" />
     <Compile Include="ICounters.cs" />

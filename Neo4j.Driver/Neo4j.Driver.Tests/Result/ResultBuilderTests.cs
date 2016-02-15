@@ -19,6 +19,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using TechTalk.SpecFlow;
 using Xunit;
 
@@ -42,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests.TCK
     [Binding]
     public class DriverTypesTestEchoingSingleParameterSteps : TckStepsBase
     {
-        private ResultCursor _result;
+        private IResultCursor _result;
 
         [BeforeTestRun]
         public static void GlobalBeforeScenario()
@@ -60,7 +61,7 @@ namespace Neo4j.Driver.IntegrationTests.TCK
                 throw;
             }
             var config = Config.DefaultConfig;
-            config.IdleSessionPoolSize = Config.InfiniteSessionPoolSize;
+            config.IdleSessionPoolSize = Config.InfiniteIdleSessionPoolSize;
             Driver = GraphDatabase.Driver(Url, config);
         }
 
@@ -177,7 +178,8 @@ namespace Neo4j.Driver.IntegrationTests.TCK
         public void WhenTheValueGivenInTheResultShouldBeTheSameAsWhatWasSent()
         {
             // param : input
-            _result.Single().Should().BeTrue();
+            _result.Next().Should().BeTrue();
+            _result.AtEnd.Should().BeTrue();
             var actual = _result.Get(0);
             AssertEqual(_expected, actual);
         }

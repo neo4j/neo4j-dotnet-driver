@@ -16,67 +16,70 @@
 //  limitations under the License.
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// Represents the changes to the database made as a result of a statement being run.
+    /// </summary>
     public interface ICounters
     {
-        /// 
-        /// Whether there were any updates at all, eg. any of the counters are greater than 0.
-        /// Return true if the statement made any updates
-        /// 
+        /// <summary>
+        /// Gets whether there were any updates at all, eg. any of the counters are greater than 0.
+        /// </summary>
+        /// <value>Returns <c>true</c> if the statement made any updates, <c>false</c> otherwise.</value>
         bool ContainsUpdates { get; }
 
-        /// 
-        /// Return number of nodes created.
-        /// 
+        /// <summary>
+        /// Gets the number of nodes created.
+        /// </summary>
         int NodesCreated { get; }
 
-        /// 
-        /// Return number of nodes deleted.
-        /// 
+        /// <summary>
+        /// Gets the number of nodes deleted.
+        /// </summary>
         int NodesDeleted { get; }
 
-        /// 
-        /// Return number of relationships created.
-        /// 
+        /// <summary>
+        /// Gets the number of relationships created.
+        /// </summary>
         int RelationshipsCreated { get; }
 
-        /// 
-        /// Return number of relationships deleted.
-        /// 
+        /// <summary>
+        /// Gets the number of relationships deleted.
+        /// </summary>
         int RelationshipsDeleted { get; }
 
-        /// 
-        /// Return number of properties (on both nodes and relationships) set.
-        /// 
+        /// <summary>
+        /// Gets the number of properties (on both nodes and relationships) set.
+        /// </summary>
         int PropertiesSet { get; }
 
-        /// 
-        /// Return number of labels added to nodes.
-        /// 
+        /// <summary>
+        /// Gets the number of labels added to nodes.
+        /// </summary>
         int LabelsAdded { get; }
 
-        /// 
-        /// Return number of labels removed from nodes.
-        /// 
+        /// <summary>
+        /// Gets the number of labels removed from nodes.
+        /// </summary>
         int LabelsRemoved { get; }
 
-        /// 
-        /// Return number of indexes added to the schema.
-        /// 
+        /// <summary>
+        /// Gets the number of indexes added to the schema.
+        /// </summary>
         int IndexesAdded { get; }
 
-        /// 
-        /// Return number of indexes removed from the schema.
-        /// 
+        /// <summary>
+        /// Gets the number of indexes removed from the schema.
+        /// </summary>
         int IndexesRemoved { get; }
 
-        /// 
-        /// Return number of constraints added to the schema.
-        /// 
+        /// <summary>
+        /// Gets the number of constraints added to the schema.
+        /// </summary>
         int ConstraintsAdded { get; }
 
-        /// 
-        /// Return number of constraints removed from the schema.
-        /// 
+        /// <summary>
+        /// Gets the number of constraints removed from the schema.
+        /// </summary>
         int ConstraintsRemoved { get; }
     }
 }

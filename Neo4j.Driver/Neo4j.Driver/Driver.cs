@@ -20,11 +20,19 @@ using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver
 {
-    public class Driver : LoggerBase, IDisposable
+    /// <summary>
+    /// The Driver instance maintains the connections with the Neo4j database, providing an access point via the <see cref="Session"/> method.
+    /// </summary>
+    /// <remarks>
+    /// The Driver maintains a session pool buffering the <see cref="ISession"/>s created by the user. The size of the buffer can be 
+    /// configured by the <see cref="Config.IdleSessionPoolSize"/> property on the <see cref="Config"/> when creating the Driver.</remarks>
+    public class Driver : LoggerBase
     {
-        private readonly Config _config;
-        private readonly Uri _uri;
-        public Uri Uri => _uri;
+        /// <summary>
+        /// Gets the <see cref="Uri"/> of the Neo4j database.
+        /// </summary>
+        public Uri Uri { get; }
+
         private SessionPool _sessionPool;
 
         internal Driver(Uri uri, Config config) : base(config?.Logger)
@@ -35,9 +43,8 @@ namespace Neo4j.Driver
                 uri = builder.Uri;
             }
 
-            _uri = uri;
-            _config = config;
-            _sessionPool = new SessionPool(config.Logger, uri, config);
+            Uri = uri;
+            _sessionPool = new SessionPool(config?.Logger, uri, config);
         }
 
         protected override void Dispose(bool isDisposing)

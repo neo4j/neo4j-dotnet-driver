@@ -17,8 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -26,11 +24,12 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
+using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Internal.Result;
+using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    using Neo4j.Driver.Exceptions;
-
     class ResultCreator
     {
         public static ResultCursor CreateResult(int keySize, int recordSize=1, Func<IResultSummary> getSummaryFunc = null)

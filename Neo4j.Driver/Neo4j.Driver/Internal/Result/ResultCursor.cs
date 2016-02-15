@@ -14,18 +14,19 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Extensions;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.Internal.Result
 {
     /// <summary>
     /// The result returned from the Neo4j instance
     /// </summary>
-    public class ResultCursor : IExtendedResultCursor, IResultRecordAccessor, IResources
+    public class ResultCursor : IExtendedResultCursor
     {
         private IResultSummary _summary;
         private readonly IPeekingEnumerator<Record> _enumerator;
@@ -152,7 +153,7 @@ namespace Neo4j.Driver
         /// Return an immutable copy of the currently viewed record
         /// </summary>
         /// <returns></returns>
-        public Record Record()
+        public IRecord Record()
         {
             EnsureCurrentIsCalled();
             return _current;
@@ -269,9 +270,4 @@ namespace Neo4j.Driver
         }
     }
 
-    public interface IResources :IDisposable
-    {
-        bool IsOpen();
-        void Close();
-    }
 }

@@ -19,6 +19,9 @@ using System.Runtime.Serialization;
 
 namespace Neo4j.Driver.Exceptions
 {
+    /// <summary>
+    /// The base class for all Neo4j exceptions.
+    /// </summary>
     [DataContract]
     public class Neo4jException : Exception
     {
@@ -44,6 +47,10 @@ namespace Neo4j.Driver.Exceptions
         public string Code { get; set; }
     }
 
+    /// <summary>
+    /// A <see cref="ClientException"/> indicates that the client has carried out an operation incorrectly.
+    /// The error code provided can be used to determine further detail for the problem.
+    /// </summary>
     [DataContract]
     public class ClientException : Neo4jException
     {
@@ -65,6 +72,10 @@ namespace Neo4j.Driver.Exceptions
         }
     }
 
+    /// <summary>
+    /// A <see cref="TransientException"/> signals a temporary fault that may be worked around by retrying.
+    /// The error code provided can be used to determine further detail for the problem.
+    /// </summary>
     [DataContract]
     public class TransientException : Neo4jException
     {
@@ -82,6 +93,10 @@ namespace Neo4j.Driver.Exceptions
         }
     }
 
+    /// <summary>
+    /// A <see cref="DatabaseException"/> indicates that there is a problem within the underlying database.
+    /// The error code provided can be used to determine further detail for the problem.
+    /// </summary>
     [DataContract]
     public class DatabaseException : Neo4jException
     {

@@ -27,8 +27,8 @@ namespace Neo4j.Driver
         /// <summary>
         ///     Return a driver for a Neo4j instance with default configuration settings
         /// </summary>
-        /// <param name="uri">The URL to the Neo4j instance</param>
-        /// <param name="config">Configuration for the driver instance to use, if <c>null</c> default configuration is used</param>
+        /// <param name="uri">The <see cref="Uri"/> to the Neo4j instance. Should be in the form <c>bolt://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will be used.</param>
+        /// <param name="config">Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig"/> is used</param>
         /// <returns>A new <see cref="Neo4j.Driver.Driver"/> instance specified by the <paramref name="uri"/></returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/></remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c></exception>
@@ -40,8 +40,8 @@ namespace Neo4j.Driver
         /// <summary>
         ///     Return a driver for a Neo4j instance with default configuration settings
         /// </summary>
-        /// <param name="uri">The URL to the Neo4j instance</param>
-        /// <param name="config">Configuration for the driver instance to use, if <c>null</c> default configuration is used</param>
+        /// <param name="uri">The URI to the Neo4j instance. Should be in the form <c>bolt://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will be used.</param>
+        /// <param name="config">Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig"/> is used</param>
         /// <returns>A new <see cref="Neo4j.Driver.Driver"/> instance specified by the <paramref name="uri"/></returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/></remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c></exception>
