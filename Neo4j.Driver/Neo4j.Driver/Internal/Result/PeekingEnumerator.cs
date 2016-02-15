@@ -17,7 +17,7 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal.Result
 {
     public interface IPeekingEnumerator<T> where T : class
     {

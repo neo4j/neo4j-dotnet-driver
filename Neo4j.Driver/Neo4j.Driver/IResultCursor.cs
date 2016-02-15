@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver
 {
