@@ -9,12 +9,12 @@ things to break in the medium term!
 
 Add the driver to your project using Nuget Package Manager:
 
-    PM> Install-Package Neo4j.Driver
+    PM> Install-Package Neo4j.Driver -Pre
 
 Connect to a Neo4j 3.0.0+ database
 
     using(Driver driver = GraphDatabase.Driver( "bolt://localhost:7687" ))
-    using(Session session = driver.Session())
+    using(ISession session = driver.Session())
     {
         var cursor = session.Run("CREATE (n) RETURN n");
     }
