@@ -37,10 +37,7 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(INode other)
         {
-            var x = Equals(Identity, other.Identity);
-            var y = Labels.ContentEqual(other.Labels);
-            var z = Properties.ContentEqual(other.Properties);
-            return x && y && z;
+            return Equals(Identity, other.Identity);
         }
 
         public override bool Equals(object obj)
@@ -53,13 +50,7 @@ namespace Neo4j.Driver.Internal
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = Identity != null ? Identity.GetHashCode() : 0;
-                hashCode = (hashCode*397) ^ (Labels != null ? Labels.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (Properties != null ? Properties.GetHashCode() : 0);
-                return hashCode;
-            }
+            return Identity?.GetHashCode() ?? 0;
         }
     }
 
@@ -94,12 +85,7 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(IRelationship other)
         {
-            if (!(Equals(Identity, other.Identity) && string.Equals(Type, other.Type) && Equals(Start, other.Start) &&
-                  Equals(End, other.End)))
-                return false;
-
-            // map
-            return Properties.ContentEqual(other.Properties);
+            return Equals(Identity, other.Identity);
         }
 
         public override bool Equals(object obj)
@@ -112,15 +98,7 @@ namespace Neo4j.Driver.Internal
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                var hashCode = Identity != null ? Identity.GetHashCode() : 0;
-                hashCode = (hashCode*397) ^ (Type != null ? Type.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (Start != null ? Start.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (End != null ? End.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (Properties != null ? Properties.GetHashCode() : 0);
-                return hashCode;
-            }
+            return Identity?.GetHashCode() ?? 0;
         }
 
         internal void SetStartAndEnd(IIdentity start, IIdentity end)
@@ -158,13 +136,28 @@ namespace Neo4j.Driver.Internal
         }
     }
 
+    /// <summary>
+    ///    
+    /// A <c>Segment</c> combines a relationship in a path with a start and end node that describe the traversal direction
+    /// for that relationship.This exists because the relationship has a direction between the two nodes that is
+    /// separate and potentially different from the direction of the path.
+    /// </summary>
     public interface ISegment
     {
+        /// <summary>
+        /// Gets the start node underlying this path segment.
+        /// </summary>
         INode Start { get; }
+        /// <summary>
+        /// Gets the end node underlying this path segment.
+        /// </summary>
         INode End { get; }
+        /// <summary>
+        /// Gets the relationship underlying this path segment.
+        /// </summary>
         IRelationship Relationship { get; }
     }
-     
+
     public class Segment : ISegment, IEquatable<ISegment>
     {
         public Segment(INode start, IRelationship rel, INode end)
@@ -205,7 +198,7 @@ namespace Neo4j.Driver.Internal
 
     public class Path : IPath, IEquatable<IPath>
     {
-        private readonly IReadOnlyList<ISegment> _segments; // TODO: do I need to expose this or not
+        private readonly IReadOnlyList<ISegment> _segments;
 
         public INode Start => Nodes.First();
         public INode End => Nodes.Last();
@@ -244,30 +237,6 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public override string ToString()
-        {
-            string str = "<";
-            INode start, end = null;
-            IRelationship rel;
-            int i = 0;
-            foreach (var segment in _segments)
-            {
-                start = Nodes[i];
-                end = Nodes[i + 1];
-                rel = Relationships[i];
-
-                if (segment.Start.Equals(start))
-                {
-                    str += start + "-" + rel + "->";
-                }
-                else
-                {
-                    str += start + "<-" + rel + "-";
-                }
-            }
-
-            str += end + ">";
-            return str;
-        }
+        
     }
 }

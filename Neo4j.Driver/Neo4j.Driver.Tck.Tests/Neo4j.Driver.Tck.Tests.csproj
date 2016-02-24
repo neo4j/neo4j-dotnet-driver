@@ -96,6 +96,14 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="TCK\ChunkingDechunking.feature.steps.cs" />
+    <Compile Include="TCK\CypherRecordParser.cs" />
+    <Compile Include="TCK\CypherRecordParserTests.cs" />
+    <Compile Include="TCK\MatchAcceptanceTest.feature.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MatchAcceptanceTest.feature</DependentUpon>
+    </Compile>
+    <Compile Include="TCK\MatchAcceptanceTestSteps.cs" />
     <Compile Include="TCK\TypeSystem.feature.cs">
       <DependentUpon>TypeSystem.feature</DependentUpon>
       <AutoGen>True</AutoGen>
@@ -109,6 +117,10 @@
     <None Include="TCK\ChunkingDechunking.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>
       <LastGenOutput>ChunkingDechunking.feature.cs</LastGenOutput>
+    </None>
+    <None Include="TCK\MatchAcceptanceTest.feature">
+      <Generator>SpecFlowSingleFileGenerator</Generator>
+      <LastGenOutput>MatchAcceptanceTest.feature.cs</LastGenOutput>
     </None>
     <None Include="TCK\TypeSystem.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>

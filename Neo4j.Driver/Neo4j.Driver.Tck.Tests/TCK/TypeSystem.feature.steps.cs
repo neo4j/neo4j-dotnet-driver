@@ -3,11 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.IntegrationTests;
 using TechTalk.SpecFlow;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.TCK
+namespace Neo4j.Driver.Tck.Tests.TCK
 {
     public abstract class TckStepsBase
     {
@@ -18,7 +18,7 @@ namespace Neo4j.Driver.IntegrationTests.TCK
         protected static Driver Driver;
         protected static Neo4jInstaller _installer;
 
-        protected dynamic GetValue(string type, string value)
+        protected static dynamic GetValue(string type, string value)
         {
             switch (type)
             {
@@ -36,8 +36,34 @@ namespace Neo4j.Driver.IntegrationTests.TCK
                     throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown type {type}");
             }
         }
-
-        
+        protected static void AssertEqual(dynamic value, dynamic other)
+        {
+            if (value == null || value is bool || value is long || value is double || value is string)
+            {
+                Assert.Equal(value, other);
+            }
+            else if (value is IList)
+            {
+                var valueList = (IList)value;
+                var otherList = (IList)other;
+                AssertEqual(valueList.Count, otherList.Count);
+                for (var i = 0; i < valueList.Count; i++)
+                {
+                    AssertEqual(valueList[i], otherList[i]);
+                }
+            }
+            else if (value is IDictionary)
+            {
+                var valueDic = (IDictionary<string, object>)value;
+                var otherDic = (IDictionary<string, object>)other;
+                AssertEqual(valueDic.Count, otherDic.Count);
+                foreach (var key in valueDic.Keys)
+                {
+                    otherDic.ContainsKey(key).Should().BeTrue();
+                    AssertEqual(valueDic[key], otherDic[key]);
+                }
+            }
+        }
     }
 
     [Binding]
@@ -223,34 +249,6 @@ namespace Neo4j.Driver.IntegrationTests.TCK
             var strings = values.Split(new[] {",", "[", "]"}, StringSplitOptions.RemoveEmptyEntries);
             return strings.Select(value => (object) GetValue(type, value)).ToList();
         }
-
-        private void AssertEqual(dynamic value, dynamic other)
-        {
-            if (value == null || value is bool || value is long || value is double || value is string)
-            {
-                Assert.Equal(value, other);
-            }
-            else if (value is IList)
-            {
-                var valueList = (IList) value;
-                var otherList = (IList) other;
-                AssertEqual(valueList.Count, otherList.Count);
-                for (var i = 0; i < valueList.Count; i++)
-                {
-                    AssertEqual(valueList[i], otherList[i]);
-                }
-            }
-            else if (value is IDictionary)
-            {
-                var valueDic = (IDictionary<string, object>) value;
-                var otherDic = (IDictionary<string, object>) other;
-                AssertEqual(valueDic.Count, otherDic.Count);
-                foreach (var key in valueDic.Keys)
-                {
-                    otherDic.ContainsKey(key).Should().BeTrue();
-                    AssertEqual(valueDic[key], otherDic[key]);
-                }
-            }
-        }
+        
     }
 }

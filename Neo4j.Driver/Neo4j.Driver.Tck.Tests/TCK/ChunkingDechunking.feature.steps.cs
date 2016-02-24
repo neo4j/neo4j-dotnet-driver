@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using Neo4j.Driver.IntegrationTests.TCK;
 using TechTalk.SpecFlow;
 
-namespace Neo4j.Driver.IntegrationTests.TCK
+namespace Neo4j.Driver.Tck.Tests.TCK
 {
     [Binding]
     public class DriverChunkingAndDeChunkingTestSteps : TckStepsBase
