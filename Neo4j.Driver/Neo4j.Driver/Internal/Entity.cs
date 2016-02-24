@@ -23,6 +23,11 @@ namespace Neo4j.Driver.Internal
 {
     public class Node : INode, IEquatable<INode>
     {
+        public IIdentity Identity { get; }
+        public IReadOnlyList<string> Labels { get; }
+        public IReadOnlyDictionary<string, object> Properties { get; }
+        public object this[string key] => Properties[key];
+
         public Node(long id, IReadOnlyList<string> lables, IReadOnlyDictionary<string, object> prop)
         {
             Identity = new Identity(id);
@@ -37,10 +42,6 @@ namespace Neo4j.Driver.Internal
             var z = Properties.ContentEqual(other.Properties);
             return x && y && z;
         }
-
-        public IIdentity Identity { get; }
-        public IReadOnlyList<string> Labels { get; }
-        public IReadOnlyDictionary<string, object> Properties { get; }
 
         public override bool Equals(object obj)
         {
@@ -64,6 +65,13 @@ namespace Neo4j.Driver.Internal
 
     public class Relationship : IRelationship, IEquatable<IRelationship>
     {
+        public IIdentity Identity { get; }
+        public string Type { get; }
+        public IIdentity Start { get; internal set; }
+        public IIdentity End { get; internal set; }
+        public IReadOnlyDictionary<string, object> Properties { get; }
+        public object this[string key] => Properties[key];
+
         public Relationship(long id, long startId, long endId, string relType,
             IReadOnlyDictionary<string, object> props)
         {
@@ -93,16 +101,6 @@ namespace Neo4j.Driver.Internal
             // map
             return Properties.ContentEqual(other.Properties);
         }
-
-        public IIdentity Identity { get; }
-
-        public string Type { get; }
-
-        public IIdentity Start { get; internal set; }
-
-        public IIdentity End { get; internal set; }
-
-        public IReadOnlyDictionary<string, object> Properties { get; }
 
         public override bool Equals(object obj)
         {
@@ -134,6 +132,8 @@ namespace Neo4j.Driver.Internal
 
     public class Identity : IIdentity, IEquatable<IIdentity>
     {
+        public long Id { get; }
+
         public Identity(long id)
         {
             Id = id;
@@ -143,8 +143,6 @@ namespace Neo4j.Driver.Internal
         {
             return Id == other.Id;
         }
-
-        public long Id { get; }
 
         public override bool Equals(object obj)
         {
@@ -160,15 +158,14 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-
     public interface ISegment
     {
         INode Start { get; }
         INode End { get; }
         IRelationship Relationship { get; }
     }
-
-    public class Segment : ISegment
+     
+    public class Segment : ISegment, IEquatable<ISegment>
     {
         public Segment(INode start, IRelationship rel, INode end)
         {
@@ -180,11 +177,40 @@ namespace Neo4j.Driver.Internal
         public INode Start { get; }
         public INode End { get; }
         public IRelationship Relationship { get; }
+
+        public bool Equals(ISegment other)
+        {
+            return Equals(Start, other.Start) && Equals(End, other.End) && Equals(Relationship, other.Relationship);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((ISegment)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Start?.GetHashCode() ?? 0;
+                hashCode = (hashCode * 397) ^ (End?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (Relationship?.GetHashCode() ?? 0);
+                return hashCode;
+            }
+        }
     }
 
-    public class Path : IPath
+    public class Path : IPath, IEquatable<IPath>
     {
-        private readonly IReadOnlyList<ISegment> _segments;
+        private readonly IReadOnlyList<ISegment> _segments; // TODO: do I need to expose this or not
+
+        public INode Start => Nodes.First();
+        public INode End => Nodes.Last();
+        public IReadOnlyList<INode> Nodes { get; }
+        public IReadOnlyList<IRelationship> Relationships { get; }
 
         public Path(IReadOnlyList<ISegment> segments, IReadOnlyList<INode> nodes,
             IReadOnlyList<IRelationship> relationships)
@@ -194,9 +220,54 @@ namespace Neo4j.Driver.Internal
             Relationships = relationships;
         }
 
-        public INode Start => Nodes.First();
-        public INode End => Nodes.Last();
-        public IReadOnlyList<INode> Nodes { get; }
-        public IReadOnlyList<IRelationship> Relationships { get; }
+        public bool Equals(IPath other)
+        {
+            return Equals(Nodes, other.Nodes) && Equals(Relationships, other.Relationships);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((IPath)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Nodes?.GetHashCode() ?? 0;
+                hashCode = (hashCode * 397) ^ (Relationships?.GetHashCode() ?? 0);
+                hashCode = (hashCode * 397) ^ (_segments?.GetHashCode() ?? 0);
+                return hashCode;
+            }
+        }
+
+        public override string ToString()
+        {
+            string str = "<";
+            INode start, end = null;
+            IRelationship rel;
+            int i = 0;
+            foreach (var segment in _segments)
+            {
+                start = Nodes[i];
+                end = Nodes[i + 1];
+                rel = Relationships[i];
+
+                if (segment.Start.Equals(start))
+                {
+                    str += start + "-" + rel + "->";
+                }
+                else
+                {
+                    str += start + "<-" + rel + "-";
+                }
+            }
+
+            str += end + ">";
+            return str;
+        }
     }
 }
