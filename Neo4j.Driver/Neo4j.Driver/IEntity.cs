@@ -24,6 +24,13 @@ namespace Neo4j.Driver
     public interface IEntity
     {
         /// <summary>
+        /// Gets the value that has the specified key in <see cref="Properties"/> 
+        /// </summary>
+        /// <param name="key">the key</param>
+        /// <returns>the value specified by the given key in <see cref="Properties"/></returns>
+        object this[string key] { get; }
+
+        /// <summary>
         /// Gets the unique <see cref="IIdentity"/> of the <c>Entity</c>.
         /// </summary>
         IIdentity Identity { get; }

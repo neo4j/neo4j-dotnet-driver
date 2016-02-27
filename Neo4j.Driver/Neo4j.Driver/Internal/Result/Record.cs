@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.Result
         public IReadOnlyDictionary<string, dynamic> Values { get; }       
         public IReadOnlyList<string> Keys { get; }
 
-        public Record(string[] keys, dynamic[] values )
+        public Record(string[] keys, dynamic[] values)
         {
             Throw.ArgumentException.IfNotEqual(keys.Length, values.Length, nameof(keys), nameof(values));
 

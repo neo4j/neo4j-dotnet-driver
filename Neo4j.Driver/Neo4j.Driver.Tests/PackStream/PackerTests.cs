@@ -17,17 +17,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Extensions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Packstream;
-using Sockets.Plugin.Abstractions;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
