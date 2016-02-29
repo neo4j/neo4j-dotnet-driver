@@ -16,26 +16,25 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal
 {
     internal class SessionPool : LoggerBase
     {
+        private readonly IAuthToken _authToken;
         private readonly Queue<IPooledSession> _availableSessions = new Queue<IPooledSession>();
-        private readonly Dictionary<Guid, IPooledSession> _inUseSessions = new Dictionary<Guid, IPooledSession>();
-        private readonly Uri _uri;
         private readonly Config _config;
         private readonly IConnection _connection;
         private readonly int _idleSessionPoolSize;
+        private readonly Dictionary<Guid, IPooledSession> _inUseSessions = new Dictionary<Guid, IPooledSession>();
+        private readonly Uri _uri;
 
-        internal int NumberOfInUseSessions => _inUseSessions.Count;
-        internal int NumberOfAvailableSessions => _availableSessions.Count;
-
-        public SessionPool(ILogger logger, Uri uri, Config config, IConnection connection = null) : base(logger)
+        public SessionPool(Uri uri, IAuthToken authToken, ILogger logger, Config config, IConnection connection = null)
+            : base(logger)
         {
             _uri = uri;
+            _authToken = authToken;
             _config = config;
             _connection = connection;
             _idleSessionPoolSize = config.IdleSessionPoolSize;
@@ -43,14 +42,17 @@ namespace Neo4j.Driver.Internal
 
         internal SessionPool(
             Queue<IPooledSession> availableSessions,
-            Dictionary<Guid, IPooledSession> inUseDictionary, Uri uri = null,
+            Dictionary<Guid, IPooledSession> inUseDictionary,
             IConnection connection = null,
             ILogger logger = null)
-            : this(logger, uri, Config.DefaultConfig, connection)
+            : this(null, AuthTokens.None, logger, Config.DefaultConfig, connection)
         {
             _availableSessions = availableSessions ?? new Queue<IPooledSession>();
             _inUseSessions = inUseDictionary ?? new Dictionary<Guid, IPooledSession>();
         }
+
+        internal int NumberOfInUseSessions => _inUseSessions.Count;
+        internal int NumberOfAvailableSessions => _availableSessions.Count;
 
         public ISession GetSession()
         {
@@ -65,7 +67,7 @@ namespace Neo4j.Driver.Internal
 
                 if (session == null)
                 {
-                    session = new Session(_uri, _config, _connection, Release);
+                    session = new Session(_uri, _authToken, _config, _connection, Release);
                     lock (_inUseSessions)
                     {
                         _inUseSessions.Add(session.Id, session);
@@ -108,7 +110,8 @@ namespace Neo4j.Driver.Internal
                 {
                     lock (_availableSessions)
                     {
-                        if (_availableSessions.Count < _idleSessionPoolSize || _idleSessionPoolSize == Config.InfiniteIdleSessionPoolSize)
+                        if (_availableSessions.Count < _idleSessionPoolSize ||
+                            _idleSessionPoolSize == Config.InfiniteIdleSessionPoolSize)
                         {
                             _availableSessions.Enqueue(session);
                         }

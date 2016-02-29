@@ -29,10 +29,10 @@ namespace Neo4j.Driver.Internal
         private Transaction _transaction;
         private readonly Action<Guid> _releaseAction;
 
-        public Session(Uri url, Config config, IConnection conn = null, Action<Guid> releaseAction = null )
+        public Session(Uri url, IAuthToken authToken, Config config, IConnection conn = null, Action<Guid> releaseAction = null )
             : base(config?.Logger)
         {
-            _connection = TryExecute(() => conn ?? new SocketConnection(url, config));
+            _connection = TryExecute(() => conn ?? new SocketConnection(url, authToken, config));
             _releaseAction = releaseAction ?? (x => {}); 
         }
 

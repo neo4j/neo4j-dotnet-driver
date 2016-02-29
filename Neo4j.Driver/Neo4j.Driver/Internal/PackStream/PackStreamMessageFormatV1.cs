@@ -284,10 +284,11 @@ namespace Neo4j.Driver.Internal.Packstream
                 _packer = new PackStream.Packer(_outputStream, _bitConverter);
             }
 
-            public void HandleInitMessage(string clientNameAndVersion)
+            public void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
             {
                 _packer.PackStructHeader(1, MSG_INIT);
                 _packer.Pack(clientNameAndVersion);
+                PackRawMap(authToken);
                 PackMessageTail();
             }
 

@@ -1,20 +1,19 @@
-﻿//  Copyright (c) 2002-2016 "Neo Technology,"
-//  Network Engine for Objects in Lund AB [http://neotechnology.com]
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
-//  This file is part of Neo4j.
+// This file is part of Neo4j.
 // 
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 // 
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 // 
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,9 +31,9 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly IMessageResponseHandler _messageHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
-        internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
-        public SocketConnection(ISocketClient socketClient, ILogger logger, IMessageResponseHandler messageResponseHandler = null)
+        public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
+            IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
             _messageHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
@@ -43,13 +42,15 @@ namespace Neo4j.Driver.Internal.Connector
             Task.Run(() => _client.Start()).Wait();
 
             // add init requestMessage by default
-            Enqueue(new InitMessage("neo4j-dotnet/1.0.0"));
+            Enqueue(new InitMessage("neo4j-dotnet/1.0.0", authToken.AsDictionary()));
         }
 
-        public SocketConnection(Uri url, Config config)
-            : this(new SocketClient(url, config), config?.Logger)
+        public SocketConnection(Uri url, IAuthToken authToken, Config config)
+            : this(new SocketClient(url, config), authToken, config?.Logger)
         {
         }
+
+        internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
         public void Dispose()
         {
@@ -72,11 +73,10 @@ namespace Neo4j.Driver.Internal.Connector
                 Enqueue(new ResetMessage());
                 throw _messageHandler.Error;
             }
-
         }
 
         public bool HasUnrecoverableError
-         => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
+            => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
 
         public void Run(ResultBuilder resultBuilder, string statement,
             IDictionary<string, object> statementParameters = null)
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
-        
+
 
         protected virtual void Dispose(bool isDisposing)
         {
