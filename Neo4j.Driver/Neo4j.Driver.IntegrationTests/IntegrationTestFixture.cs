@@ -15,6 +15,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
@@ -23,6 +24,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         private readonly Neo4jInstaller _installer = new Neo4jInstaller();
         public int Port { get; private set; }
+        public string Neo4jHome { get; private set; }
         public IntegrationTestFixture()
         {
             Port = 7687;
@@ -30,6 +32,22 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 _installer.DownloadNeo4j().Wait();
                 _installer.InstallServer();
+                _installer.StartServer();
+            }
+            catch
+            {
+                try { Dispose(); } catch { /*Do nothing*/ }
+                throw;
+            }
+            Neo4jHome = _installer.Neo4jHome.FullName;
+        }
+
+        public void RestartServerWithUpdatedSettings(IDictionary<string, string> keyValuePair)
+        {
+            try
+            {
+                _installer.StopServer();
+                _installer.UpdateSettings(keyValuePair);
                 _installer.StartServer();
             }
             catch

@@ -14,10 +14,16 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
 using FluentAssertions;
+using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
+using Path = System.IO.Path;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -29,11 +35,12 @@ namespace Neo4j.Driver.IntegrationTests
         private int Port { get; set; }
         private string ServerEndPoint => $"bolt://localhost:{Port}";
 
-
+        private readonly IntegrationTestFixture fixture;
         private readonly ITestOutputHelper output;
 
         public ConnectionIT(ITestOutputHelper output, IntegrationTestFixture fixture)
         {
+            this.fixture = fixture;
             this.output = output;
             Port = fixture.Port;
         }
@@ -50,14 +57,59 @@ namespace Neo4j.Driver.IntegrationTests
                     var resultCursor = session.Run("RETURN 2 as Number" );
                     resultCursor.Keys.Should().Contain("Number");
                     resultCursor.Keys.Count.Should().Be(1);
-                 //   resultCursor.Stream.Count.Should().Be(1);
-//                    var record = resultCursor.Stream.First();
-//                    Assert.Equal(2, record.Values["Number"]);
-//                    Assert.IsType<sbyte>(record.Values["Number"]);
                 }
             }
         }
 
+        [Fact]
+        public void ShouldEstablishConnectionWhenAuthEnabled()
+        {
+            var authFilePath = Path.Combine(fixture.Neo4jHome, "data/dbms/auth");
+            if (File.Exists(authFilePath))
+            {
+                File.Delete(authFilePath);
+            }
+            fixture.RestartServerWithUpdatedSettings(new Dictionary<string, string>
+            {
+                {"dbms.security.auth_enabled", "true"}
+            });
+            try
+            {
+                using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("neo4j", "neo4j")))
+                {
+                    using (var session = driver.Session())
+                    {
+                        var exception = Record.Exception(() => session.Run("RETURN 2 as Number"));
+                        exception.Should().BeOfType<ClientException>();
+                        exception.Message.Should().Be("The credentials have expired and needs to be updated.");
+                    }
+                }
+                // update auth and run something
+                using (var driver = GraphDatabase.Driver(
+                    ServerEndPoint,
+                    new AuthToken(new Dictionary<string, object>
+                    {
+                        {"scheme", "basic"},
+                        {"principal", "neo4j"},
+                        {"credentials", "neo4j"},
+                        {"new-credentials", "lala"}
+                    })))
+                using (var session = driver.Session())
+                {
+                    var resultCursor = session.Run("RETURN 2 as Number");
+                    resultCursor.Keys.Should().Contain("Number");
+                    resultCursor.Keys.Count.Should().Be(1);
+                }
+            }
+            finally
+            {
+                File.Delete(authFilePath);
+                fixture.RestartServerWithUpdatedSettings(new Dictionary<string, string>
+                {
+                    {"dbms.security.auth_enabled", "false"}
+                });
+            }
+        }
 
         [Fact]
         public void GetsSummary()

@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests
         private const string ServiceName = "neo4j-driver-test-server";
 
         private static DirectoryInfo Neo4jDir => new DirectoryInfo("../target/neo4j");
-        private DirectoryInfo _extractedLocation;
+        public DirectoryInfo Neo4jHome { get; private set; }
 
         private void EnsureDirectoriesExist()
         {
@@ -99,11 +99,10 @@ namespace Neo4j.Driver.IntegrationTests
                 ExtractZip(downloadFileInfo.FullName);
             }
 
-            _extractedLocation = new DirectoryInfo(Path.Combine(Neo4jDir.FullName, zipFolder));
+            Neo4jHome = new DirectoryInfo(Path.Combine(Neo4jDir.FullName, zipFolder));
 
-            UpdateSettings(_extractedLocation.FullName, 
-                new Dictionary<string, string>{ { "dbms.security.auth_enabled", "false"} });// disable auth
-            LoadPowershellModule(_extractedLocation.FullName);
+            UpdateSettings(new Dictionary<string, string>{ { "dbms.security.auth_enabled", "false"} });// disable auth
+            LoadPowershellModule(Neo4jHome.FullName);
         }
 
         private static string GetZipFolder(string filename)
@@ -117,6 +116,11 @@ namespace Neo4j.Driver.IntegrationTests
         private static void ExtractZip(string filename)
         {
             ZipFile.ExtractToDirectory(filename, Neo4jDir.FullName);
+        }
+
+        public void UpdateSettings(IDictionary<string, string> keyValuePair)
+        {
+            UpdateSettings(Neo4jHome.FullName, keyValuePair);
         }
 
         private static void UpdateSettings(string extractedLocation, IDictionary<string, string> keyValuePair)
@@ -211,7 +215,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 powershell.Runspace = _runspace;
                 powershell.AddCommand(command);
-                powershell.AddParameter("Neo4jServer", _extractedLocation.FullName);
+                powershell.AddParameter("Neo4jServer", Neo4jHome.FullName);
                 powershell.AddParameter(serviceNameParam, ServiceName);
                 powershell.Invoke();
                 if (powershell.HadErrors)

@@ -64,26 +64,31 @@ namespace Neo4j.Driver
             return Driver(new Uri(uri), AuthTokens.None, config ?? Config.DefaultConfig);
         }
 
-        /// Return a driver for a Neo4j instance with custom configuration.
-        /// 
-        /// @param uri the URL to a Neo4j instance
-        /// @param authToken authentication to use,
-        /// <see cref="AuthTokens" />
-        /// @param config user defined configuration
-        /// @return a new driver to the database instance specified by the URI
+        /// <summary>
+        ///     Return a driver for a Neo4j instance with custom configuration.
+        /// </summary>
+        /// <param name="uri">
+        ///     The <see cref="Uri" /> to the Neo4j instance. Should be in the form
+        ///     <c>bolt://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     be used.</param>
+        /// <param name="authToken">Authentication to use, <see cref="AuthTokens" /></param>
+        /// <param name="config">User defined configuration</param>
+        /// <returns>A new driver to the database instance specified by the URI</returns>
         public static Driver Driver(string uri, IAuthToken authToken, Config config = null)
         {
             return Driver(new Uri(uri), authToken, config ?? Config.DefaultConfig);
         }
 
-        /**
-         * Return a driver for a Neo4j instance with the default configuration settings
-         *
-         * @param uri the URL to a Neo4j instance
-         * @param authToken authentication to use, <see cref="AuthTokens"/>
-         * @return a new driver to the database instance specified by the URI
-         */
-
+        /// <summary>
+        ///     Return a driver for a Neo4j instance with custom configuration.
+        /// </summary>
+        /// <param name="uri">        
+        ///     The URI to the Neo4j instance. Should be in the form
+        ///     <c>bolt://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     be used.</param>
+        /// <param name="authToken">Authentication to use, <see cref="AuthTokens" /></param>
+        /// <param name="config">User defined configuration</param>
+        /// <returns>A new driver to the database instance specified by the URI</returns>
         public static Driver Driver(Uri uri, IAuthToken authToken, Config config = null)
         {
             return new Driver(uri, authToken, config ?? Config.DefaultConfig);
