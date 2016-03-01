@@ -92,7 +92,7 @@ namespace Neo4j.Driver.IntegrationTests
                         {"scheme", "basic"},
                         {"principal", "neo4j"},
                         {"credentials", "neo4j"},
-                        {"new-credentials", "lala"}
+                        {"new_credentials", "lala"}
                     })))
                 using (var session = driver.Session())
                 {
