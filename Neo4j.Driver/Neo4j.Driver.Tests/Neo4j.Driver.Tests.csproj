@@ -108,6 +108,7 @@
     <Compile Include="Connector\SocketConnectionTests.cs" />
     <Compile Include="TestUtil\TestHelper.cs" />
     <Compile Include="TransactionTests.cs" />
+    <Compile Include="ValueExtensionsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj">
