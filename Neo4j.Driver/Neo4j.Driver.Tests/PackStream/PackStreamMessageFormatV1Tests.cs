@@ -1,24 +1,23 @@
-﻿//  Copyright (c) 2002-2016 "Neo Technology,"
-//  Network Engine for Objects in Lund AB [http://neotechnology.com]
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
-//  This file is part of Neo4j.
+// This file is part of Neo4j.
 // 
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 // 
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 // 
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Extensions;
@@ -57,7 +56,6 @@ namespace Neo4j.Driver.Tests
                     MockTcpSocketClient
                         .Setup(t => t.WriteStream)
                         .Returns(MockStream.Object);
-
                 }
 
                 public void VerifyWrite(byte[] bytes, int bufferSize = ChunkedOutputStream.BufferSize)
@@ -75,10 +73,10 @@ namespace Neo4j.Driver.Tests
 
                 var writer =
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, new BigEndianTargetBitConverter(), null).Writer;
-                writer.Write(new InitMessage("a"));
+                writer.Write(new InitMessage("a", new Dictionary<string, object>()));
                 writer.Flush();
 
-                mocks.VerifyWrite(new byte[] {0x00, 0x04, 0xB1, 0x01, 0x81, 0x61, 0x00, 0x00});
+                mocks.VerifyWrite(new byte[] {0x00, 0x05, 0xB1, 0x01, 0x81, 0x61, 0xA0, 0x00, 0x00});
             }
 
             [Fact]
@@ -282,7 +280,6 @@ namespace Neo4j.Driver.Tests
 
         public class ReaderV1Tests
         {
-
             public class UnpackValueMethod
             {
                 [Theory]
@@ -338,7 +335,8 @@ namespace Neo4j.Driver.Tests
                     TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes.ToArray());
 
                     PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                        new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                            null)
                             .Reader;
                     var real = reader.UnpackValue();
                     Assert.Equal(expected, real);
@@ -354,7 +352,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var real = reader.UnpackValue();
                         IRelationship rel = real as IRelationship;
@@ -375,7 +374,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var node = reader.UnpackValue();
                         INode n = node as INode;
@@ -394,7 +394,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -420,7 +421,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -446,7 +448,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -474,7 +477,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -488,11 +492,15 @@ namespace Neo4j.Driver.Tests
                         p.Start.Equals(TestNodes.Alice).Should().BeTrue();
                         p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Identity.Id}");
 
-                        List<INode> correctOrder = new List<INode> { TestNodes.Alice, TestNodes.Carol, TestNodes.Dave };
+                        List<INode> correctOrder = new List<INode> {TestNodes.Alice, TestNodes.Carol, TestNodes.Dave};
                         p.Nodes.Should().ContainInOrder(correctOrder);
 
                         p.Relationships[0].Equals(TestRelationships.AliceLikesCarol).Should().BeTrue();
-                        List<IRelationship> expectedRelOrder = new List<IRelationship> { TestRelationships.AliceLikesCarol, TestRelationships.CarolMarriedToDave };
+                        List<IRelationship> expectedRelOrder = new List<IRelationship>
+                        {
+                            TestRelationships.AliceLikesCarol,
+                            TestRelationships.CarolMarriedToDave
+                        };
                         p.Relationships.Should().ContainInOrder(expectedRelOrder);
                     }
 
@@ -507,7 +515,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -551,7 +560,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -565,13 +575,15 @@ namespace Neo4j.Driver.Tests
                         p.Start.Equals(TestNodes.Alice).Should().BeTrue();
                         p.End.Equals(TestNodes.Carol).Should().BeTrue($"Got {p.End.Identity.Id}");
 
-                        List<INode> correctOrder = new List<INode>{
+                        List<INode> correctOrder = new List<INode>
+                        {
                             TestNodes.Alice,
                             TestNodes.Bob,
                             TestNodes.Alice,
                             TestNodes.Carol,
                             TestNodes.Bob,
-                            TestNodes.Carol };
+                            TestNodes.Carol
+                        };
                         p.Nodes.Should().ContainInOrder(correctOrder);
 
                         List<IRelationship> expectedRelOrder = new List<IRelationship>
@@ -597,7 +609,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -611,13 +624,15 @@ namespace Neo4j.Driver.Tests
                         p.Start.Equals(TestNodes.Alice).Should().BeTrue();
                         p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Identity.Id}");
 
-                        List<INode> correctOrder = new List<INode> {
+                        List<INode> correctOrder = new List<INode>
+                        {
                             TestNodes.Alice,
                             TestNodes.Carol,
                             TestNodes.Bob,
                             TestNodes.Alice,
                             TestNodes.Carol,
-                            TestNodes.Dave };
+                            TestNodes.Dave
+                        };
                         p.Nodes.Should().ContainInOrder(correctOrder);
 
                         List<IRelationship> expectedRelOrder = new List<IRelationship>
@@ -643,7 +658,8 @@ namespace Neo4j.Driver.Tests
                         TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(), null)
+                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, new BigEndianTargetBitConverter(),
+                                null)
                                 .Reader;
                         var path = reader.UnpackValue();
                         IPath p = path as IPath;
@@ -657,7 +673,8 @@ namespace Neo4j.Driver.Tests
                         p.Start.Equals(TestNodes.Carol).Should().BeTrue();
                         p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Identity.Id}");
 
-                        List<INode> correctOrder = new List<INode> {
+                        List<INode> correctOrder = new List<INode>
+                        {
                             TestNodes.Carol,
                             TestNodes.Dave,
                             TestNodes.Dave

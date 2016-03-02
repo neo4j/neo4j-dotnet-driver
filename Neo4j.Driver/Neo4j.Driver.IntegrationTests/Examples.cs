@@ -25,7 +25,7 @@ using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Examples
+namespace Neo4j.Driver.Examples
 {
 
     [Collection(IntegrationCollection.CollectionName)]
@@ -276,7 +276,6 @@ namespace Examples
         public void TlsRequireEncryption()
         {
             //tag::tls-require-encryption[]
-            // .Net driver by default use tls-signed
             var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithTlsEnabled(true).ToConfig());
             //end::tls-require-encryption[]
             driver.Dispose();

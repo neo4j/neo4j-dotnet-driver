@@ -40,6 +40,8 @@
     <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="IAuthToken.cs" />
+    <Compile Include="Internal\AuthToken.cs" />
     <Compile Include="Internal\DebugLogger.cs" />
     <Compile Include="Exceptions\Neo4jException.cs" />
     <Compile Include="Extensions\Throw.cs" />

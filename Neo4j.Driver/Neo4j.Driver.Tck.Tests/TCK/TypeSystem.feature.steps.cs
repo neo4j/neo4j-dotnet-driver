@@ -1,4 +1,20 @@
-﻿using System;
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +27,12 @@ namespace Neo4j.Driver.Tck.Tests.TCK
 {
     public abstract class TckStepsBase
     {
-        protected dynamic _expected;
-        protected IList<object> _list;
-        protected IDictionary<string, object> _map;
         public const string Url = "bolt://localhost:7687";
         protected static Driver Driver;
         protected static Neo4jInstaller _installer;
+        protected dynamic _expected;
+        protected IList<object> _list;
+        protected IDictionary<string, object> _map;
 
         protected static dynamic GetValue(string type, string value)
         {
@@ -83,7 +99,14 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             }
             catch
             {
-                try { AfterScenario(); } catch { /*Do Nothing*/ }
+                try
+                {
+                    AfterScenario();
+                }
+                catch
+                {
+                    /*Do Nothing*/
+                }
                 throw;
             }
             var config = Config.DefaultConfig;
@@ -150,7 +173,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                _list.Add((object)GetValue(type, value));
+                _list.Add((object) GetValue(type, value));
             }
         }
 
@@ -169,7 +192,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                _map.Add($"Key{i++}", (object)GetValue(type, value));
+                _map.Add($"Key{i++}", (object) GetValue(type, value));
             }
         }
 
@@ -190,14 +213,14 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public void WhenTheDriverAsksTheServerToEchoThisListBack()
         {
             _expected = _list;
-            _result = Driver.Session().Run("Return {input}", new Dictionary<string, object> { { "input", _expected } });
+            _result = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
         }
 
         [When(@"the driver asks the server to echo this map back")]
         public void WhenTheDriverAsksTheServerToEchoThisMapBack()
         {
             _expected = _map;
-            _result = Driver.Session().Run("Return {input}", new Dictionary<string, object> { { "input", _expected } });
+            _result = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
         }
 
         [When(@"the value given in the result should be the same as what was sent")]
@@ -213,7 +236,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"adding a table of lists to the map M")]
         public void WhenAddingATableOfListsToTheMapM(Table table)
         {
-            int i = 0;
+            var i = 0;
             foreach (var row in table.Rows)
             {
                 var columns = row.Values;
@@ -226,7 +249,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"adding a table of values to the map M")]
         public void WhenAddingATableOfValuesToTheMapM(Table table)
         {
-            int i = 0;
+            var i = 0;
             foreach (var row in table.Rows)
             {
                 var columns = row.Values;
@@ -241,7 +264,6 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             _map.Add("MapKey", new Dictionary<string, object>(_map));
         }
-
 
 
         private List<object> GetList(string type, string values)

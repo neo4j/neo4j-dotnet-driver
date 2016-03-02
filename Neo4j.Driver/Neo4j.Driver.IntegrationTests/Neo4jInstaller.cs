@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests
         private const string ServiceName = "neo4j-driver-test-server";
 
         private static DirectoryInfo Neo4jDir => new DirectoryInfo("../target/neo4j");
-        private DirectoryInfo _extractedLocation;
+        public DirectoryInfo Neo4jHome { get; private set; }
 
         private void EnsureDirectoriesExist()
         {
@@ -99,8 +99,10 @@ namespace Neo4j.Driver.IntegrationTests
                 ExtractZip(downloadFileInfo.FullName);
             }
 
-            _extractedLocation = new DirectoryInfo(Path.Combine(Neo4jDir.FullName, zipFolder));
-            LoadPowershellModule(_extractedLocation.FullName);
+            Neo4jHome = new DirectoryInfo(Path.Combine(Neo4jDir.FullName, zipFolder));
+
+            UpdateSettings(new Dictionary<string, string>{ { "dbms.security.auth_enabled", "false"} });// disable auth
+            LoadPowershellModule(Neo4jHome.FullName);
         }
 
         private static string GetZipFolder(string filename)
@@ -111,7 +113,67 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
+        private static void ExtractZip(string filename)
+        {
+            ZipFile.ExtractToDirectory(filename, Neo4jDir.FullName);
+        }
+
+        public void UpdateSettings(IDictionary<string, string> keyValuePair)
+        {
+            UpdateSettings(Neo4jHome.FullName, keyValuePair);
+        }
+
+        private static void UpdateSettings(string extractedLocation, IDictionary<string, string> keyValuePair)
+        {
+            var keyValuePairCopy = new Dictionary<string, string>(keyValuePair);
+
+            // rename the old file to a temp file
+            var configFileName = Path.Combine(extractedLocation, "conf/neo4j.conf");
+            var tempFileName = Path.Combine(extractedLocation, "conf/neo4j.conf.tmp");
+            File.Move(configFileName, tempFileName);
+
+            using (var reader = new StreamReader(tempFileName))
+            using (var writer = new StreamWriter(configFileName))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line.Trim() == string.Empty || line.Trim().StartsWith("#"))
+                    {
+                        // empty or comments, print as original
+                        writer.WriteLine(line);
+                    }
+                    else
+                    {
+                        string[] tokens = line.Split('=');
+                        if (tokens.Length == 2 && keyValuePairCopy.ContainsKey(tokens[0].Trim()))
+                        {
+                            var key = tokens[0].Trim();
+                            // found property and update it to the new value
+                            writer.WriteLine($"{key}={keyValuePairCopy[key]}");
+                            keyValuePairCopy.Remove(key);
+
+                        }
+                        else
+                        {
+                            // not the property that we are looking for, print it as original
+                            writer.WriteLine(line);
+                        }
+                    }
+                }
+
+                // write the extral propertes at the end of the file
+                foreach (var pair in keyValuePairCopy)
+                {
+                    writer.WriteLine($"{pair.Key}={pair.Value}");
+                }
+            }
+            // delete the temp file
+            File.Delete(tempFileName);
+        }
+
         private Runspace _runspace;
+
         private void LoadPowershellModule(string extractedLocation)
         {
             var moduleLocation = Path.Combine(extractedLocation, "bin\\Neo4j-Management\\Neo4j-Management.psm1");
@@ -125,12 +187,6 @@ namespace Neo4j.Driver.IntegrationTests
             _runspace.Open();
 
         }
-
-        private static void ExtractZip(string filename)
-        {
-            ZipFile.ExtractToDirectory(filename, Neo4jDir.FullName);
-        }
-
 
         public void InstallServer()
         {
@@ -159,7 +215,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 powershell.Runspace = _runspace;
                 powershell.AddCommand(command);
-                powershell.AddParameter("Neo4jServer", _extractedLocation.FullName);
+                powershell.AddParameter("Neo4jServer", Neo4jHome.FullName);
                 powershell.AddParameter(serviceNameParam, ServiceName);
                 powershell.Invoke();
                 if (powershell.HadErrors)

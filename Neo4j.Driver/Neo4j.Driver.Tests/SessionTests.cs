@@ -1,20 +1,19 @@
-﻿//  Copyright (c) 2002-2016 "Neo Technology,"
-//  Network Engine for Objects in Lund AB [http://neotechnology.com]
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
-//  This file is part of Neo4j.
+// This file is part of Neo4j.
 // 
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 // 
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 // 
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-using System;
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Exceptions;
@@ -22,6 +21,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
@@ -34,14 +34,13 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
                 session.Run("lalalal");
 
                 mockConn.Verify(x => x.Run(It.IsAny<ResultBuilder>(), "lalalal", null), Times.Once);
                 mockConn.Verify(x => x.PullAll(It.IsAny<ResultBuilder>()), Times.Once);
-                mockConn.Verify(x=>x.Sync());
+                mockConn.Verify(x => x.Sync());
             }
-
         }
 
         public class BeginTransactionMethod
@@ -51,9 +50,9 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
                 session.BeginTransaction();
-                var error = Xunit.Record.Exception(() => session.BeginTransaction());
+                var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
             }
 
@@ -62,7 +61,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
                 tx = session.BeginTransaction();
@@ -73,10 +72,10 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
 
-                var error = Xunit.Record.Exception(() => session.Run("lalal"));
+                var error = Record.Exception(() => session.Run("lalal"));
                 error.Should().BeOfType<ClientException>();
             }
 
@@ -85,7 +84,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
 
@@ -97,9 +96,9 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
 
-                var error = Xunit.Record.Exception(() => session.Run("lalal"));
+                var error = Record.Exception(() => session.Run("lalal"));
                 error.Should().BeOfType<ClientException>();
             }
 
@@ -108,9 +107,9 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
 
-                var error = Xunit.Record.Exception(() => session.BeginTransaction());
+                var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
             }
         }
@@ -121,7 +120,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCallResetAndSyncOnConnection()
             {
                 var mock = new Mock<IConnection>();
-                var session = new Session(null, null, mock.Object);
+                var session = new Session(null, null, null, mock.Object);
                 session.Reset();
 
                 mock.Verify(r => r.Reset(), Times.Once);
@@ -135,7 +134,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldDisposeConnOnClose()
             {
                 var mockConn = new Mock<IConnection>();
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
                 session.Close();
 
                 mockConn.Verify(x => x.Dispose(), Times.Once);
@@ -149,11 +148,11 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, mockConn.Object);
+                var session = new Session(null, null, null, mockConn.Object);
                 var tx = session.BeginTransaction();
                 session.Dispose();
 
-                mockConn.Verify(x=>x.Run(null, "ROLLBACK", null), Times.Once);
+                mockConn.Verify(x => x.Run(null, "ROLLBACK", null), Times.Once);
             }
         }
 
@@ -166,7 +165,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.IsOpen).Returns(false);
                 mock.Setup(x => x.HasUnrecoverableError).Returns(false);
 
-                var session = new Session(null, null, mock.Object);
+                var session = new Session(null, null, null, mock.Object);
                 session.IsHealthy.Should().BeFalse();
             }
 
@@ -177,7 +176,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.IsOpen).Returns(true);
                 mock.Setup(x => x.HasUnrecoverableError).Returns(true);
 
-                var session = new Session(null, null, mock.Object);
+                var session = new Session(null, null, null, mock.Object);
                 session.IsHealthy.Should().BeFalse();
             }
 
@@ -188,7 +187,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.IsOpen).Returns(true);
                 mock.Setup(x => x.HasUnrecoverableError).Returns(false);
 
-                var session = new Session(null, null, mock.Object);
+                var session = new Session(null, null, null, mock.Object);
                 session.IsHealthy.Should().BeTrue();
             }
         }
