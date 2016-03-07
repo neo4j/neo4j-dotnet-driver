@@ -24,6 +24,13 @@ namespace Neo4j.Driver
     /// </summary>
     public class Statement
     {
+        private static IDictionary<string, object> NoParameter { get; }
+
+        static Statement()
+        {
+            NoParameter = new Dictionary<string, object>();
+        }
+         
         /// <summary>
         /// Gets the statement's template.
         /// </summary>
@@ -31,17 +38,17 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets the statement's parameters.
         /// </summary>
-        public IReadOnlyDictionary<string, object> Parameters { get; }
+        public IDictionary<string, object> Parameters { get; }
 
         /// <summary>
         /// Create a statemete
         /// </summary>
         /// <param name="template">The statement's template</param>
-        /// <param name="parameters">The statement's parameters</param>
+        /// <param name="parameters">The statement's parameters, whoes values should not be changed while the statement is used in a session/transaction.</param>
         public Statement(string template, IDictionary<string, object> parameters = null)
         {
             Template = template;
-            Parameters = parameters == null ? new Dictionary<string, object>() : new Dictionary<string, object>(parameters);
+            Parameters = parameters ?? NoParameter;
         }
 
         public override string ToString()

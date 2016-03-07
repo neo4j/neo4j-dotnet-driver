@@ -118,7 +118,7 @@ namespace Neo4j.Driver
         /// <returns></returns>
         public static IList<TV> AsList<TV>(this object value, Func<object, TV> mapFunc)
         {
-            if (value is IList<object>)
+            if (value is IList<object> || value is IReadOnlyList<object>)
             {
                 var list = (from object item in (IList)value select mapFunc(item)).ToList();
                 return list;
