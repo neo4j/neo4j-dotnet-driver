@@ -81,7 +81,7 @@ namespace Neo4j.Driver.IntegrationTests
                     {
                         var exception = Record.Exception(() => session.Run("RETURN 2 as Number"));
                         exception.Should().BeOfType<ClientException>();
-                        exception.Message.Should().Be("The credentials have expired and needs to be updated.");
+                        exception.Message.Should().StartWith("The credentials have expired and need to be updated.");
                     }
                 }
                 // update auth and run something
