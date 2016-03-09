@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Result
         {
         }
 
-        public void Record(dynamic[] fields)
+        public void Record(object[] fields)
         {
             var record = new Record(_keys, fields);
             _records.Add(record);

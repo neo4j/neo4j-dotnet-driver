@@ -291,9 +291,9 @@ namespace Neo4j.Driver.Tests.Result
                 var cursor = builder.Build();
 
                 var t = AssertGetExpectResults(cursor, 3);
-                builder.Record(new dynamic[] {123});
-                builder.Record(new dynamic[] {123});
-                builder.Record(new dynamic[] {123});
+                builder.Record(new object[] {123});
+                builder.Record(new object[] {123});
+                builder.Record(new object[] {123});
                 builder.CollectSummaryMeta(null);
                 t.Wait();
             }
@@ -317,9 +317,9 @@ namespace Neo4j.Driver.Tests.Result
                 var builder = GenerateBuilder();
                 var cursor = builder.Build();
 
-                builder.Record(new dynamic[] { 123 });
-                builder.Record(new dynamic[] { 123 });
-                builder.Record(new dynamic[] { 123 });
+                builder.Record(new object[] { 123 });
+                builder.Record(new object[] { 123 });
+                builder.Record(new object[] { 123 });
                 builder.CollectSummaryMeta(null);
 
                 var t = AssertGetExpectResults(cursor, 3);

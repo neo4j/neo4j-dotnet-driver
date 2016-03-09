@@ -321,7 +321,7 @@ namespace Neo4j.Driver.Tests
                     UnpackNumCorrectly(value, expected);
                 }
 
-                private void UnpackNumCorrectly(dynamic expected, byte[] data)
+                private void UnpackNumCorrectly(long expected, byte[] data)
                 {
                     var mockTcpSocketClient = new Mock<ITcpSocketClient>();
 

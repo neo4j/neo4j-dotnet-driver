@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Neo4j.Driver.Exceptions;
 
 namespace Neo4j.Driver
 {
@@ -14,7 +16,7 @@ namespace Neo4j.Driver
         /// A helper method to explicitly cast the value streamed back via Bolt to a local type.
         /// </summary>
         /// <typeparam name="T">
-        /// Well support for one of the following types (or nullable if applies):
+        /// Well support for one of the following types (or nullable version of the following types if applies):
         /// <see cref="short"/>,
         /// <see cref="int"/>,
         /// <see cref="long"/>,
@@ -28,14 +30,16 @@ namespace Neo4j.Driver
         /// <see cref="char"/>,
         /// <see cref="bool"/>,
         /// <see cref="string"/>, 
+        /// <see cref="List{T}"/>,
         /// <see cref="INode"/>,
         /// <see cref="IRelationship"/>,
         /// <see cref="IPath"/>.
         /// Undefined support for other types that are not listed above.
         /// No support for user-defined types, e.g. Person, Movie.
         /// </typeparam>
-        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/></param>
-        /// <returns>The value of type <see cref="T"/></returns>
+        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="INode.Properties"/></param>
+        /// <returns>The value of specified return type</returns>
+        /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible</remarks>
         public static T As<T>(this object value)
         {
             if (value == null)
@@ -44,8 +48,9 @@ namespace Neo4j.Driver
                 {
                     return default(T);
                 }
-                throw new NotSupportedException($"Unsupported cast from `null` to `{typeof(T)}`");
+                throw new InvalidCastException($"Unable to cast `null` to `{typeof(T)}`.");
             }
+
             if (value is T)
             {
                 return (T) value;
@@ -106,24 +111,74 @@ namespace Neo4j.Driver
             {
                 return Convert.ToBoolean(value).AsItIs<T>();
             }
-            throw new NotSupportedException($"Unsupported cast from `{sourceType}` to `{typeof(T)}`");
-        }
-        /// <summary>
-        /// A helper method to explicitly cast the value streamed back via Bolt to a list of items,
-        /// where how the items are created are defined by the mapping function provided.
-        /// </summary>
-        /// <typeparam name="TV">The type of the items in the List</typeparam>
-        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/></param>
-        /// <param name="mapFunc">the function that how to map each list item.</param>
-        /// <returns></returns>
-        public static IList<TV> AsList<TV>(this object value, Func<object, TV> mapFunc)
-        {
-            if (value is IList<object> || value is IReadOnlyList<object>)
+
+            // force to cast to a dict or list
+            var typeInfo = targetType.GetTypeInfo();
+            if (typeInfo.ImplementedInterfaces.Contains(typeof(IDictionary)) && typeInfo.IsGenericType && value is IDictionary)
             {
-                var list = (from object item in (IList)value select mapFunc(item)).ToList();
-                return list;
+                return value.AsDictionary<T>(typeInfo);
             }
-            throw new NotSupportedException($"Unsupported cast from `{value.GetType()}` to `{typeof(IList<TV>)}`");
+            if (typeInfo.ImplementedInterfaces.Contains(typeof(IList)) && typeInfo.IsGenericType && value is IList)
+            {
+                return AsList<T>(value, typeInfo);
+            }
+
+            throw new InvalidCastException($"Unable to cast object of type `{sourceType}` to type `{typeof(T)}`.");
+        }
+
+        private static T AsDictionary<T>(this object value, TypeInfo typeInfo)
+        {
+            var dictionary = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments));
+            foreach (var kvp in (IDictionary<string, object>)value)
+            {
+                dictionary.InvokeAddOnDictionary(kvp, typeInfo.GenericTypeArguments);
+            }
+            return dictionary.AsItIs<T>();
+        }
+
+        private static void InvokeAddOnDictionary(this object dict, KeyValuePair<string, object> toAdd, Type[] genericParameters)
+        {
+            if (!(dict is IDictionary))
+                throw new InvalidOperationException("Unable to call 'Add' on something that's not a Dictionary.");
+
+            var methodKey = GetInvokableAsMethod(genericParameters[0]);
+            var methodVal = GetInvokableAsMethod(genericParameters[1]);
+
+            dict.GetType().GetRuntimeMethod("Add", genericParameters).Invoke(dict, new[] { methodKey.InvokeStatic(toAdd.Key), methodVal.InvokeStatic(toAdd.Value) });
+        }
+
+        private static T AsList<T>(this object value, TypeInfo typeInfo)
+        {
+            var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(typeInfo.GenericTypeArguments));
+
+            foreach (var o in (IList)value)
+            {
+                list.InvokeAddOnList(o, typeInfo.GenericTypeArguments);
+            }
+
+            return list.AsItIs<T>();
+        }
+
+        private static void InvokeAddOnList(this object list, object toAdd, Type[] genericParameters)
+        {
+            if (!(list is IList))
+            {
+                throw new InvalidOperationException("Unable to call 'Add' on something that's not a list.");
+            }
+
+            var method = GetInvokableAsMethod(genericParameters);
+            list.GetType().GetRuntimeMethod("Add", genericParameters).Invoke(list, new[] { method.InvokeStatic(toAdd) });
+        }
+
+        #region Helper Methods
+        private static object InvokeStatic(this MethodInfo method, params object[] parameters)
+        {
+            return method.Invoke(null, parameters);
+        }
+
+        private static MethodInfo GetInvokableAsMethod(params Type[] genericParameters)
+        {
+            return typeof(ValueExtensions).GetRuntimeMethod("As", genericParameters).MakeGenericMethod(genericParameters);
         }
 
         private static T AsItIs<T>(this object value)
@@ -132,7 +187,8 @@ namespace Neo4j.Driver
             {
                 return (T)value;
             }
-            throw new NotSupportedException($"Unsupported cast from `{value.GetType()}` to `{typeof(T)}`");
+            throw new InvalidOperationException($"The expected value `{typeof(T)}` is different from the actual value `{value.GetType()}`");
         }
+        #endregion Helper Methods
     }
 }

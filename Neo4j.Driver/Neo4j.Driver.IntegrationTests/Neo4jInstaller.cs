@@ -215,8 +215,8 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 powershell.Runspace = _runspace;
                 powershell.AddCommand(command);
+                //powershell.AddParameter(serviceNameParam, ServiceName);
                 powershell.AddParameter("Neo4jServer", Neo4jHome.FullName);
-                powershell.AddParameter(serviceNameParam, ServiceName);
                 powershell.Invoke();
                 if (powershell.HadErrors)
                 {

@@ -25,9 +25,9 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     class RecordMessage : IMessage
     {
-        private dynamic[] fields;
+        private object[] fields;
 
-        public RecordMessage(dynamic[] fields)
+        public RecordMessage(object[] fields)
         {
             this.fields = fields;
         }

@@ -55,12 +55,12 @@ namespace Neo4j.Driver.Internal.Result
             _getSummary = getSummary;
         }
 
-        public dynamic Get(int index)
+        public object Get(int index)
         {
             return _current[index];
         }
 
-        public dynamic Get(string key)
+        public object Get(string key)
         {
             return _current[key];
         }
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Internal.Result
             return Keys.Count;
         }
 
-        public IReadOnlyDictionary<string, dynamic> Values()
+        public IReadOnlyDictionary<string, object> Values()
         {
             EnsureCurrentIsCalled();
             return _current.Values;
@@ -96,10 +96,10 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
-        public IReadOnlyList<KeyValuePair<string, dynamic>> OrderedValues()
+        public IReadOnlyList<KeyValuePair<string, object>> OrderedValues()
         {
             EnsureCurrentIsCalled();
-            return Keys.Select(key => new KeyValuePair<string, dynamic>(key, _current.Values[key])).ToList();
+            return Keys.Select(key => new KeyValuePair<string, object>(key, _current.Values[key])).ToList();
         }
 
         public IEnumerable<Record> Stream()

@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Tests.Messaging
                 new object[] {new PullAllMessage(), "PULLALL"},
                 new object[]
                 {
-                    new RecordMessage(new dynamic[] {1, "a string", new[] {3, 4}}),
+                    new RecordMessage(new object[] {1, "a string", new[] {3, 4}}),
                     "RECORD [1, a string, [3, 4]]"
                 },
                 new object[] {new ResetMessage(), "RESET"},

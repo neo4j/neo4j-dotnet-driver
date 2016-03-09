@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Xunit;
@@ -10,6 +11,13 @@ namespace Neo4j.Driver.Tests
     {
         public class AsPrimaryTypeMethod
         {
+            [Fact]
+            public void ShouldHandleLists()
+            {
+                object value = new List<object> {"a", "b"};
+                var actual = value.As<List<string>>();
+                actual.ToList().Should().HaveCount(2);
+            }
 
             [Fact]
             public void ShouldConvertNullToNullable()
@@ -40,8 +48,8 @@ namespace Neo4j.Driver.Tests
             {
                 object value = null;
                 var ex = Record.Exception(() => value.As<bool>());
-                ex.Should().BeOfType<NotSupportedException>();
-                ex.Message.Should().Be("Unsupported cast from `null` to `System.Boolean`");
+                ex.Should().BeOfType<InvalidCastException>();
+                ex.Message.Should().Be("Unable to cast `null` to `System.Boolean`.");
             }
 
             [Theory]
@@ -161,33 +169,56 @@ namespace Neo4j.Driver.Tests
                 var actual = input.As<byte>();
                 actual.Should().Be(expected);
             }
+
+        }
+
+        public class AsMethodWithError
+        {
+            [Fact]
+            public void ShouldThrowExceptionWhenCastFromIntToList()
+            {
+                object value = 10;
+                var ex = Record.Exception(() => value.As<List<int>>());
+                ex.Should().BeOfType<InvalidCastException>();
+                ex.Message.Should().Be("Unable to cast object of type `System.Int32` to type `System.Collections.Generic.List`1[System.Int32]`.");
+            }
+            [Fact]
+            public void ShouldThrowExceptionWhenCastFromListToInt()
+            {
+                object value = new List<object> { "string", 2, true, "lala" };
+                var ex = Record.Exception(() => value.As<int>());
+                ex.Should().BeOfType<InvalidCastException>();
+                ex.Message.Should().Be("Unable to cast object of type 'System.Collections.Generic.List`1[System.Object]' to type 'System.IConvertible'.");
+            }
         }
 
         public class AsCollectionTypeMethod
         {
             [Fact]
-            public void ShouldCovertToListOfObjects()
+            public void ShouldCovertToListOfStrings()
             {
-                object obj = new List<object> { "string", 2, true, "lala"};
-                var actual = obj.As<IList<object>>();
+                IReadOnlyList<object> list = new List<object> { "string", 2, true, "lala" };
+                object obj = list;
+                var actual = obj.As<List<string>>();
                 actual.Count.Should().Be(4);
-                actual[0].As<string>().Should().Be("string");
-                actual[1].As<string>().Should().Be("2");
-                actual[2].As<string>().Should().Be("True");
-                actual[3].As<string>().Should().Be("lala");
+                actual[0].Should().Be("string");
+                actual[1].Should().Be("2");
+                actual[2].Should().Be("True");
+                actual[3].Should().Be("lala");
             }
 
             [Fact]
             public void ShouldCovertToListOfListOfInts()
             {
-                object obj = new List<object>
+                IReadOnlyList<object> list = new List<object>
                 {
                     new List<object> {1, 2, 3},
                     new List<object> {11, 12, 13},
                     new List<object> {21, 22, 23},
                     new List<object> {31, 32, 33}
                 };
-                var actual = obj.AsList(x=> x.AsList(y => y.As<int>()));
+                object obj = list;
+                var actual = obj.As<List<List<int>>>();
                 actual.Count.Should().Be(4);
                 actual[0][0].Should().Be(1);
                 actual[1][1].Should().Be(12);
@@ -196,10 +227,12 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldCovertToDictionaryOfObjects()
+            public void ShouldCovertToDictionaryOfStrings()
             {
-                object obj = new Dictionary<string, object>{ {"key1", "string"}, { "key2", 2}, {"key3", true}, {"key4", "lala"}};
-                var actual = obj.As<IDictionary<string, object>>();
+                IReadOnlyDictionary<string, object> dict =
+                    new Dictionary<string, object> {{"key1", "string"}, {"key2", 2}, {"key3", true}, {"key4", "lala"}};
+                object obj = dict;
+                var actual = obj.As<Dictionary<string, string>>();
                 actual.Count.Should().Be(4);
                 actual["key1"].As<string>().Should().Be("string");
                 actual["key2"].As<string>().Should().Be("2");
@@ -208,7 +241,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class AsStructTypeMethod
+        public class AsBoltStructTypeMethod
         {
             [Fact]
             public void ShouldConvertToNode()
