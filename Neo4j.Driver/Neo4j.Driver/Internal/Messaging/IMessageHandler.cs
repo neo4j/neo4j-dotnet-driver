@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.Messaging
         void HandleSuccessMessage(IDictionary<string, object> meta);
         void HandleFailureMessage(string code, string message);
         void HandleIgnoredMessage();
-        void HandleRecordMessage(dynamic[] fields);
+        void HandleRecordMessage(object[] fields);
 
         void Register(IRequestMessage requestMessage, IResultBuilder resultBuilder = null);
         void Clear();

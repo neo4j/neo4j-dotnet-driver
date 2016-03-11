@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 
-        public void HandleRecordMessage(dynamic[] fields)
+        public void HandleRecordMessage(object[] fields)
         {
             CurrentResultBuilder.Record(fields);
             _logger?.Debug("S: ", new RecordMessage(fields));

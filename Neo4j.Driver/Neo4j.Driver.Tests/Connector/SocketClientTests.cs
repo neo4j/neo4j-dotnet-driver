@@ -246,7 +246,7 @@ namespace Neo4j.Driver.Tests
                     _messageHandler.HandleIgnoredMessage();
                 }
 
-                public void HandleRecordMessage(dynamic[] fields)
+                public void HandleRecordMessage(object[] fields)
                 {
                     _messageHandler.HandleRecordMessage(fields);
                 }

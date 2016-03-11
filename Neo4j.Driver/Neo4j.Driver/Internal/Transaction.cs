@@ -23,13 +23,13 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal
 {
-    public class Transaction : ITransaction
+    public class Transaction : StatementRunner, ITransaction
     {
         private State _state = State.Active;
         private readonly IConnection _connection;
         public bool Finished { get; private set; }
 
-        public Transaction(IConnection connection)
+        public Transaction(IConnection connection, ILogger logger=null) : base(logger)
         {
             _connection = connection;
             Finished = false;
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
             {
@@ -89,6 +89,7 @@ namespace Neo4j.Driver.Internal
             finally
             {
                 Finished = true;
+                base.Dispose(isDisposing);
             }
         }
 
@@ -98,23 +99,26 @@ namespace Neo4j.Driver.Internal
             GC.SuppressFinalize(this);
         }
 
-        public IResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
+        public override IResultCursor Run(string statement, IDictionary<string, object> parameters=null)
         {
-            EnsureNotFailed();
+            return TryExecute(() =>
+            {
+                EnsureNotFailed();
 
-            try
-            {
-                ResultBuilder resultBuilder = new ResultBuilder(statement, statementParameters);
-                _connection.Run(resultBuilder, statement, statementParameters);
-                _connection.PullAll(resultBuilder);
-                _connection.Sync();
-                return resultBuilder.Build();
-            }
-            catch (Neo4jException)
-            {
-                _state = State.Failed;
-                throw;
-            }
+                try
+                {
+                    var resultBuilder = new ResultBuilder(statement, parameters);
+                    _connection.Run(resultBuilder, statement, parameters);
+                    _connection.PullAll(resultBuilder);
+                    _connection.Sync();
+                    return resultBuilder.Build();
+                }
+                catch (Neo4jException)
+                {
+                    _state = State.Failed;
+                    throw;
+                }
+            });
         }
 
         private void EnsureNotFailed()

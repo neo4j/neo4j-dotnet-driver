@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Internal.Packstream
                 UnPackMessageTail();
             }
 
-            public dynamic UnpackValue()
+            public object UnpackValue()
             {
                 var type = _unpacker.PeekNextType();
                 switch (type)
@@ -224,9 +224,9 @@ namespace Neo4j.Driver.Internal.Packstream
 
             private void UnpackRecordMessage(IMessageResponseHandler responseHandler)
             {
-                int fieldCount = (int)_unpacker.UnpackListHeader();
-                dynamic[] fields = new dynamic[fieldCount];
-                for (int i = 0; i < fieldCount; i++)
+                var fieldCount = (int)_unpacker.UnpackListHeader();
+                var fields = new object[fieldCount];
+                for (var i = 0; i < fieldCount; i++)
                 {
                     fields[i] = UnpackValue();
                 }

@@ -12,14 +12,14 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="index">The index</param>
         /// <returns>The value specified with the given index</returns>
-        dynamic this[int index] { get; }
+        object this[int index] { get; }
 
         /// <summary>
         /// Gets the value specified by the given key
         /// </summary>
         /// <param name="key">The key</param>
         /// <returns>the value spcified with the given key</returns>
-        dynamic this[string key] { get; }
+        object this[string key] { get; }
 
         /// <summary>
         /// Gets the key and value pairs in a <see cref="IReadOnlyDictionary{TKey,TValue}"/>.

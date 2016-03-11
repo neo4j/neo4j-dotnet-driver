@@ -23,17 +23,19 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal
 {
-    public class Session : LoggerBase, IPooledSession
+    public class Session : StatementRunner, IPooledSession
     {
         private readonly IConnection _connection;
         private Transaction _transaction;
         private readonly Action<Guid> _releaseAction;
+        private readonly ILogger _logger;
 
         public Session(Uri url, IAuthToken authToken, Config config, IConnection conn = null, Action<Guid> releaseAction = null )
             : base(config?.Logger)
         {
             _connection = TryExecute(() => conn ?? new SocketConnection(url, authToken, config));
-            _releaseAction = releaseAction ?? (x => {}); 
+            _releaseAction = releaseAction ?? (x => {});
+            _logger = config?.Logger;
         }
 
         protected override void Dispose(bool isDisposing)
@@ -66,7 +68,7 @@ namespace Neo4j.Driver.Internal
             GC.SuppressFinalize(this);
         }
 
-        public IResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
+        public override IResultCursor Run(string statement, IDictionary<string, object> statementParameters = null)
         {
             return TryExecute(() =>
             {
@@ -85,7 +87,7 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() =>
             {
                 EnsureConnectionIsValid();
-                _transaction = new Transaction(_connection);
+                _transaction = new Transaction(_connection, _logger);
                 return _transaction;
             });
         }

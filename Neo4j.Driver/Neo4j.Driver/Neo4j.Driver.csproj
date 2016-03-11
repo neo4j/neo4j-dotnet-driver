@@ -61,6 +61,7 @@
     <Compile Include="Internal\Entity.cs" />
     <Compile Include="Internal\Result\IResultBuilder.cs" />
     <Compile Include="Internal\SessionPool.cs" />
+    <Compile Include="Internal\StatementRunner.cs" />
     <Compile Include="Internal\Transaction.cs" />
     <Compile Include="Internal\Messaging\DiscardAllMessage.cs" />
     <Compile Include="Internal\Messaging\ResetMessage.cs" />
@@ -100,6 +101,7 @@
     <Compile Include="ISession.cs" />
     <Compile Include="Statement.cs" />
     <Compile Include="ICounters.cs" />
+    <Compile Include="ValueExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Sockets.Plugin, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">

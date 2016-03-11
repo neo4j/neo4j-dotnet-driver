@@ -78,10 +78,9 @@ namespace Neo4j.Driver.Internal.Connector
         public bool HasUnrecoverableError
             => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
 
-        public void Run(ResultBuilder resultBuilder, string statement,
-            IDictionary<string, object> statementParameters = null)
+        public void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
         {
-            var runMessage = new RunMessage(statement, statementParameters);
+            var runMessage = new RunMessage(statement, paramters);
             Enqueue(runMessage, resultBuilder);
         }
 

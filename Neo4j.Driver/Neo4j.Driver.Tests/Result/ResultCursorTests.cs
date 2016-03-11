@@ -21,7 +21,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Exceptions;
@@ -44,7 +43,7 @@ namespace Neo4j.Driver.Tests
 
             for (int j = 0; j < recordSize; j++)
             {
-                var values = new List<dynamic>();
+                var values = new List<object>();
                 for (int i = 0; i < keySize; i++)
                 {
                     values.Add(i);
@@ -230,7 +229,7 @@ namespace Neo4j.Driver.Tests
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        _records.Add(new Record(Keys, new dynamic[] { "Test", 123 }));
+                        _records.Add(new Record(Keys, new object[] { "Test", 123 }));
                     }
                 }
 

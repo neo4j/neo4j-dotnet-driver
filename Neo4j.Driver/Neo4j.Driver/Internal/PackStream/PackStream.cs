@@ -519,7 +519,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case MAP_32:
                         return UnpackUint32();
                     default:
-                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
                             $"Expected a map, but got: {markerByte.ToString("X2")}");
                 }
             }
@@ -543,7 +543,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case LIST_32:
                         return UnpackUint32();
                     default:
-                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
                             $"Expected a list, but got: {(markerByte & 0xFF).ToString("X2")}");
                 }
             }
@@ -570,7 +570,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case STRUCT_16:
                         return UnpackUint16();
                     default:
-                        throw new ArgumentOutOfRangeException("markerByte", markerByte,
+                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
                             $"Expected a struct, but got: {markerByte.ToString("X2")}");
                 }
             }

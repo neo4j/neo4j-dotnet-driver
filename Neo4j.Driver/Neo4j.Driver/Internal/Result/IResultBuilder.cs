@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Internal.Result
 {
     public interface IResultBuilder
     {
-        void Record(dynamic[] fields);
+        void Record(object[] fields);
         ResultCursor Build();
         void CollectFields(IDictionary<string, object> meta);
         void CollectSummaryMeta(IDictionary<string, object> meta);

@@ -81,7 +81,7 @@ namespace Neo4j.Driver.IntegrationTests
                     {
                         var exception = Record.Exception(() => session.Run("RETURN 2 as Number"));
                         exception.Should().BeOfType<ClientException>();
-                        exception.Message.Should().Be("The credentials have expired and needs to be updated.");
+                        exception.Message.Should().StartWith("The credentials have expired and need to be updated.");
                     }
                 }
                 // update auth and run something
@@ -156,8 +156,8 @@ namespace Neo4j.Driver.IntegrationTests
                 var result2All = cursor2.Stream().ToList();
                 var result1All = cursor1.Stream().ToList();
 
-                result2All.Select(r => (int)r.Values["n"]).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => (int)r.Values["n"]).Should().ContainInOrder(1, 2, 3);
+                result2All.Select(r => r.Values["n"].As<int>()).Should().ContainInOrder(4, 5, 6);
+                result1All.Select(r => r.Values["n"].As<int>()).Should().ContainInOrder(1, 2, 3);
             }
         }
     }

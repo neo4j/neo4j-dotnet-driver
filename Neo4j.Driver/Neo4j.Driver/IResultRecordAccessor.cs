@@ -15,9 +15,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
 {
@@ -31,13 +29,13 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="index">The position in the <see cref="IRecord"/></param>
         /// <returns>the value of property found with the index</returns>
-        dynamic Get(int index);
+        object Get(int index);
         /// <summary>
         /// Retrieve the value of the property with the given key
         /// </summary>
         /// <param name="key">The key of the property</param>
         /// <returns>the value of property found with the provided key</returns>
-        dynamic Get(string key);
+        object Get(string key);
         /// <summary>
         /// Test if the <see cref="IRecord"/> contains the given key
         /// </summary>
@@ -63,12 +61,12 @@ namespace Neo4j.Driver
         /// Returns all the values in the <see cref="IRecord"/> in a <see cref="IReadOnlyDictionary{TKey,TValue}"/>
         /// </summary>
         /// <returns>all the values in the <see cref="IRecord"/></returns>
-        IReadOnlyDictionary<string, dynamic> Values();
+        IReadOnlyDictionary<string, object> Values();
         /// <summary>
         /// Returns all the values in the <see cref="IRecord"/> in an ordered <see cref="IReadOnlyList{T}"/>
         /// </summary>
         /// <returns>all the values in the <see cref="IRecord"/> in an ordered <see cref="IReadOnlyList{T}"/></returns>
-        IReadOnlyList<KeyValuePair<string, dynamic>> OrderedValues();
+        IReadOnlyList<KeyValuePair<string, object>> OrderedValues();
         bool HasRecord();
         /// <summary>
         /// Returns the underlying <see cref="IRecord"/> directly 

@@ -34,12 +34,17 @@ namespace Neo4j.Driver.Internal.Result
         {
         }
 
-        public ResultBuilder(string statement, IDictionary<string, object> parameters)
+        public ResultBuilder(Statement statement)
         {
-            _summaryBuilder = new SummaryBuilder(new Statement(statement, parameters));
+            _summaryBuilder = new SummaryBuilder(statement);
         }
 
-        public void Record(dynamic[] fields)
+        public ResultBuilder(string statement, IDictionary<string, object> parameters)
+            : this(new Statement(statement, parameters))
+        {
+        }
+
+        public void Record(object[] fields)
         {
             var record = new Record(_keys, fields);
             _records.Add(record);

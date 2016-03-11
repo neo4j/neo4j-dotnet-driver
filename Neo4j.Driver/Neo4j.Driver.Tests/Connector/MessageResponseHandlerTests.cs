@@ -41,9 +41,9 @@ namespace Neo4j.Driver.Tests.Connector
                 var mrh = new MessageResponseHandler();
                 mrh.Register(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> {{"fields", new List<object> {"x"}}});
-                mrh.HandleRecordMessage(new dynamic[] {"x"});
+                mrh.HandleRecordMessage(new object[] {"x"});
 
-                mockResultBuilder.Verify(x => x.Record(It.IsAny<dynamic[]>()), Times.Once);
+                mockResultBuilder.Verify(x => x.Record(It.IsAny<object[]>()), Times.Once);
             }
 
             [Fact]
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests.Connector
                 mrh.HandleSuccessMessage(new Dictionary<string, object> {{"fields", new List<object> {"x"}}});
 
                 mockLogger.ResetCalls();
-                mrh.HandleRecordMessage(new dynamic[] {"x"});
+                mrh.HandleRecordMessage(new object[] {"x"});
 
                 mockLogger.Verify(x => x.Debug(It.Is<string>(actual => actual.StartsWith("S: ")), It.Is<object[]>(actual => actual.First() is RecordMessage)), Times.Once);
             }

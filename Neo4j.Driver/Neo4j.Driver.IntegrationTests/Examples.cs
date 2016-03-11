@@ -47,11 +47,11 @@ namespace Neo4j.Driver.Examples
             using (var session = driver.Session())
             {
                 session.Run("CREATE (neo:Person {name:'Neo', age:23})");
-
                 var cursor = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
-                while (cursor.Next())
+
+                foreach (var record in cursor.Stream())
                 {
-                    output.WriteLine($"Neo is {cursor.Get("p.age")} years old.");
+                    output.WriteLine($"Neo is {record["p.age"]} years old.");
                 }
             }
             //end::minimal-example[]

@@ -23,19 +23,19 @@ namespace Neo4j.Driver.Internal.Result
 {
     public class Record : IRecord
     {
-        public dynamic this[int index] => Values[Values.Keys.ToList()[index]];
-        public dynamic this[string key] => Values[key];
+        public object this[int index] => Values[Values.Keys.ToList()[index]];
+        public object this[string key] => Values[key];
 
-        public IReadOnlyDictionary<string, dynamic> Values { get; }       
+        public IReadOnlyDictionary<string, object> Values { get; }       
         public IReadOnlyList<string> Keys { get; }
 
-        public Record(string[] keys, dynamic[] values)
+        public Record(string[] keys, object[] values)
         {
             Throw.ArgumentException.IfNotEqual(keys.Length, values.Length, nameof(keys), nameof(values));
 
-            var valueKeys = new Dictionary<string, dynamic>();
+            var valueKeys = new Dictionary<string, object>();
 
-            for (int i =0; i < keys.Length; i ++)
+            for (var i =0; i < keys.Length; i ++)
             {
                 valueKeys.Add( keys[i], values[i]);
             }

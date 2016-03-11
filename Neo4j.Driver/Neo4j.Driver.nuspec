@@ -23,12 +23,14 @@
       </group>
       <group targetFramework="dotnet">
         <dependency id="Microsoft.CSharp" version="4.0.0" />
+        <dependency id="System.Dynamic.Runtime" version="4.0.0" />
         <dependency id="rda.SocketsForPCL" version="1.2.2" />
         <dependency id="System.Collections" version="4.0.0" />
         <dependency id="System.Diagnostics.Debug" version="4.0.0" />
-        <dependency id="System.Dynamic.Runtime" version="4.0.0" />
         <dependency id="System.IO" version="4.0.0" />
         <dependency id="System.Linq" version="4.0.0" />
+        <dependency id="System.Reflection" version="4.0.0" />
+        <dependency id="System.Reflection.Extensions" version="4.0.0" />
         <dependency id="System.Resources.ResourceManager" version="4.0.0" />
         <dependency id="System.Runtime" version="4.0.0" />
         <dependency id="System.Runtime.Extensions" version="4.0.0" />
