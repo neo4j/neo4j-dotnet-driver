@@ -70,7 +70,7 @@ namespace Neo4j.Driver
         /// <param name="statement">A Neo4j statement</param>
         /// <param name="parameters">Input data for the statement</param>
         /// <returns>a stream of result values and associated metadata</returns>
-        IResultCursor Run(string statement, IDictionary<string, object> parameters = null);
+        IStatementResult Run(string statement, IDictionary<string, object> parameters = null);
 
         /// <summary>
         ///
@@ -79,7 +79,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="statement">A Neo4j statement, <see cref="Statement"/></param>
         /// <returns>a stream of result values and associated metadata</returns>
-        IResultCursor Run(Statement statement);
+        IStatementResult Run(Statement statement);
 
         /// <summary>
         /// Run a statement and return a result stream
@@ -87,7 +87,7 @@ namespace Neo4j.Driver
         /// <param name="statement">A Neo4j statement</param>
         /// <param name="parameters">A parameter dictonary which is made of prop.Name=prop.Value pairs would be created</param>
         /// <returns></returns>
-        IResultCursor Run(string statement, object parameters);
+        IStatementResult Run(string statement, object parameters);
     }
 
     /// <summary>

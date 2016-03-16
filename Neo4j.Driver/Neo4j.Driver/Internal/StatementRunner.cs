@@ -10,14 +10,14 @@ namespace Neo4j.Driver.Internal
         {
         }
 
-        public abstract IResultCursor Run(string statement, IDictionary<string, object> parameters = null);
+        public abstract IStatementResult Run(string statement, IDictionary<string, object> parameters = null);
 
-        public IResultCursor Run(Statement statement)
+        public IStatementResult Run(Statement statement)
         {
             return Run(statement.Template, statement.Parameters);
         }
 
-        public IResultCursor Run(string statement, object parameters)
+        public IStatementResult Run(string statement, object parameters)
         {
             var paramDictionary = parameters.GetType().GetRuntimeProperties()
                 .ToDictionary(prop => prop.Name, prop => prop.GetValue(parameters, null));

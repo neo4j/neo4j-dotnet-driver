@@ -13,7 +13,7 @@ namespace Neo4j.Driver.Tests
             public string Statement { private set; get; }
             public IDictionary<string, object> Parameters { private set; get; } 
 
-            public override IResultCursor Run(string statement, IDictionary<string,object> parameters = null)
+            public override IStatementResult Run(string statement, IDictionary<string,object> parameters = null)
             {
                 Statement = statement;
                 Parameters = parameters;

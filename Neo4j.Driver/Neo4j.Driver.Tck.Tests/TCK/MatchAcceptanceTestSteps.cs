@@ -62,16 +62,16 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Then(@"result:")]
         public void ThenResult(Table table)
         {
-            var records = new List<Record>();
+            var records = new List<IRecord>();
             foreach (var row in table.Rows)
             {
                 records.Add( new Record(row.Keys.ToArray(), row.Values.Select(value => Parser.Parse(value)).ToArray()));
             }
-            var resultCursor = ScenarioContext.Current.Get<IResultCursor>();
-            AssertRecordsAreTheSame(resultCursor.Stream().ToList(), records);
+            var resultCursor = ScenarioContext.Current.Get<IStatementResult>();
+            AssertRecordsAreTheSame(resultCursor.ToList(), records);
         }
 
-        private void AssertRecordsAreTheSame(List<Record> actual, List<Record> expected)
+        private void AssertRecordsAreTheSame(List<IRecord> actual, List<IRecord> expected)
         {
             actual.Should().HaveSameCount(expected);
             foreach (var aRecord in actual)
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             }
         }
 
-        private bool AssertContains(List<Record> records, Record aRecord)
+        private bool AssertContains(List<IRecord> records, IRecord aRecord)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var record in records)

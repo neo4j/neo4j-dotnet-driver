@@ -23,7 +23,6 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.Result;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
@@ -31,7 +30,7 @@ namespace Neo4j.Driver.Tests
 {
     class ResultCreator
     {
-        public static ResultCursor CreateResult(int keySize, int recordSize=1, Func<IResultSummary> getSummaryFunc = null)
+        public static StatementResult CreateResult(int keySize, int recordSize=1, Func<IResultSummary> getSummaryFunc = null)
         {
             var records = new List<Record>(recordSize);
 
@@ -51,17 +50,17 @@ namespace Neo4j.Driver.Tests
                 records.Add(new Record(keys.ToArray(), values.ToArray()));
             }
             
-            return new ResultCursor(keys.ToArray(), records, getSummaryFunc);
+            return new StatementResult(keys.ToArray(), records, getSummaryFunc);
         }
     }
-    public class ResultCursorTests
+    public class StatementResultTests
     {
         public class Constructor
         {
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfRecordsIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new ResultCursor(new string[] {"test"}, (IEnumerable<Record>)null));
+                var ex = Xunit.Record.Exception(() => new StatementResult(new string[] {"test"}, (IEnumerable<Record>)null));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -69,7 +68,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfKeysIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new ResultCursor(null, new List<Record>()));
+                var ex = Xunit.Record.Exception(() => new StatementResult(null, new List<Record>()));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -77,7 +76,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetKeysProperlyIfKeysNotNull()
             {
-                var result = new ResultCursor(new string[] {"test"}, new List<Record>());
+                var result = new StatementResult(new string[] {"test"}, new List<Record>());
                 result.Keys.Should().HaveCount(1);
                 result.Keys.Should().Contain("test");
             }
@@ -86,118 +85,62 @@ namespace Neo4j.Driver.Tests
             public void ShouldGetEnumeratorFromRecords()
             {
                 Mock<IEnumerable<Record>> mock = new Mock<IEnumerable<Record>>();
-                var cursor = new ResultCursor(new string[] {"test"}, mock.Object);
+                var result = new StatementResult(new string[] {"test"}, mock.Object);
 
                 mock.Verify(x => x.GetEnumerator(), Times.Once);
             }
         }
 
-        public class CloseMethod
+        public class ConsumeMethod
         {
-            [Fact]
-            public void ShouldSetOpenToFalse()
-            {
-                var cursor = ResultCreator.CreateResult(1);
-                cursor.Close();
-                cursor.IsOpen().Should().BeFalse();
-            }
-
             [Fact]
             public void ShouldCallDiscardOnEnumberator()
             {
                 Mock<IPeekingEnumerator<Record>> mock = new Mock<IPeekingEnumerator<Record>>();
 
-                var cursor = new ResultCursor(new string[] { "test" }, mock.Object);
-                cursor.Close();
-                mock.Verify(x => x.Discard(), Times.Once);
+                var result = new StatementResult(new string[] { "test" }, mock.Object);
+                result.Consume();
+                mock.Verify(x => x.Consume(), Times.Once);
             }
 
             [Fact]
-            public void ShouldThrowInvalidOperationExceptionWhenCallingCloseMultipleTimes()
+            public void ShouldConsumeSummaryCorrectly()
+            {
+                int getSummaryCalled = 0;
+                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
+
+
+                result.Consume();
+                getSummaryCalled.Should().Be(1);
+
+                // the same if we call it multiple times
+                result.Consume();
+                getSummaryCalled.Should().Be(1);
+            }
+
+            [Fact]
+            public void ShouldThrowNoExceptionWhenCallingMultipleTimes()
             {
               
-                var cursor = ResultCreator.CreateResult(1);
+                var result = ResultCreator.CreateResult(1);
 
-                cursor.Close();
-                var ex = Xunit.Record.Exception(() => cursor.Close());
-                ex.Should().BeOfType<InvalidOperationException>();
-            }
-        }
-
-        public class NextMethod
-        {
-            [Fact]
-            public void ShouldThrowExceptionIfCursorIsClosed()
-            {
-                var cursor = ResultCreator.CreateResult(1);
-
-                cursor.Close();
-                var ex = Xunit.Record.Exception(() => cursor.Next());
-                ex.Should().BeOfType<InvalidOperationException>();
+                result.Consume();
+                var ex = Xunit.Record.Exception(() => result.Consume());
+                ex.Should().BeNull();
             }
 
             [Fact]
-            public void ShouldReturnTrueAndMoveCursorToNext()
+            public void ShouldConsumeRecordCorrectly()
             {
-                Mock<IPeekingEnumerator<Record>> mock = new Mock<IPeekingEnumerator<Record>>();
-                mock.Setup(x => x.HasNext()).Returns(true);
-                var cursor = new ResultCursor(new string[] { "test" }, mock.Object);
 
-                cursor.Next().Should().BeTrue();
-                mock.Verify(x => x.HasNext(), Times.Once);
-                mock.Verify(x => x.Next(), Times.Once);
-                cursor.Position.Should().Be(0);
-            }
+                var result = ResultCreator.CreateResult(1, 3);
 
-            [Fact]
-            public void ShouldReturnFalseAndNotMoveCursorIfLast()
-            {
-                Mock<IPeekingEnumerator<Record>> mock = new Mock<IPeekingEnumerator<Record>>();
-                mock.Setup(x => x.HasNext()).Returns(false);
-                var cursor = new ResultCursor(new string[] { "test" }, mock.Object);
+                result.Consume();
+                result.Count().Should().Be(0); // the records left after consume
+                result.Position.Should().Be(3);
 
-                cursor.Next().Should().BeFalse();
-                mock.Verify(x => x.HasNext(), Times.Once);
-                mock.Verify(x => x.Next(), Times.Never);
-                cursor.Position.Should().Be(-1);
-            }
-
-            [Fact(Skip = "Pending API Review")]
-            public void ShouldDiscardIfLimitReached()
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public class RecordMethod
-        {
-            [Fact]
-            public void ShouldReturnRecordIfHasRecord()
-            {
-                var cursor = ResultCreator.CreateResult(1);
-                cursor.Next();
-                cursor.Record().Should().NotBeNull();
-            }
-
-            [Fact]
-            public void ShouldThrowInvalidOperationExceptionIfHasNoRecord()
-            {
-                var cursor = ResultCreator.CreateResult(1);
-                var ex = Xunit.Record.Exception(() => cursor.Record());
-                ex.Should().BeOfType<InvalidOperationException>();
-            }
-        }
-
-        public class StreamMethod
-        {
-            [Fact]
-            public void ShouldReturnRecords()
-            {
-                var cursor = ResultCreator.CreateResult(2,2);
-                var records = cursor.Stream().ToList();
-                records.Count.Should().Be(2);
-                Assert.Equal(0, records[0].Values["str0"]);
-                Assert.Equal(1, records[1].Values["str1"]);
+                result.GetEnumerator().Current.Should().BeNull();
+                result.GetEnumerator().MoveNext().Should().BeFalse();
             }
         }
 
@@ -283,22 +226,22 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecords()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var cursor = new ResultCursor( TestRecordYielder.Keys, recordYielder.RecordsWithAutoLoad);
-                var records = cursor.Stream().ToList();
+                var cursor = new StatementResult( TestRecordYielder.Keys, recordYielder.RecordsWithAutoLoad);
+                var records = cursor.ToList();
                 records.Count.Should().Be(10);
             }
 
             [Fact]
-            public void ShouldWaitForAllRecordsArrive()
+            public void ShouldWaitForAllRecordsToArrive()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
 
                 int count = 0;
-                var cursor = new ResultCursor(TestRecordYielder.Keys, recordYielder.Records);
+                var cursor = new StatementResult(TestRecordYielder.Keys, recordYielder.Records);
                 var t =  Task.Factory.StartNew(() =>
                 {
                     // ReSharper disable once LoopCanBeConvertedToQuery
-                    foreach (var item in cursor.Stream())
+                    foreach (var item in cursor)
                     {
                         count++;
                     }
@@ -318,8 +261,9 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecordsImmediatelyWhenReady()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var cursor = new ResultCursor(TestRecordYielder.Keys, recordYielder.Records);
-                var records = cursor.Stream().Take(5).ToList();
+                var result = new StatementResult(TestRecordYielder.Keys, recordYielder.Records);
+                var temp = result.Take(5);
+                var records = temp.ToList();
                 records.Count.Should().Be(5);
             }
         }
@@ -327,23 +271,23 @@ namespace Neo4j.Driver.Tests
         public class SummaryProperty
         {
             [Fact]
-            public void ShouldThrowClientExceptionWhenNotAtEnd()
+            public void ShouldThrowInvalidOperationExceptionWhenNotAtEnd()
             {
-                var cursor = ResultCreator.CreateResult(1, 1);
-                cursor.AtEnd.Should().BeFalse();
+                var result = ResultCreator.CreateResult(1);
+                result.AtEnd.Should().BeFalse();
 
-                var ex = Xunit.Record.Exception(() => cursor.Summary);
-                ex.Should().BeOfType<ClientException>();
+                var ex = Xunit.Record.Exception(() => result.Summary);
+                ex.Should().BeOfType<InvalidOperationException>();
             }
 
             [Fact]
             public void ShouldCallGetSummaryWhenGetSummaryIsNotNull()
             {
                 bool getSummaryCalled = false;
-                var cursor = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled = true; return null; });
+                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled = true; return null; });
 
                 // ReSharper disable once UnusedVariable
-                var summary = cursor.Summary;
+                var summary = result.Summary;
 
                 getSummaryCalled.Should().BeTrue();
             }
@@ -351,34 +295,129 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldReturnNullWhenGetSummaryIsNull()
             {
-                var cursor = ResultCreator.CreateResult(1, 0, null);
+                var result = ResultCreator.CreateResult(1, 0);
 
-                cursor.Summary.Should().BeNull();
+                result.Summary.Should().BeNull();
             }
 
             [Fact]
             public void ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
             {
                 int getSummaryCalled = 0;
-                var cursor = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
+                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
 
                 // ReSharper disable once NotAccessedVariable
-                var summary = cursor.Summary;
+                var summary = result.Summary;
                 // ReSharper disable once RedundantAssignment
-                summary = cursor.Summary;
+                summary = result.Summary;
                 getSummaryCalled.Should().Be(1);
             }
+        }
 
-            private class FakeSummary : IResultSummary {
-                public Statement Statement { get; }
-                public ICounters Counters { get; }
-                public StatementType StatementType { get; }
-                public bool HasPlan { get; }
-                public bool HasProfile { get; }
-                public IPlan Plan { get; }
-                public IProfiledPlan Profile { get; }
-                public IList<INotification> Notifications { get; }
+        public class SingleMethod
+        {
+            [Fact]
+            public void ShouldThrowInvalidOperationExceptionIfNoRecordFound()
+            {
+                var result = new StatementResult(new [] { "test" }, new List<Record>());
+                var ex = Xunit.Record.Exception(() => result.Single());
+                ex.Should().BeOfType<InvalidOperationException>();
+                ex.Message.Should().Be("No record found.");
             }
+
+            [Fact]
+            public void ShouldThrowInvalidOperationExceptionIfMoreThanOneRecordFound()
+            {
+                var result = ResultCreator.CreateResult(1, 2);
+                var ex = Xunit.Record.Exception(() => result.Single());
+                ex.Should().BeOfType<InvalidOperationException>();
+                ex.Message.Should().Be("More than one record found.");
+            }
+
+            [Fact]
+            public void ShouldThrowInvalidOperationExceptionIfNotTheFistRecord()
+            {
+                var result = ResultCreator.CreateResult(1, 2);
+                var enumerator = result.GetEnumerator();
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Current.Should().NotBeNull();
+
+                var ex = Xunit.Record.Exception(() => result.Single());
+                ex.Should().BeOfType<InvalidOperationException>();
+                ex.Message.Should().Be("The first record is already consumed.");
+            }
+
+            [Fact]
+            public void ShouldReturnRecordIfSingle()
+            {
+                var result = ResultCreator.CreateResult(1);
+                var record = result.Single();
+                record.Should().NotBeNull();
+                record.Keys.Count.Should().Be(1);
+            }
+        }
+
+        public class PeekMethod
+        {
+            [Fact]
+            public void ShouldReturnNextRecordWithoutMovingCurrentRecord()
+            {
+                var result = ResultCreator.CreateResult(1);
+                result.Position.Should().Be(-1);
+                var record = result.Peek();
+                record.Should().NotBeNull();
+
+                result.Position.Should().Be(-1);
+                result.GetEnumerator().Current.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldReturnNullIfAtEnd()
+            {
+                var result = ResultCreator.CreateResult(1);
+                result.Take(1).ToList();
+                result.Position.Should().Be(0);
+                var record = result.Peek();
+                record.Should().BeNull();
+            }
+        }
+
+        public class DisposeMethod
+        {
+            [Fact]
+            public void ShouldConsumeRecordStream()
+            {
+                var result = ResultCreator.CreateResult(1, 2);
+
+                result.Dispose();
+
+                result.AtEnd.Should().BeTrue();
+                result.Position.Should().Be(2);
+                result.GetEnumerator().MoveNext().Should().BeFalse();
+                result.GetEnumerator().Current.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldPullSummary()
+            {
+                int getSummaryCalled = 0;
+                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
+
+                result.Dispose();
+                getSummaryCalled.Should().Be(1);
+            }
+        }
+
+        private class FakeSummary : IResultSummary
+        {
+            public Statement Statement { get; }
+            public ICounters Counters { get; }
+            public StatementType StatementType { get; }
+            public bool HasPlan { get; }
+            public bool HasProfile { get; }
+            public IPlan Plan { get; }
+            public IProfiledPlan Profile { get; }
+            public IList<INotification> Notifications { get; }
         }
     }
 }

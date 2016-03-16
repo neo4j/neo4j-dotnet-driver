@@ -47,9 +47,9 @@ namespace Neo4j.Driver.Examples
             using (var session = driver.Session())
             {
                 session.Run("CREATE (neo:Person {name:'Neo', age:23})");
-                var cursor = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
+                var result = session.Run("MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age");
 
-                foreach (var record in cursor.Stream())
+                foreach (var record in result)
                 {
                     output.WriteLine($"Neo is {record["p.age"]} years old.");
                 }
@@ -82,8 +82,8 @@ namespace Neo4j.Driver.Examples
             var session = driver.Session();
            
             //tag::statement[]
-            var cursor = session.Run("CREATE (p:Person { name: {name} })", new Dictionary<string, object> {{"name", "The One"}});
-            var theOnesCreated = cursor.Summary.Counters.NodesCreated;
+            var result = session.Run("CREATE (p:Person { name: {name} })", new Dictionary<string, object> {{"name", "The One"}});
+            var theOnesCreated = result.Summary.Counters.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement[]
             driver.Dispose();
@@ -96,8 +96,8 @@ namespace Neo4j.Driver.Examples
             var session = driver.Session();
 
             //tag::statement-without-parameters[]
-            var cursor = session.Run("CREATE (p:Person { name: 'The One' })");
-            var theOnesCreated = cursor.Summary.Counters.NodesCreated;
+            var result = session.Run("CREATE (p:Person { name: 'The One' })");
+            var theOnesCreated = result.Summary.Counters.NodesCreated;
             output.WriteLine($"There were {theOnesCreated} the ones created.");
             //end::statement-without-parameters[]
             driver.Dispose();
@@ -111,13 +111,12 @@ namespace Neo4j.Driver.Examples
             session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::result-cursor[]
-            var cursor = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
+            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
-            while (cursor.Next())
+            foreach (var record in result)
             {
-                output.WriteLine($"Record: {cursor.Position}");
-                foreach (var keyValuePair in cursor.Values())
+                foreach (var keyValuePair in record.Values)
                 {
                     output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");
                 }
@@ -135,10 +134,10 @@ namespace Neo4j.Driver.Examples
             session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::retain-result-query[]
-            var cursor = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
+            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
-            var records = cursor.Stream().ToList();
+            var records = result.ToList();
 
             session.Dispose();
 
@@ -162,10 +161,10 @@ namespace Neo4j.Driver.Examples
             session.Run("CREATE (p:Person { name: 'The One', age: 44 })");
 
             //tag::retain-result-process[]
-            var cursor = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
+            var result = session.Run("MATCH (p:Person { name: {name} }) RETURN p.age",
                 new Dictionary<string, object> { { "name", "The One" } });
 
-            var records = cursor.Stream().ToList();
+            var records = result.ToList();
 
             session.Dispose();
 
@@ -242,10 +241,10 @@ namespace Neo4j.Driver.Examples
             var session = driver.Session();
 
             //tag::result-summary-query-profile[]
-            var cursor = session.Run("PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+            var result = session.Run("PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
                             new Dictionary<string, object> { { "name", "The One" } });
 
-            IResultSummary summary = cursor.Summary;
+            IResultSummary summary = result.Summary;
 
             output.WriteLine(summary.StatementType.ToString());
             output.WriteLine(summary.Profile.ToString());
@@ -294,11 +293,8 @@ namespace Neo4j.Driver.Examples
         {
             Driver driver = GraphDatabase.Driver("bolt://localhost:7687");
             var session = driver.Session();
-            var cursor = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
-            while (cursor.Next())
-            {
-                // consume
-            }
+            var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
+            result.ToList();
             driver.Dispose();
         }
 

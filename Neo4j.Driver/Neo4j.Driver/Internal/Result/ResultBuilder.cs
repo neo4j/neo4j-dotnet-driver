@@ -68,9 +68,9 @@ namespace Neo4j.Driver.Internal.Result
             }
         } 
 
-        public ResultCursor Build()
+        public StatementResult Build()
         {
-            return new ResultCursor(_keys, RecordsStream(), () => _summaryBuilder.Build());
+            return new StatementResult(_keys, RecordsStream(), () => _summaryBuilder.Build());
         }
 
         public void CollectFields(IDictionary<string, object> meta)

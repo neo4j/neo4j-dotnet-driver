@@ -54,9 +54,9 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 using (var session = driver.Session())
                 {
-                    var resultCursor = session.Run("RETURN 2 as Number" );
-                    resultCursor.Keys.Should().Contain("Number");
-                    resultCursor.Keys.Count.Should().Be(1);
+                    var result = session.Run("RETURN 2 as Number" );
+                    result.Keys.Should().Contain("Number");
+                    result.Keys.Count.Should().Be(1);
                 }
             }
         }
@@ -75,13 +75,14 @@ namespace Neo4j.Driver.IntegrationTests
             });
             try
             {
-                using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("neo4j", "neo4j")))
+                using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("neo4j", "neo4j"),
+                    Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
                 {
                     using (var session = driver.Session())
                     {
-                        var exception = Record.Exception(() => session.Run("RETURN 2 as Number"));
+                       var exception = Record.Exception(() => session.Run("CREATE () RETURN 2 as Number").ToList());
                         exception.Should().BeOfType<ClientException>();
-                        exception.Message.Should().StartWith("The credentials have expired and need to be updated.");
+                        exception.Message.Should().StartWith("The credentials you provided were valid");
                     }
                 }
                 // update auth and run something
@@ -93,7 +94,8 @@ namespace Neo4j.Driver.IntegrationTests
                         {"principal", "neo4j"},
                         {"credentials", "neo4j"},
                         {"new_credentials", "lala"}
-                    })))
+                    }),
+                    Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
                 using (var session = driver.Session())
                 {
                     var resultCursor = session.Run("RETURN 2 as Number");
@@ -117,8 +119,8 @@ namespace Neo4j.Driver.IntegrationTests
             using (var driver = GraphDatabase.Driver(ServerEndPoint, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
             using (var session = driver.Session())
             {
-                var cursor = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
-                var stats = cursor.Summary.Counters;
+                var result = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
+                var stats = result.Summary.Counters;
                 output.WriteLine(stats.ToString());
             }
         }
@@ -134,9 +136,9 @@ namespace Neo4j.Driver.IntegrationTests
                 tx.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
                 var result = tx.Run("CREATE (n {name:'Steve Brook'}) RETURN n.name");
 
-                while (result.Next())
+                foreach (var record in result)
                 {
-                    foreach (var keyValuePair in result.Values())
+                    foreach (var keyValuePair in record.Values)
                     {
                         output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");
                     }
@@ -150,11 +152,11 @@ namespace Neo4j.Driver.IntegrationTests
             using (var driver = GraphDatabase.Driver("bolt://localhost"))
             using (var session = driver.Session())
             {
-                var cursor1 = session.Run("unwind range(1,3) as n RETURN n");
-                var cursor2 = session.Run("unwind range(4,6) as n RETURN n");
-
-                var result2All = cursor2.Stream().ToList();
-                var result1All = cursor1.Stream().ToList();
+                var result1 = session.Run("unwind range(1,3) as n RETURN n");
+                var result2 = session.Run("unwind range(4,6) as n RETURN n");
+                
+                var result2All = result2.ToList();
+                var result1All = result1.ToList();
 
                 result2All.Select(r => r.Values["n"].As<int>()).Should().ContainInOrder(4, 5, 6);
                 result1All.Select(r => r.Values["n"].As<int>()).Should().ContainInOrder(1, 2, 3);
