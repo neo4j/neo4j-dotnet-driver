@@ -29,15 +29,14 @@ namespace Neo4j.Driver
         /// <param name="key">the key</param>
         /// <returns>the value specified by the given key in <see cref="Properties"/></returns>
         object this[string key] { get; }
-
-        /// <summary>
-        /// Gets the unique <see cref="IIdentity"/> of the <c>Entity</c>.
-        /// </summary>
-        IIdentity Identity { get; }
         /// <summary>
         /// Gets the properties of the <c>Entity</c>.
         /// </summary>
         IReadOnlyDictionary<string, object> Properties { get; }
+        /// <summary>
+        /// Get the identity as a <see cref="long"/> number
+        /// </summary>
+        long Id { get; }
     }
 
     /// <summary>
@@ -49,7 +48,6 @@ namespace Neo4j.Driver
         /// Gets the lables of the node.
         /// </summary>
         IReadOnlyList<string> Labels { get; }
-        //bool HasLabel(string label);
     }
 
     /// <summary>
@@ -63,13 +61,13 @@ namespace Neo4j.Driver
         string Type { get; }
         //bool HasType(string type);
         /// <summary>
-        /// Gets the <see cref="IIdentity"/> of the start node of the relationship.
+        /// Gets the id of the start node of the relationship.
         /// </summary>
-        IIdentity Start { get; }
+        long StartNodeId { get; }
         /// <summary>
-        /// Gets the <see cref="IIdentity"/> of the end node of the relationship.
+        /// Gets the id of the end node of the relationship.
         /// </summary>
-        IIdentity End { get; }
+        long EndNodeId { get; }
     }
 
     /// <summary>
@@ -100,18 +98,5 @@ namespace Neo4j.Driver
         /// Gets all the relationships in the path.
         /// </summary>
         IReadOnlyList<IRelationship> Relationships { get; }
-    }
-
-    /// <summary>
-    /// A unique identifer
-    /// </summary>
-    public interface IIdentity
-    {
-        // bool equal(object id)
-        // int hashCode();
-        /// <summary>
-        /// Get the identity as a <see cref="long"/> number
-        /// </summary>
-        long Id { get; }
     }
 }

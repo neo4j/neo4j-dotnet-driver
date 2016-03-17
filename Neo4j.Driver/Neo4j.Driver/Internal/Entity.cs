@@ -22,21 +22,21 @@ namespace Neo4j.Driver.Internal
 {
     public class Node : INode, IEquatable<INode>
     {
-        public IIdentity Identity { get; }
+        public long Id { get; }
         public IReadOnlyList<string> Labels { get; }
         public IReadOnlyDictionary<string, object> Properties { get; }
         public object this[string key] => Properties[key];
 
         public Node(long id, IReadOnlyList<string> lables, IReadOnlyDictionary<string, object> prop)
         {
-            Identity = new Identity(id);
+            Id = id;
             Labels = lables;
             Properties = prop;
         }
 
         public bool Equals(INode other)
         {
-            return Equals(Identity, other.Identity);
+            return Equals(Id, other.Id);
         }
 
         public override bool Equals(object obj)
@@ -49,42 +49,32 @@ namespace Neo4j.Driver.Internal
 
         public override int GetHashCode()
         {
-            return Identity?.GetHashCode() ?? 0;
+            return Id.GetHashCode();
         }
     }
 
     public class Relationship : IRelationship, IEquatable<IRelationship>
     {
-        public IIdentity Identity { get; }
+        public long Id { get; }
         public string Type { get; }
-        public IIdentity Start { get; internal set; }
-        public IIdentity End { get; internal set; }
+        public long StartNodeId { get; internal set; }
+        public long EndNodeId { get; internal set; }
         public IReadOnlyDictionary<string, object> Properties { get; }
         public object this[string key] => Properties[key];
 
         public Relationship(long id, long startId, long endId, string relType,
             IReadOnlyDictionary<string, object> props)
         {
-            Identity = new Identity(id);
-            Start = new Identity(startId);
-            End = new Identity(endId);
-            Type = relType;
-            Properties = props;
-        }
-
-        public Relationship(IIdentity id, IIdentity start, IIdentity end, string relType,
-            IReadOnlyDictionary<string, object> props)
-        {
-            Identity = id;
-            Start = start;
-            End = end;
+            Id = id;
+            StartNodeId = startId;
+            EndNodeId = endId;
             Type = relType;
             Properties = props;
         }
 
         public bool Equals(IRelationship other)
         {
-            return Equals(Identity, other.Identity);
+            return Equals(Id, other.Id);
         }
 
         public override bool Equals(object obj)
@@ -97,41 +87,13 @@ namespace Neo4j.Driver.Internal
 
         public override int GetHashCode()
         {
-            return Identity?.GetHashCode() ?? 0;
-        }
-
-        internal void SetStartAndEnd(IIdentity start, IIdentity end)
-        {
-            Start = start;
-            End = end;
-        }
-    }
-
-    public class Identity : IIdentity, IEquatable<IIdentity>
-    {
-        public long Id { get; }
-
-        public Identity(long id)
-        {
-            Id = id;
-        }
-
-        public bool Equals(IIdentity other)
-        {
-            return Id == other.Id;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((Identity) obj);
-        }
-
-        public override int GetHashCode()
-        {
             return Id.GetHashCode();
+        }
+
+        internal void SetStartAndEnd(long start, long end)
+        {
+            StartNodeId = start;
+            EndNodeId = end;
         }
     }
 
@@ -231,7 +193,6 @@ namespace Neo4j.Driver.Internal
             {
                 var hashCode = Nodes?.GetHashCode() ?? 0;
                 hashCode = (hashCode * 397) ^ (Relationships?.GetHashCode() ?? 0);
-                hashCode = (hashCode * 397) ^ (_segments?.GetHashCode() ?? 0);
                 return hashCode;
             }
         }

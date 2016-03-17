@@ -151,11 +151,11 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var end = ParseNode("(" + segs[i + 3] + ")");
                 if (segs[i].Trim().Equals("-") && segs[i + 2].Trim().Equals("->"))
                 {
-                    relationship.SetStartAndEnd(start.Identity, end.Identity);
+                    relationship.SetStartAndEnd(start.Id, end.Id);
                 }
                 else
                 {
-                    relationship.SetStartAndEnd(end.Identity, start.Identity);
+                    relationship.SetStartAndEnd(end.Id, start.Id);
                 }
                 segments.Add(new Segment(start, relationship, end));
                 relationships.Add(relationship);
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 start = path.Nodes[i];
                 end = path.Nodes[i + 1];
 
-                if (rel.Start.Equals(start.Identity))
+                if (rel.StartNodeId.Equals(start.Id))
                 {
                     str += NodeToString(start) + "-" + RelToString(rel) + "->";
                 }
