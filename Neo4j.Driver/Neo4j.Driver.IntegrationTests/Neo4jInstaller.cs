@@ -216,11 +216,10 @@ namespace Neo4j.Driver.IntegrationTests
                 powershell.AddCommand("Invoke-Neo4j");
                 powershell.AddArgument(command);
                 powershell.Invoke();
-                // mute this erorr until the powershell error problem got solved.
-//                if (powershell.HadErrors)
-//                {
-//                    throw new Neo4jException("Integration", CollectAsString(powershell.Streams.Error));
-//                }
+                if (powershell.HadErrors)
+                {
+                    throw new Neo4jException("Integration", CollectAsString(powershell.Streams.Error));
+                }
             }
         }
 
