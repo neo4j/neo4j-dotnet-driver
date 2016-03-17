@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Tests
                     new List<string> {"l1", "l2"}, 
                     new Dictionary<string, object> { {"key1", "value1"}, {"key2", 2 } });
                 var actual = obj.As<INode>();
-                actual.Identity.Id.Should().Be(1);
+                actual.Id.Should().Be(1);
                 actual.Labels.Count.Should().Be(2);
                 actual.Labels[0].Should().Be("l1");
                 actual.Labels[1].Should().Be("l2");
@@ -268,7 +268,7 @@ namespace Neo4j.Driver.Tests
                     new Dictionary<string, object> {{"key1", "value1"}, {"key2", 2}});
 
                 var actual = obj.As<IRelationship>();
-                actual.Identity.Id.Should().Be(1);
+                actual.Id.Should().Be(1);
                 actual.Type.Should().Be("Type");
                 actual.Properties["key1"].As<string>().Should().Be("value1");
                 actual.Properties["key2"].As<string>().Should().Be("2");
@@ -291,8 +291,8 @@ namespace Neo4j.Driver.Tests
                     new List<IRelationship>());
 
                 var actual = obj.As<IPath>();
-                actual.Start.Identity.Id.Should().Be(1);
-                actual.End.Identity.Id.Should().Be(1);
+                actual.Start.Id.Should().Be(1);
+                actual.End.Id.Should().Be(1);
                 var node = actual.Nodes[0];
                 node.Properties["key1"].As<string>().Should().Be("value1");
                 node.Properties["key2"].As<string>().Should().Be("2");

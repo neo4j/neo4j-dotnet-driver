@@ -359,9 +359,9 @@ namespace Neo4j.Driver.Tests
                         IRelationship rel = real as IRelationship;
                         rel.Should().NotBeNull();
 
-                        rel.Identity.Id.Should().Be(1);
-                        rel.Start.Id.Should().Be(2);
-                        rel.End.Id.Should().Be(3);
+                        rel.Id.Should().Be(1);
+                        rel.StartNodeId.Should().Be(2);
+                        rel.EndNodeId.Should().Be(3);
                         rel.Type.Should().BeEmpty();
                         rel.Properties.Should().BeEmpty();
                     }
@@ -381,7 +381,7 @@ namespace Neo4j.Driver.Tests
                         INode n = node as INode;
                         n.Should().NotBeNull();
 
-                        n.Identity.Id.Should().Be(1);
+                        n.Id.Should().Be(1);
                         n.Properties.Should().BeEmpty();
                         n.Labels.Should().BeEmpty();
                     }
@@ -403,7 +403,7 @@ namespace Neo4j.Driver.Tests
 
                         p.Start.Should().NotBeNull();
                         p.End.Should().NotBeNull();
-                        p.Start.Identity.Id.Should().Be(1);
+                        p.Start.Id.Should().Be(1);
                         p.Start.Properties.Should().BeEmpty();
                         p.Start.Labels.Should().BeEmpty();
                         p.Nodes.Should().HaveCount(1);
@@ -490,7 +490,7 @@ namespace Neo4j.Driver.Tests
                         p.Start.Should().NotBeNull();
                         p.End.Should().NotBeNull();
                         p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Identity.Id}");
+                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
 
                         List<INode> correctOrder = new List<INode> {TestNodes.Alice, TestNodes.Carol, TestNodes.Dave};
                         p.Nodes.Should().ContainInOrder(correctOrder);
@@ -528,7 +528,7 @@ namespace Neo4j.Driver.Tests
                         p.Start.Should().NotBeNull();
                         p.End.Should().NotBeNull();
                         p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Identity.Id}");
+                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
 
                         List<INode> correctOrder = new List<INode>
                         {
@@ -573,7 +573,7 @@ namespace Neo4j.Driver.Tests
                         p.Start.Should().NotBeNull();
                         p.End.Should().NotBeNull();
                         p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                        p.End.Equals(TestNodes.Carol).Should().BeTrue($"Got {p.End.Identity.Id}");
+                        p.End.Equals(TestNodes.Carol).Should().BeTrue($"Got {p.End.Id}");
 
                         List<INode> correctOrder = new List<INode>
                         {
@@ -622,7 +622,7 @@ namespace Neo4j.Driver.Tests
                         p.Start.Should().NotBeNull();
                         p.End.Should().NotBeNull();
                         p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Identity.Id}");
+                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
 
                         List<INode> correctOrder = new List<INode>
                         {
@@ -671,7 +671,7 @@ namespace Neo4j.Driver.Tests
                         p.Start.Should().NotBeNull();
                         p.End.Should().NotBeNull();
                         p.Start.Equals(TestNodes.Carol).Should().BeTrue();
-                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Identity.Id}");
+                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
 
                         List<INode> correctOrder = new List<INode>
                         {
@@ -726,28 +726,28 @@ namespace Neo4j.Driver.Tests
 
                         // IRelationships
                         public static IRelationship AliceKnowsBob =
-                            new Relationship(new Identity(12L), TestNodes.Alice.Identity,
-                                TestNodes.Bob.Identity, KNOWS,
+                            new Relationship( 12L, TestNodes.Alice.Id,
+                                TestNodes.Bob.Id, KNOWS,
                                 new Dictionary<string, object> {{"since", 1999L}});
 
                         public static IRelationship AliceLikesCarol =
-                            new Relationship(new Identity(13L), TestNodes.Alice.Identity,
-                                TestNodes.Carol.Identity, LIKES,
+                            new Relationship(13L, TestNodes.Alice.Id,
+                                TestNodes.Carol.Id, LIKES,
                                 new Dictionary<string, object>());
 
                         public static IRelationship CarolDislikesBob =
-                            new Relationship(new Identity(32L), TestNodes.Carol.Identity,
-                                TestNodes.Bob.Identity, DISLIKES,
+                            new Relationship(32L, TestNodes.Carol.Id,
+                                TestNodes.Bob.Id, DISLIKES,
                                 new Dictionary<string, object>());
 
                         public static IRelationship CarolMarriedToDave =
-                            new Relationship(new Identity(34L), TestNodes.Carol.Identity,
-                                TestNodes.Dave.Identity, MARRIED_TO,
+                            new Relationship(34L, TestNodes.Carol.Id,
+                                TestNodes.Dave.Id, MARRIED_TO,
                                 new Dictionary<string, object>());
 
                         public static IRelationship DaveWorksForDave =
-                            new Relationship(new Identity(44L), TestNodes.Dave.Identity,
-                                TestNodes.Dave.Identity, WORKS_FOR,
+                            new Relationship(44L, TestNodes.Dave.Id,
+                                TestNodes.Dave.Id, WORKS_FOR,
                                 new Dictionary<string, object>());
                     }
                 }

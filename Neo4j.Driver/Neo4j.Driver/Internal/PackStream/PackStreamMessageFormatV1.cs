@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     var urn = _unpacker.UnpackLong();
                     var relType = _unpacker.UnpackString();
                     var props = UnpackMap();
-                    uniqRels[i]=new Relationship(new Identity(urn), null, null, relType, props);
+                    uniqRels[i]=new Relationship(urn, -1, -1, relType, props);
                 }
 
                 // Path sequence
@@ -160,12 +160,12 @@ namespace Neo4j.Driver.Internal.Packstream
                     if (relIdx < 0)
                     {
                         rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
-                        rel.SetStartAndEnd(nextNode.Identity, prevNode.Identity);
+                        rel.SetStartAndEnd(nextNode.Id, prevNode.Id);
                     }
                     else
                     {
                         rel = uniqRels[relIdx - 1];
-                        rel.SetStartAndEnd(prevNode.Identity, nextNode.Identity);
+                        rel.SetStartAndEnd(prevNode.Id, nextNode.Id);
                     }
 
                     nodes[i + 1] = nextNode;
