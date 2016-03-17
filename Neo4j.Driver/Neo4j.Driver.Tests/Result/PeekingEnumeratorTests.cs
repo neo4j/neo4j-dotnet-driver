@@ -14,6 +14,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Result;
@@ -23,40 +25,48 @@ namespace Neo4j.Driver.Tests
 {
     public class PeekingEnumeratorTests
     {
-        public class NextMethod
+        public class MoveNextMethod
         {
             [Fact]
-            public void ShouldReturnItemIfExisit()
+            public void ShouldReturnItemIfExist()
             {
                 var enumerator = new PeekingEnumerator<string>(new List<string> {"1", "2", "3"}.GetEnumerator());
-                enumerator.Next().Should().Be("1");
-                enumerator.Next().Should().Be("2");
-                enumerator.Next().Should().Be("3");
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Current.Should().Be("1");
+                enumerator.Position.Should().Be(0);
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Current.Should().Be("2");
+                enumerator.Position.Should().Be(1);
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Current.Should().Be("3");
+                enumerator.Position.Should().Be(2);
             }
 
             [Fact]
             public void ShouldReturnNullIfPassLast()
             {
                 var enumerator = new PeekingEnumerator<string>(new List<string> { "1"}.GetEnumerator());
-                enumerator.Next().Should().Be("1");
-                enumerator.Next().Should().BeNull();
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Current.Should().Be("1");
+                enumerator.Position.Should().Be(0);
+                enumerator.MoveNext().Should().BeFalse();
+                enumerator.Current.Should().BeNull();
+                enumerator.Position.Should().Be(1);
+                // check again
+                enumerator.MoveNext().Should().BeFalse();
+                enumerator.Current.Should().BeNull();
+                enumerator.Position.Should().Be(1);
             }
         }
 
-        public class HasNextMethod
+        public class ResetMethod
         {
             [Fact]
-            public void ShouldReturnTrueIfHasNext()
+            public void ShouldThrowExceptionIfTryToRevisit()
             {
-                var enumerator = new PeekingEnumerator<string>(new List<string> { "1" }.GetEnumerator());
-                enumerator.HasNext().Should().BeTrue();
-            }
-
-            [Fact]
-            public void ShouldReturnFalseIfHasNoNext()
-            {
-                var enumerator = new PeekingEnumerator<string>(new List<string>().GetEnumerator());
-                enumerator.HasNext().Should().BeFalse();
+                var enumerator = new PeekingEnumerator<string>(new List<string> {"1"}.GetEnumerator());
+                var ex = Xunit.Record.Exception(()=>enumerator.Reset());
+                ex.Should().BeOfType<InvalidOperationException>();
             }
         }
 
@@ -66,10 +76,16 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnNextWithoutMoveingToNext()
             {
                 var enumerator = new PeekingEnumerator<string>(new List<string> { "1" }.GetEnumerator());
-                var peeked = enumerator.Peek();
-                peeked.Should().NotBeNull();
-                peeked.Should().Be("1");
-                enumerator.HasNext().Should().BeTrue();
+
+                enumerator.Peek().Should().Be("1");
+                enumerator.Position.Should().Be(-1);
+                enumerator.Peek().Should().Be("1"); // no matter how many times are called
+                enumerator.Position.Should().Be(-1);
+
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Current.Should().Be("1");
+                enumerator.Position.Should().Be(0);
+
             }
 
             [Fact]
@@ -81,15 +97,33 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class DiscardMethod
+        public class ConsumeMethod
         {
             [Fact]
-            public void ShouldDiscardAllItemsAfterDiscard()
+            public void ShouldConsumeAllItemsAfterDiscard()
             {
                 var enumerator = new PeekingEnumerator<string>(new List<string> { "1", "2", "3" }.GetEnumerator());
-                enumerator.HasNext().Should().BeTrue();
-                enumerator.Discard();
-                enumerator.HasNext().Should().BeFalse();
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Consume();
+                enumerator.MoveNext().Should().BeFalse();
+                enumerator.Peek().Should().BeNull();
+
+                enumerator.Position.Should().Be(3);
+            }
+        }
+
+        public class DisposeMethod
+        {
+            [Fact]
+            public void ShouldNotDiscardAfterDispose()
+            {
+                var list = new List<string> { "1", "2", "3" }.GetEnumerator();
+                var enumerator = new PeekingEnumerator<string>(list);
+                enumerator.MoveNext().Should().BeTrue();
+                enumerator.Consume();
+                enumerator.MoveNext().Should().BeFalse();
+                enumerator.Peek().Should().BeNull();
+                enumerator.Position.Should().Be(3);
             }
         }
     }

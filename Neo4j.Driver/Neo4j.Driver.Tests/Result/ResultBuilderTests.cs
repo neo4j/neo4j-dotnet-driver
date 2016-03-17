@@ -269,13 +269,13 @@ namespace Neo4j.Driver.Tests.Result
                 return builder;
             }
 
-            private static Task AssertGetExpectResults(ResultCursor cursor, int numberExpected)
+            private static Task AssertGetExpectResults(StatementResult result, int numberExpected)
             {
                 int count = 0;
                 var t = Task.Factory.StartNew(() =>
                 {
                     // ReSharper disable once LoopCanBeConvertedToQuery
-                    foreach (var item in cursor.Stream())
+                    foreach (var item in result)
                     {
                         count++;
                     }

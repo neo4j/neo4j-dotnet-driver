@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.Result
     public interface IResultBuilder
     {
         void Record(object[] fields);
-        ResultCursor Build();
+        StatementResult Build();
         void CollectFields(IDictionary<string, object> meta);
         void CollectSummaryMeta(IDictionary<string, object> meta);
     }

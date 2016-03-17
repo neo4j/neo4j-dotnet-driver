@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     [Binding]
     public class DriverTypesTestEchoingSingleParameterSteps : TckStepsBase
     {
-        private IResultCursor _result;
+        private IStatementResult _statementResult;
 
         [BeforeTestRun]
         public static void GlobalBeforeScenario()
@@ -206,30 +206,30 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"the driver asks the server to echo this value back")]
         public void WhenTheDriverAsksTheServerToEchoThisValueBack()
         {
-            _result = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
+            _statementResult = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
         }
 
         [When(@"the driver asks the server to echo this list back")]
         public void WhenTheDriverAsksTheServerToEchoThisListBack()
         {
             _expected = _list;
-            _result = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
+            _statementResult = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
         }
 
         [When(@"the driver asks the server to echo this map back")]
         public void WhenTheDriverAsksTheServerToEchoThisMapBack()
         {
             _expected = _map;
-            _result = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
+            _statementResult = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
         }
 
         [When(@"the value given in the result should be the same as what was sent")]
         public void WhenTheValueGivenInTheResultShouldBeTheSameAsWhatWasSent()
         {
             // param : input
-            _result.Next().Should().BeTrue();
-            _result.AtEnd.Should().BeTrue();
-            var actual = _result.Get(0);
+            var record = _statementResult.Single(); // TODO check no exception throw
+            record.Should().NotBeNull();
+            var actual = record[0];
             AssertEqual(_expected, actual);
         }
 

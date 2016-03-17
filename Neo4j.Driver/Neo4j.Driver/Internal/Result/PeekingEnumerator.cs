@@ -15,46 +15,58 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    public interface IPeekingEnumerator<T> where T : class
+    public interface IPeekingEnumerator<T> : IEnumerator<T> where T : class
     {
-        bool HasNext();
-        T Next();
         T Peek();
-        void Discard();
+        void Consume();
+        long Position { get; }
     }
 
     public class PeekingEnumerator<T> : IPeekingEnumerator<T> where T:class
     {
         private IEnumerator<T> _enumerator;
+        private T _cached;
+        private T _current;
+        private bool _hasConsumed = false;
+        private int _position = -1;
+        public long Position => _position;
 
         public PeekingEnumerator(IEnumerator<T> enumerator)
         {
             _enumerator = enumerator;
         }
 
-        private T _cached;
+        public T Current => _current;
 
-        public bool HasNext()
-        {
-            return CacheNext();
-        }
+        object IEnumerator.Current => Current;
 
-        public T Next()
+        public bool MoveNext()
         {
             if (CacheNext())
             {
-                T result = _cached;
+                _current = _cached;
+                _position ++;
                 _cached = null;
-                return result;
+                return true;
             }
-            else
+            if(_current != null)
             {
-                return null;
+                _current = null;
+                _position ++;
+                return false;
             }
+            return false;
+        }
+
+        public void Reset()
+        {
+            throw new InvalidOperationException("Cannot revisit the records in result");
         }
 
         /// <summary>
@@ -81,10 +93,32 @@ namespace Neo4j.Driver.Internal.Result
             return CacheNext() ? _cached : null;
         }
 
-        public void Discard()
+        public void Consume()
         {
+            if (_hasConsumed)
+            {
+                return;
+            }
+            // drain all the records
+            while (_enumerator.MoveNext())
+            {
+                _position ++;
+            }
+            _position ++;
             _cached = null;
+            _current = null;
             _enumerator = null;
+            _hasConsumed = true;
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }
