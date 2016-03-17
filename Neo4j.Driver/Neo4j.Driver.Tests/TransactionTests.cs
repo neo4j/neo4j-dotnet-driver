@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Tests
                         .Throws<Neo4jException>();
                     tx.Run("lalala");
                 }
-                catch (Neo4jException e)
+                catch (Neo4jException)
                 {
                     // Fine, the state is set to failed now.
                 }

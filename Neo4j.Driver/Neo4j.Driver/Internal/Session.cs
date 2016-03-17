@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal
             
         }
 
-        public void Dispose()
+        public new void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

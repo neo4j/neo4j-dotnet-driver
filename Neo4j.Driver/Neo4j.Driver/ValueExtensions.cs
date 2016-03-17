@@ -37,7 +37,7 @@ namespace Neo4j.Driver
         /// Undefined support for other types that are not listed above.
         /// No support for user-defined types, e.g. Person, Movie.
         /// </typeparam>
-        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="INode.Properties"/></param>
+        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/></param>
         /// <returns>The value of specified return type</returns>
         /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible</remarks>
         public static T As<T>(this object value)
