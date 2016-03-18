@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotThrowExceptionWhenIdlePoolSizeReached()
             {
                 var mock = new Mock<IConnection>();
-                var config = new Config {IdleSessionPoolSize = 2};
+                var config = new Config {MaxIdleSessionPoolSize = 2};
                 var pool = new SessionPool(TestUri, AuthTokens.None, null, config, mock.Object);
                 pool.GetSession();
                 pool.GetSession();
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests
                 var mock = new Mock<IConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
 
-                var config = new Config {IdleSessionPoolSize = 2};
+                var config = new Config {MaxIdleSessionPoolSize = 2};
                 var pool = new SessionPool(TestUri, AuthTokens.None, null, config, mock.Object);
 
                 var sessions = new List<ISession>();
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tests
                 var mock = new Mock<IConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
 
-                var config = new Config {IdleSessionPoolSize = 2};
+                var config = new Config {MaxIdleSessionPoolSize = 2};
                 var pool = new SessionPool(TestUri, AuthTokens.None, null, config, mock.Object);
 
                 for (var i = 0; i < 4; i++)

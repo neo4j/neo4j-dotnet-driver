@@ -176,7 +176,7 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(IPath other)
         {
-            return Equals(Nodes, other.Nodes) && Equals(Relationships, other.Relationships);
+            return Equals(Start, other.Start) && Relationships.SequenceEqual(other.Relationships);
         }
 
         public override bool Equals(object obj)
@@ -191,8 +191,8 @@ namespace Neo4j.Driver.Internal
         {
             unchecked
             {
-                var hashCode = Nodes?.GetHashCode() ?? 0;
-                hashCode = (hashCode * 397) ^ (Relationships?.GetHashCode() ?? 0);
+                var hashCode = Start?.GetHashCode() ?? 0;
+                hashCode = Relationships?.Aggregate(hashCode, (current, relationship) => (current*397) ^ relationship.GetHashCode()) ?? hashCode;
                 return hashCode;
             }
         }

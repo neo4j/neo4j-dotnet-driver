@@ -275,7 +275,7 @@ namespace Neo4j.Driver.Examples
         public void TlsRequireEncryption()
         {
             //tag::tls-require-encryption[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithTlsEnabled(true).ToConfig());
+            var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::tls-require-encryption[]
             driver.Dispose();
         }
@@ -284,7 +284,7 @@ namespace Neo4j.Driver.Examples
         public void TlsSigned()
         {
             //tag::tls-signed[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithTlsEnabled(true).ToConfig());
+            var driver = GraphDatabase.Driver("bolt://localhost:7687", Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::tls-signed[]
             driver.Dispose();
         }

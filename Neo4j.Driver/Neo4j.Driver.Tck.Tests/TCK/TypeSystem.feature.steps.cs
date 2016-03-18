@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 throw;
             }
             var config = Config.DefaultConfig;
-            config.IdleSessionPoolSize = Config.InfiniteIdleSessionPoolSize;
+            config.MaxIdleSessionPoolSize = Config.InfiniteMaxIdleSessionPoolSize;
             Driver = GraphDatabase.Driver(Url, config);
         }
 
