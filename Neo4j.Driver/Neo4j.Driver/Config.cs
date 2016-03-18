@@ -20,21 +20,30 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver
 {
     /// <summary>
+    /// Control the level of encryption to require.
+    /// </summary>
+    public enum EncryptionLevel
+    {
+        None,
+        Encrypted
+    }
+
+    /// <summary>
     /// Use this class to config the <see cref="Driver"/> in a certain way
     /// </summary>
     public class Config
     {
         /// <summary>
-        /// When the <see cref="IdleSessionPoolSize"/> is set to <see cref="InfiniteIdleSessionPoolSize" /> the idle session pool will pool all sessions created by the driver.
+        /// When the <see cref="MaxIdleSessionPoolSize"/> is set to <see cref="InfiniteMaxIdleSessionPoolSize" /> the idle session pool will pool all sessions created by the driver.
         /// </summary>
-        public const int InfiniteIdleSessionPoolSize = -1;
+        public const int InfiniteMaxIdleSessionPoolSize = -1;
         static Config()
         {
             DefaultConfig = new Config
             {
-                TlsEnabled = false,
+                EncryptionLevel = EncryptionLevel.None,
                 Logger = new DebugLogger {Level = LogLevel.Info},
-                IdleSessionPoolSize = 20
+                MaxIdleSessionPoolSize = 10
             };
         }
 
@@ -44,9 +53,9 @@ namespace Neo4j.Driver
         /// <remarks>
         /// The defaults are <br/>
         /// <list type="bullet">
-        /// <item><see cref="TlsEnabled"/> : <c>false</c></item>
+        /// <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> None</c> </item>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
-        /// <item><see cref="IdleSessionPoolSize"/> : <c>20</c> </item>
+        /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }
@@ -57,9 +66,9 @@ namespace Neo4j.Driver
         public static IConfigBuilder Builder => new ConfigBuilder(new Config());
 
         /// <summary>
-        /// Gets or sets the use of TLS for all the connections created by the Driver.
+        /// Gets or sets the use of encryption for all the connections created by the Driver.
         /// </summary>
-        public bool TlsEnabled { get; set; }
+        public EncryptionLevel EncryptionLevel { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
@@ -67,11 +76,11 @@ namespace Neo4j.Driver
         public ILogger Logger { get; set; }
 
         /// <summary>
-        /// Gets or sets the idle session pool size.
+        /// Gets or sets the max idle session pool size.
         /// </summary>
-        /// <remarks> The idle session pool size represents the maximum number of sessions buffered for the driver. A buffered <see cref="ISession"/> 
+        /// <remarks> The max idle session pool size represents the maximum number of sessions buffered for the driver. A buffered <see cref="ISession"/>
         /// is a session that has already been connected to the database instance and doesn't need to re-initialize.</remarks>
-        public int IdleSessionPoolSize { get; set; }
+        public int MaxIdleSessionPoolSize { get; set; }
 
         private class ConfigBuilder : IConfigBuilder
         {
@@ -82,9 +91,9 @@ namespace Neo4j.Driver
                 _config = config;
             }
 
-            public IConfigBuilder WithTlsEnabled(bool enableTls)
+            public IConfigBuilder WithEncryptionLevel(EncryptionLevel level)
             {
-                _config.TlsEnabled = enableTls;
+                _config.EncryptionLevel = level;
                 return this;
             }
 
@@ -94,9 +103,9 @@ namespace Neo4j.Driver
                 return this;
             }
 
-            public IConfigBuilder WithIdleSessionPoolSize(int size)
+            public IConfigBuilder WithMaxIdleSessionPoolSize(int size)
             {
-                _config.IdleSessionPoolSize = size;
+                _config.MaxIdleSessionPoolSize = size;
                 return this;
             }
 
@@ -121,12 +130,12 @@ namespace Neo4j.Driver
         Config ToConfig();
         
         /// <summary>
-        /// Sets the <see cref="Config"/> to use TLS if <paramref name="enableTls"/> is <c>true</c>.
+        /// Sets the <see cref="Config"/> to use TLS if <paramref name="level"/> is <c>true</c>.
         /// </summary>
-        /// <param name="enableTls"><c>true</c> enables TLS for the connection, <c>false</c> otherwise.</param>
+        /// <param name="level"><c>Encrypted</c> enables TLS for the connection, <c>None</c> otherwise. See <see cref="EncryptionLevel"/> for more info</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
-        IConfigBuilder WithTlsEnabled(bool enableTls);
+        IConfigBuilder WithEncryptionLevel(EncryptionLevel level);
 
         /// <summary>
         /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
@@ -139,10 +148,10 @@ namespace Neo4j.Driver
         /// <summary>
         /// Sets the size of the idle session pool.
         /// </summary>
-        /// <param name="size">The size of the <see cref="Config.IdleSessionPoolSize"/>, set to <see cref="Config.InfiniteIdleSessionPoolSize"/> to pool all sessions.</param>
+        /// <param name="size">The size of the <see cref="Config.MaxIdleSessionPoolSize"/>, set to <see cref="Config.InfiniteMaxIdleSessionPoolSize"/> to pool all sessions.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
-        IConfigBuilder WithIdleSessionPoolSize(int size);
+        IConfigBuilder WithMaxIdleSessionPoolSize(int size);
     }
 
   

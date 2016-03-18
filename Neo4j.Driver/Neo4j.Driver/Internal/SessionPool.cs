@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal
             _authToken = authToken;
             _config = config;
             _connection = connection;
-            _idleSessionPoolSize = config.IdleSessionPoolSize;
+            _idleSessionPoolSize = config.MaxIdleSessionPoolSize;
         }
 
         internal SessionPool(
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Internal
                     lock (_availableSessions)
                     {
                         if (_availableSessions.Count < _idleSessionPoolSize ||
-                            _idleSessionPoolSize == Config.InfiniteIdleSessionPoolSize)
+                            _idleSessionPoolSize == Config.InfiniteMaxIdleSessionPoolSize)
                         {
                             _availableSessions.Enqueue(session);
                         }

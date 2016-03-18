@@ -27,7 +27,7 @@ namespace Neo4j.Driver
     /// <remarks>
     ///     The Driver maintains a session pool buffering the <see cref="ISession" />s created by the user. The size of the
     ///     buffer can be
-    ///     configured by the <see cref="Config.IdleSessionPoolSize" /> property on the <see cref="Config" /> when creating the
+    ///     configured by the <see cref="Config.MaxIdleSessionPoolSize" /> property on the <see cref="Config" /> when creating the
     ///     Driver.
     /// </remarks>
     public class Driver : LoggerBase
