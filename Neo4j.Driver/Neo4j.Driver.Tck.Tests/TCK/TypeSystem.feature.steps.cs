@@ -19,13 +19,14 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using TechTalk.SpecFlow;
 using Xunit;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
-  public abstract class TckStepsBase
+    public abstract class TckStepsBase
     {
         public const string Url = "bolt://localhost:7687";
         protected static Driver Driver;
@@ -45,7 +46,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 case "Integer":
                     return Convert.ToInt64(value);
                 case "Float":
-                    return Convert.ToDouble(value);
+                    return Convert.ToDouble(value, CultureInfo.InvariantCulture);
                 case "String":
                     return value;
                 default:
