@@ -49,7 +49,6 @@ namespace Neo4j.Driver.Tests
                 object value = null;
                 var ex = Record.Exception(() => value.As<bool>());
                 ex.Should().BeOfType<InvalidCastException>();
-                ex.Message.Should().Be("Unable to cast `null` to `System.Boolean`.");
             }
 
             [Theory]
@@ -180,7 +179,6 @@ namespace Neo4j.Driver.Tests
                 object value = 10;
                 var ex = Record.Exception(() => value.As<List<int>>());
                 ex.Should().BeOfType<InvalidCastException>();
-                ex.Message.Should().Be("Unable to cast object of type `System.Int32` to type `System.Collections.Generic.List`1[System.Int32]`.");
             }
             [Fact]
             public void ShouldThrowExceptionWhenCastFromListToInt()
@@ -188,7 +186,6 @@ namespace Neo4j.Driver.Tests
                 object value = new List<object> { "string", 2, true, "lala" };
                 var ex = Record.Exception(() => value.As<int>());
                 ex.Should().BeOfType<InvalidCastException>();
-                ex.Message.Should().Be("Unable to cast object of type 'System.Collections.Generic.List`1[System.Object]' to type 'System.IConvertible'.");
             }
         }
 
