@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Neo4j.Driver.Extensions;
 using Neo4j.Driver.Internal;
+using System.Globalization;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
@@ -79,7 +80,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             match = _floatPattern.Match(input);
             if (match.Success)
             {
-                return Convert.ToDouble(match.Groups[1].Value);
+                return Convert.ToDouble(match.Groups[1].Value, CultureInfo.InvariantCulture);
             }
             throw new NotSupportedException($"Failed to parse to {nameof(Null)}/{nameof(Boolean)}/{nameof(String)}/{nameof(Integer)}/{nameof(Float)} from input: {input}");
         }
