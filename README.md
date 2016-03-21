@@ -11,7 +11,7 @@ Add the driver to your project using Nuget Package Manager:
 
     PM> Install-Package Neo4j.Driver -Pre
 
-Connect to a Neo4j 3.0.0+ database
+Connect to a Neo4j 3.1.0+ database
 
     using(var driver = GraphDatabase.Driver( "bolt://localhost:7687" ))
     using(var session = driver.Session())

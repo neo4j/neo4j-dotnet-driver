@@ -30,7 +30,7 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class Neo4jInstaller
     {
-        private static string Version => Environment.GetEnvironmentVariable("version") ?? "3.0.0-NIGHTLY";
+        private static string Version => Environment.GetEnvironmentVariable("version") ?? "3.1.0-NIGHTLY";
 //        private static string PackageUrl => $"http://alpha.neohq.net/dist/neo4j-enterprise-{Version}-windows.zip";
         private static string PackageUrl => $"http://alpha.neohq.net/dist/neo4j-community-{Version}-windows.zip";
 

@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Tests
                 expectedBytes = expectedBytes.PadRight(ChunkedOutputStream.BufferSize);
 
                 var messageHandler = new MessageResponseHandler();
-                messageHandler.Register(new InitMessage("MyClient/1.0", new Dictionary<string, object>()));
+                messageHandler.Register(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
                 var rb = new ResultBuilder();
                 messageHandler.Register(messages[0], rb);
                 messageHandler.Register(messages[1], rb);
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var messages = new IRequestMessage[] {new RunMessage("This will cause a syntax error")};
                     var messageHandler = new MessageResponseHandler();
-                    messageHandler.Register(new InitMessage("MyClient/1.0", new Dictionary<string, object>()));
+                    messageHandler.Register(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
                     messageHandler.Register(messages[0], new ResultBuilder());
 
                     harness.SetupReadStream("00 00 00 01" +
@@ -150,7 +150,7 @@ namespace Neo4j.Driver.Tests
 
                     var messageHandler = new TestResponseHandler();
 
-                    messageHandler.Register(new InitMessage("MyClient/1.0", new Dictionary<string, object>()));
+                    messageHandler.Register(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
                     messageHandler.Register(messages[0], new ResultBuilder());
                     messageHandler.Register(messages[1], new ResultBuilder());
 
@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Tests
 
                     var messageHandler = new TestResponseHandler();
 
-                    messageHandler.Register(new InitMessage("MyClient/1.0", new Dictionary<string, object>()));
+                    messageHandler.Register(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
                     messageHandler.Register(messages[0], new ResultBuilder());
                     messageHandler.Register(messages[1], new ResultBuilder());
 
