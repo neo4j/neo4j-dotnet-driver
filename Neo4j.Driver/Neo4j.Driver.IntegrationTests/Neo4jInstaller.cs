@@ -200,7 +200,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void StartServer()
         {
             RunPowershellCommand("start");
-            Task.Delay(10000);
+            Task.Delay(10000).Wait();
         }
 
         public void StopServer()
