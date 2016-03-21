@@ -95,7 +95,10 @@
   <ItemGroup>
     <Compile Include="ConnectionIT.cs" />
     <Compile Include="Examples.cs" />
+    <Compile Include="INeo4jInstaller.cs" />
     <Compile Include="IntegrationTestFixture.cs" />
+    <Compile Include="Internals\Neo4jDownloadHelper.cs" />
+    <Compile Include="Internals\Neo4jSettingsHelper.cs" />
     <Compile Include="Neo4jInstaller.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

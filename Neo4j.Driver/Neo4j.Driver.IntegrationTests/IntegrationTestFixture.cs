@@ -30,7 +30,7 @@ namespace Neo4j.Driver.IntegrationTests
             Port = 7687;
             try
             {
-                _installer.DownloadNeo4j().Wait();
+                _installer.DownloadNeo4j();
                 _installer.InstallServer();
                 _installer.StartServer();
             }
