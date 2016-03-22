@@ -101,7 +101,6 @@ namespace Neo4j.Driver.IntegrationTests
             Neo4jHome = new DirectoryInfo(Path.Combine(Neo4jDir.FullName, zipFolder));
 
             UpdateSettings(new Dictionary<string, string>{ { "dbms.security.auth_enabled", "false"} });// disable auth
-            LoadPowershellModule(Neo4jHome.FullName);
         }
 
         private static string GetZipFolder(string filename)
@@ -171,22 +170,6 @@ namespace Neo4j.Driver.IntegrationTests
             File.Delete(tempFileName);
         }
 
-        private Runspace _runspace;
-
-        private void LoadPowershellModule(string extractedLocation)
-        {
-            var moduleLocation = Path.Combine(extractedLocation, "bin\\Neo4j-Management.psd1");
-
-            InitialSessionState initial = InitialSessionState.CreateDefault();
-#if ! BUILDSERVER
-            initial.ExecutionPolicy = ExecutionPolicy.RemoteSigned;
-#endif
-            initial.ImportPSModule(new[] { moduleLocation });
-            _runspace = RunspaceFactory.CreateRunspace(initial);
-            _runspace.Open();
-
-        }
-
         public void InstallServer()
         {
             RunPowershellCommand("install-service");
@@ -212,8 +195,8 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var powershell = PowerShell.Create())
             {
-                powershell.Runspace = _runspace;
-                powershell.AddCommand("Invoke-Neo4j");
+                var batfile = Path.Combine(Neo4jHome.FullName, "bin\\Neo4j.bat");
+                powershell.AddCommand(batfile);
                 powershell.AddArgument(command);
                 powershell.Invoke();
                 if (powershell.HadErrors)
