@@ -22,8 +22,12 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class IntegrationTestFixture : IDisposable
     {
-        private readonly Neo4jInstaller _installer = new Neo4jInstaller();
-        public int Port { get; private set; }
+#if ! PROCESS_TEST_BAESED
+    private readonly INeo4jInstaller _installer = new Neo4jInstaller();
+#else
+    private readonly INeo4jInstaller _installer = new ProcessBasedNeo4jInstaller();
+#endif
+    public int Port { get; private set; }
         public string Neo4jHome { get; private set; }
         public IntegrationTestFixture()
         {

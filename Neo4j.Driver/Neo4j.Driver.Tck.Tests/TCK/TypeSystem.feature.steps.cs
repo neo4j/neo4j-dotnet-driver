@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     {
         public const string Url = "bolt://localhost:7687";
         protected static Driver Driver;
-        protected static Neo4jInstaller _installer;
+        protected static INeo4jInstaller _installer;
         protected dynamic _expected;
         protected IList<object> _list;
         protected IDictionary<string, object> _map;
@@ -90,7 +90,11 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [BeforeTestRun]
         public static void GlobalBeforeScenario()
         {
+#if !PROCESS_TEST_BAESED
             _installer = new Neo4jInstaller();
+#else
+            _installer = new ProcessBasedNeo4jInstaller();
+#endif
             _installer.DownloadNeo4j();
             try
             {
