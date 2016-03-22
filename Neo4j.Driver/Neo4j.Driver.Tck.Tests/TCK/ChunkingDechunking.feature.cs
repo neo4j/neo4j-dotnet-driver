@@ -10,7 +10,7 @@
 // ------------------------------------------------------------------------------
 #region Designer generated code
 #pragma warning disable
-namespace Neo4j.Driver.IntegrationTests.TCK
+namespace Neo4j.Driver.Tck.Tests.TCK
 {
     using TechTalk.SpecFlow;
     
