@@ -14,6 +14,8 @@ namespace Neo4j.Driver.IntegrationTests
   /// </summary>
   public class ProcessBasedNeo4jInstaller : INeo4jInstaller
   {
+    private const string eventSourceName = "Neo4jTests";
+
     public DirectoryInfo Neo4jHome { get; private set; }
 
     public void DownloadNeo4j()
@@ -31,15 +33,26 @@ namespace Neo4j.Driver.IntegrationTests
     private Process startedProcess = null;
     public void StartServer()
     {
-      // @"C:\Program Files\Java\jre1.8.0_73\bin\java.exe - cp ""C:\Source\neo4j\ingvar\neo4j-dotnet-driver\Neo4j.Driver\Neo4j.Driver.IntegrationTests\bin\target\neo4j\neo4j-community-3.0.0-RC1/lib/*;C:\Source\neo4j\ingvar\neo4j - dotnet - driver\Neo4j.Driver\Neo4j.Driver.IntegrationTests\bin\target\neo4j\neo4j - community - 3.0.0 - RC1 / plugins/*"" -server -Dorg.neo4j.config.file=conf/neo4j.conf -Dlog4j.configuration=file:conf/log4j.properties -Dneo4j.ext.udc.source=zip-powershell -Dorg.neo4j.cluster.logdirectory=data/log -Dorg.neo4j.config.file=conf/neo4j.conf -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:hashCode=5 -XX:+AlwaysPreTouch -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields -XX:+DisableExplicitGC -Dunsupported.dbms.udc.source=zip -Dfile.encoding=UTF-8 org.neo4j.server.CommunityEntryPoint"
-      ProcessStartInfo processInfo = new ProcessStartInfo();
-      processInfo.FileName = @"C:\Program Files\Java\jre1.8.0_73\bin\java.exe";
-      processInfo.WorkingDirectory = @"C:\Source\neo4j\ingvar\neo4j-dotnet-driver\Neo4j.Driver\Neo4j.Driver.IntegrationTests\bin\target\neo4j\neo4j-community-3.0.0-RC1";
-      processInfo.Arguments = @"-cp ""C:\Source\neo4j\ingvar\neo4j-dotnet-driver\Neo4j.Driver\Neo4j.Driver.IntegrationTests\bin\target\neo4j\neo4j-community-3.0.0-RC1/lib/*;C:\Source\neo4j\ingvar\neo4j - dotnet - driver\Neo4j.Driver\Neo4j.Driver.IntegrationTests\bin\target\neo4j\neo4j - community - 3.0.0 - RC1 / plugins/*"" -server -Dorg.neo4j.config.file=conf/neo4j.conf -Dlog4j.configuration=file:conf/log4j.properties -Dneo4j.ext.udc.source=zip-powershell -Dorg.neo4j.cluster.logdirectory=data/log -Dorg.neo4j.config.file=conf/neo4j.conf -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:hashCode=5 -XX:+AlwaysPreTouch -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields -XX:+DisableExplicitGC -Dunsupported.dbms.udc.source=zip -Dfile.encoding=UTF-8 org.neo4j.server.CommunityEntryPoint";
-      processInfo.UseShellExecute = false;
-      processInfo.RedirectStandardInput = true;
-      processInfo.RedirectStandardOutput = true;
-      startedProcess = Process.Start(processInfo);
+      try
+      {
+        ProcessStartInfo processInfo = new ProcessStartInfo();
+        processInfo.FileName = @"java.exe";
+        processInfo.WorkingDirectory = Neo4jHome.FullName;
+        processInfo.Arguments = string.Format(@"-cp ""{0}lib/*;{0}plugins/*"" -server -Dorg.neo4j.config.file=conf/neo4j.conf -Dlog4j.configuration=file:conf/log4j.properties -Dneo4j.ext.udc.source=zip-powershell -Dorg.neo4j.cluster.logdirectory=data/log -Dorg.neo4j.config.file=conf/neo4j.conf -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:hashCode=5 -XX:+AlwaysPreTouch -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields -XX:+DisableExplicitGC -Dunsupported.dbms.udc.source=zip -Dfile.encoding=UTF-8 org.neo4j.server.CommunityEntryPoint", Neo4jHome.FullName);
+        processInfo.UseShellExecute = false;
+        processInfo.CreateNoWindow = true;
+        processInfo.RedirectStandardInput = true;
+        processInfo.RedirectStandardOutput = true;
+
+        EventLog.WriteEntry(eventSourceName, $"Starting process: {processInfo.FileName} with working directory: {processInfo.WorkingDirectory} and arguments: {processInfo.Arguments}", EventLogEntryType.Information);
+
+        startedProcess = Process.Start(processInfo);
+      }
+      catch (Exception ex)
+      {
+        EventLog.WriteEntry(eventSourceName, ex.ToString(), EventLogEntryType.Error);
+        throw;
+      }
 
       Task task = new Task(() =>
       {
@@ -53,9 +66,15 @@ namespace Neo4j.Driver.IntegrationTests
         string log = logCollectlor.ToString();
         if (log.Contains("ERROR"))
         {
+          EventLog.WriteEntry(eventSourceName, log, EventLogEntryType.Error);
+
           // This exception is only seen when debugging unittest
           // This can be helpful debugging if/why the Neo4j server does not start/work
           throw new InvalidOperationException(log);
+        }
+        else
+        {
+          EventLog.WriteEntry(eventSourceName, log, EventLogEntryType.Information);
         }
       });
       task.Start();
@@ -65,9 +84,24 @@ namespace Neo4j.Driver.IntegrationTests
 
     public void StopServer()
     {
-      startedProcess.StandardInput.Close();
-      Task.Delay(5000).Wait();
-      startedProcess.Kill();
+      if (startedProcess == null) return;
+
+      try
+      {
+        EventLog.WriteEntry(eventSourceName, "Stopping process");
+        startedProcess.StandardInput.AutoFlush = true;
+        startedProcess.StandardInput.Close();
+        startedProcess.CloseMainWindow();
+        Task.Delay(10000).Wait();
+        startedProcess.Kill();
+        startedProcess.WaitForExit();
+        startedProcess = null;
+      }
+      catch (Exception ex)
+      {
+        EventLog.WriteEntry(eventSourceName, ex.ToString(), EventLogEntryType.Error);
+        throw;
+      }
     }
 
     public void UninstallServer()
