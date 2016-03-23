@@ -27,13 +27,16 @@ using Neo4j.Driver.IntegrationTests.Internals;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class Neo4jInstaller : INeo4jInstaller
+    public class WindowsServiceBasedNeo4jInstaller : INeo4jInstaller
     {
         public DirectoryInfo Neo4jHome { get; private set; }
 
         public void DownloadNeo4j()
         {
-            Neo4jHome = Neo4jDownloadHelper.DownloadNeo4j();
+            Neo4jHome = Neo4jServerFilesDownloadHelper.DownloadNeo4j(
+              Neo4jServerEdition.Enterprise,
+              Neo4jServerPlatform.Windows,
+              new ZipNeo4jServerFileExtractor());
 
             UpdateSettings(new Dictionary<string, string>{ { "dbms.security.auth_enabled", "false"} });// disable auth
             LoadPowershellModule(Neo4jHome.FullName);

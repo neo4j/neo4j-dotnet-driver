@@ -91,9 +91,9 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public static void GlobalBeforeScenario()
         {
 #if !PROCESS_TEST_BAESED
-            _installer = new Neo4jInstaller();
+            _installer = new WindowsServiceBasedNeo4jInstaller();
 #else
-            _installer = new ProcessBasedNeo4jInstaller();
+            _installer = new WindowsProcessBasedNeo4jInstaller();
 #endif
             _installer.DownloadNeo4j();
             try
