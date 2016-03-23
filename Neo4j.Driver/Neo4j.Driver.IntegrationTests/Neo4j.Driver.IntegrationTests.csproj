@@ -95,14 +95,14 @@
   <ItemGroup>
     <Compile Include="ConnectionIT.cs" />
     <Compile Include="Examples.cs" />
-    <Compile Include="INeo4jInstaller.cs" />
+    <Compile Include="Internals\INeo4jInstaller.cs" />
     <Compile Include="IntegrationTestFixture.cs" />
     <Compile Include="Internals\INeo4jServerFileExtractor.cs" />
     <Compile Include="Internals\Neo4jServerFilesDownloader.cs" />
     <Compile Include="Internals\Neo4jSettingsHelper.cs" />
     <Compile Include="Internals\ZipNeo4jServerFileExtractor.cs" />
-    <Compile Include="WindowsServiceBasedNeo4jInstaller.cs" />
-    <Compile Include="WindowsProcessBasedNeo4jInstaller.cs" />
+    <Compile Include="Internals\WindowsServiceBasedNeo4jInstaller.cs" />
+    <Compile Include="Internals\WindowsProcessBasedNeo4jInstaller.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

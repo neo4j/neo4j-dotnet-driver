@@ -14,13 +14,14 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+using Neo4j.Driver.IntegrationTests.Internals;
 using System;
 using System.Collections.Generic;
 using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class IntegrationTestFixture : IDisposable
+  public class IntegrationTestFixture : IDisposable
     {
 #if ! PROCESS_TEST_BAESED
     private readonly INeo4jInstaller _installer = new WindowsServiceBasedNeo4jInstaller();

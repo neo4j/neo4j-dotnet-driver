@@ -1,11 +1,10 @@
-﻿using Neo4j.Driver.IntegrationTests.Internals;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Internals
 {
   /// <summary>
   /// A process based Neo4j installer that uses a background process for 

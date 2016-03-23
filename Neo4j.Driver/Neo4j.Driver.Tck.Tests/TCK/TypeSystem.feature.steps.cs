@@ -14,18 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using FluentAssertions;
-using Neo4j.Driver.IntegrationTests;
 using TechTalk.SpecFlow;
 using Xunit;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
-    public abstract class TckStepsBase
+  public abstract class TckStepsBase
     {
         public const string Url = "bolt://localhost:7687";
         protected static Driver Driver;

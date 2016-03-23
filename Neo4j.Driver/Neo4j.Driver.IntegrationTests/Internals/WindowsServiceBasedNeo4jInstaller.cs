@@ -14,6 +14,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+using Microsoft.PowerShell;
+using Neo4j.Driver.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,13 +23,10 @@ using System.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Threading.Tasks;
-using Microsoft.PowerShell;
-using Neo4j.Driver.Exceptions;
-using Neo4j.Driver.IntegrationTests.Internals;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class WindowsServiceBasedNeo4jInstaller : INeo4jInstaller
+  public class WindowsServiceBasedNeo4jInstaller : INeo4jInstaller
     {
         public DirectoryInfo Neo4jHome { get; private set; }
 
