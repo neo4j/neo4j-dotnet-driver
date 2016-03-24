@@ -64,4 +64,21 @@ namespace Neo4j.Driver
         /// </summary>
         LogLevel Level { get; set; }
     }
+
+    /// <summary>
+    /// Extension methods for the <see cref="ILogger"/> interface.
+    /// </summary>
+    public static class LoggerExtensions
+    {
+        /// <summary>
+        /// Log a message at <see cref="LogLevel.Error"/> level.
+        /// </summary>
+        /// <param name="logger">An <see cref="ILogger"/> instance or null.</param>
+        /// <param name="message">The error message.</param>
+        /// <param name="restOfMessage">Any restOfMessage parts of the message.</param>
+        public static void Error(this ILogger logger, string message, params object[] restOfMessage)
+        {
+            logger?.Error(message, (Exception)null, restOfMessage);
+        }
+    }
 }

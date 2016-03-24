@@ -22,6 +22,7 @@ using FluentAssertions;
 using Neo4j.Driver.IntegrationTests;
 using TechTalk.SpecFlow;
 using Xunit;
+using System.Globalization;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
@@ -45,7 +46,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 case "Integer":
                     return Convert.ToInt64(value);
                 case "Float":
-                    return Convert.ToDouble(value);
+                    return Convert.ToDouble(value, CultureInfo.InvariantCulture);
                 case "String":
                     return value;
                 default:
