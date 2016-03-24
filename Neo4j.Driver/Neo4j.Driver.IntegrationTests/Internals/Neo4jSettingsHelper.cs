@@ -1,62 +1,77 @@
-﻿using System.Collections.Generic;
+﻿//  Copyright (c) 2002-2016 "Neo Technology,"
+//  Network Engine for Objects in Lund AB [http://neotechnology.com]
+// 
+//  This file is part of Neo4j.
+// 
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+// 
+//      http://www.apache.org/licenses/LICENSE-2.0
+// 
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+using System.Collections.Generic;
 using System.IO;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-  internal static class Neo4jSettingsHelper
-  {
-    /// <summary>
-    /// Updates the settings of the Neo4j server
-    /// </summary>
-    /// <param name="location">Path of the Neo4j server</param>
-    /// <param name="keyValuePair">Settings</param>
-    public static void UpdateSettings(string location, IDictionary<string, string> keyValuePair)
+    internal static class Neo4jSettingsHelper
     {
-      var keyValuePairCopy = new Dictionary<string, string>(keyValuePair);
-
-      // rename the old file to a temp file
-      var configFileName = Path.Combine(location, "conf/neo4j.conf");
-      var tempFileName = Path.Combine(location, "conf/neo4j.conf.tmp");
-      File.Move(configFileName, tempFileName);
-
-      using (var reader = new StreamReader(tempFileName))
-      using (var writer = new StreamWriter(configFileName))
-      {
-        string line;
-        while ((line = reader.ReadLine()) != null)
+        /// <summary>
+        ///     Updates the settings of the Neo4j server
+        /// </summary>
+        /// <param name="location">Path of the Neo4j server</param>
+        /// <param name="keyValuePair">Settings</param>
+        public static void UpdateSettings(string location, IDictionary<string, string> keyValuePair)
         {
-          if (line.Trim() == string.Empty || line.Trim().StartsWith("#"))
-          {
-            // empty or comments, print as original
-            writer.WriteLine(line);
-          }
-          else
-          {
-            string[] tokens = line.Split('=');
-            if (tokens.Length == 2 && keyValuePairCopy.ContainsKey(tokens[0].Trim()))
-            {
-              var key = tokens[0].Trim();
-              // found property and update it to the new value
-              writer.WriteLine($"{key}={keyValuePairCopy[key]}");
-              keyValuePairCopy.Remove(key);
+            var keyValuePairCopy = new Dictionary<string, string>(keyValuePair);
 
-            }
-            else
-            {
-              // not the property that we are looking for, print it as original
-              writer.WriteLine(line);
-            }
-          }
-        }
+            // rename the old file to a temp file
+            var configFileName = Path.Combine(location, "conf/neo4j.conf");
+            var tempFileName = Path.Combine(location, "conf/neo4j.conf.tmp");
+            File.Move(configFileName, tempFileName);
 
-        // write the extral propertes at the end of the file
-        foreach (var pair in keyValuePairCopy)
-        {
-          writer.WriteLine($"{pair.Key}={pair.Value}");
+            using (var reader = new StreamReader(tempFileName))
+            using (var writer = new StreamWriter(configFileName))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line.Trim() == string.Empty || line.Trim().StartsWith("#"))
+                    {
+                        // empty or comments, print as original
+                        writer.WriteLine(line);
+                    }
+                    else
+                    {
+                        var tokens = line.Split('=');
+                        if (tokens.Length == 2 && keyValuePairCopy.ContainsKey(tokens[0].Trim()))
+                        {
+                            var key = tokens[0].Trim();
+                            // found property and update it to the new value
+                            writer.WriteLine($"{key}={keyValuePairCopy[key]}");
+                            keyValuePairCopy.Remove(key);
+                        }
+                        else
+                        {
+                            // not the property that we are looking for, print it as original
+                            writer.WriteLine(line);
+                        }
+                    }
+                }
+
+                // write the extral propertes at the end of the file
+                foreach (var pair in keyValuePairCopy)
+                {
+                    writer.WriteLine($"{pair.Key}={pair.Value}");
+                }
+            }
+            // delete the temp file
+            File.Delete(tempFileName);
         }
-      }
-      // delete the temp file
-      File.Delete(tempFileName);
     }
-  }
 }

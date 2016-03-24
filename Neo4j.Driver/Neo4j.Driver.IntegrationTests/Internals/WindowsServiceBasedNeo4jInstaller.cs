@@ -14,33 +14,34 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-using Neo4j.Driver.Exceptions;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
 using System.Threading.Tasks;
+using Neo4j.Driver.Exceptions;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-  public class WindowsServiceBasedNeo4jInstaller : INeo4jInstaller
+    public class WindowsServiceBasedNeo4jInstaller : INeo4jInstaller
     {
         public DirectoryInfo Neo4jHome { get; private set; }
 
         public void DownloadNeo4j()
         {
             Neo4jHome = Neo4jServerFilesDownloadHelper.DownloadNeo4j(
-              Neo4jServerEdition.Enterprise,
-              Neo4jServerPlatform.Windows,
-              new ZipNeo4jServerFileExtractor());
+                Neo4jServerEdition.Community,
+                Neo4jServerPlatform.Windows,
+                new ZipNeo4jServerFileExtractor());
 
-            UpdateSettings(new Dictionary<string, string>{ { "dbms.security.auth_enabled", "false"} });// disable auth
+            UpdateSettings(new Dictionary<string, string> {{"dbms.security.auth_enabled", "false"}}); // disable auth
         }
 
         public void UpdateSettings(IDictionary<string, string> keyValuePair)
         {
-          Neo4jSettingsHelper.UpdateSettings(Neo4jHome.FullName, keyValuePair);
+            Neo4jSettingsHelper.UpdateSettings(Neo4jHome.FullName, keyValuePair);
         }
 
         public void InstallServer()
@@ -73,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 powershell.AddArgument(command);
                 powershell.Invoke();
 // seems have some problem to work with powershell 4.0
-#if ! BUILDSERVER 
+#if ! BUILDSERVER
                 if (powershell.HadErrors)
                 {
                     throw new Neo4jException("Integration", CollectAsString(powershell.Streams.Error));
