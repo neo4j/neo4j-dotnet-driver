@@ -21,7 +21,7 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-  public class IntegrationTestFixture : IDisposable
+    public class IntegrationTestFixture : IDisposable
     {
 #if ! PROCESS_TEST_BAESED
     private readonly INeo4jInstaller _installer = new WindowsServiceBasedNeo4jInstaller();

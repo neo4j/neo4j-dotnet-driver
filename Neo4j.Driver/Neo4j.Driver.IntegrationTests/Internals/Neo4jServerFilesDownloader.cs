@@ -45,7 +45,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
       EnsureDirectoriesExist();
 
-      var downloadFileInfo = new FileInfo($"../target/{Version}.zip");
+      var platformFileExtension = GetPlatformFileExtension(platform);
+      var downloadFileInfo = new FileInfo($"../target/{Version}.{platformFileExtension}");
       if (downloadFileInfo.Directory != null)
       {
         if (!downloadFileInfo.Directory.Exists)
@@ -56,8 +57,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         PackageUrlFormat, 
         edition.ToString().ToLower(), 
         Version, 
-        platform.ToString().ToLower(),         
-        GetPlatformFileExtension(platform));
+        platform.ToString().ToLower(),   
+        platformFileExtension      
+        );
 
       bool downloadedNew = false;
       long expectedSize;
