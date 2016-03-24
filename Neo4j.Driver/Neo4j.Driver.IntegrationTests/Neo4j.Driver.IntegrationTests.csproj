@@ -101,8 +101,7 @@
     <Compile Include="Internals\Neo4jServerFilesDownloader.cs" />
     <Compile Include="Internals\Neo4jSettingsHelper.cs" />
     <Compile Include="Internals\ZipNeo4jServerFileExtractor.cs" />
-    <Compile Include="Internals\WindowsServiceBasedNeo4jInstaller.cs" />
-    <Compile Include="Internals\WindowsProcessBasedNeo4jInstaller.cs" />
+    <Compile Include="Internals\WindowsNeo4jInstaller.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
