@@ -23,7 +23,7 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class IntegrationTestFixture : IDisposable
     {
-        private readonly INeo4jInstaller _installer = new WindowsNeo4jInstaller();
+        private readonly INeo4jInstaller _installer = Neo4jInstallerFactory.Create();
         public int Port { get; private set; }
         public string Neo4jHome { get; private set; }
         public IntegrationTestFixture()

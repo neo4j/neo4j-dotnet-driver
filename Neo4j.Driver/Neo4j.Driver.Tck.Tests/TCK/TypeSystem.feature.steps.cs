@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [BeforeTestRun]
         public static void GlobalBeforeScenario()
         {
-            _installer = new WindowsNeo4jInstaller();
+            _installer = Neo4jInstallerFactory.Create();
             _installer.DownloadNeo4j();
             try
             {
