@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using Neo4j.Driver.Extensions;
 using Neo4j.Driver.Internal;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
