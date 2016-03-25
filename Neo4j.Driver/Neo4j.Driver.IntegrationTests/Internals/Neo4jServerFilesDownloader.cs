@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
       EnsureDirectoriesExist();
 
-      var downloadFileInfo = new FileInfo($"../target/{Version}.zip");
+      var downloadFileInfo = new FileInfo(string.Format("../target/{0}.{1}", Version, GetPlatformFileExtension(platform)));
       if (downloadFileInfo.Directory != null)
       {
         if (!downloadFileInfo.Directory.Exists)
