@@ -14,7 +14,7 @@
         /// </returns>
         public static INeo4jInstaller Create()
         {
-#if __MonoCs__
+#if __MonoCS__
             return new UnixProcessBasedNeo4jInstaller();
 #else
             return new WindowsNeo4jInstaller();
