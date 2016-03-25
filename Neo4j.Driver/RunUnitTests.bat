@@ -1,1 +1,0 @@
-packages\xunit.runner.console.2.1.0\tools\xunit.console.exe Neo4j.Driver.Tests\bin\Debug\Neo4j.Driver.Tests.dll Neo4j.Driver.IntegrationTests\bin\Debug\Neo4j.Driver.IntegrationTests.dll Neo4j.Driver.Tck.Tests\bin\Debug\Neo4j.Driver.Tck.Tests.dll -parallel none
