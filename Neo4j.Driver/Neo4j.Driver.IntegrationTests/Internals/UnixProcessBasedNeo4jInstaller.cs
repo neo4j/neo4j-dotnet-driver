@@ -1,23 +1,25 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class UnixProcessBasedNeo4jInstaller : INeo4jInstaller
+    /// <summary>
+    ///     Unix implementation of the <see cref="INeo4jInstaller"/>.
+    /// </summary>
+    internal class UnixProcessBasedNeo4jInstaller : INeo4jInstaller
     {
         private Process startedProcess = null;
 
         public DirectoryInfo Neo4jHome { get; private set; }
- 
+
         public void DownloadNeo4j()
         {
             Neo4jHome = Neo4jServerFilesDownloadHelper.DownloadNeo4j(
-                Neo4jServerEdition.Enterprise, 
-                Neo4jServerPlatform.Unix, 
+                Neo4jServerEdition.Enterprise,
+                Neo4jServerPlatform.Unix,
                 new TgzNeo4jServerFileExtractor());
 
             UpdateSettings(new Dictionary<string, string> { { "dbms.security.auth_enabled", "false" } });// disable auth
@@ -37,8 +39,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             processInfo.UseShellExecute = true;
             processInfo.CreateNoWindow = false;
 
-      File.AppendAllLines("log.txt", new [] { processInfo.WorkingDirectory });
-      File.AppendAllLines("log.txt", new [] { processInfo.FileName });
+            File.AppendAllLines("log.txt", new[] { processInfo.WorkingDirectory });
+            File.AppendAllLines("log.txt", new[] { processInfo.FileName });
 
             startedProcess = Process.Start(processInfo);
 
@@ -59,7 +61,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void UninstallServer()
         {
-          // Not needed
+            // Not needed
         }
 
         public void UpdateSettings(IDictionary<string, string> keyValuePair)
