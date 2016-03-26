@@ -36,7 +36,7 @@ namespace Neo4j.Driver
     /// <remarks>
     /// Set the logger that you want to use via <see cref="Config"/>.
     /// If no logger is explicitly set, then a default debug logger would be used <see cref="Config.DefaultConfig"/></remarks>
-    public interface ILogger : IDisposable
+    public interface ILogger 
     {
         /// <summary>Log a message at <see cref="LogLevel.Error"/> level.</summary>
         /// <param name="message">The error message.</param>
