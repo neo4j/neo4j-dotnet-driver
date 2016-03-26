@@ -36,15 +36,14 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(INode other)
         {
+            if (other == null) return false;
+            if (ReferenceEquals(this, other)) return true;
             return Equals(Id, other.Id);
         }
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((Node) obj);
+            return Equals(obj as INode);
         }
 
         public override int GetHashCode()
@@ -74,15 +73,14 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(IRelationship other)
         {
+            if (other == null)
+                if (ReferenceEquals(this, other)) return true;
             return Equals(Id, other.Id);
         }
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((Relationship) obj);
+            return Equals(obj as IRelationship);
         }
 
         public override int GetHashCode()
@@ -134,15 +132,14 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(ISegment other)
         {
+            if (other == null) return false;
+            if (ReferenceEquals(this, other)) return true;
             return Equals(Start, other.Start) && Equals(End, other.End) && Equals(Relationship, other.Relationship);
         }
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((ISegment)obj);
+            return Equals(obj as ISegment);
         }
 
         public override int GetHashCode()
@@ -176,15 +173,14 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(IPath other)
         {
+            if (other == null) return false;
+            if (ReferenceEquals(this, other)) return true;
             return Equals(Start, other.Start) && Relationships.SequenceEqual(other.Relationships);
         }
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((IPath)obj);
+            return Equals(obj as IPath);
         }
 
         public override int GetHashCode()
@@ -192,11 +188,9 @@ namespace Neo4j.Driver.Internal
             unchecked
             {
                 var hashCode = Start?.GetHashCode() ?? 0;
-                hashCode = Relationships?.Aggregate(hashCode, (current, relationship) => (current*397) ^ relationship.GetHashCode()) ?? hashCode;
+                hashCode = Relationships?.Aggregate(hashCode, (current, relationship) => (current * 397) ^ relationship.GetHashCode()) ?? hashCode;
                 return hashCode;
             }
         }
-
-        
     }
 }
