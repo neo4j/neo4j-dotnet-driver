@@ -38,7 +38,7 @@ namespace Neo4j.Driver
         /// </summary>
         string Description { get; }
 
-        ///
+        /// <summary>
         ///The position in the statement where this notification points to.
         ///Not all notifications have a unique position to point to and in that case the position would be set to null.
         /// </summary>
