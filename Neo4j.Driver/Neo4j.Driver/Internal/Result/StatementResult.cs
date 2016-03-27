@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Result
     public class StatementResult : IStatementResult
     {
         private IResultSummary _summary;
-        private readonly IPeekingEnumerator<Record> _enumerator;
+        private IPeekingEnumerator<Record> _enumerator;
         private List<string> _keys;
         private Func<IResultSummary> _getSummary;
         internal long Position => _enumerator.Position;
@@ -105,7 +105,12 @@ namespace Neo4j.Driver.Internal.Result
             {
                 return;
             }
-            Consume();
+            
+            if (_enumerator != null)
+            {
+                _enumerator.Dispose();
+                _enumerator = null;
+            }
         }
 
         public void Dispose()
