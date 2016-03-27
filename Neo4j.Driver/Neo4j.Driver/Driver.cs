@@ -73,7 +73,7 @@ namespace Neo4j.Driver
         ///     Establish a session with Neo4j instance
         /// </summary>
         /// <returns>
-        ///     An <see cref="ISession" /> that could be used to <see cref="ISession.Run" /> a statement or begin a
+        ///     An <see cref="ISession" /> that could be used to <see cref="IStatementRunner.Run(Statement)" /> a statement or begin a
         ///     transaction
         /// </returns>
         public ISession Session()
