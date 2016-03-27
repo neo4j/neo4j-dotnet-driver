@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Internal.Result
         private T _current;
         private bool _hasConsumed = false;
         private int _position = -1;
+        private bool _disposed = false;
         public long Position => _position;
 
         public PeekingEnumerator(IEnumerator<T> enumerator)
@@ -48,6 +49,8 @@ namespace Neo4j.Driver.Internal.Result
 
         public bool MoveNext()
         {
+            if (_disposed) return false;
+
             if (CacheNext())
             {
                 _current = _cached;
@@ -90,11 +93,13 @@ namespace Neo4j.Driver.Internal.Result
 
         public T Peek()
         {
+            if (_disposed) return default(T);
             return CacheNext() ? _cached : null;
         }
 
         public void Consume()
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(PeekingEnumerator<T>));
             if (_hasConsumed)
             {
                 return;
@@ -113,6 +118,7 @@ namespace Neo4j.Driver.Internal.Result
 
         protected virtual void Dispose(bool isDisposing)
         {
+            _disposed = true;
         }
 
         public void Dispose()

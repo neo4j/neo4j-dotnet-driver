@@ -26,7 +26,7 @@ namespace Neo4j.Driver
     /// The records in the result is lazily retrived and could only be visited once.
     /// </summary>
     /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
-    public interface IStatementResult : IEnumerable<IRecord>
+    public interface IStatementResult : IEnumerable<IRecord>, IDisposable
     {
         /// <summary>
         /// Gets the keys in the result

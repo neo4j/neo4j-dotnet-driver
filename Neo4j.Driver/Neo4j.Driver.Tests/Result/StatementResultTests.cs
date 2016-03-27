@@ -385,26 +385,53 @@ namespace Neo4j.Driver.Tests
         public class DisposeMethod
         {
             [Fact]
-            public void ShouldConsumeRecordStream()
+            public void ShouldNotConsumeRecordStream()
             {
                 var result = ResultCreator.CreateResult(1, 2);
 
                 result.Dispose();
 
                 result.AtEnd.Should().BeTrue();
-                result.Position.Should().Be(2);
+                result.Position.Should().Be(-1);
                 result.GetEnumerator().MoveNext().Should().BeFalse();
                 result.GetEnumerator().Current.Should().BeNull();
             }
 
             [Fact]
-            public void ShouldPullSummary()
+            public void ShouldNotPullSummary()
             {
                 int getSummaryCalled = 0;
                 var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
 
                 result.Dispose();
-                getSummaryCalled.Should().Be(1);
+                getSummaryCalled.Should().Be(0);
+            }
+
+            [Fact]
+            public void PeakShouldThrowAfterDispose()
+            {
+                var result = ResultCreator.CreateResult(1, 2);
+                result.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => result.Peek());
+            }
+
+            [Fact]
+            public void ConsumeShouldThrowAfterDispose()
+            {
+                var result = ResultCreator.CreateResult(1, 2);
+                result.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => result.Consume());
+            }
+
+            [Fact]
+            public void SingleShouldThrowAfterDispose()
+            {
+                var result = ResultCreator.CreateResult(1, 2);
+                result.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => result.Single());
             }
         }
 
