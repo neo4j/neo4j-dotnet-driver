@@ -115,15 +115,32 @@ namespace Neo4j.Driver.Tests
         public class DisposeMethod
         {
             [Fact]
-            public void ShouldNotDiscardAfterDispose()
+            public void ShouldDiscardAfterDispose()
             {
                 var list = new List<string> { "1", "2", "3" }.GetEnumerator();
                 var enumerator = new PeekingEnumerator<string>(list);
-                enumerator.MoveNext().Should().BeTrue();
-                enumerator.Consume();
+                enumerator.Dispose();
                 enumerator.MoveNext().Should().BeFalse();
                 enumerator.Peek().Should().BeNull();
-                enumerator.Position.Should().Be(3);
+                enumerator.Position.Should().Be(-1);
+            }
+
+            [Fact]
+            public void PeakShouldReturnDefaultAfterDispose()
+            {
+                var list = new List<string> { "1", "2", "3" }.GetEnumerator();
+                var enumerator = new PeekingEnumerator<string>(list);
+                enumerator.Dispose();
+                enumerator.Peek().Should().Be(null); // null is default(string)
+            }
+
+            [Fact]
+            public void ConsumeShouldThrowAfterDispose()
+            {
+                var list = new List<string> { "1", "2", "3" }.GetEnumerator();
+                var enumerator = new PeekingEnumerator<string>(list);
+                enumerator.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => enumerator.Consume());
             }
         }
     }

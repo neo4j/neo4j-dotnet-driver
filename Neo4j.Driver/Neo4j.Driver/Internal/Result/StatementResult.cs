@@ -28,9 +28,10 @@ namespace Neo4j.Driver.Internal.Result
     public class StatementResult : IStatementResult
     {
         private IResultSummary _summary;
-        private IPeekingEnumerator<Record> _enumerator;
+        private readonly IPeekingEnumerator<Record> _enumerator;
         private List<string> _keys;
         private Func<IResultSummary> _getSummary;
+        private bool _disposed = false;
         internal long Position => _enumerator.Position;
 
         internal StatementResult(string[] keys, IPeekingEnumerator<Record> recordEnumerator)
@@ -72,6 +73,8 @@ namespace Neo4j.Driver.Internal.Result
 
         public IRecord Single()
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(StatementResult));
+
             if (_enumerator.Position >= 0)
             {
                 throw new InvalidOperationException("The first record is already consumed.");
@@ -90,27 +93,28 @@ namespace Neo4j.Driver.Internal.Result
 
         public IRecord Peek()
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(StatementResult));
+
             return _enumerator.Peek();
         }
 
         public IResultSummary Consume()
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(StatementResult));
+
             _enumerator.Consume();
             return Summary;
         }
 
         protected virtual void Dispose(bool isDisposing)
         {
-            if (!isDisposing)
+            if (!isDisposing || _disposed)
             {
                 return;
             }
-            
-            if (_enumerator != null)
-            {
-                _enumerator.Dispose();
-                _enumerator = null;
-            }
+
+            _enumerator.Dispose();
+            _disposed = true;
         }
 
         public void Dispose()
@@ -129,5 +133,4 @@ namespace Neo4j.Driver.Internal.Result
             return GetEnumerator();
         }
     }
-
 }
