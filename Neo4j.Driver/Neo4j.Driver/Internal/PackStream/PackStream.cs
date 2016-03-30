@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections;
+using System.Globalization;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 
@@ -203,7 +204,7 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else if (value is float || value is double || value is decimal)
                 {
-                    Pack(Convert.ToDouble(value));
+                    Pack(Convert.ToDouble(value, CultureInfo.InvariantCulture));
                 }
                 else if (value is char || value is string)
                 {
