@@ -73,8 +73,8 @@ namespace Neo4j.Driver.Internal
 
         public bool Equals(IRelationship other)
         {
-            if (other == null)
-                if (ReferenceEquals(this, other)) return true;
+            if (other == null) return false;
+            if (ReferenceEquals(this, other)) return true;
             return Equals(Id, other.Id);
         }
 
