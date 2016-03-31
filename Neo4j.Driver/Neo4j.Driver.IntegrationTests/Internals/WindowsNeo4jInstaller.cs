@@ -25,7 +25,7 @@ using Neo4j.Driver.Exceptions;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class WindowsNeo4jInstaller : INeo4jInstaller
+    internal class WindowsNeo4jInstaller : INeo4jInstaller
     {
         public DirectoryInfo Neo4jHome { get; private set; }
 

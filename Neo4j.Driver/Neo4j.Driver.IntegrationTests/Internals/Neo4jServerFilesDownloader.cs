@@ -76,7 +76,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 Version,
                 platform.ToString().ToLower(),
                 platformFileExtension
-                );
+            );
 
             var downloadedNew = false;
             long expectedSize;
