@@ -20,7 +20,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Moq;
 using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Internal.Result;
@@ -28,7 +27,62 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    class ResultCreator
+    public class StatementResultTests
+    {
+        private class ListBasedRecordSet : IRecordSet
+    {
+        private readonly IList<Record> _records;
+        private int _recordIndex = 0;
+
+        public ListBasedRecordSet(IList<Record> records)
+        {
+            _records = records;
+        }
+
+        public bool AtEnd
+        {
+            get
+            {
+                return _recordIndex >= _records.Count;
+            }
+        }
+
+        public Record Peek
+        {
+            get
+            {
+                if (_recordIndex >= _records.Count) return null;
+
+                return _records[_recordIndex];
+            }
+        }
+
+        public int Position
+        {
+            get
+            {
+                return _recordIndex - 1;
+            }
+        }
+
+        public IEnumerable<Record> Records
+        {
+            get
+            {
+                if (_recordIndex >= _records.Count) yield break;
+
+                while (_recordIndex < _records.Count)
+                {
+                    yield return _records[_recordIndex++];
+                }
+
+                _recordIndex++;
+                yield break;
+            }
+        }
+    }
+
+        private class ResultCreator
     {
         public static StatementResult CreateResult(int keySize, int recordSize=1, Func<IResultSummary> getSummaryFunc = null)
         {
@@ -50,17 +104,16 @@ namespace Neo4j.Driver.Tests
                 records.Add(new Record(keys.ToArray(), values.ToArray()));
             }
             
-            return new StatementResult(keys.ToArray(), records, getSummaryFunc);
+            return new StatementResult(keys.ToArray(), new ListBasedRecordSet(records), getSummaryFunc);
         }
     }
-    public class StatementResultTests
-    {
+    
         public class Constructor
         {
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfRecordsIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new StatementResult(new string[] {"test"}, (IEnumerable<Record>)null));
+                var ex = Xunit.Record.Exception(() => new StatementResult(new string[] {"test"}, null));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -68,7 +121,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfKeysIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new StatementResult(null, new List<Record>()));
+                var ex = Xunit.Record.Exception(() => new StatementResult(null, new ListBasedRecordSet(new List<Record>())));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -76,31 +129,23 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetKeysProperlyIfKeysNotNull()
             {
-                var result = new StatementResult(new string[] {"test"}, new List<Record>());
+                var result = new StatementResult(new string[] {"test"}, new ListBasedRecordSet(new List<Record>()));
                 result.Keys.Should().HaveCount(1);
                 result.Keys.Should().Contain("test");
-            }
-
-            [Fact]
-            public void ShouldGetEnumeratorFromRecords()
-            {
-                Mock<IEnumerable<Record>> mock = new Mock<IEnumerable<Record>>();
-                var result = new StatementResult(new string[] {"test"}, mock.Object);
-
-                mock.Verify(x => x.GetEnumerator(), Times.Once);
             }
         }
 
         public class ConsumeMethod
         {
+            // INFO: Rewritten because StatementResult no longers takes IPeekingEnumerator in constructor
             [Fact]
-            public void ShouldCallDiscardOnEnumberator()
+            public void ShouldConsumeAllRecords()
             {
-                Mock<IPeekingEnumerator<Record>> mock = new Mock<IPeekingEnumerator<Record>>();
-
-                var result = new StatementResult(new string[] { "test" }, mock.Object);
+                var result = ResultCreator.CreateResult(0, 3);
                 result.Consume();
-                mock.Verify(x => x.Consume(), Times.Once);
+                result.Count().Should().Be(0);
+                result.Peek().Should().BeNull();
+                result.Position.Should().Be(3);
             }
 
             [Fact]
@@ -217,6 +262,30 @@ namespace Neo4j.Driver.Tests
                 }
             }
 
+            private class FuncBasedRecordSet : IRecordSet
+            {
+                private readonly Func<IEnumerable<Record>> _getRecords;
+
+                public FuncBasedRecordSet(Func<IEnumerable<Record>> getRecords)
+                {
+                    _getRecords = getRecords;
+                }
+
+                public bool AtEnd { get { throw new NotImplementedException(); } }
+
+                public Record Peek { get { throw new NotImplementedException(); } }
+
+                public int Position { get { throw new NotImplementedException(); } }
+
+                public IEnumerable<Record> Records
+                {
+                    get
+                    {
+                        return _getRecords();
+                    }
+                }
+            }
+
             public StreamingRecords(ITestOutputHelper output)
             {
                 _output = output;
@@ -226,7 +295,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecords()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var cursor = new StatementResult( TestRecordYielder.Keys, recordYielder.RecordsWithAutoLoad);
+                var cursor = new StatementResult( TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.RecordsWithAutoLoad));
                 var records = cursor.ToList();
                 records.Count.Should().Be(10);
             }
@@ -237,16 +306,16 @@ namespace Neo4j.Driver.Tests
                 var recordYielder = new TestRecordYielder(5, 10, _output);
 
                 int count = 0;
-                var cursor = new StatementResult(TestRecordYielder.Keys, recordYielder.Records);
-                var t =  Task.Factory.StartNew(() =>
-                {
+                var cursor = new StatementResult(TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
+                var t = Task.Factory.StartNew(() =>
+               {
                     // ReSharper disable once LoopCanBeConvertedToQuery
                     foreach (var item in cursor)
-                    {
-                        count++;
-                    }
-                    count.Should().Be(10);
-                });
+                   {
+                       count++;
+                   }
+                   count.Should().Be(10);
+               });
 
                 while (count < 5)
                 {
@@ -261,7 +330,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecordsImmediatelyWhenReady()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var result = new StatementResult(TestRecordYielder.Keys, recordYielder.Records);
+                var result = new StatementResult(TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
                 var temp = result.Take(5);
                 var records = temp.ToList();
                 records.Count.Should().Be(5);
@@ -319,10 +388,11 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowInvalidOperationExceptionIfNoRecordFound()
             {
-                var result = new StatementResult(new [] { "test" }, new List<Record>());
+                var result = new StatementResult(new [] { "test" }, new ListBasedRecordSet(new List<Record>()));
                 var ex = Xunit.Record.Exception(() => result.Single());
                 ex.Should().BeOfType<InvalidOperationException>();
-                ex.Message.Should().Be("No record found.");
+                // INFO: Changed message because use of Enumerable.Single for simpler implementation 
+                ex.Message.Should().Be("Sequence contains no elements");
             }
 
             [Fact]
@@ -331,7 +401,8 @@ namespace Neo4j.Driver.Tests
                 var result = ResultCreator.CreateResult(1, 2);
                 var ex = Xunit.Record.Exception(() => result.Single());
                 ex.Should().BeOfType<InvalidOperationException>();
-                ex.Message.Should().Be("More than one record found.");
+                // INFO: Changed message because use of Enumerable.Single for simpler implementation 
+                ex.Message.Should().Be("Sequence contains more than one element");
             }
 
             [Fact]
