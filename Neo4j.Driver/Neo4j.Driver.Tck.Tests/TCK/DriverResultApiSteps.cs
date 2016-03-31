@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Result;
 using TechTalk.SpecFlow;
-using Xunit;
 
 namespace Neo4j.Driver.Tck.Tests
 {
@@ -72,15 +71,24 @@ namespace Neo4j.Driver.Tck.Tests
             foreach (var row in table.Rows)
             {
                 var objType = counters.GetType();
-                TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
-                
-                var propName = textInfo.ToTitleCase(row["counter"]).Replace(" ", string.Empty);
+                var propName = ToCamelCase(row["counter"]);
 
                 var actual = objType.GetProperty(propName).GetValue(counters);
                 actual.ToString().ToLower().Should().Be(row["result"]);
             }
         }
-        
+
+        private string ToCamelCase(string input)
+        {
+            var strings = input.Split(' ');
+            for (var i = 0; i < strings.Length; i++)
+            {
+                var s = strings[i];
+                strings[i] = s.Substring(0, 1).ToUpper() + s.Substring(1, s.Length - 1);
+            }
+            return string.Join("", strings);
+        }
+
         [Then(@"requesting the `Statement Type` should give (.*)")]
         public void ThenRequestingTheStatementTypeShouldGive(string expected)
         {
@@ -123,7 +131,7 @@ namespace Neo4j.Driver.Tck.Tests
             summary.Profile.Should().BeNull();
         }
         
-        [Then(@"requesting the `(.*)` it contains")]
+        [Then(@"requesting the `(.*)` it contains:")]
         public void ThenRequestingThePlanItContains(string type, Table table)
         {
             object plan = ParsePlanOrProfile(type);
@@ -188,9 +196,7 @@ namespace Neo4j.Driver.Tck.Tests
         private object GetPropertyValue(object obj, string key)
         {
             var objType = obj.GetType();
-            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
-
-            var propName = textInfo.ToTitleCase(key).Replace(" ", string.Empty);
+            var propName = ToCamelCase(key);
 
             return objType.GetProperty(propName).GetValue(obj);
         }
@@ -221,10 +227,27 @@ namespace Neo4j.Driver.Tck.Tests
         {
             var summary = ScenarioContext.Current.Get<IResultSummary>();
             var notifications = summary.Notifications;
+            notifications.Count.Should().BeGreaterOrEqualTo(1);
+            var notification = notifications[0];
             foreach (var row in table.Rows)
             {
-                var actual = GetPropertyValue(notifications, row[0]);
-                row[1].Should().Be(actual.ToString());
+                var actual = GetPropertyValue(notification, row[0]);
+                if (row[1] == "{\"offset\": 0,\"line\": 1,\"column\": 1}")
+                {
+                    actual.Should().BeOfType<InputPosition>();
+                    IInputPosition pos = (IInputPosition) actual;
+                    pos.Offset.Should().Be(0);
+                    pos.Line.Should().Be(1);
+                    pos.Column.Should().Be(1);
+                }
+                else if(row[1].StartsWith("\"") && row[1].EndsWith("\""))
+                {
+                    row[1].Substring(1, row[1].Length-2).Should().Be(actual.ToString());
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Cannot understand value {row[1]} in the feature file.");
+                }
             }
         }
     }

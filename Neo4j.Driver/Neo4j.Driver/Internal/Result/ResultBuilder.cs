@@ -224,7 +224,8 @@ namespace Neo4j.Driver.Internal.Result
                     (int)posValue.GetValue("offset", 0L),
                     (int)posValue.GetValue("line", 0L),
                     (int)posValue.GetValue("column", 0L));
-                notifications.Add(new Notification(code, title, description, position));
+                var severity = value.GetValue("severity", string.Empty);
+                notifications.Add(new Notification(code, title, description, position, severity));
             }
             _summaryBuilder.Notifications = notifications;
         }

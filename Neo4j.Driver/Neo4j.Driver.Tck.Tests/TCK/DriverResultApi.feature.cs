@@ -589,7 +589,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                         "operator type",
                         "ProduceResults"});
 #line 225
-    testRunner.And("requesting the `Plan` it contains", ((string)(null)), table8, "And ");
+    testRunner.And("requesting the `Plan` it contains:", ((string)(null)), table8, "And ");
 #line hidden
             TechTalk.SpecFlow.Table table9 = new TechTalk.SpecFlow.Table(new string[] {
                         "plan method",

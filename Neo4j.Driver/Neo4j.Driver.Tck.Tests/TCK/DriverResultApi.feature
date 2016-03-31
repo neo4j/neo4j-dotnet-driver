@@ -222,7 +222,7 @@ Feature: Tests the uniform API of the driver
     When the `Statement Result` is consumed a `Result Summary` is returned
     Then the `Result Summary` has a `Plan`
     And the `Result Summary` does not have a `Profile`
-    And requesting the `Plan` it contains
+    And requesting the `Plan` it contains:
       | plan method   | result           |
       | operator type | ProduceResults   |
     And the `Plan` also contains method calls for:
