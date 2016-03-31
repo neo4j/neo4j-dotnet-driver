@@ -18,6 +18,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     [System.CodeDom.Compiler.GeneratedCodeAttribute("TechTalk.SpecFlow", "2.0.0.0")]
     [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "match_acceptance")]
+    [Xunit.TraitAttribute("Category", "reset_database")]
     public partial class MatchAcceptanceTestFeature : Xunit.IClassFixture<MatchAcceptanceTestFeature.FixtureData>, System.IDisposable
     {
         
@@ -35,7 +36,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             testRunner = TechTalk.SpecFlow.TestRunnerManager.GetTestRunner();
             TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "MatchAcceptanceTest", null, ProgrammingLanguage.CSharp, new string[] {
-                        "match_acceptance"});
+                        "match_acceptance",
+                        "reset_database"});
             testRunner.OnFeatureStart(featureInfo);
         }
         

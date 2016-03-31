@@ -18,7 +18,6 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     [System.CodeDom.Compiler.GeneratedCodeAttribute("TechTalk.SpecFlow", "2.0.0.0")]
     [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "auth")]
-    [Xunit.TraitAttribute("Category", "in_dev")]
     public partial class AuthenticationForDriversFeature : Xunit.IClassFixture<AuthenticationForDriversFeature.FixtureData>, System.IDisposable
     {
         
@@ -36,8 +35,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             testRunner = TechTalk.SpecFlow.TestRunnerManager.GetTestRunner();
             TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Authentication for drivers", null, ProgrammingLanguage.CSharp, new string[] {
-                        "auth",
-                        "in_dev"});
+                        "auth"});
             testRunner.OnFeatureStart(featureInfo);
         }
         

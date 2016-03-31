@@ -1,4 +1,4 @@
-﻿@auth @in_dev
+﻿@auth
 Feature: Authentication for drivers
 
   Scenario: Should be able to start and run against database with driver auth enabled and correct password is provided

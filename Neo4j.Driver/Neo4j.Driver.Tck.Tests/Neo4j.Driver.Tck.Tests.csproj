@@ -89,6 +89,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="TCK\DriverResultApiSteps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TCK\DriverAuthSteps.cs" />
     <Compile Include="TCK\ChunkingDechunking.feature.cs">
@@ -103,6 +104,17 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>DriverAuth.feature</DependentUpon>
+    </Compile>
+    <Compile Include="TCK\DriverEquals.feature.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DriverEquals.feature</DependentUpon>
+    </Compile>
+    <Compile Include="TCK\DriverEqualsFeatureSteps.cs" />
+    <Compile Include="TCK\DriverResultApi.feature.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DriverResultApi.feature</DependentUpon>
     </Compile>
     <Compile Include="TCK\MatchAcceptanceTest.feature.cs">
       <AutoGen>True</AutoGen>
@@ -129,6 +141,14 @@
     <None Include="TCK\DriverAuth.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>
       <LastGenOutput>DriverAuth.feature.cs</LastGenOutput>
+    </None>
+    <None Include="TCK\DriverEquals.feature">
+      <Generator>SpecFlowSingleFileGenerator</Generator>
+      <LastGenOutput>DriverEquals.feature.cs</LastGenOutput>
+    </None>
+    <None Include="TCK\DriverResultApi.feature">
+      <Generator>SpecFlowSingleFileGenerator</Generator>
+      <LastGenOutput>DriverResultApi.feature.cs</LastGenOutput>
     </None>
     <None Include="TCK\MatchAcceptanceTest.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>
