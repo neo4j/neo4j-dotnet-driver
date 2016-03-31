@@ -1,0 +1,147 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using FluentAssertions;
+using Neo4j.Driver.Exceptions;
+using Neo4j.Driver.Internal;
+using TechTalk.SpecFlow;
+using Xunit;
+using Path = System.IO.Path;
+
+namespace Neo4j.Driver.Tck.Tests.TCK
+{
+    [Binding]
+    public class DriverAuthSteps : TckStepsBase
+    {
+        private static void RestartServerWithUpdatedSettings(IDictionary<string, string> keyValuePair)
+        {
+            try
+            {
+                _installer.StopServer();
+                _installer.UpdateSettings(keyValuePair);
+                _installer.StartServer();
+            }
+            catch
+            {
+                try { StopServer(); } catch { /*Do nothing*/ }
+                throw;
+            }
+        }
+
+        private static void StopServer()
+        {
+            try
+            {
+                _installer.StopServer();
+            }
+            catch
+            {
+                // ignored
+            }
+            _installer.UninstallServer();
+        }
+
+        private static string _authFilePath;
+
+        [BeforeFeature("@auth")]
+        public static void ChangeDefaultPasswordAndDriver()
+        {
+            DisposeDriver();
+            _authFilePath = Path.Combine(_installer.Neo4jHome.FullName, "dbms/auth");
+            if (File.Exists(_authFilePath))
+            {
+                File.Delete(_authFilePath);
+            }
+            RestartServerWithUpdatedSettings(new Dictionary<string, string>
+            {
+                {"dbms.security.auth_enabled", "true"}
+            });
+            using (var driver = GraphDatabase.Driver(Url, AuthTokens.Basic("neo4j", "neo4j"),
+                Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Trace}).ToConfig()))
+            {
+                using (var session = driver.Session())
+                {
+                    var exception = Record.Exception(() => session.Run("CREATE () RETURN 2 as Number").ToList());
+                    exception.Should().BeOfType<ClientException>();
+                    exception.Message.Should().StartWith("The credentials you provided were valid");
+                }
+            }
+            // update auth and run something
+            using (var driver = GraphDatabase.Driver(
+                Url,
+                new AuthToken(new Dictionary<string, object>
+                {
+                    {"scheme", "basic"},
+                    {"principal", "neo4j"},
+                    {"credentials", "neo4j"},
+                    {"new_credentials", "lala"}
+                }),
+                Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Trace}).ToConfig()))
+            using (var session = driver.Session())
+            {
+                var resultCursor = session.Run("RETURN 1 as Number");
+                resultCursor.Keys.Should().Contain("Number");
+                resultCursor.Keys.Count.Should().Be(1);
+            }
+        }
+
+        [AfterFeature("@auth")]
+        public static void RestoreDefaultPasswordAndDriver()
+        {
+            File.Delete(_authFilePath);
+            RestartServerWithUpdatedSettings(new Dictionary<string, string>
+            {
+                {"dbms.security.auth_enabled", "false"}
+            });
+            CreateNewDriver();
+        }
+
+        [Given(@"a driver is configured with auth enabled and correct password is provided")]
+        public void GivenADriverIsConfiguredWithAuthEnabledAndCorrectPasswordIsProvided()
+        {
+            var driverWithCorrectPassword = GraphDatabase.Driver(Url, AuthTokens.Basic("neo4j", "lala"));
+            ScenarioContext.Current.Set(driverWithCorrectPassword);
+        }
+        
+        [Given(@"a driver is configured with auth enabled and the wrong password is provided")]
+        public void GivenADriverIsConfiguredWithAuthEnabledAndTheWrongPasswordIsProvided()
+        {
+            var driverWithIncorrectPassword = GraphDatabase.Driver(Url, AuthTokens.Basic("neo4j", "toufu"));
+            ScenarioContext.Current.Set(driverWithIncorrectPassword);
+        }
+        
+        [Then(@"reading and writing to the database should be possible")]
+        public void ThenReadingAndWritingToTheDatabaseShouldBePossible()
+        {
+            var driver = ScenarioContext.Current.Get<Driver>();
+            using (driver)
+            using (var session = driver.Session())
+            {
+                var result = session.Run("CREATE () RETURN 2 as Number");
+                result.Keys.Should().Contain("Number");
+                result.Keys.Count.Should().Be(1);
+                result.Single()["Number"].As<int>().Should().Be(2);
+            }
+        }
+
+        [Then(@"reading and writing to the database should not be possible")]
+        public void ThenReadingAndWritingToTheDatabaseShouldNotBePossible()
+        {
+            var driver = ScenarioContext.Current.Get<Driver>();
+            using (driver)
+            using (var session = driver.Session())
+            {
+                var exception = Record.Exception(() => session.Run("CREATE () RETURN 2 as Number"));
+                exception.Should().BeOfType<ClientException>();
+                exception.Message.Should().StartWith("The client is unauthorized due to authentication failure");
+            }
+        }
+        
+        [Then(@"a `Protocol Error` is raised")]
+        public void ThenAProtocolErrorIsRaised()
+        {
+            // the check is done in ThenReadingAndWritingToTheDatabaseShouldNotBePossible
+        }
+    }
+}

@@ -81,6 +81,16 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 }
             }
         }
+
+      protected static void DisposeDriver()
+      {
+          Driver?.Dispose();
+      }
+
+      protected static void CreateNewDriver()
+      {
+            Driver = GraphDatabase.Driver(Url);
+        }
     }
 
     [Binding]
@@ -89,7 +99,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         private IStatementResult _statementResult;
 
         [BeforeTestRun]
-        public static void GlobalBeforeScenario()
+        public static void GlobalBeforeTestRun()
         {
             _installer = new WindowsNeo4jInstaller();
             _installer.DownloadNeo4j();
@@ -102,7 +112,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             {
                 try
                 {
-                    AfterScenario();
+                    GlobalAfterTestRun();
                 }
                 catch
                 {
@@ -110,15 +120,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 }
                 throw;
             }
-            var config = Config.DefaultConfig;
-            config.MaxIdleSessionPoolSize = Config.InfiniteMaxIdleSessionPoolSize;
-            Driver = GraphDatabase.Driver(Url, config);
+            CreateNewDriver();
         }
 
         [AfterTestRun]
-        public static void AfterScenario()
+        public static void GlobalAfterTestRun()
         {
-            Driver?.Dispose();
+            DisposeDriver();
 
             try
             {

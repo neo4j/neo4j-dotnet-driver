@@ -64,7 +64,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void ShouldEstablishConnectionWhenAuthEnabled()
         {
-            var authFilePath = Path.Combine(fixture.Neo4jHome, "data/dbms/auth");
+            var authFilePath = Path.Combine(fixture.Neo4jHome, "dbms/auth");
             if (File.Exists(authFilePath))
             {
                 File.Delete(authFilePath);
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.IntegrationTests
                 {
                     using (var session = driver.Session())
                     {
-                       var exception = Record.Exception(() => session.Run("CREATE () RETURN 2 as Number").ToList());
+                        var exception = Record.Exception(() => session.Run("CREATE () RETURN 2 as Number").ToList());
                         exception.Should().BeOfType<ClientException>();
                         exception.Message.Should().StartWith("The credentials you provided were valid");
                     }
@@ -98,10 +98,23 @@ namespace Neo4j.Driver.IntegrationTests
                     Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
                 using (var session = driver.Session())
                 {
-                    var resultCursor = session.Run("RETURN 2 as Number");
+                    var resultCursor = session.Run("RETURN 1 as Number");
                     resultCursor.Keys.Should().Contain("Number");
                     resultCursor.Keys.Count.Should().Be(1);
                 }
+
+                // create a new driver and use new credentials
+                using (var driver = GraphDatabase.Driver(
+                    ServerEndPoint, AuthTokens.Basic("neo4j", "lala"),
+                    Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+                using (var session = driver.Session())
+                {
+                    var resultCursor = session.Run("CREATE () RETURN 2 as Number");
+                    resultCursor.Keys.Should().Contain("Number");
+                    resultCursor.Keys.Count.Should().Be(1);
+                    resultCursor.Single()["Number"].As<int>().Should().Be(2);
+                }
+
             }
             finally
             {
