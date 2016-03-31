@@ -3,6 +3,7 @@
 namespace Neo4j.Driver.Internal.Result
 {
     // TODO: Document me
+    // TODO: Should this be IDisposable??
     public interface IRecordSet
     {
         bool AtEnd { get; }

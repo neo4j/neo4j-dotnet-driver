@@ -23,7 +23,7 @@ using static Neo4j.Driver.StatementType;
 using System;
 
 namespace Neo4j.Driver.Internal.Result
-{
+{ 
     public class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
@@ -270,6 +270,7 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
+        // TODO: Verify that there are meaningfull unittests for this
         private class RecordSet : IRecordSet
         {
             private readonly Func<IEnumerable<Record>> _getRecords;
