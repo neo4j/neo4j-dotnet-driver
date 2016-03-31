@@ -61,7 +61,6 @@ namespace Neo4j.Driver
                 return;
             _sessionPool?.Dispose();
             _sessionPool = null;
-            Logger?.Dispose();
         }
 
         /// <summary>
