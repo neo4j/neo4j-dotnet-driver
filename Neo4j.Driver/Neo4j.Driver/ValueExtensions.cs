@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Neo4j.Driver.Exceptions;
@@ -77,11 +78,11 @@ namespace Neo4j.Driver
             }
             if (targetType == typeof (float))
             {
-                return Convert.ToSingle(value).AsItIs<T>();
+                return Convert.ToSingle(value, CultureInfo.InvariantCulture).AsItIs<T>();
             }
             if (targetType == typeof (double))
             {
-                return Convert.ToDouble(value).AsItIs<T>();
+                return Convert.ToDouble(value, CultureInfo.InvariantCulture).AsItIs<T>();
             }
             if (targetType == typeof (sbyte))
             {
