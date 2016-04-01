@@ -149,8 +149,10 @@ Feature: Tests the uniform API of the driver
       | constraints added     | 0      |
       | constraints removed   | 0      |
       | contains updates      | true   |
+	And running: DROP INDEX on :Label(prop)
 
   Scenario: Access Update Statistics and check delete index
+    Given init: CREATE INDEX on :Label(prop)
     Given running: DROP INDEX on :Label(prop)
     When the `Statement Result` is consumed a `Result Summary` is returned
     Then requesting `Counters` from `Result Summary` should give
@@ -185,8 +187,10 @@ Feature: Tests the uniform API of the driver
       | constraints added     | 1      |
       | constraints removed   | 0      |
       | contains updates      | true   |
+	Then running: DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
 
   Scenario: Access Update Statistics and check delete constraint
+    Given init: CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
     Given running: DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
     When the `Statement Result` is consumed a `Result Summary` is returned
     Then requesting `Counters` from `Result Summary` should give
@@ -208,7 +212,6 @@ Feature: Tests the uniform API of the driver
     Given running: <statement>
     When the `Statement Result` is consumed a `Result Summary` is returned
     Then requesting the `Statement Type` should give <type>
-
     Examples:
       | type         | statement                            |
       | read only    | RETURN 1                             |

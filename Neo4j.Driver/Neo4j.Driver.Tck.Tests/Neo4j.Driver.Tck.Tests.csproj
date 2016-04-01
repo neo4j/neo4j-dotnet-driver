@@ -122,6 +122,7 @@
       <DependentUpon>MatchAcceptanceTest.feature</DependentUpon>
     </Compile>
     <Compile Include="TCK\MatchAcceptanceTestSteps.cs" />
+    <Compile Include="TCK\TckStepsBase.cs" />
     <Compile Include="TCK\TypeSystem.feature.cs">
       <DependentUpon>TypeSystem.feature</DependentUpon>
       <AutoGen>True</AutoGen>

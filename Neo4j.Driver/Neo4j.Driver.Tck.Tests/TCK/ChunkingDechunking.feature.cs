@@ -10,7 +10,7 @@
 // ------------------------------------------------------------------------------
 #region Designer generated code
 #pragma warning disable
-namespace Neo4j.Driver.IntegrationTests.TCK
+namespace Neo4j.Driver.Tck.Tests.TCK
 {
     using TechTalk.SpecFlow;
     
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.IntegrationTests.TCK
 #line 20
   this.ScenarioSetup(scenarioInfo);
 #line 21
-    testRunner.Given(string.Format("a _list of size 1000 and type {0}", type), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+    testRunner.Given(string.Format("a List of size 1000 and type {0}", type), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line 22
     testRunner.When("the driver asks the server to echo this value back", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 23
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.IntegrationTests.TCK
 #line 32
   this.ScenarioSetup(scenarioInfo);
 #line 33
-    testRunner.Given(string.Format("a _map of size 1000 and type {0}", type), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+    testRunner.Given(string.Format("a Map of size 1000 and type {0}", type), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line 34
     testRunner.When("the driver asks the server to echo this value back", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 35

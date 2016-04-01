@@ -18,9 +18,9 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             try
             {
-                _installer.StopServer();
-                _installer.UpdateSettings(keyValuePair);
-                _installer.StartServer();
+                Installer.StopServer();
+                Installer.UpdateSettings(keyValuePair);
+                Installer.StartServer();
             }
             catch
             {
@@ -33,13 +33,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             try
             {
-                _installer.StopServer();
+                Installer.StopServer();
             }
             catch
             {
                 // ignored
             }
-            _installer.UninstallServer();
+            Installer.UninstallServer();
         }
 
         private static string _authFilePath;
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public static void ChangeDefaultPasswordAndDriver()
         {
             DisposeDriver();
-            _authFilePath = Path.Combine(_installer.Neo4jHome.FullName, "dbms/auth");
+            _authFilePath = Path.Combine(Installer.Neo4jHome.FullName, "dbms/auth");
             if (File.Exists(_authFilePath))
             {
                 File.Delete(_authFilePath);

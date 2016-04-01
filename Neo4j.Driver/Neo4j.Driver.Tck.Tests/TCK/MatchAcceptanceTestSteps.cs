@@ -10,7 +10,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     [Binding]
     public class MatchAcceptanceTestSteps: TckStepsBase
     {
-        private static readonly CypherRecordParser Parser = new CypherRecordParser();
+        private readonly CypherRecordParser _parser = new CypherRecordParser();
 
         [Given(@"init: (.*)$")]
         public void GivenInit(string statement)
@@ -43,11 +43,17 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             WhenRunning(statement);
         }
 
+        [Then(@"running: (.*)$")]
+        public void ThenRunning(string statement)
+        {
+            WhenRunning(statement);
+        }
+
         [When(@"running parametrized: (.*)$")]
         public void WhenRunningParameterized(string statement, Table table)
         {
             table.RowCount.Should().Be(1);
-            var dict = table.Rows[0].Keys.ToDictionary<string, string, object>(key => key, key => Parser.Parse(table.Rows[0][key]));
+            var dict = table.Rows[0].Keys.ToDictionary<string, string, object>(key => key, key => _parser.Parse(table.Rows[0][key]));
 
             using (var session = Driver.Session())
             {
@@ -77,7 +83,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var records = new List<IRecord>();
             foreach (var row in table.Rows)
             {
-                records.Add( new Record(row.Keys.ToArray(), row.Values.Select(value => Parser.Parse(value)).ToArray()));
+                records.Add( new Record(row.Keys.ToArray(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
             }
             var resultCursor = ScenarioContext.Current.Get<IStatementResult>();
             AssertRecordsAreTheSame(resultCursor.ToList(), records);

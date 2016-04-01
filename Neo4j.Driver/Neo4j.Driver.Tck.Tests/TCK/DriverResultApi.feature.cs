@@ -364,6 +364,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                         "true"});
 #line 138
     testRunner.Then("requesting `Counters` from `Result Summary` should give", ((string)(null)), table4, "Then ");
+#line 152
+ testRunner.And("running: DROP INDEX on :Label(prop)", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             this.ScenarioCleanup();
         }
@@ -374,11 +376,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void AccessUpdateStatisticsAndCheckDeleteIndex()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Access Update Statistics and check delete index", ((string[])(null)));
-#line 153
-  this.ScenarioSetup(scenarioInfo);
 #line 154
-    testRunner.Given("running: DROP INDEX on :Label(prop)", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+  this.ScenarioSetup(scenarioInfo);
 #line 155
+    testRunner.Given("init: CREATE INDEX on :Label(prop)", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 156
+    testRunner.Given("running: DROP INDEX on :Label(prop)", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 157
     testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
             TechTalk.SpecFlow.Table table5 = new TechTalk.SpecFlow.Table(new string[] {
@@ -420,7 +424,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table5.AddRow(new string[] {
                         "contains updates",
                         "true"});
-#line 156
+#line 158
     testRunner.Then("requesting `Counters` from `Result Summary` should give", ((string)(null)), table5, "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -432,11 +436,11 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void AccessUpdateStatisticsAndCheckCreateConstraint()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Access Update Statistics and check create constraint", ((string[])(null)));
-#line 171
-  this.ScenarioSetup(scenarioInfo);
-#line 172
-    testRunner.Given("running: CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line 173
+  this.ScenarioSetup(scenarioInfo);
+#line 174
+    testRunner.Given("running: CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 175
     testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
             TechTalk.SpecFlow.Table table6 = new TechTalk.SpecFlow.Table(new string[] {
@@ -478,8 +482,10 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table6.AddRow(new string[] {
                         "contains updates",
                         "true"});
-#line 174
+#line 176
     testRunner.Then("requesting `Counters` from `Result Summary` should give", ((string)(null)), table6, "Then ");
+#line 190
+ testRunner.Then("running: DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
         }
@@ -490,11 +496,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void AccessUpdateStatisticsAndCheckDeleteConstraint()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Access Update Statistics and check delete constraint", ((string[])(null)));
-#line 189
+#line 192
   this.ScenarioSetup(scenarioInfo);
-#line 190
+#line 193
+    testRunner.Given("init: CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 194
     testRunner.Given("running: DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 191
+#line 195
     testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
             TechTalk.SpecFlow.Table table7 = new TechTalk.SpecFlow.Table(new string[] {
@@ -536,7 +544,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table7.AddRow(new string[] {
                         "contains updates",
                         "true"});
-#line 192
+#line 196
     testRunner.Then("requesting `Counters` from `Result Summary` should give", ((string)(null)), table7, "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -553,13 +561,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void AccessStatementType(string type, string statement, string[] exampleTags)
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Access Statement Type", exampleTags);
-#line 207
+#line 211
   this.ScenarioSetup(scenarioInfo);
-#line 208
+#line 212
     testRunner.Given(string.Format("running: {0}", statement), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 209
+#line 213
     testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line 210
+#line 214
     testRunner.Then(string.Format("requesting the `Statement Type` should give {0}", type), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -571,15 +579,15 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void CheckThatPlanAndNoProfileIsAvailable()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Check that plan and no profile is available", ((string[])(null)));
-#line 220
-  this.ScenarioSetup(scenarioInfo);
-#line 221
-    testRunner.Given("running: EXPLAIN CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 222
-    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 223
-    testRunner.Then("the `Result Summary` has a `Plan`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+  this.ScenarioSetup(scenarioInfo);
 #line 224
+    testRunner.Given("running: EXPLAIN CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 225
+    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 226
+    testRunner.Then("the `Result Summary` has a `Plan`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 227
     testRunner.And("the `Result Summary` does not have a `Profile`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             TechTalk.SpecFlow.Table table8 = new TechTalk.SpecFlow.Table(new string[] {
@@ -588,7 +596,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table8.AddRow(new string[] {
                         "operator type",
                         "ProduceResults"});
-#line 225
+#line 228
     testRunner.And("requesting the `Plan` it contains:", ((string)(null)), table8, "And ");
 #line hidden
             TechTalk.SpecFlow.Table table9 = new TechTalk.SpecFlow.Table(new string[] {
@@ -603,7 +611,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table9.AddRow(new string[] {
                         "arguments",
                         "map of string, values"});
-#line 228
+#line 231
     testRunner.And("the `Plan` also contains method calls for:", ((string)(null)), table9, "And ");
 #line hidden
             this.ScenarioCleanup();
@@ -615,15 +623,15 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void CheckThatNoPlanOrNoProfileIsAvailable()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Check that no plan or no profile is available", ((string[])(null)));
-#line 234
-  this.ScenarioSetup(scenarioInfo);
-#line 235
-    testRunner.Given("running: CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 236
-    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 237
-    testRunner.Then("the `Result Summary` does not have a `Plan`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+  this.ScenarioSetup(scenarioInfo);
 #line 238
+    testRunner.Given("running: CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 239
+    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 240
+    testRunner.Then("the `Result Summary` does not have a `Plan`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 241
     testRunner.And("the `Result Summary` does not have a `Profile`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             this.ScenarioCleanup();
@@ -635,15 +643,15 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void CheckThatPlanAndProfileIsAvailable()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Check that plan and profile is available", ((string[])(null)));
-#line 240
-  this.ScenarioSetup(scenarioInfo);
-#line 241
-    testRunner.Given("running: PROFILE CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 242
-    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 243
-    testRunner.Then("the `Result Summary` has a `Profile`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+  this.ScenarioSetup(scenarioInfo);
 #line 244
+    testRunner.Given("running: PROFILE CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 245
+    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 246
+    testRunner.Then("the `Result Summary` has a `Profile`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 247
     testRunner.And("the `Result Summary` has a `Plan`", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             TechTalk.SpecFlow.Table table10 = new TechTalk.SpecFlow.Table(new string[] {
@@ -658,7 +666,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table10.AddRow(new string[] {
                         "records",
                         "1"});
-#line 245
+#line 248
     testRunner.And("requesting the `Profile` it contains:", ((string)(null)), table10, "And ");
 #line hidden
             TechTalk.SpecFlow.Table table11 = new TechTalk.SpecFlow.Table(new string[] {
@@ -673,7 +681,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table11.AddRow(new string[] {
                         "arguments",
                         "map of string, values"});
-#line 250
+#line 253
     testRunner.And("the `Profile` also contains method calls for:", ((string)(null)), table11, "And ");
 #line hidden
             this.ScenarioCleanup();
@@ -685,13 +693,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void CheckThatNoNotificationIsAvailable()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Check that no notification is available", ((string[])(null)));
-#line 257
-  this.ScenarioSetup(scenarioInfo);
-#line 258
-    testRunner.Given("running: CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 259
-    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line 260
+  this.ScenarioSetup(scenarioInfo);
+#line 261
+    testRunner.Given("running: CREATE (n) RETURN n", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 262
+    testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line 263
     testRunner.Then("the `Result Summary` `Notifications` is empty", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             this.ScenarioCleanup();
@@ -703,11 +711,11 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public virtual void CheckThatNotificationsAreAvailable()
         {
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Check that notifications are available", ((string[])(null)));
-#line 263
+#line 266
   this.ScenarioSetup(scenarioInfo);
-#line 264
+#line 267
     testRunner.Given("running: EXPLAIN MATCH (n),(m) RETURN n,m", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line 265
+#line 268
     testRunner.When("the `Statement Result` is consumed a `Result Summary` is returned", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
             TechTalk.SpecFlow.Table table12 = new TechTalk.SpecFlow.Table(new string[] {
@@ -728,7 +736,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table12.AddRow(new string[] {
                         "position",
                         "{\"offset\": 0,\"line\": 1,\"column\": 1}"});
-#line 266
+#line 269
     testRunner.Then("the `Result Summary` `Notifications` has one notification with", ((string)(null)), table12, "Then ");
 #line hidden
             this.ScenarioCleanup();

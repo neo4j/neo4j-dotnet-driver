@@ -16,7 +16,6 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.IntegrationTests.TCK;
 using TechTalk.SpecFlow;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
@@ -27,10 +26,11 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Given(@"a String of size (.*)")]
         public void GivenAStringOfSize(int stringLength)
         {
-            _expected = new string('a', stringLength);
+            ScenarioContext.Current.Set( new string('a', stringLength),
+               DriverTypesTestEchoingSingleParameterSteps.KeyExpected);
         }
 
-        [Given(@"a _list of size (.*) and type (.*)")]
+        [Given(@"a List of size (.*) and type (.*)")]
         public void GivenAListOfSizeAndTypeNull(int size, string type)
         {
             string value;
@@ -60,10 +60,11 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             {
                 list.Add(itemInList);
             }
-            _list = list;
+            ScenarioContext.Current.Set(list,
+                DriverTypesTestEchoingSingleParameterSteps.KeyExpected);
         }
 
-        [Given(@"a _map of size (.*) and type (.*)")]
+        [Given(@"a Map of size (.*) and type (.*)")]
         public void GivenAMapOfSizeAndTypeNull(int size, string type)
         {
             string value;
@@ -93,7 +94,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             {
                 dict.Add("Key" + i, itemInMap);
             }
-            _map = dict;
+            ScenarioContext.Current.Set(dict,
+                DriverTypesTestEchoingSingleParameterSteps.KeyExpected);
         }
     }
 }
