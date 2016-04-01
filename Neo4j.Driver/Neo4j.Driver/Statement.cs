@@ -32,9 +32,9 @@ namespace Neo4j.Driver
         }
          
         /// <summary>
-        /// Gets the statement's template.
+        /// Gets the statement's text.
         /// </summary>
-        public string Template { get; }
+        public string Text { get; }
         /// <summary>
         /// Gets the statement's parameters.
         /// </summary>
@@ -43,17 +43,17 @@ namespace Neo4j.Driver
         /// <summary>
         /// Create a statemete
         /// </summary>
-        /// <param name="template">The statement's template</param>
+        /// <param name="text">The statement's text</param>
         /// <param name="parameters">The statement's parameters, whoes values should not be changed while the statement is used in a session/transaction.</param>
-        public Statement(string template, IDictionary<string, object> parameters = null)
+        public Statement(string text, IDictionary<string, object> parameters = null)
         {
-            Template = template;
+            Text = text;
             Parameters = parameters ?? NoParameter;
         }
 
         public override string ToString()
         {
-            return $"`{Template}`, {Parameters.ToContentString()}";
+            return $"`{Text}`, {Parameters.ToContentString()}";
         }
     }
 
