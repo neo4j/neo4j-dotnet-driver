@@ -107,6 +107,7 @@ namespace Neo4j.Driver.Internal.Result
             _position ++;
             _cached = null;
             _current = null;
+            _enumerator.Dispose();
             _enumerator = null;
             _hasConsumed = true;
         }
