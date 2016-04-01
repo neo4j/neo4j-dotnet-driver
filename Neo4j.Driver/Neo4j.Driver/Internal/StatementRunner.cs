@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Internal
 
         public IStatementResult Run(Statement statement)
         {
-            return Run(statement.Template, statement.Parameters);
+            return Run(statement.Text, statement.Parameters);
         }
 
         public IStatementResult Run(string statement, object parameters)
