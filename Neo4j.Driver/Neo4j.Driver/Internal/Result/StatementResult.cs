@@ -25,10 +25,10 @@ namespace Neo4j.Driver.Internal.Result
     /// <summary>
     /// The result returned from the Neo4j instance
     /// </summary>
-    public class StatementResult : IStatementResult
+    public class StatementResult : IStatementResult, IDisposable
     {
         private IResultSummary _summary;
-        private readonly IPeekingEnumerator<Record> _enumerator;
+        private IPeekingEnumerator<Record> _enumerator;
         private List<string> _keys;
         private Func<IResultSummary> _getSummary;
         internal long Position => _enumerator.Position;
@@ -106,6 +106,11 @@ namespace Neo4j.Driver.Internal.Result
                 return;
             }
             Consume();
+            if (_enumerator != null)
+            {
+                _enumerator.Dispose();
+            }
+            _enumerator = null;
         }
 
         public void Dispose()
