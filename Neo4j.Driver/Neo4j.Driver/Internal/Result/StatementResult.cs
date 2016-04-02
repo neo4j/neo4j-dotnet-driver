@@ -16,6 +16,7 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using Neo4j.Driver.Extensions;
@@ -27,26 +28,24 @@ namespace Neo4j.Driver.Internal.Result
     /// </summary>
     public class StatementResult : IStatementResult
     {
-        private IResultSummary _summary;
-        private readonly IPeekingEnumerator<Record> _enumerator;
-        private List<string> _keys;
-        private Func<IResultSummary> _getSummary;
-        internal long Position => _enumerator.Position;
+        private readonly List<string> _keys;
+        private readonly Func<IResultSummary> _getSummary;
+        private readonly IRecordSet _recordSet;
 
-        internal StatementResult(string[] keys, IPeekingEnumerator<Record> recordEnumerator)
-        {
-            _keys = new List<string>(keys);
-            _enumerator = recordEnumerator;
-            _summary = null;
-        }
+        private IResultSummary _summary = null;
+        
+        /// <summary>
+        /// This is only used in unittest => either the unittest is bad (testing implementation not interface) or the OOP design is bad.
+        /// </summary>
+        internal long Position => _recordSet.Position;
 
-        public StatementResult(string[] keys, IEnumerable<Record> records, Func<IResultSummary> getSummary = null)
+        public StatementResult(string[] keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
-            Throw.ArgumentNullException.IfNull(records, nameof(records));
+            Throw.ArgumentNullException.IfNull(recordSet, nameof(recordSet));
 
             _keys = new List<string>(keys);
-            _enumerator = new PeekingEnumerator<Record>(records.GetEnumerator());
+            _recordSet = recordSet;
             _getSummary = getSummary;
         }
 
@@ -68,34 +67,29 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
-        internal bool AtEnd => _enumerator.Peek() == null;
+        internal bool AtEnd => _recordSet.AtEnd;
 
         public IRecord Single()
         {
-            if (_enumerator.Position >= 0)
+            if (_recordSet.Position >= 0)
             {
                 throw new InvalidOperationException("The first record is already consumed.");
             }
-            if (!_enumerator.MoveNext())
-            {
-                throw new InvalidOperationException("No record found.");
-            }
-            var record = _enumerator.Current;
-            if (_enumerator.Peek() != null)
-            {
-                throw new InvalidOperationException("More than one record found.");
-            }
-            return record;
+
+            return _recordSet.Records.Single();
         }
 
         public IRecord Peek()
         {
-            return _enumerator.Peek();
+            return _recordSet.Peek;
         }
 
         public IResultSummary Consume()
         {
-            _enumerator.Consume();
+            foreach (var record in _recordSet.Records)
+            {
+                // Do nothing, just consume the records
+            }
             return Summary;
         }
 
@@ -116,7 +110,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IEnumerator<IRecord> GetEnumerator()
         {
-            return _enumerator;
+            return _recordSet.Records.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -124,5 +118,4 @@ namespace Neo4j.Driver.Internal.Result
             return GetEnumerator();
         }
     }
-
 }

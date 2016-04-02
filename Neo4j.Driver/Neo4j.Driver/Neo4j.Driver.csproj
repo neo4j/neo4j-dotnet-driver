@@ -59,6 +59,7 @@
     <Compile Include="Internal\Messaging\SuccessMessage.cs" />
     <Compile Include="Internal\Messaging\FailureMessage.cs" />
     <Compile Include="Internal\Entity.cs" />
+    <Compile Include="Internal\Result\IRecordSet.cs" />
     <Compile Include="Internal\Result\IResultBuilder.cs" />
     <Compile Include="Internal\SessionPool.cs" />
     <Compile Include="Internal\StatementRunner.cs" />
@@ -94,7 +95,6 @@
     <Compile Include="IResultRecordAccessor.cs" />
     <Compile Include="IResultSummary.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="Internal\Result\PeekingEnumerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Internal\Result\Record.cs" />
     <Compile Include="Internal\Result\StatementResult.cs" />
