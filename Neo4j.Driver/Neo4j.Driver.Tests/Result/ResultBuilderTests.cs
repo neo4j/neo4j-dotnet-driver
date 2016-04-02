@@ -25,8 +25,6 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Result
 {
-    
-
     public class ResultBuilderTests
     {
         public class CollectMetaMethod
@@ -269,7 +267,7 @@ namespace Neo4j.Driver.Tests.Result
                 return builder;
             }
 
-            private static Task AssertGetExpectResults(StatementResult result, int numberExpected)
+            private static Task AssertGetExpectResults(StatementResult result, int numberExpected, List<object> exspectedRecordsValues = null)
             {
                 int count = 0;
                 var t = Task.Factory.StartNew(() =>
@@ -277,6 +275,10 @@ namespace Neo4j.Driver.Tests.Result
                     // ReSharper disable once LoopCanBeConvertedToQuery
                     foreach (var item in result)
                     {
+                        if (exspectedRecordsValues != null)
+                        {
+                            item.Values.First().Value.Should().Be(exspectedRecordsValues[count]);
+                        }
                         count++;
                     }
                     count.Should().Be(numberExpected);
@@ -324,6 +326,30 @@ namespace Neo4j.Driver.Tests.Result
 
                 var t = AssertGetExpectResults(cursor, 3);
                 t.Wait();
+            }
+
+            [Fact]
+            public void ShouldReturnQueuedResultsWithExspectedValue()
+            {
+                var builder = GenerateBuilder();
+                var cursor = builder.Build();
+
+                List<object> recordValues = new List<object>
+                {
+                    1,
+                    "Hello",
+                    false,
+                    10
+                };
+
+                foreach (var recordValue in recordValues)
+                { 
+                    builder.Record(new object[] { recordValue });
+                }
+                builder.CollectSummaryMeta(null);
+
+                var task = AssertGetExpectResults(cursor, recordValues.Count, recordValues);
+                task.Wait();
             }
         }
 
