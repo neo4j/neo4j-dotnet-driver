@@ -98,7 +98,6 @@
     <Compile Include="PackStream\PackStreamTests.cs" />
     <Compile Include="PackStream\UnpackerTests.cs" />
     <Compile Include="PackStream\PackerTests.cs" />
-    <Compile Include="Result\PeekingEnumeratorTests.cs" />
     <Compile Include="Result\StatementResultTests.cs" />
     <Compile Include="Connector\ChunkedInputTests.cs" />
     <Compile Include="PackStream\PackStreamMessageFormatV1Tests.cs" />
