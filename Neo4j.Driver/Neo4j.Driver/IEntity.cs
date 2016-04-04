@@ -14,6 +14,7 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver
@@ -42,7 +43,7 @@ namespace Neo4j.Driver
     /// <summary>
     /// Represents a <c>Node</c> in the Neo4j graph database 
     /// </summary>
-    public interface INode: IEntity
+    public interface INode: IEntity, IEquatable<INode>
     {
         /// <summary>
         /// Gets the lables of the node.
@@ -53,7 +54,7 @@ namespace Neo4j.Driver
     /// <summary>
     /// Represents a <c>Relationship</c> in the Neo4j graph database
     /// </summary>
-    public interface IRelationship:IEntity
+    public interface IRelationship : IEntity, IEquatable<IRelationship>
     {
         /// <summary>
         /// Gets the type of the relationship
@@ -77,7 +78,7 @@ namespace Neo4j.Driver
     ///     It is allowed to be of size 0, meaning there are no relationships in it.In this case,
     ///     it contains only a single node which is both the start and the end of the path.
     /// </summary>
-    public interface IPath
+    public interface IPath : IEquatable<IPath>
     {
         /// <summary>
         /// Gets the start <see cref="INode"/> in the path.
