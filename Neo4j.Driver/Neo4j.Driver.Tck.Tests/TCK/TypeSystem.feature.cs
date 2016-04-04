@@ -10,7 +10,7 @@
 // ------------------------------------------------------------------------------
 #region Designer generated code
 #pragma warning disable
-namespace Neo4j.Driver.IntegrationTests.TCK
+namespace Neo4j.Driver.Tck.Tests.TCK
 {
     using TechTalk.SpecFlow;
     
@@ -40,8 +40,8 @@ namespace Neo4j.Driver.IntegrationTests.TCK
   | Integer     | 64-bit signed integer |
   | Float       | 64-bit floating point number|
   | String      | Unicode string|
-  | _list        | Ordered collection of values|
-  | _map         | Unordered, keyed collection of values|
+  | List        | Ordered collection of values|
+  | Map         | Unordered, keyed collection of values|
   | Node        | A node in the graph with optional properties and labels|
   | Relationship| A directed, typed connection between two nodes. Each relationship may have properties and always has an identity|
   | Path        | The record of a directed walk through the graph, a sequence of zero or more segments*. A path with zero segments consists of a single node.|

@@ -48,8 +48,8 @@ namespace Neo4j.Driver.Internal.Result
                 Statement = builder.Statement;
                 StatementType = builder.StatementType;
                 Counters = builder.Counters ?? new Counters();
-                Plan = builder.Plan;
                 Profile = builder.Profile;
+                Plan = Profile ?? builder.Plan;
                 Notifications = builder.Notifications ?? new List<INotification>();
             }
 
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal.Result
 
     public class Plan : IPlan
     {
-        public Plan(string operationType, Dictionary<string, object> args, IList<string> identifiers, List<IPlan> childPlans)
+        public Plan(string operationType, IDictionary<string, object> args, IList<string> identifiers, IList<IPlan> childPlans)
         {
             OperatorType = operationType;
             Arguments = args;
@@ -210,13 +210,15 @@ namespace Neo4j.Driver.Internal.Result
         public string Title { get; }
         public string Description { get; }
         public IInputPosition Position { get; }
+        public string Severity { get; }
 
-        public Notification(string code, string title, string description, IInputPosition position)
+        public Notification(string code, string title, string description, IInputPosition position, string severity)
         {
             Code = code;
             Title = title;
             Description = description;
             Position = position;
+            Severity = severity;
         }
 
         public override string ToString()
@@ -224,7 +226,8 @@ namespace Neo4j.Driver.Internal.Result
             return $"{GetType().Name}{{{nameof(Code)}={Code}, " +
                    $"{nameof(Title)}={Title}, " +
                    $"{nameof(Description)}={Description}, " +
-                   $"{nameof(Position)}={Position}}}";
+                   $"{nameof(Position)}={Position}, " +
+                   $"{nameof(Severity)}={Severity}}}";
         }
 
     }

@@ -15,94 +15,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests.Internals;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using Neo4j.Driver.IntegrationTests.Internals;
 using TechTalk.SpecFlow;
-using Xunit;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
-    public abstract class TckStepsBase
-    {
-        public const string Url = "bolt://localhost:7687";
-        protected static Driver Driver;
-        protected static INeo4jInstaller _installer;
-        protected dynamic _expected;
-        protected IList<object> _list;
-        protected IDictionary<string, object> _map;
-
-        protected static dynamic GetValue(string type, string value)
-        {
-            switch (type)
-            {
-                case "Null":
-                    return null;
-                case "Boolean":
-                    return Convert.ToBoolean(value);
-                case "Integer":
-                    return Convert.ToInt64(value);
-                case "Float":
-                    return Convert.ToDouble(value, CultureInfo.InvariantCulture);
-                case "String":
-                    return value;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown type {type}");
-            }
-        }
-        protected static void AssertEqual(dynamic value, dynamic other)
-        {
-            if (value == null || value is bool || value is long || value is double || value is string)
-            {
-                Assert.Equal(value, other);
-            }
-            else if (value is IList)
-            {
-                var valueList = (IList)value;
-                var otherList = (IList)other;
-                AssertEqual(valueList.Count, otherList.Count);
-                for (var i = 0; i < valueList.Count; i++)
-                {
-                    AssertEqual(valueList[i], otherList[i]);
-                }
-            }
-            else if (value is IDictionary)
-            {
-                var valueDic = (IDictionary<string, object>)value;
-                var otherDic = (IDictionary<string, object>)other;
-                AssertEqual(valueDic.Count, otherDic.Count);
-                foreach (var key in valueDic.Keys)
-                {
-                    otherDic.ContainsKey(key).Should().BeTrue();
-                    AssertEqual(valueDic[key], otherDic[key]);
-                }
-            }
-        }
-    }
-
     [Binding]
     public class DriverTypesTestEchoingSingleParameterSteps : TckStepsBase
     {
         private IStatementResult _statementResult;
+        public const string KeyExpected = "expected";
+        public const string KeyList = "list";
+        public const string Keymap = "map";
 
         [BeforeTestRun]
-        public static void GlobalBeforeScenario()
+        public static void GlobalBeforeTestRun()
         {
-            _installer = new WindowsNeo4jInstaller();
-            _installer.DownloadNeo4j();
+            Installer = new WindowsNeo4jInstaller();
+            Installer.DownloadNeo4j();
             try
             {
-                _installer.InstallServer();
-                _installer.StartServer();
+                Installer.InstallServer();
+                Installer.StartServer();
             }
             catch
             {
                 try
                 {
-                    AfterScenario();
+                    GlobalAfterTestRun();
                 }
                 catch
                 {
@@ -110,25 +53,23 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 }
                 throw;
             }
-            var config = Config.DefaultConfig;
-            config.MaxIdleSessionPoolSize = Config.InfiniteMaxIdleSessionPoolSize;
-            Driver = GraphDatabase.Driver(Url, config);
+            CreateNewDriver();
         }
 
         [AfterTestRun]
-        public static void AfterScenario()
+        public static void GlobalAfterTestRun()
         {
-            Driver?.Dispose();
+            DisposeDriver();
 
             try
             {
-                _installer.StopServer();
+                Installer.StopServer();
             }
             catch
             {
                 // ignored
             }
-            _installer.UninstallServer();
+            Installer.UninstallServer();
         }
 
         [Given(@"A running database")]
@@ -139,111 +80,131 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Given(@"a value (.*) of type (.*)")]
         public void GivenAValueOfType(string value, string type)
         {
-            _expected = GetValue(type, value);
+            ScenarioContext.Current.Set(GetValue(type, value), KeyExpected);
         }
 
         [Given(@"a list value (.*) of type (.*)")]
         public void GivenAListValueOfTypeInteger(string values, string type)
         {
-            _expected = GetList(type, values);
+            ScenarioContext.Current.Set(GetList(type, values), KeyExpected);
         }
 
         [Given(@"an empty list L")]
         public void GivenAnEmptyListL()
         {
-            _list = new List<object>();
+            ScenarioContext.Current.Set(new List<object>(), KeyList);
         }
 
         [Given(@"adding a table of lists to the list L")]
         public void GivenAddingATableOfListsToTheListL(Table table)
         {
+            var list = ScenarioContext.Current.Get<IList<object>>(KeyList);
             foreach (var row in table.Rows)
             {
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var values = columns.ElementAt(1);
-                _list.Add(GetList(type, values));
+                list.Add(GetList(type, values));
             }
         }
 
         [Given(@"adding a table of values to the list L")]
         public void GivenAddingATableOfValuesToTheListL(Table table)
         {
+            var list = ScenarioContext.Current.Get<IList<object>>(KeyList);
             foreach (var row in table.Rows)
             {
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                _list.Add((object) GetValue(type, value));
+                list.Add(GetValue(type, value));
             }
         }
 
         [Given(@"an empty map M")]
         public void GivenAnEmptyMapM()
         {
-            _map = new Dictionary<string, object>();
+            ScenarioContext.Current.Set(new Dictionary<string, object>(), Keymap);
         }
 
         [Given(@"adding a table of values to the map M")]
         public void GivenAddingATableOfValuesToTheMapM(Table table)
         {
             var i = 0;
+            var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
             foreach (var row in table.Rows)
             {
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                _map.Add($"Key{i++}", (object) GetValue(type, value));
+                map.Add($"Key{i++}", GetValue(type, value));
             }
         }
-
 
         [Given(@"adding map M to list L")]
         public void GivenAddingMapMToListL()
         {
-            _list.Add(_map);
+            var list = ScenarioContext.Current.Get<IList<object>>(KeyList);
+            var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
+            list.Add(map);
         }
 
         [When(@"the driver asks the server to echo this value back")]
         public void WhenTheDriverAsksTheServerToEchoThisValueBack()
         {
-            _statementResult = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
+            var expected = ScenarioContext.Current.Get<object>(KeyExpected);
+            using (var session = Driver.Session())
+            {
+                _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", expected } });
+            }
+            
         }
 
         [When(@"the driver asks the server to echo this list back")]
         public void WhenTheDriverAsksTheServerToEchoThisListBack()
         {
-            _expected = _list;
-            _statementResult = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
+            var list = ScenarioContext.Current.Get<IList<object>>(KeyList);
+            ScenarioContext.Current.Set((object)list, KeyExpected);
+            using (var session = Driver.Session())
+            {
+                _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", list } });
+            }
+            
         }
 
         [When(@"the driver asks the server to echo this map back")]
         public void WhenTheDriverAsksTheServerToEchoThisMapBack()
         {
-            _expected = _map;
-            _statementResult = Driver.Session().Run("Return {input}", new Dictionary<string, object> {{"input", _expected}});
+            var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
+            ScenarioContext.Current.Set((object)map, KeyExpected);
+            using (var session = Driver.Session())
+            {
+                _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", map } });
+            }
         }
 
         [When(@"the value given in the result should be the same as what was sent")]
         public void WhenTheValueGivenInTheResultShouldBeTheSameAsWhatWasSent()
         {
             // param : input
-            var record = _statementResult.Single(); // TODO check no exception throw
+            var record = _statementResult.Single();
             record.Should().NotBeNull();
             var actual = record[0];
-            AssertEqual(_expected, actual);
+            var expected = ScenarioContext.Current.Get<object>(KeyExpected);
+            AssertEqual(expected, actual);
         }
 
         [When(@"adding a table of lists to the map M")]
         public void WhenAddingATableOfListsToTheMapM(Table table)
         {
             var i = 0;
+            var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
             foreach (var row in table.Rows)
             {
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var values = columns.ElementAt(1);
-                _map.Add($"ListKey{i++}", GetList(type, values));
+                map.Add($"ListKey{i++}", GetList(type, values));
             }
         }
 
@@ -251,26 +212,28 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public void WhenAddingATableOfValuesToTheMapM(Table table)
         {
             var i = 0;
+            var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
             foreach (var row in table.Rows)
             {
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                _map.Add($"Key{i++}", GetValue(type, value));
+                map.Add($"Key{i++}", GetValue(type, value));
             }
         }
 
         [When(@"adding a copy of map M to map M")]
         public void WhenAddingACopyOfMapMToMapM()
         {
-            _map.Add("MapKey", new Dictionary<string, object>(_map));
+            var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
+            map.Add("MapKey", new Dictionary<string, object>(map));
         }
 
 
         private List<object> GetList(string type, string values)
         {
             var strings = values.Split(new[] {",", "[", "]"}, StringSplitOptions.RemoveEmptyEntries);
-            return strings.Select(value => (object) GetValue(type, value)).ToList();
+            return strings.Select(value => GetValue(type, value)).ToList();
         }
         
     }
