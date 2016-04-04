@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tck.Tests
         public void ThenRequestingTheStatementAsTextShouldGive(string statement)
         {
             var summary = ScenarioContext.Current.Get<IResultSummary>();
-            summary.Statement.Template.Should().Be(statement);
+            summary.Statement.Text.Should().Be(statement);
         }
 
         [Then(@"requesting the `Statement` parameter should give: \{}")]

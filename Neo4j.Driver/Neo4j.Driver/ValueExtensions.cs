@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using Neo4j.Driver.Exceptions;
 
 namespace Neo4j.Driver
 {

@@ -694,11 +694,11 @@ namespace Neo4j.Driver.Tests
                     {
                         public static INode Alice = new Node(1001L,
                             new List<string> {"Person", "Employee"},
-                            new Dictionary<string, object> {{"name", "Alice"}, {"age", 33l}});
+                            new Dictionary<string, object> {{"name", "Alice"}, {"age", 33L}});
 
                         public static INode Bob = new Node(1002L,
                             new List<string> {"Person", "Employee"},
-                            new Dictionary<string, object> {{"name", "Bob"}, {"age", 44l}});
+                            new Dictionary<string, object> {{"name", "Bob"}, {"age", 44L}});
 
                         public static INode Carol = new Node(
                             1003L,

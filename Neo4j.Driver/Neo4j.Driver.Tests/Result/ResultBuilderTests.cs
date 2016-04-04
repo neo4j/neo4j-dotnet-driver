@@ -354,7 +354,7 @@ namespace Neo4j.Driver.Tests.Result
                 actual.Summary.Notifications.Should().BeEmpty();
                 actual.Summary.Plan.Should().BeNull();
                 actual.Summary.Profile.Should().BeNull();
-                actual.Summary.Statement.Template.Should().BeNull();
+                actual.Summary.Statement.Text.Should().BeNull();
                 actual.Summary.StatementType.Should().Be(StatementType.Unknown);
                 actual.Summary.Counters.ShouldBeEquivalentTo(DefaultCounters);
             }
