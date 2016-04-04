@@ -1,4 +1,4 @@
-﻿@match_acceptance
+﻿@match_acceptance @reset_database
 Feature: MatchAcceptanceTest
 
   Scenario: path query should return results in written order

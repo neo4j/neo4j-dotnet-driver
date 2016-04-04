@@ -57,12 +57,19 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public void StartServer()
         {
             RunPowershellCommand("start");
+#if BUILDSERVER
+            Task.Delay(100000).Wait();
+#else
             Task.Delay(10000).Wait();
+#endif
         }
 
         public void StopServer()
         {
             RunPowershellCommand("stop");
+#if BUILDSERVER
+            Task.Delay(100000).Wait();
+#endif
         }
 
         private void RunPowershellCommand(string command)
@@ -73,13 +80,10 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 powershell.AddCommand(batfile);
                 powershell.AddArgument(command);
                 powershell.Invoke();
-// seems have some problem to work with powershell 4.0
-#if ! BUILDSERVER
                 if (powershell.HadErrors)
                 {
                     throw new Neo4jException("Integration", CollectAsString(powershell.Streams.Error));
                 }
-#endif
             }
         }
 

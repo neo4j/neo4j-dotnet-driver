@@ -24,25 +24,30 @@ namespace Neo4j.Driver
     public interface INotification
     {
         /// <summary>
-        ///Returns a notification code for the discovered issue.
+        ///Gets a notification code for the discovered issue.
         /// </summary>
         string Code { get; }
 
         /// <summary>
-        ///Returns a short summary of the notification.
+        ///Gets a short summary of the notification.
         /// </summary>
         string Title { get; }
 
         /// <summary>
-        ///Returns a longer description of the notification.
+        ///Gets a longer description of the notification.
         /// </summary>
         string Description { get; }
 
-        ///
-        ///The position in the statement where this notification points to.
+        /// <summary>
+        ///Gets the position in the statement where this notification points to.
         ///Not all notifications have a unique position to point to and in that case the position would be set to null.
         /// </summary>
         IInputPosition Position { get; }
+
+        /// <summary>
+        /// Gets The severity level of the notification.
+        /// </summary>
+        string Severity { get; }
     }
 
     /// <summary>
