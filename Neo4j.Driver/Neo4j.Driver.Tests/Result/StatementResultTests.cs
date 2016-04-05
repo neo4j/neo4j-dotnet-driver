@@ -453,32 +453,6 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class DisposeMethod
-        {
-            [Fact]
-            public void ShouldConsumeRecordStream()
-            {
-                var result = ResultCreator.CreateResult(1, 2);
-
-                result.Dispose();
-
-                result.AtEnd.Should().BeTrue();
-                result.Position.Should().Be(2);
-                result.GetEnumerator().MoveNext().Should().BeFalse();
-                result.GetEnumerator().Current.Should().BeNull();
-            }
-
-            [Fact]
-            public void ShouldPullSummary()
-            {
-                int getSummaryCalled = 0;
-                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
-
-                result.Dispose();
-                getSummaryCalled.Should().Be(1);
-            }
-        }
-
         private class FakeSummary : IResultSummary
         {
             public Statement Statement { get; }
