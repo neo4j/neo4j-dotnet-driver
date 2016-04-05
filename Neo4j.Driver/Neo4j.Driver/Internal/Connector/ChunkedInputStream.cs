@@ -16,7 +16,6 @@
 //  limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
 using Neo4j.Driver.Internal.Packstream;
 using Sockets.Plugin.Abstractions;

@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 

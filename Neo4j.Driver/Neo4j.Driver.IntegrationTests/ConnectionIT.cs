@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
