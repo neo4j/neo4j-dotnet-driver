@@ -23,7 +23,7 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    public class ChunkedInputStream : IInputStream
+    internal class ChunkedInputStream : IInputStream
     {
         private const int ChunkSize = 1024*8; 
         public static byte[] Tail = {0x00, 0x00};

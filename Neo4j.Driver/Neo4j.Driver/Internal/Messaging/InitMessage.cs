@@ -18,7 +18,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    public class InitMessage : IRequestMessage
+    internal class InitMessage : IRequestMessage
     {
         private readonly IDictionary<string, object> _authToken;
 

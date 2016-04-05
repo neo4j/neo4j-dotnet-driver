@@ -16,7 +16,7 @@
 //  limitations under the License.
 namespace Neo4j.Driver.Internal.Connector
 {
-    public interface IInputStream
+    internal interface IInputStream
     {
         sbyte ReadSByte();
         byte ReadByte();

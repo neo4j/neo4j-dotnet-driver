@@ -20,7 +20,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Extensions
 {
-    public static class CollectionExtensions
+    internal static class CollectionExtensions
     {
         public static string ValueToString(this object o)
         {

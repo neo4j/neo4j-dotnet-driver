@@ -25,7 +25,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class SocketClientTestHarness : IDisposable
+    internal class SocketClientTestHarness : IDisposable
     {
         public SocketClient Client { get; }
         public Mock<Stream> MockWriteStream { get; }

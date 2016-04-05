@@ -654,7 +654,7 @@ namespace Neo4j.Driver.Tests
                 [InlineData(PackStream.INT_16, PackStream.PackType.Integer)]
                 [InlineData(PackStream.INT_32, PackStream.PackType.Integer)]
                 [InlineData(PackStream.INT_64, PackStream.PackType.Integer)]
-                public void ShouldPeekTypeCorrectly(byte marker, PackStream.PackType expected)
+                internal void ShouldPeekTypeCorrectly(byte marker, PackStream.PackType expected)
                 {
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.PeekByte()).Returns(marker);

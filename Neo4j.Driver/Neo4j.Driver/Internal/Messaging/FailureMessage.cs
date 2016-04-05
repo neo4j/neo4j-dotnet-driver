@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    class FailureMessage : IMessage
+    internal class FailureMessage : IMessage
     {
         private readonly string _code;
         private readonly string _message;

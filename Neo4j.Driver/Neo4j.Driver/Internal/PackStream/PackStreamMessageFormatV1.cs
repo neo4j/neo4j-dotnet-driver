@@ -26,7 +26,7 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Internal.Packstream
 {
-    public class PackStreamMessageFormatV1
+    internal class PackStreamMessageFormatV1
     {
         private static BitConverterBase _bitConverter;
 

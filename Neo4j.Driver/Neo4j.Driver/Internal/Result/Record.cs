@@ -21,7 +21,7 @@ using Neo4j.Driver.Extensions;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    public class Record : IRecord
+    internal class Record : IRecord
     {
         public object this[int index] => Values[Values.Keys.ToList()[index]];
         public object this[string key] => Values[key];

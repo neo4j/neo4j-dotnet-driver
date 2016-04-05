@@ -20,7 +20,7 @@ using System.Text;
 
 namespace Neo4j.Driver.Internal.Packstream
 {
-    public abstract class BitConverterBase
+    internal abstract class BitConverterBase
     {
         /// <summary>
         ///     Converts a byte to bytes.

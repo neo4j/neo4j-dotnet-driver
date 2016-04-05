@@ -19,7 +19,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    public interface IResultBuilder
+    internal interface IResultBuilder
     {
         void Record(object[] fields);
         StatementResult Build();
