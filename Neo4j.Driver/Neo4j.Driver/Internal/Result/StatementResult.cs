@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Result
     /// <summary>
     /// The result returned from the Neo4j instance
     /// </summary>
-    public class StatementResult : IStatementResult
+    internal class StatementResult : IStatementResult
     {
         private readonly List<string> _keys;
         private readonly Func<IResultSummary> _getSummary;

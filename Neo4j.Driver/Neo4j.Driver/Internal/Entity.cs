@@ -20,7 +20,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Internal
 {
-    public class Node : INode
+    internal class Node : INode
     {
         public long Id { get; }
         public IReadOnlyList<string> Labels { get; }
@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    public class Relationship : IRelationship
+    internal class Relationship : IRelationship
     {
         public long Id { get; }
         public string Type { get; }
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Internal
     /// for that relationship.This exists because the relationship has a direction between the two nodes that is
     /// separate and potentially different from the direction of the path.
     /// </summary>
-    public interface ISegment : IEquatable<ISegment>
+    internal interface ISegment : IEquatable<ISegment>
     {
         /// <summary>
         /// Gets the start node underlying this path segment.
@@ -117,7 +117,7 @@ namespace Neo4j.Driver.Internal
         IRelationship Relationship { get; }
     }
 
-    public class Segment : ISegment
+    internal class Segment : ISegment
     {
         public Segment(INode start, IRelationship rel, INode end)
         {
@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    public class Path : IPath
+    internal class Path : IPath
     {
         private readonly IReadOnlyList<ISegment> _segments;
 

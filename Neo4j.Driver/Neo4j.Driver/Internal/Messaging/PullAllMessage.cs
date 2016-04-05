@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    class PullAllMessage : IRequestMessage
+    internal class PullAllMessage : IRequestMessage
     {
         public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {

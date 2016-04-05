@@ -23,8 +23,8 @@ using static Neo4j.Driver.StatementType;
 using System;
 
 namespace Neo4j.Driver.Internal.Result
-{ 
-    public class ResultBuilder : IResultBuilder
+{
+    internal class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
         private readonly IList<Record> _records = new List<Record>();

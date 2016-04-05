@@ -16,12 +16,12 @@
 //  limitations under the License.
 namespace Neo4j.Driver.Internal.Messaging
 {
-    public interface IRequestMessage :IMessage
+    internal interface IRequestMessage :IMessage
     {
         void Dispatch(IMessageRequestHandler messageRequestHandler);
     }
 
-    public interface IMessage
+    internal interface IMessage
     {
         
     }

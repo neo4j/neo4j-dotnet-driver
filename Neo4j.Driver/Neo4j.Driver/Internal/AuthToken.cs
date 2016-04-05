@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal
     /// <summary>
     ///     A simple common token for authentication schemes that easily convert to an auth token map
     /// </summary>
-    public class AuthToken : IAuthToken
+    internal class AuthToken : IAuthToken
     {
         public AuthToken(IDictionary<string, object> content)
         {
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal
         public IDictionary<string, object> Content { get; }
     }
 
-    public static class AuthTokenExtensions
+    internal static class AuthTokenExtensions
     {
         public static IDictionary<string, object> AsDictionary(this IAuthToken authToken)
         {

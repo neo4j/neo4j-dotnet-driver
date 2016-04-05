@@ -20,7 +20,7 @@ using Neo4j.Driver.Exceptions;
 
 namespace Neo4j.Driver.Extensions
 {
-    public static class Extensions
+    internal static class Extensions
     {
         public static T[] DequeueToArray<T>(this Queue<T> queue, int length)
         {
