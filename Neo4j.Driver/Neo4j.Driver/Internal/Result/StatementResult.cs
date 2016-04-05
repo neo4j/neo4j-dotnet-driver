@@ -93,21 +93,6 @@ namespace Neo4j.Driver.Internal.Result
             return Summary;
         }
 
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-            {
-                return;
-            }
-            Consume();
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
         public IEnumerator<IRecord> GetEnumerator()
         {
             return _recordSet.Records.GetEnumerator();
