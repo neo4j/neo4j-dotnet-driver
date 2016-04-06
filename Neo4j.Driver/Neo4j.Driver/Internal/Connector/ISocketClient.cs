@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    public interface ISocketClient
+    internal interface ISocketClient
     {
         Task Start();
         Task Stop();

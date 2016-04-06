@@ -21,14 +21,14 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    public interface IPeekingEnumerator<T> : IEnumerator<T> where T : class
+    internal interface IPeekingEnumerator<T> : IEnumerator<T> where T : class
     {
         T Peek();
         void Consume();
         long Position { get; }
     }
 
-    public class PeekingEnumerator<T> : IPeekingEnumerator<T> where T:class
+    internal class PeekingEnumerator<T> : IPeekingEnumerator<T> where T:class
     {
         private IEnumerator<T> _enumerator;
         private T _cached;

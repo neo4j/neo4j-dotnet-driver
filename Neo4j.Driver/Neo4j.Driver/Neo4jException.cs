@@ -17,7 +17,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Neo4j.Driver.Exceptions
+namespace Neo4j.Driver
 {
     /// <summary>
     /// The base class for all Neo4j exceptions.

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FluentAssertions;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal;
 using TechTalk.SpecFlow;
 using Xunit;

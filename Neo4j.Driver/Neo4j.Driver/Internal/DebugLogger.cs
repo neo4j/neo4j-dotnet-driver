@@ -6,14 +6,14 @@ using Neo4j.Driver.Extensions;
 namespace Neo4j.Driver.Internal
 {
 
-    public class DebugLogger : BaseOutLogger
+    internal class DebugLogger : BaseOutLogger
     {
         public DebugLogger() :
             base(s => System.Diagnostics.Debug.WriteLine(s))
         { }
     }
 
-    public abstract class BaseOutLogger : ILogger
+    internal abstract class BaseOutLogger : ILogger
     {
         protected Action<string> LogMethod { get; set; }
         public LogLevel Level { get; set; }

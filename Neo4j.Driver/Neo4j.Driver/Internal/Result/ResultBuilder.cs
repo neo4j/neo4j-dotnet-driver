@@ -17,13 +17,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
 using static Neo4j.Driver.StatementType;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    public class ResultBuilder : IResultBuilder
+    internal class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
         private readonly IList<Record> _records = new List<Record>();
