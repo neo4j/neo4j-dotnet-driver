@@ -20,14 +20,17 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
 using static Neo4j.Driver.StatementType;
+using System;
 
 namespace Neo4j.Driver.Internal.Result
-{
+{ 
     public class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
         private readonly IList<Record> _records = new List<Record>();
         private readonly SummaryBuilder _summaryBuilder;
+        private int _recordIteratorIndex = 0;
+
         internal bool HasMoreRecords { get; private set; } = true;
 
         public ResultBuilder() : this(null, null)
@@ -49,28 +52,44 @@ namespace Neo4j.Driver.Internal.Result
             var record = new Record(_keys, fields);
             _records.Add(record);
         }
-
+       
         private IEnumerable<Record> RecordsStream()
         {
-            int index = 0;
-
-            while (HasMoreRecords || index <= _records.Count)
+            while (HasMoreRecords || _recordIteratorIndex <= _records.Count)
             {
-                while (index == _records.Count)
+                while (_recordIteratorIndex == _records.Count)
                 {
                     Task.Delay(50).Wait();
-                    if (!HasMoreRecords && index == _records.Count)
+                    if (!HasMoreRecords && _recordIteratorIndex == _records.Count)
                         yield break;
                 }
 
-                yield return _records[index];
-                index++;
+                yield return _records[_recordIteratorIndex];
+                _recordIteratorIndex++;
             }
         } 
 
+        private Record Peek()
+        {
+            while (_recordIteratorIndex + 1 >= _records.Count) // Peeking record not received
+            {
+                if (!HasMoreRecords && _recordIteratorIndex == _records.Count)
+                {
+                    return null;
+                }
+
+                Task.Delay(50).Wait();
+            }
+
+            return _records[_recordIteratorIndex + 1];
+        }
+
         public StatementResult Build()
         {
-            return new StatementResult(_keys, RecordsStream(), () => _summaryBuilder.Build());
+            return new StatementResult(
+                _keys, 
+                new RecordSet(RecordsStream, Peek, () => _recordIteratorIndex - 1, () => !HasMoreRecords),
+                () => _summaryBuilder.Build());
         }
 
         public void CollectFields(IDictionary<string, object> meta)
@@ -249,6 +268,59 @@ namespace Neo4j.Driver.Internal.Result
                     return SchemaWrite;
                 default:
                     throw new ClientException("Unknown statement type: `" + type + "`.");
+            }
+        }
+
+        // TODO: Verify that there are meaningfull unittests for this
+        private class RecordSet : IRecordSet
+        {
+            private readonly Func<IEnumerable<Record>> _getRecords;
+            private readonly Func<Record> _peekRecord;
+            private readonly Func<int> _getPosition;
+            private readonly Func<bool> _atEnd;
+
+            public RecordSet(Func<IEnumerable<Record>> getRecords, Func<Record> peekRecord, Func<int> getPosition, Func<bool> atEnd)
+            {
+                _getRecords = getRecords;
+                _peekRecord = peekRecord;
+                _getPosition = getPosition;
+                _atEnd = atEnd;
+            }
+
+            /// <summary>
+            /// Returns the current position of the last read record.
+            /// If no records have been read, this returns -1
+            /// </summary>
+            public int Position
+            {
+                get
+                {
+                    return _getPosition();
+                }
+            }
+
+            public bool AtEnd
+            {
+                get
+                {
+                    return _atEnd();
+                }
+            }
+
+            public Record Peek
+            {
+                get
+                {
+                    return _peekRecord();
+                }
+            }
+
+            public IEnumerable<Record> Records
+            {
+                get
+                {
+                    return _getRecords();
+                }
             }
         }
     }
