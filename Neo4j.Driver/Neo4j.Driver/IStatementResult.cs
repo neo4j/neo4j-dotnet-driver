@@ -38,12 +38,6 @@ namespace Neo4j.Driver
         /// <exception cref="InvalidOperationException">Thrown if this is called before all the records have been visited.</exception>
         IResultSummary Summary { get; }
         /// <summary>
-        /// Return the first record in the result, failing if there is not exactly one record, or if this result has already been used to move past the first record.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if not exactly one result have been found, or if this result has already been used to move past the first record.</exception>
-        /// <returns>The single record in the result.</returns>
-        IRecord Single();
-        /// <summary>
         /// Investigate the next upcoming record without changing the current position in the result.
         /// </summary>
         /// <returns>The next record, or null if there is no next record</returns>
