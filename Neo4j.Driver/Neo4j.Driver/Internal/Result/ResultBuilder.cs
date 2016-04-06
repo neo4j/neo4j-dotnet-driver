@@ -306,7 +306,7 @@ namespace Neo4j.Driver.Internal.Result
                 }
             }
 
-            public Record Peek
+            public IRecord Peek
             {
                 get
                 {
@@ -314,7 +314,7 @@ namespace Neo4j.Driver.Internal.Result
                 }
             }
 
-            public IEnumerable<Record> Records
+            public IEnumerable<IRecord> Records
             {
                 get
                 {
