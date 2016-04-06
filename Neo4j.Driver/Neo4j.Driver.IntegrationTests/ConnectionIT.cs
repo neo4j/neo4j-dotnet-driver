@@ -64,7 +64,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void ShouldEstablishConnectionWhenAuthEnabled()
         {
-            var authFilePath = Path.Combine(fixture.Neo4jHome, "dbms/auth");
+            var authFilePath = Path.Combine(fixture.Neo4jHome, "data/dbms/auth");
             if (File.Exists(authFilePath))
             {
                 File.Delete(authFilePath);
