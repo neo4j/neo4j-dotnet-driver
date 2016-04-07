@@ -87,8 +87,7 @@ namespace Neo4j.Driver.Internal.Result
         {
             return new StatementResult(
                 _keys, 
-                new RecordSet(RecordsStream, Peek, () => _recordIteratorIndex - 1, () => !HasMoreRecords),
-                () => _summaryBuilder.Build());
+                new RecordSet(RecordsStream, Peek, () => !HasMoreRecords), () => _summaryBuilder.Build());
         }
 
         public void CollectFields(IDictionary<string, object> meta)
@@ -275,27 +274,13 @@ namespace Neo4j.Driver.Internal.Result
         {
             private readonly Func<IEnumerable<Record>> _getRecords;
             private readonly Func<Record> _peekRecord;
-            private readonly Func<int> _getPosition;
             private readonly Func<bool> _atEnd;
 
-            public RecordSet(Func<IEnumerable<Record>> getRecords, Func<Record> peekRecord, Func<int> getPosition, Func<bool> atEnd)
+            public RecordSet(Func<IEnumerable<Record>> getRecords, Func<Record> peekRecord, Func<bool> atEnd)
             {
                 _getRecords = getRecords;
                 _peekRecord = peekRecord;
-                _getPosition = getPosition;
                 _atEnd = atEnd;
-            }
-
-            /// <summary>
-            /// Returns the current position of the last read record.
-            /// If no records have been read, this returns -1
-            /// </summary>
-            public int Position
-            {
-                get
-                {
-                    return _getPosition();
-                }
             }
 
             public bool AtEnd
