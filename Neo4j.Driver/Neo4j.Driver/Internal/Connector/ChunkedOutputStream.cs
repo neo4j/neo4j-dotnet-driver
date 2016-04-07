@@ -22,7 +22,7 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    public class ChunkedOutputStream : IOutputStream
+    internal class ChunkedOutputStream : IOutputStream
     {
         internal const int BufferSize = 1024*8;
         private readonly int _chunkSize;

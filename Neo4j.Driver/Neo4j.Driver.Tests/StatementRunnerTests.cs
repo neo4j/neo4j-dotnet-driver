@@ -8,7 +8,7 @@ namespace Neo4j.Driver.Tests
 {
     public class StatementRunnerTests
     {
-        public class MyStatementRunner : StatementRunner
+        internal class MyStatementRunner : StatementRunner
         {
             public string Statement { private set; get; }
             public IDictionary<string, object> Parameters { private set; get; } 

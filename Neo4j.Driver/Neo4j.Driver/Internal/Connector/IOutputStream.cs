@@ -16,7 +16,7 @@
 //  limitations under the License.
 namespace Neo4j.Driver.Internal.Connector
 {
-    public interface IOutputStream
+    internal interface IOutputStream
     {
         IOutputStream Write(byte b, params byte[] bytes);
         IOutputStream Write(byte[] bytes);

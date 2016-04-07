@@ -17,13 +17,12 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal
 {
-    public class Transaction : StatementRunner, ITransaction
+    internal class Transaction : StatementRunner, ITransaction
     {
         private State _state = State.Active;
         private readonly IConnection _connection;

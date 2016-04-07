@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
-    public class Plan : IPlan
+    internal class Plan : IPlan
     {
         public Plan(string operationType, IDictionary<string, object> args, IList<string> identifiers, IList<IPlan> childPlans)
         {
@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
-    public class ProfiledPlan : IProfiledPlan
+    internal class ProfiledPlan : IProfiledPlan
     {
         public ProfiledPlan(string operatorType, IDictionary<string, object> arguments, IList<string> identifiers, IList<IProfiledPlan> children, long dbHits, long records)
         {
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
-    public class Counters : ICounters
+    internal class Counters : ICounters
     {
 
         public bool ContainsUpdates => (
@@ -204,7 +204,7 @@ namespace Neo4j.Driver.Internal.Result
     /// <summary>
     /// This is a notifcation
     /// </summary>
-    public class Notification : INotification
+    internal class Notification : INotification
     {
         public string Code { get; }
         public string Title { get; }
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Internal.Result
 
     }
 
-    public class InputPosition : IInputPosition
+    internal class InputPosition : IInputPosition
     {
         public int Offset { get; }
         public int Line { get; }

@@ -19,7 +19,7 @@ using System;
 
 namespace Neo4j.Driver.Extensions
 {
-    public static class Throw
+    internal static class Throw
     {
         public static class ArgumentNullException
         {

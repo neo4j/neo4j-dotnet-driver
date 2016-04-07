@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal.Packstream
     /// <summary>
     ///     Converts from/to big endian (target) to platform endian.
     /// </summary>
-    public class BigEndianTargetBitConverter : BitConverterBase
+    internal class BigEndianTargetBitConverter : BitConverterBase
     {
         /// <summary>
         ///     Converts the bytes to big endian.

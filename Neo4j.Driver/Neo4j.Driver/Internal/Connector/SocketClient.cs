@@ -25,7 +25,7 @@ using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    public class SocketClient :  ISocketClient, IDisposable
+    internal class SocketClient :  ISocketClient, IDisposable
     {
         private readonly Config _config;
         private readonly ITcpSocketClient _tcpSocketClient;

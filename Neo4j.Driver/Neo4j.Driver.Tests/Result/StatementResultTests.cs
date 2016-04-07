@@ -31,10 +31,10 @@ namespace Neo4j.Driver.Tests
     {
         private class ListBasedRecordSet : IRecordSet
     {
-        private readonly IList<Record> _records;
+        private readonly IList<IRecord> _records;
         private int _recordIndex = 0;
 
-        public ListBasedRecordSet(IList<Record> records)
+        public ListBasedRecordSet(IList<IRecord> records)
         {
             _records = records;
         }
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public Record Peek
+        public IRecord Peek
         {
             get
             {
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public IEnumerable<Record> Records
+        public IEnumerable<IRecord> Records
         {
             get
             {
@@ -82,11 +82,11 @@ namespace Neo4j.Driver.Tests
         }
     }
 
-        private class ResultCreator
+    private class ResultCreator
     {
         public static StatementResult CreateResult(int keySize, int recordSize=1, Func<IResultSummary> getSummaryFunc = null)
         {
-            var records = new List<Record>(recordSize);
+            var records = new List<IRecord>(recordSize);
 
             var keys = new List<string>(keySize);
             for (int i = 0; i < keySize; i++)
@@ -121,7 +121,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfKeysIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new StatementResult(null, new ListBasedRecordSet(new List<Record>())));
+                var ex = Xunit.Record.Exception(() => new StatementResult(null, new ListBasedRecordSet(new List<IRecord>())));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetKeysProperlyIfKeysNotNull()
             {
-                var result = new StatementResult(new string[] {"test"}, new ListBasedRecordSet(new List<Record>()));
+                var result = new StatementResult(new string[] {"test"}, new ListBasedRecordSet(new List<IRecord>()));
                 result.Keys.Should().HaveCount(1);
                 result.Keys.Should().Contain("test");
             }
@@ -264,20 +264,20 @@ namespace Neo4j.Driver.Tests
 
             private class FuncBasedRecordSet : IRecordSet
             {
-                private readonly Func<IEnumerable<Record>> _getRecords;
+                private readonly Func<IEnumerable<IRecord>> _getRecords;
 
-                public FuncBasedRecordSet(Func<IEnumerable<Record>> getRecords)
+                public FuncBasedRecordSet(Func<IEnumerable<IRecord>> getRecords)
                 {
                     _getRecords = getRecords;
                 }
 
                 public bool AtEnd { get { throw new NotImplementedException(); } }
 
-                public Record Peek { get { throw new NotImplementedException(); } }
+                public IRecord Peek { get { throw new NotImplementedException(); } }
 
                 public int Position { get { throw new NotImplementedException(); } }
 
-                public IEnumerable<Record> Records
+                public IEnumerable<IRecord> Records
                 {
                     get
                     {
@@ -388,7 +388,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowInvalidOperationExceptionIfNoRecordFound()
             {
-                var result = new StatementResult(new [] { "test" }, new ListBasedRecordSet(new List<Record>()));
+                var result = new StatementResult(new [] { "test" }, new ListBasedRecordSet(new List<IRecord>()));
                 var ex = Xunit.Record.Exception(() => result.Single());
                 ex.Should().BeOfType<InvalidOperationException>();
                 // INFO: Changed message because use of Enumerable.Single for simpler implementation 

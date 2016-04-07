@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
-    public abstract class LoggerBase : IDisposable
+    internal abstract class LoggerBase : IDisposable
     {
         protected LoggerBase(ILogger logger)
         {

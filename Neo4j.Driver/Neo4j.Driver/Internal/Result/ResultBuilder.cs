@@ -17,14 +17,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Extensions;
 using static Neo4j.Driver.StatementType;
 using System;
 
 namespace Neo4j.Driver.Internal.Result
-{ 
-    public class ResultBuilder : IResultBuilder
+{
+    internal class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
         private readonly IList<Record> _records = new List<Record>();
@@ -307,7 +306,7 @@ namespace Neo4j.Driver.Internal.Result
                 }
             }
 
-            public Record Peek
+            public IRecord Peek
             {
                 get
                 {
@@ -315,7 +314,7 @@ namespace Neo4j.Driver.Internal.Result
                 }
             }
 
-            public IEnumerable<Record> Records
+            public IEnumerable<IRecord> Records
             {
                 get
                 {

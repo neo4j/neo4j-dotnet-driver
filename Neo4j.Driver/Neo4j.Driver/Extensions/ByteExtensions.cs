@@ -20,7 +20,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Extensions
 {
-    public static class ByteExtensions
+    internal static class ByteExtensions
     {
         public static byte[] PadRight(this byte[] bytes, int totalSize)
         {
