@@ -23,7 +23,7 @@ using Neo4j.Driver.Extensions;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    class RecordMessage : IMessage
+    internal class RecordMessage : IMessage
     {
         private object[] fields;
 

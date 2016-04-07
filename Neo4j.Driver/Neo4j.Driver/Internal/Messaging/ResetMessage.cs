@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    class ResetMessage:IRequestMessage
+    internal class ResetMessage:IRequestMessage
     {
         public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {

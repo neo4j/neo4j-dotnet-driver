@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    public interface IConnection : IDisposable
+    internal interface IConnection : IDisposable
     {
         void Sync();
         void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters=null);

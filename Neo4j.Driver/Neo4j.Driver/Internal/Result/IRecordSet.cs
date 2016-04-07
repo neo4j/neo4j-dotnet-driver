@@ -7,7 +7,7 @@ namespace Neo4j.Driver.Internal.Result
     /// This means that when a record has been visited by enumeration, then it will not be any
     /// future enumerations. It is consumed.
     /// </summary>
-    public interface IRecordSet
+    internal interface IRecordSet
     {
         /// <summary>
         /// Has all records been consumed.
@@ -26,11 +26,11 @@ namespace Neo4j.Driver.Internal.Result
         /// Peeks a record without consuming. 
         /// If all records has been consumed, this is null
         /// </summary>
-        Record Peek { get; }
+        IRecord Peek { get; }
 
         /// <summary>
         /// Returns an IEnumerable of records.
         /// </summary>
-        IEnumerable<Record> Records { get; }
+        IEnumerable<IRecord> Records { get; }
     }
 }

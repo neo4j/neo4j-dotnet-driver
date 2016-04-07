@@ -19,7 +19,7 @@ using System.IO;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    public static class SocketExtensions
+    internal static class SocketExtensions
     {
         public static void Write(this Stream stream, byte[] bytes)
         {

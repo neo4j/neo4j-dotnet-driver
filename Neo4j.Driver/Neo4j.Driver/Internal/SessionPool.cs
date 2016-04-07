@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Internal
     }
 
 
-    public interface IPooledSession : ISession
+    internal interface IPooledSession : ISession
     {
         Guid Id { get; }
         bool IsHealthy { get; }

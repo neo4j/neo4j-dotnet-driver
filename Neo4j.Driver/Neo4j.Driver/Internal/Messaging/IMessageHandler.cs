@@ -15,12 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections.Generic;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    public interface IMessageRequestHandler
+    internal interface IMessageRequestHandler
     {
         void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken);
         void HandleRunMessage(string statement, IDictionary<string, object> parameters);
@@ -29,7 +28,7 @@ namespace Neo4j.Driver.Internal.Messaging
         void HandleResetMessage();
     }
 
-    public interface IMessageResponseHandler
+    internal interface IMessageResponseHandler
     {
         bool HasError { get; }
         Neo4jException Error { get; }

@@ -16,7 +16,6 @@
 // limitations under the License.
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Exceptions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
