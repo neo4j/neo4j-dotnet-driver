@@ -34,11 +34,6 @@ namespace Neo4j.Driver.Internal.Result
 
         private IResultSummary _summary = null;
         
-        /// <summary>
-        /// This is only used in unittest => either the unittest is bad (testing implementation not interface) or the OOP design is bad.
-        /// </summary>
-        internal long Position => _recordSet.Position;
-
         public StatementResult(string[] keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
