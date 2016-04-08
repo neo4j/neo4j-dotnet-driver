@@ -383,51 +383,6 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class SingleMethod
-        {
-            [Fact]
-            public void ShouldThrowInvalidOperationExceptionIfNoRecordFound()
-            {
-                var result = new StatementResult(new [] { "test" }, new ListBasedRecordSet(new List<IRecord>()));
-                var ex = Xunit.Record.Exception(() => result.Single());
-                ex.Should().BeOfType<InvalidOperationException>();
-                // INFO: Changed message because use of Enumerable.Single for simpler implementation 
-                ex.Message.Should().Be("Sequence contains no elements");
-            }
-
-            [Fact]
-            public void ShouldThrowInvalidOperationExceptionIfMoreThanOneRecordFound()
-            {
-                var result = ResultCreator.CreateResult(1, 2);
-                var ex = Xunit.Record.Exception(() => result.Single());
-                ex.Should().BeOfType<InvalidOperationException>();
-                // INFO: Changed message because use of Enumerable.Single for simpler implementation 
-                ex.Message.Should().Be("Sequence contains more than one element");
-            }
-
-            [Fact]
-            public void ShouldThrowInvalidOperationExceptionIfNotTheFistRecord()
-            {
-                var result = ResultCreator.CreateResult(1, 2);
-                var enumerator = result.GetEnumerator();
-                enumerator.MoveNext().Should().BeTrue();
-                enumerator.Current.Should().NotBeNull();
-
-                var ex = Xunit.Record.Exception(() => result.Single());
-                ex.Should().BeOfType<InvalidOperationException>();
-                ex.Message.Should().Be("The first record is already consumed.");
-            }
-
-            [Fact]
-            public void ShouldReturnRecordIfSingle()
-            {
-                var result = ResultCreator.CreateResult(1);
-                var record = result.Single();
-                record.Should().NotBeNull();
-                record.Keys.Count.Should().Be(1);
-            }
-        }
-
         public class PeekMethod
         {
             [Fact]

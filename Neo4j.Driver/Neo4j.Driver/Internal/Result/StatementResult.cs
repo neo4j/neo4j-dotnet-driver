@@ -69,16 +69,6 @@ namespace Neo4j.Driver.Internal.Result
 
         internal bool AtEnd => _recordSet.AtEnd;
 
-        public IRecord Single()
-        {
-            if (_recordSet.Position >= 0)
-            {
-                throw new InvalidOperationException("The first record is already consumed.");
-            }
-
-            return _recordSet.Records.Single();
-        }
-
         public IRecord Peek()
         {
             return _recordSet.Peek;
