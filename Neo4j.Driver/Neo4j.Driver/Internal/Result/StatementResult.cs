@@ -34,11 +34,6 @@ namespace Neo4j.Driver.Internal.Result
 
         private IResultSummary _summary = null;
         
-        /// <summary>
-        /// This is only used in unittest => either the unittest is bad (testing implementation not interface) or the OOP design is bad.
-        /// </summary>
-        internal long Position => _recordSet.Position;
-
         public StatementResult(string[] keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
@@ -68,16 +63,6 @@ namespace Neo4j.Driver.Internal.Result
         }
 
         internal bool AtEnd => _recordSet.AtEnd;
-
-        public IRecord Single()
-        {
-            if (_recordSet.Position >= 0)
-            {
-                throw new InvalidOperationException("The first record is already consumed.");
-            }
-
-            return _recordSet.Records.Single();
-        }
 
         public IRecord Peek()
         {

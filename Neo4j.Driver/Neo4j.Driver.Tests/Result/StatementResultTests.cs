@@ -57,14 +57,6 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public int Position
-        {
-            get
-            {
-                return _recordIndex - 1;
-            }
-        }
-
         public IEnumerable<IRecord> Records
         {
             get
@@ -145,7 +137,6 @@ namespace Neo4j.Driver.Tests
                 result.Consume();
                 result.Count().Should().Be(0);
                 result.Peek().Should().BeNull();
-                result.Position.Should().Be(3);
             }
 
             [Fact]
@@ -182,7 +173,6 @@ namespace Neo4j.Driver.Tests
 
                 result.Consume();
                 result.Count().Should().Be(0); // the records left after consume
-                result.Position.Should().Be(3);
 
                 result.GetEnumerator().Current.Should().BeNull();
                 result.GetEnumerator().MoveNext().Should().BeFalse();
@@ -274,8 +264,6 @@ namespace Neo4j.Driver.Tests
                 public bool AtEnd { get { throw new NotImplementedException(); } }
 
                 public IRecord Peek { get { throw new NotImplementedException(); } }
-
-                public int Position { get { throw new NotImplementedException(); } }
 
                 public IEnumerable<IRecord> Records
                 {
@@ -383,62 +371,15 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class SingleMethod
-        {
-            [Fact]
-            public void ShouldThrowInvalidOperationExceptionIfNoRecordFound()
-            {
-                var result = new StatementResult(new [] { "test" }, new ListBasedRecordSet(new List<IRecord>()));
-                var ex = Xunit.Record.Exception(() => result.Single());
-                ex.Should().BeOfType<InvalidOperationException>();
-                // INFO: Changed message because use of Enumerable.Single for simpler implementation 
-                ex.Message.Should().Be("Sequence contains no elements");
-            }
-
-            [Fact]
-            public void ShouldThrowInvalidOperationExceptionIfMoreThanOneRecordFound()
-            {
-                var result = ResultCreator.CreateResult(1, 2);
-                var ex = Xunit.Record.Exception(() => result.Single());
-                ex.Should().BeOfType<InvalidOperationException>();
-                // INFO: Changed message because use of Enumerable.Single for simpler implementation 
-                ex.Message.Should().Be("Sequence contains more than one element");
-            }
-
-            [Fact]
-            public void ShouldThrowInvalidOperationExceptionIfNotTheFistRecord()
-            {
-                var result = ResultCreator.CreateResult(1, 2);
-                var enumerator = result.GetEnumerator();
-                enumerator.MoveNext().Should().BeTrue();
-                enumerator.Current.Should().NotBeNull();
-
-                var ex = Xunit.Record.Exception(() => result.Single());
-                ex.Should().BeOfType<InvalidOperationException>();
-                ex.Message.Should().Be("The first record is already consumed.");
-            }
-
-            [Fact]
-            public void ShouldReturnRecordIfSingle()
-            {
-                var result = ResultCreator.CreateResult(1);
-                var record = result.Single();
-                record.Should().NotBeNull();
-                record.Keys.Count.Should().Be(1);
-            }
-        }
-
         public class PeekMethod
         {
             [Fact]
             public void ShouldReturnNextRecordWithoutMovingCurrentRecord()
             {
                 var result = ResultCreator.CreateResult(1);
-                result.Position.Should().Be(-1);
                 var record = result.Peek();
                 record.Should().NotBeNull();
 
-                result.Position.Should().Be(-1);
                 result.GetEnumerator().Current.Should().BeNull();
             }
 
@@ -447,7 +388,6 @@ namespace Neo4j.Driver.Tests
             {
                 var result = ResultCreator.CreateResult(1);
                 result.Take(1).ToList();
-                result.Position.Should().Be(0);
                 var record = result.Peek();
                 record.Should().BeNull();
             }
