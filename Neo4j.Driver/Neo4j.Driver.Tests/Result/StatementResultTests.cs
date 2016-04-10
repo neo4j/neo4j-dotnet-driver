@@ -23,83 +23,25 @@ using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Tests.Result;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
     public class StatementResultTests
     {
-        private class ListBasedRecordSet : IRecordSet
-    {
-        private readonly IList<IRecord> _records;
-        private int _recordIndex = 0;
-
-        public ListBasedRecordSet(IList<IRecord> records)
+        private static class ResultCreator
         {
-            _records = records;
-        }
-
-        public bool AtEnd
-        {
-            get
+            public static StatementResult CreateResult(int keySize, int recordSize = 1,
+                Func<IResultSummary> getSummaryFunc = null)
             {
-                return _recordIndex >= _records.Count;
+                var keys = RecordCreator.CreateKeys(keySize);
+                var records = RecordCreator.CreateRecords(recordSize, keys);
+
+                return new StatementResult(keys.ToArray(), new ListBasedRecordSet(records), getSummaryFunc);
             }
         }
 
-        public IRecord Peek
-        {
-            get
-            {
-                if (_recordIndex >= _records.Count) return null;
-
-                return _records[_recordIndex];
-            }
-        }
-
-        public IEnumerable<IRecord> Records
-        {
-            get
-            {
-                if (_recordIndex >= _records.Count) yield break;
-
-                while (_recordIndex < _records.Count)
-                {
-                    yield return _records[_recordIndex++];
-                }
-
-                _recordIndex++;
-                yield break;
-            }
-        }
-    }
-
-    private class ResultCreator
-    {
-        public static StatementResult CreateResult(int keySize, int recordSize=1, Func<IResultSummary> getSummaryFunc = null)
-        {
-            var records = new List<IRecord>(recordSize);
-
-            var keys = new List<string>(keySize);
-            for (int i = 0; i < keySize; i++)
-            {
-                keys.Add($"str{i}");
-            }
-
-            for (int j = 0; j < recordSize; j++)
-            {
-                var values = new List<object>();
-                for (int i = 0; i < keySize; i++)
-                {
-                    values.Add(i);
-                }
-                records.Add(new Record(keys.ToArray(), values.ToArray()));
-            }
-            
-            return new StatementResult(keys.ToArray(), new ListBasedRecordSet(records), getSummaryFunc);
-        }
-    }
-    
         public class Constructor
         {
             [Fact]
@@ -261,16 +203,20 @@ namespace Neo4j.Driver.Tests
                     _getRecords = getRecords;
                 }
 
-                public bool AtEnd { get { throw new NotImplementedException(); } }
-
-                public IRecord Peek { get { throw new NotImplementedException(); } }
-
-                public IEnumerable<IRecord> Records
+                public bool AtEnd
                 {
-                    get
-                    {
-                        return _getRecords();
-                    }
+                    get { throw new NotImplementedException(); }
+                }
+
+                public IRecord Peek()
+                {
+                    throw new NotImplementedException();
+                }
+
+                public IEnumerable<IRecord> Records()
+                {
+
+                    return _getRecords();
                 }
             }
 
@@ -322,6 +268,34 @@ namespace Neo4j.Driver.Tests
                 var temp = result.Take(5);
                 var records = temp.ToList();
                 records.Count.Should().Be(5);
+            }
+        }
+
+        public class ResultNavigation
+        {
+            [Fact]
+            public void ShouldGetTheFirstRecordAndMoveToNextPosition()
+            {
+                var result = ResultCreator.CreateResult(1, 3);
+                var record = result.First();
+                record[0].As<string>().Should().Be("record0:key0");
+
+                record = result.First();
+                record[0].As<string>().Should().Be("record1:key0");
+            }
+
+            [Fact]
+            public void ShouldAlwaysAdvanceRecordPosition()
+            {
+                var result = ResultCreator.CreateResult(1, 3);
+                var enumerable = result.Take(1);
+                var records = result.Take(2).ToList();
+
+                records[0][0].As<string>().Should().Be("record0:key0");
+                records[1][0].As<string>().Should().Be("record1:key0");
+
+                records = enumerable.ToList();
+                records[0][0].As<string>().Should().Be("record2:key0");
             }
         }
 

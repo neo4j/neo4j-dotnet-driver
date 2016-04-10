@@ -43,6 +43,7 @@
     <Compile Include="IAuthToken.cs" />
     <Compile Include="Internal\AuthToken.cs" />
     <Compile Include="Internal\DebugLogger.cs" />
+    <Compile Include="Internal\Result\RecordSet.cs" />
     <Compile Include="Neo4jException.cs" />
     <Compile Include="Extensions\Throw.cs" />
     <Compile Include="Extensions\ByteExtensions.cs" />
