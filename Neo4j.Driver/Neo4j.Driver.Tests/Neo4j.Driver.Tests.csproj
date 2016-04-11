@@ -92,6 +92,7 @@
     <Compile Include="DriverTests.cs" />
     <Compile Include="EntityTests.cs" />
     <Compile Include="Messaging\MessageTests.cs" />
+    <Compile Include="Result\RecordSetTests.cs" />
     <Compile Include="Result\ResultBuilderTests.cs" />
     <Compile Include="SessionPoolTests.cs" />
     <Compile Include="SessionTests.cs" />

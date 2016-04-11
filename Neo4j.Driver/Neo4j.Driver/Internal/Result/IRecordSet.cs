@@ -18,11 +18,11 @@ namespace Neo4j.Driver.Internal.Result
         /// Peeks a record without consuming. 
         /// If all records has been consumed, this is null
         /// </summary>
-        IRecord Peek { get; }
+        IRecord Peek();
 
         /// <summary>
         /// Returns an IEnumerable of records.
         /// </summary>
-        IEnumerable<IRecord> Records { get; }
+        IEnumerable<IRecord> Records();
     }
 }

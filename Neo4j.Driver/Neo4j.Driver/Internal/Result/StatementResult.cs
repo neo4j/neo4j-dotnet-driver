@@ -66,12 +66,12 @@ namespace Neo4j.Driver.Internal.Result
 
         public IRecord Peek()
         {
-            return _recordSet.Peek;
+            return _recordSet.Peek();
         }
 
         public IResultSummary Consume()
         {
-            foreach (var record in _recordSet.Records)
+            foreach (var record in _recordSet.Records())
             {
                 // Do nothing, just consume the records
             }
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IEnumerator<IRecord> GetEnumerator()
         {
-            return _recordSet.Records.GetEnumerator();
+            return _recordSet.Records().GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
