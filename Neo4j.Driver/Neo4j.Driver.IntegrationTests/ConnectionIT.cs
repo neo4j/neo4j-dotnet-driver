@@ -174,5 +174,25 @@ namespace Neo4j.Driver.IntegrationTests
                 result1All.Select(r => r.Values["n"].As<int>()).Should().ContainInOrder(1, 2, 3);
             }
         }
+
+        [Fact]
+        public void TheSessionErrorShouldBeClearedForEachSession()
+        {
+            using (var driver = GraphDatabase.Driver("bolt://localhost"))
+            {
+                using (var session = driver.Session())
+                {
+                    var ex = Record.Exception(() => session.Run("Invalid Cypher"));
+                    ex.Should().BeOfType<ClientException>();
+                    ex.Message.Should()
+                        .Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                }
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("RETURN 1");
+                    result.Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
     }
 }

@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -26,6 +28,16 @@ namespace Neo4j.Driver.Tests
 {
     public class SessionTests
     {
+        public class Constructor
+        {
+            [Fact]
+            public void ShouldThrowExceptionIfProtocolIsNotSupported()
+            {
+                var ex = Record.Exception(() => new Session(new Uri("http://localhost:1234"), null, null));
+                ex.Should().BeOfType<NotSupportedException>();
+                ex.Message.Should().Be("Unsupported protocol: http");
+            }
+        }
         public class RunMethod
         {
             [Fact]
