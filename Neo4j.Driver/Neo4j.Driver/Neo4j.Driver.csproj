@@ -41,6 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="IAuthToken.cs" />
+    <Compile Include="IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />
     <Compile Include="Internal\DebugLogger.cs" />
     <Compile Include="Internal\Result\RecordSet.cs" />
