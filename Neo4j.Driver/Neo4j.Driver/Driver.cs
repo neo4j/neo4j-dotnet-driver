@@ -30,7 +30,7 @@ namespace Neo4j.Driver
     ///     configured by the <see cref="Config.MaxIdleSessionPoolSize" /> property on the <see cref="Config" /> when creating the
     ///     Driver.
     /// </remarks>
-    public class Driver : IDisposable
+    internal class Driver : IDriver
     {
         private SessionPool _sessionPool;
 

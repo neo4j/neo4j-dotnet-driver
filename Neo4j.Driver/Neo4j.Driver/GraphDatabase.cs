@@ -39,7 +39,7 @@ namespace Neo4j.Driver
         /// <returns>A new <see cref="Neo4j.Driver.Driver" /> instance specified by the <paramref name="uri" /></returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" /></remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c></exception>
-        public static Driver Driver(Uri uri, Config config = null)
+        public static IDriver Driver(Uri uri, Config config = null)
         {
             return Driver(uri, AuthTokens.None, config ?? Config.DefaultConfig);
         }
@@ -59,7 +59,7 @@ namespace Neo4j.Driver
         /// <returns>A new <see cref="Neo4j.Driver.Driver" /> instance specified by the <paramref name="uri" /></returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" /></remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c></exception>
-        public static Driver Driver(string uri, Config config = null)
+        public static IDriver Driver(string uri, Config config = null)
         {
             return Driver(new Uri(uri), AuthTokens.None, config ?? Config.DefaultConfig);
         }
@@ -74,7 +74,7 @@ namespace Neo4j.Driver
         /// <param name="authToken">Authentication to use, <see cref="AuthTokens" /></param>
         /// <param name="config">User defined configuration</param>
         /// <returns>A new driver to the database instance specified by the URI</returns>
-        public static Driver Driver(string uri, IAuthToken authToken, Config config = null)
+        public static IDriver Driver(string uri, IAuthToken authToken, Config config = null)
         {
             return Driver(new Uri(uri), authToken, config ?? Config.DefaultConfig);
         }
@@ -89,7 +89,7 @@ namespace Neo4j.Driver
         /// <param name="authToken">Authentication to use, <see cref="AuthTokens" /></param>
         /// <param name="config">User defined configuration</param>
         /// <returns>A new driver to the database instance specified by the URI</returns>
-        public static Driver Driver(Uri uri, IAuthToken authToken, Config config = null)
+        public static IDriver Driver(Uri uri, IAuthToken authToken, Config config = null)
         {
             return new Driver(uri, authToken, config ?? Config.DefaultConfig);
         }

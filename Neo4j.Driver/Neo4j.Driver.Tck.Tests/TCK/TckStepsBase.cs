@@ -13,7 +13,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     public class TckStepsBase
     {
         public const string Url = "bolt://localhost:7687";
-        protected static Driver Driver;
+        protected static IDriver Driver;
         protected static INeo4jInstaller Installer;
 
         protected static object GetValue(string type, string value)
