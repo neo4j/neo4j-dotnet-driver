@@ -122,6 +122,12 @@
       <DependentUpon>DriverStatementResultNavigation.feature</DependentUpon>
     </Compile>
     <Compile Include="TCK\DriverStatementResultNavigationSteps.cs" />
+    <Compile Include="TCK\ErrorReporting.feature.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ErrorReporting.feature</DependentUpon>
+    </Compile>
+    <Compile Include="TCK\ErrorReportingSteps.cs" />
     <Compile Include="TCK\MatchAcceptanceTest.feature.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -160,6 +166,10 @@
     <None Include="TCK\DriverStatementResultNavigation.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>
       <LastGenOutput>DriverStatementResultNavigation.feature.cs</LastGenOutput>
+    </None>
+    <None Include="TCK\ErrorReporting.feature">
+      <Generator>SpecFlowSingleFileGenerator</Generator>
+      <LastGenOutput>ErrorReporting.feature.cs</LastGenOutput>
     </None>
     <None Include="TCK\MatchAcceptanceTest.feature">
       <Generator>SpecFlowSingleFileGenerator</Generator>

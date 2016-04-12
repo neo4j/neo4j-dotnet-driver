@@ -40,7 +40,7 @@ namespace Neo4j.Driver
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
             Throw.ArgumentNullException.IfNull(config, nameof(config));
 
-            if (uri.Scheme.ToLowerInvariant() == "bolt" && uri.Port == -1)
+            if (uri.Port == -1)
             {
                 var builder = new UriBuilder(uri.Scheme, uri.Host, 7687);
                 uri = builder.Uri;

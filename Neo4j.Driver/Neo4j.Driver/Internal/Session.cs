@@ -28,11 +28,16 @@ namespace Neo4j.Driver.Internal
         private Transaction _transaction;
         private readonly Action<Guid> _releaseAction;
         private readonly ILogger _logger;
+        private const string Scheme = "bolt";
 
-        public Session(Uri url, IAuthToken authToken, Config config, IConnection conn = null, Action<Guid> releaseAction = null )
+        public Session(Uri uri, IAuthToken authToken, Config config, IConnection conn = null, Action<Guid> releaseAction = null )
             : base(config?.Logger)
         {
-            _connection = TryExecute(() => conn ?? new SocketConnection(url, authToken, config));
+            if (uri != null && uri.Scheme.ToLowerInvariant() != Scheme)
+            {
+                throw new NotSupportedException($"Unsupported protocol: {uri.Scheme}");
+            }
+            _connection = conn ?? new SocketConnection(uri, authToken, config);
             _releaseAction = releaseAction ?? (x => {});
             _logger = config?.Logger;
         }
