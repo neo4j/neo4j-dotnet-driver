@@ -72,10 +72,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             using (var driver = GraphDatabase.Driver("http://localhost"))
             {
                 var ex = Xunit.Record.Exception(() => driver.Session().Run("RETURN 1"));
-                ex.Should().BeOfType<AggregateException>();
-                ex = ex.GetBaseException();
                 ex.Should().BeOfType<NotSupportedException>();
-                ex.Message.Should().Be("The Neo4j Server doesn't support this client.");
+                ex.Message.Should().Be("Unsupported protocol: http");
             }
         }
 
