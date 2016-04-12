@@ -290,7 +290,7 @@ namespace Neo4j.Driver.Examples
 
         private void ClearDatabase()
         {
-            Driver driver = GraphDatabase.Driver("bolt://localhost:7687");
+            IDriver driver = GraphDatabase.Driver("bolt://localhost:7687");
             var session = driver.Session();
             var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
             result.ToList();

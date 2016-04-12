@@ -14,21 +14,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using Neo4j.Driver.Extensions;
-using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.Internal
 {
-    /// <summary>
-    ///     The <see cref="Driver"/> instance maintains the connections with a Neo4j database, providing an access point via the
-    ///     <see cref="Session" /> method.
-    /// </summary>
-    /// <remarks>
-    ///     The Driver maintains a session pool buffering the <see cref="ISession" />s created by the user. 
-    ///     The size of the buffer can be configured by the <see cref="Config.MaxIdleSessionPoolSize" /> property on the <see cref="Config" /> when creating the Driver.
-    /// </remarks>
-    public class Driver : IDisposable
+    internal class Driver : IDriver
     {
         private SessionPool _sessionPool;
 
@@ -48,9 +40,6 @@ namespace Neo4j.Driver
             _sessionPool = new SessionPool(uri, authToken, config?.Logger, config);
         }
 
-        /// <summary>
-        ///     Gets the <see cref="Uri" /> of the Neo4j database.
-        /// </summary>
         public Uri Uri { get; }
 
         protected virtual void Dispose(bool isDisposing)
@@ -71,13 +60,6 @@ namespace Neo4j.Driver
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        ///     Establishes a session with the Neo4j instance.
-        /// </summary>
-        /// <returns>
-        ///     An <see cref="ISession" /> that could be used to <see cref="IStatementRunner.Run(Statement)" /> a statement or begin a
-        ///     transaction.
-        /// </returns>
         public ISession Session()
         {
             return _sessionPool.GetSession();

@@ -19,7 +19,7 @@ using System;
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///     Creates <see cref="Neo4j.Driver.Driver" /> instances, optionally letting you
+    ///     Creates <see cref="Neo4j.Driver.IDriver" /> instances, optionally letting you
     ///     configure them.
     /// </summary>
     public static class GraphDatabase
@@ -36,10 +36,10 @@ namespace Neo4j.Driver
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
         ///     is used.
         /// </param>
-        /// <returns>A new <see cref="Neo4j.Driver.Driver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <returns>A new <see cref="Neo4j.Driver.IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
-        public static Driver Driver(Uri uri, Config config = null)
+        public static IDriver Driver(Uri uri, Config config = null)
         {
             return Driver(uri, AuthTokens.None, config ?? Config.DefaultConfig);
         }
@@ -56,10 +56,10 @@ namespace Neo4j.Driver
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
         ///     is used.
         /// </param>
-        /// <returns>A new <see cref="Neo4j.Driver.Driver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <returns>A new <see cref="Neo4j.Driver.IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
-        public static Driver Driver(string uri, Config config = null)
+        public static IDriver Driver(string uri, Config config = null)
         {
             return Driver(new Uri(uri), AuthTokens.None, config ?? Config.DefaultConfig);
         }
@@ -77,7 +77,7 @@ namespace Neo4j.Driver
         ///     is used.
         /// </param>
         /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
-        public static Driver Driver(string uri, IAuthToken authToken, Config config = null)
+        public static IDriver Driver(string uri, IAuthToken authToken, Config config = null)
         {
             return Driver(new Uri(uri), authToken, config ?? Config.DefaultConfig);
         }
@@ -95,9 +95,9 @@ namespace Neo4j.Driver
         ///     is used.
         /// </param>
         /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
-        public static Driver Driver(Uri uri, IAuthToken authToken, Config config = null)
+        public static IDriver Driver(Uri uri, IAuthToken authToken, Config config = null)
         {
-            return new Driver(uri, authToken, config ?? Config.DefaultConfig);
+            return new Internal.Driver(uri, authToken, config ?? Config.DefaultConfig);
         }
     }
 }
