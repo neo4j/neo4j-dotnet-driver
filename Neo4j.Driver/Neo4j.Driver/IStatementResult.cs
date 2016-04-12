@@ -29,7 +29,7 @@ namespace Neo4j.Driver
     public interface IStatementResult : IEnumerable<IRecord>
     {
         /// <summary>
-        /// Gets the keys in the result
+        /// Gets the keys in the result.
         /// </summary>
         IReadOnlyList<string> Keys { get; }
         /// <summary>
@@ -40,13 +40,13 @@ namespace Neo4j.Driver
         /// <summary>
         /// Investigate the next upcoming record without changing the current position in the result.
         /// </summary>
-        /// <returns>The next record, or null if there is no next record</returns>
+        /// <returns>The next record, or null if there is no next record.</returns>
         IRecord Peek();
         /// <summary>
         /// Consume the entire result, yielding a summary of it.
         /// Calling this method exhausts the result.
         /// </summary>
-        /// <returns>A summary for running the statement</returns>
+        /// <returns>A summary for running the statement.</returns>
         /// <remarks>This method could be called multiple times. If no more record could be consumed then calling this method has the same effect of calling <see cref="IStatementResult.Summary"/>.</remarks>
         IResultSummary Consume();
     }

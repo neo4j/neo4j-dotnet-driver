@@ -40,7 +40,7 @@ namespace Neo4j.Driver
 
         /// <summary>
         ///Gets the position in the statement where this notification points to.
-        ///Not all notifications have a unique position to point to and in that case the position would be set to null.
+        ///Not all notifications have a unique position to point to and in that case the position would be set to all 0s.
         /// </summary>
         IInputPosition Position { get; }
 
@@ -56,17 +56,17 @@ namespace Neo4j.Driver
     public interface IInputPosition
     {
         /// <summary>
-        /// The character offset referred to by this position; offset numbers start at 0.
+        /// Gets the character offset referred to by this position; offset numbers start at 0.
         /// </summary>
         int Offset { get; }
 
         /// <summary>
-        /// The line number referred to by the position; line numbers start at 1.
+        /// Gets the line number referred to by the position; line numbers start at 1.
         /// </summary>
         int Line { get; }
 
         /// <summary>
-        /// The column number referred to by the position; column numbers start at 1.
+        /// Gets the column number referred to by the position; column numbers start at 1.
         /// </summary>
         int Column { get; }
     }

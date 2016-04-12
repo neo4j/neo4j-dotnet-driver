@@ -8,7 +8,7 @@ using System.Reflection;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// A collection of extensions to process values streamed back via Bolt
+    /// A collection of extensions to process values streamed back via Bolt.
     /// </summary>
     public static class ValueExtensions
     {
@@ -16,7 +16,7 @@ namespace Neo4j.Driver
         /// A helper method to explicitly cast the value streamed back via Bolt to a local type.
         /// </summary>
         /// <typeparam name="T">
-        /// Well support for one of the following types (or nullable version of the following types if applies):
+        /// Supports for the following types (or nullable version of the following types if applies):
         /// <see cref="short"/>,
         /// <see cref="int"/>,
         /// <see cref="long"/>,
@@ -37,9 +37,9 @@ namespace Neo4j.Driver
         /// Undefined support for other types that are not listed above.
         /// No support for user-defined types, e.g. Person, Movie.
         /// </typeparam>
-        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/></param>
-        /// <returns>The value of specified return type</returns>
-        /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible</remarks>
+        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/>.</param>
+        /// <returns>The value of specified return type.</returns>
+        /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible.</remarks>
         public static T As<T>(this object value)
         {
             if (value == null)

@@ -11,14 +11,14 @@ namespace Neo4j.Driver
         /// Gets the value at the given index.
         /// </summary>
         /// <param name="index">The index</param>
-        /// <returns>The value specified with the given index</returns>
+        /// <returns>The value specified with the given index.</returns>
         object this[int index] { get; }
 
         /// <summary>
-        /// Gets the value specified by the given key
+        /// Gets the value specified by the given key.
         /// </summary>
         /// <param name="key">The key</param>
-        /// <returns>the value spcified with the given key</returns>
+        /// <returns>the value spcified with the given key.</returns>
         object this[string key] { get; }
 
         /// <summary>

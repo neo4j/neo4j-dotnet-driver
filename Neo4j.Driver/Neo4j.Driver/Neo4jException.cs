@@ -44,6 +44,9 @@ namespace Neo4j.Driver
             Code = code;
         }
 
+        /// <summary>
+        /// Gets or sets the code of a Neo4j exception.
+        /// </summary>
         public string Code { get; set; }
     }
 

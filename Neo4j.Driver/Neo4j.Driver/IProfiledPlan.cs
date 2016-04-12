@@ -34,6 +34,13 @@ namespace Neo4j.Driver
         /// </summary>
         long Records { get; }
 
+        /// <summary>
+        /// Gets zero or more child profiled plans.
+        /// 
+        /// A profiled plan is a tree, where each child is another profiled plan. The children are where
+        /// this part of the plan gets its input records - unless this is an <see cref="IPlan.OperatorType"/> that introduces
+        /// new records on its own.
+        /// </summary>
         new IList<IProfiledPlan> Children { get; }
     }
 }

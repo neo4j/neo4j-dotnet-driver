@@ -20,28 +20,28 @@ using System.Collections.Generic;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// The base interface for <see cref="INode"/> and <see cref="IRelationship"/>
+    /// Represents an <c>Entity</c> in the Neo4j graph database. An <c>Entity</c> could be a <c>Node</c> or a <c>Relationship</c>.
     /// </summary>
     public interface IEntity
     {
         /// <summary>
-        /// Gets the value that has the specified key in <see cref="Properties"/> 
+        /// Gets the value that has the specified key in <see cref="Properties"/>.
         /// </summary>
-        /// <param name="key">the key</param>
-        /// <returns>the value specified by the given key in <see cref="Properties"/></returns>
+        /// <param name="key">The key.</param>
+        /// <returns>The value specified by the given key in <see cref="Properties"/>.</returns>
         object this[string key] { get; }
         /// <summary>
-        /// Gets the properties of the <c>Entity</c>.
+        /// Gets the properties of the entity.
         /// </summary>
         IReadOnlyDictionary<string, object> Properties { get; }
         /// <summary>
-        /// Get the identity as a <see cref="long"/> number
+        /// Get the identity as a <see cref="long"/> number.
         /// </summary>
         long Id { get; }
     }
 
     /// <summary>
-    /// Represents a <c>Node</c> in the Neo4j graph database 
+    /// Represents a <c>Node</c> in the Neo4j graph database.
     /// </summary>
     public interface INode: IEntity, IEquatable<INode>
     {
@@ -52,12 +52,12 @@ namespace Neo4j.Driver
     }
 
     /// <summary>
-    /// Represents a <c>Relationship</c> in the Neo4j graph database
+    /// Represents a <c>Relationship</c> in the Neo4j graph database.
     /// </summary>
     public interface IRelationship : IEntity, IEquatable<IRelationship>
     {
         /// <summary>
-        /// Gets the type of the relationship
+        /// Gets the type of the relationship.
         /// </summary>
         string Type { get; }
         //bool HasType(string type);
@@ -75,7 +75,7 @@ namespace Neo4j.Driver
     ///     A <c>Path</c> is a directed sequence of relationships between two nodes. This generally
     ///     represents a <em>traversal</em> or <em>walk</em> through a graph and maintains a direction separate
     ///     from that of any relationships traversed.
-    ///     It is allowed to be of size 0, meaning there are no relationships in it.In this case,
+    ///     It is allowed to be of size 0, meaning there are no relationships in it. In this case,
     ///     it contains only a single node which is both the start and the end of the path.
     /// </summary>
     public interface IPath : IEquatable<IPath>
@@ -88,9 +88,6 @@ namespace Neo4j.Driver
         /// Gets the end <see cref="INode"/> in the path.
         /// </summary>
         INode End { get; }
-        //int Length {get;}
-        //bool Contains(INode node);
-        //bool Contains(IRelationship rel);
         /// <summary>
         /// Gets all the nodes in the path.
         /// </summary>

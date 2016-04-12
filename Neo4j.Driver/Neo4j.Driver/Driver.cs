@@ -21,14 +21,12 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///     The Driver instance maintains the connections with the Neo4j database, providing an access point via the
+    ///     The <see cref="Driver"/> instance maintains the connections with a Neo4j database, providing an access point via the
     ///     <see cref="Session" /> method.
     /// </summary>
     /// <remarks>
-    ///     The Driver maintains a session pool buffering the <see cref="ISession" />s created by the user. The size of the
-    ///     buffer can be
-    ///     configured by the <see cref="Config.MaxIdleSessionPoolSize" /> property on the <see cref="Config" /> when creating the
-    ///     Driver.
+    ///     The Driver maintains a session pool buffering the <see cref="ISession" />s created by the user. 
+    ///     The size of the buffer can be configured by the <see cref="Config.MaxIdleSessionPoolSize" /> property on the <see cref="Config" /> when creating the Driver.
     /// </remarks>
     public class Driver : IDisposable
     {
@@ -74,11 +72,11 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        ///     Establish a session with Neo4j instance
+        ///     Establishes a session with the Neo4j instance.
         /// </summary>
         /// <returns>
         ///     An <see cref="ISession" /> that could be used to <see cref="IStatementRunner.Run(Statement)" /> a statement or begin a
-        ///     transaction
+        ///     transaction.
         /// </returns>
         public ISession Session()
         {

@@ -19,7 +19,7 @@ using System.Collections.Generic;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// This describes the plan that the database planner produced and used (or will use) to execute your statement.
+    /// This describes the <c>Plan</c> that the database planner produced and used (or will use) to execute your statement.
     /// This can be extremely helpful in understanding what a statement is doing, and how to optimize it. For more
     /// details, see the Neo4j Manual.
     ///
@@ -37,26 +37,28 @@ namespace Neo4j.Driver
         string OperatorType { get; }
 
         /// <summary>
+        /// Gets the arguments for the <see cref="OperatorType"/> used.
+        /// 
         /// Many <see cref="OperatorType"/> have arguments defining their specific behavior. This map contains
         /// those arguments.
-        ///
-        /// Gets the arguments for the <see cref="OperatorType"/> used.
         /// </summary>
         IDictionary<string, object> Arguments { get; }
 
         /// <summary>
+        /// Gets a list of identifiers used by this plan.
+        /// 
         /// Identifiers used by this part of the plan. These can be both identifiers introduce by you, or automatically
         /// generated identifiers.
-        /// 
-        /// Gets a list of identifiers used by this plan.
+        ///
         /// </summary>
         IList<string> Identifiers { get; }
 
         /// <summary>
+        /// Gets zero or more child plans.
+        /// 
         /// A plan is a tree, where each child is another plan. The children are where
         /// this part of the plan gets its input records - unless this is an <see cref="OperatorType"/> that introduces
         /// new records on its own.
-        /// Gets zero or more child plans.
         /// </summary>
         IList<IPlan> Children { get; }
     }
