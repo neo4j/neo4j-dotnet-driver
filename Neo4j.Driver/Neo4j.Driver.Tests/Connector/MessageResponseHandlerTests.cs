@@ -141,6 +141,23 @@ namespace Neo4j.Driver.Tests.Connector
                 mrh.ResultBuilders.Should().HaveCount(0);
                 mrh.CurrentResultBuilder.Should().BeNull();
             }
+
+            [Fact]
+            public void ShouldClearErrorState()
+            {
+                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mrh = new MessageResponseHandler();
+                mrh.Register(new PullAllMessage(), mockResultBuilder.Object);
+
+                mrh.HandleFailureMessage("Neo.ClientError.General.ReadOnly", "message");
+                mrh.HasError.Should().BeTrue();
+                mrh.Error.Should().BeOfType<ClientException>();
+
+                mrh.Clear();
+
+                mrh.HasError.Should().BeFalse();
+                mrh.Error.Should().BeNull();
+            }
         }
 
         public class HandleFailureMessageMethod

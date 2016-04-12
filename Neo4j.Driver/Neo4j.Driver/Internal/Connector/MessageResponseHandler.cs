@@ -28,9 +28,11 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Queue<IRequestMessage> _sentMessages = new Queue<IRequestMessage>();
         internal IResultBuilder CurrentResultBuilder { get; private set; }
 
+        public Neo4jException Error { get; internal set; }
+        public bool HasError => Error != null;
+
         internal Queue<IResultBuilder> ResultBuilders => new Queue<IResultBuilder>(_resultBuilders);
-        internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_sentMessages); 
-        
+        internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_sentMessages);
 
         public MessageResponseHandler()
         {
@@ -40,9 +42,6 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _logger = logger;
         }
-
-        public Neo4jException Error { get; internal set; }
-        public bool HasError => Error != null;
 
         public void HandleSuccessMessage(IDictionary<string, object> meta)
         {
@@ -107,6 +106,7 @@ namespace Neo4j.Driver.Internal.Connector
             _resultBuilders.Clear();
             _sentMessages.Clear();
             CurrentResultBuilder = null;
+            Error = null;
         }
 
         public bool QueueIsEmpty()
