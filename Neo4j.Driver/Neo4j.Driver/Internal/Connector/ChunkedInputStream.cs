@@ -133,7 +133,7 @@ namespace Neo4j.Driver.Internal.Connector
                 throw new Neo4jException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
             }
 
-            _logger?.Trace("S: ", buffer);
+            _logger?.Trace("S: ", buffer, 0, buffer.Length);
         }
 
         public void ReadMessageTail()
