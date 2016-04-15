@@ -1,4 +1,20 @@
-﻿using System;
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,7 +24,7 @@ using System.Reflection;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// A collection of extensions to process values streamed back via Bolt
+    /// A collection of extensions to process values streamed back via Bolt.
     /// </summary>
     public static class ValueExtensions
     {
@@ -16,7 +32,7 @@ namespace Neo4j.Driver
         /// A helper method to explicitly cast the value streamed back via Bolt to a local type.
         /// </summary>
         /// <typeparam name="T">
-        /// Well support for one of the following types (or nullable version of the following types if applies):
+        /// Supports for the following types (or nullable version of the following types if applies):
         /// <see cref="short"/>,
         /// <see cref="int"/>,
         /// <see cref="long"/>,
@@ -37,9 +53,9 @@ namespace Neo4j.Driver
         /// Undefined support for other types that are not listed above.
         /// No support for user-defined types, e.g. Person, Movie.
         /// </typeparam>
-        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/></param>
-        /// <returns>The value of specified return type</returns>
-        /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible</remarks>
+        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/>.</param>
+        /// <returns>The value of specified return type.</returns>
+        /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible.</remarks>
         public static T As<T>(this object value)
         {
             if (value == null)

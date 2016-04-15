@@ -1,20 +1,19 @@
-﻿//  Copyright (c) 2002-2016 "Neo Technology,"
-//  Network Engine for Objects in Lund AB [http://neotechnology.com]
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
-//  This file is part of Neo4j.
+// This file is part of Neo4j.
 // 
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 // 
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 // 
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
@@ -29,12 +28,12 @@ namespace Neo4j.Driver
     }
 
     /// <summary>
-    /// Use this class to config the <see cref="Driver"/> in a certain way
+    /// Use this class to config the <see cref="Driver"/>.
     /// </summary>
     public class Config
     {
         /// <summary>
-        /// When the <see cref="MaxIdleSessionPoolSize"/> is set to <see cref="InfiniteMaxIdleSessionPoolSize" /> the idle session pool will pool all sessions created by the driver.
+        /// When the <see cref="MaxIdleSessionPoolSize"/> is set to <see cref="InfiniteMaxIdleSessionPoolSize" />, the idle session pool will pool all sessions created by the driver.
         /// </summary>
         public const int InfiniteMaxIdleSessionPoolSize = -1;
         static Config()
@@ -48,7 +47,7 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        /// Returns the default configuration for the <see cref="Driver"/>
+        /// Returns the default configuration for the <see cref="Driver"/>.
         /// </summary>
         /// <remarks>
         /// The defaults are <br/>
@@ -61,7 +60,7 @@ namespace Neo4j.Driver
         public static Config DefaultConfig { get; }
 
         /// <summary>
-        /// Create an instance of <see cref="IConfigBuilder"/> to build a <see cref="Config"/>
+        /// Create an instance of <see cref="IConfigBuilder"/> to build a <see cref="Config"/>.
         /// </summary>
         public static IConfigBuilder Builder => new ConfigBuilder(new Config());
 
@@ -78,8 +77,10 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets or sets the max idle session pool size.
         /// </summary>
-        /// <remarks> The max idle session pool size represents the maximum number of sessions buffered for the driver. A buffered <see cref="ISession"/>
-        /// is a session that has already been connected to the database instance and doesn't need to re-initialize.</remarks>
+        /// <remarks> 
+        /// The max idle session pool size represents the maximum number of sessions buffered by the driver. 
+        /// A buffered <see cref="ISession"/> is a session that has already been connected to the database instance and doesn't need to re-initialize.
+        /// </remarks>
         public int MaxIdleSessionPoolSize { get; set; }
 
         private class ConfigBuilder : IConfigBuilder
@@ -124,7 +125,7 @@ namespace Neo4j.Driver
         /// Builds the <see cref="Config"/> instance based on the previously set values.
         /// </summary>
         /// <remarks>>
-        /// If no value was set for a property the defaults specified in <see cref="Config.DefaultConfig"/> will be .
+        /// If no value was set for a property the defaults specified in <see cref="Config.DefaultConfig"/> will be used.
         /// </remarks>
         /// <returns>A <see cref="Config"/> instance.</returns>
         Config ToConfig();
@@ -132,7 +133,7 @@ namespace Neo4j.Driver
         /// <summary>
         /// Sets the <see cref="Config"/> to use TLS if <paramref name="level"/> is <c>true</c>.
         /// </summary>
-        /// <param name="level"><c>Encrypted</c> enables TLS for the connection, <c>None</c> otherwise. See <see cref="EncryptionLevel"/> for more info</param>
+        /// <param name="level"><see cref="EncryptionLevel.Encrypted"/> enables TLS for the connection, <see cref="EncryptionLevel.None"/> otherwise. See <see cref="EncryptionLevel"/> for more info</param>.
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithEncryptionLevel(EncryptionLevel level);

@@ -93,7 +93,6 @@
     <Compile Include="IProfiledPlan.cs" />
     <Compile Include="IRecord.cs" />
     <Compile Include="IStatementResult.cs" />
-    <Compile Include="IResultRecordAccessor.cs" />
     <Compile Include="IResultSummary.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
