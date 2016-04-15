@@ -20,29 +20,29 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///     This is a combination of a<b>Principal</b>, for instance a username,
-    ///     and one or more<b> Credentials</b>, for instance a password.It is used
-    ///     to authenticate with a Neo4j instance.See { @link AuthTokens}
-    ///     for available types of {@link AuthToken}.
-    ///     <see cref="AuthTokens" />
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+    ///     An authentication token is used to authenticate with a Neo4j instance. 
+    ///     It usually contains a <c>Principal</c>, for instance a username, and one or more <c>Credentials</c>, for instance a password.
+    ///     See <see cref="AuthTokens" /> for available types of <see cref="IAuthToken"/>s.
     /// </summary>
+    /// <remarks>
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+    /// </remarks>
     public interface IAuthToken
     {
     }
 
     /// <summary>
-    ///     This is a listing of the various methods of authentication supported by this
-    ///     driver.The scheme used must be supported by the Neo4j Instance you are connecting
-    ///     to.
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+    ///     This provides methods to create <see cref="IAuthToken"/>s for various authentication schemes supported by this driver. 
+    ///     The scheme used must be also supported by the Neo4j instance you are connecting to.
     /// </summary>
+    /// <remarks>
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+    /// </remarks>
     public class AuthTokens
     {
         /// <summary>
         ///     Gets an authentication token that can be used to connect to Neo4j instances with auth disabled.
-        ///     No authentication scheme. This will only work if authentication is disabled
-        ///     on the Neo4j Instance we are connecting to.
+        ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
         /// </summary>
         /// <remarks>
         ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
@@ -52,9 +52,9 @@ namespace Neo4j.Driver
         /// <summary>
         ///     The basic authentication scheme, using a username and a password.
         /// </summary>
-        /// <param name="username">this is the "principal", identifying who this token represents.</param>
-        /// <param name="password">this is the "credential", proving the identity of the user.</param>
-        /// <returns>an authentication token that can be used to connect to Neo4j.</returns>
+        /// <param name="username">This is the "principal", identifying who this token represents.</param>
+        /// <param name="password">This is the "credential", proving the identity of the user.</param>
+        /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
         /// <remarks>
         ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
         /// </remarks>
