@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
@@ -28,7 +29,7 @@ namespace Neo4j.Driver
     }
 
     /// <summary>
-    /// Use this class to config the <see cref="Driver"/>.
+    /// Use this class to config the <see cref="IDriver"/>.
     /// </summary>
     public class Config
     {
@@ -47,7 +48,7 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        /// Returns the default configuration for the <see cref="Driver"/>.
+        /// Returns the default configuration for the <see cref="IDriver"/>.
         /// </summary>
         /// <remarks>
         /// The defaults are <br/>
@@ -65,7 +66,7 @@ namespace Neo4j.Driver
         public static IConfigBuilder Builder => new ConfigBuilder(new Config());
 
         /// <summary>
-        /// Gets or sets the use of encryption for all the connections created by the Driver.
+        /// Gets or sets the use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
         public EncryptionLevel EncryptionLevel { get; set; }
 

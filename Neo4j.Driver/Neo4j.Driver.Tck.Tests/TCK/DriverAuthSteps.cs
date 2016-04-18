@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Then(@"reading and writing to the database should be possible")]
         public void ThenReadingAndWritingToTheDatabaseShouldBePossible()
         {
-            var driver = ScenarioContext.Current.Get<Driver>();
+            var driver = ScenarioContext.Current.Get<IDriver>();
             using (driver)
             using (var session = driver.Session())
             {
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Then(@"reading and writing to the database should not be possible")]
         public void ThenReadingAndWritingToTheDatabaseShouldNotBePossible()
         {
-            var driver = ScenarioContext.Current.Get<Driver>();
+            var driver = ScenarioContext.Current.Get<IDriver>();
             using (driver)
             using (var session = driver.Session())
             {
