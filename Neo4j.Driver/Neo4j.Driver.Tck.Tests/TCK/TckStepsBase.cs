@@ -28,7 +28,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
 {
     public class TckStepsBase
     {
-        public const string Url = "bolt://localhost:7687";
+        public const string Uri = "bolt://localhost";
+        public static IAuthToken AuthToken;
         protected static IDriver Driver;
         protected static INeo4jInstaller Installer;
 
@@ -87,7 +88,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
 
         protected static void CreateNewDriver()
         {
-            Driver = GraphDatabase.Driver(Url);
+            Driver = GraphDatabase.Driver(Uri, AuthToken);
         }
 
         protected static void AssertRecordsAreTheSame(List<IRecord> actual, List<IRecord> expected)

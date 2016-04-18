@@ -33,8 +33,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 Neo4jServerEdition.Community,
                 Neo4jServerPlatform.Windows,
                 new ZipNeo4jServerFileExtractor());
-
-            UpdateSettings(new Dictionary<string, string> {{"dbms.security.auth_enabled", "false"}}); // disable auth
         }
 
         public void UpdateSettings(IDictionary<string, string> keyValuePair)
