@@ -57,7 +57,11 @@ namespace Neo4j.Driver
 
         /// <summary>Log a message at <see cref="LogLevel.Trace"/> level</summary>
         /// <param name="message">The message.</param>
-        /// <param name="restOfMessage">Any <paramref name="restOfMessage"/> parts of the message, including (but not limited to) bytes sent and received over the connection.</param>
+        /// <param name="restOfMessage">
+        /// Any <paramref name="restOfMessage"/> parts of the message, 
+        /// including (but not limited to) byte buffer to send/receive data over the connection, 
+        /// offset in byte buffer, the length of bytes in the buffer.
+        /// </param>
         void Trace(string message, params object[] restOfMessage);
 
         /// <summary>

@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests
             {
                 var clientMock = new Mock<ITcpSocketClient>();
                 var loggerMock = new Mock<ILogger>();
-                loggerMock.Setup(x => x.Trace(It.IsAny<string>(), It.IsAny<object[]>()))
+                loggerMock.Setup(x => x.Trace(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<int>(), It.IsAny<int>()))
                     .Callback<string, object[]>((s, o) => _output.WriteLine(s +  ((byte[])o[0]).ToHexString(showX:true)));
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
@@ -84,7 +84,7 @@ namespace Neo4j.Driver.Tests
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes(actual);
                 actual.Should().Equal(correctValue);
-                loggerMock.Verify(x => x.Trace("S: ", It.IsAny<byte[]>()), Times.Exactly(4));
+                loggerMock.Verify(x => x.Trace("S: ", It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(4));
             }
 
             [Theory]

@@ -41,6 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="IAuthToken.cs" />
+    <Compile Include="IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />
     <Compile Include="Internal\DebugLogger.cs" />
     <Compile Include="Internal\Result\RecordSet.cs" />
@@ -82,7 +83,7 @@
     <Compile Include="Internal\Packstream\BitConverterBase.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Internal\Connector\IConnection.cs" />
-    <Compile Include="Driver.cs" />
+    <Compile Include="Internal\Driver.cs" />
     <Compile Include="GraphDatabase.cs" />
     <Compile Include="Internal\Session.cs" />
     <Compile Include="Internal\Messaging\RunMessage.cs" />
@@ -94,7 +95,7 @@
     <Compile Include="IRecord.cs" />
     <Compile Include="IStatementResult.cs" />
     <Compile Include="IResultSummary.cs" />
-    <Compile Include="Logger.cs" />
+    <Compile Include="ILogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Internal\Result\Record.cs" />
     <Compile Include="Internal\Result\StatementResult.cs" />
