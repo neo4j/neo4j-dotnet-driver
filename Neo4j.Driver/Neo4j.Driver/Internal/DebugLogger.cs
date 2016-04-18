@@ -47,7 +47,23 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            LogMethod($"[{level}] => {message}{ObjectToString(restOfMessage)}");
+            if (level == LogLevel.Trace)
+            {
+                LogMethod($"[{level}] => {message}{ByteBufferToString(restOfMessage)}");
+            }
+            else
+            {
+                LogMethod($"[{level}] => {message}{ObjectToString(restOfMessage)}");
+            }
+        }
+
+        private string ByteBufferToString(object[] restOfMessage)
+        {
+            Throw.ArgumentOutOfRangeException.IfValueLessThan(restOfMessage.Length, 3, nameof(restOfMessage.Length));
+            var buffer = (byte[])restOfMessage[0];
+            var offset = (int) restOfMessage[1];
+            var count = (int) restOfMessage[2];
+            return buffer.ToHexString(offset, count);
         }
 
         private string ObjectToString(object o)
