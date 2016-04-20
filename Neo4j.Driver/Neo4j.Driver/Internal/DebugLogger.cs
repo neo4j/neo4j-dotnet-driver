@@ -17,7 +17,7 @@
 using System;
 using System.Collections;
 using System.Linq;
-using Neo4j.Driver.Extensions;
+using Neo4j.Driver.Internal.Extensions;
 
 namespace Neo4j.Driver.Internal
 {

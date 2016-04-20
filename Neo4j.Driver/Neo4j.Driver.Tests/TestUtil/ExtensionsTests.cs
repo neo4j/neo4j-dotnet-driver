@@ -20,7 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Extensions;
+using Neo4j.Driver.Internal;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.TestUtil

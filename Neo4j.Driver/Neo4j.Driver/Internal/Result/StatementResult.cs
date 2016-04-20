@@ -18,7 +18,6 @@ using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using Neo4j.Driver.Extensions;
 
 namespace Neo4j.Driver.Internal.Result
 {
