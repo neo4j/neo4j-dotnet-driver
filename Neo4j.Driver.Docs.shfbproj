@@ -29,12 +29,7 @@
     <CleanIntermediates>True</CleanIntermediates>
     <MissingTags>Summary, Parameter, Returns, AutoDocumentCtors, Namespace, TypeParameter, AutoDocumentDispose</MissingTags>
     <ApiFilter>
-      <Filter entryType="Namespace" fullName="Neo4j.Driver.Extensions" isExposed="False" />
-<Filter entryType="Namespace" fullName="Neo4j.Driver.Internal" isExposed="False" />
-<Filter entryType="Namespace" fullName="Neo4j.Driver.Internal.Connector" isExposed="False" />
-<Filter entryType="Namespace" fullName="Neo4j.Driver.Internal.Messaging" isExposed="False" />
-<Filter entryType="Namespace" fullName="Neo4j.Driver.Internal.Packstream" isExposed="False" />
-<Filter entryType="Namespace" fullName="Neo4j.Driver.Internal.Result" isExposed="False" /></ApiFilter>
+    </ApiFilter>
     <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected, ProtectedInternalAsProtected</VisibleItems>
     <HelpFileVersion>1.0.0.0</HelpFileVersion>
     <MaximumGroupParts>2</MaximumGroupParts>
@@ -50,7 +45,7 @@
     <CopyrightHref>http://neotechnology.com</CopyrightHref>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
     <NamespaceSummaries>
-      <NamespaceSummaryItem name="Neo4j.Driver" isDocumented="True">The base namespace for interaction with the Neo4j .NET Driver.</NamespaceSummaryItem>
+      <NamespaceSummaryItem name="Neo4j.Driver.V1" isDocumented="True">The base namespace for interaction with the Neo4j .NET Driver.</NamespaceSummaryItem>
     </NamespaceSummaries>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in order for Visual Studio to perform
