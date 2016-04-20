@@ -17,6 +17,7 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {

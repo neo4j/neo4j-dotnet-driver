@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using FluentAssertions;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests

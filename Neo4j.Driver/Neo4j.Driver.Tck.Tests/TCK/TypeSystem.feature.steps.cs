@@ -21,6 +21,7 @@ using System.IO;
 using System.Linq;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
 using Path = System.IO.Path;
 

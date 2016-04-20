@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -45,7 +46,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var result = ScenarioContext.Current.Get<IStatementResult>();
             var record = result.Single();
             record.Keys.Count.Should().Be(1);
-            record[0].As<int>().Should().Be(expected);
+            record[0].ValueAs<int>().Should().Be(expected);
         }
 
         [Then(@"using `Single` on `Statement Result` throws exception:")]
@@ -77,7 +78,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var result = ScenarioContext.Current.Get<IStatementResult>();
             var record = result.Peek();
             record.Keys.Count.Should().BeGreaterOrEqualTo(1);
-            record[0].As<int>().Should().Be(expected);
+            record[0].ValueAs<int>().Should().Be(expected);
         }
         
         [Then(@"using `Next` on `Statement Result` gives a `Record` containing:")]
@@ -88,7 +89,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var result = ScenarioContext.Current.Get<IStatementResult>();
             var record = result.First();
             record.Keys.Count.Should().Be(1);
-            record[0].As<int>().Should().Be(expected);
+            record[0].ValueAs<int>().Should().Be(expected);
         }
         
         [Then(@"using `Peek` on `Statement Result` gives null")]
@@ -119,7 +120,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             list.Count.Should().Be(result.Keys.Count);
             foreach (var key in result.Keys)
             {
-                list.Contains(key.As<string>()).Should().BeTrue();
+                list.Contains(key.ValueAs<string>()).Should().BeTrue();
             }
         }
         

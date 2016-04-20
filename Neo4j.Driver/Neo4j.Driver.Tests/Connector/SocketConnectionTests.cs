@@ -22,6 +22,7 @@ using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 using Xunit;
 using Record = Xunit.Record;
 

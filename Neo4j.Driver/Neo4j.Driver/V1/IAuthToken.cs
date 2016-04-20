@@ -14,10 +14,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.V1
 {
     /// <summary>
     ///     An authentication token is used to authenticate with a Neo4j instance. 

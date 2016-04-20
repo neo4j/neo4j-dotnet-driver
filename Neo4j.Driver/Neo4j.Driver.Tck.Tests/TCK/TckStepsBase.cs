@@ -21,6 +21,7 @@ using System.Globalization;
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.V1;
 using Xunit;
 using static Neo4j.Driver.Tck.Tests.TCK.CypherRecordParser;
 

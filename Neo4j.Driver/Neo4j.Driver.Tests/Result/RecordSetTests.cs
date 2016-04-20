@@ -19,10 +19,11 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
-namespace Neo4j.Driver.Tests.Result
+namespace Neo4j.Driver.Tests
 {
     internal class ListBasedRecordSet : IRecordSet
     {
@@ -98,7 +99,7 @@ namespace Neo4j.Driver.Tests.Result
                 int i = 0;
                 foreach (var record in recordSet.Records())
                 {
-                    record[0].As<string>().Should().Be($"record{i++}:key0");
+                    record[0].ValueAs<string>().Should().Be($"record{i++}:key0");
                 }
                 i.Should().Be(5);
             }
@@ -117,7 +118,7 @@ namespace Neo4j.Driver.Tests.Result
                 int i = 0;
                 foreach (var record in recordSet.Records())
                 {
-                    record[0].As<string>().Should().Be($"record{i++}:key0");
+                    record[0].ValueAs<string>().Should().Be($"record{i++}:key0");
                 }
                 i.Should().Be(6);
             }
@@ -133,12 +134,12 @@ namespace Neo4j.Driver.Tests.Result
 
                 var record = recordSet.Peek();
                 record.Should().NotBeNull();
-                record[0].As<string>().Should().Be("record0:key0");
+                record[0].ValueAs<string>().Should().Be("record0:key0");
 
                 // not moving further no matter how many times are called
                 record = recordSet.Peek();
                 record.Should().NotBeNull();
-                record[0].As<string>().Should().Be("record0:key0");
+                record[0].ValueAs<string>().Should().Be("record0:key0");
             }
 
             [Fact]
@@ -150,12 +151,12 @@ namespace Neo4j.Driver.Tests.Result
                 recordSet.Records().Take(1).ToList();
                 var record = recordSet.Peek();
                 record.Should().NotBeNull();
-                record[0].As<string>().Should().Be("record1:key0");
+                record[0].ValueAs<string>().Should().Be("record1:key0");
 
                 // not moving further no matter how many times are called
                 record = recordSet.Peek();
                 record.Should().NotBeNull();
-                record[0].As<string>().Should().Be("record1:key0");
+                record[0].ValueAs<string>().Should().Be("record1:key0");
             }
 
             [Fact]
@@ -167,13 +168,13 @@ namespace Neo4j.Driver.Tests.Result
 
                 var record = recordSet.Peek();
                 record.Should().NotBeNull();
-                record[0].As<string>().Should().Be("record4:key0");
+                record[0].ValueAs<string>().Should().Be("record4:key0");
 
                 var moveNext = recordSet.Records().GetEnumerator().MoveNext();
                 moveNext.Should().BeTrue();
 
                 record.Should().NotBeNull();
-                record[0].As<string>().Should().Be("record4:key0");
+                record[0].ValueAs<string>().Should().Be("record4:key0");
 
                 record = recordSet.Peek();
                 record.Should().BeNull();
@@ -191,13 +192,13 @@ namespace Neo4j.Driver.Tests.Result
                 {
                     record = recordSet.Peek();
                     record.Should().NotBeNull();
-                    record[0].As<string>().Should().Be($"record{i}:key0");
+                    record[0].ValueAs<string>().Should().Be($"record{i}:key0");
 
                     enumerator = recordSet.Records().GetEnumerator();
                     enumerator.MoveNext().Should().BeTrue();
 
                     // peeked record = current
-                    enumerator.Current[0].As<string>().Should().Be($"record{i}:key0");
+                    enumerator.Current[0].ValueAs<string>().Should().Be($"record{i}:key0");
                 }
 
                 record = recordSet.Peek();
@@ -230,10 +231,10 @@ namespace Neo4j.Driver.Tests.Result
                 var recordStream = recordSet.Records();
 
                 var record = recordStream.First();
-                record[0].As<string>().Should().Be("record0:key0");
+                record[0].ValueAs<string>().Should().Be("record0:key0");
 
                 record = recordStream.First();
-                record[0].As<string>().Should().Be("record1:key0");
+                record[0].ValueAs<string>().Should().Be("record1:key0");
             }
 
             [Fact]
@@ -245,11 +246,11 @@ namespace Neo4j.Driver.Tests.Result
                 var enumerable = recordStream.Take(1);
                 var records = recordStream.Take(2).ToList();
 
-                records[0][0].As<string>().Should().Be("record0:key0");
-                records[1][0].As<string>().Should().Be("record1:key0");
+                records[0][0].ValueAs<string>().Should().Be("record0:key0");
+                records[1][0].ValueAs<string>().Should().Be("record1:key0");
 
                 records = enumerable.ToList();
-                records[0][0].As<string>().Should().Be("record2:key0");
+                records[0][0].ValueAs<string>().Should().Be("record2:key0");
             }
         }
     }

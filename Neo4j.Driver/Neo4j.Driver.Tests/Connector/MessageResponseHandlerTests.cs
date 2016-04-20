@@ -22,9 +22,10 @@ using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Connector
+namespace Neo4j.Driver.Tests
 {
     public class MessageResponseHandlerTests
     {
