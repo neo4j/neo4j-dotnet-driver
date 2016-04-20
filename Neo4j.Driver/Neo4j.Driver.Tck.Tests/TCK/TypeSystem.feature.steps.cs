@@ -17,9 +17,12 @@
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal;
 using TechTalk.SpecFlow;
+using Path = System.IO.Path;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
@@ -53,7 +56,28 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 }
                 throw;
             }
+            ChangeUserPassword("neo4j", "TOUFU");
+            ChangeUserPassword("TOUFU", "neo4j");
             CreateNewDriver();
+        }
+
+        private static void ChangeUserPassword(string oldPassword, string newPassword)
+        {
+            using (var driver = GraphDatabase.Driver(
+                Uri,
+                new AuthToken(new Dictionary<string, object>
+                {
+                    {"scheme", "basic"},
+                    {"principal", "neo4j"},
+                    {"credentials", oldPassword},
+                    {"new_credentials", newPassword}
+                })))
+            using (var session = driver.Session())
+            {
+                session.Run("RETURN 1 as Number").Consume();
+            }
+
+            AuthToken = AuthTokens.Basic("neo4j", newPassword);
         }
 
         [AfterTestRun]
