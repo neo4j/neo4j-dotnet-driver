@@ -97,7 +97,6 @@
     <Compile Include="Result\ResultBuilderTests.cs" />
     <Compile Include="SessionPoolTests.cs" />
     <Compile Include="SessionTests.cs" />
-    <Compile Include="PackStream\PackStreamTests.cs" />
     <Compile Include="PackStream\UnpackerTests.cs" />
     <Compile Include="PackStream\PackerTests.cs" />
     <Compile Include="Result\StatementResultTests.cs" />

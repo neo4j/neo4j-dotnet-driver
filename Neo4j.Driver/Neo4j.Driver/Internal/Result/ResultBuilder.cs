@@ -17,9 +17,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Extensions;
-using static Neo4j.Driver.StatementType;
+using static Neo4j.Driver.V1.StatementType;
 using System;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {

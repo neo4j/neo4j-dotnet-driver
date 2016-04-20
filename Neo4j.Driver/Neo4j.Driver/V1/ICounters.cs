@@ -14,7 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-namespace Neo4j.Driver
+namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Represents the changes to the database made as a result of a statement being run.

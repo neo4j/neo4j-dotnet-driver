@@ -17,7 +17,7 @@
 
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Control the level of encryption to require.

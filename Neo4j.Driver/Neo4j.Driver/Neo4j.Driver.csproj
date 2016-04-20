@@ -40,22 +40,22 @@
     <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="IAuthToken.cs" />
-    <Compile Include="IDriver.cs" />
+    <Compile Include="V1\IAuthToken.cs" />
+    <Compile Include="V1\IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />
     <Compile Include="Internal\DebugLogger.cs" />
     <Compile Include="Internal\Result\RecordSet.cs" />
-    <Compile Include="Neo4jException.cs" />
-    <Compile Include="Extensions\Throw.cs" />
-    <Compile Include="Extensions\ByteExtensions.cs" />
-    <Compile Include="Extensions\Extensions.cs" />
-    <Compile Include="INotification.cs" />
-    <Compile Include="Extensions\CollectionExtensions.cs" />
+    <Compile Include="V1\Neo4jException.cs" />
+    <Compile Include="Internal\Extensions\Throw.cs" />
+    <Compile Include="Internal\Extensions\ByteExtensions.cs" />
+    <Compile Include="Internal\Extensions\Extensions.cs" />
+    <Compile Include="V1\INotification.cs" />
+    <Compile Include="Internal\Extensions\CollectionExtensions.cs" />
     <Compile Include="Internal\Messaging\IgnoredMessage.cs" />
     <Compile Include="Internal\Connector\IInputStream.cs" />
     <Compile Include="Internal\Connector\IOutputStream.cs" />
     <Compile Include="Internal\Connector\ISocketClient.cs" />
-    <Compile Include="IEntity.cs" />
+    <Compile Include="V1\IEntity.cs" />
     <Compile Include="Internal\LoggerBase.cs" />
     <Compile Include="Internal\Messaging\RecordMessage.cs" />
     <Compile Include="Internal\Messaging\SuccessMessage.cs" />
@@ -81,28 +81,28 @@
     <Compile Include="Internal\Messaging\PullAllMessage.cs" />
     <Compile Include="Internal\Packstream\BigEndianTargetBitConverter.cs" />
     <Compile Include="Internal\Packstream\BitConverterBase.cs" />
-    <Compile Include="Config.cs" />
+    <Compile Include="V1\Config.cs" />
     <Compile Include="Internal\Connector\IConnection.cs" />
     <Compile Include="Internal\Driver.cs" />
-    <Compile Include="GraphDatabase.cs" />
+    <Compile Include="V1\GraphDatabase.cs" />
     <Compile Include="Internal\Session.cs" />
     <Compile Include="Internal\Messaging\RunMessage.cs" />
     <Compile Include="Internal\Result\ResultBuilder.cs" />
     <Compile Include="Internal\Connector\SocketConnection.cs" />
     <Compile Include="Internal\Result\SummaryBuilder.cs" />
-    <Compile Include="IPlan.cs" />
-    <Compile Include="IProfiledPlan.cs" />
-    <Compile Include="IRecord.cs" />
-    <Compile Include="IStatementResult.cs" />
-    <Compile Include="IResultSummary.cs" />
-    <Compile Include="ILogger.cs" />
+    <Compile Include="V1\IPlan.cs" />
+    <Compile Include="V1\IProfiledPlan.cs" />
+    <Compile Include="V1\IRecord.cs" />
+    <Compile Include="V1\IStatementResult.cs" />
+    <Compile Include="V1\IResultSummary.cs" />
+    <Compile Include="V1\ILogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Internal\Result\Record.cs" />
     <Compile Include="Internal\Result\StatementResult.cs" />
-    <Compile Include="ISession.cs" />
-    <Compile Include="Statement.cs" />
-    <Compile Include="ICounters.cs" />
-    <Compile Include="ValueExtensions.cs" />
+    <Compile Include="V1\ISession.cs" />
+    <Compile Include="V1\Statement.cs" />
+    <Compile Include="V1\ICounters.cs" />
+    <Compile Include="V1\ValueExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Sockets.Plugin, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">

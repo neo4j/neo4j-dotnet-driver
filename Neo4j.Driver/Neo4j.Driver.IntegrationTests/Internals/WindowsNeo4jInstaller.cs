@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Management.Automation;
 using System.Threading.Tasks;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
@@ -33,8 +34,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 Neo4jServerEdition.Community,
                 Neo4jServerPlatform.Windows,
                 new ZipNeo4jServerFileExtractor());
-
-            UpdateSettings(new Dictionary<string, string> {{"dbms.security.auth_enabled", "false"}}); // disable auth
         }
 
         public void UpdateSettings(IDictionary<string, string> keyValuePair)

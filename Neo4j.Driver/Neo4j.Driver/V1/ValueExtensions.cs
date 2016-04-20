@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,7 +22,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// A collection of extensions to process values streamed back via Bolt.
@@ -206,5 +207,10 @@ namespace Neo4j.Driver
             throw new InvalidOperationException($"The expected value `{typeof(T)}` is different from the actual value `{value.GetType()}`");
         }
         #endregion Helper Methods
+
+        internal static T ValueAs<T>(this object value)
+        {
+            return As<T>(value);
+        }
     }
 }

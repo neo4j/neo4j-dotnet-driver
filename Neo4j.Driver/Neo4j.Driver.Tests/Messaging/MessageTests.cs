@@ -19,7 +19,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Messaging
+namespace Neo4j.Driver.Tests
 {
     public class MessageTests
     {

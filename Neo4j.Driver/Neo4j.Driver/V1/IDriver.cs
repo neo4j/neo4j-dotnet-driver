@@ -16,7 +16,8 @@
 // limitations under the License.
 
 using System;
-namespace Neo4j.Driver
+
+namespace Neo4j.Driver.V1
 {
     /// <summary>
     ///     The <see cref="IDriver"/> instance maintains the connections with a Neo4j database, providing an access point via the

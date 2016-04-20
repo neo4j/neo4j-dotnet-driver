@@ -14,12 +14,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver.V1
 {
     /// <summary>
-    ///     Creates <see cref="Neo4j.Driver.IDriver" /> instances, optionally letting you
+    ///     Creates <see cref="IDriver" /> instances, optionally letting you
     ///     configure them.
     /// </summary>
     public static class GraphDatabase
@@ -36,7 +37,7 @@ namespace Neo4j.Driver
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
         ///     is used.
         /// </param>
-        /// <returns>A new <see cref="Neo4j.Driver.IDriver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
         public static IDriver Driver(Uri uri, Config config = null)
@@ -56,7 +57,7 @@ namespace Neo4j.Driver
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
         ///     is used.
         /// </param>
-        /// <returns>A new <see cref="Neo4j.Driver.IDriver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
         public static IDriver Driver(string uri, Config config = null)
