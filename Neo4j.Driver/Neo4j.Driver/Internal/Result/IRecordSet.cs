@@ -21,19 +21,18 @@ namespace Neo4j.Driver.Internal.Result
 {
     /// <summary>
     /// A record set represents a set of records where only forward enumeration is possible.
-    /// This means that when a record has been visited by enumeration, then it will not be any
-    /// future enumerations. It is consumed.
+    /// A record is considered consumed when it has been visited by enumeration. 
+    /// It will not be available by any other future enumerations.
     /// </summary>
     internal interface IRecordSet
     {
         /// <summary>
-        /// Has all records been consumed.
+        /// Returns true if this set contains no elements to consume.
         /// </summary>
         bool AtEnd { get; }
 
         /// <summary>
-        /// Peeks a record without consuming. 
-        /// If all records has been consumed, this is null
+        /// Reterives the next <see cref="IRecord"/>  without consuming it or returns null if the set is empty.
         /// </summary>
         IRecord Peek();
 
