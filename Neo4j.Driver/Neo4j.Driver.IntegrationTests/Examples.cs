@@ -314,10 +314,10 @@ namespace Neo4j.Driver.Examples
         [Fact(Skip = "Requires server certificate to be installed on host system.")]
         public void ConnectWithBasicAuth()
         {
-            //tag::connect-with-auth-disabled
+            //tag::connect-with-auth-disabled[]
             var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"),
                 Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
-            //end::connect-with-auth-disabled
+            //end::connect-with-auth-disabled[]
             driver.Dispose();
         }
 
