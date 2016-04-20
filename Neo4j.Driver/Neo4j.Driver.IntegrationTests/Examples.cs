@@ -210,7 +210,7 @@ namespace Neo4j.Driver.Examples
                 //tag::handle-cypher-error[]
                 try
                 {
-                    session.Run("This will cause a syntax error");
+                    session.Run("This will cause a syntax error").Consume();
                 }
                 catch (ClientException)
                 {
