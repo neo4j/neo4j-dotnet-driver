@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Examples
 
                 foreach (var record in result)
                 {
-                    Output.WriteLine($"{record["title"]} {record["name"]}");
+                    Output.WriteLine($"{record["title"].As<string>()} {record["name"].As<string>()}");
                 }
             }
             //end::minimal-example[]
@@ -74,7 +74,8 @@ namespace Neo4j.Driver.Examples
         public void Configuration()
         {
             //tag::configuration[]
-            var driver = GraphDatabase.Driver("bolt:localhost", AuthTokens.Basic("neo4j", "neo4j"), Config.Builder.WithMaxIdleSessionPoolSize(10).ToConfig());
+            var driver = GraphDatabase.Driver("bolt:localhost", AuthTokens.Basic("neo4j", "neo4j"),
+                Config.Builder.WithMaxIdleSessionPoolSize(10).ToConfig());
             //end::configuration[]
             driver.Dispose();
         }
@@ -86,7 +87,8 @@ namespace Neo4j.Driver.Examples
             var session = driver.Session();
            
             //tag::statement[]
-            var result = session.Run("CREATE (person:Person {name: {name}})", new Dictionary<string, object> {{"name", "Arthur"}});
+            var result = session.Run("CREATE (person:Person {name: {name}})",
+                new Dictionary<string, object> {{"name", "Arthur"}});
             //end::statement[]
 
             result.Consume();
@@ -296,7 +298,8 @@ namespace Neo4j.Driver.Examples
         public void TlsRequireEncryption()
         {
             //tag::tls-require-encryption[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"), Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
+            var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"),
+                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::tls-require-encryption[]
             driver.Dispose();
         }
@@ -305,7 +308,8 @@ namespace Neo4j.Driver.Examples
         public void TlsSigned()
         {
             //tag::tls-signed[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"), Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
+            var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"),
+                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::tls-signed[]
             driver.Dispose();
         }
