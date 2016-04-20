@@ -101,8 +101,8 @@ namespace Neo4j.Driver.IntegrationTests
                 var result2All = result2.ToList();
                 var result1All = result1.ToList();
 
-                result2All.Select(r => r.Values["n"].As<int>()).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => r.Values["n"].As<int>()).Should().ContainInOrder(1, 2, 3);
+                result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
+                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
             }
         }
 
@@ -121,7 +121,7 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var result = session.Run("RETURN 1");
-                    result.Single()[0].As<int>().Should().Be(1);
+                    result.Single()[0].ValueAs<int>().Should().Be(1);
                 }
             }
         }

@@ -20,8 +20,8 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.Packstream;
+using Neo4j.Driver.Internal;
 using Xunit;
 
 namespace Neo4j.Driver.Tests

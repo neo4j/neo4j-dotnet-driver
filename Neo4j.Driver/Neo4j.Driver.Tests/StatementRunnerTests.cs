@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests
                 parameters["Age"].Should().Be(20);
                 parameters["Name"].Should().Be("buibuibui");
 
-                var hobby = parameters["Hobby"].As<List<string>>();
+                var hobby = parameters["Hobby"].ValueAs<List<string>>();
                 hobby.Count.Should().Be(2);
                 hobby.Contains("painting").Should().BeTrue();
                 hobby.Contains("skiing").Should().BeTrue();

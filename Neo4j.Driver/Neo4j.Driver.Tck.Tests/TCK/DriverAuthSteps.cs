@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var result = session.Run("CREATE () RETURN 2 as Number");
                 result.Keys.Should().Contain("Number");
                 result.Keys.Count.Should().Be(1);
-                result.Single()["Number"].As<int>().Should().Be(2);
+                result.Single()["Number"].ValueAs<int>().Should().Be(2);
             }
         }
 

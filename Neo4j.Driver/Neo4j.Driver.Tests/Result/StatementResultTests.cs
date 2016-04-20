@@ -23,7 +23,6 @@ using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Tests.Result;
 using Neo4j.Driver.V1;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
@@ -279,10 +278,10 @@ namespace Neo4j.Driver.Tests
             {
                 var result = ResultCreator.CreateResult(1, 3);
                 var record = result.First();
-                record[0].As<string>().Should().Be("record0:key0");
+                record[0].ValueAs<string>().Should().Be("record0:key0");
 
                 record = result.First();
-                record[0].As<string>().Should().Be("record1:key0");
+                record[0].ValueAs<string>().Should().Be("record1:key0");
             }
 
             [Fact]
@@ -292,11 +291,11 @@ namespace Neo4j.Driver.Tests
                 var enumerable = result.Take(1);
                 var records = result.Take(2).ToList();
 
-                records[0][0].As<string>().Should().Be("record0:key0");
-                records[1][0].As<string>().Should().Be("record1:key0");
+                records[0][0].ValueAs<string>().Should().Be("record0:key0");
+                records[1][0].ValueAs<string>().Should().Be("record1:key0");
 
                 records = enumerable.ToList();
-                records[0][0].As<string>().Should().Be("record2:key0");
+                records[0][0].ValueAs<string>().Should().Be("record2:key0");
             }
         }
 

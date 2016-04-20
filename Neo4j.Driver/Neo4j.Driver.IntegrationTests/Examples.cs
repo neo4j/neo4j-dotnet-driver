@@ -20,16 +20,14 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 //tag::minimal-example-import[]
-using Neo4j.Driver;
+using Neo4j.Driver.V1;
 //end::minimal-example-import[]
 using Neo4j.Driver.IntegrationTests;
-using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Examples
 {
-
     [Collection(IntegrationCollection.CollectionName)]
     public class Examples
     {
@@ -335,5 +333,14 @@ namespace Neo4j.Driver.Examples
         // Not supported in .Net driver
         //end::tls-trust-on-first-use[]
 
+    }
+
+    // TODO Remove it after we figure out a way to solve the naming problem
+    internal static class ValueExtensions
+    {
+        public static T As<T>(this object value)
+        {
+            return V1.ValueExtensions.As<T>(value);
+        }
     }
 }

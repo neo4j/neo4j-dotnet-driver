@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tck.Tests
             parameters.Keys.Count.Should().Be(1);
             parameters.Keys.Should().Contain("param");
 
-            parameters["param"].As<string>().Should().Be("Pelle");
+            parameters["param"].ValueAs<string>().Should().Be("Pelle");
         }
         
         [Then(@"requesting `Counters` from `Result Summary` should give")]

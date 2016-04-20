@@ -19,7 +19,6 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
 using Sockets.Plugin.Abstractions;

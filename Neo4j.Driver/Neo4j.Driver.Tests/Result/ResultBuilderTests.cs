@@ -22,7 +22,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Result
+namespace Neo4j.Driver.Tests
 {
     public class ResultBuilderTests
     {
