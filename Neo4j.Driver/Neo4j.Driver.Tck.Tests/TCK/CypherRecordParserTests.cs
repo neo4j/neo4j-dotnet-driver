@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tck.Tests.TCK

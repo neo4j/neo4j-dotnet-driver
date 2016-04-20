@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
 using Xunit;
 

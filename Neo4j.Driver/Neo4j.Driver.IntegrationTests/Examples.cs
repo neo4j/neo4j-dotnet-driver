@@ -23,6 +23,7 @@ using FluentAssertions;
 using Neo4j.Driver;
 //end::minimal-example-import[]
 using Neo4j.Driver.IntegrationTests;
+using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
 

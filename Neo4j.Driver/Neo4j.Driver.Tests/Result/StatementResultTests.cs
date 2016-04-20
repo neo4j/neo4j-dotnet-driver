@@ -24,6 +24,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests.Result;
+using Neo4j.Driver.V1;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests

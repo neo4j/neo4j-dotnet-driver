@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver
 {
@@ -206,5 +207,10 @@ namespace Neo4j.Driver
             throw new InvalidOperationException($"The expected value `{typeof(T)}` is different from the actual value `{value.GetType()}`");
         }
         #endregion Helper Methods
+
+        internal static T ValueAs<T>(this object value)
+        {
+            return As<T>(value);
+        }
     }
 }

@@ -17,6 +17,7 @@
 using System;
 using System.Net.Sockets;
 using FluentAssertions;
+using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
 
 namespace Neo4j.Driver.Tck.Tests.TCK

@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.V1;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Internal.Packstream

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.V1;
 using Xunit;
 using Path = System.IO.Path;
 

@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
 
 namespace Neo4j.Driver.Tck.Tests

@@ -17,6 +17,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
 
 using Record = Neo4j.Driver.Internal.Result.Record;
