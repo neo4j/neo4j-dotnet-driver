@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Internal
     /// <summary>
     ///    
     /// A <c>Segment</c> combines a relationship in a path with a start and end node that describe the traversal direction
-    /// for that relationship.This exists because the relationship has a direction between the two nodes that is
+    /// for that relationship. This exists because the relationship has a direction between the two nodes that is
     /// separate and potentially different from the direction of the path.
     /// </summary>
     internal interface ISegment : IEquatable<ISegment>

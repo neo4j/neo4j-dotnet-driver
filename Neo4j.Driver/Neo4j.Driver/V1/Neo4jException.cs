@@ -77,8 +77,9 @@ namespace Neo4j.Driver.V1
     }
 
     /// <summary>
-    /// A <see cref="TransientException"/> signals a temporary fault that may be worked around by retrying.
-    /// The error code provided can be used to determine further detail for the problem.
+    /// A <see cref="TransientException"/> signals a failed operation that may be able to succeed 
+    /// if this operation is retried without any intervention by application-level functionality. 
+    /// The error code provided can be used to determine further details for the problem.
     /// </summary>
     [DataContract]
     public class TransientException : Neo4jException

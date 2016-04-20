@@ -63,30 +63,30 @@ namespace Neo4j.Driver.V1
         /// 
         /// Run a statement and return a result stream.
         ///
-        /// This method takes a set of parameters that will be injected into the
-        /// statement by Neo4j. Using parameters is highly encouraged, it helps avoid
-        /// dangerous cypher injection attacks and improves database performance as
-        /// Neo4j can re-use query plans more often.
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
         ///
         /// </summary>
-        /// <param name="statement">A Neo4j statement.</param>
-        /// <param name="parameters">Input data for the statement.</param>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="parameters">Input parameters for the statement.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
         IStatementResult Run(string statement, IDictionary<string, object> parameters = null);
 
         /// <summary>
         ///
-        /// Run a statement and return a result stream.
+        /// Execute a statement and return a result stream.
         ///
         /// </summary>
-        /// <param name="statement">A Neo4j statement, <see cref="Statement"/>.</param>
+        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
         IStatementResult Run(Statement statement);
 
         /// <summary>
-        /// Run a statement and return a result stream.
+        /// Execute a statement and return a result stream.
         /// </summary>
-        /// <param name="statement">A Neo4j statement.</param>
+        /// <param name="statement">A Cypher statement.</param>
         /// <param name="parameters">A parameter dictonary which is made of prop.Name=prop.Value pairs would be created.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
         IStatementResult Run(string statement, object parameters);
@@ -108,11 +108,9 @@ namespace Neo4j.Driver.V1
         void Success();
 
         /// <summary>
-        /// Mark this transaction as failed.When you call <see cref="IDisposable.Dispose"/>, the transaction will be rolled back.
+        /// Mark this transaction as failed. Calling <see cref="IDisposable.Dispose"/> will roll back the transaction.
         ///
-        /// After this method has been called, there is nothing that can be done to "un-mark" it .This is a safety feature
-        /// to make sure no other code calls <see cref="Success"/> and makes a transaction commit that was meant to be rolled
-        /// back.
+        /// Marking a transaction as failed is irreversable and guarantees that subsequent calls to <see cref="Success"/> will not change it's status.
         /// </summary>
         void Failure();
     }
