@@ -126,6 +126,17 @@ namespace Neo4j.Driver.Internal.Packstream
         }
 
         /// <summary>
+        ///     Converts an byte array to a unsigned short.
+        /// </summary>
+        /// <param name="bytes">The byte array to convert.</param>
+        /// <returns>A unsigned short converted from the byte array.</returns>
+        public ushort ToUInt16(byte[] bytes)
+        {
+            bytes = ToPlatformEndian(bytes);
+            return BitConverter.ToUInt16(bytes, 0);
+        }
+
+        /// <summary>
         ///     Converts an byte array to a int (Int32).
         /// </summary>
         /// <param name="bytes">The byte array to convert.</param>
