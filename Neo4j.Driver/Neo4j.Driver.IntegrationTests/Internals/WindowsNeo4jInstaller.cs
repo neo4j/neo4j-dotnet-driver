@@ -71,23 +71,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void RunPowershellCommand(string command)
         {
-            using (var powershell = PowerShell.Create())
-            {
-                var batfile = Path.Combine(Neo4jHome.FullName, "bin/Neo4j.bat");
-                powershell.AddCommand(batfile);
-                powershell.AddArgument(command);
-                powershell.Invoke();
-                if (powershell.HadErrors)
-                {
-                    throw new Neo4jException("Integration", CollectAsString(powershell.Streams.Error));
-                }
-            }
-        }
-
-        private string CollectAsString(PSDataCollection<ErrorRecord> errors)
-        {
-            var output = errors.Select(error => error.ToString()).ToList();
-            return string.Join(Environment.NewLine, output);
+            var batfile = Path.Combine(Neo4jHome.FullName, "bin/Neo4j.bat");
+            WindowsPowershellRunner.RunPowershellCommand(batfile, command);
         }
     }
 }
