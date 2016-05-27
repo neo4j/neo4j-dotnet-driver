@@ -39,8 +39,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 {
                     powershell.AddArgument(argument);
                 }
-                
-                powershell.Invoke();
+                var results = powershell.Invoke();
+                foreach (var result in results)
+                {
+                    Console.WriteLine(result);
+                }
                 if (powershell.HadErrors)
                 {
                     throw new Neo4jException("Integration", CollectAsString(powershell.Streams.Error));

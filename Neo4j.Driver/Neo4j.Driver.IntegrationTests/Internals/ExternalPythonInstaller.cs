@@ -25,10 +25,12 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class ExternalPythonInstaller : INeo4jInstaller
     {
-        private static string NeorunArgs => Environment.GetEnvironmentVariable("neorun.start.args") ?? "-p neo4j";
-        private static string NeorunPath => new DirectoryInfo("../../../../neokit/neorun.py").FullName;
-        public DirectoryInfo Neo4jHome => new DirectoryInfo("../target/neo4j/neo4jhome");
-        
+        private static readonly string NeorunArgs = Environment.GetEnvironmentVariable("NeorunStartArgs") ?? "-p neo4j";
+        private static readonly string NeorunPath = new DirectoryInfo("../../../../neokit/neorun.py").FullName;
+        private static readonly string Neo4jHomePath = new DirectoryInfo("../../../../Target/neo4jhome").FullName;
+
+        public DirectoryInfo Neo4jHome => new DirectoryInfo(Neo4jHomePath);
+
         public void DownloadNeo4j()
         {
         }
@@ -39,9 +41,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void StartServer()
         {
-            var neorunArgs = new List<string> {NeorunPath, $"--start={Neo4jHome.FullName}"};
-            neorunArgs.AddRange(NeorunArgs.Split(null));
-            WindowsPowershellRunner.RunPowershellCommand("python", neorunArgs.ToArray());
+            var args = new List<string> {NeorunPath, $"--start={Neo4jHome.FullName}"};
+            args.AddRange(NeorunArgs.Split(null));
+            WindowsPowershellRunner.RunPowershellCommand("python", args.ToArray());
         }
 
         public void StopServer()
