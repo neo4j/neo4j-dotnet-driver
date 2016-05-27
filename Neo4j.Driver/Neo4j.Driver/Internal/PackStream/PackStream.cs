@@ -104,12 +104,11 @@ namespace Neo4j.Driver.Internal.Packstream
         {
 
             private readonly IOutputStream _out;
-            private static BitConverterBase _bitConverter;
+            private static readonly BitConverterBase BitConverter = SocketClient.BitConverter;
 
-            public Packer(IOutputStream outputStream, BitConverterBase converter)
+            public Packer(IOutputStream outputStream)
             {
                 _out = outputStream;
-                _bitConverter = converter;
             }
 
             public void PackNull()
@@ -130,25 +129,25 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else if (value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4)
                 {
-                    _out.Write(INT_8).Write(_bitConverter.GetBytes((byte)value));// (byte) value;
+                    _out.Write(INT_8).Write(BitConverter.GetBytes((byte)value));// (byte) value;
                 }
                 else if (value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15)
                 {
-                    _out.Write(INT_16).Write(_bitConverter.GetBytes((short) value));
+                    _out.Write(INT_16).Write(BitConverter.GetBytes((short) value));
                 }
                 else if (value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31)
                 {
-                    _out.Write(INT_32).Write(_bitConverter.GetBytes((int) value));
+                    _out.Write(INT_32).Write(BitConverter.GetBytes((int) value));
                 }
                 else
                 {
-                    _out.Write(INT_64).Write(_bitConverter.GetBytes(value));
+                    _out.Write(INT_64).Write(BitConverter.GetBytes(value));
                 }
             }
 
             public void Pack(double value)
             {
-                _out.Write(FLOAT_64).Write(_bitConverter.GetBytes(value));
+                _out.Write(FLOAT_64).Write(BitConverter.GetBytes(value));
             }
 
             public void Pack(bool value)
@@ -164,7 +163,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     return;
                 }
 
-                var bytes = _bitConverter.GetBytes(value);
+                var bytes = BitConverter.GetBytes(value);
                 PackStringHeader(bytes.Length);
                 _out.Write(bytes);
             }
@@ -263,11 +262,11 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else if (size <= short.MaxValue)
                 {
-                    _out.Write(BYTES_16,_bitConverter.GetBytes((short) size));
+                    _out.Write(BYTES_16,BitConverter.GetBytes((short) size));
                 }
                 else
                 {
-                    _out.Write(BYTES_32, _bitConverter.GetBytes(size));
+                    _out.Write(BYTES_32, BitConverter.GetBytes(size));
                 }
             }
 
@@ -283,11 +282,11 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else if (size <= short.MaxValue)
                 {
-                    _out.Write(LIST_16, _bitConverter.GetBytes((short) size));
+                    _out.Write(LIST_16, BitConverter.GetBytes((short) size));
                 }
                 else
                 {
-                    _out.Write(LIST_32, _bitConverter.GetBytes(size));
+                    _out.Write(LIST_32, BitConverter.GetBytes(size));
                 }
             }
 
@@ -303,11 +302,11 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else if (size <= short.MaxValue)
                 {
-                    _out.Write(MAP_16, _bitConverter.GetBytes((short) size));
+                    _out.Write(MAP_16, BitConverter.GetBytes((short) size));
                 }
                 else
                 {
-                    _out.Write(MAP_32, _bitConverter.GetBytes(size));
+                    _out.Write(MAP_32, BitConverter.GetBytes(size));
                 }
             }
 
@@ -323,11 +322,11 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else if (size <= short.MaxValue)
                 {
-                    _out.Write(STRING_16, _bitConverter.GetBytes((short) size));
+                    _out.Write(STRING_16, BitConverter.GetBytes((short) size));
                 }
                 else
                 {
-                    _out.Write(STRING_32, _bitConverter.GetBytes(size));
+                    _out.Write(STRING_32, BitConverter.GetBytes(size));
                 }
             }
 
@@ -343,7 +342,7 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else if (size <= short.MaxValue)
                 {
-                    _out.Write(STRUCT_16, _bitConverter.GetBytes((short) size)).Write(signature);
+                    _out.Write(STRUCT_16, BitConverter.GetBytes((short) size)).Write(signature);
                 }
                 else
                     throw new ArgumentOutOfRangeException(nameof(size), size,
@@ -354,12 +353,11 @@ namespace Neo4j.Driver.Internal.Packstream
         public class Unpacker
         {
             private readonly IInputStream _in;
-            private static BitConverterBase _bitConverter;
+            private static readonly BitConverterBase BitConverter = SocketClient.BitConverter;
 
-            public Unpacker(IInputStream inputStream, BitConverterBase converter)
+            public Unpacker(IInputStream inputStream)
             {
                 _in = inputStream;
-                _bitConverter = converter;
             }
 
             public object UnpackNull()
@@ -430,7 +428,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     return string.Empty;
                 }
 
-                return _bitConverter.ToString(UnpackUtf8(markerByte));
+                return BitConverter.ToString(UnpackUtf8(markerByte));
             }
 
             public byte[] UnpackBytes()

@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.NULL);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackNull().Should().BeNull();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object, null);
+                    var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackNull());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.TRUE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackBoolean().Should().BeTrue();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackBoolean().Should().BeFalse();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object, null);
+                    var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackBoolean());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -107,7 +107,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(data);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     sbyte real = (sbyte)u.UnpackLong();
                     real.Should().Be(expected);
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Tests
                     sbyte expected = 1;
                     mockInput.Setup(x => x.ReadSByte()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     sbyte real = (sbyte) u.UnpackLong();
                     Assert.Equal(expected, real);
@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Tests
                     short expected = 124;
                     mockInput.Setup(x => x.ReadShort()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackLong());
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.Tests
                     int expected = 1024;
                     mockInput.Setup(x => x.ReadInt()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackLong());
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -170,7 +170,7 @@ namespace Neo4j.Driver.Tests
                     long expected = 1024;
                     mockInput.Setup(x => x.ReadLong()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackLong());
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -183,7 +183,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object, null);
+                    var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackLong());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -200,7 +200,7 @@ namespace Neo4j.Driver.Tests
                     double expected = 1.12;
                     mockInput.Setup(x => x.ReadDouble()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackDouble());
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -213,7 +213,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object, null);
+                    var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackDouble());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.TINY_STRING);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackString().Should().BeEmpty(); //.Equals(String.Empty);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -242,7 +242,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
                         .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -258,7 +258,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
                         .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
                     mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
@@ -274,7 +274,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
                         .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -291,7 +291,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
                         .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -306,7 +306,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.STRING_32);
                     mockInput.Setup(x => x.ReadInt()).Returns(-1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackString());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -320,7 +320,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackString());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -340,7 +340,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
                         .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var actual = u.UnpackBytes();
                     actual.Length.Should().Be(1);
@@ -358,7 +358,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
                         .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var actual = u.UnpackBytes();
                     actual.Length.Should().Be(1);
@@ -377,7 +377,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
                         .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var actual = u.UnpackBytes();
                     actual.Length.Should().Be(1);
@@ -394,7 +394,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_32);
                     mockInput.Setup(x => x.ReadInt()).Returns(-1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackBytes());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -408,7 +408,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackBytes());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -424,7 +424,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(0xA2);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(2);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -437,7 +437,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte())
                         .Returns(new Queue<byte>(new[] {PackStream.MAP_8, (byte) 1}).Dequeue);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
@@ -450,7 +450,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.MAP_16);
                     mockInput.Setup(x => x.ReadShort()).Returns(1);
                    
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -464,7 +464,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.MAP_32);
                     mockInput.Setup(x => x.ReadInt()).Returns(-1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(uint.MaxValue);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -477,7 +477,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackMapHeader());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -493,7 +493,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(0x92);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(2);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -506,7 +506,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte())
                         .Returns(new Queue<byte>(new[] { PackStream.LIST_8, (byte)1 }).Dequeue);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
@@ -519,7 +519,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.LIST_16);
                     mockInput.Setup(x => x.ReadShort()).Returns(1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -533,7 +533,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.LIST_32);
                     mockInput.Setup(x => x.ReadInt()).Returns(-1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(uint.MaxValue);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -546,7 +546,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackListHeader());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -562,7 +562,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(0xFF);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackStructSignature().Should().Be(0xFF);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -578,7 +578,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(0xB2);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackStructHeader().Should().Be(2);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -591,7 +591,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte())
                         .Returns(new Queue<byte>(new[] { PackStream.STRUCT_8, (byte)1 }).Dequeue);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackStructHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
@@ -604,7 +604,7 @@ namespace Neo4j.Driver.Tests
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.STRUCT_16);
                     mockInput.Setup(x => x.ReadShort()).Returns(1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.UnpackStructHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -617,7 +617,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackStructHeader());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -659,7 +659,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.PeekByte()).Returns(marker);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, null);
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     u.PeekNextType().Should().Be(expected);
                     mockInput.Verify(x => x.PeekByte(), Times.Once);
@@ -671,7 +671,7 @@ namespace Neo4j.Driver.Tests
                     var mockInput = new Mock<IInputStream>();
                     mockInput.Setup(x => x.PeekByte()).Returns(PackStream.RESERVED_C4);
 
-                    var u = new PackStream.Unpacker(mockInput.Object, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.PeekNextType());
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
