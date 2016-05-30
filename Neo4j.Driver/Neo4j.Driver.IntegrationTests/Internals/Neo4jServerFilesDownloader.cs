@@ -47,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private static DirectoryInfo Neo4jDir => new DirectoryInfo("../target/neo4j");
 
-        private static string Version => Environment.GetEnvironmentVariable("version") ?? "3.0.0-NIGHTLY";
+        private static string Version => Environment.GetEnvironmentVariable("version30") ?? "3.0.0-NIGHTLY";
 
 
         /// <summary>
@@ -69,13 +69,15 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     downloadFileInfo.Directory.Create();
             }
 
-            var packageUrl = string.Format(
+            var packageUrl = Environment.GetEnvironmentVariable("packageUri30") ?? string.Format(
                 PackageUrlFormat,
                 edition.ToString().ToLower(),
                 Version,
                 platform.ToString().ToLower(),
                 platformFileExtension
                 );
+
+            packageUrl = packageUrl.Replace('\\', '/');
 
             var downloadedNew = false;
             long expectedSize;

@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.PackNull();
                     mocks.VerifyWrite(PackStream.NULL);
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tests
 //                public void ShouldUnpacPawBytesSuccessfully()
 //                {
 //                    var mocks = new Mocks();
-//                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+//                    var u = new PackStream.Packer(mocks.OutputStream);
 //
 //                    var bytes = new byte[] { 1, 2, 3 };
 //                    u.PackRaw(bytes);
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackLongSuccessfully(long input, byte marker, string expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.Pack(input);
                     mocks.VerifyWrite(marker);
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackDoubleSuccessfully(double input, string expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.Pack(input);
                     mocks.VerifyWrite(PackStream.FLOAT_64);
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackBoolSuccessfully(bool input)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.Pack(input);
                     if (input)
@@ -169,7 +169,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullStringSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.Pack((string) null);
                     mocks.VerifyWrite(PackStream.NULL);
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackEmptyStringSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.Pack(string.Empty);
                     mocks.VerifyWrite(PackStream.TINY_STRING | 0);
@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackStringSuccessfully(int size, byte marker, byte[] sizeByte)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     var input = new string('a', size);
                     var expected = new byte[size];
@@ -215,7 +215,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackUnicodeStringSuccessfully(int size, byte marker, byte[] sizeByte)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     var input = new string('å', size);
                     var expected = new byte[size*2];
@@ -238,7 +238,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullBytesSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.Pack((byte[]) null);
                     mocks.VerifyWrite(PackStream.NULL);
@@ -249,7 +249,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackEmptyByteSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     u.Pack(new byte[] {});
                     mocks.VerifyWrite(PackStream.BYTES_8, new byte[] {0});
@@ -263,7 +263,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackStringSuccessfully(int size, byte marker, byte[] sizeByte)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     var expected = new byte[size];
                     for (int i = 0; i < size; i++)
@@ -284,7 +284,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsNull()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.Pack((object) null);
 
                     mocks.VerifyWrite(PackStream.NULL);
@@ -296,7 +296,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullableBool(bool? input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.Pack(input);
                     mocks.VerifyWrite(expected);
                 }
@@ -307,7 +307,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullableAsNull(sbyte? input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.Pack(input);
                     mocks.VerifyWrite(expected);
                 }
@@ -324,7 +324,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNumbersAsLong(object input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.Pack(input);
                     mocks.VerifyWrite(expected);
                 }
@@ -336,7 +336,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackFloatNumbersAsDouble(object input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.Pack(input);
                     mocks.VerifyWrite(expected);
                 }
@@ -345,7 +345,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackDecimalNumbersAsDouble()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     decimal input = 1.34m;
                     u.Pack((object) input);
                     mocks.VerifyWrite(PackStream.FLOAT_64);
@@ -356,7 +356,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsByteArray()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     var input = new byte[] {1, 2, 3};
                     u.Pack((object) input);
                     mocks.VerifyWrite(PackStream.BYTES_8, 3);
@@ -366,7 +366,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackCharAsString()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     char input = 'a';
                     u.Pack((object) input);
                     mocks.VerifyWrite(PackStream.TINY_STRING | 1);
@@ -376,7 +376,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsString()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     string input = "abc";
                     u.Pack((object) input);
                     mocks.VerifyWrite(PackStream.TINY_STRING | 3);
@@ -386,7 +386,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsList()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     IList<object> list = new List<object>();
                     list.Add(1);
@@ -405,7 +405,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackArrayAsList()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     int[] list = new int[2];
                     list[0]=1;
@@ -422,7 +422,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsDictionary()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     IDictionary<object, object> dic = new Dictionary<object, object>();
                     dic.Add(true, "a");
@@ -438,7 +438,7 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldThrowExceptionIfTypeUnknown()
                 {
-                    var packer = new PackStream.Packer(null, null);
+                    var packer = new PackStream.Packer(null);
                     var ex = Xunit.Record.Exception(() => packer.Pack(new {Name = "Test"}));
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
                 }
@@ -450,7 +450,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsNullIfListIsNull()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.Pack((IList) null);
 
                     mocks.VerifyWrite(PackStream.NULL);
@@ -464,7 +464,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackListHeaderCorrectly(int size, byte marker, byte[] expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.PackListHeader(size);
 
                     mocks.VerifyWrite(marker, expected);
@@ -474,7 +474,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackListOfDifferentTypeCorrectly()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     var list = new List<object>();
                     list.Add(1);
@@ -496,7 +496,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsNullIfDictionaryIsNull()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.Pack((IDictionary) null);
 
                     mocks.VerifyWrite(PackStream.NULL);
@@ -510,7 +510,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackListHeaderCorrectly(int size, byte marker, byte[] expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.PackMapHeader(size);
 
                     mocks.VerifyWrite(marker, expected);
@@ -520,7 +520,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackMapOfDifferentTypeCorrectly()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
 
                     IDictionary<object, object> dic = new Dictionary<object, object>();
                     dic.Add(true, "a");
@@ -542,7 +542,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackStructHeaderCorrectly(int size, byte marker, byte[] expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.PackStructHeader(size, 0x77);
 
                     mocks.VerifyWrite(marker, expected);
@@ -552,7 +552,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackStructHeaderStruct16Correctly()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream, new BigEndianTargetBitConverter());
+                    var u = new PackStream.Packer(mocks.OutputStream);
                     u.PackStructHeader(short.MaxValue, 0x77);
 
                     mocks.VerifyWrite(PackStream.STRUCT_16, new byte[] { 0x7F, 0xFF });
@@ -562,7 +562,7 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldThrowExceptionIfSizeIsGreaterThanShortMax()
                 {
-                    var packer = new PackStream.Packer(null, null);
+                    var packer = new PackStream.Packer(null);
                     var ex = Xunit.Record.Exception(() => packer.PackStructHeader(short.MaxValue +1, 0x1));
                     ex.Should().BeOfType<ArgumentOutOfRangeException>();
                 }

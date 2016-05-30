@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.IO;
 using FluentAssertions;
 using Moq;
@@ -41,7 +43,7 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, response);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                 var actual = chunkedInput.ReadSByte();
                 actual.Should().Be(correctValue); //, $"Got: {actual}, expected: {correctValue}");
             }
@@ -64,7 +66,7 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes( actual );
                 actual.Should().Equal(correctValue);
@@ -80,7 +82,7 @@ namespace Neo4j.Driver.Tests
                     .Callback<string, object[]>((s, o) => _output.WriteLine(s +  ((byte[])o[0]).ToHexString(showX:true)));
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), loggerMock.Object);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, loggerMock.Object);
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes(actual);
                 actual.Should().Equal(correctValue);
@@ -95,13 +97,51 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null, 1);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, null, 1);
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes(actual);
                 actual.Should().Equal(correctValue);
             }
         }
 
+        public class ChunkHeaderTests
+        {
+            private readonly Random _random = new Random();
+            public byte Getbyte()
+            {
+                var num = _random.Next(0, 26); // 0 to 25
+                byte letter = (byte)('a' + num);
+                return letter;
+            }
+
+            [Fact]
+            public void ShouldReadHeaderWithinUnsignedShortRange()
+            {
+                for (var i = 1; i <= UInt16.MaxValue; i = (i<<1) + 1) // i: [0x1, 0xFFFF]
+                {
+                    ushort chunkHeaderSize = (ushort)(i & 0xFFFF);
+
+                    var input = new byte[chunkHeaderSize + 2 + 2]; // 0xXX, 0xXX, ..., 0x00, 0x00
+                    input[0] = (byte)((chunkHeaderSize & 0xFF00) >> 8);
+                    input[1] = (byte)(chunkHeaderSize & 0xFF);
+                    for (int j = 2; j < chunkHeaderSize+2; j++)
+                    {
+                        input[j] = Getbyte();
+                    }
+
+                    var clientMock = new Mock<ITcpSocketClient>();
+                    TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
+
+                    var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
+                    byte[] actual = new byte[chunkHeaderSize];
+                    chunkedInput.ReadBytes(actual);
+                    for (int j = 0; j < actual.Length; j++)
+                    {
+                        actual[j].Should().Be(input[2 + j]);
+                    }
+                }
+            }
+        }
       
     }
 }
