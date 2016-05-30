@@ -69,7 +69,6 @@ namespace Neo4j.Driver.Tests
                 mockWriteStream.Verify(x => x.Flush(), Times.Exactly(3));
 
             }
-            // new byte[0];
         }
     } 
 }

@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Internal.Connector
                 // head
                 ReadSpecifiedSize(_headTailBuffer);
 
-                var chunkSize = _bitConverter.ToInt16(_headTailBuffer);
+                var chunkSize = _bitConverter.ToUInt16(_headTailBuffer);
 
                 // chunk
                 var chunk = new byte[chunkSize];
