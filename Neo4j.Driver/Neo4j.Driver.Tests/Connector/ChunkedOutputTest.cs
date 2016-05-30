@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowExceptionIfChunkSizeLessThan8()
             {
-                var ex = Xunit.Record.Exception(() => new ChunkedOutputStream(null, null, null, 7));
+                var ex = Xunit.Record.Exception(() => new ChunkedOutputStream(null, null, 7));
                 ex.Should().BeOfType<ArgumentOutOfRangeException>();
             }
 
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
                 mockClient.Setup(x => x.WriteStream).Returns(mockWriteStream.Object);
                 var mockLogger = new Mock<ILogger>();
 
-                var chunker = new ChunkedOutputStream(mockClient.Object, new BigEndianTargetBitConverter(), mockLogger.Object, 8);
+                var chunker = new ChunkedOutputStream(mockClient.Object, mockLogger.Object, 8);
 
                 byte[] bytes = new byte[10];
                 for (int i = 0; i < bytes.Length; i++)

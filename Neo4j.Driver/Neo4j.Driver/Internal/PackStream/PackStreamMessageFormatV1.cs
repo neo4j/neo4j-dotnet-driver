@@ -27,13 +27,10 @@ namespace Neo4j.Driver.Internal.Packstream
 {
     internal class PackStreamMessageFormatV1
     {
-        private static BitConverterBase _bitConverter;
-
-        public PackStreamMessageFormatV1(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger)
+        public PackStreamMessageFormatV1(ITcpSocketClient tcpSocketClient, ILogger logger)
         {
-            _bitConverter = bitConverter;
-            Writer = new WriterV1(new ChunkedOutputStream(tcpSocketClient, bitConverter, logger));
-            Reader = new ReaderV1(new ChunkedInputStream(tcpSocketClient, bitConverter, logger));
+            Writer = new WriterV1(new ChunkedOutputStream(tcpSocketClient, logger));
+            Reader = new ReaderV1(new ChunkedInputStream(tcpSocketClient, logger));
         }
 
         public IWriter Writer { get; }
@@ -48,7 +45,7 @@ namespace Neo4j.Driver.Internal.Packstream
             public ReaderV1(ChunkedInputStream inputStream)
             {
                 _inputStream = inputStream;
-                _unpacker = new PackStream.Unpacker(_inputStream, _bitConverter);
+                _unpacker = new PackStream.Unpacker(_inputStream);
             }
 
             public void Read(IMessageResponseHandler responseHandler)
@@ -280,7 +277,7 @@ namespace Neo4j.Driver.Internal.Packstream
             public WriterV1(ChunkedOutputStream outputStream)
             {
                 _outputStream = outputStream;
-                _packer = new PackStream.Packer(_outputStream, _bitConverter);
+                _packer = new PackStream.Packer(_outputStream);
             }
 
             public void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)

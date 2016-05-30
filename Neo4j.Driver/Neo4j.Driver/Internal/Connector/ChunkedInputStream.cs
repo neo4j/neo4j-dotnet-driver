@@ -24,8 +24,8 @@ namespace Neo4j.Driver.Internal.Connector
     internal class ChunkedInputStream : IInputStream
     {
         private const int ChunkSize = 1024*8; 
-        public static byte[] Tail = {0x00, 0x00};
-        private readonly BitConverterBase _bitConverter;
+        public static readonly byte[] Tail = {0x00, 0x00};
+        private static readonly BitConverterBase BitConverter = SocketClient.BitConverter;
         private readonly Queue<byte> _chunkBuffer; 
         private readonly byte[] _headTailBuffer = new byte[2];
         private readonly ITcpSocketClient _tcpSocketClient;
@@ -33,10 +33,9 @@ namespace Neo4j.Driver.Internal.Connector
 
 
 
-        public ChunkedInputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger, int? chunkSize = ChunkSize)
+        public ChunkedInputStream(ITcpSocketClient tcpSocketClient, ILogger logger, int? chunkSize = ChunkSize)
         {
             _tcpSocketClient = tcpSocketClient;
-            _bitConverter = bitConverter;
             _logger = logger;
             _chunkBuffer = new Queue<byte>(chunkSize.Value);
         }
@@ -56,13 +55,13 @@ namespace Neo4j.Driver.Internal.Connector
         public short ReadShort()
         {
             Ensure(2);
-            return _bitConverter.ToInt16(_chunkBuffer.DequeueToArray(2));
+            return BitConverter.ToInt16(_chunkBuffer.DequeueToArray(2));
         }
 
         public int ReadInt()
         {
             Ensure(4);
-            return _bitConverter.ToInt32(_chunkBuffer.DequeueToArray(4));
+            return BitConverter.ToInt32(_chunkBuffer.DequeueToArray(4));
         }
 
         public long ReadLong()
@@ -71,7 +70,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             var bytes = _chunkBuffer.DequeueToArray(8);
 
-            return _bitConverter.ToInt64(bytes);
+            return BitConverter.ToInt64(bytes);
         }
 
         public double ReadDouble()
@@ -80,7 +79,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             var bytes = _chunkBuffer.DequeueToArray(8);
 
-            return _bitConverter.ToDouble(bytes);
+            return BitConverter.ToDouble(bytes);
         }
 
         public void ReadBytes(byte[] buffer, int offset = 0, int? length = null)
@@ -107,8 +106,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 // head
                 ReadSpecifiedSize(_headTailBuffer);
-
-                var chunkSize = _bitConverter.ToUInt16(_headTailBuffer);
+                var chunkSize = BitConverter.ToUInt16(_headTailBuffer);
 
                 // chunk
                 var chunk = new byte[chunkSize];

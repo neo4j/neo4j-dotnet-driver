@@ -33,14 +33,14 @@ namespace Neo4j.Driver.Internal.Connector
         private IReader _reader;
         private IWriter _writer;
 
+        public static readonly BigEndianTargetBitConverter BitConverter = new BigEndianTargetBitConverter();
+
         public SocketClient(Uri url, Config config, ITcpSocketClient socketClient = null)
         {
             _url = url;
             _config = config;
             _tcpSocketClient = socketClient ?? new TcpSocketClient();
         }
-
-        private static BigEndianTargetBitConverter BitConverter => new BigEndianTargetBitConverter();
 
         public void Dispose()
         {
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
            _config.Logger?.Debug("S: [HANDSHAKE] 1");
 
-            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, BitConverter, _config.Logger);
+            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _config.Logger);
             _writer = formatV1.Writer;
             _reader = formatV1.Reader;
         }

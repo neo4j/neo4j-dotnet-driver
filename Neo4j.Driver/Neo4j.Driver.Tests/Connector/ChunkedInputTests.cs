@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, response);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                 var actual = chunkedInput.ReadSByte();
                 actual.Should().Be(correctValue); //, $"Got: {actual}, expected: {correctValue}");
             }
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes( actual );
                 actual.Should().Equal(correctValue);
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Tests
                     .Callback<string, object[]>((s, o) => _output.WriteLine(s +  ((byte[])o[0]).ToHexString(showX:true)));
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), loggerMock.Object);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, loggerMock.Object);
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes(actual);
                 actual.Should().Equal(correctValue);
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Tests
                 var clientMock = new Mock<ITcpSocketClient>();
                 TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null, 1);
+                var chunkedInput = new ChunkedInputStream(clientMock.Object, null, 1);
                 byte[] actual = new byte[3];
                 chunkedInput.ReadBytes(actual);
                 actual.Should().Equal(correctValue);
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests
                     var clientMock = new Mock<ITcpSocketClient>();
                     TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
 
-                    var chunkedInput = new ChunkedInputStream(clientMock.Object, new BigEndianTargetBitConverter(), null);
+                    var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                     byte[] actual = new byte[chunkHeaderSize];
                     chunkedInput.ReadBytes(actual);
                     for (int j = 0; j < actual.Length; j++)

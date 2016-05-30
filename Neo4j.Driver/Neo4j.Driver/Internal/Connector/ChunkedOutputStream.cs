@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.Connector
     {
         internal const int BufferSize = 1024*8;
         private readonly int _chunkSize;
-        private readonly BitConverterBase _bitConverter;
+        private static readonly BitConverterBase BitConverter = SocketClient.BitConverter;
         private readonly ITcpSocketClient _tcpSocketClient;
         private byte[] _buffer; //new byte[1024*8];
         private int _pos = -1;
@@ -34,10 +34,9 @@ namespace Neo4j.Driver.Internal.Connector
         private bool _isInChunk = false;
         private readonly ILogger _logger;
 
-        public ChunkedOutputStream(ITcpSocketClient tcpSocketClient, BitConverterBase bitConverter, ILogger logger, int? chunkSize = BufferSize)
+        public ChunkedOutputStream(ITcpSocketClient tcpSocketClient, ILogger logger, int? chunkSize = BufferSize)
         {
             _tcpSocketClient = tcpSocketClient;
-            _bitConverter = bitConverter;
             _logger = logger;
             Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize.Value, 8, nameof(chunkSize));
 
@@ -139,7 +138,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private void WriteShort(short num, byte[] buffer, int pos)
         {
-            _bitConverter.GetBytes(num).CopyTo(buffer, pos);
+            BitConverter.GetBytes(num).CopyTo(buffer, pos);
         }
     }
 }

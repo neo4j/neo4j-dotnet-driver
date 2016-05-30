@@ -19,14 +19,13 @@ using System.IO;
 using System.Linq;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Packstream;
 using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Tests
 {
     public static class TestHelper
     {
-
-
         public static class TcpSocketClientSetup
         {
             public static void SetupClientReadStream(Mock<ITcpSocketClient> mock, byte[] response)
