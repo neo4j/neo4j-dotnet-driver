@@ -21,7 +21,7 @@ using TechTalk.SpecFlow;
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
     [Binding]
-    public class DriverChunkingAndDeChunkingTestSteps : TckStepsBase
+    public class DriverChunkingAndDeChunkingTestSteps
     {
         [Given(@"a String of size (.*)")]
         public void GivenAStringOfSize(int stringLength)
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown type {type}");
             }
-            var itemInList = GetValue(type, value);
+            var itemInList = TckUtil.GetValue(type, value);
             var list = new List<object>(size);
             for (var i = 0; i < size; i ++)
             {
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown type {type}");
             }
-            var itemInMap = GetValue(type, value);
+            var itemInMap = TckUtil.GetValue(type, value);
             var dict = new Dictionary<string, object>();
             for (var i = 0; i < size; i++)
             {

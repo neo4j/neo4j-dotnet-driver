@@ -23,7 +23,7 @@ using TechTalk.SpecFlow;
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
     [Binding]
-    public class ErrorReportingSteps : TckStepsBase
+    public class ErrorReportingSteps
     {
         [Given(@"I have a driver")]
         public void GivenIHaveADriver()
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"`run` a query with that same session without closing the transaction first")]
         public void WhenRunAQueryWithThatSameSessionWithoutClosingTheTransactionFirst()
         {
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             using (var tx = session.BeginTransaction())
             {
                 var ex = Xunit.Record.Exception(() => session.Run("RETURN 1"));
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"I start a new `Transaction` with the same session before closing the previous")]
         public void WhenIStartANewTransactionWithTheSameSessionBeforeClosingThePrevious()
         {
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             using (var tx = session.BeginTransaction())
             {
                 var ex = Xunit.Record.Exception(() => session.BeginTransaction());
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"I run a non valid cypher statement")]
         public void WhenIRunANonValidCypherStatement()
         {
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 var ex = Xunit.Record.Exception(() => session.Run("Invalid Cypher"));
                 ex.Should().BeOfType<ClientException>();
