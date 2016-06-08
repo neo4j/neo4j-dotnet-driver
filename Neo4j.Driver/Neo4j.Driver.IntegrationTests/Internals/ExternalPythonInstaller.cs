@@ -25,7 +25,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class ExternalPythonInstaller : INeo4jInstaller
     {
-        private static readonly string NeorunArgs = Environment.GetEnvironmentVariable("NeorunStartArgs") ?? "-p neo4j";
+        private static readonly string NeorunArgs = "-p neo4j";
         private static readonly string NeorunPath = new DirectoryInfo("../../../../neokit/neorun.py").FullName;
         private static readonly string Neo4jHomePath = new DirectoryInfo("../../../../Target/neo4jhome").FullName;
 

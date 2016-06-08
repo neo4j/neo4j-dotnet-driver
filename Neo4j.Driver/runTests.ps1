@@ -1,7 +1,7 @@
 If ($args.Length -ne 0)
 {
-	$env:NeorunStartArgs="$args"
-	echo $Env:NeorunStartArgs
+	$env:NEORUN_START_ARGS="$args"
+	echo $Env:NEORUN_START_ARGS
 }
 
 $scriptpath = $MyInvocation.MyCommand.Path
