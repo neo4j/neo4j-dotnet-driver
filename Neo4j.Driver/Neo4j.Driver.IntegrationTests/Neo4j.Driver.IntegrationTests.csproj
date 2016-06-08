@@ -95,13 +95,11 @@
   <ItemGroup>
     <Compile Include="ConnectionIT.cs" />
     <Compile Include="Examples.cs" />
+    <Compile Include="Internals\ExternalPythonInstaller.cs" />
     <Compile Include="Internals\INeo4jInstaller.cs" />
     <Compile Include="IntegrationTestFixture.cs" />
-    <Compile Include="Internals\INeo4jServerFileExtractor.cs" />
-    <Compile Include="Internals\Neo4jServerFilesDownloader.cs" />
     <Compile Include="Internals\Neo4jSettingsHelper.cs" />
-    <Compile Include="Internals\ZipNeo4jServerFileExtractor.cs" />
-    <Compile Include="Internals\WindowsNeo4jInstaller.cs" />
+    <Compile Include="Internals\WindowsPowershellRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
