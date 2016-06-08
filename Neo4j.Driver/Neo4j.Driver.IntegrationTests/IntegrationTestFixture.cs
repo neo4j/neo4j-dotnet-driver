@@ -27,11 +27,11 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class IntegrationTestFixture : IDisposable
     {
-        private readonly INeo4jInstaller _installer = new WindowsNeo4jInstaller();
+        private readonly INeo4jInstaller _installer = new ExternalPythonInstaller();
         public string Neo4jHome { get; }
 
         public string ServerEndPoint => "bolt://localhost";
-        public IAuthToken AuthToken { get; private set; }
+        public IAuthToken AuthToken => AuthTokens.Basic("neo4j", "neo4j");
 
         public IntegrationTestFixture()
         {
@@ -47,29 +47,6 @@ namespace Neo4j.Driver.IntegrationTests
                 throw;
             }
             Neo4jHome = _installer.Neo4jHome.FullName;
-
-            // work around for the default password problem
-            ChangeUserPassword("neo4j","TOUFU");
-            ChangeUserPassword("TOUFU", "neo4j");
-        }
-
-        private void ChangeUserPassword(string oldPassword, string newPassword)
-        {
-            using (var driver = GraphDatabase.Driver(
-                ServerEndPoint,
-                new AuthToken(new Dictionary<string, object>
-                {
-                    {"scheme", "basic"},
-                    {"principal", "neo4j"},
-                    {"credentials", oldPassword},
-                    {"new_credentials", newPassword}
-                })))
-            using (var session = driver.Session())
-            {
-                session.Run("RETURN 1 as Number").Consume();
-            }
-
-            AuthToken = AuthTokens.Basic("neo4j", newPassword);
         }
 
         public void RestartServerWithUpdatedSettings(IDictionary<string, string> keyValuePair)

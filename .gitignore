@@ -191,3 +191,5 @@ _NCrunch_*
 *.vs\
 Neo4j.Driver/.vs/config/applicationhost.config
 *.GhostDoc*
+
+Target/

@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [BeforeTestRun]
         public static void GlobalBeforeTestRun()
         {
-            Installer = new WindowsNeo4jInstaller();
+            Installer = new ExternalPythonInstaller();
             Installer.DownloadNeo4j();
             try
             {
@@ -57,28 +57,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 }
                 throw;
             }
-            ChangeUserPassword("neo4j", "TOUFU");
-            ChangeUserPassword("TOUFU", "neo4j");
+            AuthToken = AuthTokens.Basic("neo4j", "neo4j");
             CreateNewDriver();
-        }
-
-        private static void ChangeUserPassword(string oldPassword, string newPassword)
-        {
-            using (var driver = GraphDatabase.Driver(
-                Uri,
-                new AuthToken(new Dictionary<string, object>
-                {
-                    {"scheme", "basic"},
-                    {"principal", "neo4j"},
-                    {"credentials", oldPassword},
-                    {"new_credentials", newPassword}
-                })))
-            using (var session = driver.Session())
-            {
-                session.Run("RETURN 1 as Number").Consume();
-            }
-
-            AuthToken = AuthTokens.Basic("neo4j", newPassword);
         }
 
         [AfterTestRun]
