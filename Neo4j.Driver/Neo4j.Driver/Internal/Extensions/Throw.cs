@@ -48,7 +48,6 @@ namespace Neo4j.Driver.Internal
             {
                 if (first == null && second == null)
                     return;
-                
 
                 If( () => first == null || second == null || !first.Equals(second), first, second, firstParam,secondParam);
             }
@@ -56,7 +55,13 @@ namespace Neo4j.Driver.Internal
             public static void If(Func<bool> func, object first, object second, string firstParam, string secondParam)
             {
                 if(func())
-                throw new System.ArgumentException($"{firstParam} ({first}) did not equal {secondParam} ({second})");
+                    throw new System.ArgumentException($"{firstParam} ({first}) did not equal {secondParam} ({second})");
+            }
+
+            public static void IfNotTrue(bool value, string nameofValue)
+            {
+                if(!value)
+                    throw new System.ArgumentException($"Expecting {nameofValue} to be true, however the value is false");
             }
         }
 
@@ -65,7 +70,13 @@ namespace Neo4j.Driver.Internal
             public static void IfValueLessThan(long value, long limit, string parameterName)
             {
                 if(value < limit)
-                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) must be greater than {limit}.");
+                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) cannot be less than {limit}.");
+            }
+
+            public static void IfValueGreaterThan(long value, long limit, string parameterName)
+            {
+                if(value > limit)
+                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) cannot be greater than {limit}.");
             }
         }
     }
