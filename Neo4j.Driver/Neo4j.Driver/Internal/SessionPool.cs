@@ -30,6 +30,7 @@ namespace Neo4j.Driver.Internal
         private readonly int _idleSessionPoolSize;
         private readonly Dictionary<Guid, IPooledSession> _inUseSessions = new Dictionary<Guid, IPooledSession>();
         private readonly Uri _uri;
+        private volatile bool _disposeCalled = false;
 
         public SessionPool(Uri uri, IAuthToken authToken, ILogger logger, Config config, IConnection connection = null)
             : base(logger)
@@ -69,26 +70,47 @@ namespace Neo4j.Driver.Internal
                 if (session == null)
                 {
                     session = new Session(_uri, _authToken, _config, _connection, Release);
-                    lock (_inUseSessions)
-                    {
-                        _inUseSessions.Add(session.Id, session);
-                    }
-                    return session;
                 }
-
-                if (!session.IsHealthy)
+                else if (!IsSessionReusable(session))
                 {
                     session.Close();
                     return GetSession();
                 }
 
-                session.Reset();
                 lock (_inUseSessions)
                 {
+                    if (_disposeCalled)
+                    {
+                        session.Close();
+                        throw new InvalidOperationException("Failed to get a new session as the SessionPool is already started to dispose");
+                    }
                     _inUseSessions.Add(session.Id, session);
                 }
                 return session;
             });
+        }
+
+        private bool IsSessionReusable(IPooledSession session)
+        {
+            if (!session.IsHealthy)
+            {
+                return false;
+            }
+
+            try
+            {
+                session.Reset();
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private bool IsPoolFull()
+        {
+            return _availableSessions.Count >= _idleSessionPoolSize && _idleSessionPoolSize != Config.InfiniteMaxIdleSessionPoolSize;
         }
 
         public void Release(Guid sessionId)
@@ -100,6 +122,7 @@ namespace Neo4j.Driver.Internal
                 {
                     if (!_inUseSessions.ContainsKey(sessionId))
                     {
+                        // pool already released
                         return;
                     }
 
@@ -111,8 +134,11 @@ namespace Neo4j.Driver.Internal
                 {
                     lock (_availableSessions)
                     {
-                        if (_availableSessions.Count < _idleSessionPoolSize ||
-                            _idleSessionPoolSize == Config.InfiniteMaxIdleSessionPoolSize)
+                        if (_disposeCalled || IsPoolFull())
+                        {
+                            session.Close();
+                        }
+                        else
                         {
                             _availableSessions.Enqueue(session);
                         }
@@ -135,6 +161,7 @@ namespace Neo4j.Driver.Internal
 
             TryExecute(() =>
             {
+                _disposeCalled = true;
                 lock (_inUseSessions)
                 {
                     var sessions = new List<IPooledSession>(_inUseSessions.Values);
