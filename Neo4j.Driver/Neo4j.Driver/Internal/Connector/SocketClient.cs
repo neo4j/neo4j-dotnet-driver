@@ -33,6 +33,13 @@ namespace Neo4j.Driver.Internal.Connector
         private IReader _reader;
         private IWriter _writer;
 
+        private static class ProtocolVersion
+        {
+            public const int NoVersion = 0;
+            public const int Version1 = 1;
+            public const int Http = 1213486160;
+        }
+
         public static readonly BigEndianTargetBitConverter BitConverter = new BigEndianTargetBitConverter();
 
         public SocketClient(Uri url, Config config, ITcpSocketClient socketClient = null)
@@ -56,15 +63,25 @@ namespace Neo4j.Driver.Internal.Connector
 
             var version = await DoHandshake().ConfigureAwait(false);
 
-            if (version != 1)
+            switch (version)
             {
-                throw new NotSupportedException("The Neo4j Server doesn't support this client.");
-            }
-           _config.Logger?.Debug("S: [HANDSHAKE] 1");
+                case ProtocolVersion.Version1:
+                    _config.Logger?.Debug("S: [HANDSHAKE] 1");
 
-            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _config.Logger);
-            _writer = formatV1.Writer;
-            _reader = formatV1.Reader;
+                    var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _config.Logger);
+                    _writer = formatV1.Writer;
+                    _reader = formatV1.Reader;
+                    break;
+                case ProtocolVersion.NoVersion:
+                    throw new NotSupportedException("The Neo4j server does not support any of the protocol versions supported by this client. " +
+                                                    "Ensure that you are using driver and server versions that are compatible with one another.");
+                case ProtocolVersion.Http:
+                    throw new NotSupportedException("Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                                                    "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)");
+                default:
+                    throw new NotSupportedException("Protocol error, server suggested unexpected protocol version: " + version);
+
+            }
         }
 
         public async Task Stop()
