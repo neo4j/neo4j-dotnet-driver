@@ -139,7 +139,35 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReuseOldSessionWhenHealthySessionInQueue()
+            public void ShouldCreateNewSessionWhenQueueOnlyContainsUnResetableSessions()
+            {
+                var mock = new Mock<IConnection>();
+                var sessions = new Queue<IPooledSession>();
+                var unhealthyId = Guid.NewGuid();
+                var unhealthyMock = new Mock<IPooledSession>();
+                unhealthyMock.Setup(x => x.IsHealthy).Returns(true);
+                unhealthyMock.Setup(x => x.Reset()).Throws<Exception>(); //failed to reset
+                unhealthyMock.Setup(x => x.Id).Returns(unhealthyId);
+
+                sessions.Enqueue(unhealthyMock.Object);
+                var pool = new SessionPool(sessions, null, mock.Object);
+
+                pool.NumberOfAvailableSessions.Should().Be(1);
+                pool.NumberOfInUseSessions.Should().Be(0);
+
+                var session = pool.GetSession();
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(1);
+                unhealthyMock.Verify(x => x.Reset(), Times.Once);
+                unhealthyMock.Verify(x => x.Close(), Times.Once);
+
+                session.Should().NotBeNull();
+                ((IPooledSession)session).Id.Should().NotBe(unhealthyId);
+            }
+
+            [Fact]
+            public void ShouldReuseOldSessionWhenReusableSessionInQueue()
             {
                 var sessions = new Queue<IPooledSession>();
                 var mock = new Mock<IPooledSession>();
@@ -157,6 +185,32 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseSessions.Should().Be(1);
                 mock.Verify(x => x.Reset(), Times.Once);
                 session.Should().Be(mock.Object);
+            }
+
+            [Fact]
+            public void ShouldReuseReusableSessionWhenReusableSessionInQueue()
+            {
+                var sessions = new Queue<IPooledSession>();
+                var healthyMock = new Mock<IPooledSession>();
+                healthyMock.Setup(x => x.IsHealthy).Returns(true);
+                var unhealthyMock = new Mock<IPooledSession>();
+                unhealthyMock.Setup(x => x.IsHealthy).Returns(false);
+
+                sessions.Enqueue(unhealthyMock.Object);
+                sessions.Enqueue(healthyMock.Object);
+                var pool = new SessionPool(sessions, null);
+
+                pool.NumberOfAvailableSessions.Should().Be(2);
+                pool.NumberOfInUseSessions.Should().Be(0);
+
+                var session = pool.GetSession();
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(1);
+                unhealthyMock.Verify(x => x.Reset(), Times.Never);
+                unhealthyMock.Verify(x => x.Close(), Times.Once);
+                healthyMock.Verify(x => x.Reset(), Times.Once);
+                session.Should().Be(healthyMock.Object);
             }
 
             [Theory]
@@ -227,38 +281,62 @@ namespace Neo4j.Driver.Tests
                 }
             }
 
-
+            // thread-safe test
+            // concurrent call of GetSession and Dispose
             [Fact]
-            public void ShouldReuseHealthySessionWhenHealthySessionInQueue()
+            public void ShouldCloseSessionGotFromAvailableIfPoolDisposeStarted()
             {
                 var sessions = new Queue<IPooledSession>();
                 var healthyMock = new Mock<IPooledSession>();
                 healthyMock.Setup(x => x.IsHealthy).Returns(true);
-                var unhealthyMock = new Mock<IPooledSession>();
-                unhealthyMock.Setup(x => x.IsHealthy).Returns(false);
 
-                sessions.Enqueue(unhealthyMock.Object);
-                sessions.Enqueue(healthyMock.Object);
                 var pool = new SessionPool(sessions, null);
 
-                pool.NumberOfAvailableSessions.Should().Be(2);
+                pool.NumberOfAvailableSessions.Should().Be(0);
                 pool.NumberOfInUseSessions.Should().Be(0);
 
-                var session = pool.GetSession();
+                // this is to simulate we call GetSession after available.clear in pool.Dispose()
+                pool.Dispose();
+                sessions.Enqueue(healthyMock.Object);
+                pool.NumberOfAvailableSessions.Should().Be(1);
+                var exception = Record.Exception(() => pool.GetSession());
 
                 pool.NumberOfAvailableSessions.Should().Be(0);
-                pool.NumberOfInUseSessions.Should().Be(1);
-                unhealthyMock.Verify(x => x.Reset(), Times.Never);
-                unhealthyMock.Verify(x => x.Close(), Times.Once);
+                pool.NumberOfInUseSessions.Should().Be(0);
                 healthyMock.Verify(x => x.Reset(), Times.Once);
-                session.Should().Be(healthyMock.Object);
+                healthyMock.Verify(x => x.Close(), Times.Once);
+                exception.Should().BeOfType<InvalidOperationException>();
+                exception.Message.Should().Contain("the SessionPool is already started to dispose");
+            }
+
+            // thread-safe test
+            // concurrent call of GetSession and Dispose
+            [Fact]
+            public void ShouldCloseNewSessionIfPoolDisposeStarted()
+            {
+                var mock = new Mock<IConnection>();
+                var pool = new SessionPool(TestUri, AuthTokens.None, null, Config.DefaultConfig, mock.Object);
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(0);
+
+                // this is to simulate we call GetSession after available.clear in pool.Dispose()
+                pool.Dispose();
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(0);
+                var exception = Record.Exception(() => pool.GetSession());
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(0);
+                exception.Should().BeOfType<InvalidOperationException>();
+                exception.Message.Should().Contain("the SessionPool is already started to dispose");
             }
         }
 
         public class ReleaseMethod
         {
             [Fact]
-            public void ShouldReturnToPoolWhenSessionIsHealthy()
+            public void ShouldReturnToPoolWhenSessionIsHealthyAndPoolIsNotFull()
             {
                 var mock = new Mock<IPooledSession>();
                 mock.Setup(x => x.IsHealthy).Returns(true);
@@ -291,6 +369,61 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableSessions.Should().Be(0);
                 pool.NumberOfInUseSessions.Should().Be(1);
 
+                pool.Release(id);
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(0);
+                mock.Verify(x => x.Close(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldCloseTheConnectionIfSessionIsHealthyButThePoolIsFull()
+            {
+                var mock = new Mock<IPooledSession>();
+                mock.Setup(x => x.IsHealthy).Returns(true);
+                var id = new Guid();
+
+                var inUseSessions = new Dictionary<Guid, IPooledSession>();
+                inUseSessions.Add(id, mock.Object);
+
+                var availableSessions = new Queue<IPooledSession>();
+                var pooledSessionMock = new Mock<IPooledSession>();
+                for (int i = 0; i < Config.DefaultConfig.MaxIdleSessionPoolSize; i++)
+                {
+                    availableSessions.Enqueue(pooledSessionMock.Object);
+                }
+
+                var pool = new SessionPool(availableSessions, inUseSessions);
+
+                pool.NumberOfAvailableSessions.Should().Be(10);
+                pool.NumberOfInUseSessions.Should().Be(1);
+
+                pool.Release(id);
+
+                pool.NumberOfAvailableSessions.Should().Be(10);
+                pool.NumberOfInUseSessions.Should().Be(0);
+                mock.Verify(x => x.Close(), Times.Once);
+            }
+
+            // thread safe test
+            // Concurrent call of Release and Dispose
+            [Fact]
+            public void ShouldCloseTheSessionIfPoolDisposeStarted()
+            {
+                var mock = new Mock<IPooledSession>();
+                mock.Setup(x => x.IsHealthy).Returns(true);
+                var id = new Guid();
+
+                var inUseSessions = new Dictionary<Guid, IPooledSession>();
+
+                var pool = new SessionPool(null, inUseSessions);
+
+                pool.NumberOfAvailableSessions.Should().Be(0);
+                pool.NumberOfInUseSessions.Should().Be(0);
+
+                pool.Dispose();
+                inUseSessions.Add(id, mock.Object);
+                pool.NumberOfInUseSessions.Should().Be(1);
                 pool.Release(id);
 
                 pool.NumberOfAvailableSessions.Should().Be(0);
