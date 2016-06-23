@@ -26,7 +26,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
     [Binding]
-    public class DriverStatementResultNavigationSteps : TckStepsBase
+    public class DriverStatementResultNavigationSteps
     {
         private readonly CypherRecordParser _parser = new CypherRecordParser();
 
@@ -133,7 +133,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 records.Add(new Record(row.Keys.ToArray(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
             }
             var resultCursor = ScenarioContext.Current.Get<IStatementResult>();
-            AssertRecordsAreTheSame(resultCursor.ToList(), records);
+            TckUtil.AssertRecordsAreTheSame(resultCursor.ToList(), records);
         }
 
         [Then(@"using `List` on `Statement Result` gives a list of size (.*), the previous records are lost")]
@@ -169,7 +169,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var size = expectedValues.Count;
                 foreach (var real in values.Values)
                 {
-                    if (CypherValueEquals(expected, real))
+                    if (TckUtil.CypherValueEquals(expected, real))
                     {
                         expectedValues.Remove(expected);
                         break;
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var record = result.Single();
             var actual = record[index];
             var expected = _parser.Parse(table.Rows[0][0]);
-            Assert.True(CypherValueEquals(actual, expected));
+            Assert.True(TckUtil.CypherValueEquals(actual, expected));
         }
 
         [Then(@"using `Get` with key `(.*)` on the single record gives:")]
@@ -200,7 +200,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var record = result.Single();
             var actual = record[key];
             var expected = _parser.Parse(table.Rows[0][0]);
-            Assert.True(CypherValueEquals(actual, expected));
+            Assert.True(TckUtil.CypherValueEquals(actual, expected));
         }
     }
 }

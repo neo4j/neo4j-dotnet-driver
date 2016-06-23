@@ -20,21 +20,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.V1;
 using Xunit;
 using static Neo4j.Driver.Tck.Tests.TCK.CypherRecordParser;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
-    public class TckStepsBase
+    public class TckUtil
     {
-        public const string Uri = "bolt://localhost";
-        public static IAuthToken AuthToken;
-        protected static IDriver Driver;
-        protected static INeo4jInstaller Installer;
-
-        protected static object GetValue(string type, string value)
+        public static object GetValue(string type, string value)
         {
             switch (type)
             {
@@ -53,7 +47,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             }
         }
 
-        protected static void AssertEqual(object value, object other)
+        public static void AssertEqual(object value, object other)
         {
             if (value == null || value is bool || value is long || value is double || value is string)
             {
@@ -82,17 +76,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             }
         }
 
-        protected static void DisposeDriver()
-        {
-            Driver?.Dispose();
-        }
-
-        protected static void CreateNewDriver()
-        {
-            Driver = GraphDatabase.Driver(Uri, AuthToken);
-        }
-
-        protected static void AssertRecordsAreTheSame(List<IRecord> actual, List<IRecord> expected)
+        public static void AssertRecordsAreTheSame(List<IRecord> actual, List<IRecord> expected)
         {
             actual.Should().HaveSameCount(expected);
             foreach (var aRecord in actual)
@@ -101,7 +85,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             }
         }
 
-        protected static bool AssertContains(List<IRecord> records, IRecord aRecord)
+        public static bool AssertContains(List<IRecord> records, IRecord aRecord)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var record in records)
@@ -114,12 +98,12 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             return false;
         }
 
-        protected static bool RecordEquals(IRecord r1, IRecord r2)
+        public static bool RecordEquals(IRecord r1, IRecord r2)
         {
             return r1.Keys.SequenceEqual(r2.Keys) && r1.Keys.All(key => CypherValueEquals(r1[key], r2[key]));
         }
 
-        protected static bool CypherValueEquals(object o1, object o2)
+        public static bool CypherValueEquals(object o1, object o2)
         {
             // long/double/bool/null/string/list<object>/dict<string, object>/path/node/rel
             if (ReferenceEquals(o1, o2)) return true;
