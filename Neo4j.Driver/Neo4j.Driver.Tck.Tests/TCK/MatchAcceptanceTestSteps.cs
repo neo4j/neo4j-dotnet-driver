@@ -25,14 +25,14 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
     [Binding]
-    public class MatchAcceptanceTestSteps: TckStepsBase
+    public class MatchAcceptanceTestSteps
     {
         private readonly CypherRecordParser _parser = new CypherRecordParser();
 
         [Given(@"init: (.*)$")]
         public void GivenInit(string statement)
         {
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 session.Run(statement);
             }
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"running: (.*)$")]
         public void WhenRunning(string statement)
         {
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 var result = session.Run(statement);
                 ScenarioContext.Current.Set(result);
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table.RowCount.Should().Be(1);
             var dict = table.Rows[0].Keys.ToDictionary<string, string, object>(key => key, key => _parser.Parse(table.Rows[0][key]));
 
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 var resultCursor = session.Run(statement, dict);
                 ScenarioContext.Current.Set(resultCursor);
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [BeforeScenario("@reset_database")]
         public void ResetDatabase()
         {
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 session.Run("MATCH (n) DETACH DELETE n");
             }
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 records.Add( new Record(row.Keys.ToArray(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
             }
             var resultCursor = ScenarioContext.Current.Get<IStatementResult>();
-            AssertRecordsAreTheSame(resultCursor.ToList(), records);
+            TckUtil.AssertRecordsAreTheSame(resultCursor.ToList(), records);
         }
     }
 }

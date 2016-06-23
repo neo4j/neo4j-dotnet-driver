@@ -23,19 +23,19 @@ using Xunit;
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
     [Binding]
-    public class DriverAuthSteps : TckStepsBase
+    public class DriverAuthSteps
     {
         [Given(@"a driver is configured with auth enabled and correct password is provided")]
         public void GivenADriverIsConfiguredWithAuthEnabledAndCorrectPasswordIsProvided()
         {
-            var driverWithCorrectPassword = GraphDatabase.Driver(Uri, AuthToken);
+            var driverWithCorrectPassword = GraphDatabase.Driver(TckHooks.Uri, TckHooks.AuthToken);
             ScenarioContext.Current.Set(driverWithCorrectPassword);
         }
         
         [Given(@"a driver is configured with auth enabled and the wrong password is provided")]
         public void GivenADriverIsConfiguredWithAuthEnabledAndTheWrongPasswordIsProvided()
         {
-            var driverWithIncorrectPassword = GraphDatabase.Driver(Uri, AuthTokens.Basic("neo4j", "lala"));
+            var driverWithIncorrectPassword = GraphDatabase.Driver(TckHooks.Uri, AuthTokens.Basic("neo4j", "lala"));
             ScenarioContext.Current.Set(driverWithIncorrectPassword);
         }
         

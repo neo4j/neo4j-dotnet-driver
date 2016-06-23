@@ -17,65 +17,19 @@
 using FluentAssertions;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
-using Path = System.IO.Path;
 
 namespace Neo4j.Driver.Tck.Tests.TCK
 {
     [Binding]
-    public class DriverTypesTestEchoingSingleParameterSteps : TckStepsBase
+    public class DriverTypesTestEchoingSingleParameterSteps
     {
         private IStatementResult _statementResult;
         public const string KeyExpected = "expected";
         public const string KeyList = "list";
         public const string Keymap = "map";
-
-        [BeforeTestRun]
-        public static void GlobalBeforeTestRun()
-        {
-            Installer = new ExternalPythonInstaller();
-            Installer.DownloadNeo4j();
-            try
-            {
-                Installer.InstallServer();
-                Installer.StartServer();
-            }
-            catch
-            {
-                try
-                {
-                    GlobalAfterTestRun();
-                }
-                catch
-                {
-                    /*Do Nothing*/
-                }
-                throw;
-            }
-            AuthToken = AuthTokens.Basic("neo4j", "neo4j");
-            CreateNewDriver();
-        }
-
-        [AfterTestRun]
-        public static void GlobalAfterTestRun()
-        {
-            DisposeDriver();
-
-            try
-            {
-                Installer.StopServer();
-            }
-            catch
-            {
-                // ignored
-            }
-            Installer.UninstallServer();
-        }
 
         [Given(@"A running database")]
         public void GivenARunningDatabase()
@@ -85,7 +39,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Given(@"a value (.*) of type (.*)")]
         public void GivenAValueOfType(string value, string type)
         {
-            ScenarioContext.Current.Set(GetValue(type, value), KeyExpected);
+            ScenarioContext.Current.Set(TckUtil.GetValue(type, value), KeyExpected);
         }
 
         [Given(@"a list value (.*) of type (.*)")]
@@ -122,7 +76,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                list.Add(GetValue(type, value));
+                list.Add(TckUtil.GetValue(type, value));
             }
         }
 
@@ -142,7 +96,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                map.Add($"Key{i++}", GetValue(type, value));
+                map.Add($"Key{i++}", TckUtil.GetValue(type, value));
             }
         }
 
@@ -158,7 +112,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public void WhenTheDriverAsksTheServerToEchoThisValueBack()
         {
             var expected = ScenarioContext.Current.Get<object>(KeyExpected);
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", expected } });
             }
@@ -170,7 +124,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             var list = ScenarioContext.Current.Get<IList<object>>(KeyList);
             ScenarioContext.Current.Set((object)list, KeyExpected);
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", list } });
             }
@@ -182,7 +136,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
             ScenarioContext.Current.Set((object)map, KeyExpected);
-            using (var session = Driver.Session())
+            using (var session = TckHooks.Driver.Session())
             {
                 _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", map } });
             }
@@ -196,7 +150,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             record.Should().NotBeNull();
             var actual = record[0];
             var expected = ScenarioContext.Current.Get<object>(KeyExpected);
-            AssertEqual(expected, actual);
+            TckUtil.AssertEqual(expected, actual);
         }
 
         [When(@"adding a table of lists to the map M")]
@@ -223,7 +177,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 var columns = row.Values;
                 var type = columns.ElementAt(0);
                 var value = columns.ElementAt(1);
-                map.Add($"Key{i++}", GetValue(type, value));
+                map.Add($"Key{i++}", TckUtil.GetValue(type, value));
             }
         }
 
@@ -238,7 +192,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         private List<object> GetList(string type, string values)
         {
             var strings = values.Split(new[] {",", "[", "]"}, StringSplitOptions.RemoveEmptyEntries);
-            return strings.Select(value => GetValue(type, value)).ToList();
+            return strings.Select(value => TckUtil.GetValue(type, value)).ToList();
         }
         
     }
