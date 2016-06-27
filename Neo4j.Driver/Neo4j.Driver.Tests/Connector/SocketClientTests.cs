@@ -48,14 +48,15 @@ namespace Neo4j.Driver.Tests
             }
 
             [Theory]
-            [InlineData(new byte[] {0, 0, 0, 0})]
-            [InlineData(new byte[] {0, 0, 0, 2})]
-            public async Task ShouldThrowExceptionIfVersionIsNotSupported(byte[] response)
+            [InlineData(new byte[] {0, 0, 0, 0}, "The Neo4j server does not support any of the protocol versions supported by this client")]
+            [InlineData(new byte[] {0, 0, 0, 2}, "Protocol error, server suggested unexpected protocol version: 2")]
+            [InlineData(new byte[] {0x48, 0x54, 0x54, 0x50 /*HTTP*/}, "Server responded HTTP.")]
+            public async Task ShouldThrowExceptionIfVersionIsNotSupported(byte[] response, string errorMessage)
             {
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream(response);
-                    await harness.ExpectException<NotSupportedException>(() => harness.Client.Start());
+                    await harness.ExpectException<NotSupportedException>(() => harness.Client.Start(), errorMessage);
                 }
             }
         }

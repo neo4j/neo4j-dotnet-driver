@@ -24,13 +24,14 @@ namespace Neo4j.Driver.Internal.Connector
     internal class ChunkedOutputStream : IOutputStream
     {
         internal const int BufferSize = 1024*8;
+        private const int ChunkHeaderBufferSize = 2;
         private readonly int _chunkSize;
         private static readonly BitConverterBase BitConverter = SocketClient.BitConverter;
         private readonly ITcpSocketClient _tcpSocketClient;
         private byte[] _buffer; //new byte[1024*8];
         private int _pos = -1;
-        private int _chunkLength = 0;
-        private int _chunkHeaderPosition = 0;
+        private int _chunkLength = -1;
+        private int _chunkHeaderPosition = -1;
         private bool _isInChunk = false;
         private readonly ILogger _logger;
 
@@ -39,106 +40,141 @@ namespace Neo4j.Driver.Internal.Connector
             _tcpSocketClient = tcpSocketClient;
             _logger = logger;
             Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize.Value, 8, nameof(chunkSize));
+            Throw.ArgumentOutOfRangeException.IfValueGreaterThan(chunkSize.Value, ushort.MaxValue + 2, nameof(chunkSize));
 
             _chunkSize = chunkSize.Value;
         }
 
         public IOutputStream Write(byte b, params byte[] bytes)
         {
-            var bytesLength = bytes?.Length ?? 0;
-            Ensure(1 + bytesLength);
-            WriteBytes(new[] { b});
-            if (bytes != null)
-            {
-                WriteBytes(bytes);
-            }
+            // Ensure there is an open chunk, and the space is enough for a byte to write
+            Ensure(1);
+            WriteBytesInChunk(new[] {b});
+            Write(bytes);
             return this;
         }
 
         public IOutputStream Write(byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes == null || bytes.Length == 0)
                 return this;
 
             var bytesLength = bytes.Length;
             var sentSize = 0;
             while (sentSize < bytes.Length)
             {
-                var sizeToSend = Math.Min(_chunkSize - 4, bytesLength-sentSize);
-                Ensure(sizeToSend);
-                WriteBytes(bytes, sentSize, sizeToSend);
+                // Ensure there is an open chunk, and that it has at least one byte of space left
+                Ensure(1);
+                var sizeToSend = Math.Min(_chunkSize - _pos, bytesLength-sentSize);
+                WriteBytesInChunk(bytes, sentSize, sizeToSend);
                 sentSize += sizeToSend;
             }
             return this;
         }
 
-
         public IOutputStream Flush()
         {
-            WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition); // size of this chunk pos-2
-            CloseChunk();
-            _chunkHeaderPosition = 0;
+            if (_isInChunk)
+            {
+                WriteUShortInChunkHeader((ushort)_chunkLength);
+                CloseChunk();
+            }
+            // else means WriteMessageTail has close the chunk with 0s
+
             _logger?.Trace("C: ", _buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Write(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Flush();
-            _buffer = null;
-            _pos = -1;
             
+            DisposeBuffer();
+
             return this;
         }
 
         public IOutputStream WriteMessageTail()
         {
-            WriteShort((short)(_chunkLength), _buffer, _chunkHeaderPosition);
-            WriteShort(0, _buffer, _pos); // pending 00 00
+            // finish the previous open chunk
+            if (_isInChunk)
+            {
+                WriteUShortInChunkHeader((ushort) _chunkLength);
+                CloseChunk();
+            }
+            // else means that the previous chunk has been flushed
 
-            _pos += 2;
-            _chunkHeaderPosition = _pos;
+            // write 00 00, which is basically is a chunk that has 0 size
+            Ensure(0); // Ensure there is an open chunk with guarantee that there is space to write 00 00
+            WriteUShortInChunkHeader(0); // pending 00 00
             CloseChunk();
+
             return this;
-        }
-
-        private void CloseChunk()
-        {
-            _chunkLength = 0;
-            _isInChunk = false;
-        }
-
-        private void WriteBytes(byte[] bytes, int offset = 0, int? length = null)
-        {
-            _isInChunk = true;
-            Array.Copy(bytes, offset, _buffer, _pos, length??bytes.Length);
-           // bytes.CopyTo(_buffer, _pos);
-            _pos += length??bytes.Length;
-            _chunkLength += length ?? bytes.Length;
         }
 
         private void Ensure(int size)
         {
-            if (size >= _chunkSize)
-                return;
+            var maxChunkSize = _chunkSize - ChunkHeaderBufferSize;
+            if (size > maxChunkSize)
+                Throw.ArgumentOutOfRangeException.IfValueGreaterThan(size, maxChunkSize, nameof(size));
+
+            var toWriteSize = _isInChunk ? size : size + ChunkHeaderBufferSize;
+            var bufferRemaining = _chunkSize - _pos;
+            if (toWriteSize > bufferRemaining)
+            {
+                Flush();
+            }
 
             if (_buffer == null)
             {
-                /*New _buffer - start of a new chunk*/
-                _buffer = new byte[_chunkSize];
-                _pos = 2; // reserve two bytes for chunk header
+                /*New buffer and mark the start of a new chunk*/
+                NewBuffer();
+                OpenChunk();
             }
-            else if (!_isInChunk)
+            else if (!_isInChunk) // just finish a message but still could write more in this chunk
             {
-                _pos += 2;
-            }
-
-            if (_buffer.Length - _pos < size + 2) // not enough to add [size] and a message ending (00 00)
-            {
-                Flush();
-                Ensure(size);
+                OpenChunk();
             }
         }
 
-        private void WriteShort(short num, byte[] buffer, int pos)
+        private void WriteBytesInChunk(byte[] bytes, int offset = 0, int? length = null)
         {
-            BitConverter.GetBytes(num).CopyTo(buffer, pos);
+            Throw.ArgumentException.IfNotTrue(_isInChunk, nameof(_isInChunk));
+            Array.Copy(bytes, offset, _buffer, _pos, length ?? bytes.Length);
+            _pos += length ?? bytes.Length;
+            _chunkLength += length ?? bytes.Length;
         }
+
+        private void WriteUShortInChunkHeader(ushort num)
+        {
+            BitConverter.GetBytes(num).CopyTo(_buffer, _chunkHeaderPosition);
+        }
+
+        private void CloseChunk()
+        {
+            _isInChunk = false;
+            _chunkLength = -1;
+            _chunkHeaderPosition = -1;
+        }
+
+        private void OpenChunk()
+        {
+            _chunkLength = 0;
+            _chunkHeaderPosition = _pos;
+
+            // reserve two bytes for chunk header
+            _pos += 2;
+
+            _isInChunk = true;
+        }
+
+        private void NewBuffer()
+        {
+            _buffer = new byte[_chunkSize];
+            _pos = 0;
+        }
+
+        private void DisposeBuffer()
+        {
+            _buffer = null;
+            _pos = -1;
+        }
+
     }
 }

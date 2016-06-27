@@ -17,6 +17,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal;
@@ -42,11 +43,15 @@ namespace Neo4j.Driver.Tests
                
         }
 
-        public async Task ExpectException<T>(Func<Task> func) where T : Exception
+        public async Task ExpectException<T>(Func<Task> func, string errorMessage=null) where T : Exception
         {
             var exception = await Xunit.Record.ExceptionAsync(() => func());
             Assert.NotNull(exception);
             Assert.IsType<T>(exception);
+            if (errorMessage != null)
+            {
+                exception.Message.Should().Contain(errorMessage);
+            }
         }
 
         public void SetupReadStream(string hexBytes)
