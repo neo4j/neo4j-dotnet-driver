@@ -38,8 +38,9 @@ namespace Neo4j.Driver.Internal.Messaging
         void HandleFailureMessage(string code, string message);
         void HandleIgnoredMessage();
         void HandleRecordMessage(object[] fields);
-        void Register(IRequestMessage requestMessage, IResultBuilder resultBuilder = null);
+        void RegisterMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null);
         void Clear();
-        bool QueueIsEmpty();
+        int UnhandledMessageSize { get; }
+        bool IsRecordMessageReceived { get; }
     }
 }

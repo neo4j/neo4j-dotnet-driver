@@ -16,7 +16,6 @@
 // limitations under the License.
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using static Neo4j.Driver.V1.StatementType;
 using System;
 using Neo4j.Driver.V1;
@@ -26,10 +25,10 @@ namespace Neo4j.Driver.Internal.Result
     internal class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
-        private readonly IList<IRecord> _records = new List<IRecord>();
         private readonly SummaryBuilder _summaryBuilder;
 
-        internal bool HasMoreRecords { get; private set; } = true;
+        public Func<bool> ReceiveOneRecordMessageFunc { private get; set; }
+        public IRecord Record { get; private set; }
 
         public ResultBuilder() : this(null, null)
         {
@@ -45,21 +44,19 @@ namespace Neo4j.Driver.Internal.Result
         {
         }
 
-        public void Record(object[] fields)
-        {
-            var record = new Record(_keys, fields);
-            _records.Add(record);
-        }
-       
- 
-
         public StatementResult Build()
         {
             return new StatementResult(
-                _keys, 
-                new RecordSet(_records, () => !HasMoreRecords), () => _summaryBuilder.Build());
+                _keys,
+                new RecordSet(() => Record, ReceiveOneRecordMessageFunc),
+                () => _summaryBuilder.Build());
         }
 
+        public void CollectRecord(object[] fields)
+        {
+            Record = new Record(_keys, fields);
+        }
+       
         public void CollectFields(IDictionary<string, object> meta)
         {
             if (meta == null)
@@ -71,7 +68,6 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectSummaryMeta(IDictionary<string, object> meta)
         {
-            HasMoreRecords = false;
             if (meta == null)
             {
                 return;
@@ -83,7 +79,6 @@ namespace Neo4j.Driver.Internal.Result
             CollectProfile(meta, "profile");
             CollectNotifications(meta, "notifications");
         }
-
 
         private void CollectKeys(IDictionary<string, object> meta, string name)
         {

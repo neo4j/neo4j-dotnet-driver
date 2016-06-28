@@ -14,15 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result
 {
     internal interface IResultBuilder
     {
-        void Record(object[] fields);
+        void CollectRecord(object[] fields);
         StatementResult Build();
         void CollectFields(IDictionary<string, object> meta);
         void CollectSummaryMeta(IDictionary<string, object> meta);
+        Func<bool> ReceiveOneRecordMessageFunc { set; }
     }
 }

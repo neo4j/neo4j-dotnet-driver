@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Given(@"init: (.*)$")]
         public void GivenInit(string statement)
         {
-            using (var session = TckHooks.Driver.Session())
+            using (var session = TckHooks.CreateSession())
             {
                 session.Run(statement);
             }
@@ -43,15 +43,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             ScenarioContext.Current.Pending();
         }
-        
+
         [When(@"running: (.*)$")]
         public void WhenRunning(string statement)
         {
-            using (var session = TckHooks.Driver.Session())
-            {
-                var result = session.Run(statement);
-                ScenarioContext.Current.Set(result);
-            }
+            var session = TckHooks.CreateSession();
+            var result = session.Run(statement);
+            ScenarioContext.Current.Set(result);
         }
 
         [Given(@"running: (.*)$")]
@@ -70,13 +68,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public void WhenRunningParameterized(string statement, Table table)
         {
             table.RowCount.Should().Be(1);
-            var dict = table.Rows[0].Keys.ToDictionary<string, string, object>(key => key, key => _parser.Parse(table.Rows[0][key]));
+            var dict = table.Rows[0].Keys.ToDictionary<string, string, object>(key => key,
+                key => _parser.Parse(table.Rows[0][key]));
 
-            using (var session = TckHooks.Driver.Session())
-            {
-                var resultCursor = session.Run(statement, dict);
-                ScenarioContext.Current.Set(resultCursor);
-            }
+            var session = TckHooks.CreateSession();
+            var result = session.Run(statement, dict);
+            ScenarioContext.Current.Set(result);
+
         }
 
         [Given(@"running parametrized: (.*)$")]
@@ -88,7 +86,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [BeforeScenario("@reset_database")]
         public void ResetDatabase()
         {
-            using (var session = TckHooks.Driver.Session())
+            using (var session = TckHooks.CreateSession())
             {
                 session.Run("MATCH (n) DETACH DELETE n");
             }
@@ -102,8 +100,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             {
                 records.Add( new Record(row.Keys.ToArray(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
             }
-            var resultCursor = ScenarioContext.Current.Get<IStatementResult>();
-            TckUtil.AssertRecordsAreTheSame(resultCursor.ToList(), records);
+            var result = ScenarioContext.Current.Get<IStatementResult>();
+            TckUtil.AssertRecordsAreTheSame(result.ToList(), records);
         }
     }
 }
