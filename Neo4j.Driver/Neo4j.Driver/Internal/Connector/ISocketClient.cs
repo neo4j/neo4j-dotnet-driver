@@ -24,7 +24,13 @@ namespace Neo4j.Driver.Internal.Connector
     {
         Task Start();
         Task Stop();
-        void Send(IEnumerable<IRequestMessage> messages, IMessageResponseHandler responseHandler);
+        void Send(IEnumerable<IRequestMessage> messages);
+        /* Recieve until unhandledMessageSize messages are left in unhandled message queue (client sent messages) */
+        void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0);
+        /* Retive one server reply message from client's input buffer.
+         * Return true if a client message is complete (a success/failure/ignore message received),
+         * otherwise false (a record message received) */
+        bool ReceiveOne(IMessageResponseHandler responseHandler);
         bool IsOpen { get; }
     }
 }

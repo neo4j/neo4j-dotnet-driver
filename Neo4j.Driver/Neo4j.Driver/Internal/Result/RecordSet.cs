@@ -14,56 +14,80 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
     internal class RecordSet : IRecordSet
     {
-        private readonly Func<bool> _atEnd;
-        internal int Position = 0;
-        private readonly IList<IRecord> _records;
+        private readonly Func<bool> _receiveOneFunc;
+        private readonly Func<IRecord> _recordFunc;
 
-        public RecordSet(IList<IRecord> records, Func<bool> atEnd)
+        private IRecord _peekedRecord;
+
+        public RecordSet(Func<IRecord> recordFunc, Func<bool> receiveOneFunc)
         {
-            _records = records;
-            _atEnd = atEnd;
+            _recordFunc = recordFunc;
+            _receiveOneFunc = receiveOneFunc;
         }
 
-        public bool AtEnd => _atEnd();
+        public bool AtEnd { get; private set; }
 
         public IEnumerable<IRecord> Records()
         {
-            while (!AtEnd || Position <= _records.Count)
+            while (!HasReadAllRecords())
             {
-                while (Position == _records.Count)
-                {
-                    Task.Delay(50).Wait();
-                    if (AtEnd && Position == _records.Count)
-                        yield break;
-                }
+                // first try to return if already retrived,
+                // otherwise pull from input stream
 
-                yield return _records[Position++];
-//                Position++;
+                if (_peekedRecord != null)
+                {
+                    var record = _peekedRecord;
+                    _peekedRecord = null;
+                    yield return record;
+                }
+                else
+                {
+                    AtEnd = _receiveOneFunc.Invoke();
+                    if (!AtEnd)
+                    {
+                        yield return _recordFunc.Invoke();
+                    }
+                }
             }
+        }
+
+        private bool HasReadAllRecords()
+        {
+            return AtEnd && _peekedRecord == null;
         }
 
         public IRecord Peek()
         {
-            while (Position >= _records.Count) // Peeking record not received
+            // we did not move the cursor in the stream
+            if (_peekedRecord != null)
             {
-                if (AtEnd && Position >= _records.Count)
-                {
-                    return null;
-                }
-
-                Task.Delay(50).Wait();
+                return _peekedRecord;
             }
-
-            return _records[Position];
+            // we already arrived at the end of the stream
+            if (AtEnd)
+            {
+                return null;
+            }
+            // we still in the middle of the stream and we need to pull from input buffer
+            AtEnd = _receiveOneFunc.Invoke();
+            if (AtEnd) // well the message received is a success
+            {
+                return null;
+            }
+            else // we get another record message
+            {
+                _peekedRecord = _recordFunc.Invoke();
+                return _peekedRecord;
+            }
         }
     }
 }

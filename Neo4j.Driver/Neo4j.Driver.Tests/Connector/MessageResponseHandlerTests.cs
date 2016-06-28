@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests
                 mrh.HandleSuccessMessage(new Dictionary<string, object> {{"fields", new List<object> {"x"}}});
                 mrh.HandleRecordMessage(new object[] {"x"});
 
-                mockResultBuilder.Verify(x => x.Record(It.IsAny<object[]>()), Times.Once);
+                mockResultBuilder.Verify(x => x.CollectRecord(It.IsAny<object[]>()), Times.Once);
             }
 
             [Fact]

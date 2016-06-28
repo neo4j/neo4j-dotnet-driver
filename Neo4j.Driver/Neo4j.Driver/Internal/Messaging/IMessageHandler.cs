@@ -40,6 +40,7 @@ namespace Neo4j.Driver.Internal.Messaging
 
         void Register(IRequestMessage requestMessage, IResultBuilder resultBuilder = null);
         void Clear();
-        bool QueueIsEmpty();
+        int UnhandledMessageSize { get; }
+        bool IsRecordMessageReceived { get; }
     }
 }

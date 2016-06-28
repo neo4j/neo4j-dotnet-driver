@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class SocketConnection : IConnection
     {
         private readonly ISocketClient _client;
-        private readonly IMessageResponseHandler _messageHandler;
+        private readonly IMessageResponseHandler _responseHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
 
@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Connector
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
-            _messageHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
+            _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
 
             _client = socketClient;
             Task.Run(() => _client.Start()).Wait();
@@ -64,18 +64,29 @@ namespace Neo4j.Driver.Internal.Connector
                 return;
             }
 
-            _client.Send(_messages, _messageHandler);
+            // blocking to send
+            _client.Send(_messages);
             ClearQueue(); // clear sending queue
+            // blocking to receive
+            _client.Receive(_responseHandler);
+        }
 
-            if (_messageHandler.HasError)
+        public void SyncRun()
+        {
+            if (_messages.Count == 0)
             {
-                Enqueue(new ResetMessage());
-                throw _messageHandler.Error;
+                return;
             }
+
+            // blocking to send
+            _client.Send(_messages);
+            ClearQueue(); // clear sending queue
+            // blocking to receive unitl 1 message unhandled left (PULL_ALL)
+            _client.Receive(_responseHandler, 1);
         }
 
         public bool HasUnrecoverableError
-            => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
+            => _responseHandler.Error is TransientException || _responseHandler.Error is DatabaseException;
 
         public void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
         {
@@ -86,6 +97,7 @@ namespace Neo4j.Driver.Internal.Connector
         public void PullAll(ResultBuilder resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
+            resultBuilder.ReceiveOneFunc = () => _client.ReceiveOne(_responseHandler);
         }
 
         public void DiscardAll()
@@ -96,7 +108,7 @@ namespace Neo4j.Driver.Internal.Connector
         public void Reset()
         {
             ClearQueue();
-            _messageHandler.Clear();
+            _responseHandler.Clear();
             Enqueue(new ResetMessage());
         }
 
@@ -119,7 +131,7 @@ namespace Neo4j.Driver.Internal.Connector
         private void Enqueue(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
         {
             _messages.Enqueue(requestMessage);
-            _messageHandler.Register(requestMessage, resultBuilder);
+            _responseHandler.Register(requestMessage, resultBuilder);
         }
     }
 }

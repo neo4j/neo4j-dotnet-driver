@@ -23,6 +23,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal interface IConnection : IDisposable
     {
         void Sync();
+        void SyncRun();
         void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters=null);
         void PullAll(ResultBuilder resultBuilder);
         void DiscardAll();

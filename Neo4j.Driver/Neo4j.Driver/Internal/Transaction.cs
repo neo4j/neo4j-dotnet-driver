@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Internal
                     var resultBuilder = new ResultBuilder(statement, parameters);
                     _connection.Run(resultBuilder, statement, parameters);
                     _connection.PullAll(resultBuilder);
-                    _connection.Sync();
+                    _connection.SyncRun();
                     return resultBuilder.Build();
                 }
                 catch (Neo4jException)

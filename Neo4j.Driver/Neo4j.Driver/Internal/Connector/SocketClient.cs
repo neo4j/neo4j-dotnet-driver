@@ -94,47 +94,55 @@ namespace Neo4j.Driver.Internal.Connector
             IsOpen = false;
         }
 
-        public void Send(IEnumerable<IRequestMessage> messages, IMessageResponseHandler responseHandler)
+        public void Send(IEnumerable<IRequestMessage> messages)
         {
             foreach (var message in messages)
             {
                 _writer.Write(message);
                 _config.Logger?.Debug("C: ", message);
             }
-
             _writer.Flush();
-
-            Receive(responseHandler);
         }
 
         public bool IsOpen { get; private set; }
 
-        private void Receive(IMessageResponseHandler responseHandler)
+        public void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0)
         {
-            while (!responseHandler.QueueIsEmpty())
+            // This method highly relies on the fact that the session is not threadsafe and could only be used in a single thread
+            // as if two threads trying to modify the message size, then we might
+            // 1. force to pull all instead of streaming records
+            // 2. lost some records as the thead who forces to pull will throw the recived record away on receiving.
+            while (responseHandler.UnhandledMessageSize > unhandledMessageSize)
             {
-                try
-                {
-                    _reader.Read(responseHandler);
-                }
-                catch (Exception ex)
-                {
-                    _config.Logger.Error("Unable to unpack message from server, connection has been terminated.", ex);
-                    Task.Run(() => Stop()).Wait();
-                    throw;
-                }
-                if (responseHandler.HasError)
-                {
-                    if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))
-                    {
-                        Task.Run(() => Stop()).Wait();
-                        throw responseHandler.Error;
-                    }
-                }
+                ReceiveOne(responseHandler);
             }
             //Read 1 message
             //Send to handler,
             //While messages read < messages handled keep doing above.
+        }
+
+        public bool ReceiveOne(IMessageResponseHandler responseHandler)
+        {
+            try
+            {
+                _reader.Read(responseHandler);
+            }
+            catch (Exception ex)
+            {
+                _config.Logger.Error("Unable to unpack message from server, connection has been terminated.", ex);
+                Task.Run(() => Stop()).Wait();
+                throw;
+            }
+            if (responseHandler.HasError)
+            {
+                if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))
+                {
+                    Task.Run(() => Stop()).Wait();
+                    throw responseHandler.Error;
+                }
+                throw responseHandler.Error;
+            }
+            return !responseHandler.IsRecordMessageReceived; // one message replied
         }
 
         private async Task<int> DoHandshake()

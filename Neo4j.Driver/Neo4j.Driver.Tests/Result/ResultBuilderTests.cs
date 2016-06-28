@@ -292,9 +292,9 @@ namespace Neo4j.Driver.Tests
                 var cursor = builder.Build();
 
                 var t = AssertGetExpectResults(cursor, 3);
-                builder.Record(new object[] {123});
-                builder.Record(new object[] {123});
-                builder.Record(new object[] {123});
+                builder.CollectRecord(new object[] {123});
+                builder.CollectRecord(new object[] {123});
+                builder.CollectRecord(new object[] {123});
                 builder.CollectSummaryMeta(null);
                 t.Wait();
             }
@@ -318,9 +318,9 @@ namespace Neo4j.Driver.Tests
                 var builder = GenerateBuilder();
                 var cursor = builder.Build();
 
-                builder.Record(new object[] { 123 });
-                builder.Record(new object[] { 123 });
-                builder.Record(new object[] { 123 });
+                builder.CollectRecord(new object[] { 123 });
+                builder.CollectRecord(new object[] { 123 });
+                builder.CollectRecord(new object[] { 123 });
                 builder.CollectSummaryMeta(null);
 
                 var t = AssertGetExpectResults(cursor, 3);
@@ -343,7 +343,7 @@ namespace Neo4j.Driver.Tests
 
                 foreach (var recordValue in recordValues)
                 { 
-                    builder.Record(new object[] { recordValue });
+                    builder.CollectRecord(new object[] { recordValue });
                 }
                 builder.CollectSummaryMeta(null);
 

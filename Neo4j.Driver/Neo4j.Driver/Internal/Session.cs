@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Internal
                 var resultBuilder = new ResultBuilder(statement, statementParameters);
                 _connection.Run(resultBuilder, statement, statementParameters);
                 _connection.PullAll(resultBuilder);
-                _connection.Sync();
+                _connection.SyncRun();
 
                 return resultBuilder.Build();
             });
