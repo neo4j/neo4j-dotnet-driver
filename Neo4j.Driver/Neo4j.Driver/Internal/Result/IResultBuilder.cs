@@ -17,7 +17,7 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
@@ -27,6 +27,6 @@ namespace Neo4j.Driver.Internal.Result
         StatementResult Build();
         void CollectFields(IDictionary<string, object> meta);
         void CollectSummaryMeta(IDictionary<string, object> meta);
-        Func<bool> ReceiveOneFunc { set; }
+        Func<bool> ReceiveOneMessageRecordFunc { set; }
     }
 }

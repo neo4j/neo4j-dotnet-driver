@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal.Connector
             GC.SuppressFinalize(this);
         }
 
-        public void Sync()
+        private void SendAndReceive(int unhandledMessageCount = 0)
         {
             if (_messages.Count == 0)
             {
@@ -68,21 +68,23 @@ namespace Neo4j.Driver.Internal.Connector
             _client.Send(_messages);
             ClearQueue(); // clear sending queue
             // blocking to receive
-            _client.Receive(_responseHandler);
+            _client.Receive(_responseHandler, unhandledMessageCount);
+
+            if (_responseHandler.HasError)
+            {
+                Enqueue(new ResetMessage());
+                throw _responseHandler.Error;
+            }
+        }
+
+        public void Sync()
+        {
+            SendAndReceive();
         }
 
         public void SyncRun()
         {
-            if (_messages.Count == 0)
-            {
-                return;
-            }
-
-            // blocking to send
-            _client.Send(_messages);
-            ClearQueue(); // clear sending queue
-            // blocking to receive unitl 1 message unhandled left (PULL_ALL)
-            _client.Receive(_responseHandler, 1);
+            SendAndReceive(1); // blocking to receive unitl 1 message unhandled left (PULL_ALL)
         }
 
         public bool HasUnrecoverableError
@@ -97,7 +99,7 @@ namespace Neo4j.Driver.Internal.Connector
         public void PullAll(ResultBuilder resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
-            resultBuilder.ReceiveOneFunc = () => _client.ReceiveOne(_responseHandler);
+            resultBuilder.ReceiveOneMessageRecordFunc = () => _client.ReceiveOneRecordMessage(_responseHandler);
         }
 
         public void DiscardAll()

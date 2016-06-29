@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests
                 con.Sync();
                 mock.Reset();
                 con.Sync();
-                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>(), It.IsAny<IMessageResponseHandler>()),
+                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
                     Times.Never);
             }
 
@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Tests
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, null);
 
                 con.Sync();
-                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>(), It.IsAny<IMessageResponseHandler>()),
+                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
                     Times.Once);
                 con.Messages.Count.Should().Be(0);
             }

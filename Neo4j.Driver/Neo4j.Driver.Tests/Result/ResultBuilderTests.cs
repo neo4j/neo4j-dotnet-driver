@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,11 +46,13 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectType()
             {
                 var builder = new ResultBuilder();
+                builder.ReceiveOneMessageRecordFunc = () => false;
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"type", "r" } };
                 builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
+                result.Consume();
                 result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
             }
 
@@ -56,11 +60,13 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectStattistics()
             {
                 var builder = new ResultBuilder();
+                builder.ReceiveOneMessageRecordFunc = () => false;
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"type", "r" }, {"stats", new Dictionary<string, object> { {"nodes-created", 10L}, {"nodes-deleted", 5L} } } };
                 builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
+                result.Consume();
                 var statistics = result.Summary.Counters;
                 statistics.NodesCreated.Should().Be(10);
 
@@ -70,6 +76,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectNotifications()
             {
                 var builder = new ResultBuilder();
+                builder.ReceiveOneMessageRecordFunc = () => false;
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {
                     {"type", "r" },
@@ -96,6 +103,7 @@ namespace Neo4j.Driver.Tests
                 InputPosition position = new InputPosition(0,0,0);
 
                 var result = builder.Build();
+                result.Consume();
                 var notifications = result.Summary.Notifications;
                 notifications.Should().HaveCount(2);
                 notifications[0].Code.Should().Be("CODE");
@@ -117,6 +125,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectSimplePlan()
             {
                 var builder = new ResultBuilder();
+                builder.ReceiveOneMessageRecordFunc = () => false;
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {   {"type", "r" },
                     { "plan", new Dictionary<string, object>
@@ -126,6 +135,7 @@ namespace Neo4j.Driver.Tests
                 builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
+                result.Consume();
                 var plan = result.Summary.Plan;
                 plan.OperatorType.Should().Be("X");
                 plan.Arguments.Should().BeEmpty();
@@ -138,6 +148,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectPlanThatContainsPlans()
             {
                 var builder = new ResultBuilder();
+                builder.ReceiveOneMessageRecordFunc = () => false;
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {
                     {"type", "r"},
@@ -173,6 +184,7 @@ namespace Neo4j.Driver.Tests
                 builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
+                result.Consume();
                 var plan = result.Summary.Plan;
                 plan.OperatorType.Should().Be("X");
                 plan.Arguments.Should().ContainKey("a");
@@ -193,6 +205,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectProfiledPlanThatContainsProfiledPlans()
             {
                 var builder = new ResultBuilder();
+                builder.ReceiveOneMessageRecordFunc = () => false;
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {
                     {"type", "r"},
@@ -239,6 +252,7 @@ namespace Neo4j.Driver.Tests
                 builder.CollectSummaryMeta(meta);
 
                 var result = builder.Build();
+                result.Consume();
                 var profile = result.Summary.Profile;
                 profile.DbHits.Should().Be(1L);
                 profile.OperatorType.Should().Be("X");
@@ -289,13 +303,20 @@ namespace Neo4j.Driver.Tests
             public void ShouldStreamResults()
             {
                 var builder = GenerateBuilder();
+                var i = 0;
+                builder.ReceiveOneMessageRecordFunc = () =>
+                {
+                    if (i++ >= 3)
+                    {
+                        builder.CollectSummaryMeta(null);
+                        return false;
+                    }
+                    builder.CollectRecord(new object[] { 123 });
+                    return true;
+                };
                 var cursor = builder.Build();
 
                 var t = AssertGetExpectResults(cursor, 3);
-                builder.CollectRecord(new object[] {123});
-                builder.CollectRecord(new object[] {123});
-                builder.CollectRecord(new object[] {123});
-                builder.CollectSummaryMeta(null);
                 t.Wait();
             }
 
@@ -303,27 +324,15 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnNoResultsWhenNoneRecieved()
             {
                 var builder = GenerateBuilder();
+                builder.ReceiveOneMessageRecordFunc = () =>
+                {
+                    builder.CollectSummaryMeta(null);
+                    return false;
+                };
                 var cursor = builder.Build();
 
                 var t = AssertGetExpectResults(cursor, 0);
 
-                builder.CollectSummaryMeta(null);
-
-                t.Wait();
-            }
-
-            [Fact]
-            public void ShouldReturnQueuedResults()
-            {
-                var builder = GenerateBuilder();
-                var cursor = builder.Build();
-
-                builder.CollectRecord(new object[] { 123 });
-                builder.CollectRecord(new object[] { 123 });
-                builder.CollectRecord(new object[] { 123 });
-                builder.CollectSummaryMeta(null);
-
-                var t = AssertGetExpectResults(cursor, 3);
                 t.Wait();
             }
 
@@ -331,8 +340,6 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnQueuedResultsWithExspectedValue()
             {
                 var builder = GenerateBuilder();
-                var cursor = builder.Build();
-
                 List<object> recordValues = new List<object>
                 {
                     1,
@@ -340,12 +347,18 @@ namespace Neo4j.Driver.Tests
                     false,
                     10
                 };
-
-                foreach (var recordValue in recordValues)
-                { 
-                    builder.CollectRecord(new object[] { recordValue });
-                }
-                builder.CollectSummaryMeta(null);
+                var i = 0;
+                builder.ReceiveOneMessageRecordFunc = () =>
+                {
+                    if (i < recordValues.Count)
+                    {
+                        builder.CollectRecord(new[] { recordValues[i++] });
+                        return true;
+                    }
+                    builder.CollectSummaryMeta(null);
+                    return false;
+                };
+                var cursor = builder.Build();
 
                 var task = AssertGetExpectResults(cursor, recordValues.Count, recordValues);
                 task.Wait();
@@ -357,22 +370,16 @@ namespace Neo4j.Driver.Tests
             private static ICounters DefaultCounters => new Counters();
 
             [Fact]
-            public void ShouldSetNoMoreRecords()
-            {
-                var builder = new ResultBuilder();
-
-                builder.HasMoreRecords.Should().BeTrue();
-                builder.CollectSummaryMeta(null);
-                builder.HasMoreRecords.Should().BeFalse();
-            }
-
-            [Fact]
             public void DoesNothingWhenMetaIsNull()
             {
                 var builder = new ResultBuilder();
-
-                builder.CollectSummaryMeta(null);
+                builder.ReceiveOneMessageRecordFunc = () =>
+                {
+                    builder.CollectSummaryMeta(null);
+                    return false;
+                };
                 var actual = builder.Build();
+                actual.Consume();
 
                 actual.Summary.HasPlan.Should().BeFalse();
                 actual.Summary.HasProfile.Should().BeFalse();
@@ -399,8 +406,13 @@ namespace Neo4j.Driver.Tests
                         {"type", typeValue}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
 
                     actual.Summary.StatementType.Should().Be(expected);
                 }
@@ -414,8 +426,13 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.StatementType.Should().Be(StatementType.Unknown);
                 }
 
@@ -444,8 +461,13 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.Counters.ShouldBeEquivalentTo(DefaultCounters);
                 }
 
@@ -471,8 +493,12 @@ namespace Neo4j.Driver.Tests
                         } }
                     };
 
-                    builder.CollectSummaryMeta(meta);
-                    var actual = builder.Build().Summary.Counters;
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
+                    var actual = builder.Build().Consume().Counters;
                     actual.Should().NotBeNull();
 
                     actual.NodesCreated.Should().Be(1);
@@ -499,9 +525,14 @@ namespace Neo4j.Driver.Tests
                     {
                         {"something", "unknown"}
                     };
-
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Plan.Should().BeNull();
                     actual.Summary.HasPlan.Should().BeFalse();
                 }
@@ -515,8 +546,14 @@ namespace Neo4j.Driver.Tests
                         {"plan", new Dictionary<string,object>()}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Plan.Should().BeNull();
                     actual.Summary.HasPlan.Should().BeFalse();
                 }
@@ -530,8 +567,14 @@ namespace Neo4j.Driver.Tests
                         {"plan", null}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Plan.Should().BeNull();
                     actual.Summary.HasPlan.Should().BeFalse();
                 }
@@ -550,8 +593,16 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    var ex = Xunit.Record.Exception(() => builder.CollectSummaryMeta(meta));
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
+                    var actual = builder.Build();
+
+                    var ex = Xunit.Record.Exception(() => actual.Consume());
                     ex.Should().BeOfType<Neo4jException>();
+                    ex.Message.Should().Be("Required property 'operatorType' is not in the response.");
                 }
 
                 [Fact]
@@ -568,8 +619,14 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Plan.Should().NotBeNull();
                     actual.Summary.HasPlan.Should().BeTrue();
                     
@@ -597,8 +654,14 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Plan.Should().NotBeNull();
                     actual.Summary.HasPlan.Should().BeTrue();
 
@@ -642,8 +705,12 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
-                    var actual = builder.Build().Summary.Plan.Children.Single();
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
+                    var actual = builder.Build().Consume().Plan.Children.Single();
 
                     actual.Arguments.Should().HaveCount(1);
                     actual.Arguments.Should().ContainKey("child_a");
@@ -695,8 +762,12 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
-                    var actual = builder.Build().Summary.Plan.Children.Single().Children.Single();
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
+                    var actual = builder.Build().Consume().Plan.Children.Single().Children.Single();
 
                     actual.Arguments.Should().HaveCount(1);
                     actual.Arguments.Should().ContainKey("childChild_a");
@@ -722,8 +793,14 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Profile.Should().BeNull();
                     actual.Summary.HasProfile.Should().BeFalse();
                 }
@@ -737,8 +814,14 @@ namespace Neo4j.Driver.Tests
                         {"profile", new Dictionary<string,object>()}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Profile.Should().BeNull();
                     actual.Summary.HasProfile.Should().BeFalse();
                 }
@@ -752,8 +835,14 @@ namespace Neo4j.Driver.Tests
                         {"profile", null}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Profile.Should().BeNull();
                     actual.Summary.HasProfile.Should().BeFalse();
                 }
@@ -774,8 +863,16 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    var ex = Xunit.Record.Exception(() => builder.CollectSummaryMeta(meta));
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
+                    var actual = builder.Build();
+
+                    var ex = Xunit.Record.Exception(() => actual.Consume());
                     ex.Should().BeOfType<Neo4jException>();
+                    ex.Message.Should().Be("Required property 'operatorType' is not in the response.");
                 }
 
                 [Fact]
@@ -793,8 +890,16 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    var ex = Xunit.Record.Exception(() => builder.CollectSummaryMeta(meta));
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
+                    var actual = builder.Build();
+
+                    var ex = Xunit.Record.Exception(() => actual.Consume());
                     ex.Should().BeOfType<Neo4jException>();
+                    ex.Message.Should().Be("Required property 'rows' is not in the response.");
                 }
 
                 [Fact]
@@ -812,8 +917,16 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    var ex = Xunit.Record.Exception(() => builder.CollectSummaryMeta(meta));
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
+                    var actual = builder.Build();
+
+                    var ex = Xunit.Record.Exception(() => actual.Consume());
                     ex.Should().BeOfType<Neo4jException>();
+                    ex.Message.Should().Be("Required property 'dbHits' is not in the response.");
                 }
 
                 [Fact]
@@ -832,8 +945,14 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
+
                     actual.Summary.Profile.Should().NotBeNull();
                     actual.Summary.HasProfile.Should().BeTrue();
 
@@ -866,8 +985,13 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
                     actual.Summary.HasProfile.Should().BeTrue();
 
@@ -919,8 +1043,13 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
                     actual.Summary.HasProfile.Should().BeTrue();
 
@@ -985,8 +1114,13 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
                     actual.Summary.HasProfile.Should().BeTrue();
 
@@ -1019,8 +1153,13 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.Notifications.Should().BeEmpty();
                 }
 
@@ -1051,8 +1190,13 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.Notifications.Should().HaveCount(1);
 
                     var n = actual.Summary.Notifications.Single();
@@ -1105,8 +1249,13 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.CollectSummaryMeta(meta);
+                    builder.ReceiveOneMessageRecordFunc = () =>
+                    {
+                        builder.CollectSummaryMeta(meta);
+                        return false;
+                    };
                     var actual = builder.Build();
+                    actual.Consume();
                     actual.Summary.Notifications.Should().HaveCount(2);
 
                     var n = actual.Summary.Notifications.Skip(1).Single();

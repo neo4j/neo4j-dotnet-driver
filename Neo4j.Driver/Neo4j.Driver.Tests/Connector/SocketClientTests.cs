@@ -96,7 +96,8 @@ namespace Neo4j.Driver.Tests
                     harness.ResetCalls();
 
                     // When
-                    harness.Client.Send(messages, messageHandler);
+                    harness.Client.Send(messages);
+                    harness.Client.Receive(messageHandler);
 
                     // Then
                     harness.VerifyWriteStreamUsages(2 /*write + flush*/);
@@ -125,16 +126,16 @@ namespace Neo4j.Driver.Tests
                     harness.ResetCalls();
 
                     // When
-                    harness.Client.Send(messages, messageHandler);
+                    harness.Client.Send(messages);
+                    Record.Exception(() => harness.Client.Receive(messageHandler));
 
                     // Then
                     harness.VerifyWriteStreamUsages(2 /*write + flush*/);
 
                     messageHandler.HasError.Should().BeTrue();
                     messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
-                    messageHandler.Error.Message.Should()
-                        .Be(
-                            "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
+                    messageHandler.Error.Message.Should().Be(
+                        "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
                 }
             }
 
@@ -167,16 +168,17 @@ namespace Neo4j.Driver.Tests
 
 
                     // When
-                    harness.Client.Send(messages, messageHandler);
+                    harness.Client.Send(messages);
+                    Record.Exception(() => harness.Client.Receive(messageHandler));
 
                     // Then
                     harness.VerifyWriteStreamUsages(2 /*write + flush*/);
 
                     messageHandler.HasError.Should().BeTrue();
                     messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
-                    messageHandler.Error.Message.Should()
-                        .Be("Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
-                    messageHandler.QueueIsEmpty().Should().BeTrue();
+                    messageHandler.Error.Message.Should().Be(
+                        "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
+                    messageHandler.UnhandledMessageSize.Should().Be(0);
                     messageHandler.FailureMessageCalled.Should().Be(1);
                     messageHandler.IgnoreMessageCalled.Should().Be(1);
                 }
@@ -209,7 +211,8 @@ namespace Neo4j.Driver.Tests
                     messageHandler.Error = new ClientException("Neo.ClientError.Request.Invalid", "Test Message");
 
                     // When
-                    var ex = Record.Exception(() => harness.Client.Send(messages, messageHandler));
+                    harness.Client.Send(messages);
+                    var ex = Record.Exception(() => harness.Client.Receive(messageHandler));
                     ex.Should().BeOfType<ClientException>();
 
                     harness.MockTcpSocketClient.Verify(x => x.DisconnectAsync(), Times.Once);
@@ -262,10 +265,8 @@ namespace Neo4j.Driver.Tests
                     throw new NotImplementedException();
                 }
 
-                public bool QueueIsEmpty()
-                {
-                    return _messageHandler.QueueIsEmpty();
-                }
+                public int UnhandledMessageSize => _messageHandler.UnhandledMessageSize;
+                public bool IsRecordMessageReceived => _messageHandler.IsRecordMessageReceived;
 
                 public bool HasError => _messageHandler.HasError;
 

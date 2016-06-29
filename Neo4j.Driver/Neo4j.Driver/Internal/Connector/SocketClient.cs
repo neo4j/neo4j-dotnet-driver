@@ -106,22 +106,28 @@ namespace Neo4j.Driver.Internal.Connector
 
         public bool IsOpen { get; private set; }
 
+        /// <summary>
+        /// This method highly relies on the fact that the session is not threadsafe and could only be used in a single thread
+        /// as if two threads trying to modify the message size, then we might
+        /// 1. force to pull all instead of streaming records
+        /// 2. lose some records as only one record is buffered in result builder on client.
+        /// </summary>
         public void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0)
         {
-            // This method highly relies on the fact that the session is not threadsafe and could only be used in a single thread
-            // as if two threads trying to modify the message size, then we might
-            // 1. force to pull all instead of streaming records
-            // 2. lost some records as the thead who forces to pull will throw the recived record away on receiving.
-            while (responseHandler.UnhandledMessageSize > unhandledMessageSize)
+            while (responseHandler.UnhandledMessageSize > unhandledMessageSize 
+                || (responseHandler.HasError && responseHandler.UnhandledMessageSize > 0)
+                /*if error happens, then just drain the whole unhandledMessage queue*/)
             {
                 ReceiveOne(responseHandler);
+                //Read 1 message
+                //Send to handler
             }
-            //Read 1 message
-            //Send to handler,
-            //While messages read < messages handled keep doing above.
         }
 
-        public bool ReceiveOne(IMessageResponseHandler responseHandler)
+        /// <summary>
+        /// This method will not throw exception if a railure message is received
+        /// </summary>
+        private void ReceiveOne(IMessageResponseHandler responseHandler)
         {
             try
             {
@@ -140,9 +146,25 @@ namespace Neo4j.Driver.Internal.Connector
                     Task.Run(() => Stop()).Wait();
                     throw responseHandler.Error;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Return true if a record message is received, otherwise false.
+        /// This method will throw the exception if a failure message is received.
+        /// </summary>
+        public bool ReceiveOneRecordMessage(IMessageResponseHandler responseHandler)
+        {
+            if (responseHandler.UnhandledMessageSize == 0)
+            {
+                return false;
+            }
+            ReceiveOne(responseHandler);
+            if (responseHandler.HasError)
+            {
                 throw responseHandler.Error;
             }
-            return !responseHandler.IsRecordMessageReceived; // one message replied
+            return responseHandler.IsRecordMessageReceived;
         }
 
         private async Task<int> DoHandshake()

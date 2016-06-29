@@ -25,11 +25,10 @@ namespace Neo4j.Driver.Internal.Result
     internal class ResultBuilder : IResultBuilder
     {
         private string[] _keys = new string[0];
-        public IRecord Record { get; private set; }
         private readonly SummaryBuilder _summaryBuilder;
-        public Func<bool> ReceiveOneFunc { private get; set; }
 
-        internal bool HasMoreRecords { get; private set; } = true;
+        public Func<bool> ReceiveOneMessageRecordFunc { private get; set; }
+        public IRecord Record { get; private set; }
 
         public ResultBuilder() : this(null, null)
         {
@@ -49,7 +48,8 @@ namespace Neo4j.Driver.Internal.Result
         {
             return new StatementResult(
                 _keys,
-                new RecordSet(() => Record, ReceiveOneFunc), () => _summaryBuilder.Build());
+                new RecordSet(() => Record, ReceiveOneMessageRecordFunc),
+                () => _summaryBuilder.Build());
         }
 
         public void CollectRecord(object[] fields)
@@ -68,7 +68,6 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectSummaryMeta(IDictionary<string, object> meta)
         {
-            HasMoreRecords = false;
             if (meta == null)
             {
                 return;
