@@ -15,6 +15,7 @@
 // limitations under the License.
 using System;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using TechTalk.SpecFlow;
 
@@ -23,10 +24,25 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     [Binding]
     public static class TckHooks
     {
-        public static IDriver Driver;
+        private static IDriver _driver;
         public static INeo4jInstaller Installer;
         public const string Uri = "bolt://localhost";
         public static IAuthToken AuthToken;
+
+        public static ISession CreateSession()
+        {
+            var session = _driver.Session();
+            ScenarioContext.Current.Set(session);
+            return session;
+        }
+
+        [AfterScenario]
+        public static void DisposeSession()
+        {
+            ISession session;
+            ScenarioContext.Current.TryGetValue(out session);
+            session?.Dispose();
+        }
 
         [BeforeTestRun]
         public static void GlobalBeforeTestRun()
@@ -88,12 +104,12 @@ namespace Neo4j.Driver.Tck.Tests.TCK
 
         private static void DisposeDriver()
         {
-            Driver?.Dispose();
+            _driver?.Dispose();
         }
 
         private static void CreateNewDriver()
         {
-            Driver = GraphDatabase.Driver(Uri, AuthToken);
+            _driver = GraphDatabase.Driver(Uri, AuthToken);
         }
     }
 }

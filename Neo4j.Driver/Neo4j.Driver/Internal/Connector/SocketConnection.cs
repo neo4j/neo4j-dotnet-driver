@@ -116,8 +116,6 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Reset()
         {
-            ClearQueue();
-            _responseHandler.Clear();
             Enqueue(new ResetMessage());
         }
 
