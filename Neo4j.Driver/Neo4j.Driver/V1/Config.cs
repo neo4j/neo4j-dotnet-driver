@@ -39,10 +39,15 @@ namespace Neo4j.Driver.V1
         public const int InfiniteMaxIdleSessionPoolSize = -1;
         static Config()
         {
-            DefaultConfig = new Config
+            DefaultConfig = CreateNewConfig();
+        }
+
+        private static Config CreateNewConfig()
+        {
+            return new Config
             {
                 EncryptionLevel = EncryptionLevel.None,
-                Logger = new DebugLogger {Level = LogLevel.Info},
+                Logger = new DebugLogger { Level = LogLevel.Info },
                 MaxIdleSessionPoolSize = 10
             };
         }
@@ -63,7 +68,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Create an instance of <see cref="IConfigBuilder"/> to build a <see cref="Config"/>.
         /// </summary>
-        public static IConfigBuilder Builder => new ConfigBuilder(new Config());
+        public static IConfigBuilder Builder => new ConfigBuilder(CreateNewConfig());
 
         /// <summary>
         /// Gets or sets the use of encryption for all the connections created by the <see cref="IDriver"/>.
