@@ -40,6 +40,7 @@
     <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Internal\Messaging\AckFailureMessage.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />

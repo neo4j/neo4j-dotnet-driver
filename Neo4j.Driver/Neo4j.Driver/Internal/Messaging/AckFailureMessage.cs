@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2016 "Neo Technology,"
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -17,20 +17,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Messaging
 {
-    internal interface ISocketClient
+    internal class AckFailureMessage : IRequestMessage
     {
-        Task Start();
-        Task Stop();
-        void Send(IEnumerable<IRequestMessage> messages);
-        /* Recieve until unhandledMessageSize messages are left in unhandled message queue */
-        void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0);
-        /* Return true if a record message is received, otherwise false. */
-        bool ReceiveOneRecordMessage(IMessageResponseHandler responseHandler, Action onFailureAction );
-        bool IsOpen { get; }
+        public void Dispatch(IMessageRequestHandler messageRequestHandler)
+        {
+            messageRequestHandler.HandleAckFailureMessage();
+        }
+
+        public override string ToString()
+        {
+            return "ACK_FAILURE";
+        }
     }
 }

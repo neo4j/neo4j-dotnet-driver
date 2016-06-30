@@ -41,7 +41,8 @@ namespace Neo4j.Driver.Internal.Connector
             Task.Run(() => _client.Start()).Wait();
 
             // add init requestMessage by default
-            Enqueue(new InitMessage("neo4j-dotnet/1.0.0", authToken.AsDictionary()));
+            Enqueue(new InitMessage("neo4j-dotnet/1.0", authToken.AsDictionary()));
+            Sync();
         }
 
         public SocketConnection(Uri url, IAuthToken authToken, Config config)
@@ -72,9 +73,15 @@ namespace Neo4j.Driver.Internal.Connector
 
             if (_responseHandler.HasError)
             {
-                Enqueue(new ResetMessage());
-                throw _responseHandler.Error;
+                OnResponseHasError();
             }
+        }
+
+        private void OnResponseHasError()
+        {
+
+            Enqueue(new AckFailureMessage());
+            throw _responseHandler.Error;
         }
 
         public void Sync()
@@ -99,7 +106,7 @@ namespace Neo4j.Driver.Internal.Connector
         public void PullAll(ResultBuilder resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
-            resultBuilder.ReceiveOneMessageRecordFunc = () => _client.ReceiveOneRecordMessage(_responseHandler);
+            resultBuilder.ReceiveOneMessageRecordFunc = () => _client.ReceiveOneRecordMessage(_responseHandler, OnResponseHasError);
         }
 
         public void DiscardAll()
