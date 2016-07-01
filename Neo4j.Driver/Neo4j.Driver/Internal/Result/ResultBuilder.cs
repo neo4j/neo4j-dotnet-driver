@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Result
         private string[] _keys = new string[0];
         private readonly SummaryBuilder _summaryBuilder;
 
-        public Func<bool> ReceiveOneMessageRecordFunc { private get; set; }
+        public Func<bool> ReceiveOneRecordMessageFunc { private get; set; }
         public IRecord Record { get; private set; }
 
         public ResultBuilder() : this(null, null)
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Internal.Result
         {
             return new StatementResult(
                 _keys,
-                new RecordSet(() => Record, ReceiveOneMessageRecordFunc),
+                new RecordSet(() => Record, ReceiveOneRecordMessageFunc),
                 () => _summaryBuilder.Build());
         }
 

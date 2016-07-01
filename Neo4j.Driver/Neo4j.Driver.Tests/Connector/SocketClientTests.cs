@@ -187,27 +187,25 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldStopClientAndThrowExceptionWhenProtocolErrorOccurs()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri, null))
+                using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     var messages = new IRequestMessage[]
                     {
-                        new RunMessage("This will cause a syntax error"),
-                        new PullAllMessage()
+                        new InitMessage("MyClient/1.0", new Dictionary<string, object>())
                     };
 
                     var messageHandler = new TestResponseHandler();
 
-                    messageHandler.Register(new InitMessage("MyClient/1.0", new Dictionary<string, object>()));
-                    messageHandler.Register(messages[0], new ResultBuilder());
-                    messageHandler.Register(messages[1], new ResultBuilder());
+                    messageHandler.Register(messages[0]);
 
                     harness.SetupReadStream("00 00 00 01" +
-                                            "00 03 b1 70 a0 00 00");
+                                            "00 02 b0 7e 00 00"); // this should be the error Neo.ClientError.Request.Invalid
 
                     harness.SetupWriteStream();
 
                     await harness.Client.Start();
 
+                    // As we do not really get an error but a ignored back, we set the error here
                     messageHandler.Error = new ClientException("Neo.ClientError.Request.Invalid", "Test Message");
 
                     // When

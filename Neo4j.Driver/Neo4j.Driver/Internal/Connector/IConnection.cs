@@ -24,8 +24,8 @@ namespace Neo4j.Driver.Internal.Connector
     {
         void Sync();
         void SyncRun();
-        void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters=null);
-        void PullAll(ResultBuilder resultBuilder);
+        void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters=null);
+        void PullAll(IResultBuilder resultBuilder);
         void DiscardAll();
         void Reset();
         bool IsOpen { get; }

@@ -97,16 +97,16 @@ namespace Neo4j.Driver.Internal.Connector
         public bool HasUnrecoverableError
             => _responseHandler.Error is DatabaseException;
 
-        public void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
+        public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
         {
             var runMessage = new RunMessage(statement, paramters);
             Enqueue(runMessage, resultBuilder);
         }
 
-        public void PullAll(ResultBuilder resultBuilder)
+        public void PullAll(IResultBuilder resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
-            resultBuilder.ReceiveOneMessageRecordFunc = () => _client.ReceiveOneRecordMessage(_responseHandler, OnResponseHasError);
+            resultBuilder.ReceiveOneRecordMessageFunc = () => _client.ReceiveOneRecordMessage(_responseHandler, OnResponseHasError);
         }
 
         public void DiscardAll()
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Internal.Connector
             _messages.Clear();
         }
 
-        private void Enqueue(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
+        private void Enqueue(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
             _messages.Enqueue(requestMessage);
             _responseHandler.Register(requestMessage, resultBuilder);
