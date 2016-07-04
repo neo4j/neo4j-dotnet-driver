@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Internal.Messaging
         void HandlePullAllMessage();
         void HandleDiscardAllMessage();
         void HandleResetMessage();
+        void HandleAckFailureMessage();
     }
 
     internal interface IMessageResponseHandler

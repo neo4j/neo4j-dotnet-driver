@@ -200,7 +200,7 @@ namespace Neo4j.Driver.Tests
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
 
                 mockResponseHandler.Setup(x => x.Error).Returns(new TransientException("BLAH", "lalala"));
-                con.HasUnrecoverableError.Should().BeTrue();
+                con.HasUnrecoverableError.Should().BeFalse();
             }
 
             [Fact]

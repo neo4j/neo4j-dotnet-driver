@@ -125,5 +125,42 @@ namespace Neo4j.Driver.IntegrationTests
                 }
             }
         }
+
+        [Fact]
+        public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            {
+                using (var session = driver.Session())
+                {
+                    var ex = Record.Exception(() => session.Run("Invalid Cypher"));
+                    ex.Should().BeOfType<ClientException>();
+                    ex.Message.Should()
+                        .Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                    var result = session.Run("RETURN 1");
+                    result.Single()[0].ValueAs<int>().Should().Be(1);
+                }
+            }
+        }
+
+        [Fact]
+        public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRunForTx()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var tx = session.BeginTransaction())
+                    {
+                        var ex = Record.Exception(() => tx.Run("Invalid Cypher"));
+                        ex.Should().BeOfType<ClientException>();
+                        ex.Message.Should().Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                    }
+
+                    var result = session.Run("RETURN 1");
+                    result.Single()[0].ValueAs<int>().Should().Be(1);
+                }
+            }
+        }
     }
 }
