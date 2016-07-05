@@ -115,8 +115,7 @@ namespace Neo4j.Driver.IntegrationTests
                 {
                     var ex = Record.Exception(() => session.Run("Invalid Cypher"));
                     ex.Should().BeOfType<ClientException>();
-                    ex.Message.Should()
-                        .Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                    ex.Message.Should().StartWith("Invalid input 'I'");
                 }
                 using (var session = driver.Session())
                 {
@@ -135,8 +134,7 @@ namespace Neo4j.Driver.IntegrationTests
                 {
                     var ex = Record.Exception(() => session.Run("Invalid Cypher"));
                     ex.Should().BeOfType<ClientException>();
-                    ex.Message.Should()
-                        .Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                    ex.Message.Should().StartWith("Invalid input 'I'");
                     var result = session.Run("RETURN 1");
                     result.Single()[0].ValueAs<int>().Should().Be(1);
                 }
@@ -154,7 +152,7 @@ namespace Neo4j.Driver.IntegrationTests
                     {
                         var ex = Record.Exception(() => tx.Run("Invalid Cypher"));
                         ex.Should().BeOfType<ClientException>();
-                        ex.Message.Should().Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                        ex.Message.Should().StartWith("Invalid input 'I'");
                     }
 
                     var result = session.Run("RETURN 1");

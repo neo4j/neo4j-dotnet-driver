@@ -50,15 +50,15 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldEnqueuesInitMessage()
+            public void ShouldSyncInitMessageImmediately()
             {
                 var mockClient = new Mock<ISocketClient>();
-                var socketConnection = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, null);
+                var mockHandler = new Mock<IMessageResponseHandler>();
+                new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
 
-                //socketConnection.Init("testclient");
-                socketConnection.Messages.Should().HaveCount(1);
-                var msg = socketConnection.Messages.First();
-                msg.Should().BeAssignableTo<InitMessage>();
+                mockHandler.Verify(h => h.Register(It.IsAny<InitMessage>(), null));
+
+                mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>(), mockHandler.Object), Times.Once);
             }
 
             [Fact]
@@ -124,8 +124,8 @@ namespace Neo4j.Driver.Tests
                 con.Run(new ResultBuilder(), "a statement");
 
                 // Then
-                con.Messages.Count.Should().Be(2); // Init + Run
-                con.Messages[1].Should().BeAssignableTo<RunMessage>();
+                con.Messages.Count.Should().Be(1); // Run
+                con.Messages[0].Should().BeAssignableTo<RunMessage>();
             }
 
             [Fact]
@@ -155,8 +155,8 @@ namespace Neo4j.Driver.Tests
                 con.PullAll(new ResultBuilder());
 
                 // Then
-                con.Messages.Count.Should().Be(2); // Init + PullAll
-                con.Messages[1].Should().BeAssignableTo<PullAllMessage>();
+                con.Messages.Count.Should().Be(1); // PullAll
+                con.Messages[0].Should().BeAssignableTo<PullAllMessage>();
             }
 
             [Fact]
