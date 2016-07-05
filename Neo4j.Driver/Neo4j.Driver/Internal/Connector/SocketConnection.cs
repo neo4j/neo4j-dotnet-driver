@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class SocketConnection : IConnection
     {
         private readonly ISocketClient _client;
-        private readonly IMessageResponseHandler _messageHandler;
+        private readonly IMessageResponseHandler _responseHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
 
@@ -35,13 +35,14 @@ namespace Neo4j.Driver.Internal.Connector
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
-            _messageHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
+            _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
 
             _client = socketClient;
             Task.Run(() => _client.Start()).Wait();
 
             // add init requestMessage by default
-            Enqueue(new InitMessage("neo4j-dotnet/1.0.0", authToken.AsDictionary()));
+            Enqueue(new InitMessage("neo4j-dotnet/1.0", authToken.AsDictionary()));
+            Sync();
         }
 
         public SocketConnection(Uri url, IAuthToken authToken, Config config)
@@ -57,35 +58,55 @@ namespace Neo4j.Driver.Internal.Connector
             GC.SuppressFinalize(this);
         }
 
-        public void Sync()
+        private void SendAndReceive(int unhandledMessageCount = 0)
         {
             if (_messages.Count == 0)
             {
                 return;
             }
 
-            _client.Send(_messages, _messageHandler);
+            // blocking to send
+            _client.Send(_messages);
             ClearQueue(); // clear sending queue
+            // blocking to receive
+            _client.Receive(_responseHandler, unhandledMessageCount);
 
-            if (_messageHandler.HasError)
+            if (_responseHandler.HasError)
             {
-                Enqueue(new ResetMessage());
-                throw _messageHandler.Error;
+                OnResponseHasError();
             }
         }
 
-        public bool HasUnrecoverableError
-            => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
+        private void OnResponseHasError()
+        {
 
-        public void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
+            Enqueue(new AckFailureMessage());
+            throw _responseHandler.Error;
+        }
+
+        public void Sync()
+        {
+            SendAndReceive();
+        }
+
+        public void SyncRun()
+        {
+            SendAndReceive(1); // blocking to receive unitl 1 message unhandled left (PULL_ALL)
+        }
+
+        public bool HasUnrecoverableError
+            => _responseHandler.Error is DatabaseException;
+
+        public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
         {
             var runMessage = new RunMessage(statement, paramters);
             Enqueue(runMessage, resultBuilder);
         }
 
-        public void PullAll(ResultBuilder resultBuilder)
+        public void PullAll(IResultBuilder resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
+            resultBuilder.ReceiveOneRecordMessageFunc = () => _client.ReceiveOneRecordMessage(_responseHandler, OnResponseHasError);
         }
 
         public void DiscardAll()
@@ -95,8 +116,6 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Reset()
         {
-            ClearQueue();
-            _messageHandler.Clear();
             Enqueue(new ResetMessage());
         }
 
@@ -116,10 +135,10 @@ namespace Neo4j.Driver.Internal.Connector
             _messages.Clear();
         }
 
-        private void Enqueue(IRequestMessage requestMessage, ResultBuilder resultBuilder = null)
+        private void Enqueue(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
             _messages.Enqueue(requestMessage);
-            _messageHandler.Register(requestMessage, resultBuilder);
+            _responseHandler.Register(requestMessage, resultBuilder);
         }
     }
 }

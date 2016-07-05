@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
 
                 mockConn.Verify(x => x.Run(It.IsAny<ResultBuilder>(), "lalalal", null), Times.Once);
                 mockConn.Verify(x => x.PullAll(It.IsAny<ResultBuilder>()), Times.Once);
-                mockConn.Verify(x => x.Sync());
+                mockConn.Verify(x => x.SyncRun());
             }
         }
 

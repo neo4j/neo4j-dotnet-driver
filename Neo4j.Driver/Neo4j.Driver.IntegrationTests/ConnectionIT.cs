@@ -63,7 +63,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (var session = driver.Session())
             {
                 var result = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
-                var stats = result.Summary.Counters;
+                var stats = result.Consume().Counters;
                 _output.WriteLine(stats.ToString());
             }
         }
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Fact]
-        public void BuffersResultsOfOneQuerySoTheyCanBeReadAfterAnotherSubsequentQueryHasBeenParsed()
+        public void BuffersNoResultsOfOneQuerySoTheyCanNotBeReadAfterAnotherSubsequentQueryHasBeenParsed()
         {
             using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             using (var session = driver.Session())
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var result1All = result1.ToList();
 
                 result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
+                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder();
             }
         }
 
@@ -120,6 +120,43 @@ namespace Neo4j.Driver.IntegrationTests
                 }
                 using (var session = driver.Session())
                 {
+                    var result = session.Run("RETURN 1");
+                    result.Single()[0].ValueAs<int>().Should().Be(1);
+                }
+            }
+        }
+
+        [Fact]
+        public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            {
+                using (var session = driver.Session())
+                {
+                    var ex = Record.Exception(() => session.Run("Invalid Cypher"));
+                    ex.Should().BeOfType<ClientException>();
+                    ex.Message.Should()
+                        .Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                    var result = session.Run("RETURN 1");
+                    result.Single()[0].ValueAs<int>().Should().Be(1);
+                }
+            }
+        }
+
+        [Fact]
+        public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRunForTx()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var tx = session.BeginTransaction())
+                    {
+                        var ex = Record.Exception(() => tx.Run("Invalid Cypher"));
+                        ex.Should().BeOfType<ClientException>();
+                        ex.Message.Should().Be("Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))\n\"Invalid Cypher\"\n ^");
+                    }
+
                     var result = session.Run("RETURN 1");
                     result.Single()[0].ValueAs<int>().Should().Be(1);
                 }

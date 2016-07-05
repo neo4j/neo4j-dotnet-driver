@@ -30,10 +30,7 @@ namespace Neo4j.Driver.Tests
 {
     public class SocketConnectionTests
     {
-        private static ILogger Logger
-        {
-            get { return new Mock<ILogger>().Object; }
-        }
+        private static ILogger Logger => new Mock<ILogger>().Object;
 
         private static Mock<ISocketClient> MockSocketClient => new Mock<ISocketClient>();
 
@@ -50,15 +47,16 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldEnqueuesInitMessage()
+            public void ShouldSyncInitMessageImmediately()
             {
                 var mockClient = new Mock<ISocketClient>();
-                var socketConnection = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, null);
+                var mockHandler = new Mock<IMessageResponseHandler>();
+                new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
 
-                //socketConnection.Init("testclient");
-                socketConnection.Messages.Should().HaveCount(1);
-                var msg = socketConnection.Messages.First();
-                msg.Should().BeAssignableTo<InitMessage>();
+                mockHandler.Verify(h => h.Register(It.IsAny<InitMessage>(), null));
+
+                mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
+                mockClient.Verify(c => c.Receive(mockHandler.Object, 0), Times.Once);
             }
 
             [Fact]
@@ -94,7 +92,7 @@ namespace Neo4j.Driver.Tests
                 con.Sync();
                 mock.Reset();
                 con.Sync();
-                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>(), It.IsAny<IMessageResponseHandler>()),
+                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
                     Times.Never);
             }
 
@@ -105,7 +103,7 @@ namespace Neo4j.Driver.Tests
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, null);
 
                 con.Sync();
-                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>(), It.IsAny<IMessageResponseHandler>()),
+                mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
                     Times.Once);
                 con.Messages.Count.Should().Be(0);
             }
@@ -124,8 +122,8 @@ namespace Neo4j.Driver.Tests
                 con.Run(new ResultBuilder(), "a statement");
 
                 // Then
-                con.Messages.Count.Should().Be(2); // Init + Run
-                con.Messages[1].Should().BeAssignableTo<RunMessage>();
+                con.Messages.Count.Should().Be(1); // Run
+                con.Messages[0].Should().BeAssignableTo<RunMessage>();
             }
 
             [Fact]
@@ -155,8 +153,8 @@ namespace Neo4j.Driver.Tests
                 con.PullAll(new ResultBuilder());
 
                 // Then
-                con.Messages.Count.Should().Be(2); // Init + PullAll
-                con.Messages[1].Should().BeAssignableTo<PullAllMessage>();
+                con.Messages.Count.Should().Be(1); // PullAll
+                con.Messages[0].Should().BeAssignableTo<PullAllMessage>();
             }
 
             [Fact]
@@ -176,17 +174,20 @@ namespace Neo4j.Driver.Tests
         public class ResetMethod
         {
             [Fact]
-            public void ShouldClearSendingMessagesMessageHandlerAndEnqueueResetMessage()
+            public void ShouldNotClearMessagesResponseHandlerAndEnqueueResetMessage()
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
 
+                con.Run(null, "bula");
                 con.Reset();
                 var messages = con.Messages;
-                messages.Count.Should().Be(1);
-                messages[0].Should().BeOfType<ResetMessage>();
-                mockResponseHandler.Verify(x => x.Clear());
+                messages.Count.Should().Be(2);
+                messages[0].Should().BeOfType<RunMessage>();
+                messages[1].Should().BeOfType<ResetMessage>();
+                mockResponseHandler.Verify(x => x.Register(It.IsAny<RunMessage>(), null), Times.Once);
+                mockResponseHandler.Verify(x => x.Register(It.IsAny<ResetMessage>(), null), Times.Once);
             }
         }
 
@@ -200,7 +201,7 @@ namespace Neo4j.Driver.Tests
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
 
                 mockResponseHandler.Setup(x => x.Error).Returns(new TransientException("BLAH", "lalala"));
-                con.HasUnrecoverableError.Should().BeTrue();
+                con.HasUnrecoverableError.Should().BeFalse();
             }
 
             [Fact]

@@ -94,47 +94,77 @@ namespace Neo4j.Driver.Internal.Connector
             IsOpen = false;
         }
 
-        public void Send(IEnumerable<IRequestMessage> messages, IMessageResponseHandler responseHandler)
+        public void Send(IEnumerable<IRequestMessage> messages)
         {
             foreach (var message in messages)
             {
                 _writer.Write(message);
                 _config.Logger?.Debug("C: ", message);
             }
-
             _writer.Flush();
-
-            Receive(responseHandler);
         }
 
         public bool IsOpen { get; private set; }
 
-        private void Receive(IMessageResponseHandler responseHandler)
+        /// <summary>
+        /// This method highly relies on the fact that the session is not threadsafe and could only be used in a single thread
+        /// as if two threads trying to modify the message size, then we might
+        /// 1. force to pull all instead of streaming records
+        /// 2. lose some records as only one record is buffered in result builder on client.
+        /// </summary>
+        public void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0)
         {
-            while (!responseHandler.QueueIsEmpty())
+            while (responseHandler.UnhandledMessageSize > unhandledMessageSize 
+                || (responseHandler.HasError && responseHandler.UnhandledMessageSize > 0)
+                /*if error happens, then just drain the whole unhandledMessage queue*/)
             {
-                try
+                ReceiveOne(responseHandler);
+                //Read 1 message
+                //Send to handler
+            }
+        }
+
+        /// <summary>
+        /// This method will not throw exception if a railure message is received
+        /// </summary>
+        private void ReceiveOne(IMessageResponseHandler responseHandler)
+        {
+            try
+            {
+                _reader.Read(responseHandler);
+            }
+            catch (Exception ex)
+            {
+                _config.Logger.Error("Unable to unpack message from server, connection has been terminated.", ex);
+                Task.Run(() => Stop()).Wait();
+                throw;
+            }
+            if (responseHandler.HasError)
+            {
+                if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))
                 {
-                    _reader.Read(responseHandler);
-                }
-                catch (Exception ex)
-                {
-                    _config.Logger.Error("Unable to unpack message from server, connection has been terminated.", ex);
                     Task.Run(() => Stop()).Wait();
-                    throw;
-                }
-                if (responseHandler.HasError)
-                {
-                    if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))
-                    {
-                        Task.Run(() => Stop()).Wait();
-                        throw responseHandler.Error;
-                    }
+                    throw responseHandler.Error;
                 }
             }
-            //Read 1 message
-            //Send to handler,
-            //While messages read < messages handled keep doing above.
+        }
+
+        /// <summary>
+        /// Return true if a record message is received, otherwise false.
+        /// This method will throw the exception if a failure message is received.
+        /// </summary>
+        public bool ReceiveOneRecordMessage(IMessageResponseHandler responseHandler, Action onFailureAction )
+        {
+            if (responseHandler.UnhandledMessageSize == 0)
+            {
+                return false;
+            }
+            ReceiveOne(responseHandler);
+            if (responseHandler.HasError)
+            {
+                onFailureAction.Invoke();
+            }
+            return responseHandler.IsRecordMessageReceived;
         }
 
         private async Task<int> DoHandshake()

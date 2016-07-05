@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2016 "Neo Technology,"
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -17,15 +17,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal.Messaging
 {
-    internal interface IResultBuilder
+    internal class AckFailureMessage : IRequestMessage
     {
-        void CollectRecord(object[] fields);
-        StatementResult Build();
-        void CollectFields(IDictionary<string, object> meta);
-        void CollectSummaryMeta(IDictionary<string, object> meta);
-        Func<bool> ReceiveOneRecordMessageFunc { set; }
+        public void Dispatch(IMessageRequestHandler messageRequestHandler)
+        {
+            messageRequestHandler.HandleAckFailureMessage();
+        }
+
+        public override string ToString()
+        {
+            return "ACK_FAILURE";
+        }
     }
 }

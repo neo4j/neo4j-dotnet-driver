@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"`run` a query with that same session without closing the transaction first")]
         public void WhenRunAQueryWithThatSameSessionWithoutClosingTheTransactionFirst()
         {
-            using (var session = TckHooks.Driver.Session())
+            using (var session = TckHooks.CreateSession())
             using (var tx = session.BeginTransaction())
             {
                 var ex = Xunit.Record.Exception(() => session.Run("RETURN 1"));
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"I start a new `Transaction` with the same session before closing the previous")]
         public void WhenIStartANewTransactionWithTheSameSessionBeforeClosingThePrevious()
         {
-            using (var session = TckHooks.Driver.Session())
+            using (var session = TckHooks.CreateSession())
             using (var tx = session.BeginTransaction())
             {
                 var ex = Xunit.Record.Exception(() => session.BeginTransaction());
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"I run a non valid cypher statement")]
         public void WhenIRunANonValidCypherStatement()
         {
-            using (var session = TckHooks.Driver.Session())
+            using (var session = TckHooks.CreateSession())
             {
                 var ex = Xunit.Record.Exception(() => session.Run("Invalid Cypher"));
                 ex.Should().BeOfType<ClientException>();

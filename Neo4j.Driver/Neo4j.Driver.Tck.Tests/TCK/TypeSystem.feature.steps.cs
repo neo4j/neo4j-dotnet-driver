@@ -112,11 +112,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public void WhenTheDriverAsksTheServerToEchoThisValueBack()
         {
             var expected = ScenarioContext.Current.Get<object>(KeyExpected);
-            using (var session = TckHooks.Driver.Session())
-            {
-                _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", expected } });
-            }
-            
+            var session = TckHooks.CreateSession();
+            _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", expected } });
         }
 
         [When(@"the driver asks the server to echo this list back")]
@@ -124,11 +121,9 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             var list = ScenarioContext.Current.Get<IList<object>>(KeyList);
             ScenarioContext.Current.Set((object)list, KeyExpected);
-            using (var session = TckHooks.Driver.Session())
-            {
-                _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", list } });
-            }
-            
+
+            var session = TckHooks.CreateSession();
+            _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", list } });
         }
 
         [When(@"the driver asks the server to echo this map back")]
@@ -136,10 +131,9 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             var map = ScenarioContext.Current.Get<IDictionary<string, object>>(Keymap);
             ScenarioContext.Current.Set((object)map, KeyExpected);
-            using (var session = TckHooks.Driver.Session())
-            {
-                _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", map } });
-            }
+
+            var session = TckHooks.CreateSession();
+            _statementResult = session.Run("Return {input}", new Dictionary<string, object> { { "input", map } });
         }
 
         [When(@"the value given in the result should be the same as what was sent")]

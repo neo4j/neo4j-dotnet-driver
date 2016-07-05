@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
@@ -24,7 +26,11 @@ namespace Neo4j.Driver.Internal.Connector
     {
         Task Start();
         Task Stop();
-        void Send(IEnumerable<IRequestMessage> messages, IMessageResponseHandler responseHandler);
+        void Send(IEnumerable<IRequestMessage> messages);
+        /* Recieve until unhandledMessageSize messages are left in unhandled message queue */
+        void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0);
+        /* Return true if a record message is received, otherwise false. */
+        bool ReceiveOneRecordMessage(IMessageResponseHandler responseHandler, Action onFailureAction );
         bool IsOpen { get; }
     }
 }
