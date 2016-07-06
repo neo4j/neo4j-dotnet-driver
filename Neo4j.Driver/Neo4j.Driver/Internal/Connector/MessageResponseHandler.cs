@@ -58,6 +58,7 @@ namespace Neo4j.Driver.Internal.Connector
                 // before summary method is called
                 CurrentResultBuilder?.CollectSummaryMeta(meta);
             }
+            Error = null;
             _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 

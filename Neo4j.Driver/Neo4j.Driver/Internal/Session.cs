@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureConnectionIsValid();
+                EnsureCanRunMoreStatements();
                 var resultBuilder = new ResultBuilder(statement, statementParameters);
                 _connection.Run(resultBuilder, statement, statementParameters);
                 _connection.PullAll(resultBuilder);
@@ -90,24 +90,24 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureConnectionIsValid();
+                EnsureCanRunMoreStatements();
                 _transaction = new Transaction(_connection, _logger);
                 return _transaction;
             });
         }
 
-        private void EnsureConnectionIsValid()
+        private void EnsureCanRunMoreStatements()
         {
+            EnsureConnectionIsHealthy();
             EnsureNoOpenTransaction();
-            EnsureConnectionIsOpen();
         }
 
-        private void EnsureConnectionIsOpen()
+        private void EnsureConnectionIsHealthy()
         {
-            if (!_connection.IsOpen)
+            if (!IsHealthy)
             {
                 throw new ClientException("The current session cannot be reused as the underlying connection with the " +
-                                           "server has been closed due to unrecoverable errors. " +
+                                           "server has been closed or is going to be closed due to unrecoverable errors. " +
                                            "Please close this session and retry your statement in another new session.");
             }
         }

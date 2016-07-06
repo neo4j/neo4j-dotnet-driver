@@ -41,7 +41,8 @@ namespace Neo4j.Driver.Internal.Connector
             Task.Run(() => _client.Start()).Wait();
 
             // add init requestMessage by default
-            Enqueue(new InitMessage("neo4j-dotnet/1.0.0", authToken.AsDictionary()));
+            Enqueue(new InitMessage("neo4j-dotnet/1.0", authToken.AsDictionary()));
+            Sync();
         }
 
         public SocketConnection(Uri url, IAuthToken authToken, Config config)
@@ -69,13 +70,13 @@ namespace Neo4j.Driver.Internal.Connector
 
             if (_messageHandler.HasError)
             {
-                Enqueue(new ResetMessage());
+                Enqueue(new AckFailureMessage());
                 throw _messageHandler.Error;
             }
         }
 
         public bool HasUnrecoverableError
-            => _messageHandler.Error is TransientException || _messageHandler.Error is DatabaseException;
+            => _messageHandler.Error is DatabaseException;
 
         public void Run(ResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
         {

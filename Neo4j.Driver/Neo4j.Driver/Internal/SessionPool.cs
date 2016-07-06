@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal
                 {
                     session = new Session(_uri, _authToken, _config, _connection, Release);
                 }
-                else if (!IsSessionReusable(session))
+                else if (!session.IsHealthy)
                 {
                     session.Close();
                     return GetSession();
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Internal
                     _inUseSessions.Remove(sessionId);
                 }
 
-                if (session.IsHealthy)
+                if (IsSessionReusable(session))
                 {
                     lock (_availableSessions)
                     {

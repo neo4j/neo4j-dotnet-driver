@@ -58,9 +58,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             var driver = ScenarioContext.Current.Get<IDriver>();
             using (driver)
-            using (var session = driver.Session())
             {
-                var exception = Record.Exception(() => session.Run("CREATE () RETURN 2 as Number"));
+                var exception = Record.Exception(() => driver.Session());
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("The client is unauthorized due to authentication failure");
             }
