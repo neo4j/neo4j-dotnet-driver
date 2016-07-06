@@ -87,6 +87,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="ConfigTests.cs" />
     <Compile Include="Connector\ChunkedOutputTest.cs" />
     <Compile Include="Connector\MessageResponseHandlerTests.cs" />
     <Compile Include="Connector\SocketExtensionTests.cs" />
