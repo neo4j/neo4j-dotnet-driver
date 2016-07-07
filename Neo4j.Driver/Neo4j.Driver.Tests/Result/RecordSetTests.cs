@@ -28,17 +28,17 @@ namespace Neo4j.Driver.Tests
     internal class ListBasedRecordSet : IRecordSet
     {
         private readonly IList<IRecord> _records;
+        private int _count = 0;
         private readonly RecordSet _recordSet;
-
-        public int Position => _recordSet.Position;
 
         public ListBasedRecordSet(IList<IRecord> records)
         {
             _records = records;
-            _recordSet = new RecordSet(_records, ()=>AtEnd);
+            _recordSet = new RecordSet(() => _records[_count++], () => !AtEnd);
         }
 
-        public bool AtEnd => _recordSet.Position >= _records.Count;
+        public bool AtEnd => _count >= _records.Count;
+        
         public IRecord Peek()
         {
             return _recordSet.Peek();

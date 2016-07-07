@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
@@ -25,14 +27,17 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly ILogger _logger;
         private readonly Queue<IResultBuilder> _resultBuilders = new Queue<IResultBuilder>();
-        private readonly Queue<IRequestMessage> _sentMessages = new Queue<IRequestMessage>();
+        private readonly Queue<IRequestMessage> _unhandledMessages = new Queue<IRequestMessage>();
         internal IResultBuilder CurrentResultBuilder { get; private set; }
+
+        public int UnhandledMessageSize => _unhandledMessages.Count;
+        public bool IsRecordMessageReceived { get; internal set; }
 
         public Neo4jException Error { get; internal set; }
         public bool HasError => Error != null;
 
         internal Queue<IResultBuilder> ResultBuilders => new Queue<IResultBuilder>(_resultBuilders);
-        internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_sentMessages);
+        internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_unhandledMessages);
 
         public MessageResponseHandler()
         {
@@ -45,8 +50,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void HandleSuccessMessage(IDictionary<string, object> meta)
         {
-            _sentMessages.Dequeue();
-            CurrentResultBuilder = _resultBuilders.Dequeue();
+            UnregisterMessage();
             if (meta.ContainsKey("fields"))
             {
                 // first success
@@ -64,7 +68,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void HandleRecordMessage(object[] fields)
         {
-            CurrentResultBuilder.Record(fields);
+            IsRecordMessageReceived = true;
+            CurrentResultBuilder.CollectRecord(fields);
             _logger?.Debug("S: ", new RecordMessage(fields));
         }
 
@@ -84,35 +89,37 @@ namespace Neo4j.Driver.Internal.Connector
                     Error = new DatabaseException(code, message);
                     break;
             }
-            _sentMessages.Dequeue();
-            _resultBuilders.Dequeue();
+            UnregisterMessage();
             _logger?.Debug("S: ", new FailureMessage(code, message));
         }
 
         public void HandleIgnoredMessage()
         {
-            _sentMessages.Dequeue();
-            _resultBuilders.Dequeue();
+            UnregisterMessage();
             _logger?.Debug("S: ", new IgnoredMessage());
         }
 
-        public void Register(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+        public void RegisterMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
-            _sentMessages.Enqueue(requestMessage);
+            _unhandledMessages.Enqueue(requestMessage);
             _resultBuilders.Enqueue(resultBuilder);
+        }
+
+        private void UnregisterMessage()
+        {
+            _unhandledMessages.Dequeue();
+            CurrentResultBuilder = _resultBuilders.Dequeue();
+            IsRecordMessageReceived = false;
         }
 
         public void Clear()
         {
             _resultBuilders.Clear();
-            _sentMessages.Clear();
+            _unhandledMessages.Clear();
+
             CurrentResultBuilder = null;
             Error = null;
-        }
-
-        public bool QueueIsEmpty()
-        {
-            return _sentMessages.Count == 0;
+            IsRecordMessageReceived = false;
         }
     }
 }

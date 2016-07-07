@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests
         public class RunMethod
         {
             [Fact]
-            public void ShouldRunPullAllSync()
+            public void ShouldRunPullAllSyncRun()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests
 
                 mockConn.Verify(x => x.Run(It.IsAny<ResultBuilder>(), "lalala", null), Times.Once);
                 mockConn.Verify(x => x.PullAll(It.IsAny<ResultBuilder>()), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Once);
+                mockConn.Verify(x => x.SyncRun(), Times.Once);
                 tx.Finished.Should().BeFalse();
             }
 

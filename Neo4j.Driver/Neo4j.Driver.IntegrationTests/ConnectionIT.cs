@@ -63,7 +63,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (var session = driver.Session())
             {
                 var result = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
-                var stats = result.Summary.Counters;
+                var stats = result.Consume().Counters;
                 _output.WriteLine(stats.ToString());
             }
         }
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var result1All = result1.ToList();
 
                 result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
+                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder();
             }
         }
 
