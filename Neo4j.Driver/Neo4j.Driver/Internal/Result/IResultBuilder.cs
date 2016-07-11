@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal.Result
         StatementResult Build();
         void CollectFields(IDictionary<string, object> meta);
         void CollectSummaryMeta(IDictionary<string, object> meta);
-        Func<bool> ReceiveOneRecordMessageFunc { set; }
+        Action ReceiveOneRecordMessageFunc { set; }
+        void IsStreamingRecords(bool value);
     }
 }

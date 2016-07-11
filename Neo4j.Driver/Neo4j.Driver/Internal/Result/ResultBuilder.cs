@@ -27,8 +27,10 @@ namespace Neo4j.Driver.Internal.Result
         private string[] _keys = new string[0];
         private readonly SummaryBuilder _summaryBuilder;
 
-        public Func<bool> ReceiveOneRecordMessageFunc { private get; set; }
-        public IRecord Record { get; private set; }
+        public Action ReceiveOneRecordMessageFunc { private get; set; }
+
+        private readonly Queue<IRecord> _records = new Queue<IRecord>();
+        private bool _isStreamingRecords;
 
         public ResultBuilder() : this(null, null)
         {
@@ -48,13 +50,32 @@ namespace Neo4j.Driver.Internal.Result
         {
             return new StatementResult(
                 _keys,
-                new RecordSet(() => Record, ReceiveOneRecordMessageFunc),
+                new RecordSet(NextRecord),
                 () => _summaryBuilder.Build());
+        }
+
+        /// <summary>
+        /// Return next record in the record stream if any, otherwise return null
+        /// </summary>
+        /// <returns>Next record in the record stream if any, otherwise return null</returns>
+        private IRecord NextRecord()
+        {
+            if (_isStreamingRecords)
+            {
+                ReceiveOneRecordMessageFunc.Invoke();
+            }
+            return _records.Count > 0 ? _records.Dequeue() : null;
+        }
+
+        public void IsStreamingRecords(bool value)
+        {
+            _isStreamingRecords = value;
         }
 
         public void CollectRecord(object[] fields)
         {
-            Record = new Record(_keys, fields);
+            var record = new Record(_keys, fields);
+            _records.Enqueue(record);
         }
        
         public void CollectFields(IDictionary<string, object> meta)
@@ -64,6 +85,7 @@ namespace Neo4j.Driver.Internal.Result
                 return;
             }
             CollectKeys(meta, "fields");
+            _isStreamingRecords = true;
         }
 
         public void CollectSummaryMeta(IDictionary<string, object> meta)

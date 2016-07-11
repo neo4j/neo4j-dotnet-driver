@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectType()
             {
                 var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
+                builder.IsStreamingRecords(false);
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"type", "r" } };
                 builder.CollectSummaryMeta(meta);
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectStattistics()
             {
                 var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
+                builder.IsStreamingRecords(false);
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"type", "r" }, {"stats", new Dictionary<string, object> { {"nodes-created", 10L}, {"nodes-deleted", 5L} } } };
                 builder.CollectSummaryMeta(meta);
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectNotifications()
             {
                 var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
+                builder.IsStreamingRecords(false);
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {
                     {"type", "r" },
@@ -125,7 +125,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectSimplePlan()
             {
                 var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
+                builder.IsStreamingRecords(false);
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {   {"type", "r" },
                     { "plan", new Dictionary<string, object>
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectPlanThatContainsPlans()
             {
                 var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
+                builder.IsStreamingRecords(false);
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {
                     {"type", "r"},
@@ -205,7 +205,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCollectProfiledPlanThatContainsProfiledPlans()
             {
                 var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
+                builder.IsStreamingRecords(false);
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 {
                     {"type", "r"},
@@ -309,10 +309,8 @@ namespace Neo4j.Driver.Tests
                     if (i++ >= 3)
                     {
                         builder.CollectSummaryMeta(null);
-                        return false;
                     }
                     builder.CollectRecord(new object[] { 123 });
-                    return true;
                 };
                 var cursor = builder.Build();
 
@@ -327,7 +325,6 @@ namespace Neo4j.Driver.Tests
                 builder.ReceiveOneRecordMessageFunc = () =>
                 {
                     builder.CollectSummaryMeta(null);
-                    return false;
                 };
                 var cursor = builder.Build();
 
@@ -353,10 +350,8 @@ namespace Neo4j.Driver.Tests
                     if (i < recordValues.Count)
                     {
                         builder.CollectRecord(new[] { recordValues[i++] });
-                        return true;
                     }
                     builder.CollectSummaryMeta(null);
-                    return false;
                 };
                 var cursor = builder.Build();
 
@@ -376,7 +371,6 @@ namespace Neo4j.Driver.Tests
                 builder.ReceiveOneRecordMessageFunc = () =>
                 {
                     builder.CollectSummaryMeta(null);
-                    return false;
                 };
                 var actual = builder.Build();
                 actual.Consume();
@@ -409,7 +403,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -429,7 +422,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -464,7 +456,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -492,11 +483,9 @@ namespace Neo4j.Driver.Tests
                             {"constraints-removed", 11L },
                         } }
                     };
-
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build().Consume().Counters;
                     actual.Should().NotBeNull();
@@ -528,7 +517,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -549,7 +537,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -570,7 +557,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -596,7 +582,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
 
@@ -622,7 +607,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -657,7 +641,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -708,7 +691,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build().Consume().Plan.Children.Single();
 
@@ -765,7 +747,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build().Consume().Plan.Children.Single().Children.Single();
 
@@ -796,7 +777,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -817,7 +797,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -838,7 +817,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -866,7 +844,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
 
@@ -893,7 +870,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
 
@@ -920,7 +896,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
 
@@ -948,7 +923,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -988,7 +962,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -1046,7 +1019,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -1117,7 +1089,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -1156,7 +1127,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -1193,7 +1163,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();
@@ -1252,7 +1221,6 @@ namespace Neo4j.Driver.Tests
                     builder.ReceiveOneRecordMessageFunc = () =>
                     {
                         builder.CollectSummaryMeta(meta);
-                        return false;
                     };
                     var actual = builder.Build();
                     actual.Consume();

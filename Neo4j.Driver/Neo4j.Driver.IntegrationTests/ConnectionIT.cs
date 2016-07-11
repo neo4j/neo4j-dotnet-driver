@@ -102,7 +102,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var result1All = result1.ToList();
 
                 result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder();
+                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
             }
         }
 

@@ -79,10 +79,10 @@ namespace Neo4j.Driver.Tests
                 expectedBytes = expectedBytes.PadRight(ChunkedOutputStream.BufferSize);
 
                 var messageHandler = new MessageResponseHandler();
-                messageHandler.RegisterMessage(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
+                messageHandler.EnqueueMessage(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
                 var rb = new ResultBuilder();
-                messageHandler.RegisterMessage(messages[0], rb);
-                messageHandler.RegisterMessage(messages[1], rb);
+                messageHandler.EnqueueMessage(messages[0], rb);
+                messageHandler.EnqueueMessage(messages[1], rb);
 
                 using (var harness = new SocketClientTestHarness(FakeUri, null))
                 {
@@ -113,8 +113,8 @@ namespace Neo4j.Driver.Tests
                 {
                     var messages = new IRequestMessage[] {new RunMessage("This will cause a syntax error")};
                     var messageHandler = new MessageResponseHandler();
-                    messageHandler.RegisterMessage(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
-                    messageHandler.RegisterMessage(messages[0], new ResultBuilder());
+                    messageHandler.EnqueueMessage(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
+                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder());
 
                     harness.SetupReadStream("00 00 00 01" +
                                             "00 03 b1 70 a0 00 00" +
@@ -152,9 +152,9 @@ namespace Neo4j.Driver.Tests
 
                     var messageHandler = new TestResponseHandler();
 
-                    messageHandler.RegisterMessage(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
-                    messageHandler.RegisterMessage(messages[0], new ResultBuilder());
-                    messageHandler.RegisterMessage(messages[1], new ResultBuilder());
+                    messageHandler.EnqueueMessage(new InitMessage("MyClient/1.1", new Dictionary<string, object>()));
+                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder());
+                    messageHandler.EnqueueMessage(messages[1], new ResultBuilder());
 
                     harness.SetupReadStream("00 00 00 01" +
                                             "00 03 b1 70 a0 00 00" +
@@ -196,7 +196,7 @@ namespace Neo4j.Driver.Tests
 
                     var messageHandler = new TestResponseHandler();
 
-                    messageHandler.RegisterMessage(messages[0]);
+                    messageHandler.EnqueueMessage(messages[0]);
                     harness.SetupReadStream("00 00 00 01" +
                                             "00 02 b0 7e 00 00"); // read whatever message but not success
 
@@ -252,9 +252,9 @@ namespace Neo4j.Driver.Tests
                     _messageHandler.HandleRecordMessage(fields);
                 }
 
-                public void RegisterMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+                public void EnqueueMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
                 {
-                    _messageHandler.RegisterMessage(requestMessage, resultBuilder);
+                    _messageHandler.EnqueueMessage(requestMessage, resultBuilder);
                 }
 
                 public void Clear()
@@ -263,7 +263,6 @@ namespace Neo4j.Driver.Tests
                 }
 
                 public int UnhandledMessageSize => _messageHandler.UnhandledMessageSize;
-                public bool IsRecordMessageReceived => _messageHandler.IsRecordMessageReceived;
 
                 public bool HasError => _messageHandler.HasError;
 
