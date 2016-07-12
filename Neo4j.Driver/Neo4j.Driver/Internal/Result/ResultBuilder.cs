@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Result
         private string[] _keys = new string[0];
         private readonly SummaryBuilder _summaryBuilder;
 
-        public Action ReceiveOneRecordMessageFunc { private get; set; }
+        public Action ReceiveOneFun { private get; set; }
 
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _isStreamingRecords;
@@ -62,14 +62,14 @@ namespace Neo4j.Driver.Internal.Result
         {
             if (_isStreamingRecords)
             {
-                ReceiveOneRecordMessageFunc.Invoke();
+                ReceiveOneFun.Invoke();
             }
             return _records.Count > 0 ? _records.Dequeue() : null;
         }
 
-        public void IsStreamingRecords(bool value)
+        public void InvalidateResult()
         {
-            _isStreamingRecords = value;
+            _isStreamingRecords = false;
         }
 
         public void CollectRecord(object[] fields)
@@ -77,19 +77,20 @@ namespace Neo4j.Driver.Internal.Result
             var record = new Record(_keys, fields);
             _records.Enqueue(record);
         }
-       
+
         public void CollectFields(IDictionary<string, object> meta)
         {
+            _isStreamingRecords = true;
             if (meta == null)
             {
                 return;
             }
             CollectKeys(meta, "fields");
-            _isStreamingRecords = true;
         }
 
-        public void CollectSummaryMeta(IDictionary<string, object> meta)
+        public void CollectSummary(IDictionary<string, object> meta)
         {
+            _isStreamingRecords = false;
             if (meta == null)
             {
                 return;

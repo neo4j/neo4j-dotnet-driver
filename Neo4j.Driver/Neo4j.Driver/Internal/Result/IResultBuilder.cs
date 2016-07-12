@@ -22,11 +22,11 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal interface IResultBuilder
     {
-        void CollectRecord(object[] fields);
         StatementResult Build();
         void CollectFields(IDictionary<string, object> meta);
-        void CollectSummaryMeta(IDictionary<string, object> meta);
-        Action ReceiveOneRecordMessageFunc { set; }
-        void IsStreamingRecords(bool value);
+        void CollectRecord(object[] fields);
+        void CollectSummary(IDictionary<string, object> meta);
+        void InvalidateResult();
+        Action ReceiveOneFun { set; }
     }
 }

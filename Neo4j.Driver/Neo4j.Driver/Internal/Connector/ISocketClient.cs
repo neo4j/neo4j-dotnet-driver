@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.Connector
         void Send(IEnumerable<IRequestMessage> messages);
         /* Recieve until unhandledMessageSize messages are left in unhandled message queue */
         void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0);
-        void ReceiveOneRecordMessage(IMessageResponseHandler responseHandler, Action onFailureAction );
+        void ReceiveOne(IMessageResponseHandler responseHandler, Action onFailureAction );
         bool IsOpen { get; }
     }
 }

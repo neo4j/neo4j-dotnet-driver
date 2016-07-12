@@ -124,9 +124,6 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        /// <summary>
-        /// This method will not throw exception if a failure message is received
-        /// </summary>
         private void ReceiveOne(IMessageResponseHandler responseHandler)
         {
             try
@@ -150,10 +147,9 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         /// <summary>
-        /// Return true if a record message is received, otherwise false.
-        /// This method will throw the exception if a failure message is received.
+        /// Perform failure action if error
         /// </summary>
-        public void ReceiveOneRecordMessage(IMessageResponseHandler responseHandler, Action onFailureAction)
+        public void ReceiveOne(IMessageResponseHandler responseHandler, Action onFailureAction)
         {
             if (responseHandler.UnhandledMessageSize == 0)
             {

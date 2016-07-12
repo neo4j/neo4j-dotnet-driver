@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 // second success
                 // before summary method is called
-                CurrentResultBuilder?.CollectSummaryMeta(meta);
+                CurrentResultBuilder?.CollectSummary(meta);
             }
             Error = null;
             _logger?.Debug("S: ", new SuccessMessage(meta));
@@ -88,12 +88,14 @@ namespace Neo4j.Driver.Internal.Connector
                     Error = new DatabaseException(code, message);
                     break;
             }
+            CurrentResultBuilder?.InvalidateResult(); // an error received, so the result is broken
             _logger?.Debug("S: ", new FailureMessage(code, message));
         }
 
         public void HandleIgnoredMessage()
         {
             DequeueMessage();
+            CurrentResultBuilder?.InvalidateResult(); // the result is ignored
             _logger?.Debug("S: ", new IgnoredMessage());
         }
 
@@ -111,23 +113,14 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _unhandledMessages.Dequeue();
             CurrentResultBuilder = _resultBuilders.Dequeue();
-            CurrentResultBuilder?.IsStreamingRecords(false);
         }
 
         private void Interrupt()
         {
             // when receiving a reset, we will interrupt to not saving any incoming records by clean the result builder.
-            CurrentResultBuilder?.IsStreamingRecords(false);
+            CurrentResultBuilder?.InvalidateResult();
             CurrentResultBuilder = null;
         }
 
-        public void Clear()
-        {
-            _resultBuilders.Clear();
-            _unhandledMessages.Clear();
-
-            CurrentResultBuilder = null;
-            Error = null;
-        }
     }
 }
