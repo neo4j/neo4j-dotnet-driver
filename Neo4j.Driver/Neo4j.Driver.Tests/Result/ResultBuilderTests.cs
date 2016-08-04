@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,295 +28,53 @@ namespace Neo4j.Driver.Tests
 {
     public class ResultBuilderTests
     {
-        public class CollectMetaMethod
+        private static ResultBuilder GenerateBuilder(IDictionary<string, object> meta = null)
         {
-            [Fact]
-            public void ShouldCollectKeys()
-            {
-                var builder = new ResultBuilder();
-                IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"fields", new List<object> {"fieldKey1", "fieldKey2", "fieldKey3"} },{"type", "r" } };
-                builder.CollectFields(meta);
-
-                var result = builder.Build();
-                result.Keys.Should().ContainInOrder("fieldKey1", "fieldKey2", "fieldKey3");
-            }
-
-            [Fact]
-            public void ShouldCollectType()
-            {
-                var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
-                IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"type", "r" } };
-                builder.CollectSummaryMeta(meta);
-
-                var result = builder.Build();
-                result.Consume();
-                result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
-            }
-
-            [Fact]
-            public void ShouldCollectStattistics()
-            {
-                var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
-                IDictionary<string, object> meta = new Dictionary<string, object>
-                { {"type", "r" }, {"stats", new Dictionary<string, object> { {"nodes-created", 10L}, {"nodes-deleted", 5L} } } };
-                builder.CollectSummaryMeta(meta);
-
-                var result = builder.Build();
-                result.Consume();
-                var statistics = result.Summary.Counters;
-                statistics.NodesCreated.Should().Be(10);
-
-            }
-
-            [Fact]
-            public void ShouldCollectNotifications()
-            {
-                var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
-                IDictionary<string, object> meta = new Dictionary<string, object>
-                {
-                    {"type", "r" },
-                    {
-                        "notifications", new List<object>
-                        {
-                            new Dictionary<string, object> {{"code", "CODE"}, {"title", "TITLE"}},
-                            new Dictionary<string, object>
-                            {
-                                {"description", "DES"},
-                                {
-                                    "position", new Dictionary<string, object>
-                                    {
-                                        {"offset", 11L}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                };
-
-                builder.CollectSummaryMeta(meta);
-
-                InputPosition position = new InputPosition(0,0,0);
-
-                var result = builder.Build();
-                result.Consume();
-                var notifications = result.Summary.Notifications;
-                notifications.Should().HaveCount(2);
-                notifications[0].Code.Should().Be("CODE");
-                notifications[0].Title.Should().Be("TITLE");
-                notifications[0].Position.Offset.Should().Be(0);
-                notifications[0].Position.Column.Should().Be(0);
-                notifications[0].Position.Line.Should().Be(0);
-                notifications[0].Description.Should().BeEmpty();
-
-                notifications[1].Description.Should().Be("DES");
-                notifications[1].Code.Should().BeEmpty();
-                notifications[1].Title.Should().BeEmpty();
-                notifications[1].Position.Offset.Should().Be(11);
-                notifications[1].Position.Column.Should().Be(0);
-                notifications[1].Position.Line.Should().Be(0);
-            }
-
-            [Fact]
-            public void ShouldCollectSimplePlan()
-            {
-                var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
-                IDictionary<string, object> meta = new Dictionary<string, object>
-                {   {"type", "r" },
-                    { "plan", new Dictionary<string, object>
-                {
-                    {"operatorType", "X"}
-                } } };
-                builder.CollectSummaryMeta(meta);
-
-                var result = builder.Build();
-                result.Consume();
-                var plan = result.Summary.Plan;
-                plan.OperatorType.Should().Be("X");
-                plan.Arguments.Should().BeEmpty();
-                plan.Children.Should().BeEmpty();
-                plan.Identifiers.Should().BeEmpty();
-
-            }
-
-            [Fact]
-            public void ShouldCollectPlanThatContainsPlans()
-            {
-                var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
-                IDictionary<string, object> meta = new Dictionary<string, object>
-                {
-                    {"type", "r"},
-                    {
-                        "plan", new Dictionary<string, object>
-                        {
-                            {"operatorType", "X"},
-                            {"args", new Dictionary<string, object> {{"a", 1}, {"b", "lala"}}},
-                            {"identifiers", new List<object> {"id1", "id2"}},
-                            {
-                                "children", new List<object>
-                                {
-                                    new Dictionary<string, object>
-                                    {
-                                        {"operatorType", "tt"},
-                                        {"children", new List<object>()}
-                                    },
-                                    new Dictionary<string, object>
-                                    {
-                                        { "operatorType", "Z" },
-                                        {
-                                            "children", new List<object>
-                                            {
-                                                new Dictionary<string, object> {{"operatorType", "Y"}}
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                };
-                builder.CollectSummaryMeta(meta);
-
-                var result = builder.Build();
-                result.Consume();
-                var plan = result.Summary.Plan;
-                plan.OperatorType.Should().Be("X");
-                plan.Arguments.Should().ContainKey("a");
-                plan.Arguments["a"].Should().Be(1);
-                plan.Arguments.Should().ContainKey("b");
-                plan.Arguments["b"].Should().Be("lala");
-                plan.Identifiers.Should().ContainInOrder("id1", "id2");
-                plan.Children.Should().NotBeNull();
-                var children = plan.Children;
-                children.Should().HaveCount(2);
-                children[0].OperatorType.Should().Be("tt");
-                children[0].Children.Should().BeEmpty();
-                children[1].Children.Should().HaveCount(1);
-                children[1].Children[0].OperatorType.Should().Be("Y");
-            }
-
-            [Fact]
-            public void ShouldCollectProfiledPlanThatContainsProfiledPlans()
-            {
-                var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () => false;
-                IDictionary<string, object> meta = new Dictionary<string, object>
-                {
-                    {"type", "r"},
-                    {
-                        "profile", new Dictionary<string, object>
-                        {
-                            {"operatorType", "X"},
-                            {"args", new Dictionary<string, object> {{"a", 1}, {"b", "lala"}}},
-                            {"dbHits", 1L},
-                            {"rows", 1L},
-                            {"identifiers", new List<object> {"id1", "id2"}},
-                            {
-                                "children", new List<object>
-                                {
-                                    new Dictionary<string, object>
-                                    {
-                                        {"dbHits", 1L},
-                                        {"rows", 1L},
-                                        {"operatorType", "tt"},
-                                        {"children", new List<object>()}
-                                    },
-                                    new Dictionary<string, object>
-                                    {
-                                        {"dbHits", 1L},
-                                        {"rows", 1L},
-                                        {"operatorType", "Z"},
-                                        {
-                                            "children", new List<object>
-                                            {
-                                                new Dictionary<string, object>
-                                                {
-                                                    {"dbHits", 1L},
-                                                    {"rows", 1L},
-                                                    { "operatorType", "Y"}
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                };
-                builder.CollectSummaryMeta(meta);
-
-                var result = builder.Build();
-                result.Consume();
-                var profile = result.Summary.Profile;
-                profile.DbHits.Should().Be(1L);
-                profile.OperatorType.Should().Be("X");
-                profile.Arguments.Should().ContainKey("a");
-                profile.Arguments["a"].Should().Be(1);
-                profile.Arguments.Should().ContainKey("b");
-                profile.Arguments["b"].Should().Be("lala");
-                profile.Identifiers.Should().ContainInOrder("id1", "id2");
-                profile.Children.Should().NotBeNull();
-                var children = profile.Children;
-                children.Should().HaveCount(2);
-                children[0].OperatorType.Should().Be("tt");
-                children[0].Children.Should().BeEmpty();
-                children[1].Children.Should().HaveCount(1);
-                children[1].Children[0].OperatorType.Should().Be("Y");
-            }
+            var builder = new ResultBuilder();
+            builder.CollectFields(meta ?? new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
+            return builder;
         }
 
-        public class BuildMethod
+        private static Task AssertGetExpectResults(StatementResult result, int numberExpected, List<object> exspectedRecordsValues = null)
         {
-            private static ResultBuilder GenerateBuilder(IDictionary<string, object> meta = null)
+            int count = 0;
+            var t = Task.Factory.StartNew(() =>
             {
-                var builder = new ResultBuilder();
-                builder.CollectFields(meta ?? new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
-                return builder;
-            }
-
-            private static Task AssertGetExpectResults(StatementResult result, int numberExpected, List<object> exspectedRecordsValues = null)
-            {
-                int count = 0;
-                var t = Task.Factory.StartNew(() =>
+                // ReSharper disable once LoopCanBeConvertedToQuery
+                foreach (var item in result)
                 {
-                    // ReSharper disable once LoopCanBeConvertedToQuery
-                    foreach (var item in result)
+                    if (exspectedRecordsValues != null)
                     {
-                        if (exspectedRecordsValues != null)
-                        {
-                            item.Values.First().Value.Should().Be(exspectedRecordsValues[count]);
-                        }
-                        count++;
+                        item.Values.First().Value.Should().Be(exspectedRecordsValues[count]);
                     }
-                    count.Should().Be(numberExpected);
-                });
-                return t;
-            }
+                    count++;
+                }
+                count.Should().Be(numberExpected);
+            });
+            return t;
+        }
 
+        public class CollectRecordMethod
+        {
             [Fact]
             public void ShouldStreamResults()
             {
                 var builder = GenerateBuilder();
                 var i = 0;
-                builder.ReceiveOneRecordMessageFunc = () =>
+                builder.ReceiveOneFun = () =>
                 {
                     if (i++ >= 3)
                     {
-                        builder.CollectSummaryMeta(null);
-                        return false;
+                        builder.CollectSummary(null);
                     }
-                    builder.CollectRecord(new object[] { 123 });
-                    return true;
+                    else
+                    {
+                        builder.CollectRecord(new object[] {123 + i});
+                    }
                 };
-                var cursor = builder.Build();
+                var result = builder.Build();
 
-                var t = AssertGetExpectResults(cursor, 3);
+                var t = AssertGetExpectResults(result, 3, new List<object> {124, 125, 126});
                 t.Wait();
             }
 
@@ -324,14 +82,13 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnNoResultsWhenNoneRecieved()
             {
                 var builder = GenerateBuilder();
-                builder.ReceiveOneRecordMessageFunc = () =>
+                builder.ReceiveOneFun = () =>
                 {
-                    builder.CollectSummaryMeta(null);
-                    return false;
+                    builder.CollectSummary(null);
                 };
-                var cursor = builder.Build();
+                var result = builder.Build();
 
-                var t = AssertGetExpectResults(cursor, 0);
+                var t = AssertGetExpectResults(result, 0);
 
                 t.Wait();
             }
@@ -347,37 +104,28 @@ namespace Neo4j.Driver.Tests
                     false,
                     10
                 };
-                var i = 0;
-                builder.ReceiveOneRecordMessageFunc = () =>
+                for (int i = 0; i < recordValues.Count; i++)
                 {
-                    if (i < recordValues.Count)
-                    {
-                        builder.CollectRecord(new[] { recordValues[i++] });
-                        return true;
-                    }
-                    builder.CollectSummaryMeta(null);
-                    return false;
-                };
-                var cursor = builder.Build();
+                    builder.CollectRecord(new[] { recordValues[i] });
+                }
+                builder.CollectSummary(null);
 
-                var task = AssertGetExpectResults(cursor, recordValues.Count, recordValues);
+                var result = builder.Build();
+
+                var task = AssertGetExpectResults(result, recordValues.Count, recordValues);
                 task.Wait();
             }
         }
 
-        public class CollectSummaryMetaMethod
+        public class CollectSummaryMethod
         {
             private static ICounters DefaultCounters => new Counters();
 
             [Fact]
-            public void DoesNothingWhenMetaIsNull()
+            public void DoesNothingWhenSummaryIsNull()
             {
                 var builder = new ResultBuilder();
-                builder.ReceiveOneRecordMessageFunc = () =>
-                {
-                    builder.CollectSummaryMeta(null);
-                    return false;
-                };
+                builder.CollectSummary(null);
                 var actual = builder.Build();
                 actual.Consume();
 
@@ -406,11 +154,7 @@ namespace Neo4j.Driver.Tests
                         {"type", typeValue}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -426,11 +170,7 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.StatementType.Should().Be(StatementType.Unknown);
@@ -445,7 +185,7 @@ namespace Neo4j.Driver.Tests
                         {"type", "unknown"}
                     };
 
-                    var ex = Xunit.Record.Exception(() => builder.CollectSummaryMeta(meta));
+                    var ex = Xunit.Record.Exception(() => builder.CollectSummary(meta));
                     ex.Should().BeOfType<ClientException>();
                 }
             }
@@ -461,11 +201,7 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.Counters.ShouldBeEquivalentTo(DefaultCounters);
@@ -492,12 +228,7 @@ namespace Neo4j.Driver.Tests
                             {"constraints-removed", 11L },
                         } }
                     };
-
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build().Consume().Counters;
                     actual.Should().NotBeNull();
 
@@ -525,11 +256,7 @@ namespace Neo4j.Driver.Tests
                     {
                         {"something", "unknown"}
                     };
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -546,11 +273,7 @@ namespace Neo4j.Driver.Tests
                         {"plan", new Dictionary<string,object>()}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -567,11 +290,7 @@ namespace Neo4j.Driver.Tests
                         {"plan", null}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -593,14 +312,9 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
-                    var actual = builder.Build();
+                   ;
 
-                    var ex = Xunit.Record.Exception(() => actual.Consume());
+                    var ex = Xunit.Record.Exception(() => builder.CollectSummary(meta));
                     ex.Should().BeOfType<Neo4jException>();
                     ex.Message.Should().Be("Required property 'operatorType' is not in the response.");
                 }
@@ -619,11 +333,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -654,11 +364,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -705,11 +411,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build().Consume().Plan.Children.Single();
 
                     actual.Arguments.Should().HaveCount(1);
@@ -762,11 +464,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build().Consume().Plan.Children.Single().Children.Single();
 
                     actual.Arguments.Should().HaveCount(1);
@@ -793,11 +491,7 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -814,11 +508,7 @@ namespace Neo4j.Driver.Tests
                         {"profile", new Dictionary<string,object>()}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -835,11 +525,7 @@ namespace Neo4j.Driver.Tests
                         {"profile", null}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -863,14 +549,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
-                    var actual = builder.Build();
-
-                    var ex = Xunit.Record.Exception(() => actual.Consume());
+                    var ex = Xunit.Record.Exception(() => builder.CollectSummary(meta));
                     ex.Should().BeOfType<Neo4jException>();
                     ex.Message.Should().Be("Required property 'operatorType' is not in the response.");
                 }
@@ -890,14 +569,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
-                    var actual = builder.Build();
-
-                    var ex = Xunit.Record.Exception(() => actual.Consume());
+                    var ex = Xunit.Record.Exception(() => builder.CollectSummary(meta));
                     ex.Should().BeOfType<Neo4jException>();
                     ex.Message.Should().Be("Required property 'rows' is not in the response.");
                 }
@@ -917,14 +589,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
-                    var actual = builder.Build();
-
-                    var ex = Xunit.Record.Exception(() => actual.Consume());
+                    var ex = Xunit.Record.Exception(() => builder.CollectSummary(meta));
                     ex.Should().BeOfType<Neo4jException>();
                     ex.Message.Should().Be("Required property 'dbHits' is not in the response.");
                 }
@@ -945,11 +610,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
 
@@ -985,11 +646,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
@@ -1042,12 +699,7 @@ namespace Neo4j.Driver.Tests
                             }
                         }
                     };
-
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
@@ -1113,12 +765,8 @@ namespace Neo4j.Driver.Tests
                             }
                         }
                     };
-
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
@@ -1153,11 +801,7 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.Notifications.Should().BeEmpty();
@@ -1190,11 +834,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.Notifications.Should().HaveCount(1);
@@ -1249,11 +889,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
 
-                    builder.ReceiveOneRecordMessageFunc = () =>
-                    {
-                        builder.CollectSummaryMeta(meta);
-                        return false;
-                    };
+                    builder.CollectSummary(meta);
                     var actual = builder.Build();
                     actual.Consume();
                     actual.Summary.Notifications.Should().HaveCount(2);
@@ -1272,13 +908,22 @@ namespace Neo4j.Driver.Tests
         public class CollectFieldsMethod
         {
             [Fact]
+            public void ShouldPassDefaultKeysToResultIfNoKeySet()
+            {
+                var builder = new ResultBuilder();
+                var result = builder.Build();
+
+                result.Keys.Should().BeEmpty();
+            }
+
+            [Fact]
             public void ShouldDoNothingWhenMetaIsNull()
             {
                 var builder = new ResultBuilder();
                 builder.CollectFields(null);
 
-                var actual = builder.Build();
-                actual.Keys.Should().BeEmpty();
+                var result = builder.Build();
+                result.Keys.Should().BeEmpty();
             }
 
             [Fact]
@@ -1291,8 +936,46 @@ namespace Neo4j.Driver.Tests
                 };
                 builder.CollectFields(meta);
 
-                var actual = builder.Build();
-                actual.Keys.Should().BeEmpty();
+                var result = builder.Build();
+                result.Keys.Should().BeEmpty();
+            }
+
+            [Fact]
+            public void ShouldCollectKeys()
+            {
+                IDictionary<string, object> meta = new Dictionary<string, object>
+                { {"fields", new List<object> {"fieldKey1", "fieldKey2", "fieldKey3"} },{"type", "r" } };
+
+                var builder = new ResultBuilder();
+                builder.CollectFields(meta);
+                var result = builder.Build();
+
+                result.Keys.Should().ContainInOrder("fieldKey1", "fieldKey2", "fieldKey3");
+            }
+        }
+
+        public class InvalidateResultMethod
+        {
+            [Fact]
+            public void ShouldStopStreamingWhenResultIsInvalid()
+            {
+                var builder = GenerateBuilder();
+                var i = 0;
+                builder.ReceiveOneFun = () =>
+                {
+                    if (i++ >= 3)
+                    {
+                        builder.InvalidateResult();
+                    }
+                    else
+                    {
+                        builder.CollectRecord(new object[] { 123 + i });
+                    }
+                };
+                var result = builder.Build();
+
+                var t = AssertGetExpectResults(result, 3, new List<object> { 124, 125, 126 });
+                t.Wait();
             }
         }
     }

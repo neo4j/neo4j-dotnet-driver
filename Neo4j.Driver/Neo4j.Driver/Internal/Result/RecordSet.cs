@@ -23,15 +23,12 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class RecordSet : IRecordSet
     {
-        private readonly Func<bool> _receiveOneRecordMessageFunc;
-        private readonly Func<IRecord> _recordFunc;
-
+        private readonly Func<IRecord> _nextRecordFunc;
         private IRecord _peekedRecord;
 
-        public RecordSet(Func<IRecord> recordFunc, Func<bool> receiveOneRecordMessageFunc)
+        public RecordSet(Func<IRecord> nextRecordFunc)
         {
-            _recordFunc = recordFunc;
-            _receiveOneRecordMessageFunc = receiveOneRecordMessageFunc;
+            _nextRecordFunc = nextRecordFunc;
         }
 
         public bool AtEnd { get; private set; }
@@ -51,10 +48,14 @@ namespace Neo4j.Driver.Internal.Result
                 }
                 else
                 {
-                    AtEnd = !_receiveOneRecordMessageFunc.Invoke();
+                    var record = _nextRecordFunc.Invoke();
+                    if (record == null)
+                    {
+                        AtEnd = true;
+                    }
                     if (!AtEnd)
                     {
-                        yield return _recordFunc.Invoke();
+                        yield return record;
                     }
                 }
             }
@@ -78,14 +79,14 @@ namespace Neo4j.Driver.Internal.Result
                 return null;
             }
             // we still in the middle of the stream and we need to pull from input buffer
-            AtEnd = !_receiveOneRecordMessageFunc.Invoke();
-            if (AtEnd) // well the message received is a success
+            _peekedRecord = _nextRecordFunc.Invoke();
+            if (_peekedRecord == null) // well the message received is a success
             {
+                AtEnd = true;
                 return null;
             }
             else // we get another record message
             {
-                _peekedRecord = _recordFunc.Invoke();
                 return _peekedRecord;
             }
         }

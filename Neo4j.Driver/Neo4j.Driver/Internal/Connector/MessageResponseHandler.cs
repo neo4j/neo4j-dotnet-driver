@@ -31,7 +31,6 @@ namespace Neo4j.Driver.Internal.Connector
         internal IResultBuilder CurrentResultBuilder { get; private set; }
 
         public int UnhandledMessageSize => _unhandledMessages.Count;
-        public bool IsRecordMessageReceived { get; internal set; }
 
         public Neo4jException Error { get; internal set; }
         public bool HasError => Error != null;
@@ -50,7 +49,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void HandleSuccessMessage(IDictionary<string, object> meta)
         {
-            UnregisterMessage();
+            DequeueMessage();
             if (meta.ContainsKey("fields"))
             {
                 // first success
@@ -60,7 +59,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 // second success
                 // before summary method is called
-                CurrentResultBuilder?.CollectSummaryMeta(meta);
+                CurrentResultBuilder?.CollectSummary(meta);
             }
             Error = null;
             _logger?.Debug("S: ", new SuccessMessage(meta));
@@ -68,13 +67,13 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void HandleRecordMessage(object[] fields)
         {
-            IsRecordMessageReceived = true;
-            CurrentResultBuilder.CollectRecord(fields);
+            CurrentResultBuilder?.CollectRecord(fields);
             _logger?.Debug("S: ", new RecordMessage(fields));
         }
 
         public void HandleFailureMessage(string code, string message)
         {
+            DequeueMessage();
             var parts = code.Split('.');
             var classification = parts[1].ToLowerInvariant();
             switch (classification)
@@ -89,37 +88,39 @@ namespace Neo4j.Driver.Internal.Connector
                     Error = new DatabaseException(code, message);
                     break;
             }
-            UnregisterMessage();
+            CurrentResultBuilder?.InvalidateResult(); // an error received, so the result is broken
             _logger?.Debug("S: ", new FailureMessage(code, message));
         }
 
         public void HandleIgnoredMessage()
         {
-            UnregisterMessage();
+            DequeueMessage();
+            CurrentResultBuilder?.InvalidateResult(); // the result is ignored
             _logger?.Debug("S: ", new IgnoredMessage());
         }
 
-        public void RegisterMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+        public void EnqueueMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
             _unhandledMessages.Enqueue(requestMessage);
             _resultBuilders.Enqueue(resultBuilder);
+            if (requestMessage is ResetMessage)
+            {
+                Interrupt();
+            }
         }
 
-        private void UnregisterMessage()
+        private void DequeueMessage()
         {
             _unhandledMessages.Dequeue();
             CurrentResultBuilder = _resultBuilders.Dequeue();
-            IsRecordMessageReceived = false;
         }
 
-        public void Clear()
+        private void Interrupt()
         {
-            _resultBuilders.Clear();
-            _unhandledMessages.Clear();
-
+            // when receiving a reset, we will interrupt to not saving any incoming records by clean the result builder.
+            CurrentResultBuilder?.InvalidateResult();
             CurrentResultBuilder = null;
-            Error = null;
-            IsRecordMessageReceived = false;
         }
+
     }
 }

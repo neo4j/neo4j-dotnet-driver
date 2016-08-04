@@ -124,9 +124,6 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        /// <summary>
-        /// This method will not throw exception if a railure message is received
-        /// </summary>
         private void ReceiveOne(IMessageResponseHandler responseHandler)
         {
             try
@@ -150,21 +147,19 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         /// <summary>
-        /// Return true if a record message is received, otherwise false.
-        /// This method will throw the exception if a failure message is received.
+        /// Perform failure action if error
         /// </summary>
-        public bool ReceiveOneRecordMessage(IMessageResponseHandler responseHandler, Action onFailureAction)
+        public void ReceiveOne(IMessageResponseHandler responseHandler, Action onFailureAction)
         {
             if (responseHandler.UnhandledMessageSize == 0)
             {
-                return false;
+                return;
             }
             ReceiveOne(responseHandler);
             if (responseHandler.HasError)
             {
                 onFailureAction.Invoke();
             }
-            return responseHandler.IsRecordMessageReceived;
         }
 
         private async Task<int> DoHandshake()

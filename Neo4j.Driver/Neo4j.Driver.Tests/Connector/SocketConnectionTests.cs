@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<IMessageResponseHandler>();
                 new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
 
-                mockHandler.Verify(h => h.RegisterMessage(It.IsAny<InitMessage>(), null));
+                mockHandler.Verify(h => h.EnqueueMessage(It.IsAny<InitMessage>(), null));
 
                 mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
                 mockClient.Verify(c => c.Receive(mockHandler.Object, 0), Times.Once);
@@ -136,7 +136,7 @@ namespace Neo4j.Driver.Tests
                 var rb = new ResultBuilder();
                 con.Run(rb, "statement");
 
-                mockResponseHandler.Verify(h => h.RegisterMessage(It.IsAny<RunMessage>(), rb), Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), rb), Times.Once);
             }
         }
 
@@ -167,7 +167,7 @@ namespace Neo4j.Driver.Tests
                 var rb = new ResultBuilder();
                 con.PullAll(rb);
 
-                mockResponseHandler.Verify(h => h.RegisterMessage(It.IsAny<PullAllMessage>(), rb), Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<PullAllMessage>(), rb), Times.Once);
             }
         }
 
@@ -186,8 +186,8 @@ namespace Neo4j.Driver.Tests
                 messages.Count.Should().Be(2);
                 messages[0].Should().BeOfType<RunMessage>();
                 messages[1].Should().BeOfType<ResetMessage>();
-                mockResponseHandler.Verify(x => x.RegisterMessage(It.IsAny<RunMessage>(), null), Times.Once);
-                mockResponseHandler.Verify(x => x.RegisterMessage(It.IsAny<ResetMessage>(), null), Times.Once);
+                mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<RunMessage>(), null), Times.Once);
+                mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<ResetMessage>(), null), Times.Once);
             }
         }
 

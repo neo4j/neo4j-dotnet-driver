@@ -34,11 +34,16 @@ namespace Neo4j.Driver.Tests
         public ListBasedRecordSet(IList<IRecord> records)
         {
             _records = records;
-            _recordSet = new RecordSet(() => _records[_count++], () => !AtEnd);
+            _recordSet = new RecordSet(NextRecord);
         }
 
         public bool AtEnd => _count >= _records.Count;
-        
+
+        private IRecord NextRecord()
+        {
+            return AtEnd ? null : _records[_count++];
+        }
+
         public IRecord Peek()
         {
             return _recordSet.Peek();

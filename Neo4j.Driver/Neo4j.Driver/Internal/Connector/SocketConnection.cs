@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Internal.Connector
         public void PullAll(IResultBuilder resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
-            resultBuilder.ReceiveOneRecordMessageFunc = () => _client.ReceiveOneRecordMessage(_responseHandler, OnResponseHasError);
+            resultBuilder.ReceiveOneFun = () => _client.ReceiveOne(_responseHandler, OnResponseHasError);
         }
 
         public void DiscardAll()
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Internal.Connector
         private void Enqueue(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
             _messages.Enqueue(requestMessage);
-            _responseHandler.RegisterMessage(requestMessage, resultBuilder);
+            _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
         }
     }
 }

@@ -102,7 +102,56 @@ namespace Neo4j.Driver.IntegrationTests
                 var result1All = result1.ToList();
 
                 result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder();
+                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
+            }
+        }
+
+        [Fact]
+        public void ResultsHaveNotBeenReadGetLostAfterSessionClosed()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            {
+                IStatementResult result;
+                using (var session = driver.Session())
+                {
+                    result = session.Run("unwind range(1,3) as n RETURN n");
+                }
+                var resultAll = result.ToList();
+
+                // Records that has not been read inside session get lost
+                resultAll.Count.Should().Be(0);
+                resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder();
+
+                // Summary is still saved
+                result.Summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
+                result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
+            }
+        }
+
+        [Fact]
+        public void BuffersResultsOfOneTxSoTheyCanBeReadAfterAnotherSubsequentTx()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var session = driver.Session())
+            {
+                IStatementResult result1, result2;
+                using (var tx = session.BeginTransaction())
+                {
+                    result1 = tx.Run("unwind range(1,3) as n RETURN n");
+                    tx.Success();
+                }
+
+                using (var tx = session.BeginTransaction())
+                {
+                    result2 = tx.Run("unwind range(4,6) as n RETURN n");
+                    tx.Success();
+                }
+
+                var result2All = result2.ToList();
+                var result1All = result1.ToList();
+
+                result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
+                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
             }
         }
 
