@@ -15,31 +15,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections.Generic;
-using System.Linq;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
     internal class Record : IRecord
     {
-        public object this[int index] => Values[Values.Keys.ToList()[index]];
+        public object this[int index] => Values[Keys[index]];
         public object this[string key] => Values[key];
 
         public IReadOnlyDictionary<string, object> Values { get; }       
         public IReadOnlyList<string> Keys { get; }
 
-        public Record(string[] keys, object[] values)
+        public Record(List<string>keys, object[] values)
         {
-            Throw.ArgumentException.IfNotEqual(keys.Length, values.Length, nameof(keys), nameof(values));
+            Throw.ArgumentException.IfNotEqual(keys.Count, values.Length, nameof(keys), nameof(values));
 
             var valueKeys = new Dictionary<string, object>();
 
-            for (var i =0; i < keys.Length; i ++)
+            for (var i = 0; i < keys.Count; i++)
             {
-                valueKeys.Add( keys[i], values[i]);
+                valueKeys.Add(keys[i], values[i]);
             }
             Values = valueKeys;
-            Keys = new List<string>(keys);
+            Keys = keys;
         }
     }
 }

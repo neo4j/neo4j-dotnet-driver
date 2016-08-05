@@ -100,11 +100,11 @@ namespace Neo4j.Driver.Internal
 
                 try
                 {
-                    var resultBuilder = new ResultBuilder(statement, parameters);
+                    var resultBuilder = new ResultBuilder(statement, parameters,()=>_connection.ReceiveOne());
                     _connection.Run(resultBuilder, statement, parameters);
                     _connection.PullAll(resultBuilder);
-                    _connection.SyncRun();
-                    return resultBuilder.Build();
+                    _connection.Send();
+                    return resultBuilder.PreBuild();
                 }
                 catch (Neo4jException)
                 {

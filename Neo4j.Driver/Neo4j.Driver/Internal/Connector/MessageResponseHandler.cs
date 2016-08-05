@@ -28,12 +28,15 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly ILogger _logger;
         private readonly Queue<IResultBuilder> _resultBuilders = new Queue<IResultBuilder>();
         private readonly Queue<IRequestMessage> _unhandledMessages = new Queue<IRequestMessage>();
-        internal IResultBuilder CurrentResultBuilder { get; private set; }
+
+        public IResultBuilder CurrentResultBuilder { get; private set; }
 
         public int UnhandledMessageSize => _unhandledMessages.Count;
 
-        public Neo4jException Error { get; internal set; }
+        public Neo4jException Error { get; set; }
         public bool HasError => Error != null;
+        public bool HasProtocolViolationError
+            => HasError && Error.Code.ToLowerInvariant().Contains("clienterror.request");
 
         internal Queue<IResultBuilder> ResultBuilders => new Queue<IResultBuilder>(_resultBuilders);
         internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_unhandledMessages);
@@ -61,7 +64,6 @@ namespace Neo4j.Driver.Internal.Connector
                 // before summary method is called
                 CurrentResultBuilder?.CollectSummary(meta);
             }
-            Error = null;
             _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 
@@ -103,10 +105,6 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _unhandledMessages.Enqueue(requestMessage);
             _resultBuilders.Enqueue(resultBuilder);
-            if (requestMessage is ResetMessage)
-            {
-                Interrupt();
-            }
         }
 
         private void DequeueMessage()
@@ -114,13 +112,5 @@ namespace Neo4j.Driver.Internal.Connector
             _unhandledMessages.Dequeue();
             CurrentResultBuilder = _resultBuilders.Dequeue();
         }
-
-        private void Interrupt()
-        {
-            // when receiving a reset, we will interrupt to not saving any incoming records by clean the result builder.
-            CurrentResultBuilder?.InvalidateResult();
-            CurrentResultBuilder = null;
-        }
-
     }
 }

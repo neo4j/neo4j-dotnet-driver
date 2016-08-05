@@ -49,6 +49,14 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <returns>A new transaction.</returns>
         ITransaction BeginTransaction();
+
+        /// <summary>
+        /// Reset the current session. This sends an immediate RESET signal to the server which both interrupts
+        /// any statement that is currently executing and ignores any subsequently queued statements.Following
+        /// the reset, the current transaction will have been rolled back and any outstanding failures will
+        /// have been acknowledged.
+        /// </summary>
+        void Reset();
     }
 
     /// <summary>

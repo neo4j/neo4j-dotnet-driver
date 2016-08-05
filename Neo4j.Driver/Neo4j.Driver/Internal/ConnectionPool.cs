@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Internal
 
             try
             {
-                connection.ResetConnection();
+                connection.ClearConnection();
             }
             catch
             {
@@ -220,6 +220,6 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         /// Try to reset the connection to a clean state to prepare it for a new session.
         /// </summary>
-        void ResetConnection();
+        void ClearConnection();
     }
 }

@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldClearErrorState()
+            public void ShouldSuccessMessageNotClearErrorState()
             {
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new PullAllMessage());
@@ -139,8 +139,8 @@ namespace Neo4j.Driver.Tests
 
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
 
-                mrh.HasError.Should().BeFalse();
-                mrh.Error.Should().BeNull();
+                mrh.HasError.Should().BeTrue();
+                mrh.Error.Should().NotBeNull();
             }
         }
 
@@ -358,22 +358,24 @@ namespace Neo4j.Driver.Tests
         public class EnqueueMessageMethod
         {
             [Fact]
-            public void ShouldNotBufferAnyRecordWhenResetIsEnqueue()
+            public void ShouldBufferAnyRecordWhenResetIsEnqueue()
             {
                 var mockResultBuilder = new Mock<IResultBuilder>();
 
                 var mrh = new MessageResponseHandler();
+                mrh.EnqueueMessage(new RunMessage("run something"), mockResultBuilder.Object);
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
                 mrh.HandleRecordMessage(new object[] { "x" });
                 mrh.CurrentResultBuilder.Should().NotBeNull();
 
                 mrh.EnqueueMessage(new ResetMessage());
-                mrh.CurrentResultBuilder.Should().BeNull();
+                mrh.CurrentResultBuilder.Should().NotBeNull();
 
                 mrh.HandleRecordMessage(new object[] { "x" });
 
-                mockResultBuilder.Verify(x => x.CollectRecord(It.IsAny<object[]>()), Times.Once);
+                mockResultBuilder.Verify(x => x.CollectRecord(It.IsAny<object[]>()), Times.Exactly(2));
+                mrh.UnhandledMessageSize.Should().Be(2);
             }
         }
     }

@@ -32,13 +32,17 @@ namespace Neo4j.Driver.Internal.Messaging
 
     internal interface IMessageResponseHandler
     {
+        Neo4jException Error { get; set; }
         bool HasError { get; }
-        Neo4jException Error { get; }
+        bool HasProtocolViolationError { get; }
+
         void HandleSuccessMessage(IDictionary<string, object> meta);
         void HandleFailureMessage(string code, string message);
         void HandleIgnoredMessage();
         void HandleRecordMessage(object[] fields);
+
         void EnqueueMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null);
         int UnhandledMessageSize { get; }
+        IResultBuilder CurrentResultBuilder { get; }
     }
 }

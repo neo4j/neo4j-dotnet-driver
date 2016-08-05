@@ -30,6 +30,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly IMessageResponseHandler _responseHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
+        internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
         public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
             IMessageResponseHandler messageResponseHandler = null)
@@ -50,47 +51,41 @@ namespace Neo4j.Driver.Internal.Connector
         {
         }
 
-        internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
-
-        public void Dispose()
+        public void Sync()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Send();
+            Receive();
         }
 
-        private void SendAndReceive(int unhandledMessageCount = 0)
+        public void Send()
         {
             if (_messages.Count == 0)
             {
+                // nothing to send
+                return;
+            }
+            // blocking to send
+            _client.Send(_messages);
+            _messages.Clear();
+        }
+
+        private void Receive()
+        {
+            if (_responseHandler.UnhandledMessageSize == 0)
+            {
+                // nothing to receive
                 return;
             }
 
-            // blocking to send
-            _client.Send(_messages);
-            ClearQueue(); // clear sending queue
             // blocking to receive
-            _client.Receive(_responseHandler, unhandledMessageCount);
-
-            if (_responseHandler.HasError)
-            {
-                OnResponseHasError();
-            }
+            _client.Receive(_responseHandler);
+            AssertNoServerFailure();
         }
 
-        private void OnResponseHasError()
+        public void ReceiveOne()
         {
-            Enqueue(new AckFailureMessage());
-            throw _responseHandler.Error;
-        }
-
-        public void Sync()
-        {
-            SendAndReceive();
-        }
-
-        public void SyncRun()
-        {
-            SendAndReceive(1); // blocking to receive unitl 1 message unhandled left (PULL_ALL)
+            _client.ReceiveOne(_responseHandler);
+            AssertNoServerFailure();
         }
 
         public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
@@ -102,7 +97,6 @@ namespace Neo4j.Driver.Internal.Connector
         public void PullAll(IResultBuilder resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
-            resultBuilder.ReceiveOneFun = () => _client.ReceiveOne(_responseHandler, OnResponseHasError);
         }
 
         public void DiscardAll()
@@ -116,12 +110,18 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
-        public bool HasUnrecoverableError => _responseHandler.Error is DatabaseException;
+        public bool HasUnrecoverableError { get; private set; }
         public bool IsHealthy => IsOpen && !HasUnrecoverableError;
 
         public void Close()
         {
             Dispose();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -132,9 +132,27 @@ namespace Neo4j.Driver.Internal.Connector
             Task.Run(() => _client.Stop()).Wait();
         }
 
-        private void ClearQueue()
+        private void AssertNoServerFailure()
         {
-            _messages.Clear();
+            if (_responseHandler.HasError)
+            {
+                if (IsRecoverableError(_responseHandler.Error))
+                {
+                    Enqueue(new AckFailureMessage());
+                }
+                else
+                {
+                    HasUnrecoverableError = true;
+                }
+                var error = _responseHandler.Error;
+                _responseHandler.Error = null;
+                throw error;
+            }
+        }
+
+        private bool IsRecoverableError(Neo4jException error)
+        {
+            return error is ClientException || error is TransientException;
         }
 
         private void Enqueue(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)

@@ -77,12 +77,12 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
-                var resultBuilder = new ResultBuilder(statement, statementParameters);
+                var resultBuilder = new ResultBuilder(statement, statementParameters, ()=>_connection.ReceiveOne());
                 _connection.Run(resultBuilder, statement, statementParameters);
                 _connection.PullAll(resultBuilder);
-                _connection.SyncRun();
+                _connection.Send();
 
-                return resultBuilder.Build();
+                return resultBuilder.PreBuild();
             });
         }
 
@@ -134,6 +134,36 @@ namespace Neo4j.Driver.Internal
                 throw new ClientException("Please close the currently open transaction object before running " +
                                            "more statements/transactions in the current session.");
             }
+        }
+
+        public Guid Id { get; } = Guid.NewGuid();
+
+        public bool IsHealthy
+        {
+            get
+            {
+                if (!_connection.IsOpen)
+                {
+                    return false;
+                }
+                if (_connection.HasUnrecoverableError)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        public void Reset()
+        {
+            _connection.Reset();
+            _connection.Send();
+        }
+
+        public void Close()
+        {
+            Dispose(true);
+            _connection.Dispose();
         }
     }
 }

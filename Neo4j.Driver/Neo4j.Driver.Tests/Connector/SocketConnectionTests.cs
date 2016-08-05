@@ -16,7 +16,6 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
@@ -24,7 +23,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
-using Record = Xunit.Record;
+using static Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
@@ -51,18 +50,19 @@ namespace Neo4j.Driver.Tests
             {
                 var mockClient = new Mock<ISocketClient>();
                 var mockHandler = new Mock<IMessageResponseHandler>();
+                mockHandler.Setup(x => x.UnhandledMessageSize).Returns(1);
                 new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
 
                 mockHandler.Verify(h => h.EnqueueMessage(It.IsAny<InitMessage>(), null));
 
                 mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
-                mockClient.Verify(c => c.Receive(mockHandler.Object, 0), Times.Once);
+                mockClient.Verify(c => c.Receive(mockHandler.Object), Times.Once);
             }
 
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
             {
-                var exception = Record.Exception(() => new SocketConnection(null, AuthTokens.None, Logger));
+                var exception = Exception(() => new SocketConnection(null, AuthTokens.None, Logger));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -211,8 +211,15 @@ namespace Neo4j.Driver.Tests
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
 
+                mockResponseHandler.Setup(x => x.HasError).Returns(true);
                 mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException("BLAH", "lalala"));
+
+                var exception = Exception(()=>con.ReceiveOne());
+                exception.Should().BeOfType<DatabaseException>();
+                exception.Message.Should().Be("lalala");
+
                 con.HasUnrecoverableError.Should().BeTrue();
+                mockResponseHandler.VerifySet(x=>x.Error=null, Times.Once);
             }
 
             [Fact]

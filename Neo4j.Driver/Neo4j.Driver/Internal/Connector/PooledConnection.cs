@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.Connector
         }
         public Guid Id { get; } = Guid.NewGuid();
 
-        public void ResetConnection()
+        public void ClearConnection()
         {
             Reset();
             Sync();
@@ -43,9 +43,14 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.Sync();
         }
 
-        public void SyncRun()
+        public void Send()
         {
-            _connection.SyncRun();
+            _connection.Send();
+        }
+
+        public void ReceiveOne()
+        {
+            _connection.ReceiveOne();
         }
 
         public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters = null)

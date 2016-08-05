@@ -176,7 +176,6 @@ namespace Neo4j.Driver.Tests
                     await harness.Client.Start();
                     harness.ResetCalls();
 
-
                     // When
                     harness.Client.Send(messages);
                     Record.Exception(() => harness.Client.Receive(messageHandler));
@@ -240,6 +239,8 @@ namespace Neo4j.Driver.Tests
                 public int IgnoreMessageCalled { get; private set; }
 
 
+                public bool HasProtocolViolationError => _messageHandler.HasProtocolViolationError;
+
                 public void HandleSuccessMessage(IDictionary<string, object> meta)
                 {
                     _messageHandler.HandleSuccessMessage(meta);
@@ -273,6 +274,7 @@ namespace Neo4j.Driver.Tests
                 }
 
                 public int UnhandledMessageSize => _messageHandler.UnhandledMessageSize;
+                public IResultBuilder CurrentResultBuilder => _messageHandler.CurrentResultBuilder;
 
                 public bool HasError => _messageHandler.HasError;
 

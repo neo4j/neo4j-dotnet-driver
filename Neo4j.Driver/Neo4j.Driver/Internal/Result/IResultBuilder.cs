@@ -15,18 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result
 {
     internal interface IResultBuilder
     {
-        StatementResult Build();
         void CollectFields(IDictionary<string, object> meta);
         void CollectRecord(object[] fields);
         void CollectSummary(IDictionary<string, object> meta);
         void InvalidateResult();
-        Action ReceiveOneFun { set; }
     }
 }

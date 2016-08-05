@@ -31,14 +31,14 @@ namespace Neo4j.Driver.Internal.Result
         private readonly Func<IResultSummary> _getSummary;
         private readonly IRecordSet _recordSet;
 
-        private IResultSummary _summary = null;
-        
-        public StatementResult(string[] keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
+        private IResultSummary _summary;
+
+        public StatementResult(List<string> keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
             Throw.ArgumentNullException.IfNull(recordSet, nameof(recordSet));
 
-            _keys = new List<string>(keys);
+            _keys = keys;
             _recordSet = recordSet;
             _getSummary = getSummary;
         }
