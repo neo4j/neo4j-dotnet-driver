@@ -28,7 +28,22 @@ namespace Neo4j.Driver.Internal.Connector
         void PullAll(IResultBuilder resultBuilder);
         void DiscardAll();
         void Reset();
+
+        /// <summary>
+        /// Return true if the underlying socket connection is till open, otherwise false.
+        /// </summary>
         bool IsOpen { get; }
+        /// <summary>
+        /// Return true if unrecoverable error has been received on this connection, otherwise false.
+        /// </summary>
         bool HasUnrecoverableError { get; }
+        /// <summary>
+        /// Return true if more statements could be run on this connection, otherwise false.
+        /// </summary>
+        bool IsHealthy { get; }
+        /// <summary>
+        /// Close and release related resources
+        /// </summary>
+        void Close();
     }
 }
