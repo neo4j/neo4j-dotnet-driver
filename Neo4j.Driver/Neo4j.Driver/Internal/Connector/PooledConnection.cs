@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         /// <summary>
-        /// Dispose a pooled connection will try to release the connection resource back to pool
+        /// Disposing a pooled connection will try to release the connection resource back to pool
         /// </summary>
         public void Dispose()
         {

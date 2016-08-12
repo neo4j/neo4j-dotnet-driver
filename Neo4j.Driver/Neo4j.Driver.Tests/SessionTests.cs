@@ -162,7 +162,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldOnlyDisposeSessionOnce()
+            public void ShouldThrowExceptionWhenDisposingSessionMoreThanOnce()
             {
                 // Given
                 var mockConn = new Mock<IConnection>();

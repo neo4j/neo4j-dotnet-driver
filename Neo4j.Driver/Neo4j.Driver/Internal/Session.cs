@@ -47,6 +47,8 @@ namespace Neo4j.Driver.Internal
             {
                 if (_isOpen)
                 {
+                    // This will not protect the session being disposed concurrently
+                    // a.k.a. Session is not thread-safe!
                     _isOpen = false;
                 }
                 else

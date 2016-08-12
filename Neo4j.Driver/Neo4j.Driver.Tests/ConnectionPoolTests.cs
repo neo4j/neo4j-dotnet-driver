@@ -250,24 +250,38 @@ namespace Neo4j.Driver.Tests
                 }
             }
 
+            [Fact]
+            public void ShouldThrowExceptionWhenAcquireCalledAfterDispose()
+            {
+                var pool = new ConnectionPool(MockedConnection);
+
+                pool.Dispose();
+                var exception = Record.Exception(() => pool.Acquire());
+                exception.Should().BeOfType<InvalidOperationException>();
+                exception.Message.Should().Contain("the driver has already been disposed");
+            }
+
             // thread-safe test
             // concurrent call of Acquire and Dispose
             [Fact]
-            public void ShouldCloseConnectionGotFromAvailableIfPoolDisposeStarted()
+            public void ShouldCloseAcquiredConnectionIfPoolDisposeStarted()
             {
+                // Given
                 var conns = new Queue<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
-                healthyMock.Setup(x => x.IsHealthy).Returns(true);
-
                 var pool = new ConnectionPool(MockedConnection, conns);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                // this is to simulate we call Acquire after available.clear in pool.Dispose()
-                pool.Dispose();
+                // This is to simulate Acquire called first,
+                // but before Acquire put a new conn into inUseConn, Dispose get called.
+                // Note: Once dispose get called, it is forbiden to put anything into queue.
+                healthyMock.Setup(x => x.IsHealthy).Returns(true)
+                    .Callback(() => pool.DisposeCalled = true); // Simulte Dispose get called at this time
                 conns.Enqueue(healthyMock.Object);
                 pool.NumberOfAvailableConnections.Should().Be(1);
+                // When
                 var exception = Record.Exception(() => pool.Acquire());
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
@@ -275,29 +289,7 @@ namespace Neo4j.Driver.Tests
                 healthyMock.Verify(x => x.IsHealthy, Times.Once);
                 healthyMock.Verify(x => x.Close(), Times.Once);
                 exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Contain("the driver is already started to dispose");
-            }
-
-            // thread-safe test
-            // concurrent call of Acquire and Dispose
-            [Fact]
-            public void ShouldCloseNewConnectionIfPoolDisposeStarted()
-            {
-                var pool = new ConnectionPool(MockedConnection);
-
-                pool.NumberOfAvailableConnections.Should().Be(0);
-                pool.NumberOfInUseConnections.Should().Be(0);
-
-                // this is to simulate we call Acquire after available.clear in pool.Dispose()
-                pool.Dispose();
-                pool.NumberOfAvailableConnections.Should().Be(0);
-                pool.NumberOfInUseConnections.Should().Be(0);
-                var exception = Record.Exception(() => pool.Acquire());
-
-                pool.NumberOfAvailableConnections.Should().Be(0);
-                pool.NumberOfInUseConnections.Should().Be(0);
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Contain("the driver is already started to dispose");
+                exception.Message.Should().Contain("the driver has already started to dispose");
             }
         }
 
@@ -400,22 +392,27 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldCloseConnectionIfPoolDisposeStarted()
             {
-                var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(true);
-                var id = new Guid();
-
+                // Given
                 var inUseConns = new Dictionary<Guid, IPooledConnection>();
-
                 var pool = new ConnectionPool(null, null, inUseConns);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                pool.Dispose();
+                var mock = new Mock<IPooledConnection>();
+                var id = new Guid();
                 inUseConns.Add(id, mock.Object);
                 pool.NumberOfInUseConnections.Should().Be(1);
+
+                // When
+                // this is to simulate Release called first,
+                // but before Release put a new conn into availConns, Dispose get called.
+                // Note: Once dispose get called, it is forbiden to put anything into queue.
+                mock.Setup(x => x.IsHealthy).Returns(true)
+                    .Callback(() => pool.DisposeCalled = true); // Simulte Dispose get called at this time
                 pool.Release(id);
 
+                // Then
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
                 mock.Verify(x => x.Close(), Times.Once);
@@ -471,8 +468,44 @@ namespace Neo4j.Driver.Tests
 
                 mockLogger.Verify(x => x.Info(It.Is<string>(actual => actual.StartsWith("Disposing In Use"))),
                     Times.Once);
-                mockLogger.Verify(x => x.Info(It.Is<string>(actual => actual.StartsWith("Disposing Available"))),
+                mockLogger.Verify(x => x.Debug(It.Is<string>(actual => actual.StartsWith("Disposing Available"))),
                     Times.Once);
+            }
+
+            [Fact]
+            public void ShouldReturnDirectlyWhenConnectionReleaseCalledAfterPoolDispose()
+            {
+                // Given
+                var mock = new Mock<IPooledConnection>();
+                var id = Guid.NewGuid();
+                var inUseConns = new Dictionary<Guid, IPooledConnection> {{id, mock.Object}};
+                var pool = new ConnectionPool(null, null, inUseConns);
+
+                // When
+                pool.Dispose();
+                pool.Release(id);
+
+                // Then
+                mock.Verify(x => x.Close(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldNotThrowExceptionWhenDisposedTwice()
+            {
+                // Given
+                var mock = new Mock<IPooledConnection>();
+                var id = Guid.NewGuid();
+                var inUseConns = new Dictionary<Guid, IPooledConnection> { { id, mock.Object } };
+                var pool = new ConnectionPool(null, null, inUseConns);
+
+                // When
+                pool.Dispose();
+                pool.Dispose();
+
+                // Then
+                mock.Verify(x => x.Close(), Times.Once);
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(0);
             }
         }
     }

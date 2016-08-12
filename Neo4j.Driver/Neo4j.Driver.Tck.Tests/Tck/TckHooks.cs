@@ -36,6 +36,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             return session;
         }
 
+        public static ISession CreateSelfManagedSession()
+        {
+            var session = _driver.Session();
+            ScenarioContext.Current.Set((ISession)null);
+            return session;
+        }
+
         [AfterScenario]
         public static void DisposeSession()
         {

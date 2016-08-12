@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Given(@"init: (.*)$")]
         public void GivenInit(string statement)
         {
-            using (var session = TckHooks.CreateSession())
+            using (var session = TckHooks.CreateSelfManagedSession())
             {
                 session.Run(statement);
             }
@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [BeforeScenario("@reset_database")]
         public void ResetDatabase()
         {
-            using (var session = TckHooks.CreateSession())
+            using (var session = TckHooks.CreateSelfManagedSession())
             {
                 session.Run("MATCH (n) DETACH DELETE n");
             }

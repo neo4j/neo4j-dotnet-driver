@@ -31,11 +31,15 @@ namespace Neo4j.Driver.Internal
         private readonly Queue<IPooledConnection> _availableConnections = new Queue<IPooledConnection>();
         private readonly Dictionary<Guid, IPooledConnection> _inUseConnections = new Dictionary<Guid, IPooledConnection>();
 
-        private readonly IConnection _fackConnection;
+        private volatile bool _disposeCalled;
+
+        private readonly IConnection _fakeConnection;
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
-
-        private volatile bool _disposeCalled = false;
+        internal bool DisposeCalled
+        {
+            set { _disposeCalled = value; }
+        }
 
         public ConnectionPool(Uri uri, IAuthToken authToken, ILogger logger, Config config)
             : base(logger)
@@ -55,20 +59,24 @@ namespace Neo4j.Driver.Internal
             Config config = null)
             : this(null, null, logger, config ?? Config.DefaultConfig)
         {
-            _fackConnection = connection;
+            _fakeConnection = connection;
             _availableConnections = availableConnections ?? new Queue<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new Dictionary<Guid, IPooledConnection>();
         }
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            return _fackConnection != null ? new PooledConnection(_fackConnection, Release) : new PooledConnection(new SocketConnection(_uri, _authToken, _config), Release);
+            return _fakeConnection != null ? new PooledConnection(_fakeConnection, Release) : new PooledConnection(new SocketConnection(_uri, _authToken, _config), Release);
         }
 
         public IPooledConnection Acquire()
         {
             return TryExecute(() =>
             {
+                if (_disposeCalled)
+                {
+                    throw new InvalidOperationException("Failed to create a new session as the driver has already been disposed.");
+                }
                 IPooledConnection connection = null;
                 lock (_availableConnections)
                 {
@@ -91,7 +99,7 @@ namespace Neo4j.Driver.Internal
                     if (_disposeCalled)
                     {
                         connection.Close();
-                        throw new InvalidOperationException("Failed to create a new session as the driver is already started to dispose");
+                        throw new InvalidOperationException("Failed to create a new session as the driver has already started to dispose.");
                     }
                     _inUseConnections.Add(connection.Id, connection);
                 }
@@ -126,12 +134,17 @@ namespace Neo4j.Driver.Internal
         {
             TryExecute(() =>
             {
+                if (_disposeCalled)
+                {
+                    // pool already disposed
+                    return;
+                }
                 IPooledConnection connection;
                 lock (_inUseConnections)
                 {
                     if (!_inUseConnections.ContainsKey(id))
                     {
-                        // pool already released
+                        // pool already disposed
                         return;
                     }
 
@@ -161,6 +174,8 @@ namespace Neo4j.Driver.Internal
             });
         }
 
+        // For concurrent calling: you are free to get something from inUseConn or availConn when we dispose.
+        // However it is forbiden to put something back to the conn queues after we've already started disposing.
         protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
@@ -186,7 +201,7 @@ namespace Neo4j.Driver.Internal
                     while (_availableConnections.Count > 0)
                     {
                         var connection = _availableConnections.Dequeue();
-                        Logger?.Info($"Disposing Available Connection {connection.Id}");
+                        Logger?.Debug($"Disposing Available Connection {connection.Id}");
                         connection.Close();
                     }
                 }
