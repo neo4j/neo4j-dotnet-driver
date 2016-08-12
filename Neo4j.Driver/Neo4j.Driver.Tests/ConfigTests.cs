@@ -15,11 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
@@ -43,6 +38,16 @@ namespace Neo4j.Driver.Tests
 
         public class ConfigBuilderTests
         {
+            [Fact]
+            public void ShouldUseDefaultValueIfNotSpecified()
+            {
+                var config = new Config {EncryptionLevel = EncryptionLevel.Encrypted};
+
+                config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
+                config.Logger.Should().BeOfType<DebugLogger>();
+                config.MaxIdleSessionPoolSize.Should().Be(10);
+            }
+
             [Fact]
             public void WithLoggingShouldModifyTheSingleValue()
             {
