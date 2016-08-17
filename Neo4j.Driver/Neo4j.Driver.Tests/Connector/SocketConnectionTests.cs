@@ -226,5 +226,44 @@ namespace Neo4j.Driver.Tests
                 con.HasUnrecoverableError.Should().BeFalse();
             }
         }
+
+        public class IsHealthyMethod
+        {
+            [Fact]
+            public void ShouldBeFalseWhenConectionIsNotOpen()
+            {
+                var mockClient = new Mock<ISocketClient>();
+                mockClient.Setup(x => x.IsOpen).Returns(false);
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                mockResponseHandler.Setup(x => x.Error).Returns(new ClientException()); // has no unrecoverable error
+
+                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                conn.IsHealthy.Should().BeFalse();
+            }
+
+            [Fact]
+            public void ShouldBeFalseWhenConnectionHasUnrecoverableError()
+            {
+                var mockClient = new Mock<ISocketClient>();
+                mockClient.Setup(x => x.IsOpen).Returns(false);
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException());  // unrecoverable error
+
+                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                conn.IsHealthy.Should().BeFalse();
+            }
+
+            [Fact]
+            public void ShouldReturnTrueWhenIsHealthy()
+            {
+                var mockClient = new Mock<ISocketClient>();
+                mockClient.Setup(x => x.IsOpen).Returns(true);
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                mockResponseHandler.Setup(x => x.Error).Returns(new ClientException());  // has no unrecoverable error
+
+                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                conn.IsHealthy.Should().BeTrue();
+            }
+        }
     }
 }

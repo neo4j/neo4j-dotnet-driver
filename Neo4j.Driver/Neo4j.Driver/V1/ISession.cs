@@ -31,7 +31,7 @@ namespace Neo4j.Driver.V1
     /// "sticky sessions", meaning all requests within one session must always go to the same Neo4j instance.
     ///
     /// Session objects are not thread safe, if you want to run concurrent operations against the database,
-    /// simply create multiple sessions objects.
+    /// simply create multiple session objects.
     /// </summary>
     public interface ISession : IStatementRunner
     {

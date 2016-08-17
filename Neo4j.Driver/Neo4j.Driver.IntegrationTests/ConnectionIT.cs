@@ -177,7 +177,8 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
+                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
             {
                 using (var session = driver.Session())
                 {
@@ -193,7 +194,8 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRunForTx()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
+                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
             {
                 using (var session = driver.Session())
                 {
@@ -208,6 +210,28 @@ namespace Neo4j.Driver.IntegrationTests
                     result.Single()[0].ValueAs<int>().Should().Be(1);
                 }
             }
+        }
+
+        [Fact]
+        public void ShouldNotThrowExceptionWhenDisposeSessionAfterDriver()
+        {
+            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
+                Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Trace}).ToConfig());
+
+            var session = driver.Session();
+
+            using (var tx = session.BeginTransaction())
+            {
+                var ex = Record.Exception(() => tx.Run("Invalid Cypher"));
+                ex.Should().BeOfType<ClientException>();
+                ex.Message.Should().StartWith("Invalid input 'I'");
+            }
+
+            var result = session.Run("RETURN 1");
+            result.Single()[0].ValueAs<int>().Should().Be(1);
+
+            driver.Dispose();
+            session.Dispose();
         }
     }
 }

@@ -22,7 +22,8 @@ namespace Neo4j.Driver.Internal
 {
     internal class Driver : IDriver
     {
-        private SessionPool _sessionPool;
+        private ConnectionPool _connectionPool;
+        private ILogger _logger;
 
         internal Driver(Uri uri, IAuthToken authToken, Config config)
         {
@@ -37,7 +38,8 @@ namespace Neo4j.Driver.Internal
             }
 
             Uri = uri;
-            _sessionPool = new SessionPool(uri, authToken, config?.Logger, config);
+            _logger = config?.Logger;
+            _connectionPool = new ConnectionPool(uri, authToken, _logger, config);
         }
 
         public Uri Uri { get; }
@@ -47,11 +49,12 @@ namespace Neo4j.Driver.Internal
             if (!isDisposing)
                 return;
 
-            if (_sessionPool != null)
+            if (_connectionPool != null)
             {
-                _sessionPool.Dispose();
-                _sessionPool = null;
+                _connectionPool.Dispose();
+                _connectionPool = null;
             }
+            _logger = null;
         }
 
         public void Dispose()
@@ -62,7 +65,7 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session()
         {
-            return _sessionPool.GetSession();
+            return new Session(_connectionPool.Acquire(), _logger);
         }
     }
 }

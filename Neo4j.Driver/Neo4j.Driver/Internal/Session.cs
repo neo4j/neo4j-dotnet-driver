@@ -22,24 +22,18 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Session : StatementRunner, IPooledSession
+    internal class Session : StatementRunner, ISession
     {
         private readonly IConnection _connection;
         private Transaction _transaction;
-        private readonly Action<Guid> _releaseAction;
-        private readonly ILogger _logger;
-        private const string Scheme = "bolt";
 
-        public Session(Uri uri, IAuthToken authToken, Config config, IConnection conn = null, Action<Guid> releaseAction = null )
-            : base(config?.Logger)
+        private readonly ILogger _logger;
+        private bool _isOpen = true;
+
+        public Session(IConnection conn, ILogger logger):base(logger)
         {
-            if (uri != null && uri.Scheme.ToLowerInvariant() != Scheme)
-            {
-                throw new NotSupportedException($"Unsupported protocol: {uri.Scheme}");
-            }
-            _connection = conn ?? new SocketConnection(uri, authToken, config);
-            _releaseAction = releaseAction ?? (x => {});
-            _logger = config?.Logger;
+            _connection = conn;
+            _logger = logger;
         }
 
         protected override void Dispose(bool isDisposing)
@@ -49,27 +43,33 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            if(_transaction!= null && !_transaction.Finished)
+            TryExecute(() =>
             {
-                try
+                if (_isOpen)
                 {
-                    _transaction.Dispose();
+                    // This will not protect the session being disposed concurrently
+                    // a.k.a. Session is not thread-safe!
+                    _isOpen = false;
                 }
-                catch 
+                else
                 {
-                    // Best-effort
+                    throw new InvalidOperationException("Failed to dispose this seesion as it has already been disposed.");
                 }
-            }
+                if (_transaction != null && !_transaction.Finished)
+                {
+                    try
+                    {
+                        _transaction.Dispose();
+                    }
+                    catch
+                    {
+                        // Best-effort
+                    }
+                }
+                _connection.Dispose();
+            });
 
-            _releaseAction(Id);
-            base.Dispose(isDisposing);
-            
-        }
-
-        public new void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            base.Dispose(true);
         }
 
         public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
@@ -100,11 +100,22 @@ namespace Neo4j.Driver.Internal
         {
             EnsureConnectionIsHealthy();
             EnsureNoOpenTransaction();
+            EnsureSessionIsOpen();
+        }
+
+        private void EnsureSessionIsOpen()
+        {
+            if (!_isOpen)
+            {
+                throw new ClientException("Cannot running more statements in the current session as it has already been disposed." +
+                                          "Make sure that you do not have a bad reference to a disposed session " +
+                                          "and retry your statement in another new session.");
+            }
         }
 
         private void EnsureConnectionIsHealthy()
         {
-            if (!IsHealthy)
+            if (!_connection.IsHealthy)
             {
                 throw new ClientException("The current session cannot be reused as the underlying connection with the " +
                                            "server has been closed or is going to be closed due to unrecoverable errors. " +
@@ -123,36 +134,6 @@ namespace Neo4j.Driver.Internal
                 throw new ClientException("Please close the currently open transaction object before running " +
                                            "more statements/transactions in the current session.");
             }
-        }
-
-        public Guid Id { get; } = Guid.NewGuid();
-
-        public bool IsHealthy
-        {
-            get
-            {
-                if (!_connection.IsOpen)
-                {
-                    return false;
-                }
-                if (_connection.HasUnrecoverableError)
-                {
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        public void Reset()
-        {
-            _connection.Reset();
-            _connection.Sync();
-        }
-
-        public void Close()
-        {
-            Dispose(true);
-            _connection.Dispose();
         }
     }
 }

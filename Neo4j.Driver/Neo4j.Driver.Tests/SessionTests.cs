@@ -28,24 +28,14 @@ namespace Neo4j.Driver.Tests
 {
     public class SessionTests
     {
-        public class Constructor
-        {
-            [Fact]
-            public void ShouldThrowExceptionIfProtocolIsNotSupported()
-            {
-                var ex = Record.Exception(() => new Session(new Uri("http://localhost:1234"), null, null));
-                ex.Should().BeOfType<NotSupportedException>();
-                ex.Message.Should().Be("Unsupported protocol: http");
-            }
-        }
         public class RunMethod
         {
             [Fact]
             public void ShouldSyncOnRun()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, null, mockConn.Object);
+                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                var session = new Session(mockConn.Object, null);
                 session.Run("lalalal");
 
                 mockConn.Verify(x => x.Run(It.IsAny<ResultBuilder>(), "lalalal", null), Times.Once);
@@ -60,8 +50,8 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotAllowNewTxWhileOneIsRunning()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, null, mockConn.Object);
+                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                var session = new Session(mockConn.Object, null);
                 session.BeginTransaction();
                 var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
@@ -71,8 +61,8 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeAbleToOpenTxAfterPreviousIsClosed()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, null, mockConn.Object);
+                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
                 tx = session.BeginTransaction();
@@ -82,8 +72,8 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotBeAbleToUseSessionWhileOngoingTransaction()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, null, mockConn.Object);
+                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
 
                 var error = Record.Exception(() => session.Run("lalal"));
@@ -94,8 +84,8 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, null, mockConn.Object);
+                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
 
@@ -107,7 +97,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new Session(null, null, null, mockConn.Object);
+                var session = new Session(mockConn.Object, null);
 
                 var error = Record.Exception(() => session.Run("lalal"));
                 error.Should().BeOfType<ClientException>();
@@ -118,37 +108,32 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new Session(null, null, null, mockConn.Object);
+                var session = new Session(mockConn.Object, null);
 
                 var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
             }
-        }
 
-        public class ResetMethod
-        {
             [Fact]
-            public void ShouldCallResetAndSyncOnConnection()
-            {
-                var mock = new Mock<IConnection>();
-                var session = new Session(null, null, null, mock.Object);
-                session.Reset();
-
-                mock.Verify(r => r.Reset(), Times.Once);
-                mock.Verify(r => r.Sync(), Times.Once);
-            }
-        }
-
-        public class CloseMethod
-        {
-            [Fact]
-            public void ShouldDisposeConnOnClose()
+            public void ShouldNotAllowMoreStatementsInSessionWhileConnectionHasUnrecoverableError()
             {
                 var mockConn = new Mock<IConnection>();
-                var session = new Session(null, null, null, mockConn.Object);
-                session.Close();
+                mockConn.Setup(x => x.HasUnrecoverableError).Returns(true);
+                var session = new Session(mockConn.Object, null);
 
-                mockConn.Verify(x => x.Dispose(), Times.Once);
+                var error = Record.Exception(() => session.Run("lalal"));
+                error.Should().BeOfType<ClientException>();
+            }
+
+            [Fact]
+            public void ShouldNotAllowMoreTransactionsInSessionWhileConnectionHasUnrecoverableError()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.HasUnrecoverableError).Returns(true);
+                var session = new Session(mockConn.Object, null);
+
+                var error = Record.Exception(() => session.BeginTransaction());
+                error.Should().BeOfType<ClientException>();
             }
         }
 
@@ -158,48 +143,40 @@ namespace Neo4j.Driver.Tests
             public void ShouldDisposeTxOnDispose()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(null, null, null, mockConn.Object);
+                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
                 session.Dispose();
 
                 mockConn.Verify(x => x.Run(null, "ROLLBACK", null), Times.Once);
             }
-        }
 
-        public class IsHealthyMethod
-        {
             [Fact]
-            public void ShouldBeFalseWhenConectionIsNotOpen()
+            public void ShouldDisposeConnectinOnDispose()
             {
-                var mock = new Mock<IConnection>();
-                mock.Setup(x => x.IsOpen).Returns(false);
-                mock.Setup(x => x.HasUnrecoverableError).Returns(false);
+                var mockConn = new Mock<IConnection>();
+                var session = new Session(mockConn.Object, null);
+                session.Dispose();
 
-                var session = new Session(null, null, null, mock.Object);
-                session.IsHealthy.Should().BeFalse();
+                mockConn.Verify(x => x.Dispose(), Times.Once);
             }
 
             [Fact]
-            public void ShouldBeFalseWhenConnectionHasUnrecoverableError()
+            public void ShouldThrowExceptionWhenDisposingSessionMoreThanOnce()
             {
-                var mock = new Mock<IConnection>();
-                mock.Setup(x => x.IsOpen).Returns(true);
-                mock.Setup(x => x.HasUnrecoverableError).Returns(true);
+                // Given
+                var mockConn = new Mock<IConnection>();
+                var session = new Session(mockConn.Object, null);
 
-                var session = new Session(null, null, null, mock.Object);
-                session.IsHealthy.Should().BeFalse();
-            }
+                // When
+                session.Dispose();
+                var exception = Record.Exception(()=>session.Dispose());
 
-            [Fact]
-            public void ShouldReturnTrueWhenIsHealthy()
-            {
-                var mock = new Mock<IConnection>();
-                mock.Setup(x => x.IsOpen).Returns(true);
-                mock.Setup(x => x.HasUnrecoverableError).Returns(false);
+                // Then
+                exception.Should().BeOfType<InvalidOperationException>();
+                exception.Message.Should().Be("Failed to dispose this seesion as it has already been disposed.");
 
-                var session = new Session(null, null, null, mock.Object);
-                session.IsHealthy.Should().BeTrue();
+                mockConn.Verify(x => x.Dispose(), Times.Once);
             }
         }
     }

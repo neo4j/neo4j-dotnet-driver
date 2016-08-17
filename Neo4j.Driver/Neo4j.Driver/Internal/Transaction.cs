@@ -88,14 +88,8 @@ namespace Neo4j.Driver.Internal
             finally
             {
                 Finished = true;
-                base.Dispose(isDisposing);
+                base.Dispose(true);
             }
-        }
-
-        public new void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         public override IStatementResult Run(string statement, IDictionary<string, object> parameters=null)

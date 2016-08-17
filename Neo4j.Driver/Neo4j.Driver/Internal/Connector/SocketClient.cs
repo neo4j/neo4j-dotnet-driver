@@ -27,24 +27,29 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketClient :  ISocketClient, IDisposable
     {
-        private readonly Config _config;
-        private readonly ITcpSocketClient _tcpSocketClient;
-        private readonly Uri _url;
-        private IReader _reader;
-        private IWriter _writer;
-
         private static class ProtocolVersion
         {
             public const int NoVersion = 0;
             public const int Version1 = 1;
             public const int Http = 1213486160;
         }
+        private const string Scheme = "bolt";
+
+        private readonly Config _config;
+        private readonly ITcpSocketClient _tcpSocketClient;
+        private readonly Uri _uri;
+        private IReader _reader;
+        private IWriter _writer;
 
         public static readonly BigEndianTargetBitConverter BitConverter = new BigEndianTargetBitConverter();
 
-        public SocketClient(Uri url, Config config, ITcpSocketClient socketClient = null)
+        public SocketClient(Uri uri, Config config, ITcpSocketClient socketClient = null)
         {
-            _url = url;
+            if (uri != null && uri.Scheme.ToLowerInvariant() != Scheme)
+            {
+                throw new NotSupportedException($"Unsupported protocol: {uri.Scheme}");
+            }
+            _uri = uri;
             _config = config;
             _tcpSocketClient = socketClient ?? new TcpSocketClient();
         }
@@ -57,9 +62,9 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task Start()
         {
-            await _tcpSocketClient.ConnectAsync(_url.Host, _url.Port, _config.EncryptionLevel == EncryptionLevel.Encrypted).ConfigureAwait(false);
+            await _tcpSocketClient.ConnectAsync(_uri.Host, _uri.Port, _config.EncryptionLevel == EncryptionLevel.Encrypted).ConfigureAwait(false);
             IsOpen = true;
-            _config.Logger?.Debug($"~~ [CONNECT] {_url}");
+            _config.Logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var version = await DoHandshake().ConfigureAwait(false);
 

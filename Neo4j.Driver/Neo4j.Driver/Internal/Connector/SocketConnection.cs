@@ -45,8 +45,8 @@ namespace Neo4j.Driver.Internal.Connector
             Sync();
         }
 
-        public SocketConnection(Uri url, IAuthToken authToken, Config config)
-            : this(new SocketClient(url, config), authToken, config?.Logger)
+        public SocketConnection(Uri uri, IAuthToken authToken, Config config)
+            : this(new SocketClient(uri, config), authToken, config?.Logger)
         {
         }
 
@@ -93,9 +93,6 @@ namespace Neo4j.Driver.Internal.Connector
             SendAndReceive(1); // blocking to receive unitl 1 message unhandled left (PULL_ALL)
         }
 
-        public bool HasUnrecoverableError
-            => _responseHandler.Error is DatabaseException;
-
         public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
         {
             var runMessage = new RunMessage(statement, paramters);
@@ -119,7 +116,13 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
+        public bool HasUnrecoverableError => _responseHandler.Error is DatabaseException;
+        public bool IsHealthy => IsOpen && !HasUnrecoverableError;
 
+        public void Close()
+        {
+            Dispose();
+        }
 
         protected virtual void Dispose(bool isDisposing)
         {

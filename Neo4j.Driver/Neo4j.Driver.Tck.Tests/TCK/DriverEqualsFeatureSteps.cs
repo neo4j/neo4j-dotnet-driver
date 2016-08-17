@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [Given(@"`(.*)` is single value result of: (.*)")]
         public void GivenValue1IsSingleValueResultOf(string key, string statement)
         {
-            using (var session = TckHooks.CreateSession())
+            using (var session = TckHooks.CreateSelfManagedSession())
             {
                 var statementResult = session.Run(statement);
                 var value = statementResult.Single()[0];
