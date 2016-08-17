@@ -39,17 +39,7 @@ namespace Neo4j.Driver.V1
         public const int InfiniteMaxIdleSessionPoolSize = -1;
         static Config()
         {
-            DefaultConfig = CreateNewConfig();
-        }
-
-        private static Config CreateNewConfig()
-        {
-            return new Config
-            {
-                EncryptionLevel = EncryptionLevel.None,
-                Logger = new DebugLogger { Level = LogLevel.Info },
-                MaxIdleSessionPoolSize = 10
-            };
+            DefaultConfig = new Config();
         }
 
         /// <summary>
@@ -68,17 +58,17 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Create an instance of <see cref="IConfigBuilder"/> to build a <see cref="Config"/>.
         /// </summary>
-        public static IConfigBuilder Builder => new ConfigBuilder(CreateNewConfig());
+        public static IConfigBuilder Builder => new ConfigBuilder(new Config());
 
         /// <summary>
         /// Gets or sets the use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
-        public EncryptionLevel EncryptionLevel { get; set; }
+        public EncryptionLevel EncryptionLevel { get; set; } = EncryptionLevel.None;
 
         /// <summary>
         /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
         /// </summary>
-        public ILogger Logger { get; set; }
+        public ILogger Logger { get; set; } = new DebugLogger {Level = LogLevel.Info};
 
         /// <summary>
         /// Gets or sets the max idle session pool size.
@@ -87,7 +77,7 @@ namespace Neo4j.Driver.V1
         /// The max idle session pool size represents the maximum number of sessions buffered by the driver. 
         /// A buffered <see cref="ISession"/> is a session that has already been connected to the database instance and doesn't need to re-initialize.
         /// </remarks>
-        public int MaxIdleSessionPoolSize { get; set; }
+        public int MaxIdleSessionPoolSize { get; set; } = 10;
 
         private class ConfigBuilder : IConfigBuilder
         {
