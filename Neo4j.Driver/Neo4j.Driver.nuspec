@@ -15,39 +15,19 @@
     <iconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</iconUrl>
     <tags>Cypher NoSql Graph Bolt Neo4j</tags>
     <dependencies>
-      <group targetFramework="net45">
-        <dependency id="rda.SocketsForPCL" version="1.2.2" />
-      </group>
-      <group targetFramework="portable-win8+net45+wp8">
-        <dependency id="rda.SocketsForPCL" version="1.2.2" />
-      </group>
       <group targetFramework="dotnet">
-        <dependency id="Microsoft.CSharp" version="4.0.0" />
-        <dependency id="System.Dynamic.Runtime" version="4.0.0" />
-        <dependency id="rda.SocketsForPCL" version="1.2.2" />
-        <dependency id="System.Collections" version="4.0.0" />
-        <dependency id="System.Diagnostics.Debug" version="4.0.0" />
-        <dependency id="System.Globalization" version="4.0.0" />
-        <dependency id="System.IO" version="4.0.0" />
-        <dependency id="System.Linq" version="4.0.0" />
-        <dependency id="System.Reflection" version="4.0.0" />
-        <dependency id="System.Reflection.Extensions" version="4.0.0" />
-        <dependency id="System.Resources.ResourceManager" version="4.0.0" />
-        <dependency id="System.Runtime" version="4.0.0" />
-        <dependency id="System.Runtime.Extensions" version="4.0.0" />
-        <dependency id="System.Runtime.Serialization.Primitives" version="4.0.0" />
-        <dependency id="System.Text.Encoding" version="4.0.0" />
-        <dependency id="System.Threading" version="4.0.0" />
-        <dependency id="System.Threading.Tasks" version="4.0.0" />
+        <dependency id="Microsoft.NETCore.Portable.Compatibility" version="1.0.1" />
+        <dependency id="NETStandard.Library" version="1.6.0" />
+        <dependency id="System.Net.Security" version="4.0.0" />
+        <dependency id="System.Net.Sockets" version="4.1.0" />
+        <dependency id="System.Runtime.Serialization.Primitives" version="4.1.1" />
+        
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="Neo4j.Driver\bin\Release\Neo4j.Driver.dll" target="lib\dotnet" />
-    <file src="Neo4j.Driver\bin\Release\Neo4j.Driver.pdb" target="lib\dotnet" />
-    <file src="Neo4j.Driver\bin\Release\Neo4j.Driver.xml" target="lib\dotnet" />
-    <file src="Neo4j.Driver\bin\Release\Neo4j.Driver.dll" target="lib\portable-win8+net45+wp8" />
-    <file src="Neo4j.Driver\bin\Release\Neo4j.Driver.pdb" target="lib\portable-win8+net45+wp8" />
-    <file src="Neo4j.Driver\bin\Release\Neo4j.Driver.xml" target="lib\portable-win8+net45+wp8" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.dll" target="lib\dotnet" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.pdb" target="lib\dotnet" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.xml" target="lib\dotnet" />
   </files>
 </package>
