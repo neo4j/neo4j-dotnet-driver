@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
@@ -50,6 +52,72 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var result = session.Run("RETURN 2 as Number" );
+                    result.Keys.Should().Contain("Number");
+                    result.Keys.Count.Should().Be(1);
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldProvideRealmWithBasicAuthToken()
+        {
+            var oldAuthToken = _authToken.AsDictionary();
+            var newAuthToken = AuthTokens.Basic(oldAuthToken["principal"].ValueAs<string>(), oldAuthToken["credentials"].ValueAs<string>(), "native");
+
+            using (var driver = GraphDatabase.Driver(
+                _serverEndPoint,
+                newAuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("RETURN 2 as Number");
+                    result.Keys.Should().Contain("Number");
+                    result.Keys.Count.Should().Be(1);
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldCreateCustomAuthToken()
+        {
+            var oldAuthToken = _authToken.AsDictionary();
+            var newAuthToken = AuthTokens.Custom(
+                oldAuthToken["principal"].ValueAs<string>(),
+                oldAuthToken["credentials"].ValueAs<string>(),
+                "native",
+                "basic");
+
+            using (var driver = GraphDatabase.Driver(
+                _serverEndPoint,
+                newAuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("RETURN 2 as Number");
+                    result.Keys.Should().Contain("Number");
+                    result.Keys.Count.Should().Be(1);
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldCreateCustomAuthTokenWithAdditionalParameters()
+        {
+            var oldAuthToken = _authToken.AsDictionary();
+            var newAuthToken = AuthTokens.Custom(
+                oldAuthToken["principal"].ValueAs<string>(),
+                oldAuthToken["credentials"].ValueAs<string>(),
+                "native",
+                "basic",
+                new Dictionary<string, object> {{"secret", 42}});
+
+            using (var driver = GraphDatabase.Driver(
+                _serverEndPoint,
+                newAuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("RETURN 2 as Number");
                     result.Keys.Should().Contain("Number");
                     result.Keys.Count.Should().Be(1);
                 }
