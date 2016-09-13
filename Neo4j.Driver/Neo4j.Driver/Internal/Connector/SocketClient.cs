@@ -20,8 +20,6 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
-using Sockets.Plugin;
-using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -46,7 +44,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _url = url;
             _config = config;
-            _tcpSocketClient = socketClient ?? new TcpSocketClient();
+            _tcpSocketClient = socketClient ?? new TcpSocketClient(_config.Logger);
         }
 
         public void Dispose()
