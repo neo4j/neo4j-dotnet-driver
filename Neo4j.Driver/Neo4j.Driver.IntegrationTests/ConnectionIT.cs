@@ -176,7 +176,7 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Fact]
-        public void ResultsHaveNotBeenReadGetBufferedAfterSessionClosed()
+        public void ResultsHaveReceivedButNotBeenReadGetBufferedAfterSessionClosed()
         {
             using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             {
@@ -184,12 +184,15 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     result = session.Run("unwind range(1,3) as n RETURN n");
+                    session.Run("RETURN 1").Consume();// force the first one to finish and result received on client
+                    // Note: result of "RETURN 1" might not get buffered (without consume)
+                    // as server might receive run and reset at the same time and decides to cancel run
                 }
                 var resultAll = result.ToList();
 
                 // Records that has not been read inside session still saved
                 resultAll.Count.Should().Be(3);
-                resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder();
+                resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1,2,3);
 
                 // Summary is still saved
                 result.Summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
@@ -365,6 +368,58 @@ namespace Neo4j.Driver.IntegrationTests
             else
             {
                 session.Reset();
+            }
+        }
+
+        [Fact]
+        public void ShouldAllowMoreStatementAfterSessionReset()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            {
+                using (var session = driver.Session())
+                {
+                    session.Run("RETURN 1").Consume();
+                    session.Reset();
+                    session.Run("RETURN 2").Consume();
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldAllowMoreTxAfterSessionReset()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var tx = session.BeginTransaction())
+                    {
+                        tx.Run("Return 1");
+                        tx.Success();
+                    }
+                    session.Reset();
+                    using (var tx = session.BeginTransaction())
+                    {
+                        tx.Run("RETURN 2");
+                        tx.Success();
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var session = driver.Session())
+            {
+                using (var tx = session.BeginTransaction())
+                {
+                    session.Reset();
+                    var exception = Record.Exception(()=>tx.Run("Return 1"));
+                    exception.Should().BeOfType<ClientException>();
+                    exception.Message.Should().StartWith("Cannot run more statements in this transaction");
+                }
             }
         }
     }

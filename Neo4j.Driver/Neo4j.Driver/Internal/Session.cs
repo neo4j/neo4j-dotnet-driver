@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal
     {
         private readonly IConnection _connection;
         private Transaction _transaction;
+        private readonly Action _transactionCleanupAction;
 
         private readonly ILogger _logger;
         private bool _isOpen = true;
@@ -33,6 +34,7 @@ namespace Neo4j.Driver.Internal
         public Session(IConnection conn, ILogger logger):base(logger)
         {
             _connection = conn;
+            _transactionCleanupAction = () => { _transaction = null; };
             _logger = logger;
         }
 
@@ -55,7 +57,7 @@ namespace Neo4j.Driver.Internal
                 {
                     throw new InvalidOperationException("Failed to dispose this seesion as it has already been disposed.");
                 }
-                if (_transaction != null && !_transaction.Finished)
+                if (_transaction != null)
                 {
                     try
                     {
@@ -91,7 +93,7 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
-                _transaction = new Transaction(_connection, _logger);
+                _transaction = new Transaction(_connection, _transactionCleanupAction, _logger);
                 return _transaction;
             });
         }
@@ -125,11 +127,7 @@ namespace Neo4j.Driver.Internal
 
         private void EnsureNoOpenTransaction()
         {
-            if (_transaction == null)
-            {
-                return;
-            }
-            if (!_transaction.Finished)
+            if (_transaction != null)
             {
                 throw new ClientException("Please close the currently open transaction object before running " +
                                            "more statements/transactions in the current session.");
@@ -156,6 +154,10 @@ namespace Neo4j.Driver.Internal
 
         public void Reset()
         {
+            EnsureSessionIsOpen();
+            EnsureConnectionIsHealthy();
+
+            _transaction?.MarkToClose();
             _connection.Reset();
             _connection.Send();
         }

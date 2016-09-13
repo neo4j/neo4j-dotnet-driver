@@ -26,12 +26,14 @@ namespace Neo4j.Driver.Internal
     {
         private State _state = State.Active;
         private readonly IConnection _connection;
-        public bool Finished { get; private set; }
+        private readonly Action _cleanupAction;
 
-        public Transaction(IConnection connection, ILogger logger=null) : base(logger)
+        private readonly object _syncLock = new object();
+
+        public Transaction(IConnection connection, Action cleanupAction=null, ILogger logger=null) : base(logger)
         {
             _connection = connection;
-            Finished = false;
+            _cleanupAction = cleanupAction ?? (() => { });
 
             _connection.Run(null, "BEGIN");
             _connection.DiscardAll();
@@ -82,12 +84,13 @@ namespace Neo4j.Driver.Internal
                     // do this, we could just clear the queue. Future optimization.
                     _connection.Run(null, "ROLLBACK");
                     _connection.DiscardAll();
+                    _connection.Sync();
                     _state = State.RolledBack;
                 }
             }
             finally
             {
-                Finished = true;
+                _cleanupAction.Invoke();;
                 base.Dispose(true);
             }
         }
@@ -96,27 +99,29 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureNotFailed();
-
-                try
+                lock (_syncLock)
                 {
-                    var resultBuilder = new ResultBuilder(statement, parameters,()=>_connection.ReceiveOne());
-                    _connection.Run(resultBuilder, statement, parameters);
-                    _connection.PullAll(resultBuilder);
-                    _connection.Send();
-                    return resultBuilder.PreBuild();
-                }
-                catch (Neo4jException)
-                {
-                    _state = State.Failed;
-                    throw;
+                    EnsureNotFailed();
+                    try
+                    {
+                        var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne());
+                        _connection.Run(resultBuilder, statement, parameters);
+                        _connection.PullAll(resultBuilder);
+                        _connection.Send();
+                        return resultBuilder.PreBuild();
+                    }
+                    catch (Neo4jException)
+                    {
+                        _state = State.Failed;
+                        throw;
+                    }
                 }
             });
         }
 
         private void EnsureNotFailed()
         {
-            if (_state == State.Failed)
+            if (_state == State.Failed || _state == State.MarkedFailed || _state == State.RolledBack)
             {
                 throw new ClientException(
                     "Cannot run more statements in this transaction, because previous statements in the " +
@@ -139,6 +144,14 @@ namespace Neo4j.Driver.Internal
             if (_state == State.Active || _state == State.MarkedSuccess)
             {
                 _state = State.MarkedFailed;
+            }
+        }
+
+        public void MarkToClose()
+        {
+            lock (_syncLock)
+            {
+                _state = State.Failed;
             }
         }
     }

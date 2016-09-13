@@ -32,6 +32,8 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
+        private readonly object _syncLock = new object();
+
         public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
             IMessageResponseHandler messageResponseHandler = null)
         {
@@ -59,14 +61,17 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Send()
         {
-            if (_messages.Count == 0)
+            lock (_syncLock)
             {
-                // nothing to send
-                return;
+                if (_messages.Count == 0)
+                {
+                    // nothing to send
+                    return;
+                }
+                // blocking to send
+                _client.Send(_messages);
+                _messages.Clear();
             }
-            // blocking to send
-            _client.Send(_messages);
-            _messages.Clear();
         }
 
         private void Receive()
@@ -157,8 +162,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         private void Enqueue(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
-            _messages.Enqueue(requestMessage);
-            _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
+            lock (_syncLock)
+            {
+                _messages.Enqueue(requestMessage);
+                _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
+            }
         }
     }
 }

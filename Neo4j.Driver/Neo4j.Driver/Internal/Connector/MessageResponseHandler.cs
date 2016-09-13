@@ -30,8 +30,9 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Queue<IRequestMessage> _unhandledMessages = new Queue<IRequestMessage>();
 
         public IResultBuilder CurrentResultBuilder { get; private set; }
-
         public int UnhandledMessageSize => _unhandledMessages.Count;
+
+        private readonly object _syncLock = new object();
 
         public Neo4jException Error { get; set; }
         public bool HasError => Error != null;
@@ -103,14 +104,20 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void EnqueueMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
         {
-            _unhandledMessages.Enqueue(requestMessage);
-            _resultBuilders.Enqueue(resultBuilder);
+            lock (_syncLock)
+            {
+                _unhandledMessages.Enqueue(requestMessage);
+                _resultBuilders.Enqueue(resultBuilder);
+            }
         }
 
         private void DequeueMessage()
         {
-            _unhandledMessages.Dequeue();
-            CurrentResultBuilder = _resultBuilders.Dequeue();
+            lock (_syncLock)
+            {
+                _unhandledMessages.Dequeue();
+                CurrentResultBuilder = _resultBuilders.Dequeue();
+            }
         }
     }
 }
