@@ -34,21 +34,21 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void NotDequeueFromSentMessagesOrSetsCurrentBuilder()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
-                mrh.CurrentResultBuilder.Should().BeNull();
+                mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleRecordMessage(new object[] { "x" });
                 mrh.SentMessages.Should().HaveCount(1);
-                mrh.CurrentResultBuilder.Should().BeNull();
+                mrh.CurrentResponseCollector.Should().BeNull();
             }
 
             [Fact]
             public void CallsRecordOnTheCurrentResultBuilder()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
 
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void LogsTheMessageToDebug()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
@@ -80,21 +80,21 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void DequeuesFromSentMessagesAndSetsCurrentBuilder()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
-                mrh.CurrentResultBuilder.Should().BeNull();
+                mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
                 mrh.SentMessages.Should().HaveCount(0);
-                mrh.CurrentResultBuilder.Should().NotBeNull();
+                mrh.CurrentResponseCollector.Should().NotBeNull();
             }
 
             [Fact]
             public void ShouldCollectFieldsIfMessageContainsFields()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
@@ -103,9 +103,20 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public void ShouldCallDoneSuccess()
+            {
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
+                var mrh = new MessageResponseHandler();
+
+                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
+                mockResultBuilder.Verify(x => x.DoneSuccess(), Times.Once);
+            }
+
+            [Fact]
             public void ShouldTryToCollectSummaryIfMessageDoesNotContainFields()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
@@ -116,7 +127,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void LogsTheMessageToDebug()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
@@ -149,27 +160,27 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void DequeuesFromSentMessagesAndSetsCurrentBuilder()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
-                mrh.CurrentResultBuilder.Should().BeNull();
+                mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleIgnoredMessage();
                 mrh.SentMessages.Should().HaveCount(0);
-                mrh.CurrentResultBuilder.Should().NotBeNull();
+                mrh.CurrentResponseCollector.Should().NotBeNull();
             }
 
             [Fact]
-            public void ShouldCallInvalidateResultIfCurrentResultBuilderNotNull()
+            public void ShouldCallDoneIgnoredIfCurrentResultBuilderNotNull()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
 
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.HandleIgnoredMessage();
 
-                mockResultBuilder.Verify(x => x.InvalidateResult(), Times.Once);
+                mockResultBuilder.Verify(x => x.DoneIgnored(), Times.Once);
             }
 
             [Fact]
@@ -183,7 +194,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void LogsTheMessageToDebug()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
@@ -199,7 +210,7 @@ namespace Neo4j.Driver.Tests
             [Theory, MemberData("ClientErrors")]
             public void ShouldCreateClientExceptionWhenClassificationContainsClientError(string code)
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
 
@@ -211,7 +222,7 @@ namespace Neo4j.Driver.Tests
             [Theory, MemberData("TransientErrors")]
             public void ShouldCreateTransientExceptionWhenClassificationContainsTransientError(string code)
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
 
@@ -223,7 +234,7 @@ namespace Neo4j.Driver.Tests
             [Theory, MemberData("DatabaseErrors")]
             public void ShouldCreateDatabaseExceptionWhenClassificationContainsDatabaseError(string code)
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
 
@@ -235,27 +246,27 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void DequeuesFromSentMessagesAndSetsCurrentBuilder()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
-                mrh.CurrentResultBuilder.Should().BeNull();
+                mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleFailureMessage("code.error", "message");
                 mrh.SentMessages.Should().HaveCount(0);
-                mrh.CurrentResultBuilder.Should().NotBeNull();
+                mrh.CurrentResponseCollector.Should().NotBeNull();
             }
 
             [Fact]
-            public void ShouldCallInvalidateResultIfCurrentResultBuilderNotNull()
+            public void ShouldCallDoneFailureIfCurrentResultBuilderNotNull()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
 
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.HandleFailureMessage("code.error", "message");
 
-                mockResultBuilder.Verify(x => x.InvalidateResult(), Times.Once);
+                mockResultBuilder.Verify(x => x.DoneFailure(), Times.Once);
             }
 
             [Fact]
@@ -269,7 +280,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void LogsTheMessageToDebug()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
@@ -360,17 +371,17 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldBufferAnyRecordWhenResetIsEnqueue()
             {
-                var mockResultBuilder = new Mock<IResultBuilder>();
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
 
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new RunMessage("run something"), mockResultBuilder.Object);
                 mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
                 mrh.HandleRecordMessage(new object[] { "x" });
-                mrh.CurrentResultBuilder.Should().NotBeNull();
+                mrh.CurrentResponseCollector.Should().NotBeNull();
 
                 mrh.EnqueueMessage(new ResetMessage());
-                mrh.CurrentResultBuilder.Should().NotBeNull();
+                mrh.CurrentResponseCollector.Should().NotBeNull();
 
                 mrh.HandleRecordMessage(new object[] { "x" });
 

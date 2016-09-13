@@ -67,7 +67,7 @@
     <Compile Include="Internal\Messaging\FailureMessage.cs" />
     <Compile Include="Internal\Entity.cs" />
     <Compile Include="Internal\Result\IRecordSet.cs" />
-    <Compile Include="Internal\Result\IResultBuilder.cs" />
+    <Compile Include="Internal\Result\IMessageResponseCollector.cs" />
     <Compile Include="Internal\ConnectionPool.cs" />
     <Compile Include="Internal\StatementRunner.cs" />
     <Compile Include="Internal\Transaction.cs" />

@@ -32,6 +32,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
+        private volatile bool _interrupted;
         private readonly object _syncLock = new object();
 
         public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
@@ -93,13 +94,13 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
+        public void Run(IMessageResponseCollector resultBuilder, string statement, IDictionary<string, object> paramters=null)
         {
             var runMessage = new RunMessage(statement, paramters);
             Enqueue(runMessage, resultBuilder);
         }
 
-        public void PullAll(IResultBuilder resultBuilder)
+        public void PullAll(IMessageResponseCollector resultBuilder)
         {
             Enqueue(new PullAllMessage(), resultBuilder);
         }
@@ -112,6 +113,16 @@ namespace Neo4j.Driver.Internal.Connector
         public void Reset()
         {
             Enqueue(new ResetMessage());
+        }
+
+        public void ResetAsync()
+        {
+            if (!_interrupted)
+            {
+                _interrupted = true;
+                Enqueue(new ResetMessage(), new ResetCollector(() => { _interrupted = false; }));
+                Send();
+            }
         }
 
         public bool IsOpen => _client.IsOpen;
@@ -143,7 +154,10 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 if (IsRecoverableError(_responseHandler.Error))
                 {
-                    Enqueue(new AckFailureMessage());
+                    if (!_interrupted)
+                    {
+                        Enqueue(new AckFailureMessage());
+                    }
                 }
                 else
                 {
@@ -160,7 +174,7 @@ namespace Neo4j.Driver.Internal.Connector
             return error is ClientException || error is TransientException;
         }
 
-        private void Enqueue(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null)
         {
             lock (_syncLock)
             {

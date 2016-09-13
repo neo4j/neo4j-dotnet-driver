@@ -965,7 +965,7 @@ namespace Neo4j.Driver.Tests
                 {
                     if (i++ >= 3)
                     {
-                        builder.InvalidateResult();
+                        builder.DoneFailure();
                     }
                     else
                     {

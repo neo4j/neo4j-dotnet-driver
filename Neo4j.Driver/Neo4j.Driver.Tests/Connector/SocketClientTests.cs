@@ -263,9 +263,9 @@ namespace Neo4j.Driver.Tests
                     _messageHandler.HandleRecordMessage(fields);
                 }
 
-                public void EnqueueMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+                public void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null)
                 {
-                    _messageHandler.EnqueueMessage(requestMessage, resultBuilder);
+                    _messageHandler.EnqueueMessage(requestMessage, responseCollector);
                 }
 
                 public void Clear()
@@ -274,7 +274,7 @@ namespace Neo4j.Driver.Tests
                 }
 
                 public int UnhandledMessageSize => _messageHandler.UnhandledMessageSize;
-                public IResultBuilder CurrentResultBuilder => _messageHandler.CurrentResultBuilder;
+                public IMessageResponseCollector CurrentResponseCollector => _messageHandler.CurrentResponseCollector;
 
                 public bool HasError => _messageHandler.HasError;
 

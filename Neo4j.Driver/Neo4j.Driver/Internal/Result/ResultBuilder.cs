@@ -22,7 +22,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultBuilder : IResultBuilder
+    internal class ResultBuilder : IMessageResponseCollector
     {
         private readonly List<string> _keys = new List<string>();
         private readonly SummaryBuilder _summaryBuilder;
@@ -74,11 +74,6 @@ namespace Neo4j.Driver.Internal.Result
             _receiveOneFun = receiveOneFunc;
         }
 
-        public void InvalidateResult()
-        {
-            _hasMoreRecords = false;
-        }
-
         public void CollectRecord(object[] fields)
         {
             var record = new Record(_keys, fields);
@@ -107,6 +102,26 @@ namespace Neo4j.Driver.Internal.Result
             CollectPlan(meta, "plan");
             CollectProfile(meta, "profile");
             CollectNotifications(meta, "notifications");
+        }
+
+        public void DoneSuccess()
+        {
+            // do nothing
+        }
+
+        public void DoneFailure()
+        {
+            InvalidateResult();// an error received, so the result is broken
+        }
+
+        public void DoneIgnored()
+        {
+            InvalidateResult();// the result is ignored
+        }
+
+        private void InvalidateResult()
+        {
+            _hasMoreRecords = false;
         }
 
         private void CollectKeys(IDictionary<string, object> meta, string name)

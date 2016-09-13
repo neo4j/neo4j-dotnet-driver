@@ -53,12 +53,12 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.ReceiveOne();
         }
 
-        public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters = null)
+        public void Run(IMessageResponseCollector resultBuilder, string statement, IDictionary<string, object> parameters = null)
         {
             _connection.Run(resultBuilder, statement, parameters);
         }
 
-        public void PullAll(IResultBuilder resultBuilder)
+        public void PullAll(IMessageResponseCollector resultBuilder)
         {
             _connection.PullAll(resultBuilder);
         }
@@ -71,6 +71,11 @@ namespace Neo4j.Driver.Internal.Connector
         public void Reset()
         {
             _connection.Reset();
+        }
+
+        public void ResetAsync()
+        {
+            _connection.ResetAsync();
         }
 
         public bool IsOpen => _connection.IsOpen;

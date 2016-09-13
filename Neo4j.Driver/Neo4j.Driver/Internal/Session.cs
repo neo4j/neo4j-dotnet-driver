@@ -158,8 +158,7 @@ namespace Neo4j.Driver.Internal
             EnsureConnectionIsHealthy();
 
             _transaction?.MarkToClose();
-            _connection.Reset();
-            _connection.Send();
+            _connection.ResetAsync();
         }
 
         public void Close()

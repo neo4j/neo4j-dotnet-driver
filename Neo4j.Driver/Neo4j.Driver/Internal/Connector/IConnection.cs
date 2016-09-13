@@ -30,13 +30,16 @@ namespace Neo4j.Driver.Internal.Connector
         void ReceiveOne();
 
         // Enqueue a run message
-        void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters=null);
+        void Run(IMessageResponseCollector resultBuilder, string statement, IDictionary<string, object> parameters=null);
         // Enqueue a pull_all message
-        void PullAll(IResultBuilder resultBuilder);
+        void PullAll(IMessageResponseCollector resultBuilder);
         // Enqueue a discard_all message
         void DiscardAll();
         // Enqueue a reset message
         void Reset();
+
+        //Asynchronously sending reset to the socket output channel. Enqueue reset + send all
+        void ResetAsync();
 
         /// <summary>
         /// Return true if the underlying socket connection is till open, otherwise false.

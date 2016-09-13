@@ -26,10 +26,10 @@ namespace Neo4j.Driver.Internal.Connector
     internal class MessageResponseHandler : IMessageResponseHandler
     {
         private readonly ILogger _logger;
-        private readonly Queue<IResultBuilder> _resultBuilders = new Queue<IResultBuilder>();
+        private readonly Queue<IMessageResponseCollector> _resultBuilders = new Queue<IMessageResponseCollector>();
         private readonly Queue<IRequestMessage> _unhandledMessages = new Queue<IRequestMessage>();
 
-        public IResultBuilder CurrentResultBuilder { get; private set; }
+        public IMessageResponseCollector CurrentResponseCollector { get; private set; }
         public int UnhandledMessageSize => _unhandledMessages.Count;
 
         private readonly object _syncLock = new object();
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.Connector
         public bool HasProtocolViolationError
             => HasError && Error.Code.ToLowerInvariant().Contains("clienterror.request");
 
-        internal Queue<IResultBuilder> ResultBuilders => new Queue<IResultBuilder>(_resultBuilders);
+        internal Queue<IMessageResponseCollector> ResultBuilders => new Queue<IMessageResponseCollector>(_resultBuilders);
         internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_unhandledMessages);
 
         public MessageResponseHandler()
@@ -57,20 +57,21 @@ namespace Neo4j.Driver.Internal.Connector
             if (meta.ContainsKey("fields"))
             {
                 // first success
-                CurrentResultBuilder?.CollectFields(meta);
+                CurrentResponseCollector?.CollectFields(meta);
             }
             else
             {
                 // second success
                 // before summary method is called
-                CurrentResultBuilder?.CollectSummary(meta);
+                CurrentResponseCollector?.CollectSummary(meta);
             }
+            CurrentResponseCollector?.DoneSuccess();
             _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 
         public void HandleRecordMessage(object[] fields)
         {
-            CurrentResultBuilder?.CollectRecord(fields);
+            CurrentResponseCollector?.CollectRecord(fields);
             _logger?.Debug("S: ", new RecordMessage(fields));
         }
 
@@ -91,23 +92,23 @@ namespace Neo4j.Driver.Internal.Connector
                     Error = new DatabaseException(code, message);
                     break;
             }
-            CurrentResultBuilder?.InvalidateResult(); // an error received, so the result is broken
+            CurrentResponseCollector?.DoneFailure();
             _logger?.Debug("S: ", new FailureMessage(code, message));
         }
 
         public void HandleIgnoredMessage()
         {
             DequeueMessage();
-            CurrentResultBuilder?.InvalidateResult(); // the result is ignored
+            CurrentResponseCollector?.DoneIgnored();
             _logger?.Debug("S: ", new IgnoredMessage());
         }
 
-        public void EnqueueMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+        public void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null)
         {
             lock (_syncLock)
             {
                 _unhandledMessages.Enqueue(requestMessage);
-                _resultBuilders.Enqueue(resultBuilder);
+                _resultBuilders.Enqueue(responseCollector);
             }
         }
 
@@ -116,7 +117,7 @@ namespace Neo4j.Driver.Internal.Connector
             lock (_syncLock)
             {
                 _unhandledMessages.Dequeue();
-                CurrentResultBuilder = _resultBuilders.Dequeue();
+                CurrentResponseCollector = _resultBuilders.Dequeue();
             }
         }
     }
