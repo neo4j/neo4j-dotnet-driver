@@ -17,7 +17,6 @@
 using System;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
-using Sockets.Plugin.Abstractions;
 
 namespace Neo4j.Driver.Internal.Connector
 {
