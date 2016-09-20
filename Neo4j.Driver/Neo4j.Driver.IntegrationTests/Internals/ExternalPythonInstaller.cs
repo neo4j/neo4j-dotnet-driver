@@ -63,5 +63,18 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             Neo4jSettingsHelper.UpdateSettings(Neo4jHome.FullName, keyValuePair);
         }
+
+        public void EnsureProcedures(string sourceProcedureJarPath)
+        {
+            var jarName = new DirectoryInfo(sourceProcedureJarPath).Name;
+
+            var pluginFolderPath = Path.Combine(Neo4jHome.FullName, "plugins");
+            var destProcedureJarPath = Path.Combine(pluginFolderPath, jarName);
+
+            if (!File.Exists(destProcedureJarPath))
+            {
+                File.Copy(sourceProcedureJarPath, destProcedureJarPath);
+            }
+        }
     }
 }

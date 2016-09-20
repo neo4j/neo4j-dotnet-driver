@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -41,6 +42,7 @@ namespace Neo4j.Driver.IntegrationTests
             _output = output;
             _serverEndPoint = fixture.ServerEndPoint;
             _authToken = fixture.AuthToken;
+            fixture.RestartServerWithProcedures(new DirectoryInfo("../../Resources/longRunningStatement.jar").FullName);
         }
 
         [Fact]
@@ -312,11 +314,11 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var cancelTokenSource = new CancellationTokenSource();
-                    var resetSession = ResetSessionAfterTimeout(session, 10, cancelTokenSource.Token);
+                    var resetSession = ResetSessionAfterTimeout(session, 5, cancelTokenSource.Token);
 
                     var result = session.Run("CALL test.driver.longRunningStatement({seconds})",
                         new Dictionary<string, object> { { "seconds", 20 } });
-                    var exception = Record.Exception( () => result.Consume());
+                    var exception = Record.Exception(() => result.Consume());
 
                     // if we finished procedure then we cancel the reset timeout
                     cancelTokenSource.Cancel();
@@ -338,7 +340,7 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var cancelTokenSource = new CancellationTokenSource();
-                    var resetSession = ResetSessionAfterTimeout(session, 10, cancelTokenSource.Token);
+                    var resetSession = ResetSessionAfterTimeout(session, 5, cancelTokenSource.Token);
 
                     var result = session.Run("CALL test.driver.longStreamingResult({seconds})",
                         new Dictionary<string, object> { { "seconds", 20L } });

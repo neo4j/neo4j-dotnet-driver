@@ -61,6 +61,21 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
+        public void RestartServerWithProcedures(string sourceProcedureJarPath)
+        {
+            try
+            {
+                _installer.StopServer();
+                _installer.EnsureProcedures(sourceProcedureJarPath);
+                _installer.StartServer();
+            }
+            catch
+            {
+                try { Dispose(); } catch { /*Do nothing*/ }
+                throw;
+            }
+        }
+
         public void Dispose()
         {
             try

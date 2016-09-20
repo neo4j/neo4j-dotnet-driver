@@ -49,7 +49,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         void StartServer();
 
         /// <summary>
-        ///     Tops the Neo4j server (ANy platform)
+        ///     Tops the Neo4j server (Any platform)
         /// </summary>
         void StopServer();
 
@@ -63,5 +63,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         /// </summary>
         /// <param name="keyValuePair"></param>
         void UpdateSettings(IDictionary<string, string> keyValuePair);
+
+        /// <summary>
+        /// Ensure a procedure jar with the same name as the given jar file name presented in the plugin folder on server
+        /// </summary>
+        /// <param name="sourceProcedureJarPath">Copy the jar from this path if not found</param>
+        void EnsureProcedures(string sourceProcedureJarPath);
     }
 }
