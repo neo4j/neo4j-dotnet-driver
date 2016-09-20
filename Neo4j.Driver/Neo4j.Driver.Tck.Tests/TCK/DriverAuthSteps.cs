@@ -47,6 +47,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             using (var session = driver.Session())
             {
                 var result = session.Run("CREATE () RETURN 2 as Number");
+                result.Peek();
                 result.Keys.Should().Contain("Number");
                 result.Keys.Count.Should().Be(1);
                 result.Single()["Number"].ValueAs<int>().Should().Be(2);

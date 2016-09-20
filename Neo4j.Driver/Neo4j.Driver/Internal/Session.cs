@@ -68,7 +68,14 @@ namespace Neo4j.Driver.Internal
                         // Best-effort
                     }
                 }
-                _connection.Dispose();
+                try
+                {
+                    _connection.Sync();
+                }
+                finally
+                {
+                    _connection.Dispose();
+                }
             });
 
             base.Dispose(true);

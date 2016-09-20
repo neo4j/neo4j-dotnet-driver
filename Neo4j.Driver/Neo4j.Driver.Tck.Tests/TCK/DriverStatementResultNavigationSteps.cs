@@ -117,6 +117,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             var result = ScenarioContext.Current.Get<IStatementResult>();
             var list = table.Rows.Select(row => row[0]).ToList();
+            result.Consume();
             list.Count.Should().Be(result.Keys.Count);
             foreach (var key in result.Keys)
             {

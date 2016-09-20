@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             using (var session = TckHooks.CreateSelfManagedSession())
             {
-                session.Run(statement);
+                session.Run(statement).Consume();
             }
         }
 
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             using (var session = TckHooks.CreateSelfManagedSession())
             {
-                session.Run("MATCH (n) DETACH DELETE n");
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 

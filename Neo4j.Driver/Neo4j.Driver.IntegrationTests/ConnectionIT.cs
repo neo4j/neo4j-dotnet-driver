@@ -184,9 +184,6 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     result = session.Run("unwind range(1,3) as n RETURN n");
-                    session.Run("RETURN 1").Consume();// force the first one to finish and result received on client
-                    // Note: result of "RETURN 1" might not get buffered (without consume)
-                    // as server might receive run and reset at the same time and decides to cancel run
                 }
                 var resultAll = result.ToList();
 
