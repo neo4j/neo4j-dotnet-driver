@@ -16,12 +16,14 @@
 // limitations under the License.
 
 using System;
+using System.IO;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
+using Sockets.Plugin.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
 

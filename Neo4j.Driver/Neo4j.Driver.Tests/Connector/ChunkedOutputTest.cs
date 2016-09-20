@@ -20,6 +20,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
+using Sockets.Plugin.Abstractions;
 using Xunit;
 
 namespace Neo4j.Driver.Tests

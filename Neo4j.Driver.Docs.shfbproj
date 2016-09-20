@@ -18,8 +18,8 @@
     <HtmlHelpName>Neo4j.Driver.Documentation</HtmlHelpName>
     <Language>en-US</Language>
     <DocumentationSources>
-      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\Neo4j.Driver.xml" />
-      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\Neo4j.Driver.dll" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Debug\Neo4j.Driver.xml" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Debug\Neo4j.Driver.dll" />
     </DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <HelpFileFormat>Website</HelpFileFormat>
