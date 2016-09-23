@@ -53,19 +53,9 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.ReceiveOne();
         }
 
-        public void Run(IMessageResponseCollector resultBuilder, string statement, IDictionary<string, object> parameters = null)
+        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false)
         {
-            _connection.Run(resultBuilder, statement, parameters);
-        }
-
-        public void PullAll(IMessageResponseCollector resultBuilder)
-        {
-            _connection.PullAll(resultBuilder);
-        }
-
-        public void DiscardAll()
-        {
-            _connection.DiscardAll();
+            _connection.Run(statement, parameters, resultBuilder, pullAll);
         }
 
         public void Reset()

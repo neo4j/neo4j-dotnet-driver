@@ -421,5 +421,50 @@ namespace Neo4j.Driver.IntegrationTests
                 }
             }
         }
+
+
+        [Fact]
+        public void ShouldAllowBeginNewTxAfterResetAndResultConsumed()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var session = driver.Session())
+            {
+                var tx1 = session.BeginTransaction();
+                var result = tx1.Run("Return 1");
+                session.Reset();
+                try
+                {
+                    result.Consume();
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                using (var tx = session.BeginTransaction())
+                {
+                    tx.Run("RETURN 2");
+                    tx.Success();
+                }
+            }
+        }
+
+        [Fact]
+        public async void ShouldThrowExceptionIfErrorAfterResetButNotConsumed()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var session = driver.Session())
+            {
+                session.Run("CALL test.driver.longRunningStatement({seconds})",
+                    new Dictionary<string, object> { { "seconds", 20 } });
+                await Task.Delay(5 * 1000);
+                session.Reset();
+
+                var exception = Record.Exception(() => session.BeginTransaction());
+
+                exception.Should().BeOfType<ClientException>();
+                exception.Message.Should().StartWith("An error has occurred due to the cancellation of executing a previous statement.");
+            }
+        }
     }
 }

@@ -29,12 +29,8 @@ namespace Neo4j.Driver.Internal.Connector
         // receive one
         void ReceiveOne();
 
-        // Enqueue a run message
-        void Run(IMessageResponseCollector resultBuilder, string statement, IDictionary<string, object> parameters=null);
-        // Enqueue a pull_all message
-        void PullAll(IMessageResponseCollector resultBuilder);
-        // Enqueue a discard_all message
-        void DiscardAll();
+        // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
+        void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false);
         // Enqueue a reset message
         void Reset();
 

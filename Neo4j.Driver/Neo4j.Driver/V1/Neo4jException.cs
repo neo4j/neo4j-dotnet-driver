@@ -39,6 +39,11 @@ namespace Neo4j.Driver.V1
             Code = code;
         }
 
+        public Neo4jException(string message, Exception innerException)
+            : this(null, message, innerException)
+        {
+        }
+
         public Neo4jException(string code, string message, Exception innerException)
             : base(message, innerException)
         {
@@ -67,6 +72,11 @@ namespace Neo4j.Driver.V1
         }
 
         public ClientException(string code, string message) : base(code, message)
+        {
+        }
+
+        public ClientException(string message, Exception innerException)
+            : base(message, innerException)
         {
         }
 

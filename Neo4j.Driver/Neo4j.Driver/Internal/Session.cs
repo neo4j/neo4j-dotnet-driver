@@ -25,7 +25,16 @@ namespace Neo4j.Driver.Internal
     internal class Session : StatementRunner, ISession
     {
         private readonly IConnection _connection;
+
+        /* 
+         * All operations that modify transation status or 
+         * perform a certain action depending on the current transaction status 
+         * should be syncronized,
+         * as both reset thread and running thread could modify this filed at the same time.
+         */
         private Transaction _transaction;
+        private readonly object _txSyncLock = new object();
+
         private readonly Action _transactionCleanupAction;
 
         private readonly ILogger _logger;
@@ -57,24 +66,27 @@ namespace Neo4j.Driver.Internal
                 {
                     throw new InvalidOperationException("Failed to dispose this seesion as it has already been disposed.");
                 }
-                if (_transaction != null)
+                lock (_txSyncLock)
                 {
+                    if (_transaction != null)
+                    {
+                        try
+                        {
+                            _transaction.Dispose();
+                        }
+                        catch
+                        {
+                            // Best-effort
+                        }
+                    }
                     try
                     {
-                        _transaction.Dispose();
+                        _connection.Sync();
                     }
-                    catch
+                    finally
                     {
-                        // Best-effort
+                        _connection.Dispose();
                     }
-                }
-                try
-                {
-                    _connection.Sync();
-                }
-                finally
-                {
-                    _connection.Dispose();
                 }
             });
 
@@ -85,12 +97,13 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureCanRunMoreStatements();
-                var resultBuilder = new ResultBuilder(statement, statementParameters, ()=>_connection.ReceiveOne());
-                _connection.Run(resultBuilder, statement, statementParameters);
-                _connection.PullAll(resultBuilder);
-                _connection.Send();
-
+                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne());
+                lock (_txSyncLock)
+                {
+                    EnsureCanRunMoreStatements();
+                    _connection.Run(statement, statementParameters, resultBuilder, true);
+                    _connection.Send();
+                }
                 return resultBuilder.PreBuild();
             });
         }
@@ -99,8 +112,11 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureCanRunMoreStatements();
-                _transaction = new Transaction(_connection, _transactionCleanupAction, _logger);
+                lock (_txSyncLock)
+                {
+                    EnsureCanRunMoreStatements();
+                    _transaction = new Transaction(_connection, _transactionCleanupAction, _logger);
+                }
                 return _transaction;
             });
         }
@@ -164,7 +180,11 @@ namespace Neo4j.Driver.Internal
             EnsureSessionIsOpen();
             EnsureConnectionIsHealthy();
 
-            _transaction?.MarkToClose();
+            lock (_txSyncLock)
+            {
+                _transaction?.MarkToClose();
+                _transactionCleanupAction.Invoke();
+            }
             _connection.ResetAsync();
         }
 

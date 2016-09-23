@@ -38,8 +38,7 @@ namespace Neo4j.Driver.Tests
                 var session = new Session(mockConn.Object, null);
                 session.Run("lalalal");
 
-                mockConn.Verify(x => x.Run(It.IsAny<ResultBuilder>(), "lalalal", null), Times.Once);
-                mockConn.Verify(x => x.PullAll(It.IsAny<ResultBuilder>()), Times.Once);
+                mockConn.Verify(x => x.Run("lalalal", null, It.IsAny<ResultBuilder>(), true), Times.Once);
                 mockConn.Verify(x => x.Send());
             }
         }
@@ -148,7 +147,7 @@ namespace Neo4j.Driver.Tests
                 var tx = session.BeginTransaction();
                 session.Dispose();
 
-                mockConn.Verify(x => x.Run(null, "ROLLBACK", null), Times.Once);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
             }
 
             [Fact]

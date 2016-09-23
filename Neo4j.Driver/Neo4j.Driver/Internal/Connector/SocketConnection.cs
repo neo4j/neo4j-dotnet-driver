@@ -64,6 +64,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             lock (_syncLock)
             {
+                EnsureNotInterrupted();
                 if (_messages.Count == 0)
                 {
                     // nothing to send
@@ -94,20 +95,16 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Run(IMessageResponseCollector resultBuilder, string statement, IDictionary<string, object> paramters=null)
+        public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false)
         {
-            var runMessage = new RunMessage(statement, paramters);
-            Enqueue(runMessage, resultBuilder);
-        }
-
-        public void PullAll(IMessageResponseCollector resultBuilder)
-        {
-            Enqueue(new PullAllMessage(), resultBuilder);
-        }
-
-        public void DiscardAll()
-        {
-            Enqueue(new DiscardAllMessage());
+            if (pullAll)
+            {
+                Enqueue(new RunMessage(statement, paramters), resultBuilder, new PullAllMessage());
+            }
+            else
+            {
+                Enqueue(new RunMessage(statement, paramters), resultBuilder, new DiscardAllMessage());
+            }
         }
 
         public void Reset()
@@ -117,11 +114,14 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void ResetAsync()
         {
-            if (!_interrupted)
+            lock (_syncLock)
             {
-                _interrupted = true;
-                Enqueue(new ResetMessage(), new ResetCollector(() => { _interrupted = false; }));
-                Send();
+                if (!_interrupted)
+                {
+                    Enqueue(new ResetMessage(), new ResetCollector(() => { _interrupted = false; }));
+                    Send();
+                    _interrupted = true;
+                }
             }
         }
 
@@ -165,6 +165,7 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 var error = _responseHandler.Error;
                 _responseHandler.Error = null;
+                _interrupted = false;
                 throw error;
             }
         }
@@ -174,12 +175,40 @@ namespace Neo4j.Driver.Internal.Connector
             return error is ClientException || error is TransientException;
         }
 
-        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null)
+        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null, IRequestMessage requestStreamingMessage = null)
         {
             lock (_syncLock)
             {
+                EnsureNotInterrupted();
                 _messages.Enqueue(requestMessage);
                 _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
+
+                if (requestStreamingMessage != null)
+                {
+                    _messages.Enqueue(requestStreamingMessage);
+                    _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
+                }
+            }
+        }
+
+        private void EnsureNotInterrupted()
+        {
+            if (_interrupted)
+            {
+                try
+                {
+                    while (_responseHandler.UnhandledMessageSize > 0)
+                    {
+                        ReceiveOne();
+                    }
+                }
+                catch (Neo4jException e)
+                {
+                    throw new ClientException(
+                        "An error has occurred due to the cancellation of executing a previous statement. " +
+                        "You received this error probably because you did not consume the result immediately after " +
+                        "running the statement which get reset in this session.", e);
+                }
             }
         }
     }

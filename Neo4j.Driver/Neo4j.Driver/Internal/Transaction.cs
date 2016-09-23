@@ -24,10 +24,14 @@ namespace Neo4j.Driver.Internal
 {
     internal class Transaction : StatementRunner, ITransaction
     {
-        private State _state = State.Active;
         private readonly IConnection _connection;
         private readonly Action _cleanupAction;
 
+        /* 
+         * All the blocks that modifies the state of this tx and perform certain actoin based on the current tx state should be syncronized
+         * as a reset thread and a run thread could modify this state at the same time.
+         */
+        private State _state = State.Active;
         private readonly object _syncLock = new object();
 
         public Transaction(IConnection connection, Action cleanupAction=null, ILogger logger=null) : base(logger)
@@ -35,8 +39,7 @@ namespace Neo4j.Driver.Internal
             _connection = connection;
             _cleanupAction = cleanupAction ?? (() => { });
 
-            _connection.Run(null, "BEGIN");
-            _connection.DiscardAll();
+            _connection.Run("BEGIN");
         }
 
         private enum State
@@ -71,21 +74,22 @@ namespace Neo4j.Driver.Internal
             }
             try
             {
-                if (_state == State.MarkedSuccess)
+                lock (_syncLock)
                 {
-                    _connection.Run(null, "COMMIT");
-                    _connection.DiscardAll();
-                    _connection.Sync();
-                    _state = State.Succeeded;
-                }
-                else if (_state == State.MarkedFailed || _state == State.Active)
-                {
-                    // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
-                    // do this, we could just clear the queue. Future optimization.
-                    _connection.Run(null, "ROLLBACK");
-                    _connection.DiscardAll();
-                    _connection.Sync();
-                    _state = State.RolledBack;
+                    if (_state == State.MarkedSuccess)
+                    {
+                        _connection.Run("COMMIT");
+                        _connection.Sync();
+                        _state = State.Succeeded;
+                    }
+                    else if (_state == State.MarkedFailed || _state == State.Active)
+                    {
+                        // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
+                        // do this, we could just clear the queue. Future optimization.
+                        _connection.Run("ROLLBACK");
+                        _connection.Sync();
+                        _state = State.RolledBack;
+                    }
                 }
             }
             finally
@@ -105,8 +109,7 @@ namespace Neo4j.Driver.Internal
                     try
                     {
                         var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne());
-                        _connection.Run(resultBuilder, statement, parameters);
-                        _connection.PullAll(resultBuilder);
+                        _connection.Run(statement, parameters, resultBuilder, true);
                         _connection.Send();
                         return resultBuilder.PreBuild();
                     }
@@ -133,17 +136,23 @@ namespace Neo4j.Driver.Internal
 
         public void Success()
         {
-            if (_state == State.Active)
+            lock (_syncLock)
             {
-                _state = State.MarkedSuccess;
+                if (_state == State.Active)
+                {
+                    _state = State.MarkedSuccess;
+                }
             }
         }
 
         public void Failure()
         {
-            if (_state == State.Active || _state == State.MarkedSuccess)
+            lock (_syncLock)
             {
-                _state = State.MarkedFailed;
+                if (_state == State.Active || _state == State.MarkedSuccess)
+                {
+                    _state = State.MarkedFailed;
+                }
             }
         }
 
