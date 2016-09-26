@@ -57,6 +57,12 @@ namespace Neo4j.Driver.V1
         /// have been acknowledged.
         /// </summary>
         void Reset();
+
+        /// <summary>
+        /// Returns a string telling which version of the server the session is connected to.
+        /// </summary>
+        /// <returns>The server version of <c>null</c> if not available.</returns>
+        string Server();
     }
 
     /// <summary>

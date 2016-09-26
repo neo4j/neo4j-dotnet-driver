@@ -87,6 +87,7 @@ namespace Neo4j.Driver.Internal.Result
                 return;
             }
             CollectKeys(meta, "fields");
+            CollectResultAvailableAfter(meta, "result_available_after");
         }
 
         public void CollectSummary(IDictionary<string, object> meta)
@@ -102,7 +103,6 @@ namespace Neo4j.Driver.Internal.Result
             CollectPlan(meta, "plan");
             CollectProfile(meta, "profile");
             CollectNotifications(meta, "notifications");
-            CollectResultAvailableAfter(meta, "result_available_after");
             CollectResultConsumedAfter(meta, "result_consumed_after");
         }
 

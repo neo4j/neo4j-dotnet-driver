@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
@@ -31,40 +32,61 @@ namespace Neo4j.Driver.Internal.Result
         void DoneIgnored();
     }
 
-    internal class ResetCollector : IMessageResponseCollector
+    internal class ResetCollector : NoOperationCollector
     {
-        private readonly Action _successCallBackAction;
+        private readonly Action _successCallbackAction;
         public ResetCollector(Action successCallBackAction = null)
         {
-            _successCallBackAction = successCallBackAction ?? (() => { });
+            _successCallbackAction = successCallBackAction ?? (() => { });
 
         }
-        public void CollectFields(IDictionary<string, object> meta)
+
+        public override void DoneSuccess()
+        {
+            _successCallbackAction.Invoke();
+        }
+    }
+
+    internal class InitCollector : NoOperationCollector
+    {
+        public string Server { private set; get; }
+        public override void CollectSummary(IDictionary<string, object> meta)
+        {
+            if (meta.ContainsKey("server"))
+            {
+                Server = meta["server"].As<string>();
+            }
+        }
+    }
+
+    internal abstract class NoOperationCollector : IMessageResponseCollector
+    {
+        public virtual void CollectFields(IDictionary<string, object> meta)
         {
             // left empty
         }
 
-        public void CollectRecord(object[] fields)
+        public virtual void CollectRecord(object[] fields)
         {
             // left empty
         }
 
-        public void CollectSummary(IDictionary<string, object> meta)
+        public virtual void CollectSummary(IDictionary<string, object> meta)
         {
             // left empty
         }
 
-        public void DoneSuccess()
-        {
-            _successCallBackAction.Invoke();
-        }
-
-        public void DoneFailure()
+        public virtual void DoneSuccess()
         {
             // left empty
         }
 
-        public void DoneIgnored()
+        public virtual void DoneFailure()
+        {
+            // left empty
+        }
+
+        public virtual void DoneIgnored()
         {
             // left empty
         }

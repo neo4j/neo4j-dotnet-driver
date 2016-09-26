@@ -73,6 +73,7 @@ namespace Neo4j.Driver.Internal.Connector
         public bool HasUnrecoverableError => _connection.HasUnrecoverableError;
 
         public bool IsHealthy => _connection.IsHealthy;
+        public string Server => _connection.Server;
 
         /// <summary>
         /// Close the connection and all resources all for good

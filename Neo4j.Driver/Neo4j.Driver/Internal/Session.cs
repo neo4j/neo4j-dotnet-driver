@@ -188,6 +188,11 @@ namespace Neo4j.Driver.Internal
             _connection.ResetAsync();
         }
 
+        public string Server()
+        {
+            return _connection.Server;
+        }
+
         public void Close()
         {
             Dispose(true);
