@@ -73,7 +73,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             if (!File.Exists(destProcedureJarPath))
             {
+                StopServer();
                 File.Copy(sourceProcedureJarPath, destProcedureJarPath);
+                StartServer();
             }
         }
     }

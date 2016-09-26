@@ -65,7 +65,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         void UpdateSettings(IDictionary<string, string> keyValuePair);
 
         /// <summary>
-        /// Ensure a procedure jar with the same name as the given jar file name presented in the plugin folder on server
+        /// Ensure a procedure jar with the same name as the given jar file name presented in the plugin folder on server.
+        /// This method might restart the server if it is required to load the new procedures.
         /// </summary>
         /// <param name="sourceProcedureJarPath">Copy the jar from this path if not found</param>
         void EnsureProcedures(string sourceProcedureJarPath);

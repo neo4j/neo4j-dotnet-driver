@@ -37,7 +37,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         private readonly string _serverEndPoint;
         private readonly IAuthToken _authToken;
-        private readonly Config _debugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Trace}).ToConfig();
+        private readonly Config _debugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
 
         private readonly ITestOutputHelper _output;
 
@@ -329,9 +329,16 @@ namespace Neo4j.Driver.IntegrationTests
                     cancelTokenSource.Cancel();
                     await resetSession;
 
-                    exception.Should().BeOfType<ClientException>();
+                    if (ServerVersion.Version(session.Server()) >= ServerVersion.V3_1_0)
+                    {
+                        exception.Should().BeOfType<TransientException>();
+                    }
+                    else
+                    {
+                        exception.Should().BeOfType<ClientException>();
+                    }
                     exception.Message.StartsWith("Failed to invoke procedure `test.driver.longRunningStatement`: " +
-                                                 "Caused by: org.neo4j.graphdb.TransactionTerminatedException");
+                             "Caused by: org.neo4j.graphdb.TransactionTerminatedException");
                 }
             }
         }
@@ -339,7 +346,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public async void ShouldKillLongStreamingResult()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,_debugConfig))
             {
                 using (var session = driver.Session())
                 {
