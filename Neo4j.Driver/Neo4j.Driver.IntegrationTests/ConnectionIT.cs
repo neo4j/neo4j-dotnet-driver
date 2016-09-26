@@ -16,6 +16,9 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
@@ -39,6 +42,7 @@ namespace Neo4j.Driver.IntegrationTests
             _output = output;
             _serverEndPoint = fixture.ServerEndPoint;
             _authToken = fixture.AuthToken;
+            fixture.RestartServerWithProcedures(new DirectoryInfo("../../Resources/longRunningStatement.jar").FullName);
         }
 
         [Fact]
@@ -52,6 +56,7 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var result = session.Run("RETURN 2 as Number" );
+                    result.Consume();
                     result.Keys.Should().Contain("Number");
                     result.Keys.Count.Should().Be(1);
                 }
@@ -71,6 +76,7 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var result = session.Run("RETURN 2 as Number");
+                    result.Consume();
                     result.Keys.Should().Contain("Number");
                     result.Keys.Count.Should().Be(1);
                 }
@@ -94,6 +100,7 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var result = session.Run("RETURN 2 as Number");
+                    result.Consume();
                     result.Keys.Should().Contain("Number");
                     result.Keys.Count.Should().Be(1);
                 }
@@ -118,6 +125,7 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = driver.Session())
                 {
                     var result = session.Run("RETURN 2 as Number");
+                    result.Consume();
                     result.Keys.Should().Contain("Number");
                     result.Keys.Count.Should().Be(1);
                 }
@@ -147,13 +155,8 @@ namespace Neo4j.Driver.IntegrationTests
                 tx.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
                 var result = tx.Run("CREATE (n {name:'Steve Brook'}) RETURN n.name");
 
-                foreach (var record in result)
-                {
-                    foreach (var keyValuePair in record.Values)
-                    {
-                        _output.WriteLine($"{keyValuePair.Key} = {keyValuePair.Value}");
-                    }
-                }
+                var record = result.Single();
+                record["n.name"].Should().Be("Steve Brook");
             }
         }
 
@@ -175,7 +178,7 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Fact]
-        public void ResultsHaveNotBeenReadGetLostAfterSessionClosed()
+        public void ResultsHaveReceivedButNotBeenReadGetBufferedAfterSessionClosed()
         {
             using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             {
@@ -186,9 +189,9 @@ namespace Neo4j.Driver.IntegrationTests
                 }
                 var resultAll = result.ToList();
 
-                // Records that has not been read inside session get lost
-                resultAll.Count.Should().Be(0);
-                resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder();
+                // Records that has not been read inside session still saved
+                resultAll.Count.Should().Be(3);
+                resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1,2,3);
 
                 // Summary is still saved
                 result.Summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
@@ -230,7 +233,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 using (var session = driver.Session())
                 {
-                    var ex = Record.Exception(() => session.Run("Invalid Cypher"));
+                    var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
                     ex.Should().BeOfType<ClientException>();
                     ex.Message.Should().StartWith("Invalid input 'I'");
                 }
@@ -250,7 +253,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 using (var session = driver.Session())
                 {
-                    var ex = Record.Exception(() => session.Run("Invalid Cypher"));
+                    var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
                     ex.Should().BeOfType<ClientException>();
                     ex.Message.Should().StartWith("Invalid input 'I'");
                     var result = session.Run("RETURN 1");
@@ -269,7 +272,7 @@ namespace Neo4j.Driver.IntegrationTests
                 {
                     using (var tx = session.BeginTransaction())
                     {
-                        var ex = Record.Exception(() => tx.Run("Invalid Cypher"));
+                        var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
                         ex.Should().BeOfType<ClientException>();
                         ex.Message.Should().StartWith("Invalid input 'I'");
                     }
@@ -290,7 +293,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             using (var tx = session.BeginTransaction())
             {
-                var ex = Record.Exception(() => tx.Run("Invalid Cypher"));
+                var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
                 ex.Should().BeOfType<ClientException>();
                 ex.Message.Should().StartWith("Invalid input 'I'");
             }
@@ -300,6 +303,168 @@ namespace Neo4j.Driver.IntegrationTests
 
             driver.Dispose();
             session.Dispose();
+        }
+
+        [Fact]
+        public async void ShouldKillLongRunningStatement()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
+                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig()))
+            {
+                using (var session = driver.Session())
+                {
+                    var cancelTokenSource = new CancellationTokenSource();
+                    var resetSession = ResetSessionAfterTimeout(session, 5, cancelTokenSource.Token);
+
+                    var result = session.Run("CALL test.driver.longRunningStatement({seconds})",
+                        new Dictionary<string, object> { { "seconds", 20 } });
+                    var exception = Record.Exception(() => result.Consume());
+
+                    // if we finished procedure then we cancel the reset timeout
+                    cancelTokenSource.Cancel();
+                    await resetSession;
+
+                    exception.Should().BeOfType<ClientException>();
+                    exception.Message.StartsWith("Failed to invoke procedure `test.driver.longRunningStatement`: " +
+                                                 "Caused by: org.neo4j.graphdb.TransactionTerminatedException");
+                }
+            }
+        }
+
+        [Fact]
+        public async void ShouldKillLongStreamingResult()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
+                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig()))
+            {
+                using (var session = driver.Session())
+                {
+                    var cancelTokenSource = new CancellationTokenSource();
+                    var resetSession = ResetSessionAfterTimeout(session, 5, cancelTokenSource.Token);
+
+                    var result = session.Run("CALL test.driver.longStreamingResult({seconds})",
+                        new Dictionary<string, object> { { "seconds", 20L } });
+
+                    var exception = Record.Exception(() => result.Consume());
+
+                    // if we finished procedure then we cancel the reset timeout
+                    cancelTokenSource.Cancel();
+                    await resetSession;
+
+                    exception.Should().BeOfType<ClientException>();
+                    exception.Message.StartsWith("Failed to call procedure `test.driver.longStreamingResult(seconds :: INTEGER?) :: (record :: STRING?)");
+                }
+            }
+        }
+
+        public async Task ResetSessionAfterTimeout(ISession session, int seconds, CancellationToken cancelToken)
+        {
+            await Task.Delay(seconds*1000, cancelToken);
+            if (cancelToken.IsCancellationRequested)
+            {
+                cancelToken.IsCancellationRequested.Should().Be(false);
+            }
+            else
+            {
+                session.Reset();
+            }
+        }
+
+        [Fact]
+        public void ShouldAllowMoreStatementAfterSessionReset()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            {
+                using (var session = driver.Session())
+                {
+                    session.Run("RETURN 1").Consume();
+                    session.Reset();
+                    session.Run("RETURN 2").Consume();
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldAllowMoreTxAfterSessionReset()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var tx = session.BeginTransaction())
+                    {
+                        tx.Run("Return 1");
+                        tx.Success();
+                    }
+                    session.Reset();
+                    using (var tx = session.BeginTransaction())
+                    {
+                        tx.Run("RETURN 2");
+                        tx.Success();
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var session = driver.Session())
+            {
+                using (var tx = session.BeginTransaction())
+                {
+                    session.Reset();
+                    var exception = Record.Exception(()=>tx.Run("Return 1"));
+                    exception.Should().BeOfType<ClientException>();
+                    exception.Message.Should().StartWith("Cannot run more statements in this transaction");
+                }
+            }
+        }
+
+
+        [Fact]
+        public void ShouldAllowBeginNewTxAfterResetAndResultConsumed()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var session = driver.Session())
+            {
+                var tx1 = session.BeginTransaction();
+                var result = tx1.Run("Return 1");
+                session.Reset();
+                try
+                {
+                    result.Consume();
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                using (var tx = session.BeginTransaction())
+                {
+                    tx.Run("RETURN 2");
+                    tx.Success();
+                }
+            }
+        }
+
+        [Fact]
+        public async void ShouldThrowExceptionIfErrorAfterResetButNotConsumed()
+        {
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+            using (var session = driver.Session())
+            {
+                session.Run("CALL test.driver.longRunningStatement({seconds})",
+                    new Dictionary<string, object> { { "seconds", 20 } });
+                await Task.Delay(5 * 1000);
+                session.Reset();
+
+                var exception = Record.Exception(() => session.BeginTransaction());
+
+                exception.Should().BeOfType<ClientException>();
+                exception.Message.Should().StartWith("An error has occurred due to the cancellation of executing a previous statement.");
+            }
         }
     }
 }

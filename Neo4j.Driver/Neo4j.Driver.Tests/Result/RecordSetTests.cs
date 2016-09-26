@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests
 
     internal static class RecordCreator
     {
-        public static IList<string> CreateKeys(int keySize=1)
+        public static List<string> CreateKeys(int keySize=1)
         {
             var keys = new List<string>(keySize);
             for (int i = 0; i < keySize; i++)
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Tests
             return CreateRecords(recordSize, keys);
         }
 
-        public static IList<IRecord> CreateRecords(int recordSize, IList<string> keys)
+        public static IList<IRecord> CreateRecords(int recordSize, List<string> keys)
         {
             var records = new List<IRecord>(recordSize);
 
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tests
                 {
                     values.Add($"record{j}:key{i}");
                 }
-                records.Add(new Record(keys.ToArray(), values.ToArray()));
+                records.Add(new Record(keys, values.ToArray()));
             }
             return records;
         } 
@@ -117,7 +117,7 @@ namespace Neo4j.Driver.Tests
                 var recordSet = new ListBasedRecordSet(records);
 
                 // I add a new record after RecordSet is created
-                var newRecord = new Record(keys.ToArray(), new object[] {"record5:key0"});
+                var newRecord = new Record(keys, new object[] {"record5:key0"});
                 records.Add(newRecord);
 
                 int i = 0;

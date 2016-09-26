@@ -22,36 +22,34 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultBuilder : IResultBuilder
+    internal class ResultBuilder : IMessageResponseCollector
     {
-        private string[] _keys = new string[0];
+        private readonly List<string> _keys = new List<string>();
         private readonly SummaryBuilder _summaryBuilder;
 
-        public Action ReceiveOneFun { private get; set; }
+        private Action _receiveOneFun;
 
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
-        private bool _isStreamingRecords;
+        private bool _hasMoreRecords = true;
 
-        public ResultBuilder() : this(null, null)
+        public ResultBuilder() : this(null, null, null)
         {
         }
 
-        public ResultBuilder(Statement statement)
+        public ResultBuilder(Statement statement, Action receiveOneFun)
         {
             _summaryBuilder = new SummaryBuilder(statement);
+            _receiveOneFun = receiveOneFun;
         }
 
-        public ResultBuilder(string statement, IDictionary<string, object> parameters)
-            : this(new Statement(statement, parameters))
+        public ResultBuilder(string statement, IDictionary<string, object> parameters, Action receiveOneFun)
+            : this(new Statement(statement, parameters), receiveOneFun)
         {
         }
 
-        public StatementResult Build()
+        public StatementResult PreBuild()
         {
-            return new StatementResult(
-                _keys,
-                new RecordSet(NextRecord),
-                () => _summaryBuilder.Build());
+            return new StatementResult(_keys, new RecordSet(NextRecord), ()=> _summaryBuilder.Build());
         }
 
         /// <summary>
@@ -60,16 +58,20 @@ namespace Neo4j.Driver.Internal.Result
         /// <returns>Next record in the record stream if any, otherwise return null</returns>
         private IRecord NextRecord()
         {
-            if (_isStreamingRecords)
+            if (_records.Count > 0)
             {
-                ReceiveOneFun.Invoke();
+                return _records.Dequeue();
+            }
+            while (_hasMoreRecords && _records.Count <= 0)
+            {
+                _receiveOneFun.Invoke();
             }
             return _records.Count > 0 ? _records.Dequeue() : null;
         }
 
-        public void InvalidateResult()
+        internal void SetReceiveOneFunc(Action receiveOneFunc)
         {
-            _isStreamingRecords = false;
+            _receiveOneFun = receiveOneFunc;
         }
 
         public void CollectRecord(object[] fields)
@@ -80,7 +82,6 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectFields(IDictionary<string, object> meta)
         {
-            _isStreamingRecords = true;
             if (meta == null)
             {
                 return;
@@ -90,7 +91,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectSummary(IDictionary<string, object> meta)
         {
-            _isStreamingRecords = false;
+            _hasMoreRecords = false;
             if (meta == null)
             {
                 return;
@@ -103,6 +104,26 @@ namespace Neo4j.Driver.Internal.Result
             CollectNotifications(meta, "notifications");
         }
 
+        public void DoneSuccess()
+        {
+            // do nothing
+        }
+
+        public void DoneFailure()
+        {
+            InvalidateResult();// an error received, so the result is broken
+        }
+
+        public void DoneIgnored()
+        {
+            InvalidateResult();// the result is ignored
+        }
+
+        private void InvalidateResult()
+        {
+            _hasMoreRecords = false;
+        }
+
         private void CollectKeys(IDictionary<string, object> meta, string name)
         {
             if (!meta.ContainsKey(name))
@@ -110,8 +131,13 @@ namespace Neo4j.Driver.Internal.Result
                 return;
             }
 
-            var keys = meta.GetValue(name, new List<object>()).Cast<string>();
-            _keys = keys.ToArray();
+            if (meta.ContainsKey(name))
+            {
+                foreach (var key in meta[name].As<List<string>>())
+                {
+                    _keys.Add(key);
+                }
+            }
         }
 
         private void CollectType(IDictionary<string, object> meta, string name)

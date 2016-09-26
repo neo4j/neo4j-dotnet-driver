@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             using (var session = TckHooks.CreateSelfManagedSession())
             {
-                session.Run(statement);
+                session.Run(statement).Consume();
             }
         }
 
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             using (var session = TckHooks.CreateSelfManagedSession())
             {
-                session.Run("MATCH (n) DETACH DELETE n");
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 
@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var records = new List<IRecord>();
             foreach (var row in table.Rows)
             {
-                records.Add( new Record(row.Keys.ToArray(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
+                records.Add( new Record(row.Keys.ToList(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
             }
             var result = ScenarioContext.Current.Get<IStatementResult>();
             TckUtil.AssertRecordsAreTheSame(result.ToList(), records);

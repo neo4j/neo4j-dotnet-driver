@@ -14,11 +14,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -39,9 +34,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Verify(x=>x.Run(null, "BEGIN", null), Times.Once);
-                mockConn.Verify(x=>x.DiscardAll(), Times.Once);
-                tx.Finished.Should().BeFalse();
+                mockConn.Verify(x=>x.Run("BEGIN", null, null, false), Times.Once);
             }
         }
 
@@ -55,10 +48,8 @@ namespace Neo4j.Driver.Tests
 
                 tx.Run("lalala");
 
-                mockConn.Verify(x => x.Run(It.IsAny<ResultBuilder>(), "lalala", null), Times.Once);
-                mockConn.Verify(x => x.PullAll(It.IsAny<ResultBuilder>()), Times.Once);
-                mockConn.Verify(x => x.SyncRun(), Times.Once);
-                tx.Finished.Should().BeFalse();
+                mockConn.Verify(x => x.Run("lalala", null, It.IsAny<ResultBuilder>(), true), Times.Once);
+                mockConn.Verify(x => x.Send(), Times.Once);
             }
 
             [Fact]
@@ -69,7 +60,7 @@ namespace Neo4j.Driver.Tests
 
                 try
                 {
-                    mockConn.Setup(x => x.Run(It.IsAny<ResultBuilder>(), It.IsAny<string>(), null))
+                    mockConn.Setup(x => x.Run(It.IsAny<string>(), null, It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
                     tx.Run("lalala");
                 }
@@ -80,7 +71,6 @@ namespace Neo4j.Driver.Tests
 
                 var error = Xunit.Record.Exception(()=>tx.Run("ttt"));
                 error.Should().BeOfType<ClientException>();
-                tx.Finished.Should().BeFalse();
             }
 
             [Fact]
@@ -89,12 +79,11 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
                    
-                mockConn.Setup(x => x.Run(It.IsAny<ResultBuilder>(), It.IsAny<string>(), null))
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), null, It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
 
                 var error = Xunit.Record.Exception(() => tx.Run("ttt"));
                 error.Should().BeOfType<Neo4jException>();
-                tx.Finished.Should().BeFalse();
             }
         }
 
@@ -109,9 +98,8 @@ namespace Neo4j.Driver.Tests
                 mockConn.ResetCalls();
                 tx.Success();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run(null, "COMMIT", null), Times.Once);
-                mockConn.Verify(x => x.DiscardAll(), Times.Once);
-                tx.Finished.Should().BeTrue();
+                mockConn.Verify(x => x.Run("COMMIT", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
             }
 
             [Fact]
@@ -125,9 +113,8 @@ namespace Neo4j.Driver.Tests
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Failure();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run(null, "ROLLBACK", null), Times.Once);
-                mockConn.Verify(x => x.DiscardAll(), Times.Once);
-                tx.Finished.Should().BeTrue();
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
             }
 
             [Fact]
@@ -139,11 +126,42 @@ namespace Neo4j.Driver.Tests
                 mockConn.ResetCalls();
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Dispose();
-                mockConn.Verify(x => x.Run(null, "ROLLBACK", null), Times.Once);
-                mockConn.Verify(x => x.DiscardAll(), Times.Once);
-                tx.Finished.Should().BeTrue();
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }
 
+        public class MarkToClosedMethod
+        {
+            [Fact]
+            public void ShouldNotAllowMoreMessagesAfterMarkToClosed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+                mockConn.ResetCalls();
+
+                tx.MarkToClose();
+
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Never);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldThrowExceptionToRunAfterMarkToClosed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+                mockConn.ResetCalls();
+
+                tx.MarkToClose();
+
+                var exception = Xunit.Record.Exception(()=>tx.Run("should not run"));
+                exception.Should().BeOfType<ClientException>();
+                exception.Message.Should().StartWith("Cannot run more statements in this transaction");
+
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Never);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+        }
     }
 }

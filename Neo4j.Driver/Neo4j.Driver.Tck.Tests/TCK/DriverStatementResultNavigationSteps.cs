@@ -117,6 +117,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             var result = ScenarioContext.Current.Get<IStatementResult>();
             var list = table.Rows.Select(row => row[0]).ToList();
+            result.Consume();
             list.Count.Should().Be(result.Keys.Count);
             foreach (var key in result.Keys)
             {
@@ -130,7 +131,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             var records = new List<IRecord>();
             foreach (var row in table.Rows)
             {
-                records.Add(new Record(row.Keys.ToArray(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
+                records.Add(new Record(row.Keys.ToList(), row.Values.Select(value => _parser.Parse(value)).ToArray()));
             }
             var resultCursor = ScenarioContext.Current.Get<IStatementResult>();
             TckUtil.AssertRecordsAreTheSame(resultCursor.ToList(), records);

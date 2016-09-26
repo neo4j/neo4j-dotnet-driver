@@ -341,7 +341,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsHealthy).Returns(true);
-                mock.Setup(x => x.ResetConnection()).Throws<ClientException>();
+                mock.Setup(x => x.ClearConnection()).Throws<ClientException>();
                 var id = new Guid();
 
                 var inUseConns = new Dictionary<Guid, IPooledConnection>();

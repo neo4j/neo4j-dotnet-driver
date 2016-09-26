@@ -22,12 +22,20 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface IConnection : IDisposable
     {
+        // send all and receive all
         void Sync();
-        void SyncRun();
-        void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> parameters=null);
-        void PullAll(IResultBuilder resultBuilder);
-        void DiscardAll();
+        // send all
+        void Send();
+        // receive one
+        void ReceiveOne();
+
+        // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
+        void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false);
+        // Enqueue a reset message
         void Reset();
+
+        //Asynchronously sending reset to the socket output channel. Enqueue reset + send all
+        void ResetAsync();
 
         /// <summary>
         /// Return true if the underlying socket connection is till open, otherwise false.

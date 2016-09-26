@@ -30,6 +30,10 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly IMessageResponseHandler _responseHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
+        internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
+
+        private volatile bool _interrupted;
+        private readonly object _syncLock = new object();
 
         public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
             IMessageResponseHandler messageResponseHandler = null)
@@ -50,64 +54,57 @@ namespace Neo4j.Driver.Internal.Connector
         {
         }
 
-        internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
-
-        public void Dispose()
+        public void Sync()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Send();
+            Receive();
         }
 
-        private void SendAndReceive(int unhandledMessageCount = 0)
+        public void Send()
         {
-            if (_messages.Count == 0)
+            lock (_syncLock)
             {
+                EnsureNotInterrupted();
+                if (_messages.Count == 0)
+                {
+                    // nothing to send
+                    return;
+                }
+                // blocking to send
+                _client.Send(_messages);
+                _messages.Clear();
+            }
+        }
+
+        private void Receive()
+        {
+            if (_responseHandler.UnhandledMessageSize == 0)
+            {
+                // nothing to receive
                 return;
             }
 
-            // blocking to send
-            _client.Send(_messages);
-            ClearQueue(); // clear sending queue
             // blocking to receive
-            _client.Receive(_responseHandler, unhandledMessageCount);
+            _client.Receive(_responseHandler);
+            AssertNoServerFailure();
+        }
 
-            if (_responseHandler.HasError)
+        public void ReceiveOne()
+        {
+            _client.ReceiveOne(_responseHandler);
+            AssertNoServerFailure();
+        }
+
+        public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false)
+        {
+            if (pullAll)
             {
-                OnResponseHasError();
+                Enqueue(new RunMessage(statement, paramters), resultBuilder, new PullAllMessage());
             }
-        }
-
-        private void OnResponseHasError()
-        {
-            Enqueue(new AckFailureMessage());
-            throw _responseHandler.Error;
-        }
-
-        public void Sync()
-        {
-            SendAndReceive();
-        }
-
-        public void SyncRun()
-        {
-            SendAndReceive(1); // blocking to receive unitl 1 message unhandled left (PULL_ALL)
-        }
-
-        public void Run(IResultBuilder resultBuilder, string statement, IDictionary<string, object> paramters=null)
-        {
-            var runMessage = new RunMessage(statement, paramters);
-            Enqueue(runMessage, resultBuilder);
-        }
-
-        public void PullAll(IResultBuilder resultBuilder)
-        {
-            Enqueue(new PullAllMessage(), resultBuilder);
-            resultBuilder.ReceiveOneFun = () => _client.ReceiveOne(_responseHandler, OnResponseHasError);
-        }
-
-        public void DiscardAll()
-        {
-            Enqueue(new DiscardAllMessage());
+            else
+            {
+                Enqueue(new RunMessage(statement, paramters), resultBuilder, new DiscardAllMessage());
+            }
         }
 
         public void Reset()
@@ -115,13 +112,32 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new ResetMessage());
         }
 
+        public void ResetAsync()
+        {
+            lock (_syncLock)
+            {
+                if (!_interrupted)
+                {
+                    Enqueue(new ResetMessage(), new ResetCollector(() => { _interrupted = false; }));
+                    Send();
+                    _interrupted = true;
+                }
+            }
+        }
+
         public bool IsOpen => _client.IsOpen;
-        public bool HasUnrecoverableError => _responseHandler.Error is DatabaseException;
+        public bool HasUnrecoverableError { get; private set; }
         public bool IsHealthy => IsOpen && !HasUnrecoverableError;
 
         public void Close()
         {
             Dispose();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -132,15 +148,68 @@ namespace Neo4j.Driver.Internal.Connector
             Task.Run(() => _client.Stop()).Wait();
         }
 
-        private void ClearQueue()
+        private void AssertNoServerFailure()
         {
-            _messages.Clear();
+            if (_responseHandler.HasError)
+            {
+                if (IsRecoverableError(_responseHandler.Error))
+                {
+                    if (!_interrupted)
+                    {
+                        Enqueue(new AckFailureMessage());
+                    }
+                }
+                else
+                {
+                    HasUnrecoverableError = true;
+                }
+                var error = _responseHandler.Error;
+                _responseHandler.Error = null;
+                _interrupted = false;
+                throw error;
+            }
         }
 
-        private void Enqueue(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+        private bool IsRecoverableError(Neo4jException error)
         {
-            _messages.Enqueue(requestMessage);
-            _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
+            return error is ClientException || error is TransientException;
+        }
+
+        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null, IRequestMessage requestStreamingMessage = null)
+        {
+            lock (_syncLock)
+            {
+                EnsureNotInterrupted();
+                _messages.Enqueue(requestMessage);
+                _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
+
+                if (requestStreamingMessage != null)
+                {
+                    _messages.Enqueue(requestStreamingMessage);
+                    _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
+                }
+            }
+        }
+
+        private void EnsureNotInterrupted()
+        {
+            if (_interrupted)
+            {
+                try
+                {
+                    while (_responseHandler.UnhandledMessageSize > 0)
+                    {
+                        ReceiveOne();
+                    }
+                }
+                catch (Neo4jException e)
+                {
+                    throw new ClientException(
+                        "An error has occurred due to the cancellation of executing a previous statement. " +
+                        "You received this error probably because you did not consume the result immediately after " +
+                        "running the statement which get reset in this session.", e);
+                }
+            }
         }
     }
 }

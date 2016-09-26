@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             {
                 var builder = GenerateBuilder();
                 var i = 0;
-                builder.ReceiveOneFun = () =>
+                builder.SetReceiveOneFunc(() =>
                 {
                     if (i++ >= 3)
                     {
@@ -71,8 +71,8 @@ namespace Neo4j.Driver.Tests
                     {
                         builder.CollectRecord(new object[] {123 + i});
                     }
-                };
-                var result = builder.Build();
+                });
+                var result = builder.PreBuild();
 
                 var t = AssertGetExpectResults(result, 3, new List<object> {124, 125, 126});
                 t.Wait();
@@ -82,11 +82,11 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnNoResultsWhenNoneRecieved()
             {
                 var builder = GenerateBuilder();
-                builder.ReceiveOneFun = () =>
+                builder.SetReceiveOneFunc(() =>
                 {
                     builder.CollectSummary(null);
-                };
-                var result = builder.Build();
+                });
+                var result = builder.PreBuild();
 
                 var t = AssertGetExpectResults(result, 0);
 
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tests
                 }
                 builder.CollectSummary(null);
 
-                var result = builder.Build();
+                var result = builder.PreBuild();
 
                 var task = AssertGetExpectResults(result, recordValues.Count, recordValues);
                 task.Wait();
@@ -126,7 +126,7 @@ namespace Neo4j.Driver.Tests
             {
                 var builder = new ResultBuilder();
                 builder.CollectSummary(null);
-                var actual = builder.Build();
+                var actual = builder.PreBuild();
                 actual.Consume();
 
                 actual.Summary.HasPlan.Should().BeFalse();
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.StatementType.Should().Be(expected);
@@ -171,7 +171,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.StatementType.Should().Be(StatementType.Unknown);
                 }
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.Counters.ShouldBeEquivalentTo(DefaultCounters);
                 }
@@ -229,7 +229,7 @@ namespace Neo4j.Driver.Tests
                         } }
                     };
                     builder.CollectSummary(meta);
-                    var actual = builder.Build().Consume().Counters;
+                    var actual = builder.PreBuild().Consume().Counters;
                     actual.Should().NotBeNull();
 
                     actual.NodesCreated.Should().Be(1);
@@ -257,7 +257,7 @@ namespace Neo4j.Driver.Tests
                         {"something", "unknown"}
                     };
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Plan.Should().BeNull();
@@ -274,7 +274,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Plan.Should().BeNull();
@@ -291,7 +291,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Plan.Should().BeNull();
@@ -334,7 +334,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Plan.Should().NotBeNull();
@@ -365,7 +365,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Plan.Should().NotBeNull();
@@ -412,7 +412,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build().Consume().Plan.Children.Single();
+                    var actual = builder.PreBuild().Consume().Plan.Children.Single();
 
                     actual.Arguments.Should().HaveCount(1);
                     actual.Arguments.Should().ContainKey("child_a");
@@ -465,7 +465,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build().Consume().Plan.Children.Single().Children.Single();
+                    var actual = builder.PreBuild().Consume().Plan.Children.Single().Children.Single();
 
                     actual.Arguments.Should().HaveCount(1);
                     actual.Arguments.Should().ContainKey("childChild_a");
@@ -492,7 +492,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Profile.Should().BeNull();
@@ -509,7 +509,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Profile.Should().BeNull();
@@ -526,7 +526,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Profile.Should().BeNull();
@@ -611,7 +611,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
 
                     actual.Summary.Profile.Should().NotBeNull();
@@ -647,7 +647,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
                     actual.Summary.HasProfile.Should().BeTrue();
@@ -700,7 +700,7 @@ namespace Neo4j.Driver.Tests
                         }
                     };
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
                     actual.Summary.HasProfile.Should().BeTrue();
@@ -767,7 +767,7 @@ namespace Neo4j.Driver.Tests
                     };
                     
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.Profile.Should().NotBeNull();
                     actual.Summary.HasProfile.Should().BeTrue();
@@ -802,7 +802,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.Notifications.Should().BeEmpty();
                 }
@@ -835,7 +835,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.Notifications.Should().HaveCount(1);
 
@@ -890,7 +890,7 @@ namespace Neo4j.Driver.Tests
                     };
 
                     builder.CollectSummary(meta);
-                    var actual = builder.Build();
+                    var actual = builder.PreBuild();
                     actual.Consume();
                     actual.Summary.Notifications.Should().HaveCount(2);
 
@@ -911,7 +911,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldPassDefaultKeysToResultIfNoKeySet()
             {
                 var builder = new ResultBuilder();
-                var result = builder.Build();
+                var result = builder.PreBuild();
 
                 result.Keys.Should().BeEmpty();
             }
@@ -922,7 +922,7 @@ namespace Neo4j.Driver.Tests
                 var builder = new ResultBuilder();
                 builder.CollectFields(null);
 
-                var result = builder.Build();
+                var result = builder.PreBuild();
                 result.Keys.Should().BeEmpty();
             }
 
@@ -936,7 +936,7 @@ namespace Neo4j.Driver.Tests
                 };
                 builder.CollectFields(meta);
 
-                var result = builder.Build();
+                var result = builder.PreBuild();
                 result.Keys.Should().BeEmpty();
             }
 
@@ -948,7 +948,7 @@ namespace Neo4j.Driver.Tests
 
                 var builder = new ResultBuilder();
                 builder.CollectFields(meta);
-                var result = builder.Build();
+                var result = builder.PreBuild();
 
                 result.Keys.Should().ContainInOrder("fieldKey1", "fieldKey2", "fieldKey3");
             }
@@ -961,18 +961,18 @@ namespace Neo4j.Driver.Tests
             {
                 var builder = GenerateBuilder();
                 var i = 0;
-                builder.ReceiveOneFun = () =>
+                builder.SetReceiveOneFunc(() =>
                 {
                     if (i++ >= 3)
                     {
-                        builder.InvalidateResult();
+                        builder.DoneFailure();
                     }
                     else
                     {
-                        builder.CollectRecord(new object[] { 123 + i });
+                        builder.CollectRecord(new object[] {123 + i});
                     }
-                };
-                var result = builder.Build();
+                });
+                var result = builder.PreBuild();
 
                 var t = AssertGetExpectResults(result, 3, new List<object> { 124, 125, 126 });
                 t.Wait();

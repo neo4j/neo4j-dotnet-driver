@@ -16,9 +16,11 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Packstream;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -109,25 +111,15 @@ namespace Neo4j.Driver.Internal.Connector
 
         public bool IsOpen { get; private set; }
 
-        /// <summary>
-        /// This method highly relies on the fact that the session is not threadsafe and could only be used in a single thread
-        /// as if two threads trying to modify the message size, then we might
-        /// 1. force to pull all instead of streaming records
-        /// 2. lose some records as only one record is buffered in result builder on client.
-        /// </summary>
-        public void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0)
+        public void Receive(IMessageResponseHandler responseHandler)
         {
-            while (responseHandler.UnhandledMessageSize > unhandledMessageSize 
-                || (responseHandler.HasError && responseHandler.UnhandledMessageSize > 0)
-                /*if error happens, then just drain the whole unhandledMessage queue*/)
+            while(responseHandler.UnhandledMessageSize > 0)
             {
                 ReceiveOne(responseHandler);
-                //Read 1 message
-                //Send to handler
             }
         }
 
-        private void ReceiveOne(IMessageResponseHandler responseHandler)
+        public void ReceiveOne(IMessageResponseHandler responseHandler)
         {
             try
             {
@@ -139,29 +131,10 @@ namespace Neo4j.Driver.Internal.Connector
                 Task.Run(() => Stop()).Wait();
                 throw;
             }
-            if (responseHandler.HasError)
+            if (responseHandler.HasProtocolViolationError)
             {
-                if (responseHandler.Error.Code.ToLowerInvariant().Contains("clienterror.request"))
-                {
-                    Task.Run(() => Stop()).Wait();
-                    throw responseHandler.Error;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Perform failure action if error
-        /// </summary>
-        public void ReceiveOne(IMessageResponseHandler responseHandler, Action onFailureAction)
-        {
-            if (responseHandler.UnhandledMessageSize == 0)
-            {
-                return;
-            }
-            ReceiveOne(responseHandler);
-            if (responseHandler.HasError)
-            {
-                onFailureAction.Invoke();
+                Task.Run(() => Stop()).Wait();
+                throw responseHandler.Error;
             }
         }
 
@@ -171,15 +144,11 @@ namespace Neo4j.Driver.Internal.Connector
             int[] supportedVersion = {1, 0, 0, 0};
             
             var data = PackVersions(supportedVersion);
-            //            Logger.Log($"Sending Handshake... {string.Join(",", data)}");
             await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
             await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
 
             data = new byte[4];
-            //            Logger.Log("Receiving Handshake Reponse...");
             await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
-
-            //            Logger.Log($"Handshake Raw = {string.Join(",", data)}");
 
             var agreedVersion = GetAgreedVersion(data);
             return agreedVersion;

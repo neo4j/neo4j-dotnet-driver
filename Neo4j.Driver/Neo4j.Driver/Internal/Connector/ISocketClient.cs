@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
@@ -27,9 +26,8 @@ namespace Neo4j.Driver.Internal.Connector
         Task Start();
         Task Stop();
         void Send(IEnumerable<IRequestMessage> messages);
-        /* Recieve until unhandledMessageSize messages are left in unhandled message queue */
-        void Receive(IMessageResponseHandler responseHandler, int unhandledMessageSize = 0);
-        void ReceiveOne(IMessageResponseHandler responseHandler, Action onFailureAction );
+        void Receive(IMessageResponseHandler responseHandler);
+        void ReceiveOne(IMessageResponseHandler responseHandler);
         bool IsOpen { get; }
     }
 }

@@ -64,7 +64,8 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             using (var session = TckHooks.CreateSelfManagedSession())
             {
-                var ex = Xunit.Record.Exception(() => session.Run("Invalid Cypher"));
+                var result = session.Run("Invalid Cypher");
+                var ex = Xunit.Record.Exception(() => result.Consume());
                 ex.Should().BeOfType<ClientException>();
                 ex.Message.Should().StartWith("Invalid input");
             }
@@ -75,7 +76,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             using (var driver = GraphDatabase.Driver("bolt://localhost:1234"))
             {
-                var ex = Xunit.Record.Exception(() => driver.Session().Run("Return 1"));
+                var ex = Xunit.Record.Exception(() => driver.Session());
                 ex.Should().BeOfType<AggregateException>();
                 ex = ex.GetBaseException();
                 ex.Should().BeOfType<SocketException>();
@@ -88,7 +89,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         {
             using (var driver = GraphDatabase.Driver("http://localhost"))
             {
-                var ex = Xunit.Record.Exception(() => driver.Session().Run("RETURN 1"));
+                var ex = Xunit.Record.Exception(() => driver.Session());
                 ex.Should().BeOfType<NotSupportedException>();
                 ex.Message.Should().Be("Unsupported protocol: http");
             }

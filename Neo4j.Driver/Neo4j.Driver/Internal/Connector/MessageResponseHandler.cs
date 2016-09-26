@@ -26,16 +26,20 @@ namespace Neo4j.Driver.Internal.Connector
     internal class MessageResponseHandler : IMessageResponseHandler
     {
         private readonly ILogger _logger;
-        private readonly Queue<IResultBuilder> _resultBuilders = new Queue<IResultBuilder>();
+        private readonly Queue<IMessageResponseCollector> _resultBuilders = new Queue<IMessageResponseCollector>();
         private readonly Queue<IRequestMessage> _unhandledMessages = new Queue<IRequestMessage>();
-        internal IResultBuilder CurrentResultBuilder { get; private set; }
 
+        public IMessageResponseCollector CurrentResponseCollector { get; private set; }
         public int UnhandledMessageSize => _unhandledMessages.Count;
 
-        public Neo4jException Error { get; internal set; }
-        public bool HasError => Error != null;
+        private readonly object _syncLock = new object();
 
-        internal Queue<IResultBuilder> ResultBuilders => new Queue<IResultBuilder>(_resultBuilders);
+        public Neo4jException Error { get; set; }
+        public bool HasError => Error != null;
+        public bool HasProtocolViolationError
+            => HasError && Error.Code.ToLowerInvariant().Contains("clienterror.request");
+
+        internal Queue<IMessageResponseCollector> ResultBuilders => new Queue<IMessageResponseCollector>(_resultBuilders);
         internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_unhandledMessages);
 
         public MessageResponseHandler()
@@ -53,21 +57,21 @@ namespace Neo4j.Driver.Internal.Connector
             if (meta.ContainsKey("fields"))
             {
                 // first success
-                CurrentResultBuilder?.CollectFields(meta);
+                CurrentResponseCollector?.CollectFields(meta);
             }
             else
             {
                 // second success
                 // before summary method is called
-                CurrentResultBuilder?.CollectSummary(meta);
+                CurrentResponseCollector?.CollectSummary(meta);
             }
-            Error = null;
+            CurrentResponseCollector?.DoneSuccess();
             _logger?.Debug("S: ", new SuccessMessage(meta));
         }
 
         public void HandleRecordMessage(object[] fields)
         {
-            CurrentResultBuilder?.CollectRecord(fields);
+            CurrentResponseCollector?.CollectRecord(fields);
             _logger?.Debug("S: ", new RecordMessage(fields));
         }
 
@@ -88,39 +92,33 @@ namespace Neo4j.Driver.Internal.Connector
                     Error = new DatabaseException(code, message);
                     break;
             }
-            CurrentResultBuilder?.InvalidateResult(); // an error received, so the result is broken
+            CurrentResponseCollector?.DoneFailure();
             _logger?.Debug("S: ", new FailureMessage(code, message));
         }
 
         public void HandleIgnoredMessage()
         {
             DequeueMessage();
-            CurrentResultBuilder?.InvalidateResult(); // the result is ignored
+            CurrentResponseCollector?.DoneIgnored();
             _logger?.Debug("S: ", new IgnoredMessage());
         }
 
-        public void EnqueueMessage(IRequestMessage requestMessage, IResultBuilder resultBuilder = null)
+        public void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null)
         {
-            _unhandledMessages.Enqueue(requestMessage);
-            _resultBuilders.Enqueue(resultBuilder);
-            if (requestMessage is ResetMessage)
+            lock (_syncLock)
             {
-                Interrupt();
+                _unhandledMessages.Enqueue(requestMessage);
+                _resultBuilders.Enqueue(responseCollector);
             }
         }
 
         private void DequeueMessage()
         {
-            _unhandledMessages.Dequeue();
-            CurrentResultBuilder = _resultBuilders.Dequeue();
+            lock (_syncLock)
+            {
+                _unhandledMessages.Dequeue();
+                CurrentResponseCollector = _resultBuilders.Dequeue();
+            }
         }
-
-        private void Interrupt()
-        {
-            // when receiving a reset, we will interrupt to not saving any incoming records by clean the result builder.
-            CurrentResultBuilder?.InvalidateResult();
-            CurrentResultBuilder = null;
-        }
-
     }
 }

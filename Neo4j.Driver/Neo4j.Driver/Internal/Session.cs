@@ -25,7 +25,17 @@ namespace Neo4j.Driver.Internal
     internal class Session : StatementRunner, ISession
     {
         private readonly IConnection _connection;
+
+        /* 
+         * All operations that modify transation status or 
+         * perform a certain action depending on the current transaction status 
+         * should be syncronized,
+         * as both reset thread and running thread could modify this filed at the same time.
+         */
         private Transaction _transaction;
+        private readonly object _txSyncLock = new object();
+
+        private readonly Action _transactionCleanupAction;
 
         private readonly ILogger _logger;
         private bool _isOpen = true;
@@ -33,6 +43,7 @@ namespace Neo4j.Driver.Internal
         public Session(IConnection conn, ILogger logger):base(logger)
         {
             _connection = conn;
+            _transactionCleanupAction = () => { _transaction = null; };
             _logger = logger;
         }
 
@@ -55,18 +66,28 @@ namespace Neo4j.Driver.Internal
                 {
                     throw new InvalidOperationException("Failed to dispose this seesion as it has already been disposed.");
                 }
-                if (_transaction != null && !_transaction.Finished)
+                lock (_txSyncLock)
                 {
+                    if (_transaction != null)
+                    {
+                        try
+                        {
+                            _transaction.Dispose();
+                        }
+                        catch
+                        {
+                            // Best-effort
+                        }
+                    }
                     try
                     {
-                        _transaction.Dispose();
+                        _connection.Sync();
                     }
-                    catch
+                    finally
                     {
-                        // Best-effort
+                        _connection.Dispose();
                     }
                 }
-                _connection.Dispose();
             });
 
             base.Dispose(true);
@@ -76,13 +97,14 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureCanRunMoreStatements();
-                var resultBuilder = new ResultBuilder(statement, statementParameters);
-                _connection.Run(resultBuilder, statement, statementParameters);
-                _connection.PullAll(resultBuilder);
-                _connection.SyncRun();
-
-                return resultBuilder.Build();
+                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne());
+                lock (_txSyncLock)
+                {
+                    EnsureCanRunMoreStatements();
+                    _connection.Run(statement, statementParameters, resultBuilder, true);
+                    _connection.Send();
+                }
+                return resultBuilder.PreBuild();
             });
         }
 
@@ -90,8 +112,11 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureCanRunMoreStatements();
-                _transaction = new Transaction(_connection, _logger);
+                lock (_txSyncLock)
+                {
+                    EnsureCanRunMoreStatements();
+                    _transaction = new Transaction(_connection, _transactionCleanupAction, _logger);
+                }
                 return _transaction;
             });
         }
@@ -125,15 +150,48 @@ namespace Neo4j.Driver.Internal
 
         private void EnsureNoOpenTransaction()
         {
-            if (_transaction == null)
-            {
-                return;
-            }
-            if (!_transaction.Finished)
+            if (_transaction != null)
             {
                 throw new ClientException("Please close the currently open transaction object before running " +
                                            "more statements/transactions in the current session.");
             }
+        }
+
+        public Guid Id { get; } = Guid.NewGuid();
+
+        public bool IsHealthy
+        {
+            get
+            {
+                if (!_connection.IsOpen)
+                {
+                    return false;
+                }
+                if (_connection.HasUnrecoverableError)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        public void Reset()
+        {
+            EnsureSessionIsOpen();
+            EnsureConnectionIsHealthy();
+
+            lock (_txSyncLock)
+            {
+                _transaction?.MarkToClose();
+                _transactionCleanupAction.Invoke();
+            }
+            _connection.ResetAsync();
+        }
+
+        public void Close()
+        {
+            Dispose(true);
+            _connection.Dispose();
         }
     }
 }
