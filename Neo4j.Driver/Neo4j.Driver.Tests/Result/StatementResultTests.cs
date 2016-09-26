@@ -377,6 +377,8 @@ namespace Neo4j.Driver.Tests
             public IPlan Plan { get; }
             public IProfiledPlan Profile { get; }
             public IList<INotification> Notifications { get; }
+            public TimeSpan ResultAvailableAfter { get; }
+            public TimeSpan ResultConsumedAfter { get; }
         }
     }
 }
