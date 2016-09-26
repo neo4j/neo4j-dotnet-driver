@@ -28,6 +28,8 @@ namespace Neo4j.Driver.Internal.Result
         public IPlan Plan { private get; set; }
         public IProfiledPlan Profile { private get; set; }
         public IList<INotification> Notifications { private get; set; }
+        public long ResultAvailableAfter { private get; set; } = -1L;
+        public long ResultConsumedAfter { private get; set; } = -1L;
 
         public SummaryBuilder(Statement statement)
         {
@@ -51,6 +53,9 @@ namespace Neo4j.Driver.Internal.Result
                 Profile = builder.Profile;
                 Plan = Profile ?? builder.Plan;
                 Notifications = builder.Notifications ?? new List<INotification>();
+                ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
+                ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
+
             }
 
             public Statement Statement { get; }
@@ -61,6 +66,8 @@ namespace Neo4j.Driver.Internal.Result
             public IPlan Plan { get; }
             public IProfiledPlan Profile { get; }
             public IList<INotification> Notifications { get; }
+            public TimeSpan ResultAvailableAfter { get; }
+            public TimeSpan ResultConsumedAfter { get; }
 
             public override string ToString()
             {
@@ -69,7 +76,9 @@ namespace Neo4j.Driver.Internal.Result
                        $"{nameof(StatementType)}={StatementType}, " +
                        $"{nameof(Plan)}={Plan}, " +
                        $"{nameof(Profile)}={Profile}, " +
-                       $"{nameof(Notifications)}={Notifications.ToContentString()}}}";
+                       $"{nameof(Notifications)}={Notifications.ToContentString()}, " +
+                       $"{nameof(ResultAvailableAfter)}={ResultAvailableAfter.ToString("g")}, " +
+                       $"{nameof(ResultConsumedAfter)}={ResultConsumedAfter.ToString("g")}}}";
             }
         }
     }

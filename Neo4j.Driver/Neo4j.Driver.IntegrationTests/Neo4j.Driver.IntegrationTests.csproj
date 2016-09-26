@@ -109,6 +109,7 @@
   <ItemGroup>
     <Compile Include="ConnectionIT.cs" />
     <Compile Include="Examples.cs" />
+    <Compile Include="Internals\ServerVersion.cs" />
     <Compile Include="Internals\ExternalPythonInstaller.cs" />
     <Compile Include="Internals\INeo4jInstaller.cs" />
     <Compile Include="IntegrationTestFixture.cs" />

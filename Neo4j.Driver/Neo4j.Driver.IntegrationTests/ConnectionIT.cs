@@ -15,11 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -34,6 +37,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         private readonly string _serverEndPoint;
         private readonly IAuthToken _authToken;
+        private readonly Config _debugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
 
         private readonly ITestOutputHelper _output;
 
@@ -48,10 +52,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void ShouldDoHandShake()
         {
-            using (var driver = GraphDatabase.Driver(
-                _serverEndPoint,
-                _authToken,
-                Config.Builder.WithLogger( new DebugLogger {Level = LogLevel.Trace}).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             {
                 using (var session = driver.Session())
                 {
@@ -69,9 +70,7 @@ namespace Neo4j.Driver.IntegrationTests
             var oldAuthToken = _authToken.AsDictionary();
             var newAuthToken = AuthTokens.Basic(oldAuthToken["principal"].ValueAs<string>(), oldAuthToken["credentials"].ValueAs<string>(), "native");
 
-            using (var driver = GraphDatabase.Driver(
-                _serverEndPoint,
-                newAuthToken))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, newAuthToken))
             {
                 using (var session = driver.Session())
                 {
@@ -93,9 +92,7 @@ namespace Neo4j.Driver.IntegrationTests
                 "native",
                 "basic");
 
-            using (var driver = GraphDatabase.Driver(
-                _serverEndPoint,
-                newAuthToken))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, newAuthToken))
             {
                 using (var session = driver.Session())
                 {
@@ -118,9 +115,7 @@ namespace Neo4j.Driver.IntegrationTests
                 "basic",
                 new Dictionary<string, object> {{"secret", 42}});
 
-            using (var driver = GraphDatabase.Driver(
-                _serverEndPoint,
-                newAuthToken))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, newAuthToken))
             {
                 using (var session = driver.Session())
                 {
@@ -135,19 +130,33 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void GetsSummary()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             using (var session = driver.Session())
             {
                 var result = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
                 var stats = result.Consume().Counters;
-                _output.WriteLine(stats.ToString());
+                stats.ToString().Should()
+                    .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
+                    "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
+                    "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
+
+                if (ServerVersion.Version(session.Server()) >= ServerVersion.V3_1_0)
+                {
+                    result.Summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
+                    result.Summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
+                }
+                else
+                {
+                    result.Summary.ResultAvailableAfter.Should().BeLessThan(TimeSpan.Zero);
+                    result.Summary.ResultConsumedAfter.Should().BeLessThan(TimeSpan.Zero);
+                }
             }
         }
 
         [Fact]
         public void ShouldBeAbleToRunMultiStatementsInOneTransaction()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Trace}).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             using (var session = driver.Session())
             using (var tx = session.BeginTransaction())
             {
@@ -248,8 +257,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
-                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             {
                 using (var session = driver.Session())
                 {
@@ -265,8 +273,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRunForTx()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
-                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Trace }).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             {
                 using (var session = driver.Session())
                 {
@@ -286,8 +293,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void ShouldNotThrowExceptionWhenDisposeSessionAfterDriver()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
-                Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Trace}).ToConfig());
+            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
 
             var session = driver.Session();
 
@@ -308,8 +314,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public async void ShouldKillLongRunningStatement()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
-                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
             {
                 using (var session = driver.Session())
                 {
@@ -324,9 +329,16 @@ namespace Neo4j.Driver.IntegrationTests
                     cancelTokenSource.Cancel();
                     await resetSession;
 
-                    exception.Should().BeOfType<ClientException>();
+                    if (ServerVersion.Version(session.Server()) >= ServerVersion.V3_1_0)
+                    {
+                        exception.Should().BeOfType<TransientException>();
+                    }
+                    else
+                    {
+                        exception.Should().BeOfType<ClientException>();
+                    }
                     exception.Message.StartsWith("Failed to invoke procedure `test.driver.longRunningStatement`: " +
-                                                 "Caused by: org.neo4j.graphdb.TransactionTerminatedException");
+                             "Caused by: org.neo4j.graphdb.TransactionTerminatedException");
                 }
             }
         }
@@ -334,8 +346,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public async void ShouldKillLongStreamingResult()
         {
-            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,
-                Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig()))
+            using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken,_debugConfig))
             {
                 using (var session = driver.Session())
                 {

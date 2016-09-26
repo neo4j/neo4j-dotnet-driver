@@ -87,6 +87,7 @@ namespace Neo4j.Driver.Internal.Result
                 return;
             }
             CollectKeys(meta, "fields");
+            CollectResultAvailableAfter(meta, "result_available_after");
         }
 
         public void CollectSummary(IDictionary<string, object> meta)
@@ -102,6 +103,7 @@ namespace Neo4j.Driver.Internal.Result
             CollectPlan(meta, "plan");
             CollectProfile(meta, "profile");
             CollectNotifications(meta, "notifications");
+            CollectResultConsumedAfter(meta, "result_consumed_after");
         }
 
         public void DoneSuccess()
@@ -259,6 +261,24 @@ namespace Neo4j.Driver.Internal.Result
                 notifications.Add(new Notification(code, title, description, position, severity));
             }
             _summaryBuilder.Notifications = notifications;
+        }
+
+        private void CollectResultAvailableAfter(IDictionary<string, object> meta, string name)
+        {
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            _summaryBuilder.ResultAvailableAfter = meta[name].As<long>();
+        }
+
+        private void CollectResultConsumedAfter(IDictionary<string, object> meta, string name)
+        {
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            _summaryBuilder.ResultConsumedAfter = meta[name].As<long>();
         }
 
         private static int CountersValue(IDictionary<string, object> counters, string name)

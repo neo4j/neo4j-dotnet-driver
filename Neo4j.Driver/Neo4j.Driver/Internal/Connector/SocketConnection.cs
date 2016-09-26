@@ -45,8 +45,15 @@ namespace Neo4j.Driver.Internal.Connector
             Task.Run(() => _client.Start()).Wait();
 
             // add init requestMessage by default
-            Enqueue(new InitMessage("neo4j-dotnet/1.1", authToken.AsDictionary()));
+            Init(authToken);
+        }
+
+        private void Init(IAuthToken authToken)
+        {
+            var initCollector = new InitCollector();
+            Enqueue(new InitMessage("neo4j-dotnet/1.1", authToken.AsDictionary()), initCollector);
             Sync();
+            Server = initCollector.Server;
         }
 
         public SocketConnection(Uri uri, IAuthToken authToken, Config config)
@@ -126,8 +133,9 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
-        public bool HasUnrecoverableError { get; private set; }
+        public bool HasUnrecoverableError { private set; get; }
         public bool IsHealthy => IsOpen && !HasUnrecoverableError;
+        public string Server { private set; get; }
 
         public void Close()
         {

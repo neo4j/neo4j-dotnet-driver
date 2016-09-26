@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.V1
@@ -102,5 +103,23 @@ namespace Neo4j.Driver.V1
         /// 
         /// </remarks>
         IList<INotification> Notifications { get; }
+
+        /// <summary>
+        /// The time it took the server to make the result available for consumption.
+        /// Default to <c>-00:00:00.001</c> if the server version does not support this field in summary.
+        /// </summary>
+        /// <remarks>
+        /// Field introduced in Neo4j 3.1.
+        /// </remarks>
+        TimeSpan ResultAvailableAfter { get; }
+
+        /// <summary>
+        /// The time it took the server to consume the result.
+        /// Default to <c>-00:00:00.001</c> if the server version does not support this field in summary.
+        /// </summary>
+        /// <remarks>
+        /// Field introduced in Neo4j 3.1.
+        /// </remarks>
+        TimeSpan ResultConsumedAfter { get; }
     }
 }

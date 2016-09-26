@@ -137,6 +137,8 @@ namespace Neo4j.Driver.Tests
                 actual.Summary.Statement.Text.Should().BeNull();
                 actual.Summary.StatementType.Should().Be(StatementType.Unknown);
                 actual.Summary.Counters.ShouldBeEquivalentTo(DefaultCounters);
+                actual.Summary.ResultAvailableAfter.ToString().Should().Be("-00:00:00.0010000");
+                actual.Summary.ResultConsumedAfter.ToString().Should().Be("-00:00:00.0010000");
             }
 
             public class TypeMeta
@@ -951,6 +953,47 @@ namespace Neo4j.Driver.Tests
                 var result = builder.PreBuild();
 
                 result.Keys.Should().ContainInOrder("fieldKey1", "fieldKey2", "fieldKey3");
+            }
+        }
+
+        public class ResultAvailableAndConsumedAfterMethod
+        {
+            [Fact]
+            public void ShouldCollectResultAvailableAfter()
+            {
+                IDictionary<string, object> meta = new Dictionary<string, object>
+                {
+                    {"fields",  new List<object>() },
+                    {"result_available_after", 12345},
+                    {"result_consumed_after", 67890}
+                };
+
+                var builder = new ResultBuilder();
+                var result = builder.PreBuild();
+                builder.CollectFields(meta);
+                builder.CollectSummary(null);
+                result.Consume();
+
+                result.Summary.ResultAvailableAfter.ToString().Should().Be("00:00:12.3450000");
+                result.Summary.ResultConsumedAfter.ToString().Should().Be("-00:00:00.0010000");
+            }
+
+            [Fact]
+            public void ShouldCollectResultConsumedAfter()
+            {
+                IDictionary<string, object> meta = new Dictionary<string, object>
+                {
+                    {"result_available_after", 12345},
+                    {"result_consumed_after", 67890}
+                };
+
+                var builder = new ResultBuilder();
+                builder.CollectSummary(meta);
+                var result = builder.PreBuild();
+                result.Consume();
+
+                result.Summary.ResultAvailableAfter.ToString().Should().Be("-00:00:00.0010000");
+                result.Summary.ResultConsumedAfter.ToString().Should().Be("00:01:07.8900000");
             }
         }
 

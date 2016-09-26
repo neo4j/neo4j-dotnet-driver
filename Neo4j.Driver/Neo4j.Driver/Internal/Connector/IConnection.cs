@@ -49,6 +49,15 @@ namespace Neo4j.Driver.Internal.Connector
         /// Return true if more statements could be run on this connection, otherwise false.
         /// </summary>
         bool IsHealthy { get; }
+
+        /// <summary>
+        /// The version of the server the connection connected to. Default to <c>null</c> if not supported by server
+        /// </summary>
+        /// <remarks>
+        /// Introduced since Neo4j 3.1.
+        /// </remarks>
+        string Server { get; }
+
         /// <summary>
         /// Close and release related resources
         /// </summary>

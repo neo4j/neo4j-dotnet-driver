@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Tests
                 mockHandler.Setup(x => x.UnhandledMessageSize).Returns(1);
                 new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
 
-                mockHandler.Verify(h => h.EnqueueMessage(It.IsAny<InitMessage>(), null));
+                mockHandler.Verify(h => h.EnqueueMessage(It.IsAny<InitMessage>(), It.IsAny<InitCollector>()));
 
                 mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
                 mockClient.Verify(c => c.Receive(mockHandler.Object), Times.Once);
