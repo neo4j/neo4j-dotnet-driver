@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.V1
 {
@@ -98,7 +99,10 @@ namespace Neo4j.Driver.V1
         /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
         public static IDriver Driver(Uri uri, IAuthToken authToken, Config config = null)
         {
-            return new Internal.Driver(uri, authToken, config ?? Config.DefaultConfig);
+            config = config ?? Config.DefaultConfig;
+            var encryptionManager = new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger);
+            var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
+            return new Internal.Driver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
         }
     }
 }

@@ -25,9 +25,12 @@ namespace Neo4j.Driver.Internal
     {
         private readonly Uri _uri;
         private readonly IAuthToken _authToken;
-        private readonly Config _config;
 
+        private readonly EncryptionManager _encryptionManager;
         private readonly int _idleSessionPoolSize;
+
+        private readonly ILogger _logger;
+
         private readonly Queue<IPooledConnection> _availableConnections = new Queue<IPooledConnection>();
         private readonly Dictionary<Guid, IPooledConnection> _inUseConnections = new Dictionary<Guid, IPooledConnection>();
 
@@ -41,14 +44,16 @@ namespace Neo4j.Driver.Internal
             set { _disposeCalled = value; }
         }
 
-        public ConnectionPool(Uri uri, IAuthToken authToken, ILogger logger, Config config)
+        public ConnectionPool(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
             : base(logger)
         {
             _uri = uri;
             _authToken = authToken;
-            _config = config;
 
-            _idleSessionPoolSize = config.MaxIdleSessionPoolSize;
+            _encryptionManager = encryptionManager;
+            _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
+
+            _logger = logger;
         }
 
         internal ConnectionPool(
@@ -56,8 +61,8 @@ namespace Neo4j.Driver.Internal
             Queue<IPooledConnection> availableConnections = null,
             Dictionary<Guid, IPooledConnection> inUseConnections = null,
             ILogger logger = null,
-            Config config = null)
-            : this(null, null, logger, config ?? Config.DefaultConfig)
+            ConnectionPoolSettings settings = null)
+            : this(null, null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), logger)
         {
             _fakeConnection = connection;
             _availableConnections = availableConnections ?? new Queue<IPooledConnection>();
@@ -66,7 +71,7 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            return _fakeConnection != null ? new PooledConnection(_fakeConnection, Release) : new PooledConnection(new SocketConnection(_uri, _authToken, _config), Release);
+            return _fakeConnection != null ? new PooledConnection(_fakeConnection, Release) : new PooledConnection(new SocketConnection(_uri, _authToken, _encryptionManager, _logger), Release);
         }
 
         public IPooledConnection Acquire()

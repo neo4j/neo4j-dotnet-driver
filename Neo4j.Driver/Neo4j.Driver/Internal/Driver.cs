@@ -25,11 +25,12 @@ namespace Neo4j.Driver.Internal
         private ConnectionPool _connectionPool;
         private ILogger _logger;
 
-        internal Driver(Uri uri, IAuthToken authToken, Config config)
+        internal Driver(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(uri, nameof(uri));
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
-            Throw.ArgumentNullException.IfNull(config, nameof(config));
+            Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
+            Throw.ArgumentNullException.IfNull(connectionPoolSettings, nameof(connectionPoolSettings));
 
             if (uri.Port == -1)
             {
@@ -38,8 +39,8 @@ namespace Neo4j.Driver.Internal
             }
 
             Uri = uri;
-            _logger = config?.Logger;
-            _connectionPool = new ConnectionPool(uri, authToken, _logger, config);
+            _logger = logger;
+            _connectionPool = new ConnectionPool(uri, authToken, encryptionManager, connectionPoolSettings, _logger);
         }
 
         public Uri Uri { get; }

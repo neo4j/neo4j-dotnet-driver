@@ -30,14 +30,14 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly TcpClient _client;
         private bool _useTls;
         private Stream _stream;
-        private int _port;
-        private string _host;
-        private readonly ILogger _logger;
+        private Uri _uri;
 
-        public TcpSocketClient(ILogger logger)
+        private readonly EncryptionManager _encryptionManager;
+
+        public TcpSocketClient(EncryptionManager encryptionManager)
         {
             _client = new TcpClient();
-            _logger = logger;
+            _encryptionManager = encryptionManager;
         }
         
         private Stream Stream
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.Connector
                 else
                 {
                     var secureStream = new SslStream(_client.GetStream(), true, ServerValidationCallback);
-                    var sslTask = secureStream.AuthenticateAsClientAsync(_host, null, System.Security.Authentication.SslProtocols.Tls12, false);
+                    var sslTask = secureStream.AuthenticateAsClientAsync(_uri.Host, null, System.Security.Authentication.SslProtocols.Tls12, false);
                     sslTask.Wait();
                     _stream = secureStream;
                 }
@@ -70,21 +70,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private bool ServerValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            switch (sslPolicyErrors)
-            {
-                case SslPolicyErrors.RemoteCertificateNameMismatch:
-                    _logger.Debug("Server name mismatch.");
-                    return false;
-                case SslPolicyErrors.RemoteCertificateNotAvailable:
-                    _logger.Debug("Certificate not available.");
-                    return false;
-                case SslPolicyErrors.RemoteCertificateChainErrors:
-                    _logger.Debug("Certificate validation failed.");
-                    return false;
-            }
-
-            _logger.Debug("Authentication succeeded.");
-            return true;
+            return _encryptionManager.TrustStrategy.ValidateServerCertificate(_uri, certificate, sslPolicyErrors);
         }
 
         public Stream ReadStream => Stream;
@@ -95,12 +81,11 @@ namespace Neo4j.Driver.Internal.Connector
             _client?.Dispose();
         }
 
-        public async Task ConnectAsync(string host, int port, bool useTlsEncryption)
+        public async Task ConnectAsync(Uri uri, bool useTlsEncryption)
         {
-            _host = host;
-            _port = port;
+            _uri = uri;
             _useTls = useTlsEncryption;
-            await _client.ConnectAsync(host, port).ConfigureAwait(true);
+            await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(true);
         }
 
         protected virtual void Dispose(bool isDisposing)

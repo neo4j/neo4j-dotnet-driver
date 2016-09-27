@@ -25,7 +25,17 @@ namespace Neo4j.Driver.V1
     public enum EncryptionLevel
     {
         None,
+        EncryptedNoLocal,
         Encrypted
+    }
+
+    /// <summary>
+    /// Strategy for how to trust encryption certificate.
+    /// </summary>
+    public enum TrustStrategy
+    {
+        TrustOnFirstUse,
+        TrustSystemCaSignedCertificates
     }
 
     /// <summary>
@@ -64,6 +74,8 @@ namespace Neo4j.Driver.V1
         /// Gets or sets the use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
         public EncryptionLevel EncryptionLevel { get; set; } = EncryptionLevel.None;
+
+        public TrustStrategy TrustStrategy { get; set; } = TrustStrategy.TrustOnFirstUse;
 
         /// <summary>
         /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
