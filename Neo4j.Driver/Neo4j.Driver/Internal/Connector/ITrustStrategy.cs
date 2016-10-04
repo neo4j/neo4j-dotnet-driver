@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Security;
 using System.Security.Cryptography;
@@ -59,25 +60,29 @@ namespace Neo4j.Driver.Internal.Connector
 
     internal class TrustOnFirstUse : ITrustStrategy
     {
-        private readonly string _knownHostFilePath = System.IO.Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"),".neo4j");
+        private static readonly string DefaultKnownHostsFilePath = System.IO.Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), ".neo4j");
+        private readonly string _knownHostsFilePath;
         private readonly IDictionary<string, string> _knownHosts = new Dictionary<string, string>();
         private readonly ILogger _logger;
 
-        public TrustOnFirstUse(ILogger logger)
+        internal IDictionary<string, string> KnownHost => new ReadOnlyDictionary<string, string>(_knownHosts);
+
+        public TrustOnFirstUse(ILogger logger, string knownHostsFilePath = null)
         {
             _logger = logger;
+            _knownHostsFilePath = knownHostsFilePath ?? DefaultKnownHostsFilePath;
             LoadFromKnownHost();
+
         }
 
         private void LoadFromKnownHost()
         {
-            if (!File.Exists(_knownHostFilePath))
+            if (!File.Exists(_knownHostsFilePath))
             {
                 return;
             }
 
-            using (var fileStream = File.Open(_knownHostFilePath, FileMode.Open, FileAccess.Read))
-            using (var reader = new StreamReader(fileStream))
+            using (var reader = File.OpenText(_knownHostsFilePath))
             {
                 string line;
                 while ((line = reader.ReadLine()) != null)
@@ -118,7 +123,7 @@ namespace Neo4j.Driver.Internal.Connector
                     $"Unable to connect to neo4j at `{serverId}`, because the certificate the server uses has changed. " +
                     "This is a security feature to protect against man-in-the-middle attacks.\n" +
                     "If you trust the certificate the server uses now, simply remove the line that starts with " +
-                    $"`{serverId}` in the file `{_knownHostFilePath}`.\n" +
+                    $"`{serverId}` in the file `{_knownHostsFilePath}`.\n" +
                     $"The old certificate saved in file is:\n{fingerprint}\nThe New certificate received is:\n{fingerprint}");
                 return false;
             }
@@ -130,11 +135,9 @@ namespace Neo4j.Driver.Internal.Connector
         private void SaveToKnownHost(string serverId, string fingerprint)
         {
             _logger?.Info($"Adding {fingerprint} as known and trusted certificate for {serverId}.");
-            if (!File.Exists(_knownHostFilePath))
-            {
-                Directory.CreateDirectory(_knownHostFilePath);
-            }
-            using (var writer = File.AppendText(_knownHostFilePath))
+
+            CreateFileRecursively(_knownHostsFilePath);
+            using (var writer = File.AppendText(_knownHostsFilePath))
             {
                 writer.WriteLine($"{serverId} {fingerprint}");
             }
@@ -145,7 +148,21 @@ namespace Neo4j.Driver.Internal.Connector
             var data = certificate.GetCertHash();
             using (var sha512 = SHA512.Create())
             {
-                return sha512.ComputeHash(data).ToHexString();
+                return sha512.ComputeHash(data).ToHexString("");
+            }
+        }
+
+        private static void CreateFileRecursively(string filePath)
+        {
+            var directoryPath = System.IO.Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            if (!File.Exists(filePath))
+            {
+                using (File.Create(filePath))
+                {} //make sure the file get closed after use
             }
         }
     }
