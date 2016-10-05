@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Internal.Connector
 
     internal class TrustOnFirstUse : ITrustStrategy
     {
-        private static readonly string DefaultKnownHostsFilePath = System.IO.Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), ".neo4j");
+        public static readonly string DefaultKnownHostsFilePath = System.IO.Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), ".neo4j");
         private readonly string _knownHostsFilePath;
         private readonly IDictionary<string, string> _knownHosts = new Dictionary<string, string>();
         private readonly ILogger _logger;
@@ -72,7 +72,6 @@ namespace Neo4j.Driver.Internal.Connector
             _logger = logger;
             _knownHostsFilePath = knownHostsFilePath ?? DefaultKnownHostsFilePath;
             LoadFromKnownHost();
-
         }
 
         private void LoadFromKnownHost()
@@ -117,7 +116,7 @@ namespace Neo4j.Driver.Internal.Connector
                     }
                 }
             }
-            else if (!_knownHosts[serverId].Equals(fingerprint))
+            if (!_knownHosts[serverId].Equals(fingerprint))
             {
                 _logger?.Error(
                     $"Unable to connect to neo4j at `{serverId}`, because the certificate the server uses has changed. " +

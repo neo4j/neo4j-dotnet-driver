@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using FluentAssertions;
 //tag::minimal-example-import[]
@@ -25,6 +26,7 @@ using Neo4j.Driver.V1;
 using Neo4j.Driver.IntegrationTests;
 using Xunit;
 using Xunit.Abstractions;
+using Path = System.IO.Path;
 
 namespace Neo4j.Driver.Examples
 {
@@ -309,7 +311,7 @@ namespace Neo4j.Driver.Examples
         {
             //tag::tls-signed[]
             var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
-                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
+                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).WithTrustStrategy(TrustStrategy.TrustSystemCaSignedCertificates()).ToConfig());
             //end::tls-signed[]
             driver.Dispose();
         }
@@ -333,10 +335,25 @@ namespace Neo4j.Driver.Examples
             driver.Dispose();
         }
 
-        //tag::tls-trust-on-first-use[]
-        // Not supported in .Net driver
-        //end::tls-trust-on-first-use[]
+        [Fact]
+        public void TlsTrustOnFirstUse()
+        {
+            var knownHostsFileName = Path.GetTempPath() + Guid.NewGuid() + ".tmp";
+            //tag::tls-trust-on-first-use[]
+            var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
+                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).WithTrustStrategy(TrustStrategy.TrustOnFirstUse(knownHostsFileName))
+                .ToConfig());
+            //end::tls-trust-on-first-use[]
 
+            using (var session = driver.Session())
+            {
+                var result = session.Run("RETURN 1 as n");
+                result.Single()["n"].As<int>().Should().Be(1);
+            }
+            driver.Dispose();
+
+            File.Delete(knownHostsFileName);
+        }
     }
 
     // TODO Remove it after we figure out a way to solve the naming problem

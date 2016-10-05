@@ -36,12 +36,12 @@ namespace Neo4j.Driver.Internal
 
             if (_encryptionLevel != EncryptionLevel.None)
             {
-                switch (strategy)
+                switch (strategy.ServerTrustStrategy())
                 {
-                    case V1.TrustStrategy.TrustOnFirstUse:
-                        TrustStrategy = new TrustOnFirstUse(logger);
+                    case V1.TrustStrategy.Strategy.TrustOnFirstUse:
+                        TrustStrategy = new TrustOnFirstUse(logger, strategy.FileName());
                         break;
-                    case V1.TrustStrategy.TrustSystemCaSignedCertificates:
+                    case V1.TrustStrategy.Strategy.TrustSystemCaSignedCertificates:
                         TrustStrategy = new TrustSystemCaSignedCertificates(logger);
                         break;
                     default:
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal
                     return false;
                 case EncryptionLevel.Encrypted:
                     return true;
-                case EncryptionLevel.EncryptedNoLocal:
+                case EncryptionLevel.EncryptedNonLocal:
                     return !uri.IsLoopback;
                 default:
                     throw new InvalidOperationException($"Unknown encryption level {_encryptionLevel}");
