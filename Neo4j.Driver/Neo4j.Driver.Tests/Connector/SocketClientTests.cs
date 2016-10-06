@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowExceptionIfProtocolIsNotSupported()
             {
-                var ex = Record.Exception(() => new SocketClient(new Uri("http://localhost:1234"), null));
+                var ex = Record.Exception(() => new SocketClient(new Uri("http://localhost:1234"), null, null));
                 ex.Should().BeOfType<NotSupportedException>();
                 ex.Message.Should().Be("Unsupported protocol: http");
             }
@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests
                 {
                     harness.SetupReadStream(new byte[] {0, 0, 0, 1});
                     await harness.Client.Start();
-                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri.Host, FakeUri.Port, false),
+                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri, false),
                         Times.Once);
                 }
             }
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests
                 messageHandler.EnqueueMessage(messages[0], rb);
                 messageHandler.EnqueueMessage(messages[1], rb);
 
-                using (var harness = new SocketClientTestHarness(FakeUri, null))
+                using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream("00 00 00 01" +
                                             "00 03 b1 70 a0 00 00" +
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldCreateExceptionWhenErrorReceivedFromDatabase()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri, null))
+                using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     var messages = new IRequestMessage[] {new RunMessage("This will cause a syntax error")};
                     var messageHandler = new MessageResponseHandler();
@@ -152,7 +152,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldIgnorePullAllWhenErrorHappenedDuringRun()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri, null))
+                using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     var messages = new IRequestMessage[]
                     {

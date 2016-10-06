@@ -50,8 +50,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotThrowExceptionWhenIdlePoolSizeReached()
             {
-                var config = new Config {MaxIdleSessionPoolSize = 2};
-                var pool = new ConnectionPool(MockedConnection, config:config);
+                var connectionPoolSettings = new ConnectionPoolSettings(2);
+                var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
                 pool.Acquire();
                 pool.Acquire();
                 pool.NumberOfAvailableConnections.Should().Be(0);
@@ -64,8 +64,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotExceedIdleLimit()
             {
-                var config = new Config {MaxIdleSessionPoolSize = 2};
-                var pool = new ConnectionPool(MockedConnection, config:config);
+                var connectionPoolSettings = new ConnectionPoolSettings(2);
+                var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
 
                 var conns = new List<IPooledConnection>();
                 for (var i = 0; i < 4; i++)
@@ -86,8 +86,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAcquireFromPoolIfAvailable()
             {
-                var config = new Config {MaxIdleSessionPoolSize = 2};
-                var pool = new ConnectionPool(MockedConnection, config:config);
+                var connectionPoolSettings = new ConnectionPoolSettings(2);
+                var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
 
                 for (var i = 0; i < 4; i++)
                 {

@@ -31,20 +31,19 @@ namespace Neo4j.Driver.Tests
         public SocketClient Client { get; }
         public Mock<Stream> MockWriteStream { get; }
         public Mock<ITcpSocketClient> MockTcpSocketClient { get; }
-        string _received = String.Empty;
+        string _received = string.Empty;
 
-        public SocketClientTestHarness(Uri uri, Config config = null)
+        public SocketClientTestHarness(Uri uri=null, EncryptionManager encryptionManager = null)
         {
-            if (config == null) config = Config.DefaultConfig;
             MockTcpSocketClient = new Mock<ITcpSocketClient>();
             MockWriteStream = TestHelper.TcpSocketClientSetup.CreateWriteStreamMock(MockTcpSocketClient);
-            Client = new SocketClient(uri, config, MockTcpSocketClient.Object);
+            Client = new SocketClient(uri, encryptionManager?? new Mock<EncryptionManager>().Object, MockTcpSocketClient.Object);
                
         }
 
         public async Task ExpectException<T>(Func<Task> func, string errorMessage=null) where T : Exception
         {
-            var exception = await Xunit.Record.ExceptionAsync(() => func());
+            var exception = await Record.ExceptionAsync(() => func());
             Assert.NotNull(exception);
             Assert.IsType<T>(exception);
             if (errorMessage != null)

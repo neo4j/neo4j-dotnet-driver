@@ -56,8 +56,8 @@ namespace Neo4j.Driver.Internal.Connector
             Server = initCollector.Server;
         }
 
-        public SocketConnection(Uri uri, IAuthToken authToken, Config config)
-            : this(new SocketClient(uri, config), authToken, config?.Logger)
+        public SocketConnection(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ILogger logger)
+            : this(new SocketClient(uri, encryptionManager, logger), authToken, logger)
         {
         }
 

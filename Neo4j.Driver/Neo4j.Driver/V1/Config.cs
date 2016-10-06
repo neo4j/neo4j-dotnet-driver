@@ -24,7 +24,17 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public enum EncryptionLevel
     {
+        /// <summary>
+        /// No encryption at all.
+        /// </summary>
         None,
+        /// <summary>
+        ///  With this level, the driver will only connect to the server without encryption if local but with encryption otherwise.
+        /// </summary>
+        EncryptedNonLocal,
+        /// <summary>
+        /// Always encrypted.
+        /// </summary>
         Encrypted
     }
 
@@ -42,13 +52,15 @@ namespace Neo4j.Driver.V1
             DefaultConfig = new Config();
         }
 
+
         /// <summary>
         /// Returns the default configuration for the <see cref="IDriver"/>.
         /// </summary>
         /// <remarks>
         /// The defaults are <br/>
         /// <list type="bullet">
-        /// <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> None</c> </item>
+        /// <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> EncryptedNonLocal</c> </item>
+        /// <item><see cref="TrustStrategy"/> : <c><see cref="V1.TrustStrategy.TrustOnFirstUse"/>TrustOnFirstUse</c> </item>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
         /// </list>
@@ -63,7 +75,12 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets or sets the use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
-        public EncryptionLevel EncryptionLevel { get; set; } = EncryptionLevel.None;
+        public EncryptionLevel EncryptionLevel { get; set; } = EncryptionLevel.EncryptedNonLocal;
+
+        /// <summary>
+        /// Gets or sets how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
+        /// </summary>
+        public TrustStrategy TrustStrategy { get; set; } = TrustStrategy.TrustOnFirstUse();
 
         /// <summary>
         /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
@@ -91,6 +108,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithEncryptionLevel(EncryptionLevel level)
             {
                 _config.EncryptionLevel = level;
+                return this;
+            }
+
+            public IConfigBuilder WithTrustStrategy(TrustStrategy strategy)
+            {
+                _config.TrustStrategy = strategy;
                 return this;
             }
 
@@ -135,6 +158,15 @@ namespace Neo4j.Driver.V1
         IConfigBuilder WithEncryptionLevel(EncryptionLevel level);
 
         /// <summary>
+        /// Sets <see cref="Config"/> to use the verification <paramref name="strategy"/> when establishing TLS connections.
+        /// The <paramref name="strategy"/> will not take effects if <see cref="Config.EncryptionLevel"/> decides to use no TLS encryption on the connections.
+        /// </summary>
+        /// <param name="strategy">See <see cref="TrustStrategy"/> for available strategies.</param>
+        /// <returns></returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithTrustStrategy(TrustStrategy strategy);
+
+        /// <summary>
         /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
@@ -151,5 +183,54 @@ namespace Neo4j.Driver.V1
         IConfigBuilder WithMaxIdleSessionPoolSize(int size);
     }
 
-  
+    /// <summary>
+    /// Strategy for how to trust encryption certificate.
+    /// </summary>
+    public class TrustStrategy
+    {
+        internal enum Strategy
+        {
+            TrustOnFirstUse,
+            TrustSystemCaSignedCertificates
+        }
+
+        private readonly string _fileName;
+        private readonly Strategy _strategy;
+
+        private TrustStrategy(Strategy strategy, string fileName = null)
+        {
+            _strategy = strategy;
+            _fileName = fileName;
+        }
+
+        internal string FileName()
+        {
+            return _fileName;
+        }
+
+        internal Strategy ServerTrustStrategy()
+        {
+            return _strategy;
+        }
+
+        /// <summary>
+        /// Automatically trust a Neo4j instance the first time we see it - but fail to connect if its encryption certificate ever changes.
+        /// This is similar to the mechanism used in SSH, and protects against man-in-the-middle attacks that occur after the initial setup of your application.
+        /// </summary>
+        /// <param name="knownHostsFileName">Optional. The file name where known certificates are stored. Default to be a file in the current user's folder</param>
+        /// <returns>An <see cref="TrustStrategy"/> accepted by <see cref="Config.TrustStrategy"/></returns>
+        public static TrustStrategy TrustOnFirstUse(string knownHostsFileName = null)
+        {
+            return new TrustStrategy(Strategy.TrustOnFirstUse, knownHostsFileName);
+        }
+
+        /// <summary>
+        /// Only turst connections from the server whose certifact is trusted by the operation system
+        /// </summary>
+        /// <returns>An <see cref="TrustStrategy"/> accepted by <see cref="Config.TrustStrategy"/></returns>
+        public static TrustStrategy TrustSystemCaSignedCertificates()
+        {
+            return new TrustStrategy(Strategy.TrustSystemCaSignedCertificates);
+        }
+    }
 }

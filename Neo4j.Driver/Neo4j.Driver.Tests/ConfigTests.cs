@@ -30,7 +30,9 @@ namespace Neo4j.Driver.Tests
             public void DefaultConfigShouldGiveCorrectValueBack()
             {
                 var config = Config.DefaultConfig;
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.EncryptionLevel.Should().Be(EncryptionLevel.EncryptedNonLocal);
+                config.TrustStrategy.ServerTrustStrategy().Should().Be(TrustStrategy.Strategy.TrustOnFirstUse);
+                config.TrustStrategy.FileName().Should().BeNull();
                 config.Logger.Should().BeOfType<DebugLogger>();
                 config.MaxIdleSessionPoolSize.Should().Be(10);
             }
@@ -44,6 +46,8 @@ namespace Neo4j.Driver.Tests
                 var config = new Config {EncryptionLevel = EncryptionLevel.Encrypted};
 
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
+                config.TrustStrategy.ServerTrustStrategy().Should().Be(TrustStrategy.Strategy.TrustOnFirstUse);
+                config.TrustStrategy.FileName().Should().BeNull();
                 config.Logger.Should().BeOfType<DebugLogger>();
                 config.MaxIdleSessionPoolSize.Should().Be(10);
             }
@@ -52,7 +56,9 @@ namespace Neo4j.Driver.Tests
             public void WithLoggingShouldModifyTheSingleValue()
             {
                 var config = Config.Builder.WithLogger(null).ToConfig();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.EncryptionLevel.Should().Be(EncryptionLevel.EncryptedNonLocal);
+                config.TrustStrategy.ServerTrustStrategy().Should().Be(TrustStrategy.Strategy.TrustOnFirstUse);
+                config.TrustStrategy.FileName().Should().BeNull();
                 config.Logger.Should().BeNull();
                 config.MaxIdleSessionPoolSize.Should().Be(10);
             }
@@ -61,7 +67,9 @@ namespace Neo4j.Driver.Tests
             public void WithPoolSizeShouldModifyTheSingleValue()
             {
                 var config = Config.Builder.WithMaxIdleSessionPoolSize(3).ToConfig();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.EncryptionLevel.Should().Be(EncryptionLevel.EncryptedNonLocal);
+                config.TrustStrategy.ServerTrustStrategy().Should().Be(TrustStrategy.Strategy.TrustOnFirstUse);
+                config.TrustStrategy.FileName().Should().BeNull();
                 config.Logger.Should().BeOfType<DebugLogger>();
                 config.MaxIdleSessionPoolSize.Should().Be(3);
             }
@@ -71,6 +79,19 @@ namespace Neo4j.Driver.Tests
             {
                 var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
+                config.TrustStrategy.ServerTrustStrategy().Should().Be(TrustStrategy.Strategy.TrustOnFirstUse);
+                config.TrustStrategy.FileName().Should().BeNull();
+                config.Logger.Should().BeOfType<DebugLogger>();
+                config.MaxIdleSessionPoolSize.Should().Be(10);
+            }
+
+            [Fact]
+            public void WithTrustStrategyShouldModifyTheSingleValue()
+            {
+                var config = Config.Builder.WithTrustStrategy(TrustStrategy.TrustSystemCaSignedCertificates()).ToConfig();
+                config.EncryptionLevel.Should().Be(EncryptionLevel.EncryptedNonLocal);
+                config.TrustStrategy.ServerTrustStrategy().Should().Be(TrustStrategy.Strategy.TrustSystemCaSignedCertificates);
+                config.TrustStrategy.FileName().Should().BeNull();
                 config.Logger.Should().BeOfType<DebugLogger>();
                 config.MaxIdleSessionPoolSize.Should().Be(10);
             }
@@ -89,7 +110,9 @@ namespace Neo4j.Driver.Tests
                 config1.MaxIdleSessionPoolSize.Should().Be(3);
                 config1.Logger.Should().BeOfType<DebugLogger>();
 
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.EncryptionLevel.Should().Be(EncryptionLevel.EncryptedNonLocal);
+                config.TrustStrategy.ServerTrustStrategy().Should().Be(TrustStrategy.Strategy.TrustOnFirstUse);
+                config.TrustStrategy.FileName().Should().BeNull();
                 config.Logger.Should().BeOfType<DebugLogger>();
                 config.MaxIdleSessionPoolSize.Should().Be(10);
             }

@@ -41,10 +41,12 @@
     <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Internal\Connector\ITrustStrategy.cs" />
     <Compile Include="Internal\Connector\PooledConnection.cs" />
     <Compile Include="Internal\Connector\ITcpSocketClient.cs" />
     <Compile Include="Internal\Connector\TcpSocketClient.cs" />
     <Compile Include="Internal\Messaging\AckFailureMessage.cs" />
+    <Compile Include="Internal\EncryptionManager.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />

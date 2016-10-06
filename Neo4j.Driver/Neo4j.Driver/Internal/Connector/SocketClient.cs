@@ -16,11 +16,9 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Packstream;
-using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -35,23 +33,31 @@ namespace Neo4j.Driver.Internal.Connector
         }
         private const string Scheme = "bolt";
 
-        private readonly Config _config;
         private readonly ITcpSocketClient _tcpSocketClient;
         private readonly Uri _uri;
         private IReader _reader;
         private IWriter _writer;
 
+        private readonly EncryptionManager _encryptionManager;
+        private readonly ILogger _logger;
+
         public static readonly BigEndianTargetBitConverter BitConverter = new BigEndianTargetBitConverter();
 
-        public SocketClient(Uri uri, Config config, ITcpSocketClient socketClient = null)
+        public SocketClient(Uri uri, EncryptionManager encryptionManager, ILogger logger, ITcpSocketClient socketClient = null)
         {
             if (uri != null && uri.Scheme.ToLowerInvariant() != Scheme)
             {
                 throw new NotSupportedException($"Unsupported protocol: {uri.Scheme}");
             }
             _uri = uri;
-            _config = config;
-            _tcpSocketClient = socketClient ?? new TcpSocketClient(_config.Logger);
+            _encryptionManager = encryptionManager;
+            _logger = logger;
+            _tcpSocketClient = socketClient ?? new TcpSocketClient(_encryptionManager);
+        }
+
+        internal SocketClient(Uri uri, EncryptionManager encryptionManager, ITcpSocketClient socketClient)
+            :this(uri, encryptionManager, null, socketClient)
+        {
         }
 
         public void Dispose()
@@ -62,18 +68,18 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task Start()
         {
-            await _tcpSocketClient.ConnectAsync(_uri.Host, _uri.Port, _config.EncryptionLevel == EncryptionLevel.Encrypted).ConfigureAwait(false);
+            await _tcpSocketClient.ConnectAsync(_uri, _encryptionManager.UseTls(_uri)).ConfigureAwait(false);
             IsOpen = true;
-            _config.Logger?.Debug($"~~ [CONNECT] {_uri}");
+            _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var version = await DoHandshake().ConfigureAwait(false);
 
             switch (version)
             {
                 case ProtocolVersion.Version1:
-                    _config.Logger?.Debug("S: [HANDSHAKE] 1");
+                    _logger?.Debug("S: [HANDSHAKE] 1");
 
-                    var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _config.Logger);
+                    var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _logger);
                     _writer = formatV1.Writer;
                     _reader = formatV1.Reader;
                     break;
@@ -104,7 +110,7 @@ namespace Neo4j.Driver.Internal.Connector
             foreach (var message in messages)
             {
                 _writer.Write(message);
-                _config.Logger?.Debug("C: ", message);
+                _logger?.Debug("C: ", message);
             }
             _writer.Flush();
         }
@@ -127,7 +133,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception ex)
             {
-                _config.Logger.Error("Unable to unpack message from server, connection has been terminated.", ex);
+                _logger?.Error("Unable to unpack message from server, connection has been terminated.", ex);
                 Task.Run(() => Stop()).Wait();
                 throw;
             }
@@ -140,7 +146,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private async Task<int> DoHandshake()
         {
-            _config.Logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
+            _logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
             int[] supportedVersion = {1, 0, 0, 0};
             
             var data = PackVersions(supportedVersion);
