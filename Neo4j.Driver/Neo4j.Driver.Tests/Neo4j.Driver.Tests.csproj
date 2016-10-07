@@ -152,6 +152,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AuthTokenTests.cs" />
+    <Compile Include="ClusterServerPoolTests.cs" />
     <Compile Include="ConfigTests.cs" />
     <Compile Include="Connector\ChunkedOutputTest.cs" />
     <Compile Include="Connector\MessageResponseHandlerTests.cs" />

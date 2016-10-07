@@ -41,6 +41,8 @@
     <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Internal\ClusterConnectionPool.cs" />
+    <Compile Include="Internal\ConnectionPoolSettings.cs" />
     <Compile Include="Internal\Connector\ITrustStrategy.cs" />
     <Compile Include="Internal\Connector\PooledConnection.cs" />
     <Compile Include="Internal\Connector\ITcpSocketClient.cs" />

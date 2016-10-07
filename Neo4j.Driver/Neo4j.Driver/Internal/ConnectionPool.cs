@@ -21,7 +21,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class ConnectionPool : LoggerBase
+    internal class ConnectionPool : LoggerBase, IConnectionPool
     {
         private readonly Uri _uri;
         private readonly IAuthToken _authToken;
@@ -36,9 +36,11 @@ namespace Neo4j.Driver.Internal
 
         private volatile bool _disposeCalled;
 
+        // for test only
         private readonly IConnection _fakeConnection;
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
+
         internal bool DisposeCalled
         {
             set { _disposeCalled = value; }
@@ -215,6 +217,11 @@ namespace Neo4j.Driver.Internal
         }
     }
 
+    internal interface IConnectionPool : IDisposable
+    {
+        IPooledConnection Acquire();
+        void Release(Guid id);
+    }
 
     internal interface IPooledConnection : IConnection
     {

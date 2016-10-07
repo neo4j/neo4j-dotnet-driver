@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal
     {
         private readonly EncryptionLevel _encryptionLevel;
 
-        public EncryptionManager(){}
+        public EncryptionManager(){} // for test
 
         public EncryptionManager(EncryptionLevel level, TrustStrategy strategy, ILogger logger)
         {
@@ -66,15 +66,5 @@ namespace Neo4j.Driver.Internal
         }
 
         public ITrustStrategy TrustStrategy { get; }
-    }
-
-    internal class ConnectionPoolSettings
-    {
-        public int MaxIdleSessionPoolSize { get; }
-
-        public ConnectionPoolSettings(int maxIdleSessionPoolSize)
-        {
-            MaxIdleSessionPoolSize = maxIdleSessionPoolSize;
-        }
     }
 }
