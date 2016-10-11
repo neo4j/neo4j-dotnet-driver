@@ -49,6 +49,7 @@
     <Compile Include="Internal\Connector\TcpSocketClient.cs" />
     <Compile Include="Internal\Messaging\AckFailureMessage.cs" />
     <Compile Include="Internal\EncryptionManager.cs" />
+    <Compile Include="Internal\RoutingDriver.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />
@@ -92,7 +93,7 @@
     <Compile Include="Internal\Packstream\BitConverterBase.cs" />
     <Compile Include="V1\Config.cs" />
     <Compile Include="Internal\Connector\IConnection.cs" />
-    <Compile Include="Internal\Driver.cs" />
+    <Compile Include="Internal\DirectDriver.cs" />
     <Compile Include="V1\GraphDatabase.cs" />
     <Compile Include="Internal\Session.cs" />
     <Compile Include="Internal\Messaging\RunMessage.cs" />

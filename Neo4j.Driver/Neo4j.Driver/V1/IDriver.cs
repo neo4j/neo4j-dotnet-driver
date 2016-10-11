@@ -42,5 +42,13 @@ namespace Neo4j.Driver.V1
         ///     transaction.
         /// </returns>
         ISession Session();
+
+
+        ISession Session(AccessMode mode);
+    }
+
+    public enum AccessMode
+    {
+        Read, Write
     }
 }

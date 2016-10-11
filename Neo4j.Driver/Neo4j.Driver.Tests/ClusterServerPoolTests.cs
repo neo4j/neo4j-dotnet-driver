@@ -80,5 +80,128 @@ namespace Neo4j.Driver.Tests
                 exception.Message.Should().Contain("Failed to create connections with server");
             }
         }
+
+        public class HasAddressMethod
+        {
+            [Theory]
+            [InlineData("bolt+routing://localhost:7687", "bolt+routing://127.0.0.1:7687", false)]
+            [InlineData("bolt+routing://127.0.0.1:7687", "bolt+routing://127.0.0.1:7687", true)]
+            [InlineData("bolt+routing://localhost:7687", "bolt+routing://localhost:7687", true)]
+            [InlineData("bolt+routing://LOCALHOST:7687", "bolt+routing://localhost:7687", true)]
+            public void AddressMatchTest(string first, string second, bool expectedResult)
+            {
+                // Given
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
+
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+                pool.HasAddress(new Uri(second)).Should().Be(expectedResult);
+            }
+        }
+
+        public class PurgeMethod
+        {
+            [Fact]
+            public void ShouldRemovedIfExist()
+            {
+                // Given
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                connectionPoolDict.GetOrAdd(new Uri(ServerUri), mockedConnectionPool.Object);
+
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+                // When
+                pool.Purge(new Uri(ServerUri));
+                
+                // Then
+                mockedConnectionPool.Verify(x=>x.Dispose(), Times.Once);
+                connectionPoolDict.Count.Should().Be(0);
+                connectionPoolDict.ContainsKey(new Uri(ServerUri)).Should().BeFalse();
+            }
+
+            [Fact]
+            public void ShouldRemoveNothingIfNotFound()
+            {
+                // Given
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+                // When
+                pool.Purge(new Uri(ServerUri));
+
+                // Then
+                connectionPoolDict.Count.Should().Be(0);
+                connectionPoolDict.ContainsKey(new Uri(ServerUri)).Should().BeFalse();
+            }
+        }
+
+        public class ReleaseMethod
+        {
+            [Fact]
+            public void ShouldReleaseIfExist()
+            {
+                // Given
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                connectionPoolDict.GetOrAdd(new Uri(ServerUri), mockedConnectionPool.Object);
+
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+                // When
+                var id = new Guid();
+                pool.Release(new Uri(ServerUri), id);
+
+                // Then
+                mockedConnectionPool.Verify(x => x.Release(id), Times.Once);
+                connectionPoolDict.Count.Should().Be(1);
+                connectionPoolDict.ContainsKey(new Uri(ServerUri)).Should().BeTrue();
+            }
+
+            [Fact]
+            public void ShouldNotReleaseIfNotFound()
+            {
+                // Given
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                connectionPoolDict.GetOrAdd(new Uri(ServerUri), mockedConnectionPool.Object);
+
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+                // When
+                var id = new Guid();
+                pool.Release(new Uri("http://123"), id);
+
+                // Then
+                mockedConnectionPool.Verify(x => x.Release(id), Times.Never());
+                connectionPoolDict.Count.Should().Be(1);
+                connectionPoolDict.ContainsKey(new Uri(ServerUri)).Should().BeTrue();
+            }
+        }
+
+        public class DisposeMethod
+        {
+            [Fact]
+            public void ShouldRemoveAllAfterDispose()
+            {
+                // Given
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                connectionPoolDict.GetOrAdd(new Uri(ServerUri), mockedConnectionPool.Object);
+
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+                // When
+                pool.Dispose();
+
+                // Then
+                mockedConnectionPool.Verify(x => x.Dispose(), Times.Once);
+                connectionPoolDict.Count.Should().Be(0);
+                connectionPoolDict.ContainsKey(new Uri(ServerUri)).Should().BeFalse();
+
+            }
+        }
     }
 }

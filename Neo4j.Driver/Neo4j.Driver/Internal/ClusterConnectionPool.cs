@@ -66,6 +66,15 @@ namespace Neo4j.Driver.Internal
             }
         }
 
+        public void Clear()
+        {
+            var uris = _pools.Keys;
+            foreach (var uri in uris)
+            {
+                Purge(uri);
+            }
+        }
+
         public void Release(Uri uri, Guid id)
         {
             IConnectionPool pool;
@@ -79,11 +88,7 @@ namespace Neo4j.Driver.Internal
         protected override void Dispose(bool isDisposing)
         {
             _disposeCalled = true;
-            var uris = _pools.Keys;
-            foreach (var uri in uris)
-            {
-                Purge(uri);
-            }
+            Clear();
         }
     }
 
@@ -95,6 +100,8 @@ namespace Neo4j.Driver.Internal
         void Release(Uri uri, Guid id);
         // Remove all the connections with the server specified by the uri
         void Purge(Uri uri);
+        // Purge all
+        void Clear();
         // Test if we have established connections with the server specified by the uri
         bool HasAddress(Uri uri);
     }

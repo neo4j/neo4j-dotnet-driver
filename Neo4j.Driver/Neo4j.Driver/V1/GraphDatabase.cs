@@ -102,7 +102,15 @@ namespace Neo4j.Driver.V1
             config = config ?? Config.DefaultConfig;
             var encryptionManager = new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger);
             var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
-            return new Internal.Driver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+            switch (uri.Scheme.ToLower())
+            {
+                case "bolt":
+                    return new DirectDriver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+                case "bolt+routing":
+                    return new RoutingDriver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+                default:
+                    throw new InvalidOperationException($"Unsupported URI scheme: {uri.Scheme}");
+            }
         }
     }
 }

@@ -20,12 +20,12 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Driver : IDriver
+    internal class DirectDriver : IDriver
     {
-        private ConnectionPool _connectionPool;
+        private IConnectionPool _connectionPool;
         private ILogger _logger;
 
-        internal Driver(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
+        internal DirectDriver(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(uri, nameof(uri));
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
@@ -67,6 +67,11 @@ namespace Neo4j.Driver.Internal
         public ISession Session()
         {
             return new Session(_connectionPool.Acquire(), _logger);
+        }
+
+        public ISession Session(AccessMode ignore)
+        {
+            return Session();
         }
     }
 }
