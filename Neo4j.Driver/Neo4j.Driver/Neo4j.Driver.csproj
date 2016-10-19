@@ -42,6 +42,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Internal\ClusterConnectionPool.cs" />
+    <Compile Include="Internal\ClusterView.cs" />
+    <Compile Include="Internal\ConcurrentRoundRobinSet.cs" />
     <Compile Include="Internal\ConnectionPoolSettings.cs" />
     <Compile Include="Internal\Connector\ITrustStrategy.cs" />
     <Compile Include="Internal\Connector\PooledConnection.cs" />
