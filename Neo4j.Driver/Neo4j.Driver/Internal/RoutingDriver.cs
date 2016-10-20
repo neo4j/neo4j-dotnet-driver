@@ -22,9 +22,9 @@ namespace Neo4j.Driver.Internal
 {
     internal class RoutingDriver : IDriver
     {
-        private IClusterConnectionPool _connectionPool;
+        
         private ILogger _logger;
-        private ClusterView _clusterView;
+        private ILoadBalancer _loadBalancer;
 
         internal RoutingDriver(
             Uri seedServer, 
@@ -35,8 +35,7 @@ namespace Neo4j.Driver.Internal
         {
             Uri = seedServer;
             _logger = logger;
-            _connectionPool = new ClusterConnectionPool(authToken, encryptionManager, poolSettings, logger);
-            _clusterView = new ClusterView(seedServer);
+
         }
 
         public void Dispose()
@@ -52,99 +51,10 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session(AccessMode mode)
         {
-            IPooledConnection connection = AcquireConnection(mode);
+            IPooledConnection connection = _loadBalancer.AcquireConnection(mode);
 
             throw new NotImplementedException();
             //return new RoutingSession(connection, mode, )
-        }
-
-        private IPooledConnection AcquireConnection(AccessMode mode)
-        {
-            CheckServer();
-            switch (mode)
-            {
-                case AccessMode.Read:
-                    return AcquireReadConnection();
-                case AccessMode.Write:
-                    return AcquireWriteConnection();
-                default:
-                    throw new InvalidOperationException($"Unknown access mode {mode}.");
-            }
-        }
-
-        private IPooledConnection AcquireReadConnection()
-        {
-            for (var i = 0; i < _clusterView.NumberOfReaders; i++)
-            {
-                Uri uri;
-                if (_clusterView.TryNextReader(out uri))
-                {
-                    break; // while we are reading from the view, all servers get removed from the view
-                }
-
-                try
-                {
-                    return _connectionPool.Acquire(uri);
-                }
-                catch (ConnectionFailureException)
-                {
-                    Forget(uri);
-                }
-            }
-            throw new SessionExpiredException("Failed to connect to any read server.");
-        }
-
-        private IPooledConnection AcquireWriteConnection()
-        {
-            for (var i = 0; i < _clusterView.NumberOfWriters; i++)
-            {
-                Uri uri;
-                if (_clusterView.TryNextWriter(out uri))
-                {
-                    break;
-                }
-
-                try
-                {
-                    return _connectionPool.Acquire(uri);
-                }
-                catch (ConnectionFailureException)
-                {
-                    Forget(uri);
-                }
-            }
-            throw new SessionExpiredException("Failed to connect to any write server.");
-        }
-
-        private void Forget(Uri uri)
-        {
-            _connectionPool.Purge(uri);
-            _clusterView.Remove(uri);
-        }
-
-        // Should sync on this method
-        private void CheckServer()
-        {
-            throw new NotImplementedException();
-//            if (!_clusterView.IsStale())
-//            {
-//                return;
-//            }
-//            var oldCluster = _clusterView.All();
-//            var newView = NewClusterView();
-//            var newCluster = newView.All();
-//
-//            oldCluster.ExceptWith(newCluster);
-//            foreach (var server in oldCluster)
-//            {
-//                _connectionPool.Purge(server);
-//            }
-//            _clusterView = newView;
-        }
-
-        private ClusterView NewClusterView()
-        {
-            throw new NotImplementedException();
         }
     }
 }

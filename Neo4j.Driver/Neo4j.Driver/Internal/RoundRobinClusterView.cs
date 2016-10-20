@@ -16,23 +16,31 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class ClusterView
+    internal class RoundRobinClusterView
     {
         private const int MinRouterCount = 1;
-        private ConcurrentRoundRobinSet<Uri> _routers;
-        private ConcurrentRoundRobinSet<Uri> _detachedRouters;
-        private ConcurrentRoundRobinSet<Uri> _readers;
-        private ConcurrentRoundRobinSet<Uri> _writers;
+        private readonly ConcurrentRoundRobinSet<Uri> _routers = new ConcurrentRoundRobinSet<Uri>();
+        private readonly ConcurrentRoundRobinSet<Uri> _detachedRouters = new ConcurrentRoundRobinSet<Uri>();
+        private readonly ConcurrentRoundRobinSet<Uri> _readers = new ConcurrentRoundRobinSet<Uri>();
+        private readonly ConcurrentRoundRobinSet<Uri> _writers = new ConcurrentRoundRobinSet<Uri>();
 
-        public ClusterView(Uri seed = null)
+        public RoundRobinClusterView(Uri seed = null)
         {
             if (seed != null)
             {
                 _routers.Add(seed);
             }
+        }
+
+        public RoundRobinClusterView(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers)
+        {
+            _routers.Add(routers);
+            _readers.Add(readers);
+            _writers.Add(writers);
         }
 
         public bool IsStale()
@@ -65,17 +73,13 @@ namespace Neo4j.Driver.Internal
             _writers.Remove(uri);
         }
 
-//        public ISet<Uri> All()
-//        {
-//            var all = new HashSet<Uri>();
-////            all.UnionWith(_routers);
-////            all.UnionWith(_readers);
-////            all.UnionWith(_writers);
-//            return all;
-//        }
-
-        public int NumberOfReaders => _readers.Count;
-        public int NumberOfWriters => _writers.Count;
-        public int NumberOfRouters => _routers.Count;
+        public ISet<Uri> All()
+        {
+            var all = new HashSet<Uri>();
+            all.UnionWith(_routers);
+            all.UnionWith(_readers);
+            all.UnionWith(_writers);
+            return all;
+        }
     }
 }

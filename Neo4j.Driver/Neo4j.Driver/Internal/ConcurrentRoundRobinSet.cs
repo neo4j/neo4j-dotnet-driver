@@ -65,33 +65,33 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public void Clear()
-        {
-            lock (_syncLock)
-            {
-                var count = _queue.Count;
-                for (var i = 0; i < count; i++)
-                {
-                    T ignore;
-                    _queue.TryDequeue(out ignore);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Remove all items from the set and add the given items into the set
-        /// </summary>
-        /// <param name="items">The new items to add in this set</param>
-        public void Update(IEnumerable<T> items)
-        {
-            lock (_syncLock)
-            {
-                // Clear 
-                Clear();
-                // Add
-                Add(items);
-            }
-        }
+//        public void Clear()
+//        {
+//            lock (_syncLock)
+//            {
+//                var count = _queue.Count;
+//                for (var i = 0; i < count; i++)
+//                {
+//                    T ignore;
+//                    _queue.TryDequeue(out ignore);
+//                }
+//            }
+//        }
+//
+//        /// <summary>
+//        /// Remove all items from the set and add the given items into the set
+//        /// </summary>
+//        /// <param name="items">The new items to add in this set</param>
+//        public void Update(IEnumerable<T> items)
+//        {
+//            lock (_syncLock)
+//            {
+//                // Clear 
+//                Clear();
+//                // Add
+//                Add(items);
+//            }
+//        }
 
         /// <summary>
         /// Remove one item from this set
@@ -138,6 +138,7 @@ namespace Neo4j.Driver.Internal
                     value = default(T);
                     return false;
                 }
+                // change to no memory copy, e.g. list
                 _queue.TryDequeue(out value);
                 _queue.Enqueue(value);
             }
