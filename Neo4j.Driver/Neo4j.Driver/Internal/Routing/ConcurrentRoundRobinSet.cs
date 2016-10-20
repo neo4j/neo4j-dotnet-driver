@@ -21,7 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal.Routing
 {
     // The current impl uses lock to protect from concurrent access to the elements in this set.
     // Make this class lock free if it is possible.

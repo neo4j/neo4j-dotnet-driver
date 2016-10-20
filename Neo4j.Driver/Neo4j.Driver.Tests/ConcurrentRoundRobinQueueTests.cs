@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Routing;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
