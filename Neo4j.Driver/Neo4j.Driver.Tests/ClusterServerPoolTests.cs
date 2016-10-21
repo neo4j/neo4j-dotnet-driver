@@ -5,6 +5,7 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Routing;
 
 
 namespace Neo4j.Driver.Tests

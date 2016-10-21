@@ -33,6 +33,8 @@ namespace Neo4j.Driver.Internal.Connector
         void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false);
         // Enqueue a reset message
         void Reset();
+        // Enqueue a ackFailure message
+        void AckFailure();
 
         //Asynchronously sending reset to the socket output channel. Enqueue reset + send all
         void ResetAsync();
@@ -41,14 +43,14 @@ namespace Neo4j.Driver.Internal.Connector
         /// Return true if the underlying socket connection is till open, otherwise false.
         /// </summary>
         bool IsOpen { get; }
-        /// <summary>
-        /// Return true if unrecoverable error has been received on this connection, otherwise false.
-        /// </summary>
-        bool HasUnrecoverableError { get; }
-        /// <summary>
-        /// Return true if more statements could be run on this connection, otherwise false.
-        /// </summary>
-        bool IsHealthy { get; }
+//        /// <summary>
+//        /// Return true if unrecoverable error has been received on this connection, otherwise false.
+//        /// </summary>
+//        bool HasUnrecoverableError { get; }
+//        /// <summary>
+//        /// Return true if more statements could be run on this connection, otherwise false.
+//        /// </summary>
+//        bool IsHealthy { get; }
 
         /// <summary>
         /// The version of the server the connection connected to. Default to <c>null</c> if not supported by server

@@ -229,9 +229,20 @@ namespace Neo4j.Driver.Internal
         /// An identifer of this connection for pooling
         /// </summary>
         Guid Id { get; }
+
         /// <summary>
         /// Try to reset the connection to a clean state to prepare it for a new session.
         /// </summary>
         void ClearConnection();
+
+        /// <summary>
+        /// Return true if unrecoverable error has been received on this connection, otherwise false.
+        /// </summary>
+        bool HasUnrecoverableError { get; }
+
+        /// <summary>
+        /// Return true if more statements could be run on this connection, otherwise false.
+        /// </summary>
+        bool IsHealthy { get; }
     }
 }

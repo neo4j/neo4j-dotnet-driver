@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -24,6 +25,24 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly Action<Guid> _releaseAction;
         private readonly IConnection _connection;
+
+        public void OnReadError(Exception error)
+        {
+            if (IsRecoverableError(error))
+            {
+                _connection.AckFailure();
+            }
+            else
+            {
+                HasUnrecoverableError = true;
+            }
+        }
+        private bool IsRecoverableError(Exception error)
+        {
+            return error is ClientException || error is TransientException;
+        }
+
+        public bool HasUnrecoverableError { private set; get; }
 
         public PooledConnection(IConnection connection, Action<Guid> releaseAction = null)
         {
@@ -63,16 +82,18 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.Reset();
         }
 
+        public void AckFailure()
+        {
+            _connection.AckFailure();
+        }
+
         public void ResetAsync()
         {
             _connection.ResetAsync();
         }
 
         public bool IsOpen => _connection.IsOpen;
-
-        public bool HasUnrecoverableError => _connection.HasUnrecoverableError;
-
-        public bool IsHealthy => _connection.IsHealthy;
+        public bool IsHealthy => IsOpen && !HasUnrecoverableError;
         public string Server => _connection.Server;
 
         /// <summary>

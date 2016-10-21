@@ -35,6 +35,11 @@ namespace Neo4j.Driver.Internal.Connector
         private volatile bool _interrupted;
         private readonly object _syncLock = new object();
 
+        // TODO pull out as an error handler
+        // If no given then use a null error handler otherwise use the specified error handler
+        private readonly Action<Exception> _onReadErrorAction;
+        private readonly Action<Exception> _onWriteErrorAction;
+
         public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
             IMessageResponseHandler messageResponseHandler = null)
         {
@@ -78,7 +83,17 @@ namespace Neo4j.Driver.Internal.Connector
                     return;
                 }
                 // blocking to send
-                _client.Send(_messages);
+
+                try
+                {
+                    _client.Send(_messages);
+                }
+                catch (Exception error)
+                {
+                    _onWriteErrorAction(error);
+                    throw;
+                }
+                
                 _messages.Clear();
             }
         }
@@ -92,13 +107,31 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             // blocking to receive
-            _client.Receive(_responseHandler);
+            try
+            {
+                _client.Receive(_responseHandler);
+            }
+            catch (Exception error)
+            {
+                _onReadErrorAction(error);
+                throw;
+            }
+            
             AssertNoServerFailure();
         }
 
         public void ReceiveOne()
         {
-            _client.ReceiveOne(_responseHandler);
+            try
+            {
+                _client.ReceiveOne(_responseHandler);
+            }
+            catch (Exception error)
+            {
+                _onReadErrorAction(error);
+                throw;
+            }
+            
             AssertNoServerFailure();
         }
 
@@ -119,6 +152,14 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new ResetMessage());
         }
 
+        public void AckFailure()
+        {
+            if (!_interrupted)
+            {
+                Enqueue(new AckFailureMessage());
+            }
+        }
+
         public void ResetAsync()
         {
             lock (_syncLock)
@@ -133,8 +174,6 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
-        public bool HasUnrecoverableError { private set; get; }
-        public bool IsHealthy => IsOpen && !HasUnrecoverableError;
         public string Server { private set; get; }
 
         public void Close()
@@ -160,27 +199,14 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (_responseHandler.HasError)
             {
-                if (IsRecoverableError(_responseHandler.Error))
-                {
-                    if (!_interrupted)
-                    {
-                        Enqueue(new AckFailureMessage());
-                    }
-                }
-                else
-                {
-                    HasUnrecoverableError = true;
-                }
                 var error = _responseHandler.Error;
+
+                _onReadErrorAction(error);
+
                 _responseHandler.Error = null;
                 _interrupted = false;
                 throw error;
             }
-        }
-
-        private bool IsRecoverableError(Neo4jException error)
-        {
-            return error is ClientException || error is TransientException;
         }
 
         private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null, IRequestMessage requestStreamingMessage = null)
