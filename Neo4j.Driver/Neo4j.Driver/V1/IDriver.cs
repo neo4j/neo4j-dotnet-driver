@@ -21,7 +21,7 @@ namespace Neo4j.Driver.V1
 {
     /// <summary>
     ///     The <see cref="IDriver"/> instance maintains the connections with a Neo4j database, providing an access point via the
-    ///     <see cref="Session" /> method.
+    ///     <see cref="ISession" /> method.
     /// </summary>
     /// <remarks>
     ///     The Driver maintains a session pool buffering the <see cref="ISession" />s created by the user. 

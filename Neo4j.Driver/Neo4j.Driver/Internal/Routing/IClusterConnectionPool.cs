@@ -16,22 +16,17 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal interface IClusterConnectionPool
+    internal interface IClusterConnectionPool : IDisposable
     {
         // Try to acquire a connection with the server specified by the uri
         bool TryAcquire(Uri uri, out IPooledConnection conn);
-        // Release the connection back to the server connection pool specified by the uri
-        void Release(Uri uri, Guid id);
-        // Add a pool for a new uri
-        void Add(Uri uri);
-        // Remove all the connections with the server specified by the uri
+        // Update the pool keys with the new server uris
+        void Update(IEnumerable<Uri> uris);
+        // Remove all the connection pool with the server specified by the uri
         void Purge(Uri uri);
-        // Purge all
-        void Clear();
-        // Test if we have established connections with the server specified by the uri
-        bool HasAddress(Uri uri);
     }
 }

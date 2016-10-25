@@ -1,22 +1,21 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class ConcurrentRoundRobinQueueTests
+    public class ConcurrentRoundRobinSetTests
     {
-        public class HopMethod
+        public class TryNextMethod
         {
             [Fact]
-            public void ShouldThrowExceptionIfNoElementInSet()
+            public void ShouldReturnFalseIfNoElementInSet()
             {
                 var set = new ConcurrentRoundRobinSet<int>();
-                var exception = Xunit.Record.Exception(() => set.Hop());
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Be("No item in set");
+                int value;
+                set.TryNext(out value).Should().BeFalse();
+                value.Should().Be(default(int));
             }
 
             [Fact]
@@ -26,7 +25,8 @@ namespace Neo4j.Driver.Tests
 
                 for (var i = 0; i < 10; i++)
                 {
-                    var real = set.Hop();
+                    int real;
+                    set.TryNext(out real).Should().BeTrue();
                     var expect = i % set.Count;
                     real.Should().Be(expect);
                 }
@@ -38,6 +38,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAddNew()
             {
+                // ReSharper disable once UseObjectOrCollectionInitializer
                 var set = new ConcurrentRoundRobinSet<int>();
                 set.Add(1);
                 set.Count.Should().Be(1);
@@ -46,6 +47,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotAddIfAlreadyExists()
             {
+                // ReSharper disable once UseObjectOrCollectionInitializer
                 var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
                 set.Add(0);
                 set.Add(1);
@@ -53,17 +55,6 @@ namespace Neo4j.Driver.Tests
                 set.Add(3);
                 set.Count.Should().Be(4);
                 set.Should().ContainInOrder(0, 1, 2, 3);
-            }
-        }
-
-        public class ClearMethod
-        {
-            [Fact]
-            public void ShouldRemoveAll()
-            {
-                var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
-                set.Clear();
-                set.Count.Should().Be(0);
             }
         }
 
@@ -98,7 +89,9 @@ namespace Neo4j.Driver.Tests
                 // we loop serveral turns on the full set
                 for (var i = 0; i < 3*set.Count; i++)
                 {
-                    set.Hop().Should().Be(i % set.Count);
+                    int real;
+                    set.TryNext(out real).Should().BeTrue();
+                    real.Should().Be(i%set.Count);
                 }
 
                 // we add a new item into the set
@@ -107,7 +100,9 @@ namespace Neo4j.Driver.Tests
                 // we loop again and everything is in set
                 for (var i = 0; i < 3*set.Count; i++)
                 {
-                    set.Hop().Should().Be(i % set.Count);
+                    int real;
+                    set.TryNext(out real).Should().BeTrue();
+                    real.Should().Be(i % set.Count);
                 }
             }
 
@@ -118,7 +113,8 @@ namespace Neo4j.Driver.Tests
 
                 for (var i = 0; i < 3 * set.Count; i++)
                 {
-                    var real = set.Hop();
+                    int real;
+                    set.TryNext(out real).Should().BeTrue();
                     var expect = i % set.Count;
                     real.Should().Be(expect);
                 }
@@ -127,7 +123,8 @@ namespace Neo4j.Driver.Tests
 
                 for (var i = 0; i < 3 * set.Count; i++)
                 {
-                    var real = set.Hop();
+                    int real;
+                    set.TryNext(out real).Should().BeTrue();
                     var expect = i % set.Count;
                     real.Should().Be(expect);
                 }

@@ -35,10 +35,7 @@ namespace Neo4j.Driver.Internal.Connector
         private volatile bool _interrupted;
         private readonly object _syncLock = new object();
 
-        // TODO pull out as an error handler
-        // If no given then use a null error handler otherwise use the specified error handler
-        private readonly Action<Exception> _onReadErrorAction;
-        private readonly Action<Exception> _onWriteErrorAction;
+        private IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
 
         public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
             IMessageResponseHandler messageResponseHandler = null)
@@ -90,7 +87,7 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception error)
                 {
-                    _onWriteErrorAction(error);
+                    OnConnectionError(error);
                     throw;
                 }
                 
@@ -113,7 +110,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception error)
             {
-                _onReadErrorAction(error);
+                OnConnectionError(error);
                 throw;
             }
             
@@ -128,7 +125,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception error)
             {
-                _onReadErrorAction(error);
+                OnConnectionError(error);
                 throw;
             }
             
@@ -181,6 +178,11 @@ namespace Neo4j.Driver.Internal.Connector
             Dispose();
         }
 
+        public void AddConnectionErrorHander(IConnectionErrorHandler handler)
+        {
+            _handlers.Add(handler);
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -201,11 +203,27 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 var error = _responseHandler.Error;
 
-                _onReadErrorAction(error);
+                OnNeo4jError(error);
 
                 _responseHandler.Error = null;
                 _interrupted = false;
                 throw error;
+            }
+        }
+
+        private void OnConnectionError(Exception e)
+        {
+            foreach (var handler in _handlers)
+            {
+                e = handler.OnConnectionError(e);
+            }
+        }
+
+        public void OnNeo4jError(Neo4jException e)
+        {
+            foreach (var handler in _handlers)
+            {
+                e = handler.OnNeo4jError(e);
             }
         }
 

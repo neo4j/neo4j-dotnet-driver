@@ -65,34 +65,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-//        public void Clear()
-//        {
-//            lock (_syncLock)
-//            {
-//                var count = _queue.Count;
-//                for (var i = 0; i < count; i++)
-//                {
-//                    T ignore;
-//                    _queue.TryDequeue(out ignore);
-//                }
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Remove all items from the set and add the given items into the set
-//        /// </summary>
-//        /// <param name="items">The new items to add in this set</param>
-//        public void Update(IEnumerable<T> items)
-//        {
-//            lock (_syncLock)
-//            {
-//                // Clear 
-//                Clear();
-//                // Add
-//                Add(items);
-//            }
-//        }
-
         /// <summary>
         /// Remove one item from this set
         /// </summary>
@@ -119,17 +91,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        public T Hop()
-        {
-            T value;
-            if (!TryHop(out value))
-            {
-                throw new InvalidOperationException("No item in set");
-            }
-            return value;
-        }
-
-        public bool TryHop(out T value)
+        public bool TryNext(out T value)
         {
             lock (_syncLock)
             {

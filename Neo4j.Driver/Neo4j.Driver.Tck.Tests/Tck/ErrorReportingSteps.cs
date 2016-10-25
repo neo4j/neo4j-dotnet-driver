@@ -87,12 +87,9 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"I set up a driver with wrong scheme")]
         public void WhenISetUpADriverWithWrongScheme()
         {
-            using (var driver = GraphDatabase.Driver("http://localhost"))
-            {
-                var ex = Xunit.Record.Exception(() => driver.Session());
-                ex.Should().BeOfType<NotSupportedException>();
-                ex.Message.Should().Be("Unsupported protocol: http");
-            }
+            var ex = Xunit.Record.Exception(() => GraphDatabase.Driver("http://localhost"));
+            ex.Should().BeOfType<NotSupportedException>();
+            ex.Message.Should().Be("Unsupported URI scheme: http");
         }
 
         [Then(@"it throws a `ClientException`")]

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
@@ -23,7 +24,9 @@ namespace Neo4j.Driver.Internal.Routing
     internal class RoundRobinLoadBalancer : ILoadBalancer
     {
         private RoundRobinClusterView _clusterView;
-        private readonly IClusterConnectionPool _connectionPool;
+        private IClusterConnectionPool _connectionPool;
+        private ILogger _logger;
+        private readonly object _syncLock = new object();
 
         public RoundRobinLoadBalancer(
             Uri seedServer,
@@ -32,14 +35,14 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionPoolSettings poolSettings,
             ILogger logger)
         {
-            _connectionPool = new ClusterConnectionPool(authToken, encryptionManager, poolSettings, logger);
-            _connectionPool.Add(seedServer);
+            _connectionPool = new ClusterConnectionPool(seedServer, authToken, encryptionManager, poolSettings, logger, CreateClusterPooledConnectionErrorHandler);
             _clusterView = new RoundRobinClusterView(seedServer);
+            _logger = logger;
         }
 
         public IPooledConnection AcquireConnection(AccessMode mode)
         {
-            Discovery();
+            EnsureDiscovery();
             switch (mode)
             {
                 case AccessMode.Read:
@@ -70,9 +73,10 @@ namespace Neo4j.Driver.Internal.Routing
                         return conn;
                     }
                 }
-                catch (ConnectionFailureException)
+                catch (SessionExpiredException)
                 {
-                    Forget(uri);
+                    // ignored
+                    // Already handled by connectionpool error handler to remove from load balancer
                 }
             }
             throw new SessionExpiredException("Failed to connect to any read server.");
@@ -96,9 +100,10 @@ namespace Neo4j.Driver.Internal.Routing
                         return conn;
                     }
                 }
-                catch (ConnectionFailureException)
+                catch (SessionExpiredException)
                 {
-                    Forget(uri);
+                    // ignored
+                    // Already handled by connectionpool error handler to remove from load balancer
                 }
             }
             throw new SessionExpiredException("Failed to connect to any write server.");
@@ -110,29 +115,19 @@ namespace Neo4j.Driver.Internal.Routing
             _connectionPool.Purge(uri);
         }
 
-        // TODO: Should sync on this method
-        public void Discovery()
+        public void EnsureDiscovery()
         {
-            if (!_clusterView.IsStale())
+            lock (_syncLock)
             {
-                return;
-            }
+                if (!_clusterView.IsStale())
+                {
+                    return;
+                }
 
-            var oldServers = _clusterView.All();
-            var newView = NewClusterView();
-            var newServers = newView.All();
-
-            oldServers.ExceptWith(newServers);
-            foreach (var server in oldServers)
-            {
-                _connectionPool.Purge(server);
+                var newView = NewClusterView();
+                _connectionPool.Update(newView.All());
+                _clusterView = newView;
             }
-            foreach (var server in newServers)
-            {
-                _connectionPool.Add(server);
-            }
-            
-            _clusterView = newView;
         }
 
         public RoundRobinClusterView NewClusterView()
@@ -151,21 +146,102 @@ namespace Neo4j.Driver.Internal.Routing
                     IPooledConnection conn;
                     if (_connectionPool.TryAcquire(uri, out conn))
                     {
-                        var discoveryManager = new ClusterDiscoveryManager(conn);
+                        var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
                         discoveryManager.Rediscovery();
-                        return new RoundRobinClusterView(discoveryManager.Routers, discoveryManager.Readers, discoveryManager.Writers);
+                        return new RoundRobinClusterView(discoveryManager.Routers, discoveryManager.Readers,
+                            discoveryManager.Writers);
                     }
                 }
-                catch (ConnectionFailureException)
+                catch (SessionExpiredException)
                 {
-                    Forget(uri);
+                    // ignored
+                    // Already handled by connection pool error handler to remove from load balancer
+                }
+                catch (InvalidDiscoveryException)
+                {
+                    _clusterView.Remove(uri);
                 }
             }
 
             // TODO also try each detached routers
-            throw new SessionExpiredException(
+            // We retied and tried our best however there is just no cluster.
+            // This is the ultimate place we will inform the user that you need to re-create a driver
+            throw new ServerUnavailableException(
                 "Failed to connect to any routing server. " +
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
+        }
+
+        private Exception OnConnectionError(Exception e, Uri uri)
+        {
+            Forget(uri);
+            return new SessionExpiredException($"Server at {uri} is no longer available", e);
+        }
+
+        private Neo4jException OnNeo4jError(Neo4jException error, Uri uri)
+        {
+            if (error.Code.Equals("Neo.ClientError.Cluster.NotALeader"))
+            {
+                // The lead is no longer a leader, a.k.a. the write server no longer accepts writes
+                // However the server is still available for possible reads.
+                // Therefore we just remove it from ClusterView but keep it in connection pool.
+                _clusterView.Remove(uri);
+                return new SessionExpiredException($"Server at {uri} no longer accepts writes");
+            }
+            else if (error.Code.Equals("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase"))
+            {
+                // The user was trying to run a write in a read session
+                // So inform the user and let him try with a proper session mode
+                return new ClientException("Write queries cannot be performed in READ access mode.");
+            }
+            return error;
+        }
+
+        private ClusterPooledConnectionErrorHandler CreateClusterPooledConnectionErrorHandler(Uri uri)
+        {
+            return new ClusterPooledConnectionErrorHandler(x => OnConnectionError(x, uri), x => OnNeo4jError(x, uri));
+        }
+
+        private class ClusterPooledConnectionErrorHandler : IConnectionErrorHandler
+        {
+            private Func<Exception, Exception> _onConnectionErrorFunc;
+            private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
+
+            public ClusterPooledConnectionErrorHandler(Func<Exception, Exception> onConnectionErrorFuncFunc, Func<Neo4jException, Neo4jException> onNeo4JErrorFuncFunc)
+            {
+                _onConnectionErrorFunc = onConnectionErrorFuncFunc;
+                _onNeo4jErrorFunc = onNeo4JErrorFuncFunc;
+            }
+
+            public Exception OnConnectionError(Exception e)
+            {
+                return _onConnectionErrorFunc.Invoke(e);
+            }
+
+            public Neo4jException OnNeo4jError(Neo4jException e)
+            {
+                return _onNeo4jErrorFunc.Invoke(e);
+            }
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (!isDisposing)
+                return;
+
+            _clusterView = null;
+
+            if (_connectionPool != null)
+            {
+                _connectionPool.Dispose();
+                _connectionPool = null;
+            }
+            _logger = null;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

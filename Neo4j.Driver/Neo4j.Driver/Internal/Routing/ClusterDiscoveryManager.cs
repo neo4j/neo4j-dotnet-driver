@@ -24,21 +24,22 @@ namespace Neo4j.Driver.Internal.Routing
     internal class ClusterDiscoveryManager
     {
         private readonly IPooledConnection _conn;
-        private ILogger logger;
+        private readonly ILogger _logger;
         public IEnumerable<Uri> Readers { get; internal set; } // = new Uri[0];
         public IEnumerable<Uri> Writers { get; internal set; } // = new Uri[0];
         public IEnumerable<Uri> Routers { get; internal set; } // = new Uri[0];
 
         private const string ProcedureName = "dbms.cluster.routing.getServers";
-        public ClusterDiscoveryManager(IPooledConnection connection)
+        public ClusterDiscoveryManager(IPooledConnection connection, ILogger logger)
         {
             _conn = connection;
+            _logger = logger;
         }
 
+        /// <remarks>Throws <see cref="InvalidDiscoveryException"/> if the discovery result is invalid.</remarks>
         public void Rediscovery()
         {
-            // TODO error handling???
-            using (var session = new Session(_conn, logger))
+            using (var session = new Session(_conn, _logger))
             {
                 var result = session.Run($"CALL {ProcedureName}");
                 var record = result.Single();
@@ -48,7 +49,6 @@ namespace Neo4j.Driver.Internal.Routing
                     var role = servers["role"].As<string>();
                     switch (role)
                     {
-                        // TODO test 0 size array
                         case "READ":
                             Readers = addresses.Select(address => new Uri(address)).ToArray();
                             break;
@@ -61,6 +61,18 @@ namespace Neo4j.Driver.Internal.Routing
                     }
                 }
             }
+            if (!Readers.Any() || !Writers.Any() || !Routers.Any())
+            {
+                throw new InvalidDiscoveryException(
+                    $"Invalid discovery result: discovered {Routers.Count()} routers, " +
+                    $"{Writers.Count()} writers and {Readers.Count()} readers. A Redisvoery is required.");
+            }
         }
+    }
+
+    internal class InvalidDiscoveryException : Exception
+    {
+        public InvalidDiscoveryException(string message) : base(message)
+        {}
     }
 }

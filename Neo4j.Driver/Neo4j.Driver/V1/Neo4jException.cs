@@ -130,13 +130,13 @@ namespace Neo4j.Driver.V1
     }
 
     [DataContract]
-    public class ConnectionFailureException : Neo4jException
+    public class ServerUnavailableException : Neo4jException
     {
-        public ConnectionFailureException(string message) : base(message)
+        public ServerUnavailableException(string message) : base(message)
         {
         }
 
-        public ConnectionFailureException(string message, Exception innerException) : base(message, innerException)
+        public ServerUnavailableException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }

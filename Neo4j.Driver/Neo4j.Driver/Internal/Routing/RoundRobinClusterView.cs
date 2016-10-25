@@ -52,17 +52,17 @@ namespace Neo4j.Driver.Internal.Routing
 
         public bool TryNextRouter(out Uri uri)
         {
-            return _routers.TryHop(out uri);
+            return _routers.TryNext(out uri);
         }
 
         public bool TryNextReader(out Uri uri)
         {
-            return _readers.TryHop(out uri);
+            return _readers.TryNext(out uri);
         }
 
         public bool TryNextWriter(out Uri uri)
         {
-            return _writers.TryHop(out uri);
+            return _writers.TryNext(out uri);
         }
 
         public void Remove(Uri uri)

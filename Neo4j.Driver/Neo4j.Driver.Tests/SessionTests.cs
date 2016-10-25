@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldSyncOnRun()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = new Session(mockConn.Object, null);
                 session.Run("lalalal");
 
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotAllowNewTxWhileOneIsRunning()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = new Session(mockConn.Object, null);
                 session.BeginTransaction();
                 var error = Record.Exception(() => session.BeginTransaction());
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeAbleToOpenTxAfterPreviousIsClosed()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotBeAbleToUseSessionWhileOngoingTransaction()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
 
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotAllowMoreStatementsInSessionWhileConnectionHasUnrecoverableError()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = new Mock<IPooledConnection>();
                 mockConn.Setup(x => x.HasUnrecoverableError).Returns(true);
                 var session = new Session(mockConn.Object, null);
 
@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotAllowMoreTransactionsInSessionWhileConnectionHasUnrecoverableError()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = new Mock<IPooledConnection>();
                 mockConn.Setup(x => x.HasUnrecoverableError).Returns(true);
                 var session = new Session(mockConn.Object, null);
 
@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldDisposeTxOnDispose()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsHealthy).Returns(true);
+                mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = new Session(mockConn.Object, null);
                 var tx = session.BeginTransaction();
                 session.Dispose();

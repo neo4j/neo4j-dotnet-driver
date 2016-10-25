@@ -17,6 +17,9 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
@@ -27,25 +30,37 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IAuthToken _authToken;
         private readonly EncryptionManager _encryptionManager;
         private readonly ConnectionPoolSettings _poolSettings;
+        private readonly Func<Uri, IConnectionErrorHandler> _clusterErrorHandlerCreator;
 
         // for test only
         private readonly IConnectionPool _fakeConnectionPool;
 
         private volatile bool _disposeCalled;
 
-        public ClusterConnectionPool(IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings poolSettings, ILogger logger)
+        public ClusterConnectionPool(
+            Uri seedServer,
+            IAuthToken authToken,
+            EncryptionManager encryptionManager,
+            ConnectionPoolSettings poolSettings,
+            ILogger logger,
+            Func<Uri, IConnectionErrorHandler> clusterErrorHandlerCreator)
             : base(logger)
         {
             _authToken = authToken;
             _encryptionManager = encryptionManager;
             _poolSettings = poolSettings;
+            _clusterErrorHandlerCreator = clusterErrorHandlerCreator;
+            if (seedServer != null)
+            {
+                Add(seedServer);
+            }
         }
 
         internal ClusterConnectionPool(IConnectionPool connectionPool,
             ConcurrentDictionary<Uri, IConnectionPool> pool=null,
             ConnectionPoolSettings poolSettings=null,
             ILogger logger=null) :
-            this(null, encryptionManager: null, poolSettings: poolSettings, logger: logger)
+            this(null, null, null, poolSettings, logger, null)
         {
             _fakeConnectionPool = connectionPool;
             _pools = pool;
@@ -53,7 +68,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
-            return _fakeConnectionPool ?? new ConnectionPool(uri, _authToken, _encryptionManager, _poolSettings, Logger);
+            return _fakeConnectionPool ?? new ConnectionPool(uri, _authToken, _encryptionManager, _poolSettings, Logger, _clusterErrorHandlerCreator.Invoke(uri));
         }
 
         public bool TryAcquire(Uri uri, out IPooledConnection conn)
@@ -69,13 +84,8 @@ namespace Neo4j.Driver.Internal.Routing
             return true;
         }
 
-        public bool HasAddress(Uri uri)
-        {
-            return _pools.ContainsKey(uri);
-        }
-
-        // This is the only place to add a pool
-        public void Add(Uri uri)
+        // This is the ultimate method to add a pool
+        private void Add(Uri uri)
         {
             _pools.GetOrAdd(uri, CreateNewConnectionPool);
             if (_disposeCalled)
@@ -83,6 +93,21 @@ namespace Neo4j.Driver.Internal.Routing
                 // Anything added after dispose should be directly cleaned.
                 Purge(uri);
                 throw new InvalidOperationException($"Failed to create connections with server {uri} as the driver has already started to dispose.");
+            }
+        }
+
+        public void Update(IEnumerable<Uri> servers)
+        {
+            foreach (var uri in _pools.Keys)
+            {
+                if (!servers.Contains(uri))
+                {
+                    Purge(uri);
+                }
+            }
+            foreach (var uri in servers)
+            {
+                Add(uri);
             }
         }
 
@@ -96,22 +121,12 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        public void Clear()
+        private void Clear()
         {
             var uris = _pools.Keys;
             foreach (var uri in uris)
             {
                 Purge(uri);
-            }
-        }
-
-        public void Release(Uri uri, Guid id)
-        {
-            IConnectionPool pool;
-            var found = _pools.TryGetValue(uri, out pool);
-            if (found)
-            {
-                pool.Release(id);
             }
         }
 

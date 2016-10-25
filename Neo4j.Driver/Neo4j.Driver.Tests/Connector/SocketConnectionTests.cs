@@ -194,6 +194,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        // TODO move this to PooledConnectionTests
         public class HasUnrecoverableError
         {
             [Fact]
@@ -201,7 +202,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                var con = new PooledConnection (new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object));
 
                 mockResponseHandler.Setup(x => x.Error).Returns(new TransientException("BLAH", "lalala"));
                 con.HasUnrecoverableError.Should().BeFalse();
@@ -212,7 +213,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                var con = new PooledConnection(new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object));
 
                 mockResponseHandler.Setup(x => x.HasError).Returns(true);
                 mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException("BLAH", "lalala"));
@@ -230,14 +231,14 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                var con = new PooledConnection(new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object));
 
                 mockResponseHandler.Setup(x => x.Error).Returns(new ClientException("BLAH", "lalala"));
                 con.HasUnrecoverableError.Should().BeFalse();
             }
         }
 
-        public class IsHealthyMethod
+        public class IsOpenMethod
         {
             [Fact]
             public void ShouldBeFalseWhenConectionIsNotOpen()
@@ -247,8 +248,8 @@ namespace Neo4j.Driver.Tests
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 mockResponseHandler.Setup(x => x.Error).Returns(new ClientException()); // has no unrecoverable error
 
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-                conn.IsHealthy.Should().BeFalse();
+                var conn = new PooledConnection(new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object));
+                conn.IsOpen.Should().BeFalse();
             }
 
             [Fact]
@@ -259,8 +260,8 @@ namespace Neo4j.Driver.Tests
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException());  // unrecoverable error
 
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-                conn.IsHealthy.Should().BeFalse();
+                var conn = new PooledConnection(new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object));
+                conn.IsOpen.Should().BeFalse();
             }
 
             [Fact]
@@ -271,8 +272,8 @@ namespace Neo4j.Driver.Tests
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 mockResponseHandler.Setup(x => x.Error).Returns(new ClientException());  // has no unrecoverable error
 
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-                conn.IsHealthy.Should().BeTrue();
+                var conn = new PooledConnection(new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object));
+                conn.IsOpen.Should().BeTrue();
             }
         }
     }

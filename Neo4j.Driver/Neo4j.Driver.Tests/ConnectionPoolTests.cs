@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
                 get
                 {
                     var mock = new Mock<IConnection>();
-                    mock.Setup(x => x.IsHealthy).Returns(true);
+                    mock.Setup(x => x.IsOpen).Returns(true);
                     return mock.Object;
                 }
             }
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Tests
                 var conns = new Queue<IPooledConnection>();
                 var unhealthyId = Guid.NewGuid();
                 var unhealthyMock = new Mock<IPooledConnection>();
-                unhealthyMock.Setup(x => x.IsHealthy).Returns(false);
+                unhealthyMock.Setup(x => x.IsOpen).Returns(false);
                 unhealthyMock.Setup(x => x.Id).Returns(unhealthyId);
 
                 conns.Enqueue(unhealthyMock.Object);
@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
-                unhealthyMock.Verify(x => x.IsHealthy, Times.Once);
+                unhealthyMock.Verify(x => x.IsOpen, Times.Once);
                 unhealthyMock.Verify(x => x.Close(), Times.Once);
 
                 conn.Should().NotBeNull();
@@ -141,7 +141,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conns = new Queue<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(true);
+                mock.Setup(x => x.IsOpen).Returns(true);
 
                 conns.Enqueue(mock.Object);
                 var pool = new ConnectionPool(MockedConnection, conns);
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
-                mock.Verify(x => x.IsHealthy, Times.Once);
+                mock.Verify(x => x.IsOpen, Times.Once);
                 conn.Should().Be(mock.Object);
             }
 
@@ -162,9 +162,9 @@ namespace Neo4j.Driver.Tests
             {
                 var conns = new Queue<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
-                healthyMock.Setup(x => x.IsHealthy).Returns(true);
+                healthyMock.Setup(x => x.IsOpen).Returns(true);
                 var unhealthyMock = new Mock<IPooledConnection>();
-                unhealthyMock.Setup(x => x.IsHealthy).Returns(false);
+                unhealthyMock.Setup(x => x.IsOpen).Returns(false);
 
                 conns.Enqueue(unhealthyMock.Object);
                 conns.Enqueue(healthyMock.Object);
@@ -201,7 +201,7 @@ namespace Neo4j.Driver.Tests
                 for (var i = 0; i < numberOfThreads; i++)
                 {
                     var mock = new Mock<IPooledConnection>();
-                    mock.Setup(x => x.IsHealthy).Returns(true);
+                    mock.Setup(x => x.IsOpen).Returns(true);
                     mock.Setup(x => x.Id).Returns(ids[i]);
                     conns.Enqueue(mock.Object);
                     mockConns.Enqueue(mock);
@@ -246,7 +246,7 @@ namespace Neo4j.Driver.Tests
 
                 foreach (var mock in mockConns)
                 {
-                    mock.Verify(x => x.IsHealthy, Times.Once);
+                    mock.Verify(x => x.IsOpen, Times.Once);
                 }
             }
 
@@ -277,7 +277,7 @@ namespace Neo4j.Driver.Tests
                 // This is to simulate Acquire called first,
                 // but before Acquire put a new conn into inUseConn, Dispose get called.
                 // Note: Once dispose get called, it is forbiden to put anything into queue.
-                healthyMock.Setup(x => x.IsHealthy).Returns(true)
+                healthyMock.Setup(x => x.IsOpen).Returns(true)
                     .Callback(() => pool.DisposeCalled = true); // Simulte Dispose get called at this time
                 conns.Enqueue(healthyMock.Object);
                 pool.NumberOfAvailableConnections.Should().Be(1);
@@ -286,7 +286,7 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                healthyMock.Verify(x => x.IsHealthy, Times.Once);
+                healthyMock.Verify(x => x.IsOpen, Times.Once);
                 healthyMock.Verify(x => x.Close(), Times.Once);
                 exception.Should().BeOfType<InvalidOperationException>();
                 exception.Message.Should().Contain("the driver has already started to dispose");
@@ -299,7 +299,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnToPoolWhenConnectionIsReusableAndPoolIsNotFull()
             {
                 var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(true);
+                mock.Setup(x => x.IsOpen).Returns(true);
                 var id = new Guid();
 
                 var inUseconns = new Dictionary<Guid, IPooledConnection>();
@@ -319,7 +319,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseConnectionWhenConnectionIsUnhealthy()
             {
                 var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(false);
+                mock.Setup(x => x.IsOpen).Returns(false);
                 var id = new Guid();
 
                 var inUseConns = new Dictionary<Guid, IPooledConnection>();
@@ -337,10 +337,10 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldCloseConnectionWhenConnectionIsHealthyButNotResetable()
+            public void ShouldCloseConnectionWhenConnectionIsOpenButNotResetable()
             {
                 var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(true);
+                mock.Setup(x => x.IsOpen).Returns(true);
                 mock.Setup(x => x.ClearConnection()).Throws<ClientException>();
                 var id = new Guid();
 
@@ -362,7 +362,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseTheConnectionIfSessionIsReusableButThePoolIsFull()
             {
                 var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(true);
+                mock.Setup(x => x.IsOpen).Returns(true);
                 var id = new Guid();
 
                 var inUseConns = new Dictionary<Guid, IPooledConnection>();
@@ -408,7 +408,7 @@ namespace Neo4j.Driver.Tests
                 // this is to simulate Release called first,
                 // but before Release put a new conn into availConns, Dispose get called.
                 // Note: Once dispose get called, it is forbiden to put anything into queue.
-                mock.Setup(x => x.IsHealthy).Returns(true)
+                mock.Setup(x => x.IsOpen).Returns(true)
                     .Callback(() => pool.DisposeCalled = true); // Simulte Dispose get called at this time
                 pool.Release(id);
 
@@ -425,14 +425,14 @@ namespace Neo4j.Driver.Tests
             public void ShouldReleaseAll()
             {
                 var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(true);
+                mock.Setup(x => x.IsOpen).Returns(true);
                 var id = Guid.NewGuid();
                 var inUseConns = new Dictionary<Guid, IPooledConnection>();
                 inUseConns.Add(id, mock.Object);
 
                 var availableConns = new Queue<IPooledConnection>();
                 var mock1 = new Mock<IPooledConnection>();
-                mock1.Setup(x => x.IsHealthy).Returns(true);
+                mock1.Setup(x => x.IsOpen).Returns(true);
 
                 availableConns.Enqueue(mock1.Object);
 
@@ -451,14 +451,14 @@ namespace Neo4j.Driver.Tests
             {
                 var mockLogger = new Mock<ILogger>();
                 var mock = new Mock<IPooledConnection>();
-                mock.Setup(x => x.IsHealthy).Returns(true);
+                mock.Setup(x => x.IsOpen).Returns(true);
                 var id = Guid.NewGuid();
                 var inUseConns = new Dictionary<Guid, IPooledConnection>();
                 inUseConns.Add(id, mock.Object);
 
                 var availableConns = new Queue<IPooledConnection>();
                 var mock1 = new Mock<IPooledConnection>();
-                mock1.Setup(x => x.IsHealthy).Returns(true);
+                mock1.Setup(x => x.IsOpen).Returns(true);
 
                 availableConns.Enqueue(mock1.Object);
 

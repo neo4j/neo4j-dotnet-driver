@@ -16,14 +16,15 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal.Routing
 {
+    /// <summary>
+    /// A driver with a simple load balancer to route to a cluster
+    /// </summary>
     internal class RoutingDriver : IDriver
     {
-        
         private ILogger _logger;
         private ILoadBalancer _loadBalancer;
 
@@ -34,14 +35,33 @@ namespace Neo4j.Driver.Internal
             ConnectionPoolSettings poolSettings, 
             ILogger logger)
         {
+            Throw.ArgumentNullException.IfNull(seedServer, nameof(seedServer));
+            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
+            Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
+            Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
+
             Uri = seedServer;
             _logger = logger;
+            _loadBalancer = new RoundRobinLoadBalancer(seedServer, authToken, encryptionManager, poolSettings, _logger);
+        }
 
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (!isDisposing)
+                return;
+
+            if (_loadBalancer != null)
+            {
+                _loadBalancer.Dispose();
+                _loadBalancer = null;
+            }
+            _logger = null;
         }
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         public Uri Uri { get; }
@@ -52,10 +72,7 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session(AccessMode mode)
         {
-            IPooledConnection connection = _loadBalancer.AcquireConnection(mode);
-
-            throw new NotImplementedException();
-            //return new RoutingSession(connection, mode, )
+            return new Session(_loadBalancer.AcquireConnection(mode), _logger);
         }
     }
 }

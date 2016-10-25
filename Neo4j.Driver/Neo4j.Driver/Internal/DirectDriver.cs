@@ -32,12 +32,6 @@ namespace Neo4j.Driver.Internal
             Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
             Throw.ArgumentNullException.IfNull(connectionPoolSettings, nameof(connectionPoolSettings));
 
-            if (uri.Port == -1)
-            {
-                var builder = new UriBuilder(uri.Scheme, uri.Host, 7687);
-                uri = builder.Uri;
-            }
-
             Uri = uri;
             _logger = logger;
             _connectionPool = new ConnectionPool(uri, authToken, encryptionManager, connectionPoolSettings, _logger);

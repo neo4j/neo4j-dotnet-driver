@@ -17,6 +17,7 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.V1
 {
@@ -102,6 +103,13 @@ namespace Neo4j.Driver.V1
             config = config ?? Config.DefaultConfig;
             var encryptionManager = new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger);
             var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
+
+            if (uri.Port == -1)
+            {
+                var builder = new UriBuilder(uri.Scheme, uri.Host, 7687);
+                uri = builder.Uri;
+            }
+
             switch (uri.Scheme.ToLower())
             {
                 case "bolt":
@@ -109,7 +117,7 @@ namespace Neo4j.Driver.V1
                 case "bolt+routing":
                     return new RoutingDriver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
                 default:
-                    throw new InvalidOperationException($"Unsupported URI scheme: {uri.Scheme}");
+                    throw new NotSupportedException($"Unsupported URI scheme: {uri.Scheme}");
             }
         }
     }

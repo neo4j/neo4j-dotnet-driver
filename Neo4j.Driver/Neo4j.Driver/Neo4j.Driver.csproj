@@ -41,6 +41,8 @@
     <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Internal\Connector\IConnectionErrorHandler.cs" />
+    <Compile Include="Internal\Extensions\Neo4jErrorExtensions.cs" />
     <Compile Include="Internal\Routing\ClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />
     <Compile Include="Internal\Routing\IClusterConnectionPool.cs" />
@@ -55,7 +57,7 @@
     <Compile Include="Internal\Messaging\AckFailureMessage.cs" />
     <Compile Include="Internal\EncryptionManager.cs" />
     <Compile Include="Internal\Routing\RoundRobinLoadBalancer.cs" />
-    <Compile Include="Internal\RoutingDriver.cs" />
+    <Compile Include="Internal\Routing\RoutingDriver.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />

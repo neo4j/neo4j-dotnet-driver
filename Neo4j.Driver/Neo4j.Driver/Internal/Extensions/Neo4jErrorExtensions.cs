@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2016 "Neo Technology,"
+﻿// Copyright (c) 2002-2016 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -15,13 +15,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal
 {
-    internal interface ILoadBalancer : IDisposable
+    internal static class Neo4jErrorExtensions
     {
-        IPooledConnection AcquireConnection(AccessMode mode);
+        public static bool IsRecoverableError(this Neo4jException error)
+        {
+            return (error is ClientException || error is TransientException) && !IsClusterError(error);
+        }
+
+        public static bool IsClusterError(this Neo4jException error)
+        {
+            return error.Code.Equals("Neo.ClientError.Cluster.NotALeader")
+                   || error.Code.Equals("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
+        }
     }
 }
