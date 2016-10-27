@@ -21,7 +21,6 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -72,7 +71,7 @@ namespace Neo4j.Driver.Tests
 
         public void VerifyWriteStreamUsages(int count)
         {
-            MockTcpSocketClient.Verify(c => c.WriteStream, Times.Exactly(2));
+            MockTcpSocketClient.Verify(c => c.WriteStream, Times.Exactly(count));
         }
 
         public void VerifyWriteStreamContent(byte[] expectedBytes, int expectedLength)

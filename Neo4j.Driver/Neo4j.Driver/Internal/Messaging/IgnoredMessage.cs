@@ -16,11 +16,16 @@
 // limitations under the License.
 namespace Neo4j.Driver.Internal.Messaging
 {
-    internal class IgnoredMessage : IMessage
+    internal class IgnoredMessage : IResponseMessage
     {
         public override string ToString()
         {
             return "IGNORED";
+        }
+
+        public void Dispatch(IMessageResponseHandler messageResponseHandler)
+        {
+            messageResponseHandler.HandleIgnoredMessage();
         }
     }
 }

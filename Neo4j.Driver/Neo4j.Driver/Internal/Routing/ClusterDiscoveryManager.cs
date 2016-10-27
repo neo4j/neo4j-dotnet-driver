@@ -17,20 +17,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterDiscoveryManager
     {
-        private readonly IPooledConnection _conn;
+        private readonly IConnection _conn;
         private readonly ILogger _logger;
-        public IEnumerable<Uri> Readers { get; internal set; } // = new Uri[0];
-        public IEnumerable<Uri> Writers { get; internal set; } // = new Uri[0];
-        public IEnumerable<Uri> Routers { get; internal set; } // = new Uri[0];
+        public IEnumerable<Uri> Readers { get; internal set; } = new Uri[0];
+        public IEnumerable<Uri> Writers { get; internal set; } = new Uri[0];
+        public IEnumerable<Uri> Routers { get; internal set; } = new Uri[0];
 
         private const string ProcedureName = "dbms.cluster.routing.getServers";
-        public ClusterDiscoveryManager(IPooledConnection connection, ILogger logger)
+        public ClusterDiscoveryManager(IConnection connection, ILogger logger)
         {
             _conn = connection;
             _logger = logger;
@@ -43,20 +44,21 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 var result = session.Run($"CALL {ProcedureName}");
                 var record = result.Single();
-                foreach (var servers in record["servers"].As<IList<IDictionary<string,object>>>())
+                // TODO require an IT to make sure List or IList, Dictionary or IDictionary
+                foreach (var servers in record["servers"].As<List<Dictionary<string,object>>>())
                 {
-                    var addresses = servers["addresses"].As<IList<string>>();
+                    var addresses = servers["addresses"].As<List<string>>();
                     var role = servers["role"].As<string>();
                     switch (role)
                     {
                         case "READ":
-                            Readers = addresses.Select(address => new Uri(address)).ToArray();
+                            Readers = addresses.Select(BoltRoutingUri).ToArray();
                             break;
                         case "WRITE":
-                            Writers = addresses.Select(address => new Uri(address)).ToArray();
+                            Writers = addresses.Select(BoltRoutingUri).ToArray();
                             break;
                         case "ROUTE":
-                            Routers = addresses.Select(address => new Uri(address)).ToArray();
+                            Routers = addresses.Select(BoltRoutingUri).ToArray();
                             break;
                     }
                 }
@@ -67,6 +69,14 @@ namespace Neo4j.Driver.Internal.Routing
                     $"Invalid discovery result: discovered {Routers.Count()} routers, " +
                     $"{Writers.Count()} writers and {Readers.Count()} readers. A Redisvoery is required.");
             }
+        }
+
+        // TODO we do not need to add this additional `bolt+routing`.
+        // Consider change `Uri` to `string` in our dictionary
+        // However to be a valid Uri, you need to provide a scheme
+        private Uri BoltRoutingUri(string address)
+        {
+            return new Uri("bolt+routing://" + address);
         }
     }
 
