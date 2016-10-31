@@ -36,6 +36,11 @@ namespace Neo4j.Driver.Internal.Connector
         }
         public Guid Id { get; } = Guid.NewGuid();
 
+        public void Init()
+        {
+            _connection.Init();
+        }
+
         public void ClearConnection()
         {
             Reset();
@@ -116,7 +121,7 @@ namespace Neo4j.Driver.Internal.Connector
             return error;
         }
 
-        private class PooledConnectionErrorHandler : IConnectionErrorHandler
+        internal class PooledConnectionErrorHandler : IConnectionErrorHandler
         {
             private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
             private readonly Func<Exception, Exception> _onConnErrorFunc;

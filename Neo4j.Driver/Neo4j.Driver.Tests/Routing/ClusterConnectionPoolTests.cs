@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Tests
     {
         private static Uri ServerUri { get; } = new Uri("bolt+routing://1234:5678");
 
-        public class AcquireMethod
+        public class TryAcquireMethod
         {
             [Fact]
             public void ShouldNotCreateNewConnectionPoolIfUriDoseNotExist()

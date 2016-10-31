@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal class RoundRobinLoadBalancer : ILoadBalancer
     {
         private RoundRobinClusterView _clusterView;
-        private IClusterConnectionPool _connectionPool;
+        private IClusterConnectionPool _clusterConnectionPool;
         private ILogger _logger;
         private readonly object _syncLock = new object();
 
@@ -35,9 +35,21 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionPoolSettings poolSettings,
             ILogger logger)
         {
-            _connectionPool = new ClusterConnectionPool(seedServer, authToken, encryptionManager, poolSettings, logger, CreateClusterPooledConnectionErrorHandler);
+            _clusterConnectionPool = new ClusterConnectionPool(
+                seedServer, authToken, encryptionManager,
+                poolSettings, logger, CreateClusterPooledConnectionErrorHandler);
             _clusterView = new RoundRobinClusterView(seedServer);
             _logger = logger;
+        }
+
+        // for test only
+        internal RoundRobinLoadBalancer(
+            IClusterConnectionPool clusterConnPool,
+            RoundRobinClusterView clusterView)
+        {
+            _clusterConnectionPool = clusterConnPool;
+            _clusterView = clusterView;
+            _logger = null;
         }
 
         public IPooledConnection AcquireConnection(AccessMode mode)
@@ -54,7 +66,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        private IPooledConnection AcquireReadConnection()
+        internal IPooledConnection AcquireReadConnection()
         {
             while (true)
             {
@@ -68,7 +80,7 @@ namespace Neo4j.Driver.Internal.Routing
                 try
                 {
                     IPooledConnection conn;
-                    if (_connectionPool.TryAcquire(uri, out conn))
+                    if (_clusterConnectionPool.TryAcquire(uri, out conn))
                     {
                         return conn;
                     }
@@ -82,7 +94,7 @@ namespace Neo4j.Driver.Internal.Routing
             throw new SessionExpiredException("Failed to connect to any read server.");
         }
 
-        private IPooledConnection AcquireWriteConnection()
+        internal IPooledConnection AcquireWriteConnection()
         {
             while(true)
             {
@@ -95,7 +107,7 @@ namespace Neo4j.Driver.Internal.Routing
                 try
                 {
                     IPooledConnection conn;
-                    if (_connectionPool.TryAcquire(uri, out conn))
+                    if (_clusterConnectionPool.TryAcquire(uri, out conn))
                     {
                         return conn;
                     }
@@ -112,10 +124,10 @@ namespace Neo4j.Driver.Internal.Routing
         public void Forget(Uri uri)
         {
             _clusterView.Remove(uri);
-            _connectionPool.Purge(uri);
+            _clusterConnectionPool.Purge(uri);
         }
 
-        public void EnsureDiscovery()
+        internal void EnsureDiscovery()
         {
             lock (_syncLock)
             {
@@ -125,12 +137,12 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var newView = NewClusterView();
-                _connectionPool.Update(newView.All());
+                _clusterConnectionPool.Update(newView.All());
                 _clusterView = newView;
             }
         }
 
-        public RoundRobinClusterView NewClusterView()
+        internal RoundRobinClusterView NewClusterView(Func<IPooledConnection, ILogger, RoundRobinClusterView> rediscoveryFunc = null)
         {
             while (true)
             {
@@ -144,12 +156,9 @@ namespace Neo4j.Driver.Internal.Routing
                 try
                 {
                     IPooledConnection conn;
-                    if (_connectionPool.TryAcquire(uri, out conn))
+                    if (_clusterConnectionPool.TryAcquire(uri, out conn))
                     {
-                        var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
-                        discoveryManager.Rediscovery();
-                        return new RoundRobinClusterView(discoveryManager.Routers, discoveryManager.Readers,
-                            discoveryManager.Writers);
+                        return rediscoveryFunc == null ? Rediscovery(conn, _logger) : rediscoveryFunc.Invoke(conn, _logger);
                     }
                 }
                 catch (SessionExpiredException)
@@ -169,6 +178,14 @@ namespace Neo4j.Driver.Internal.Routing
             throw new ServerUnavailableException(
                 "Failed to connect to any routing server. " +
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
+        }
+
+        private static RoundRobinClusterView Rediscovery(IPooledConnection conn, ILogger logger)
+        {
+            var discoveryManager = new ClusterDiscoveryManager(conn, logger);
+            discoveryManager.Rediscovery();
+            return new RoundRobinClusterView(discoveryManager.Routers, discoveryManager.Readers,
+                discoveryManager.Writers);
         }
 
         private Exception OnConnectionError(Exception e, Uri uri)
@@ -196,12 +213,12 @@ namespace Neo4j.Driver.Internal.Routing
             return error;
         }
 
-        private ClusterPooledConnectionErrorHandler CreateClusterPooledConnectionErrorHandler(Uri uri)
+        internal ClusterPooledConnectionErrorHandler CreateClusterPooledConnectionErrorHandler(Uri uri)
         {
             return new ClusterPooledConnectionErrorHandler(x => OnConnectionError(x, uri), x => OnNeo4jError(x, uri));
         }
 
-        private class ClusterPooledConnectionErrorHandler : IConnectionErrorHandler
+        internal class ClusterPooledConnectionErrorHandler : IConnectionErrorHandler
         {
             private Func<Exception, Exception> _onConnectionErrorFunc;
             private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
@@ -230,10 +247,10 @@ namespace Neo4j.Driver.Internal.Routing
 
             _clusterView = null;
 
-            if (_connectionPool != null)
+            if (_clusterConnectionPool != null)
             {
-                _connectionPool.Dispose();
-                _connectionPool = null;
+                _clusterConnectionPool.Dispose();
+                _clusterConnectionPool = null;
             }
             _logger = null;
         }

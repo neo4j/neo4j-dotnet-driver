@@ -178,7 +178,9 @@ namespace Neo4j.Driver.Tests
                 MessagePair(PullAllMessage(), SuccessMessage())
             };
             var mock = new MockedMessagingClient(requestAndResponsePairs);
-            return new SocketConnection(mock.Client, AuthTokens.None, null);
+            var conn = new SocketConnection(mock.Client, AuthTokens.None, null);
+            conn.Init();
+            return conn;
         }
     }
 

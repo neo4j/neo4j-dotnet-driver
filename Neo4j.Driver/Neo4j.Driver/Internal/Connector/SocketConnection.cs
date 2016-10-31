@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class SocketConnection : IConnection
     {
         private readonly ISocketClient _client;
+        private readonly IAuthToken _authToken;
         private readonly IMessageResponseHandler _responseHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
@@ -35,19 +36,22 @@ namespace Neo4j.Driver.Internal.Connector
         private volatile bool _interrupted;
         private readonly object _syncLock = new object();
 
-        private IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
+        private readonly IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
 
-        public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
+        // for testing only
+        internal SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
-
             _client = socketClient;
-            Task.Run(() => _client.Start()).Wait();
+            _authToken = authToken;
+        }
 
-            // add init requestMessage by default
-            Init(authToken);
+        public void Init()
+        {
+            Task.Run(() => _client.Start()).Wait();
+            Init(_authToken);
         }
 
         private void Init(IAuthToken authToken)
@@ -87,8 +91,8 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception error)
                 {
-                    OnConnectionError(error);
-                    throw;
+                    error = OnConnectionError(error);
+                    throw error;
                 }
                 
                 _messages.Clear();
@@ -110,8 +114,8 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception error)
             {
-                OnConnectionError(error);
-                throw;
+                error = OnConnectionError(error);
+                throw error;
             }
             
             AssertNoServerFailure();
@@ -125,8 +129,8 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception error)
             {
-                OnConnectionError(error);
-                throw;
+                error = OnConnectionError(error);
+                throw error;
             }
             
             AssertNoServerFailure();
@@ -203,7 +207,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 var error = _responseHandler.Error;
 
-                OnNeo4jError(error);
+                error = OnNeo4jError(error);
 
                 _responseHandler.Error = null;
                 _interrupted = false;
@@ -211,20 +215,22 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private void OnConnectionError(Exception e)
+        private Exception OnConnectionError(Exception e)
         {
             foreach (var handler in _handlers)
             {
                 e = handler.OnConnectionError(e);
             }
+            return e;
         }
 
-        public void OnNeo4jError(Neo4jException e)
+        public Neo4jException OnNeo4jError(Neo4jException e)
         {
             foreach (var handler in _handlers)
             {
                 e = handler.OnNeo4jError(e);
             }
+            return e;
         }
 
         private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null, IRequestMessage requestStreamingMessage = null)

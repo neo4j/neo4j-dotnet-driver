@@ -48,6 +48,37 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public void ShouldAddExternalConnectionHandlerIfNotNull()
+            {
+                // Given
+                var mock = new Mock<IConnection>();
+                mock.Setup(x => x.IsOpen).Returns(true);
+
+                var mockedHandler = new Mock<IConnectionErrorHandler>();
+                var connectionPool = new ConnectionPool(mock.Object, exteralErrorHandler:mockedHandler.Object);
+                // When
+                connectionPool.Acquire();
+
+                //Then
+                mock.Verify(x=>x.AddConnectionErrorHander(mockedHandler.Object), Times.Once);
+                mock.Verify(x => x.Init(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldCallConnInit()
+            {
+                // Given
+                var mock = new Mock<IConnection>();
+                mock.Setup(x => x.IsOpen).Returns(true);
+                var connectionPool = new ConnectionPool(mock.Object);
+                // When
+                connectionPool.Acquire();
+
+                //Then
+                mock.Verify(x => x.Init(), Times.Once);
+            }
+
+            [Fact]
             public void ShouldNotThrowExceptionWhenIdlePoolSizeReached()
             {
                 var connectionPoolSettings = new ConnectionPoolSettings(2);

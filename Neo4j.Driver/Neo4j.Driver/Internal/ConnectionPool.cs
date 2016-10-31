@@ -64,7 +64,6 @@ namespace Neo4j.Driver.Internal
             _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
 
             _externalErrorHandler = exteralErrorHandler;
-
             _logger = logger;
         }
 
@@ -73,8 +72,11 @@ namespace Neo4j.Driver.Internal
             Queue<IPooledConnection> availableConnections = null,
             Dictionary<Guid, IPooledConnection> inUseConnections = null,
             ILogger logger = null,
-            ConnectionPoolSettings settings = null)
-            : this(null, null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), logger)
+            ConnectionPoolSettings settings = null,
+            IConnectionErrorHandler exteralErrorHandler = null)
+            : this(null, null, null,
+                  settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
+                  logger, exteralErrorHandler)
         {
             _fakeConnection = connection;
             _availableConnections = availableConnections ?? new Queue<IPooledConnection>();
@@ -83,11 +85,14 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            var conn = _fakeConnection != null ? new PooledConnection(_fakeConnection, Release) : new PooledConnection(new SocketConnection(_uri, _authToken, _encryptionManager, _logger), Release);
+            var conn = _fakeConnection != null
+                ? new PooledConnection(_fakeConnection, Release)
+                : new PooledConnection(new SocketConnection(_uri, _authToken, _encryptionManager, _logger), Release);
             if (_externalErrorHandler != null)
             {
                 conn.AddConnectionErrorHander(_externalErrorHandler);
             }
+            conn.Init();
             return conn;
         }
 

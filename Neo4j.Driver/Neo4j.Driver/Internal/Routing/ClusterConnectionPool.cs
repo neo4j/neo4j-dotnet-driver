@@ -57,13 +57,13 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         internal ClusterConnectionPool(IConnectionPool connectionPool,
-            ConcurrentDictionary<Uri, IConnectionPool> pool=null,
+            ConcurrentDictionary<Uri, IConnectionPool> clusterPool=null,
             ConnectionPoolSettings poolSettings=null,
             ILogger logger=null) :
             this(null, null, null, poolSettings, logger, null)
         {
             _fakeConnectionPool = connectionPool;
-            _pools = pool;
+            _pools = clusterPool;
         }
 
         private IConnectionPool CreateNewConnectionPool(Uri uri)
