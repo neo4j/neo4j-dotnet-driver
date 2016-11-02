@@ -68,6 +68,7 @@ namespace Neo4j.Driver.Tests
                 manager.Readers.Count().Should().Be(1);
                 manager.Writers.Count().Should().Be(2);
                 manager.Routers.Count().Should().Be(3);
+                manager.ExpireAfterSeconds = 9223372036854775807;
             }
 
             [Fact]

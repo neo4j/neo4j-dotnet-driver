@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -27,6 +28,7 @@ namespace Neo4j.Driver.Internal.Routing
         private IClusterConnectionPool _clusterConnectionPool;
         private ILogger _logger;
         private readonly object _syncLock = new object();
+        private readonly Stopwatch _stopwatch;
 
         public RoundRobinLoadBalancer(
             Uri seedServer,
@@ -38,7 +40,10 @@ namespace Neo4j.Driver.Internal.Routing
             _clusterConnectionPool = new ClusterConnectionPool(
                 seedServer, authToken, encryptionManager,
                 poolSettings, logger, CreateClusterPooledConnectionErrorHandler);
-            _clusterView = new RoundRobinClusterView(seedServer);
+
+            _stopwatch = new Stopwatch();
+            _clusterView = new RoundRobinClusterView(seedServer, _stopwatch);
+
             _logger = logger;
         }
 
@@ -142,7 +147,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        internal RoundRobinClusterView NewClusterView(Func<IPooledConnection, ILogger, RoundRobinClusterView> rediscoveryFunc = null)
+        internal RoundRobinClusterView NewClusterView(Func<IPooledConnection, RoundRobinClusterView> rediscoveryFunc = null)
         {
             while (true)
             {
@@ -158,7 +163,7 @@ namespace Neo4j.Driver.Internal.Routing
                     IPooledConnection conn;
                     if (_clusterConnectionPool.TryAcquire(uri, out conn))
                     {
-                        return rediscoveryFunc == null ? Rediscovery(conn, _logger) : rediscoveryFunc.Invoke(conn, _logger);
+                        return rediscoveryFunc == null ? Rediscovery(conn) : rediscoveryFunc.Invoke(conn);
                     }
                 }
                 catch (SessionExpiredException)
@@ -168,6 +173,7 @@ namespace Neo4j.Driver.Internal.Routing
                 }
                 catch (InvalidDiscoveryException)
                 {
+                    // The result is invalid probably due to partition.
                     _clusterView.Remove(uri);
                 }
             }
@@ -180,12 +186,12 @@ namespace Neo4j.Driver.Internal.Routing
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
-        private static RoundRobinClusterView Rediscovery(IPooledConnection conn, ILogger logger)
+        private RoundRobinClusterView Rediscovery(IPooledConnection conn)
         {
-            var discoveryManager = new ClusterDiscoveryManager(conn, logger);
+            var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
             discoveryManager.Rediscovery();
             return new RoundRobinClusterView(discoveryManager.Routers, discoveryManager.Readers,
-                discoveryManager.Writers);
+                discoveryManager.Writers, _stopwatch, discoveryManager.ExpireAfterSeconds);
         }
 
         private Exception OnConnectionError(Exception e, Uri uri)

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -27,27 +28,34 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ConcurrentRoundRobinSet<Uri> _detachedRouters = new ConcurrentRoundRobinSet<Uri>();
         private readonly ConcurrentRoundRobinSet<Uri> _readers = new ConcurrentRoundRobinSet<Uri>();
         private readonly ConcurrentRoundRobinSet<Uri> _writers = new ConcurrentRoundRobinSet<Uri>();
+        private readonly Stopwatch _stopwatch;
+        private readonly long _expireAfterSeconds;
 
-        public RoundRobinClusterView(Uri seed = null)
+        public RoundRobinClusterView(Uri seed, Stopwatch stopwatch, long expireAfterSeconds = 0)
         {
-            if (seed != null)
-            {
-                _routers.Add(seed);
-            }
+            _routers.Add(seed);
+
+            _expireAfterSeconds = expireAfterSeconds;
+            _stopwatch = stopwatch;
+            _stopwatch.Restart();
         }
 
-        public RoundRobinClusterView(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers)
+        public RoundRobinClusterView(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
+            Stopwatch stopwatch, long expireAfterSeconds)
         {
             _routers.Add(routers);
             _readers.Add(readers);
             _writers.Add(writers);
+
+            _expireAfterSeconds = expireAfterSeconds;
+            _stopwatch = stopwatch;
+            _stopwatch.Restart();
         }
 
         public bool IsStale()
         {
-            return
-//                expires < clock.millis() ||
-                _routers.Count <= MinRouterCount || _readers.IsEmpty || _writers.IsEmpty;
+            return _routers.Count <= MinRouterCount || _readers.IsEmpty || _writers.IsEmpty
+                || _expireAfterSeconds < _stopwatch.Elapsed.TotalSeconds;
         }
 
         public bool TryNextRouter(out Uri uri)

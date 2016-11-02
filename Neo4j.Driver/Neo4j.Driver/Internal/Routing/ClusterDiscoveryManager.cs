@@ -29,6 +29,7 @@ namespace Neo4j.Driver.Internal.Routing
         public IEnumerable<Uri> Readers { get; internal set; } = new Uri[0];
         public IEnumerable<Uri> Writers { get; internal set; } = new Uri[0];
         public IEnumerable<Uri> Routers { get; internal set; } = new Uri[0];
+        public long ExpireAfterSeconds { get; internal set; }
 
         private const string ProcedureName = "dbms.cluster.routing.getServers";
         public ClusterDiscoveryManager(IConnection connection, ILogger logger)
@@ -62,6 +63,7 @@ namespace Neo4j.Driver.Internal.Routing
                             break;
                     }
                 }
+                ExpireAfterSeconds = record["ttl"].As<long>();
             }
             if (!Readers.Any() || !Writers.Any() || !Routers.Any())
             {
@@ -71,9 +73,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        // TODO we do not need to add this additional `bolt+routing`.
-        // Consider change `Uri` to `string` in our dictionary
-        // However to be a valid Uri, you need to provide a scheme
         private Uri BoltRoutingUri(string address)
         {
             return new Uri("bolt+routing://" + address);

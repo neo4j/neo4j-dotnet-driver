@@ -17,6 +17,8 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using FluentAssertions;
 using Moq;
@@ -31,13 +33,18 @@ namespace Neo4j.Driver.Tests
     {
         public class AcquireConnectionMethod
         {
+            private static RoundRobinClusterView NewClusterView(IEnumerable<Uri> routers, IEnumerable<Uri> readers,
+                IEnumerable<Uri> writers)
+            {
+                return new RoundRobinClusterView(routers, readers, writers, new Mock<Stopwatch>().Object, 0);
+            }
             public class NewClusterViewMethod
             {
                 [Fact]
                 public void ShouldThrowServerUnavailableException()
                 {
                     // Given
-                    var clusterView = new RoundRobinClusterView(new Uri[0], new Uri[0], new Uri[0]);
+                    var clusterView = NewClusterView(new Uri[0], new Uri[0], new Uri[0]);
                     var balancer = new RoundRobinLoadBalancer(null, clusterView);
 
                     // When
@@ -54,7 +61,7 @@ namespace Neo4j.Driver.Tests
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
                     // a cluster view which knows a read/write uri
-                    var clusterView = new RoundRobinClusterView(new[] {uri}, new Uri[0], new Uri[0]);
+                    var clusterView = NewClusterView(new[] {uri}, new Uri[0], new Uri[0]);
 
                     var mockedConn = new Mock<IPooledConnection>();
                     var mockedConnPool = new Mock<IConnectionPool>();
@@ -68,8 +75,8 @@ namespace Neo4j.Driver.Tests
 
                     // When
                     var anotherUri = new Uri("bolt+routing://123:789");
-                    var result = balancer.NewClusterView((connection, logger) 
-                        => new RoundRobinClusterView(new [] {anotherUri}, new Uri[0], new Uri[0]));
+                    var result = balancer.NewClusterView(connection 
+                        => NewClusterView(new [] {anotherUri}, new Uri[0], new Uri[0]));
 
                     // Then
                     result.All().Should().ContainInOrder(anotherUri);
@@ -82,7 +89,7 @@ namespace Neo4j.Driver.Tests
                     var uri = new Uri("bolt+routing://123:456");
                     var uri2 = new Uri("bolt+routing://123:789");
                     // a cluster view which knows a read/write uri
-                    var clusterView = new RoundRobinClusterView(new[] { uri, uri2 }, new Uri[0], new Uri[0]);
+                    var clusterView = NewClusterView(new[] { uri, uri2 }, new Uri[0], new Uri[0]);
 
                     var mockedConn = new Mock<IPooledConnection>();
                     var mockedConnPool = new Mock<IConnectionPool>();
@@ -97,7 +104,7 @@ namespace Neo4j.Driver.Tests
                     var balancer = new RoundRobinLoadBalancer(clusterConnPool, clusterView);
 
                     // When
-                    var error = Record.Exception(() =>balancer.NewClusterView((connection, logger) =>
+                    var error = Record.Exception(() =>balancer.NewClusterView(connection =>
                     {
                         // never successfully rediscovery
                         throw new InvalidDiscoveryException("Invalid");
@@ -117,10 +124,10 @@ namespace Neo4j.Driver.Tests
                     switch (mode)
                     {
                         case AccessMode.Read:
-                            clusterView = new RoundRobinClusterView(new Uri[0], new[] { uri }, new Uri[0]);
+                            clusterView = NewClusterView(new Uri[0], new[] { uri }, new Uri[0]);
                             break;
                         case AccessMode.Write:
-                            clusterView = new RoundRobinClusterView(new Uri[0], new Uri[0], new[] { uri });
+                            clusterView = NewClusterView(new Uri[0], new Uri[0], new[] { uri });
                             break;
                         default:
                             throw new InvalidOperationException($"Unknown type {mode} to this test.");
@@ -151,7 +158,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldThrowSessionExpiredExceptionIfNoServerAvailable(AccessMode mode)
                 {
                     // Given
-                    var clusterView = new RoundRobinClusterView(new Uri[0], new Uri[0], new Uri[0]);
+                    var clusterView = NewClusterView(new Uri[0], new Uri[0], new Uri[0]);
                     var balancer = new RoundRobinLoadBalancer(null, clusterView);
 
                     // When
