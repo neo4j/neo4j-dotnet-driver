@@ -19,7 +19,6 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -57,7 +56,9 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 else
                 {
-                    var secureStream = new SslStream(_client.GetStream(), true, ServerValidationCallback);
+                    var secureStream = new SslStream(_client.GetStream(), true,
+                        (sender, certificate, chain, errors) =>
+                            _encryptionManager.TrustStrategy.ValidateServerCertificate(_uri, certificate, errors));
                     var sslTask = secureStream.AuthenticateAsClientAsync(_uri.Host, null, System.Security.Authentication.SslProtocols.Tls12, false);
                     sslTask.Wait();
                     _stream = secureStream;
@@ -65,11 +66,6 @@ namespace Neo4j.Driver.Internal.Connector
 
                 return _stream;
             }
-        }
-
-        private bool ServerValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-        {
-            return _encryptionManager.TrustStrategy.ValidateServerCertificate(_uri, certificate, sslPolicyErrors);
         }
 
         public Stream ReadStream => Stream;

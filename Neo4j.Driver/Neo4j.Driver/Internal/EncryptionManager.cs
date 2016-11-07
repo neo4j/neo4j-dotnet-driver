@@ -34,14 +34,14 @@ namespace Neo4j.Driver.Internal
         {
             _encryptionLevel = level;
 
-            if (_encryptionLevel != EncryptionLevel.None)
+            if (_encryptionLevel == EncryptionLevel.Encrypted)
             {
-                switch (strategy.ServerTrustStrategy())
+                switch (strategy)
                 {
-                    case V1.TrustStrategy.Strategy.TrustOnFirstUse:
-                        TrustStrategy = new TrustOnFirstUse(logger, strategy.FileName());
+                    case V1.TrustStrategy.TrustAllCertificates:
+                        TrustStrategy = new TrustAllCertificates(logger);
                         break;
-                    case V1.TrustStrategy.Strategy.TrustSystemCaSignedCertificates:
+                    case V1.TrustStrategy.TrustSystemCaSignedCertificates:
                         TrustStrategy = new TrustSystemCaSignedCertificates(logger);
                         break;
                     default:
@@ -49,19 +49,20 @@ namespace Neo4j.Driver.Internal
                 }
             }
         }
-        
-        public bool UseTls(Uri uri)
+
+        public bool UseTls
         {
-            switch (_encryptionLevel)
+            get
             {
-                case EncryptionLevel.None:
-                    return false;
-                case EncryptionLevel.Encrypted:
-                    return true;
-                case EncryptionLevel.EncryptedNonLocal:
-                    return !uri.IsLoopback;
-                default:
-                    throw new InvalidOperationException($"Unknown encryption level {_encryptionLevel}");
+                switch (_encryptionLevel)
+                {
+                    case EncryptionLevel.Encrypted:
+                        return true;
+                    case EncryptionLevel.None:
+                        return false;
+                    default:
+                        throw new NotSupportedException($"Unknown encryption level: {_encryptionLevel}");
+                }
             }
         }
 

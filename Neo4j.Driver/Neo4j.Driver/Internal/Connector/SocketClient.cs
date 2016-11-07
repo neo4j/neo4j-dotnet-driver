@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task Start()
         {
-            await _tcpSocketClient.ConnectAsync(_uri, _encryptionManager.UseTls(_uri)).ConfigureAwait(false);
+            await _tcpSocketClient.ConnectAsync(_uri, _encryptionManager.UseTls).ConfigureAwait(false);
             IsOpen = true;
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
