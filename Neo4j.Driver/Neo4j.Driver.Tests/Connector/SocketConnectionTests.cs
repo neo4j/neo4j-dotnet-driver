@@ -30,6 +30,7 @@ namespace Neo4j.Driver.Tests
     public class SocketConnectionTests
     {
         private static ILogger Logger => new Mock<ILogger>().Object;
+        private static IServerInfo Server => new ServerInfo(new Uri("http://1234.com"));
 
         private static Mock<ISocketClient> MockSocketClient => new Mock<ISocketClient>();
 
@@ -38,7 +39,15 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
             {
-                var exception = Exception(() => new SocketConnection(null, AuthTokens.None, Logger));
+                var exception = Exception(() => new SocketConnection(null, AuthTokens.None, Logger, Server));
+                exception.Should().NotBeNull();
+                exception.Should().BeOfType<ArgumentNullException>();
+            }
+
+            [Fact]
+            public void ShouldThrowArgumentNullExceptionIfServerUriIsNull()
+            {
+                var exception = Exception(() => new SocketConnection(null, AuthTokens.None, Logger, null));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -52,7 +61,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockClient = new Mock<ISocketClient>();
                 // ReSharper disable once ObjectCreationAsStatement
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger);
+                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, Server);
 
                 // When
                 conn.Init();
@@ -68,7 +77,7 @@ namespace Neo4j.Driver.Tests
                 var mockClient = new Mock<ISocketClient>();
                 var mockHandler = new Mock<IMessageResponseHandler>();
                 mockHandler.Setup(x => x.UnhandledMessageSize).Returns(1);
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
+                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, Server, mockHandler.Object);
 
                 // When
                 conn.Init();
@@ -87,7 +96,7 @@ namespace Neo4j.Driver.Tests
             public void StopsTheClient()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, null);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server);
 
                 con.Dispose();
                 mock.Verify(c => c.Stop(), Times.Once);
@@ -100,7 +109,7 @@ namespace Neo4j.Driver.Tests
             public void DoesNothing_IfMessagesEmpty()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server);
 
                 con.Sync();
                 mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
@@ -111,7 +120,7 @@ namespace Neo4j.Driver.Tests
             public void SendsMessageAndClearsQueue_WhenMessageOnQueue()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server);
                 con.Run("A statement");
 
                 con.Sync();
@@ -128,7 +137,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = MockSocketClient;
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server);
 
                 // When
                 con.Run("a statement", null, new ResultBuilder());
@@ -144,7 +153,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object);
 
                 var rb = new ResultBuilder();
                 con.Run("statement", null, rb);
@@ -158,7 +167,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = MockSocketClient;
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server);
 
                 // When
                 con.Run("a statement", null, new ResultBuilder(), true);
@@ -174,7 +183,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object);
 
                 var rb = new ResultBuilder();
                 con.Run("statement", null, rb, true);
@@ -191,7 +200,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object);
 
                 con.Run("bula");
                 con.Reset();

@@ -85,6 +85,17 @@ namespace Neo4j.Driver.Tests
                 var error = Xunit.Record.Exception(() => tx.Run("ttt"));
                 error.Should().BeOfType<Neo4jException>();
             }
+
+            [Fact]
+            public void ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+
+                tx.Run("lalala");
+
+                mockConn.Verify(x => x.Server, Times.Once);
+            }
         }
 
         public class DisposeMethod

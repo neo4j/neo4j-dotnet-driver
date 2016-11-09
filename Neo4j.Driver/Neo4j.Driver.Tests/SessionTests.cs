@@ -41,6 +41,17 @@ namespace Neo4j.Driver.Tests
                 mockConn.Verify(x => x.Run("lalalal", null, It.IsAny<ResultBuilder>(), true), Times.Once);
                 mockConn.Verify(x => x.Send());
             }
+
+            [Fact]
+            public void ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = new Session(mockConn.Object, null);
+                session.Run("lalalal");
+
+                mockConn.Verify(x => x.Server, Times.Once);
+            }
         }
 
         public class BeginTransactionMethod

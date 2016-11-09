@@ -32,18 +32,18 @@ namespace Neo4j.Driver.Internal.Result
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
-        public ResultBuilder() : this(null, null, null)
+        public ResultBuilder() : this(null, null, null, null)
         {
         }
 
-        public ResultBuilder(Statement statement, Action receiveOneFun)
+        public ResultBuilder(Statement statement, Action receiveOneFun, IServerInfo server)
         {
-            _summaryBuilder = new SummaryBuilder(statement);
+            _summaryBuilder = new SummaryBuilder(statement, server);
             _receiveOneFun = receiveOneFun;
         }
 
-        public ResultBuilder(string statement, IDictionary<string, object> parameters, Action receiveOneFun)
-            : this(new Statement(statement, parameters), receiveOneFun)
+        public ResultBuilder(string statement, IDictionary<string, object> parameters, Action receiveOneFun, IServerInfo server)
+            : this(new Statement(statement, parameters), receiveOneFun, server)
         {
         }
 

@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _connection.IsOpen && !HasUnrecoverableError;
-        public string Server => _connection.Server;
+        public IServerInfo Server => _connection.Server;
 
         /// <summary>
         /// Close the connection and all resources all for good

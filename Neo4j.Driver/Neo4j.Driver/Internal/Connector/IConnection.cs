@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -46,12 +47,9 @@ namespace Neo4j.Driver.Internal.Connector
         bool IsOpen { get; }
 
         /// <summary>
-        /// The version of the server the connection connected to. Default to <c>null</c> if not supported by server
+        /// The info of the server the connection connected to.
         /// </summary>
-        /// <remarks>
-        /// Introduced since Neo4j 3.1.
-        /// </remarks>
-        string Server { get; }
+        IServerInfo Server { get; }
 
         /// <summary>
         /// Close and release related resources

@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne());
+                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne(), _connection.Server);
                 lock (_txSyncLock)
                 {
                     EnsureCanRunMoreStatements();
@@ -178,11 +178,6 @@ namespace Neo4j.Driver.Internal
                 _transactionCleanupAction.Invoke();
             }
             _connection.ResetAsync();
-        }
-
-        public string Server()
-        {
-            return _connection.Server;
         }
 
         public void Close()

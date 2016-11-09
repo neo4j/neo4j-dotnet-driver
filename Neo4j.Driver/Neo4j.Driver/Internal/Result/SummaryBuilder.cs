@@ -30,10 +30,12 @@ namespace Neo4j.Driver.Internal.Result
         public IList<INotification> Notifications { private get; set; }
         public long ResultAvailableAfter { private get; set; } = -1L;
         public long ResultConsumedAfter { private get; set; } = -1L;
+        public IServerInfo Server { private get; set; }
 
-        public SummaryBuilder(Statement statement)
+        public SummaryBuilder(Statement statement, IServerInfo serverInfo)
         {
             Statement = statement;
+            Server = serverInfo;
         }
 
         public IResultSummary Build()
@@ -55,6 +57,7 @@ namespace Neo4j.Driver.Internal.Result
                 Notifications = builder.Notifications ?? new List<INotification>();
                 ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
                 ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
+                Server = builder.Server;
 
             }
 
@@ -68,6 +71,7 @@ namespace Neo4j.Driver.Internal.Result
             public IList<INotification> Notifications { get; }
             public TimeSpan ResultAvailableAfter { get; }
             public TimeSpan ResultConsumedAfter { get; }
+            public IServerInfo Server { get; }
 
             public override string ToString()
             {
@@ -78,8 +82,26 @@ namespace Neo4j.Driver.Internal.Result
                        $"{nameof(Profile)}={Profile}, " +
                        $"{nameof(Notifications)}={Notifications.ToContentString()}, " +
                        $"{nameof(ResultAvailableAfter)}={ResultAvailableAfter.ToString("g")}, " +
-                       $"{nameof(ResultConsumedAfter)}={ResultConsumedAfter.ToString("g")}}}";
+                       $"{nameof(ResultConsumedAfter)}={ResultConsumedAfter.ToString("g")}, " +
+                       $"{nameof(Server)}={Server})}}";
             }
+        }
+    }
+
+    internal class ServerInfo : IServerInfo
+    {
+        public ServerInfo(Uri uri)
+        {
+            Address = uri.ToString();
+        }
+
+        public string Address { get; set; }
+        public string Version { get; set; }
+
+        public override string ToString()
+        {
+            return $"{GetType().Name}{{{nameof(Address)}={Address}, " +
+                   $"{nameof(Version)}={Version}}}";
         }
     }
 

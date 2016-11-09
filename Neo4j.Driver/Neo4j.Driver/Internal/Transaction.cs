@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Internal
                     EnsureNotFailed();
                     try
                     {
-                        var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne());
+                        var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(), _connection.Server);
                         _connection.Run(statement, parameters, resultBuilder, true);
                         _connection.Send();
                         return resultBuilder.PreBuild();

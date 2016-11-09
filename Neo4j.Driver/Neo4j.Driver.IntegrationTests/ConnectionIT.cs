@@ -138,8 +138,10 @@ namespace Neo4j.Driver.IntegrationTests
                     .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
                     "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
                     "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
+                var serverInfo = result.Summary.Server;
 
-                if (ServerVersion.Version(session.Server()) >= ServerVersion.V3_1_0)
+                serverInfo.Address.Should().Be("bolt://localhost:7687/");
+                if (ServerVersion.Version(serverInfo.Version) >= ServerVersion.V3_1_0)
                 {
                     result.Summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
                     result.Summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
@@ -328,7 +330,9 @@ namespace Neo4j.Driver.IntegrationTests
                     cancelTokenSource.Cancel();
                     await resetSession;
 
-                    if (ServerVersion.Version(session.Server()) >= ServerVersion.V3_1_0)
+                    var serverInfo = result.Summary.Server;
+
+                    if (ServerVersion.Version(serverInfo.Version) >= ServerVersion.V3_1_0)
                     {
                         exception.Should().BeOfType<TransientException>();
                     }
