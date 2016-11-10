@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private Neo4jException OnNeo4jError(Neo4jException error, Uri uri)
         {
-            if (error.Code.Equals("Neo.ClientError.Cluster.NotALeader"))
+            if (error.IsClusterNotALeaderError())
             {
                 // The lead is no longer a leader, a.k.a. the write server no longer accepts writes
                 // However the server is still available for possible reads.
@@ -210,7 +210,7 @@ namespace Neo4j.Driver.Internal.Routing
                 _clusterView.Remove(uri);
                 return new SessionExpiredException($"Server at {uri} no longer accepts writes");
             }
-            else if (error.Code.Equals("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase"))
+            else if (error.IsForbiddenOnReadOnlyDatabaseError())
             {
                 // The user was trying to run a write in a read session
                 // So inform the user and let him try with a proper session mode

@@ -28,8 +28,18 @@ namespace Neo4j.Driver.Internal
 
         public static bool IsClusterError(this Neo4jException error)
         {
-            return error.Code.Equals("Neo.ClientError.Cluster.NotALeader")
-                   || error.Code.Equals("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
+            return IsClusterNotALeaderError(error)
+                   || IsForbiddenOnReadOnlyDatabaseError(error);
+        }
+
+        public static bool IsClusterNotALeaderError(this Neo4jException error)
+        {
+            return error.Code.Equals("Neo.ClientError.Cluster.NotALeader");
+        }
+
+        public static bool IsForbiddenOnReadOnlyDatabaseError(this Neo4jException error)
+        {
+            return error.Code.Equals("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
         }
     }
 }

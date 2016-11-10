@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Internal.Connector
                                                     "Ensure that you are using driver and server versions that are compatible with one another.");
                 case ProtocolVersion.Http:
                     throw new NotSupportedException("Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                                                    "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)");
+                                                    $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})");
                 default:
                     throw new NotSupportedException("Protocol error, server suggested unexpected protocol version: " + version);
 

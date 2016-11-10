@@ -27,6 +27,7 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public static class GraphDatabase
     {
+        internal const int DefaultBoltPort = 7687;
         /// <summary>
         ///     Returns a driver for a Neo4j instance with default configuration settings.
         /// </summary>
@@ -106,7 +107,7 @@ namespace Neo4j.Driver.V1
 
             if (uri.Port == -1)
             {
-                var builder = new UriBuilder(uri.Scheme, uri.Host, 7687);
+                var builder = new UriBuilder(uri.Scheme, uri.Host, DefaultBoltPort);
                 uri = builder.Uri;
             }
 

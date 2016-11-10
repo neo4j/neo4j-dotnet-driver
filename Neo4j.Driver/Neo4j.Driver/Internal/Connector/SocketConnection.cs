@@ -54,6 +54,8 @@ namespace Neo4j.Driver.Internal.Connector
             Init(_authToken);
         }
 
+
+
         private void Init(IAuthToken authToken)
         {
             var initCollector = new InitCollector();
