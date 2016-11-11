@@ -48,10 +48,17 @@ namespace Neo4j.Driver.Internal.Result
                 }
                 else
                 {
-                    var record = _nextRecordFunc.Invoke();
-                    if (record == null)
+                    IRecord record = null;
+                    try
                     {
-                        AtEnd = true;
+                        record = _nextRecordFunc.Invoke();
+                    }
+                    finally
+                    {
+                        if (record == null)
+                        {
+                            AtEnd = true;
+                        }
                     }
                     if (!AtEnd)
                     {
