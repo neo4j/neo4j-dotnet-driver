@@ -14,18 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-namespace Neo4j.Driver.Internal.Messaging
-{
-    internal class IgnoredMessage : IResponseMessage
-    {
-        public override string ToString()
-        {
-            return "IGNORED";
-        }
 
-        public void Dispatch(IMessageResponseHandler messageResponseHandler)
+namespace Neo4j.Driver.Internal
+{
+    internal class ConnectionPoolSettings
+    {
+        public int MaxIdleSessionPoolSize { get; }
+
+        public ConnectionPoolSettings(){} // for test
+
+        public ConnectionPoolSettings(int maxIdleSessionPoolSize)
         {
-            messageResponseHandler.HandleIgnoredMessage();
+            MaxIdleSessionPoolSize = maxIdleSessionPoolSize;
         }
     }
 }

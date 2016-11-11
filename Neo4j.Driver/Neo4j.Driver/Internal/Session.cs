@@ -66,30 +66,38 @@ namespace Neo4j.Driver.Internal
                 {
                     throw new InvalidOperationException("Failed to dispose this seesion as it has already been disposed.");
                 }
-                lock (_txSyncLock)
+                if (!_connection.IsOpen)
                 {
-                    if (_transaction != null)
+                    // can not sync any data on this connection
+                    _connection.Dispose();
+                }
+                else
+                {
+                    lock (_txSyncLock)
                     {
+                        if (_transaction != null)
+                        {
+                            try
+                            {
+                                _transaction.Dispose();
+                            }
+                            catch
+                            {
+                                // Best-effort
+                            }
+                        }
                         try
                         {
-                            _transaction.Dispose();
+                            _connection.Sync();
                         }
-                        catch
+                        finally
                         {
-                            // Best-effort
+                            _connection.Dispose();
                         }
-                    }
-                    try
-                    {
-                        _connection.Sync();
-                    }
-                    finally
-                    {
-                        _connection.Dispose();
                     }
                 }
+                
             });
-
             base.Dispose(true);
         }
 
@@ -140,7 +148,7 @@ namespace Neo4j.Driver.Internal
 
         private void EnsureConnectionIsHealthy()
         {
-            if (!_connection.IsHealthy)
+            if (!_connection.IsOpen)
             {
                 throw new ClientException("The current session cannot be reused as the underlying connection with the " +
                                            "server has been closed or is going to be closed due to unrecoverable errors. " +
@@ -158,22 +166,6 @@ namespace Neo4j.Driver.Internal
         }
 
         public Guid Id { get; } = Guid.NewGuid();
-
-        public bool IsHealthy
-        {
-            get
-            {
-                if (!_connection.IsOpen)
-                {
-                    return false;
-                }
-                if (_connection.HasUnrecoverableError)
-                {
-                    return false;
-                }
-                return true;
-            }
-        }
 
         public void Reset()
         {

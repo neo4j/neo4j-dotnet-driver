@@ -29,10 +29,13 @@ namespace Neo4j.Driver.Internal.Connector
         // receive one
         void ReceiveOne();
 
+        void Init();
         // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
         void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false);
         // Enqueue a reset message
         void Reset();
+        // Enqueue a ackFailure message
+        void AckFailure();
 
         //Asynchronously sending reset to the socket output channel. Enqueue reset + send all
         void ResetAsync();
@@ -41,14 +44,6 @@ namespace Neo4j.Driver.Internal.Connector
         /// Return true if the underlying socket connection is till open, otherwise false.
         /// </summary>
         bool IsOpen { get; }
-        /// <summary>
-        /// Return true if unrecoverable error has been received on this connection, otherwise false.
-        /// </summary>
-        bool HasUnrecoverableError { get; }
-        /// <summary>
-        /// Return true if more statements could be run on this connection, otherwise false.
-        /// </summary>
-        bool IsHealthy { get; }
 
         /// <summary>
         /// The version of the server the connection connected to. Default to <c>null</c> if not supported by server
@@ -62,5 +57,11 @@ namespace Neo4j.Driver.Internal.Connector
         /// Close and release related resources
         /// </summary>
         void Close();
+
+        /// <summary>
+        /// Adds an extra error handler that you wish to be called back when a consreponding error is received
+        /// </summary>
+        /// <param name="handler">The extra error handler to add.</param>
+        void AddConnectionErrorHander(IConnectionErrorHandler handler);
     }
 }

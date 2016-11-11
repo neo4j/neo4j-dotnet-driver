@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    internal class FailureMessage : IMessage
+    internal class FailureMessage : IResponseMessage
     {
         private readonly string _code;
         private readonly string _message;
@@ -35,6 +35,11 @@ namespace Neo4j.Driver.Internal.Messaging
         public override string ToString()
         {
             return $"FAILURE code={_code}, message={_message}";
+        }
+
+        public void Dispatch(IMessageResponseHandler messageResponseHandler)
+        {
+            messageResponseHandler.HandleFailureMessage(_code, _message);
         }
     }
 }

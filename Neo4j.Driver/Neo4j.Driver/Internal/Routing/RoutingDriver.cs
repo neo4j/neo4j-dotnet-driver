@@ -18,42 +18,42 @@
 using System;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal.Routing
 {
-    internal class Driver : IDriver
+    /// <summary>
+    /// A driver with a simple load balancer to route to a cluster
+    /// </summary>
+    internal class RoutingDriver : IDriver
     {
-        private ConnectionPool _connectionPool;
         private ILogger _logger;
+        private ILoadBalancer _loadBalancer;
 
-        internal Driver(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
+        internal RoutingDriver(
+            Uri seedServer, 
+            IAuthToken authToken, 
+            EncryptionManager encryptionManager,
+            ConnectionPoolSettings poolSettings, 
+            ILogger logger)
         {
-            Throw.ArgumentNullException.IfNull(uri, nameof(uri));
+            Throw.ArgumentNullException.IfNull(seedServer, nameof(seedServer));
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
             Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
-            Throw.ArgumentNullException.IfNull(connectionPoolSettings, nameof(connectionPoolSettings));
+            Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
 
-            if (uri.Port == -1)
-            {
-                var builder = new UriBuilder(uri.Scheme, uri.Host, 7687);
-                uri = builder.Uri;
-            }
-
-            Uri = uri;
+            Uri = seedServer;
             _logger = logger;
-            _connectionPool = new ConnectionPool(uri, authToken, encryptionManager, connectionPoolSettings, _logger);
+            _loadBalancer = new RoundRobinLoadBalancer(seedServer, authToken, encryptionManager, poolSettings, _logger);
         }
-
-        public Uri Uri { get; }
 
         protected virtual void Dispose(bool isDisposing)
         {
             if (!isDisposing)
                 return;
 
-            if (_connectionPool != null)
+            if (_loadBalancer != null)
             {
-                _connectionPool.Dispose();
-                _connectionPool = null;
+                _loadBalancer.Dispose();
+                _loadBalancer = null;
             }
             _logger = null;
         }
@@ -64,9 +64,15 @@ namespace Neo4j.Driver.Internal
             GC.SuppressFinalize(this);
         }
 
+        public Uri Uri { get; }
         public ISession Session()
         {
-            return new Session(_connectionPool.Acquire(), _logger);
+            return Session(AccessMode.Write);
+        }
+
+        public ISession Session(AccessMode mode)
+        {
+            return new Session(_loadBalancer.AcquireConnection(mode), _logger);
         }
     }
 }

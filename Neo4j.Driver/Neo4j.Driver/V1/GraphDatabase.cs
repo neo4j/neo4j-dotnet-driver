@@ -17,6 +17,7 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.V1
 {
@@ -26,6 +27,7 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public static class GraphDatabase
     {
+        internal const int DefaultBoltPort = 7687;
         /// <summary>
         ///     Returns a driver for a Neo4j instance with default configuration settings.
         /// </summary>
@@ -102,7 +104,22 @@ namespace Neo4j.Driver.V1
             config = config ?? Config.DefaultConfig;
             var encryptionManager = new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger);
             var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
-            return new Internal.Driver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+
+            if (uri.Port == -1)
+            {
+                var builder = new UriBuilder(uri.Scheme, uri.Host, DefaultBoltPort);
+                uri = builder.Uri;
+            }
+
+            switch (uri.Scheme.ToLower())
+            {
+                case "bolt":
+                    return new DirectDriver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+                case "bolt+routing":
+                    return new RoutingDriver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+                default:
+                    throw new NotSupportedException($"Unsupported URI scheme: {uri.Scheme}");
+            }
         }
     }
 }

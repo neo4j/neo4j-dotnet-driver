@@ -18,18 +18,23 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    internal class SuccessMessage : IMessage
+    internal class SuccessMessage : IResponseMessage
     {
-        private IDictionary<string, object> meta;
+        private readonly IDictionary<string, object> _meta;
 
         public SuccessMessage(IDictionary<string, object> meta)
         {
-            this.meta = meta;
+            _meta = meta;
         }
 
         public override string ToString()
         {
-            return $"SUCCESS {meta.ValueToString()}";
+            return $"SUCCESS {_meta.ValueToString()}";
+        }
+
+        public void Dispatch(IMessageResponseHandler messageResponseHandler)
+        {
+            messageResponseHandler.HandleSuccessMessage(_meta);
         }
     }
 }

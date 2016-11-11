@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class SocketConnection : IConnection
     {
         private readonly ISocketClient _client;
+        private readonly IAuthToken _authToken;
         private readonly IMessageResponseHandler _responseHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
@@ -35,18 +36,25 @@ namespace Neo4j.Driver.Internal.Connector
         private volatile bool _interrupted;
         private readonly object _syncLock = new object();
 
-        public SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
+        private readonly IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
+
+        // for testing only
+        internal SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
-
             _client = socketClient;
-            Task.Run(() => _client.Start()).Wait();
-
-            // add init requestMessage by default
-            Init(authToken);
+            _authToken = authToken;
         }
+
+        public void Init()
+        {
+            Task.Run(() => _client.Start()).Wait();
+            Init(_authToken);
+        }
+
+
 
         private void Init(IAuthToken authToken)
         {
@@ -78,7 +86,17 @@ namespace Neo4j.Driver.Internal.Connector
                     return;
                 }
                 // blocking to send
-                _client.Send(_messages);
+
+                try
+                {
+                    _client.Send(_messages);
+                }
+                catch (Exception error)
+                {
+                    error = OnConnectionError(error);
+                    throw error;
+                }
+                
                 _messages.Clear();
             }
         }
@@ -92,13 +110,31 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             // blocking to receive
-            _client.Receive(_responseHandler);
+            try
+            {
+                _client.Receive(_responseHandler);
+            }
+            catch (Exception error)
+            {
+                error = OnConnectionError(error);
+                throw error;
+            }
+            
             AssertNoServerFailure();
         }
 
         public void ReceiveOne()
         {
-            _client.ReceiveOne(_responseHandler);
+            try
+            {
+                _client.ReceiveOne(_responseHandler);
+            }
+            catch (Exception error)
+            {
+                error = OnConnectionError(error);
+                throw error;
+            }
+            
             AssertNoServerFailure();
         }
 
@@ -119,6 +155,14 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new ResetMessage());
         }
 
+        public void AckFailure()
+        {
+            if (!_interrupted)
+            {
+                Enqueue(new AckFailureMessage());
+            }
+        }
+
         public void ResetAsync()
         {
             lock (_syncLock)
@@ -133,13 +177,16 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
-        public bool HasUnrecoverableError { private set; get; }
-        public bool IsHealthy => IsOpen && !HasUnrecoverableError;
         public string Server { private set; get; }
 
         public void Close()
         {
             Dispose();
+        }
+
+        public void AddConnectionErrorHander(IConnectionErrorHandler handler)
+        {
+            _handlers.Add(handler);
         }
 
         public void Dispose()
@@ -160,27 +207,32 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (_responseHandler.HasError)
             {
-                if (IsRecoverableError(_responseHandler.Error))
-                {
-                    if (!_interrupted)
-                    {
-                        Enqueue(new AckFailureMessage());
-                    }
-                }
-                else
-                {
-                    HasUnrecoverableError = true;
-                }
                 var error = _responseHandler.Error;
+
+                error = OnNeo4jError(error);
+
                 _responseHandler.Error = null;
                 _interrupted = false;
                 throw error;
             }
         }
 
-        private bool IsRecoverableError(Neo4jException error)
+        private Exception OnConnectionError(Exception e)
         {
-            return error is ClientException || error is TransientException;
+            foreach (var handler in _handlers)
+            {
+                e = handler.OnConnectionError(e);
+            }
+            return e;
+        }
+
+        public Neo4jException OnNeo4jError(Neo4jException e)
+        {
+            foreach (var handler in _handlers)
+            {
+                e = handler.OnNeo4jError(e);
+            }
+            return e;
         }
 
         private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null, IRequestMessage requestStreamingMessage = null)

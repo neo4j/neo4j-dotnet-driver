@@ -21,6 +21,11 @@ namespace Neo4j.Driver.Internal.Messaging
         void Dispatch(IMessageRequestHandler messageRequestHandler);
     }
 
+    internal interface IResponseMessage : IMessage
+    {
+        void Dispatch(IMessageResponseHandler messageResponseHandler);
+    }
+
     internal interface IMessage
     {
         

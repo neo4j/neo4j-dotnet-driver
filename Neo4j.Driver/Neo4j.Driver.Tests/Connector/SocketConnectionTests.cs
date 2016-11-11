@@ -36,35 +36,48 @@ namespace Neo4j.Driver.Tests
         public class Construction
         {
             [Fact]
+            public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
+            {
+                var exception = Exception(() => new SocketConnection(null, AuthTokens.None, Logger));
+                exception.Should().NotBeNull();
+                exception.Should().BeOfType<ArgumentNullException>();
+            }
+        }
+
+        public class InitMethod
+        {
+            [Fact]
             public void ShouldStartClient()
             {
+                // Given
                 var mockClient = new Mock<ISocketClient>();
                 // ReSharper disable once ObjectCreationAsStatement
-                new SocketConnection(mockClient.Object, AuthTokens.None, Logger, null);
+                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger);
 
+                // When
+                conn.Init();
+
+                // Then
                 mockClient.Verify(c => c.Start(), Times.Once);
             }
 
             [Fact]
             public void ShouldSyncInitMessageImmediately()
             {
+                // Given
                 var mockClient = new Mock<ISocketClient>();
                 var mockHandler = new Mock<IMessageResponseHandler>();
                 mockHandler.Setup(x => x.UnhandledMessageSize).Returns(1);
-                new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
+                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockHandler.Object);
 
+                // When
+                conn.Init();
+
+                // Then
                 mockHandler.Verify(h => h.EnqueueMessage(It.IsAny<InitMessage>(), It.IsAny<InitCollector>()));
 
                 mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
                 mockClient.Verify(c => c.Receive(mockHandler.Object), Times.Once);
-            }
-
-            [Fact]
-            public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
-            {
-                var exception = Exception(() => new SocketConnection(null, AuthTokens.None, Logger));
-                exception.Should().NotBeNull();
-                exception.Should().BeOfType<ArgumentNullException>();
             }
         }
 
@@ -87,10 +100,8 @@ namespace Neo4j.Driver.Tests
             public void DoesNothing_IfMessagesEmpty()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, null);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger);
 
-                con.Sync();
-                mock.Reset();
                 con.Sync();
                 mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
                     Times.Never);
@@ -100,7 +111,8 @@ namespace Neo4j.Driver.Tests
             public void SendsMessageAndClearsQueue_WhenMessageOnQueue()
             {
                 var mock = new Mock<ISocketClient>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, null);
+                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger);
+                con.Run("A statement");
 
                 con.Sync();
                 mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
@@ -191,88 +203,6 @@ namespace Neo4j.Driver.Tests
                 mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<RunMessage>(), null), Times.Once);
                 mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<DiscardAllMessage>(), null), Times.Once);
                 mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<ResetMessage>(), null), Times.Once);
-            }
-        }
-
-        public class HasUnrecoverableError
-        {
-            [Fact]
-            public void ShouldReportErrorIfIsTransientException()
-            {
-                var mock = MockSocketClient;
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-
-                mockResponseHandler.Setup(x => x.Error).Returns(new TransientException("BLAH", "lalala"));
-                con.HasUnrecoverableError.Should().BeFalse();
-            }
-
-            [Fact]
-            public void ShouldReportErrorIfIsDatabaseException()
-            {
-                var mock = MockSocketClient;
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-
-                mockResponseHandler.Setup(x => x.HasError).Returns(true);
-                mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException("BLAH", "lalala"));
-
-                var exception = Exception(()=>con.ReceiveOne());
-                exception.Should().BeOfType<DatabaseException>();
-                exception.Message.Should().Be("lalala");
-
-                con.HasUnrecoverableError.Should().BeTrue();
-                mockResponseHandler.VerifySet(x=>x.Error=null, Times.Once);
-            }
-
-            [Fact]
-            public void ShouldNotReportErrorIfIsOtherExceptions()
-            {
-                var mock = MockSocketClient;
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-
-                mockResponseHandler.Setup(x => x.Error).Returns(new ClientException("BLAH", "lalala"));
-                con.HasUnrecoverableError.Should().BeFalse();
-            }
-        }
-
-        public class IsHealthyMethod
-        {
-            [Fact]
-            public void ShouldBeFalseWhenConectionIsNotOpen()
-            {
-                var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.IsOpen).Returns(false);
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                mockResponseHandler.Setup(x => x.Error).Returns(new ClientException()); // has no unrecoverable error
-
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-                conn.IsHealthy.Should().BeFalse();
-            }
-
-            [Fact]
-            public void ShouldBeFalseWhenConnectionHasUnrecoverableError()
-            {
-                var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.IsOpen).Returns(false);
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException());  // unrecoverable error
-
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-                conn.IsHealthy.Should().BeFalse();
-            }
-
-            [Fact]
-            public void ShouldReturnTrueWhenIsHealthy()
-            {
-                var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.IsOpen).Returns(true);
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                mockResponseHandler.Setup(x => x.Error).Returns(new ClientException());  // has no unrecoverable error
-
-                var conn = new SocketConnection(mockClient.Object, AuthTokens.None, Logger, mockResponseHandler.Object);
-                conn.IsHealthy.Should().BeTrue();
             }
         }
     }

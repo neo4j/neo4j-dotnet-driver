@@ -21,7 +21,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class ConnectionPool : LoggerBase
+    internal class ConnectionPool : LoggerBase, IConnectionPool
     {
         private readonly Uri _uri;
         private readonly IAuthToken _authToken;
@@ -34,17 +34,27 @@ namespace Neo4j.Driver.Internal
         private readonly Queue<IPooledConnection> _availableConnections = new Queue<IPooledConnection>();
         private readonly Dictionary<Guid, IPooledConnection> _inUseConnections = new Dictionary<Guid, IPooledConnection>();
 
+        private readonly IConnectionErrorHandler _externalErrorHandler;
+
         private volatile bool _disposeCalled;
 
+        // for test only
         private readonly IConnection _fakeConnection;
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
+
         internal bool DisposeCalled
         {
             set { _disposeCalled = value; }
         }
 
-        public ConnectionPool(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
+        public ConnectionPool(
+            Uri uri,
+            IAuthToken authToken,
+            EncryptionManager encryptionManager,
+            ConnectionPoolSettings connectionPoolSettings,
+            ILogger logger,
+            IConnectionErrorHandler exteralErrorHandler = null)
             : base(logger)
         {
             _uri = uri;
@@ -53,6 +63,7 @@ namespace Neo4j.Driver.Internal
             _encryptionManager = encryptionManager;
             _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
 
+            _externalErrorHandler = exteralErrorHandler;
             _logger = logger;
         }
 
@@ -61,8 +72,11 @@ namespace Neo4j.Driver.Internal
             Queue<IPooledConnection> availableConnections = null,
             Dictionary<Guid, IPooledConnection> inUseConnections = null,
             ILogger logger = null,
-            ConnectionPoolSettings settings = null)
-            : this(null, null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), logger)
+            ConnectionPoolSettings settings = null,
+            IConnectionErrorHandler exteralErrorHandler = null)
+            : this(null, null, null,
+                  settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
+                  logger, exteralErrorHandler)
         {
             _fakeConnection = connection;
             _availableConnections = availableConnections ?? new Queue<IPooledConnection>();
@@ -71,7 +85,15 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            return _fakeConnection != null ? new PooledConnection(_fakeConnection, Release) : new PooledConnection(new SocketConnection(_uri, _authToken, _encryptionManager, _logger), Release);
+            var conn = _fakeConnection != null
+                ? new PooledConnection(_fakeConnection, Release)
+                : new PooledConnection(new SocketConnection(_uri, _authToken, _encryptionManager, _logger), Release);
+            if (_externalErrorHandler != null)
+            {
+                conn.AddConnectionErrorHander(_externalErrorHandler);
+            }
+            conn.Init();
+            return conn;
         }
 
         public IPooledConnection Acquire()
@@ -93,7 +115,7 @@ namespace Neo4j.Driver.Internal
                 {
                     connection = CreateNewPooledConnection();
                 }
-                else if (!connection.IsHealthy)
+                else if (!connection.IsOpen)
                 {
                     connection.Close();
                     return Acquire();
@@ -114,7 +136,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsConnectionReusable(IPooledConnection connection)
         {
-            if (!connection.IsHealthy)
+            if (!connection.IsOpen)
             {
                 return false;
             }
@@ -215,6 +237,11 @@ namespace Neo4j.Driver.Internal
         }
     }
 
+    internal interface IConnectionPool : IDisposable
+    {
+        IPooledConnection Acquire();
+        void Release(Guid id);
+    }
 
     internal interface IPooledConnection : IConnection
     {
@@ -222,9 +249,15 @@ namespace Neo4j.Driver.Internal
         /// An identifer of this connection for pooling
         /// </summary>
         Guid Id { get; }
+
         /// <summary>
         /// Try to reset the connection to a clean state to prepare it for a new session.
         /// </summary>
         void ClearConnection();
+
+        /// <summary>
+        /// Return true if unrecoverable error has been received on this connection, otherwise false.
+        /// </summary>
+        bool HasUnrecoverableError { get; }
     }
 }

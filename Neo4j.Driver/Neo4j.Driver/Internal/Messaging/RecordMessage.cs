@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    internal class RecordMessage : IMessage
+    internal class RecordMessage : IResponseMessage
     {
         private object[] fields;
 
@@ -34,6 +34,11 @@ namespace Neo4j.Driver.Internal.Messaging
         public override string ToString()
         {
             return $"RECORD {fields.ValueToString()}";
+        }
+
+        public void Dispatch(IMessageResponseHandler messageResponseHandler)
+        {
+            messageResponseHandler.HandleRecordMessage(fields);
         }
     }
 }

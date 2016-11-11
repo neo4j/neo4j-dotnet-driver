@@ -128,4 +128,28 @@ namespace Neo4j.Driver.V1
         {
         }
     }
+
+    [DataContract]
+    public class ServerUnavailableException : Neo4jException
+    {
+        public ServerUnavailableException(string message) : base(message)
+        {
+        }
+
+        public ServerUnavailableException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
+
+    [DataContract]
+    public class SessionExpiredException : Neo4jException
+    {
+        public SessionExpiredException(string message) : base(message)
+        {
+        }
+
+        public SessionExpiredException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
 }

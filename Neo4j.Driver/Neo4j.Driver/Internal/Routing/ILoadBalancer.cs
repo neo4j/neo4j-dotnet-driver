@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2016 "Neo Technology,"
+// Copyright (c) 2002-2016 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -14,18 +14,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-namespace Neo4j.Driver.Internal.Messaging
-{
-    internal class IgnoredMessage : IResponseMessage
-    {
-        public override string ToString()
-        {
-            return "IGNORED";
-        }
 
-        public void Dispatch(IMessageResponseHandler messageResponseHandler)
-        {
-            messageResponseHandler.HandleIgnoredMessage();
-        }
+using System;
+using Neo4j.Driver.V1;
+
+namespace Neo4j.Driver.Internal.Routing
+{
+    internal interface ILoadBalancer : IDisposable
+    {
+        IPooledConnection AcquireConnection(AccessMode mode);
     }
 }

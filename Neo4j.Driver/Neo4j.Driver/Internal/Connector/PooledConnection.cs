@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -29,8 +30,16 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _connection = connection;
             _releaseAction = releaseAction ?? (x => { });
+
+            //Adds call back error handler
+            AddConnectionErrorHander(new PooledConnectionErrorHandler(OnNeo4jError));
         }
         public Guid Id { get; } = Guid.NewGuid();
+
+        public void Init()
+        {
+            _connection.Init();
+        }
 
         public void ClearConnection()
         {
@@ -63,16 +72,17 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.Reset();
         }
 
+        public void AckFailure()
+        {
+            _connection.AckFailure();
+        }
+
         public void ResetAsync()
         {
             _connection.ResetAsync();
         }
 
-        public bool IsOpen => _connection.IsOpen;
-
-        public bool HasUnrecoverableError => _connection.HasUnrecoverableError;
-
-        public bool IsHealthy => _connection.IsHealthy;
+        public bool IsOpen => _connection.IsOpen && !HasUnrecoverableError;
         public string Server => _connection.Server;
 
         /// <summary>
@@ -83,12 +93,56 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.Close();
         }
 
+        public void AddConnectionErrorHander(IConnectionErrorHandler handler)
+        {
+            _connection.AddConnectionErrorHander(handler);
+        }
+
         /// <summary>
         /// Disposing a pooled connection will try to release the connection resource back to pool
         /// </summary>
         public void Dispose()
         {
             _releaseAction(Id);
+        }
+
+        public bool HasUnrecoverableError { private set; get; }
+
+        private Neo4jException OnNeo4jError(Neo4jException error)
+        {
+            if (error.IsRecoverableError())
+            {
+                _connection.AckFailure();
+            }
+            else
+            {
+                HasUnrecoverableError = true;
+            }
+            return error;
+        }
+
+        internal class PooledConnectionErrorHandler : IConnectionErrorHandler
+        {
+            private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
+            private readonly Func<Exception, Exception> _onConnErrorFunc;
+
+            public PooledConnectionErrorHandler(
+                Func<Neo4jException, Neo4jException> onNeo4JErrorFunc,
+                Func<Exception, Exception> onConnectionErrorFunc = null)
+            {
+                _onNeo4jErrorFunc = onNeo4JErrorFunc;
+                _onConnErrorFunc = onConnectionErrorFunc;
+            }
+
+            public Exception OnConnectionError(Exception e)
+            {
+                return _onConnErrorFunc.Invoke(e);
+            }
+
+            public Neo4jException OnNeo4jError(Neo4jException e)
+            {
+                return _onNeo4jErrorFunc.Invoke(e);
+            }
         }
     }
 }
