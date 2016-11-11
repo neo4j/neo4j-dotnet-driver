@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false)
+        public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
         {
             if (pullAll)
             {

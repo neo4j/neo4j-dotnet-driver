@@ -158,7 +158,7 @@ namespace Neo4j.Driver.Tests
                 var tx = session.BeginTransaction();
                 session.Dispose();
 
-                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
             }
 
             [Fact]

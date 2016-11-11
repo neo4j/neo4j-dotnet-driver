@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         void Init();
         // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
-        void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false);
+        void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true);
         // Enqueue a reset message
         void Reset();
         // Enqueue a ackFailure message

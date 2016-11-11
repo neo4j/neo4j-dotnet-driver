@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Tests
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server);
 
                 // When
-                con.Run("a statement", null, new ResultBuilder());
+                con.Run("a statement", null, new ResultBuilder(), false);
 
                 // Then
                 con.Messages.Count.Should().Be(2); // Run + DiscardAll
@@ -156,7 +156,7 @@ namespace Neo4j.Driver.Tests
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object);
 
                 var rb = new ResultBuilder();
-                con.Run("statement", null, rb);
+                con.Run("statement", null, rb, false);
 
                 mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), rb), Times.Once);
                 mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<DiscardAllMessage>(), rb), Times.Once);
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 var con = new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object);
 
-                con.Run("bula");
+                con.Run("bula", null, null, false);
                 con.Reset();
                 var messages = con.Messages;
                 messages.Count.Should().Be(3);

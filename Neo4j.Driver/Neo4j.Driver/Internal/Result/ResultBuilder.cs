@@ -90,6 +90,12 @@ namespace Neo4j.Driver.Internal.Result
             CollectResultAvailableAfter(meta, "result_available_after");
         }
 
+        public void CollectBookmark(IDictionary<string, object> meta)
+        {
+            throw new NotSupportedException(
+                $"Should not get a bookmark on a result. bookmark = {meta[Transaction.BookmarkKey].As<string>()}");
+        }
+
         public void CollectSummary(IDictionary<string, object> meta)
         {
             _hasMoreRecords = false;

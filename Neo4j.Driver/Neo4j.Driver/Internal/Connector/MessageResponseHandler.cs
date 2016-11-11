@@ -59,6 +59,10 @@ namespace Neo4j.Driver.Internal.Connector
                 // first success
                 CurrentResponseCollector?.CollectFields(meta);
             }
+            else if (meta.ContainsKey(Transaction.BookmarkKey))
+            {
+                CurrentResponseCollector?.CollectBookmark(meta);
+            }
             else
             {
                 // second success
