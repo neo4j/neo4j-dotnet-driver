@@ -164,7 +164,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
-    <Compile Include="ConnectionIT.cs" />
+    <Compile Include="DirectDriverIT.cs" />
     <Compile Include="Examples.cs" />
     <Compile Include="Internals\ServerVersion.cs" />
     <Compile Include="Internals\ExternalPythonInstaller.cs" />
