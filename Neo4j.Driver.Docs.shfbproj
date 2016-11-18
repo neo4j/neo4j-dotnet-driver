@@ -13,7 +13,7 @@
     <RootNamespace>Documentation</RootNamespace>
     <Name>Documentation</Name>
     <!-- SHFB properties -->
-    <FrameworkVersion>.NET Framework 4.5.2</FrameworkVersion>
+    <FrameworkVersion>.NET Portable Library 5.0 (NuGet)</FrameworkVersion>
     <OutputPath>.\Docs\</OutputPath>
     <HtmlHelpName>Neo4j.Driver.Documentation</HtmlHelpName>
     <Language>en-US</Language>
@@ -47,6 +47,21 @@
     <NamespaceSummaries>
       <NamespaceSummaryItem name="Neo4j.Driver.V1" isDocumented="True">The base namespace for interaction with the Neo4j .NET Driver.</NamespaceSummaryItem>
     </NamespaceSummaries>
+    <SaveComponentCacheCapacity>100</SaveComponentCacheCapacity>
+    <PlugInConfigurations>
+      <PlugInConfig id="Assembly Binding Redirection" enabled="True">
+        <configuration useGAC="false">
+          <assemblyBinding />
+          <ignoreIfUnresolved>
+            <assemblyIdentity name="BusinessObjects.Licensing.KeycodeDecoder" />
+            <assemblyIdentity name="Microsoft.VisualStudio.TestTools.UITest.Playback" />
+            <assemblyIdentity name="System.Net.Sockets" />
+            <assemblyIdentity name="System.Runtime.Serialization.Primitives" />
+            <assemblyIdentity name="System.Security.Cryptography.X509Certificates" />
+          </ignoreIfUnresolved>
+        </configuration>
+      </PlugInConfig>
+    </PlugInConfigurations>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in order for Visual Studio to perform
 			 the build.  The others are optional common platform types that may appear. -->

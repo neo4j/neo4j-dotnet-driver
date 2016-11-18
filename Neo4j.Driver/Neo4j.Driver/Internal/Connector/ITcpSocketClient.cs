@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    public interface ITcpSocketClient : IDisposable
+    internal interface ITcpSocketClient : IDisposable
     {
         Stream ReadStream { get;  }
         Stream WriteStream { get;  }
