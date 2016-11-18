@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Tests
 {
     public static class TestHelper
     {
-        public static class TcpSocketClientSetup
+        internal static class TcpSocketClientSetup
         {
             public static void SetupClientReadStream(Mock<ITcpSocketClient> mock, byte[] response)
             {
