@@ -311,7 +311,7 @@ namespace Neo4j.Driver.Examples
         {
             //tag::tls-signed[]
             var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
-                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).WithTrustStrategy(TrustStrategy.TrustSystemCaSignedCertificates()).ToConfig());
+                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).WithTrustStrategy(TrustStrategy.TrustSystemCaSignedCertificates).ToConfig());
             //end::tls-signed[]
             driver.Dispose();
         }
@@ -335,16 +335,18 @@ namespace Neo4j.Driver.Examples
             driver.Dispose();
         }
 
+        //tag::tls-trust-on-first-use[]
+        // Not supported in this driver
+        //end::tls-trust-on-first-use[]
+
         [Fact]
         public void TlsTrustOnFirstUse()
         {
             var knownHostsFileName = Path.GetTempPath() + Guid.NewGuid() + ".tmp";
-            //tag::tls-trust-on-first-use[]
+            
             var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
-                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).WithTrustStrategy(TrustStrategy.TrustOnFirstUse(knownHostsFileName))
+                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).WithTrustStrategy(TrustStrategy.TrustAllCertificates)
                 .ToConfig());
-            //end::tls-trust-on-first-use[]
-
             using (var session = driver.Session())
             {
                 var result = session.Run("RETURN 1 as n");

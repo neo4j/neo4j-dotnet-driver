@@ -58,111 +58,25 @@ namespace Neo4j.Driver.Internal.Connector
         }
     }
 
-    internal class TrustOnFirstUse : ITrustStrategy
+    internal class TrustAllCertificates : ITrustStrategy
     {
-        public static readonly string DefaultKnownHostsFilePath = System.IO.Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), ".neo4j");
-        private readonly string _knownHostsFilePath;
-        private readonly IDictionary<string, string> _knownHosts = new Dictionary<string, string>();
         private readonly ILogger _logger;
 
-        internal IDictionary<string, string> KnownHost => new ReadOnlyDictionary<string, string>(_knownHosts);
-
-        public TrustOnFirstUse(ILogger logger, string knownHostsFilePath = null)
+        public TrustAllCertificates(ILogger logger)
         {
-            _logger = logger;
-            _knownHostsFilePath = knownHostsFilePath ?? DefaultKnownHostsFilePath;
-            LoadFromKnownHost();
+            _logger = logger; 
         }
-
-        private void LoadFromKnownHost()
-        {
-            if (!File.Exists(_knownHostsFilePath))
-            {
-                return;
-            }
-
-            using (var reader = File.OpenText(_knownHostsFilePath))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    if (!line.Trim().StartsWith("#"))
-                    {
-                        var strings = line.Split(' ');
-                        if (strings.Length == 2)
-                        {
-                            _knownHosts.Add(strings[0], strings[1]);
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-
+            
         public bool ValidateServerCertificate(Uri uri, X509Certificate certificate, SslPolicyErrors sslPolicyErrors)
         {
-            var serverId = uri.ToString();
-            var fingerprint = Fingerprint(certificate);
-            
-            if (!_knownHosts.ContainsKey(serverId))
+            switch (sslPolicyErrors)
             {
-                // lock to make sure only one thread is appending the knownHost file
-                lock (_knownHosts)
-                {
-                    if (!_knownHosts.ContainsKey(serverId)) // check again if still no one has appened the same
-                    {
-                        _knownHosts.Add(serverId, fingerprint);
-                        SaveToKnownHost(serverId, fingerprint);
-                    }
-                }
+                case SslPolicyErrors.RemoteCertificateNotAvailable:
+                    _logger?.Error("Certificate not available.");
+                    return false;
             }
-            if (!_knownHosts[serverId].Equals(fingerprint))
-            {
-                _logger?.Error(
-                    $"Unable to connect to neo4j at `{serverId}`, because the certificate the server uses has changed. " +
-                    "This is a security feature to protect against man-in-the-middle attacks.\n" +
-                    "If you trust the certificate the server uses now, simply remove the line that starts with " +
-                    $"`{serverId}` in the file `{_knownHostsFilePath}`.\n" +
-                    $"The old certificate saved in file is:\n{fingerprint}\nThe New certificate received is:\n{fingerprint}");
-                return false;
-            }
-
-            _logger?.Debug("Authentication succeeded.");
+            _logger?.Debug("Autentication succeeded");
             return true;
-        }
-
-        private void SaveToKnownHost(string serverId, string fingerprint)
-        {
-            _logger?.Info($"Adding {fingerprint} as known and trusted certificate for {serverId}.");
-
-            CreateFileRecursively(_knownHostsFilePath);
-            using (var writer = File.AppendText(_knownHostsFilePath))
-            {
-                writer.WriteLine($"{serverId} {fingerprint}");
-            }
-        }
-
-        private static string Fingerprint(X509Certificate certificate)
-        {
-            var data = certificate.GetCertHash();
-            using (var sha512 = SHA512.Create())
-            {
-                return sha512.ComputeHash(data).ToHexString("");
-            }
-        }
-
-        private static void CreateFileRecursively(string filePath)
-        {
-            var directoryPath = System.IO.Path.GetDirectoryName(filePath);
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-            if (!File.Exists(filePath))
-            {
-                using (File.Create(filePath))
-                {} //make sure the file get closed after use
-            }
         }
     }
 }
