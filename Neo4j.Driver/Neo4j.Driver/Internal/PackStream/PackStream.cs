@@ -219,7 +219,7 @@ namespace Neo4j.Driver.Internal.Packstream
                 else
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value.GetType(),
-                        $"Cannot understand{nameof(value)} with type {value.GetType().FullName}");
+                        $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
                 }
             }
 
