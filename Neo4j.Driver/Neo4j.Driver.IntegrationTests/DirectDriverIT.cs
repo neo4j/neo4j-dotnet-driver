@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -359,6 +360,76 @@ namespace Neo4j.Driver.IntegrationTests
                         }
                     }
                 }
+            }
+
+            [Fact]
+            public void ShouldWaitOnBookmark()
+            {
+                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                {
+                    string version;
+                    using (var session = driver.Session())
+                    {
+                        version = session.Run("RETURN 1").Consume().Server.Version;
+                    }
+                    if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
+                    {
+                        using (var session = driver.Session())
+                        {
+                            // get a bookmark
+                            session.LastBookmark.Should().BeNull();
+                            using (var tx = session.BeginTransaction())
+                            {
+                                tx.Run("CREATE (a:Person)");
+                                tx.Success();
+                            }
+
+                            session.LastBookmark.Should().NotBeNull();
+                            session.LastBookmark.Should().StartWith(BookmarkHeader);
+                            var lastBookmarkNum = BookmarkNum(session.LastBookmark);
+
+                            var queue = new ConcurrentQueue<long>();
+                            // start a thread to create lastBookmark + 1 tx
+                            Task.Factory.StartNew(() =>
+                            {
+                                Thread.Sleep(100);
+                                using (var anotherSession = driver.Session())
+                                {
+                                    using (var tx = anotherSession.BeginTransaction())
+                                    {
+                                        tx.Run("CREATE (a:Person)");
+                                        tx.Success();
+                                    }
+                                    queue.Enqueue(BookmarkNum(anotherSession.LastBookmark));
+                                }
+
+                            });
+
+                            // wait for lastBookmark + 1 and create lastBookmark + 2
+                            var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
+                            using (var tx = session.BeginTransaction(waitForBookmark))
+                            {
+                                tx.Run("CREATE (a:Person)");
+                                tx.Success();
+                            }
+                            queue.Enqueue(BookmarkNum(session.LastBookmark));
+
+                            queue.Count.Should().Be(2);
+                            long value;
+                            queue.TryDequeue(out value).Should().BeTrue();
+                            value.Should().Be(lastBookmarkNum + 1);
+                            queue.TryDequeue(out value).Should().BeTrue();
+                            value.Should().Be(lastBookmarkNum + 2);
+                        }
+                    }
+                }
+            }
+
+            private const string BookmarkHeader = "neo4j:bookmark:v1:tx";
+
+            private long BookmarkNum(string bookmark)
+            {
+                return Convert.ToInt64(bookmark.Substring(BookmarkHeader.Length));
             }
         }
 

@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -29,13 +31,26 @@ namespace Neo4j.Driver.Tests
         public class Constructor
         {
             [Fact]
-            public void ShouldRunBeginAndDiscardAll()
+            public void ShouldRunBeginAndPullAll()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Verify(x=>x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(x=>x.Run("BEGIN", new Dictionary<string, object>(), null, true), Times.Once);
             }
+
+            [Fact]
+            public void ShouldSendBookmarkIfPresents()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object, null, null, "a bookmark");
+
+                IDictionary<string, object> paramters = new Dictionary<string, object>();
+                paramters.Add("bookmark", "a bookmark");
+
+                mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
+            }
+
         }
 
         public class RunMethod

@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal
             {
                 paramters.Add(BookmarkKey, bookmark);
             }
-            _connection.Run(Begin);
+            _connection.Run(Begin, paramters);
         }
 
         private enum State
