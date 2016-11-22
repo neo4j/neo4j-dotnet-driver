@@ -39,13 +39,17 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
 
         // for testing only
-        internal SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger,
+        internal SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger, IServerInfo server,
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
-            _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
+            Throw.ArgumentNullException.IfNull(server, nameof(server));
+
             _client = socketClient;
             _authToken = authToken;
+            Server = server;
+
+            _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
         }
 
         public void Init()
@@ -54,18 +58,16 @@ namespace Neo4j.Driver.Internal.Connector
             Init(_authToken);
         }
 
-
-
         private void Init(IAuthToken authToken)
         {
             var initCollector = new InitCollector();
             Enqueue(new InitMessage("neo4j-dotnet/1.1", authToken.AsDictionary()), initCollector);
             Sync();
-            Server = initCollector.Server;
+            ((ServerInfo)Server).Version = initCollector.Server;
         }
 
         public SocketConnection(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ILogger logger)
-            : this(new SocketClient(uri, encryptionManager, logger), authToken, logger)
+            : this(new SocketClient(uri, encryptionManager, logger), authToken, logger, new ServerInfo(uri))
         {
         }
 
@@ -138,7 +140,7 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false)
+        public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
         {
             if (pullAll)
             {
@@ -177,7 +179,7 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
-        public string Server { private set; get; }
+        public IServerInfo Server { get; }
 
         public void Close()
         {

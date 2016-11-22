@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -29,13 +31,26 @@ namespace Neo4j.Driver.Tests
         public class Constructor
         {
             [Fact]
-            public void ShouldRunBeginAndDiscardAll()
+            public void ShouldRunBeginAndPullAll()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Verify(x=>x.Run("BEGIN", null, null, false), Times.Once);
+                mockConn.Verify(x=>x.Run("BEGIN", new Dictionary<string, object>(), null, true), Times.Once);
             }
+
+            [Fact]
+            public void ShouldSendBookmarkIfPresents()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object, null, null, "a bookmark");
+
+                IDictionary<string, object> paramters = new Dictionary<string, object>();
+                paramters.Add("bookmark", "a bookmark");
+
+                mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
+            }
+
         }
 
         public class RunMethod
@@ -85,6 +100,17 @@ namespace Neo4j.Driver.Tests
                 var error = Xunit.Record.Exception(() => tx.Run("ttt"));
                 error.Should().BeOfType<Neo4jException>();
             }
+
+            [Fact]
+            public void ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+
+                tx.Run("lalala");
+
+                mockConn.Verify(x => x.Server, Times.Once);
+            }
         }
 
         public class DisposeMethod
@@ -98,7 +124,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.ResetCalls();
                 tx.Success();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("COMMIT", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Run("COMMIT", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
 
@@ -113,7 +139,7 @@ namespace Neo4j.Driver.Tests
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Failure();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
 
@@ -126,7 +152,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.ResetCalls();
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }
@@ -142,7 +168,7 @@ namespace Neo4j.Driver.Tests
 
                 tx.MarkToClose();
 
-                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Never);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>()), Times.Never);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -159,7 +185,7 @@ namespace Neo4j.Driver.Tests
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Cannot run more statements in this transaction");
 
-                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Never);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>()), Times.Never);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
         }

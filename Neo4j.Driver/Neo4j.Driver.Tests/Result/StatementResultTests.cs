@@ -379,6 +379,7 @@ namespace Neo4j.Driver.Tests
             public IList<INotification> Notifications { get; }
             public TimeSpan ResultAvailableAfter { get; }
             public TimeSpan ResultConsumedAfter { get; }
+            public IServerInfo Server { get; }
         }
     }
 }

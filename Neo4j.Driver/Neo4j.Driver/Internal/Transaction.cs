@@ -27,6 +27,13 @@ namespace Neo4j.Driver.Internal
         private readonly IConnection _connection;
         private readonly Action _cleanupAction;
 
+        internal const string BookmarkKey = "bookmark";
+        internal string Bookmark { get; private set; }
+
+        private const string Begin = "BEGIN";
+        private const string Commit = "COMMIT";
+        private const string Rollback = "ROLLBACK";
+
         /* 
          * All the blocks that modifies the state of this tx and perform certain actoin based on the current tx state should be syncronized
          * as a reset thread and a run thread could modify this state at the same time.
@@ -34,12 +41,17 @@ namespace Neo4j.Driver.Internal
         private State _state = State.Active;
         private readonly object _syncLock = new object();
 
-        public Transaction(IConnection connection, Action cleanupAction=null, ILogger logger=null) : base(logger)
+        public Transaction(IConnection connection, Action cleanupAction=null, ILogger logger=null, string bookmark = null) : base(logger)
         {
             _connection = connection;
             _cleanupAction = cleanupAction ?? (() => { });
 
-            _connection.Run("BEGIN");
+            IDictionary<string, object> paramters = new Dictionary<string, object>();
+            if (bookmark != null)
+            {
+                paramters.Add(BookmarkKey, bookmark);
+            }
+            _connection.Run(Begin, paramters);
         }
 
         private enum State
@@ -78,7 +90,7 @@ namespace Neo4j.Driver.Internal
                 {
                     if (_state == State.MarkedSuccess)
                     {
-                        _connection.Run("COMMIT");
+                        _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = s));
                         _connection.Sync();
                         _state = State.Succeeded;
                     }
@@ -86,7 +98,7 @@ namespace Neo4j.Driver.Internal
                     {
                         // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
                         // do this, we could just clear the queue. Future optimization.
-                        _connection.Run("ROLLBACK");
+                        _connection.Run(Rollback, null, new BookmarkCollector(s => Bookmark = s));
                         _connection.Sync();
                         _state = State.RolledBack;
                     }
@@ -108,8 +120,8 @@ namespace Neo4j.Driver.Internal
                     EnsureNotFailed();
                     try
                     {
-                        var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne());
-                        _connection.Run(statement, parameters, resultBuilder, true);
+                        var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(), _connection.Server);
+                        _connection.Run(statement, parameters, resultBuilder);
                         _connection.Send();
                         return resultBuilder.PreBuild();
                     }

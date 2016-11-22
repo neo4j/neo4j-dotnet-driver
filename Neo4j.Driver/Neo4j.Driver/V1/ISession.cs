@@ -47,8 +47,17 @@ namespace Neo4j.Driver.V1
         /// method.
         ///
         /// </summary>
+        /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
+        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
+        /// </param>
         /// <returns>A new transaction.</returns>
-        ITransaction BeginTransaction();
+        ITransaction BeginTransaction(string bookmark = null);
+
+        /// <summary>
+        /// Gets the bookmark received following the last completed <see cref="ITransaction"/>.
+        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will be null.
+        /// </summary>
+        string LastBookmark { get; }
 
         /// <summary>
         /// Reset the current session. This sends an immediate RESET signal to the server which both interrupts
@@ -57,12 +66,6 @@ namespace Neo4j.Driver.V1
         /// have been acknowledged.
         /// </summary>
         void Reset();
-
-        /// <summary>
-        /// Returns a string telling which version of the server the session is connected to.
-        /// </summary>
-        /// <returns>The server version of <c>null</c> if not available.</returns>
-        string Server();
     }
 
     /// <summary>

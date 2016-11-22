@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.ReceiveOne();
         }
 
-        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = false)
+        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
         {
             _connection.Run(statement, parameters, resultBuilder, pullAll);
         }
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _connection.IsOpen && !HasUnrecoverableError;
-        public string Server => _connection.Server;
+        public IServerInfo Server => _connection.Server;
 
         /// <summary>
         /// Close the connection and all resources all for good

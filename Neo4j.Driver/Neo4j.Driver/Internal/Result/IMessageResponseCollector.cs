@@ -23,13 +23,35 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal interface IMessageResponseCollector
     {
+        // success
         void CollectFields(IDictionary<string, object> meta);
-        void CollectRecord(object[] fields);
+        void CollectBookmark(IDictionary<string, object> meta);
         void CollectSummary(IDictionary<string, object> meta);
+
+        // record
+        void CollectRecord(object[] fields);
 
         void DoneSuccess();
         void DoneFailure();
         void DoneIgnored();
+    }
+
+    internal class BookmarkCollector : NoOperationCollector
+    {
+        private readonly Action<string> _setBookmarkCallbackAction;
+        public BookmarkCollector(Action<string> bookmarkCallbackAction)
+        {
+            _setBookmarkCallbackAction = bookmarkCallbackAction;
+        }
+
+        public override void CollectBookmark(IDictionary<string, object> meta)
+        {
+            if (meta.ContainsKey(Transaction.BookmarkKey))
+            {
+                var bookmark = meta[Transaction.BookmarkKey].As<string>();
+                _setBookmarkCallbackAction.Invoke(bookmark);
+            }
+        }
     }
 
     internal class ResetCollector : NoOperationCollector
@@ -38,7 +60,6 @@ namespace Neo4j.Driver.Internal.Result
         public ResetCollector(Action successCallBackAction = null)
         {
             _successCallbackAction = successCallBackAction ?? (() => { });
-
         }
 
         public override void DoneSuccess()
@@ -62,6 +83,11 @@ namespace Neo4j.Driver.Internal.Result
     internal abstract class NoOperationCollector : IMessageResponseCollector
     {
         public virtual void CollectFields(IDictionary<string, object> meta)
+        {
+            // left empty
+        }
+
+        public virtual void CollectBookmark(IDictionary<string, object> meta)
         {
             // left empty
         }

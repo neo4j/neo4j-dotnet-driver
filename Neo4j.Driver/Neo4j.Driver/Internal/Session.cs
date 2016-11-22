@@ -43,7 +43,11 @@ namespace Neo4j.Driver.Internal
         public Session(IConnection conn, ILogger logger):base(logger)
         {
             _connection = conn;
-            _transactionCleanupAction = () => { _transaction = null; };
+            _transactionCleanupAction = () =>
+            {
+                LastBookmark = _transaction?.Bookmark;
+                _transaction = null;
+            };
             _logger = logger;
         }
 
@@ -105,29 +109,31 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne());
+                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne(), _connection.Server);
                 lock (_txSyncLock)
                 {
                     EnsureCanRunMoreStatements();
-                    _connection.Run(statement, statementParameters, resultBuilder, true);
+                    _connection.Run(statement, statementParameters, resultBuilder);
                     _connection.Send();
                 }
                 return resultBuilder.PreBuild();
             });
         }
 
-        public ITransaction BeginTransaction()
+        public ITransaction BeginTransaction(string bookmark = null)
         {
             return TryExecute(() =>
             {
                 lock (_txSyncLock)
                 {
                     EnsureCanRunMoreStatements();
-                    _transaction = new Transaction(_connection, _transactionCleanupAction, _logger);
+                    _transaction = new Transaction(_connection, _transactionCleanupAction, _logger, bookmark);
                 }
                 return _transaction;
             });
         }
+
+        public string LastBookmark { get; private set; }
 
         private void EnsureCanRunMoreStatements()
         {
@@ -178,11 +184,6 @@ namespace Neo4j.Driver.Internal
                 _transactionCleanupAction.Invoke();
             }
             _connection.ResetAsync();
-        }
-
-        public string Server()
-        {
-            return _connection.Server;
         }
 
         public void Close()

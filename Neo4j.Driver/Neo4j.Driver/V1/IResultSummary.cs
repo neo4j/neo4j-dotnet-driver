@@ -121,5 +121,10 @@ namespace Neo4j.Driver.V1
         /// Field introduced in Neo4j 3.1.
         /// </remarks>
         TimeSpan ResultConsumedAfter { get; }
+
+        /// <summary>
+        /// Get some basic information of the server where the statement is carried out
+        /// </summary>
+        IServerInfo Server { get; }
     }
 }
