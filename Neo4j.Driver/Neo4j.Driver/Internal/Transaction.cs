@@ -90,25 +90,45 @@ namespace Neo4j.Driver.Internal
                 {
                     if (_state == State.MarkedSuccess)
                     {
-                        _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = s));
-                        _connection.Sync();
-                        _state = State.Succeeded;
+                        try
+                        {
+                            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = s));
+                            _connection.Sync();
+                            _state = State.Succeeded;
+                        }
+                        catch(Exception)
+                        {
+                            // if we ever failed to commit, then we rollback the tx
+                            try
+                            {
+                                RollBackTx();
+                            }
+                            catch (Exception)
+                            {
+                                // ignored
+                            }
+
+                            throw;
+                        }
                     }
                     else if (_state == State.MarkedFailed || _state == State.Active)
                     {
-                        // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
-                        // do this, we could just clear the queue. Future optimization.
-                        _connection.Run(Rollback, null, new BookmarkCollector(s => Bookmark = s));
-                        _connection.Sync();
-                        _state = State.RolledBack;
+                        RollBackTx();
                     }
                 }
             }
             finally
             {
-                _cleanupAction.Invoke();;
+                _cleanupAction.Invoke();
                 base.Dispose(true);
             }
+        }
+
+        private void RollBackTx()
+        {
+            _connection.Run(Rollback, null, new BookmarkCollector(s => Bookmark = s));
+            _connection.Sync();
+            _state = State.RolledBack;
         }
 
         public override IStatementResult Run(string statement, IDictionary<string, object> parameters=null)

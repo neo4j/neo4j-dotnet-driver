@@ -298,11 +298,13 @@ namespace Neo4j.Driver.IntegrationTests
             }
 
             [Fact]
-            public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRunForTx()
+            public void RollBackTxIfErrorWithConsume()
             {
+                // Given
                 using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
                 using (var session = driver.Session())
                 {
+                    // When failed to run a tx with consume
                     using (var tx = session.BeginTransaction())
                     {
                         var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
@@ -310,28 +312,60 @@ namespace Neo4j.Driver.IntegrationTests
                         ex.Message.Should().StartWith("Invalid input 'I'");
                     }
 
+                    // Then can run more afterwards
                     var result = session.Run("RETURN 1");
                     result.Single()[0].ValueAs<int>().Should().Be(1);
                 }
             }
 
             [Fact]
-            public void ShouldNotThrowExceptionWhenDisposeSessionAfterDriver()
+            public void RollBackTxIfErrorWithoutConsume()
             {
+                // Given
                 using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
                 using (var session = driver.Session())
                 {
-                    using (var tx = session.BeginTransaction())
-                    {
-                        var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
-                        ex.Should().BeOfType<ClientException>();
-                        ex.Message.Should().StartWith("Invalid input 'I'");
-                    }
+                    // When failed to run a tx without consume
 
-                    var result = session.Run("RETURN 1");
-                    result.Single()[0].ValueAs<int>().Should().Be(1);
+                    // The following code is the same as using(var tx = session.BeginTx()) {...}
+                    // While we have the full control of where the error is thrown
+                    var tx = session.BeginTransaction();
+                    tx.Run("Invalid Cypher");
+                    tx.Success();
+                    var ex = Record.Exception(() => tx.Dispose());
+                    ex.Should().BeOfType<ClientException>();
+                    ex.Message.Should().StartWith("Invalid input 'I'");
+
+                    // Then can still run more afterwards
+                    using (var anotherTx = session.BeginTransaction())
+                    {
+                        var result = anotherTx.Run("RETURN 1");
+                        result.Single()[0].ValueAs<int>().Should().Be(1);
+                    }
                 }
             }
+
+            [Fact]
+            public void ShouldNotThrowExceptionWhenDisposeSessionAfterDriver()
+            {
+                var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
+
+                var session = driver.Session();
+
+                using (var tx = session.BeginTransaction())
+                {
+                    var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
+                    ex.Should().BeOfType<ClientException>();
+                    ex.Message.Should().StartWith("Invalid input 'I'");
+                }
+
+                var result = session.Run("RETURN 1");
+                result.Single()[0].ValueAs<int>().Should().Be(1);
+
+                driver.Dispose();
+                session.Dispose();
+            }
+
 
             [Fact]
             public void ShouldContainLastBookmarkAfterTx()
@@ -542,6 +576,24 @@ namespace Neo4j.Driver.IntegrationTests
                         tx.Success();
                     }
                     session.Reset();
+                    using (var tx = session.BeginTransaction())
+                    {
+                        tx.Run("RETURN 2");
+                        tx.Success();
+                    }
+                }
+            }
+
+            [Fact]
+            public void ShouldAllowNewTxRunAfterSessionReset()
+            {
+                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                using (var session = driver.Session())
+                {
+                    using (var tx = session.BeginTransaction())
+                    {
+                        session.Reset();
+                    }
                     using (var tx = session.BeginTransaction())
                     {
                         tx.Run("RETURN 2");
