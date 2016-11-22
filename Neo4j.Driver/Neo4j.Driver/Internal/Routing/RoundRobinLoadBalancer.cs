@@ -181,7 +181,7 @@ namespace Neo4j.Driver.Internal.Routing
             // TODO also try each detached routers
             // We retied and tried our best however there is just no cluster.
             // This is the ultimate place we will inform the user that you need to re-create a driver
-            throw new ServerUnavailableException(
+            throw new ServiceUnavailableException(
                 "Failed to connect to any routing server. " +
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
