@@ -302,16 +302,6 @@ namespace Neo4j.Driver.Tests
         public class SummaryProperty
         {
             [Fact]
-            public void ShouldThrowInvalidOperationExceptionWhenNotAtEnd()
-            {
-                var result = ResultCreator.CreateResult(1);
-                result.AtEnd.Should().BeFalse();
-
-                var ex = Xunit.Record.Exception(() => result.Summary);
-                ex.Should().BeOfType<InvalidOperationException>();
-            }
-
-            [Fact]
             public void ShouldCallGetSummaryWhenGetSummaryIsNotNull()
             {
                 bool getSummaryCalled = false;

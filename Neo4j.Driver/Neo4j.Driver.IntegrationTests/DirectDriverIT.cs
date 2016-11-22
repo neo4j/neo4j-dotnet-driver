@@ -155,6 +155,58 @@ namespace Neo4j.Driver.IntegrationTests
             }
 
             [Fact]
+            public void AccessSummaryAfterFailure()
+            {
+                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("Invalid");
+                    var error = Record.Exception(()=>result.Consume());
+                    error.Should().BeOfType<ClientException>();
+                    var summary = result.Summary;
+
+                    summary.Should().NotBeNull();
+                    summary.Counters.NodesCreated.Should().Be(0);
+                    summary.Server.Address.Should().Contain("localhost:7687");
+                }
+            }
+
+            [Fact]
+            public void BufferRecordsAfterSummary()
+            {
+                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("UNWIND [1,2] AS a RETURN a");
+                    var summary = result.Summary;
+
+                    summary.Should().NotBeNull();
+                    summary.Counters.NodesCreated.Should().Be(0);
+                    summary.Server.Address.Should().Contain("localhost:7687");
+
+                    result.First()["a"].ValueAs<int>().Should().Be(1);
+                    result.First()["a"].ValueAs<int>().Should().Be(2);
+                }
+            }
+
+            [Fact]
+            public void DiscardRecordsAfterConsume()
+            {
+                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("UNWIND [1,2] AS a RETURN a");
+                    var summary = result.Consume();
+
+                    summary.Should().NotBeNull();
+                    summary.Counters.NodesCreated.Should().Be(0);
+                    summary.Server.Address.Should().Contain("localhost:7687");
+
+                    result.ToList().Count.Should().Be(0);
+                }
+            }
+
+            [Fact]
             public void BuffersResultsOfRunSoTheyCanBeReadAfterAnotherSubsequentRun()
             {
                 using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))

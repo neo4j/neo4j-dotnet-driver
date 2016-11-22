@@ -49,10 +49,6 @@ namespace Neo4j.Driver.Internal.Result
         {
             get
             {
-                if (!AtEnd)
-                {
-                    throw new InvalidOperationException("Cannot get summary before consuming all records.");
-                }
                 if (_summary == null && _getSummary != null)
                 {
                     _summary = _getSummary();

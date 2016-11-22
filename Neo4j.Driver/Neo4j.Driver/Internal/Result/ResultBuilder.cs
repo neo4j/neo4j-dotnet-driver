@@ -49,7 +49,22 @@ namespace Neo4j.Driver.Internal.Result
 
         public StatementResult PreBuild()
         {
-            return new StatementResult(_keys, new RecordSet(NextRecord), ()=> _summaryBuilder.Build());
+            return new StatementResult(_keys, new RecordSet(NextRecord), Summary);
+        }
+
+        /// <summary>
+        /// Buffer all records left unread into memory and return the summary
+        /// </summary>
+        /// <returns>The final summary</returns>
+        private IResultSummary Summary()
+        {
+            // read all records into memory
+            while (_hasMoreRecords)
+            {
+                _receiveOneFun.Invoke();
+            }
+            // return the summary
+            return _summaryBuilder.Build();
         }
 
         /// <summary>

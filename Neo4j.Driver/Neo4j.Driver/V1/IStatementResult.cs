@@ -33,9 +33,14 @@ namespace Neo4j.Driver.V1
         /// </summary>
         IReadOnlyList<string> Keys { get; }
         /// <summary>
-        /// Gets the <see cref="IResultSummary"/> after streaming the whole records to the client. 
+        /// Gets the <see cref="IResultSummary"/> after streaming the whole records to the client.
+        /// If the records in the result are not fully consumed,
+        /// then calling this method will force to pull all remaining records into buffer to yield the summary.
+        ///
+        /// If you want to obtain the summary but discard the records, use <see cref="Consume"/> instead.
+        ///
+        /// If all records in the records stream are already consumed, then this method will return the summary directly.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if this is called before all the records have been visited.</exception>
         IResultSummary Summary { get; }
         /// <summary>
         /// Investigate the next upcoming record without changing the current position in the result.
