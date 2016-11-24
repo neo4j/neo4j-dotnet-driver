@@ -1,14 +1,14 @@
 ﻿// Copyright (c) 2002-2016 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
-// 
+//
 // This file is part of Neo4j.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,8 +50,12 @@ namespace Neo4j.Driver.Examples
             using (var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j")))
             using (var session = driver.Session())
             {
-                session.Run("CREATE (a:Person {name:'Arthur', title:'King'})");
-                var result = session.Run("MATCH (a:Person) WHERE a.name = 'Arthur' RETURN a.name AS name, a.title AS title");
+                session.Run("CREATE (a:Person {name: {name}, title: {title}})",
+                            new Dictionary<string, object> { {"name", "Arthur"}, {"title", "King"} });
+
+                var result = session.Run("MATCH (a:Person) WHERE a.name = {name} " +
+                                         "RETURN a.name AS name, a.title AS title",
+                                         new Dictionary<string, object> { {"name", "Arthur"} });
 
                 foreach (var record in result)
                 {
@@ -85,10 +89,10 @@ namespace Neo4j.Driver.Examples
         {
             var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
             var session = driver.Session();
-           
+
             //tag::statement[]
             var result = session.Run("CREATE (person:Person {name: {name}})",
-                new Dictionary<string, object> {{"name", "Arthur"}});
+                new Dictionary<string, object> { {"name", "Arthur"} });
             //end::statement[]
 
             result.Consume();
@@ -102,7 +106,7 @@ namespace Neo4j.Driver.Examples
             var session = driver.Session();
 
             //tag::statement-without-parameters[]
-            var result = session.Run("CREATE (p:Person { name: 'Arthur' })");
+            var result = session.Run("CREATE (p:Person {name: 'Arthur'})");
             //end::statement-without-parameters[]
             result.Consume();
             driver.Dispose();
@@ -113,12 +117,14 @@ namespace Neo4j.Driver.Examples
         {
             var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
             var session = driver.Session();
-            session.Run("CREATE (weapon:Weapon { name: 'Sword in the stone' })");
+            session.Run("CREATE (weapon:Weapon {name: {name}})",
+                        new Dictionary<string, object> { {"name", "Sword in the stone"} });
 
             //tag::result-traversal[]
             var searchTerm = "Sword";
-            var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} RETURN weapon.name",
-                new Dictionary<string, object> { { "term", searchTerm } });
+            var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} " +
+                                     "RETURN weapon.name",
+                                    new Dictionary<string, object> { {"term", searchTerm} });
 
             Output.WriteLine($"List of weapons called {searchTerm}:");
             foreach (var record in result)
@@ -135,13 +141,19 @@ namespace Neo4j.Driver.Examples
         {
             var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
             var session = driver.Session();
-            session.Run("CREATE (weapon:Weapon { name: 'Sword in the stone', owner: 'Arthur', material: 'Stone', size: 'Huge' })");
-            session.Run("CREATE (weapon:Weapon { name: 'Excalibur', owner: 'Arthur', material: 'Iron', size: 'Enormous' })");
+            session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
+                        new Dictionary<string, object> { {"name", "Sword in the stone"}, {"owner", "Arthur"},
+                                                       {"material", "Stone"}, {"size", "Huge"} });
+
+            session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
+                        new Dictionary<string, object> { {"name", "Excalibur"}, {"owner", "Arthur"},
+                                                       {"material", "Iron"}, {"size", "Enormous"} });
 
             //tag::access-record[]
             var searchTerm = "Arthur";
-            var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} RETURN weapon.name, weapon.material, weapon.size",
-                new Dictionary<string, object> { { "term", searchTerm } });
+            var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} " +
+                                     "RETURN weapon.name, weapon.material, weapon.size",
+                                    new Dictionary<string, object> { {"term", searchTerm} });
 
             Output.WriteLine($"List of weapons owned by {searchTerm}:");
             foreach (var record in result)
@@ -159,11 +171,13 @@ namespace Neo4j.Driver.Examples
         {
             var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
             var session = driver.Session();
-            session.Run("CREATE (knight:Person:Knight { name: 'Lancelot', castle: 'Camelot' })");
+            session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
+                        new Dictionary<string, object> { {"name", "Lancelot"}, {"castle", "Camelot"} });
 
             //tag::retain-result[]
-            var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN knight.name AS name",
-                new Dictionary<string, object> { { "castle", "Camelot" } });
+            var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
+                                     "RETURN knight.name AS name",
+                                    new Dictionary<string, object> { {"castle", "Camelot"} });
 
             var records = result.ToList();
             session.Dispose();
@@ -182,19 +196,23 @@ namespace Neo4j.Driver.Examples
         {
             var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
             var session = driver.Session();
-            session.Run("CREATE (knight:Person:Knight { name: 'Lancelot', castle: 'Camelot' })");
-            session.Run("CREATE (knight:Person { name: 'Arthur', title: 'King' })");
+            session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
+                        new Dictionary<string, object> { {"name", "Lancelot"}, {"castle", "Camelot"} });
+
+            session.Run("CREATE (knight:Person {name: {name}, title: {title}})",
+                        new Dictionary<string, object> { {"name", "Arthur"}, {"title", "King"} });
 
             //tag::nested-statements[]
-            var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN id(knight) AS knight_id",
-                new Dictionary<string, object> { { "castle", "Camelot" } });
+            var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
+                                     "RETURN id(knight) AS knight_id",
+                                    new Dictionary<string, object> { {"castle", "Camelot"} });
 
             foreach (var record in result)
             {
                 session.Run("MATCH (knight) WHERE id(knight) = {id} " +
                             "MATCH (king:Person) WHERE king.name = {king} " +
                             "CREATE (knight)-[:DEFENDS]->(king)",
-                    new Dictionary<string, object> {{"id", record["knight_id"]}, {"king", "Arthur"}});
+                    new Dictionary<string, object> { {"id", record["knight_id"]}, {"king", "Arthur"} });
             }
             //end::nested-statements[]
             driver.Dispose();
@@ -232,7 +250,8 @@ namespace Neo4j.Driver.Examples
             //tag::transaction-commit[]
             using (var tx = session.BeginTransaction())
             {
-                tx.Run("CREATE (:Person {name: 'Guinevere'})");
+                tx.Run("CREATE (:Person {name: {name}})",
+                        new Dictionary<string, object> { {"name", "Guinevere"} });
                 tx.Success();
             }
             //end::transaction-commit[]
@@ -249,7 +268,8 @@ namespace Neo4j.Driver.Examples
             //tag::transaction-rollback[]
             using (var tx = session.BeginTransaction())
             {
-                tx.Run("CREATE (:Person {name: 'Merlin'})");
+                tx.Run("CREATE (:Person {name: {name}})",
+                        new Dictionary<string, object> { {"name", "Merlin"} });
                 // optional to explicitly call tx.Failure();
             }
             //end::transaction-rollback[]
@@ -265,7 +285,7 @@ namespace Neo4j.Driver.Examples
 
             //tag::result-summary-query-profile[]
             var result = session.Run("PROFILE MATCH (p:Person {name: {name}}) RETURN id(p)",
-                            new Dictionary<string, object> { { "name", "Arthur" } });
+                            new Dictionary<string, object> { {"name", "Arthur"} });
 
             IResultSummary summary = result.Consume();
 
