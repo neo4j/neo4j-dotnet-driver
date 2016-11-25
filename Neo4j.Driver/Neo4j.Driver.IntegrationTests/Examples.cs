@@ -1,14 +1,14 @@
 ﻿// Copyright (c) 2002-2016 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
-// 
+//
 // This file is part of Neo4j.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Examples
         public void MinimalExample()
         {
             //tag::minimal-example[]
-            using (var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j")))
+            using (var driver = GraphDatabase.Driver("bolt://myserver:7687", AuthTokens.Basic("neo4j", "neo4j")))
             using (var session = driver.Session())
             {
                 session.Run("CREATE (a:Person {name:'Arthur', title:'King'})");
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Examples
         public void ConstructDriver()
         {
             //tag::construct-driver[]
-            var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"));
+            var driver = GraphDatabase.Driver("bolt://myserver:7687", AuthTokens.Basic("neo4j", "neo4j"));
             //end::construct-driver[]
             driver.Dispose();
         }
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Examples
         public void Configuration()
         {
             //tag::configuration[]
-            var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
+            var driver = GraphDatabase.Driver("bolt://myserver:7687", AuthTokens.Basic("neo4j", "neo4j"),
                 Config.Builder.WithMaxIdleSessionPoolSize(10).ToConfig());
             //end::configuration[]
             driver.Dispose();
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Examples
         {
             var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
             var session = driver.Session();
-           
+
             //tag::statement[]
             var result = session.Run("CREATE (person:Person {name: {name}})",
                 new Dictionary<string, object> {{"name", "Arthur"}});
@@ -298,7 +298,7 @@ namespace Neo4j.Driver.Examples
         public void TlsRequireEncryption()
         {
             //tag::tls-require-encryption[]
-            var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
+            var driver = GraphDatabase.Driver("bolt://myserver:7687", AuthTokens.Basic("neo4j", "neo4j"),
                 Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::tls-require-encryption[]
             driver.Dispose();
@@ -308,7 +308,7 @@ namespace Neo4j.Driver.Examples
         public void TlsSigned()
         {
             //tag::tls-signed[]
-            var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
+            var driver = GraphDatabase.Driver("bolt://myserver:7687", AuthTokens.Basic("neo4j", "neo4j"),
                 Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::tls-signed[]
             driver.Dispose();
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.Examples
         public void ConnectWithAuthDisabled()
         {
             //tag::connect-with-auth-disabled[]
-            var driver = GraphDatabase.Driver("bolt://localhost",
+            var driver = GraphDatabase.Driver("bolt://myserver:7687",
                 Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::connect-with-auth-disabled[]
             driver.Dispose();
