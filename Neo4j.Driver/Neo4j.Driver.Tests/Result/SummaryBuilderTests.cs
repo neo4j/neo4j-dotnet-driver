@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Tests
     {
         [Theory]
         [InlineData("bolt://localhost:7687", "1.2.3", "ServerInfo{Address=localhost:7687, Version=1.2.3}")]
-        [InlineData("bolt://127.0.1:7687", "1.2.3", "ServerInfo{Address=127.0.1:7687, Version=1.2.3}")]
+        [InlineData("bolt://127.0.0.1:7687", "1.2.3", "ServerInfo{Address=127.0.0.1:7687, Version=1.2.3}")]
         // If no port provided, it will be port=-1. This should never happen as we always default to 7687 if no port provided.
         [InlineData("bolt://localhost", "1.2.3", "ServerInfo{Address=localhost:-1, Version=1.2.3}")]
         [InlineData("https://neo4j.com:9999", "1.2.3", "ServerInfo{Address=neo4j.com:9999, Version=1.2.3}")]
