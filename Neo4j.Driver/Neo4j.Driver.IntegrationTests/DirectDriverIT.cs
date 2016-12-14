@@ -140,7 +140,7 @@ namespace Neo4j.Driver.IntegrationTests
                         "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
                     var serverInfo = result.Summary.Server;
 
-                    serverInfo.Address.Should().Be("bolt://localhost:7687/");
+                    serverInfo.Address.Should().Be("localhost:7687");
                     if (ServerVersion.Version(serverInfo.Version) >= ServerVersion.V3_1_0)
                     {
                         result.Summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);

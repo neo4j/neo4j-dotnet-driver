@@ -129,18 +129,27 @@ namespace Neo4j.Driver.V1
         }
     }
 
+    /// <summary>
+    ///  A <see cref="ServiceUnavailableException"/> indicates that the driver cannot communicate with the cluster.
+    /// </summary>
     [DataContract]
-    public class ServerUnavailableException : Neo4jException
+    public class ServiceUnavailableException : Neo4jException
     {
-        public ServerUnavailableException(string message) : base(message)
+        public ServiceUnavailableException(string message) : base(message)
         {
         }
 
-        public ServerUnavailableException(string message, Exception innerException) : base(message, innerException)
+        public ServiceUnavailableException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
 
+    /// <summary>
+    /// A <see cref="SessionExpiredException"/> indicates that the session can no longer satisfy the criteria under which it was acquired,
+    /// e.g. a server no longer accepts write requests.
+    ///
+    /// A new session needs to be acquired from the driver and all actions taken on the expired session must be replayed.
+    /// </summary>
     [DataContract]
     public class SessionExpiredException : Neo4jException
     {

@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests
                     var error = Record.Exception(() => balancer.UpdateRoutingTable());
 
                     // Then
-                    error.Should().BeOfType<ServerUnavailableException>();
+                    error.Should().BeOfType<ServiceUnavailableException>();
                     error.Message.Should().Contain("Failed to connect to any routing server.");
                 }
 
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests
 
                     // Then
                     clusterView.All().Should().BeEmpty();
-                    error.Should().BeOfType<ServerUnavailableException>();
+                    error.Should().BeOfType<ServiceUnavailableException>();
                 }
             }
 

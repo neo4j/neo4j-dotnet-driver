@@ -92,10 +92,10 @@ namespace Neo4j.Driver.Internal.Result
     {
         public ServerInfo(Uri uri)
         {
-            Address = uri.ToString();
+            Address = $"{uri.Host}:{uri.Port}";
         }
 
-        public string Address { get; set; }
+        public string Address { get; }
         public string Version { get; set; }
 
         public override string ToString()

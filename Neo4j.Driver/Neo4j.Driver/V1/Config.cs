@@ -34,14 +34,17 @@ namespace Neo4j.Driver.V1
         Encrypted
     }
 
+    /// <summary>
+    /// Specify the trust strategy the driver adopts to trust a server.
+    /// </summary>
     public enum TrustStrategy
     {
         /// <summary>
-        /// Trust all servers
+        /// Trust all servers.
         /// </summary>
         TrustAllCertificates,
         /// <summary>
-        /// Trust the servers whoes certifiacte is trusted by OS
+        /// Trust the servers whoes certifiacte is trusted by OS.
         /// </summary>
         TrustSystemCaSignedCertificates
     }
@@ -59,7 +62,6 @@ namespace Neo4j.Driver.V1
         {
             DefaultConfig = new Config();
         }
-
 
         /// <summary>
         /// Returns the default configuration for the <see cref="IDriver"/>.
