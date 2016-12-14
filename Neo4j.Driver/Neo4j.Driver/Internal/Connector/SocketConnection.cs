@@ -54,7 +54,16 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Init()
         {
-            Task.Run(() => _client.Start()).Wait();
+            try
+            {
+                Task.Run(() => _client.Start()).Wait();
+            }
+            catch (Exception error)
+            {
+                error = OnConnectionError(error);
+                throw error;
+            }
+
             Init(_authToken);
         }
 

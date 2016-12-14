@@ -33,16 +33,6 @@ namespace Neo4j.Driver.Tests
     {
         private static Uri FakeUri => new Uri("bolt://foo.bar:7878");
 
-        public class Constructor
-        {
-            [Fact]
-            public void ShouldThrowExceptionIfProtocolIsNotSupported()
-            {
-                var ex = Record.Exception(() => new SocketClient(new Uri("http://localhost:1234"), null, null));
-                ex.Should().BeOfType<NotSupportedException>();
-                ex.Message.Should().Be("Unsupported protocol: http");
-            }
-        }
         public class StartMethod
         {
             [Fact]

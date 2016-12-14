@@ -47,7 +47,7 @@
     <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />
     <Compile Include="Internal\Routing\IClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\ILoadBalancer.cs" />
-    <Compile Include="Internal\Routing\RoundRobinClusterView.cs" />
+    <Compile Include="Internal\Routing\RoundRobinRoutingTable.cs" />
     <Compile Include="Internal\Routing\ConcurrentRoundRobinSet.cs" />
     <Compile Include="Internal\ConnectionPoolSettings.cs" />
     <Compile Include="Internal\Connector\ITrustStrategy.cs" />

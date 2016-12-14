@@ -21,7 +21,7 @@ using System.Diagnostics;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class RoundRobinClusterView
+    internal class RoundRobinRoutingTable
     {
         private const int MinRouterCount = 1;
         private readonly ConcurrentRoundRobinSet<Uri> _routers = new ConcurrentRoundRobinSet<Uri>();
@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly Stopwatch _stopwatch;
         private readonly long _expireAfterSeconds;
 
-        public RoundRobinClusterView(Uri seed, Stopwatch stopwatch, long expireAfterSeconds = 0)
+        public RoundRobinRoutingTable(Uri seed, Stopwatch stopwatch, long expireAfterSeconds = 0)
         {
             _routers.Add(seed);
 
@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Internal.Routing
             _stopwatch.Restart();
         }
 
-        public RoundRobinClusterView(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
+        public RoundRobinRoutingTable(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
             Stopwatch stopwatch, long expireAfterSeconds)
         {
             _routers.Add(routers);

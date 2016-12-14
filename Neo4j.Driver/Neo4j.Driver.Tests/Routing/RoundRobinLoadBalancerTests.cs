@@ -33,10 +33,10 @@ namespace Neo4j.Driver.Tests
     {
         public class AcquireConnectionMethod
         {
-            private static RoundRobinClusterView NewClusterView(IEnumerable<Uri> routers, IEnumerable<Uri> readers,
+            private static RoundRobinRoutingTable NewClusterView(IEnumerable<Uri> routers, IEnumerable<Uri> readers,
                 IEnumerable<Uri> writers)
             {
-                return new RoundRobinClusterView(routers, readers, writers, new Mock<Stopwatch>().Object, 0);
+                return new RoundRobinRoutingTable(routers, readers, writers, new Mock<Stopwatch>().Object, 0);
             }
             public class NewClusterViewMethod
             {
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests
                     var balancer = new RoundRobinLoadBalancer(null, clusterView);
 
                     // When
-                    var error = Record.Exception(() => balancer.NewClusterView());
+                    var error = Record.Exception(() => balancer.UpdateRoutingTable());
 
                     // Then
                     error.Should().BeOfType<ServerUnavailableException>();
@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Tests
 
                     // When
                     var anotherUri = new Uri("bolt+routing://123:789");
-                    var result = balancer.NewClusterView(connection 
+                    var result = balancer.UpdateRoutingTable(connection 
                         => NewClusterView(new [] {anotherUri}, new Uri[0], new Uri[0]));
 
                     // Then
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Tests
                     var balancer = new RoundRobinLoadBalancer(clusterConnPool, clusterView);
 
                     // When
-                    var error = Record.Exception(() =>balancer.NewClusterView(connection =>
+                    var error = Record.Exception(() =>balancer.UpdateRoutingTable(connection =>
                     {
                         // never successfully rediscovery
                         throw new InvalidDiscoveryException("Invalid");
@@ -118,21 +118,21 @@ namespace Neo4j.Driver.Tests
 
             public class AcquireReadWriteConnectionMethod
             {
-                private static RoundRobinClusterView CreateClusterView(Uri uri, AccessMode mode)
+                private static RoundRobinRoutingTable CreateClusterView(Uri uri, AccessMode mode)
                 {
-                    RoundRobinClusterView clusterView;
+                    RoundRobinRoutingTable routingTable;
                     switch (mode)
                     {
                         case AccessMode.Read:
-                            clusterView = NewClusterView(new Uri[0], new[] { uri }, new Uri[0]);
+                            routingTable = NewClusterView(new Uri[0], new[] { uri }, new Uri[0]);
                             break;
                         case AccessMode.Write:
-                            clusterView = NewClusterView(new Uri[0], new Uri[0], new[] { uri });
+                            routingTable = NewClusterView(new Uri[0], new Uri[0], new[] { uri });
                             break;
                         default:
                             throw new InvalidOperationException($"Unknown type {mode} to this test.");
                     }
-                    return clusterView;
+                    return routingTable;
                 }
 
                 private static IPooledConnection AcquiredConn(RoundRobinLoadBalancer balancer, AccessMode mode)
