@@ -136,12 +136,12 @@ namespace Neo4j.Driver.Internal.Connector
 
             public Exception OnConnectionError(Exception e)
             {
-                return _onConnErrorFunc?.Invoke(e);
+                return _onConnErrorFunc == null ? e : _onConnErrorFunc.Invoke(e);
             }
 
             public Neo4jException OnNeo4jError(Neo4jException e)
             {
-                return _onNeo4jErrorFunc?.Invoke(e);
+                return _onNeo4jErrorFunc.Invoke(e);
             }
         }
     }
