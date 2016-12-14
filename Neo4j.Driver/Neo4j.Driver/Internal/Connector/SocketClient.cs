@@ -31,7 +31,6 @@ namespace Neo4j.Driver.Internal.Connector
             public const int Version1 = 1;
             public const int Http = 1213486160;
         }
-        private const string Scheme = "bolt";
 
         private readonly ITcpSocketClient _tcpSocketClient;
         private readonly Uri _uri;
@@ -45,10 +44,6 @@ namespace Neo4j.Driver.Internal.Connector
 
         public SocketClient(Uri uri, EncryptionManager encryptionManager, ILogger logger, ITcpSocketClient socketClient = null)
         {
-            if (uri != null && uri.Scheme.ToLowerInvariant() != Scheme)
-            {
-                throw new NotSupportedException($"Unsupported protocol: {uri.Scheme}");
-            }
             _uri = uri;
             _encryptionManager = encryptionManager;
             _logger = logger;

@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class RoundRobinLoadBalancer : ILoadBalancer
     {
-        private RoundRobinClusterView _clusterView;
+        private RoundRobinRoutingTable _routingTable;
         private IClusterConnectionPool _clusterConnectionPool;
         private ILogger _logger;
         private readonly object _syncLock = new object();
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.Routing
                 poolSettings, logger, CreateClusterPooledConnectionErrorHandler);
 
             _stopwatch = new Stopwatch();
-            _clusterView = new RoundRobinClusterView(seedServer, _stopwatch);
+            _routingTable = new RoundRobinRoutingTable(seedServer, _stopwatch);
 
             _logger = logger;
         }
@@ -50,16 +50,16 @@ namespace Neo4j.Driver.Internal.Routing
         // for test only
         internal RoundRobinLoadBalancer(
             IClusterConnectionPool clusterConnPool,
-            RoundRobinClusterView clusterView)
+            RoundRobinRoutingTable routingTable)
         {
             _clusterConnectionPool = clusterConnPool;
-            _clusterView = clusterView;
+            _routingTable = routingTable;
             _logger = null;
         }
 
         public IPooledConnection AcquireConnection(AccessMode mode)
         {
-            EnsureDiscovery();
+            EnsureRoutingTableIsFresh();
             switch (mode)
             {
                 case AccessMode.Read:
@@ -76,9 +76,9 @@ namespace Neo4j.Driver.Internal.Routing
             while (true)
             {
                 Uri uri;
-                if (!_clusterView.TryNextReader(out uri))
+                if (!_routingTable.TryNextReader(out uri))
                 {
-                    // no server known to clusterView
+                    // no server known to routingTable
                     break;
                 }
 
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Internal.Routing
             while(true)
             {
                 Uri uri;
-                if (!_clusterView.TryNextWriter(out uri))
+                if (!_routingTable.TryNextWriter(out uri))
                 {
                     break;
                 }
@@ -128,31 +128,31 @@ namespace Neo4j.Driver.Internal.Routing
 
         public void Forget(Uri uri)
         {
-            _clusterView.Remove(uri);
+            _routingTable.Remove(uri);
             _clusterConnectionPool.Purge(uri);
         }
 
-        internal void EnsureDiscovery()
+        internal void EnsureRoutingTableIsFresh()
         {
             lock (_syncLock)
             {
-                if (!_clusterView.IsStale())
+                if (!_routingTable.IsStale())
                 {
                     return;
                 }
 
-                var newView = NewClusterView();
-                _clusterConnectionPool.Update(newView.All());
-                _clusterView = newView;
+                var routingTable = UpdateRoutingTable();
+                _clusterConnectionPool.Update(routingTable.All());
+                _routingTable = routingTable;
             }
         }
 
-        internal RoundRobinClusterView NewClusterView(Func<IPooledConnection, RoundRobinClusterView> rediscoveryFunc = null)
+        internal RoundRobinRoutingTable UpdateRoutingTable(Func<IPooledConnection, RoundRobinRoutingTable> rediscoveryFunc = null)
         {
             while (true)
             {
                 Uri uri;
-                if (!_clusterView.TryNextRouter(out uri))
+                if (!_routingTable.TryNextRouter(out uri))
                 {
                     // no alive server
                     break;
@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Internal.Routing
                 catch (InvalidDiscoveryException)
                 {
                     // The result is invalid probably due to partition.
-                    _clusterView.Remove(uri);
+                    _routingTable.Remove(uri);
                 }
             }
 
@@ -186,11 +186,11 @@ namespace Neo4j.Driver.Internal.Routing
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
-        private RoundRobinClusterView Rediscovery(IPooledConnection conn)
+        private RoundRobinRoutingTable Rediscovery(IPooledConnection conn)
         {
             var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
             discoveryManager.Rediscovery();
-            return new RoundRobinClusterView(discoveryManager.Routers, discoveryManager.Readers,
+            return new RoundRobinRoutingTable(discoveryManager.Routers, discoveryManager.Readers,
                 discoveryManager.Writers, _stopwatch, discoveryManager.ExpireAfterSeconds);
         }
 
@@ -207,7 +207,7 @@ namespace Neo4j.Driver.Internal.Routing
                 // The lead is no longer a leader, a.k.a. the write server no longer accepts writes
                 // However the server is still available for possible reads.
                 // Therefore we just remove it from ClusterView but keep it in connection pool.
-                _clusterView.Remove(uri);
+                _routingTable.Remove(uri);
                 return new SessionExpiredException($"Server at {uri} no longer accepts writes");
             }
             else if (error.IsForbiddenOnReadOnlyDatabaseError())
@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Internal.Routing
             if (!isDisposing)
                 return;
 
-            _clusterView = null;
+            _routingTable = null;
 
             if (_clusterConnectionPool != null)
             {
