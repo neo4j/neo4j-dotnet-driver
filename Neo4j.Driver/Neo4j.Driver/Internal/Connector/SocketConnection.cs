@@ -36,6 +36,7 @@ namespace Neo4j.Driver.Internal.Connector
         private volatile bool _interrupted;
         private readonly object _syncLock = new object();
 
+        private readonly ILogger _logger;
         private readonly IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
 
         // for testing only
@@ -49,6 +50,7 @@ namespace Neo4j.Driver.Internal.Connector
             _authToken = authToken;
             Server = server;
 
+            _logger = logger;
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
         }
 
@@ -211,7 +213,15 @@ namespace Neo4j.Driver.Internal.Connector
             if (!isDisposing)
                 return;
 
-            Task.Run(() => _client.Stop()).Wait();
+            try
+            {
+                Task.Run(() => _client.Stop()).Wait();
+            }
+            catch (Exception e)
+            {
+                // only log the exception if failed to close connection
+                _logger.Error($"Failed to close connection properly due to error: {e.Message}", e);
+            }
         }
 
         private void AssertNoServerFailure()
