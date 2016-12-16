@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal class RoundRobinLoadBalancer : ILoadBalancer
     {
         private RoundRobinRoutingTable _routingTable;
-        private IClusterConnectionPool _clusterConnectionPool;
+        private readonly IClusterConnectionPool _clusterConnectionPool;
         private ILogger _logger;
         private readonly object _syncLock = new object();
         private readonly Stopwatch _stopwatch;
@@ -166,19 +166,22 @@ namespace Neo4j.Driver.Internal.Routing
                         return rediscoveryFunc == null ? Rediscovery(conn) : rediscoveryFunc.Invoke(conn);
                     }
                 }
-                catch (SessionExpiredException)
+                catch (Exception e)
                 {
-                    // ignored
-                    // Already handled by connection pool error handler to remove from load balancer
-                }
-                catch (InvalidDiscoveryException)
-                {
-                    // The result is invalid probably due to partition.
-                    _routingTable.Remove(uri);
+                    _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");
+                    if (e is SessionExpiredException)
+                    {
+                        // ignored
+                        // Already handled by connection pool error handler to remove from load balancer
+                    }
+                    else if (e is InvalidDiscoveryException)
+                    {
+                        // The result is invalid probably due to partition.
+                        _routingTable.Remove(uri);
+                    }
                 }
             }
 
-            // TODO also try each detached routers
             // We retied and tried our best however there is just no cluster.
             // This is the ultimate place we will inform the user that you need to re-create a driver
             throw new ServerUnavailableException(
@@ -251,14 +254,11 @@ namespace Neo4j.Driver.Internal.Routing
             if (!isDisposing)
                 return;
 
-            _routingTable = null;
+            // We cannot set routing table and cluster conn pool to null as we do not want get NPE in concurrent call of dispose and acquire
+            _routingTable.Clear();
+            _clusterConnectionPool.Dispose();
 
-            if (_clusterConnectionPool != null)
-            {
-                _clusterConnectionPool.Dispose();
-                _clusterConnectionPool = null;
-            }
-            _logger = null;
+            // cannot set logger to null here otherwise we might concurrent call log and set log to null.
         }
 
         public void Dispose()

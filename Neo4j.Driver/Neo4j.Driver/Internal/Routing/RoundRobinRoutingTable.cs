@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public bool IsStale()
         {
-            return _routers.Count <= MinRouterCount || _readers.IsEmpty || _writers.IsEmpty
+            return _routers.Count < MinRouterCount || _readers.IsEmpty || _writers.IsEmpty
                 || _expireAfterSeconds < _stopwatch.Elapsed.TotalSeconds;
         }
 
@@ -88,6 +88,14 @@ namespace Neo4j.Driver.Internal.Routing
             all.UnionWith(_readers);
             all.UnionWith(_writers);
             return all;
+        }
+
+        public void Clear()
+        {
+            _routers.Clear();
+            _detachedRouters.Clear();
+            _readers.Clear();
+            _writers.Clear();
         }
     }
 }

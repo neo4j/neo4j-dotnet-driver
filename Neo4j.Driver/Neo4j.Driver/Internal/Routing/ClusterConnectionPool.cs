@@ -91,8 +91,8 @@ namespace Neo4j.Driver.Internal.Routing
             if (_disposeCalled)
             {
                 // Anything added after dispose should be directly cleaned.
-                Purge(uri);
-                throw new InvalidOperationException($"Failed to create connections with server {uri} as the driver has already started to dispose.");
+                Clear();
+                throw new ObjectDisposedException(GetType().Name, $"Failed to create connections with server {uri} as the driver has already started to dispose.");
             }
         }
 

@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal
 {
     internal class DirectDriver : BaseDriver
     {
-        private IConnectionPool _connectionPool;
+        private readonly IConnectionPool _connectionPool;
         private ILogger _logger;
 
         internal DirectDriver(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
@@ -45,11 +45,9 @@ namespace Neo4j.Driver.Internal
 
         public override void ReleaseUnmanagedResources()
         {
-            if (_connectionPool != null)
-            {
-                _connectionPool.Dispose();
-                _connectionPool = null;
-            }
+            // We cannot set connection pool to be null,
+            // otherwise we might get NPE when using concurrently with NewSession
+            _connectionPool.Dispose();
             _logger = null;
         }
 

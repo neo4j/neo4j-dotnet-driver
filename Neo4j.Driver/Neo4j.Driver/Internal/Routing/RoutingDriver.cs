@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal class RoutingDriver : BaseDriver
     {
         private ILogger _logger;
-        private ILoadBalancer _loadBalancer;
+        private readonly ILoadBalancer _loadBalancer;
 
 
         internal RoutingDriver(
@@ -53,11 +53,11 @@ namespace Neo4j.Driver.Internal.Routing
 
         public override void ReleaseUnmanagedResources()
         {
-            if (_loadBalancer != null)
-            {
-                _loadBalancer.Dispose();
-                _loadBalancer = null;
-            }
+
+            // we cannot set loadbalancer to be null,
+            // otherwise we might got NPE when concurrent calling with NewSession method
+            _loadBalancer.Dispose();
+ 
             _logger = null;
         }
 
