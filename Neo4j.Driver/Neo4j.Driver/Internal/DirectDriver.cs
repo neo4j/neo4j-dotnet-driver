@@ -16,11 +16,12 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class DirectDriver : IDriver
+    internal class DirectDriver : BaseDriver
     {
         private IConnectionPool _connectionPool;
         private ILogger _logger;
@@ -37,13 +38,13 @@ namespace Neo4j.Driver.Internal
             _connectionPool = new ConnectionPool(uri, authToken, encryptionManager, connectionPoolSettings, _logger);
         }
 
-        public Uri Uri { get; }
-
-        protected virtual void Dispose(bool isDisposing)
+        public override ISession NewSession(AccessMode mode)
         {
-            if (!isDisposing)
-                return;
+            return new Session(_connectionPool.Acquire(), _logger);
+        }
 
+        public override void ReleaseUnmanagedResources()
+        {
             if (_connectionPool != null)
             {
                 _connectionPool.Dispose();
@@ -52,20 +53,6 @@ namespace Neo4j.Driver.Internal
             _logger = null;
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public ISession Session()
-        {
-            return new Session(_connectionPool.Acquire(), _logger);
-        }
-
-        public ISession Session(AccessMode ignore)
-        {
-            return Session();
-        }
+        public override Uri Uri { get; }
     }
 }

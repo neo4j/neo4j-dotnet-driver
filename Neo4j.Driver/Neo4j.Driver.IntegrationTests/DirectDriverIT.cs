@@ -287,6 +287,22 @@ namespace Neo4j.Driver.IntegrationTests
                 _serverEndPoint = fixture.ServerEndPoint;
                 _authToken = fixture.AuthToken;
             }
+
+            [Fact]
+            public void DisallowNewSessionAfterDriverDispose()
+            {
+                var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
+                var session = driver.Session(AccessMode.Write);
+                session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
+
+                driver.Dispose();
+                session.Dispose();
+
+                var error = Record.Exception(() => driver.Session());
+                error.Should().BeOfType<ObjectDisposedException>();
+                error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
+            }
+
             [Fact]
             public void ShouldConnectAndRun()
             {
