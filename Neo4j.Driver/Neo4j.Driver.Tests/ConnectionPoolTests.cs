@@ -288,8 +288,8 @@ namespace Neo4j.Driver.Tests
 
                 pool.Dispose();
                 var exception = Record.Exception(() => pool.Acquire());
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Contain("the driver has already been disposed");
+                exception.Should().BeOfType<ObjectDisposedException>();
+                exception.Message.Should().Contain("Cannot acquire a new connection from the connection pool");
             }
 
             // thread-safe test
@@ -319,8 +319,8 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
                 healthyMock.Verify(x => x.IsOpen, Times.Once);
                 healthyMock.Verify(x => x.Close(), Times.Once);
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Contain("the driver has already started to dispose");
+                exception.Should().BeOfType<ObjectDisposedException>();
+                exception.Message.Should().Contain("Cannot acquire a new connection from the connection pool");
             }
         }
 

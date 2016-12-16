@@ -27,9 +27,7 @@ namespace Neo4j.Driver.Internal.Routing
         public abstract void ReleaseUnmanagedResources();
         public abstract Uri Uri { get; }
 
-        private const int True = 1;
-        private const int False = 0;
-        private volatile int _isDisposed = False;
+        private volatile bool _disposeCalled = false;
 
         protected virtual void Dispose(bool isDisposing)
         {
@@ -37,18 +35,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 return;
             }
-
-            // protect the driver from concurrent calling on Dispose
-#pragma warning disable 420
-            // The compiler warnning is ignored as we are locking on the volatile anyway,
-            // so it is safe to use the volatile as ref
-            if (Interlocked.CompareExchange(ref _isDisposed, True, False) == True)
-#pragma warning restore 420
-            {
-                // the driver is already disposed
-                // calling dispose method many times will not raise any exceptions
-                return;
-            }
+            _disposeCalled = true;
             ReleaseUnmanagedResources();
         }
 
@@ -65,14 +52,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         public ISession Session(AccessMode mode)
         {
-            if (_isDisposed == True)
+            if (_disposeCalled)
             {
                 ThrowDriverClosedException();
             }
 
             var session = NewSession(mode);
 
-            if (_isDisposed == True)
+            if (_disposeCalled)
             {
                 session.Dispose();
                 ThrowDriverClosedException();
