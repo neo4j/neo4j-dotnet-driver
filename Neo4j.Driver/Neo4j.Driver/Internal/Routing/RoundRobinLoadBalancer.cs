@@ -140,6 +140,7 @@ namespace Neo4j.Driver.Internal.Routing
                 var routingTable = UpdateRoutingTable();
                 _clusterConnectionPool.Update(routingTable.All());
                 _routingTable = routingTable;
+                _logger.Info($"Updated routingTable to be {_routingTable}");
             }
         }
 
