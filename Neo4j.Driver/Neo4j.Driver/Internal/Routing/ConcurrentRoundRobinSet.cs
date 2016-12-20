@@ -114,11 +114,8 @@ namespace Neo4j.Driver.Internal.Routing
         {
             lock (_syncLock)
             {
-                while (!_queue.IsEmpty)
-                {
-                    T ignored;
-                    _queue.TryDequeue(out ignored);
-                }
+                T ignored;
+                while (_queue.TryDequeue(out ignored)) {}
             }
         }
 

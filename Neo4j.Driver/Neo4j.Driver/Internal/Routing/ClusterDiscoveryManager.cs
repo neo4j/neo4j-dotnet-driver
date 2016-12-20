@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -43,7 +44,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                var session = new Session(_conn, _logger);
+                using (var session = new Session(_conn, _logger))
                 {
                     var result = session.Run($"CALL {ProcedureName}");
                     var record = result.Single();

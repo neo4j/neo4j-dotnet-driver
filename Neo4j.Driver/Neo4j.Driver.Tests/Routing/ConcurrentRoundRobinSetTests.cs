@@ -79,6 +79,17 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class ClearMethod
+        {
+            [Fact]
+            public void ShouldRemoveAdd()
+            {
+                var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
+                set.Clear();
+                set.Should().BeEmpty();
+            }
+        }
+
         public class ConcurrentAccessTests
         {
             [Fact]

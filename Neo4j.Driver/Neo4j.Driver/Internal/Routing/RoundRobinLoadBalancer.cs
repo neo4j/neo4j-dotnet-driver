@@ -168,17 +168,15 @@ namespace Neo4j.Driver.Internal.Routing
                 }
                 catch (Exception e)
                 {
-                    _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");
-                    if (e is SessionExpiredException)
-                    {
-                        // ignored
-                        // Already handled by connection pool error handler to remove from load balancer
-                    }
-                    else if (e is InvalidDiscoveryException)
+                    _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");                    
+                    if (e is InvalidDiscoveryException)
                     {
                         // The result is invalid probably due to partition.
                         _routingTable.Remove(uri);
                     }
+                    //else if (e is SessionExpiredException)//{}
+                    // ignored
+                    // As already handled by connection pool error handler to remove from load balancer
                 }
             }
 
