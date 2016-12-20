@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Tests
                 // Then
                 mockedConnectionPool.Verify(x => x.Dispose());
 
-                exception.Should().BeOfType<InvalidOperationException>();
+                exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().Contain("Failed to create connections with server");
             }
 

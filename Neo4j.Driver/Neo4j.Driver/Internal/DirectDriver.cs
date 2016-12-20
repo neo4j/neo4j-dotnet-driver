@@ -16,13 +16,14 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class DirectDriver : IDriver
+    internal class DirectDriver : BaseDriver
     {
-        private IConnectionPool _connectionPool;
+        private readonly IConnectionPool _connectionPool;
         private ILogger _logger;
 
         internal DirectDriver(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
@@ -37,35 +38,19 @@ namespace Neo4j.Driver.Internal
             _connectionPool = new ConnectionPool(uri, authToken, encryptionManager, connectionPoolSettings, _logger);
         }
 
-        public Uri Uri { get; }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
-            if (_connectionPool != null)
-            {
-                _connectionPool.Dispose();
-                _connectionPool = null;
-            }
-            _logger = null;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public ISession Session()
+        public override ISession NewSession(AccessMode mode)
         {
             return new Session(_connectionPool.Acquire(), _logger);
         }
 
-        public ISession Session(AccessMode ignore)
+        public override void ReleaseUnmanagedResources()
         {
-            return Session();
+            // We cannot set connection pool to be null,
+            // otherwise we might get NPE when using concurrently with NewSession
+            _connectionPool.Dispose();
+            _logger = null;
         }
+
+        public override Uri Uri { get; }
     }
 }

@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -41,30 +42,41 @@ namespace Neo4j.Driver.Internal.Routing
         /// <remarks>Throws <see cref="InvalidDiscoveryException"/> if the discovery result is invalid.</remarks>
         public void Rediscovery()
         {
-            using (var session = new Session(_conn, _logger))
+            try
             {
-                var result = session.Run($"CALL {ProcedureName}");
-                var record = result.Single();
-                // TODO require an IT to make sure List or IList, Dictionary or IDictionary
-                foreach (var servers in record["servers"].As<List<Dictionary<string,object>>>())
+                using (var session = new Session(_conn, _logger))
                 {
-                    var addresses = servers["addresses"].As<List<string>>();
-                    var role = servers["role"].As<string>();
-                    switch (role)
+                    var result = session.Run($"CALL {ProcedureName}");
+                    var record = result.Single();
+
+                    foreach (var servers in record["servers"].As<List<Dictionary<string, object>>>())
                     {
-                        case "READ":
-                            Readers = addresses.Select(BoltRoutingUri).ToArray();
-                            break;
-                        case "WRITE":
-                            Writers = addresses.Select(BoltRoutingUri).ToArray();
-                            break;
-                        case "ROUTE":
-                            Routers = addresses.Select(BoltRoutingUri).ToArray();
-                            break;
+                        var addresses = servers["addresses"].As<List<string>>();
+                        var role = servers["role"].As<string>();
+                        switch (role)
+                        {
+                            case "READ":
+                                Readers = addresses.Select(BoltRoutingUri).ToArray();
+                                break;
+                            case "WRITE":
+                                Writers = addresses.Select(BoltRoutingUri).ToArray();
+                                break;
+                            case "ROUTE":
+                                Routers = addresses.Select(BoltRoutingUri).ToArray();
+                                break;
+                        }
                     }
+                    ExpireAfterSeconds = record["ttl"].As<long>();
                 }
-                ExpireAfterSeconds = record["ttl"].As<long>();
             }
+            catch (Exception e)
+            {
+                // for any reason we failed to do a discovery
+                throw new InvalidDiscoveryException(
+                    $"Error when calling `getServers` procedure: {e.Message}. " +
+                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.");
+            }
+
             if (!Readers.Any() || !Writers.Any() || !Routers.Any())
             {
                 throw new InvalidDiscoveryException(

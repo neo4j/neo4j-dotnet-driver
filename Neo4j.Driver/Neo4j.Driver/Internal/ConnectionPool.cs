@@ -96,13 +96,18 @@ namespace Neo4j.Driver.Internal
             return conn;
         }
 
+        private void ThrowConnectionPoolClosedException()
+        {
+            throw new ObjectDisposedException(GetType().Name, "Cannot acquire a new connection from the connection pool as the pool has already been disposed.");
+        }
+
         public IPooledConnection Acquire()
         {
             return TryExecute(() =>
             {
                 if (_disposeCalled)
                 {
-                    throw new InvalidOperationException("Failed to create a new session as the driver has already been disposed.");
+                    ThrowConnectionPoolClosedException();
                 }
                 IPooledConnection connection = null;
                 lock (_availableConnections)
@@ -126,7 +131,7 @@ namespace Neo4j.Driver.Internal
                     if (_disposeCalled)
                     {
                         connection.Close();
-                        throw new InvalidOperationException("Failed to create a new session as the driver has already started to dispose.");
+                        ThrowConnectionPoolClosedException();
                     }
                     _inUseConnections.Add(connection.Id, connection);
                 }

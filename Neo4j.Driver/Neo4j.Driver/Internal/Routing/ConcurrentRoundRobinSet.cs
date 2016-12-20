@@ -107,6 +107,18 @@ namespace Neo4j.Driver.Internal.Routing
             return true;
         }
 
+        /// <summary>
+        /// Clean all the item inside this set
+        /// </summary>
+        public void Clear()
+        {
+            lock (_syncLock)
+            {
+                T ignored;
+                while (_queue.TryDequeue(out ignored)) {}
+            }
+        }
+
         public int Count => _queue.Count;
 
         public bool IsEmpty => _queue.IsEmpty;

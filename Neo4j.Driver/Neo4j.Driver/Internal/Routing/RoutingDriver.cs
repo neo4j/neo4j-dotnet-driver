@@ -23,10 +23,11 @@ namespace Neo4j.Driver.Internal.Routing
     /// <summary>
     /// A driver with a simple load balancer to route to a cluster
     /// </summary>
-    internal class RoutingDriver : IDriver
+    internal class RoutingDriver : BaseDriver
     {
         private ILogger _logger;
-        private ILoadBalancer _loadBalancer;
+        private readonly ILoadBalancer _loadBalancer;
+
 
         internal RoutingDriver(
             Uri seedServer, 
@@ -45,34 +46,21 @@ namespace Neo4j.Driver.Internal.Routing
             _loadBalancer = new RoundRobinLoadBalancer(seedServer, authToken, encryptionManager, poolSettings, _logger);
         }
 
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
-            if (_loadBalancer != null)
-            {
-                _loadBalancer.Dispose();
-                _loadBalancer = null;
-            }
-            _logger = null;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public Uri Uri { get; }
-        public ISession Session()
-        {
-            return Session(AccessMode.Write);
-        }
-
-        public ISession Session(AccessMode mode)
+        public override ISession NewSession(AccessMode mode)
         {
             return new Session(_loadBalancer.AcquireConnection(mode), _logger);
         }
+
+        public override void ReleaseUnmanagedResources()
+        {
+
+            // we cannot set loadbalancer to be null,
+            // otherwise we might got NPE when concurrent calling with NewSession method
+            _loadBalancer.Dispose();
+ 
+            _logger = null;
+        }
+
+        public override Uri Uri { get; }
     }
 }

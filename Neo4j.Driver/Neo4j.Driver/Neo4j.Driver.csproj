@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="Internal\Connector\IConnectionErrorHandler.cs" />
     <Compile Include="Internal\Extensions\Neo4jErrorExtensions.cs" />
+    <Compile Include="Internal\Routing\BaseDriver.cs" />
     <Compile Include="Internal\Routing\ClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />
     <Compile Include="Internal\Routing\IClusterConnectionPool.cs" />
