@@ -126,7 +126,7 @@ namespace Neo4j.Driver.Internal
 
         private void RollBackTx()
         {
-            _connection.Run(Rollback, null, new BookmarkCollector(s => Bookmark = s));
+            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
             _connection.Sync();
             _state = State.RolledBack;
         }

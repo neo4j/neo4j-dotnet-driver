@@ -330,6 +330,7 @@ namespace Neo4j.Driver.IntegrationTests
                     // The following code is the same as using(var tx = session.BeginTx()) {...}
                     // While we have the full control of where the error is thrown
                     var tx = session.BeginTransaction();
+                    tx.Run("CREATE (a { name: 'lizhen' })");
                     tx.Run("Invalid Cypher");
                     tx.Success();
                     var ex = Record.Exception(() => tx.Dispose());
@@ -339,8 +340,8 @@ namespace Neo4j.Driver.IntegrationTests
                     // Then can still run more afterwards
                     using (var anotherTx = session.BeginTransaction())
                     {
-                        var result = anotherTx.Run("RETURN 1");
-                        result.Single()[0].ValueAs<int>().Should().Be(1);
+                        var result = anotherTx.Run("MATCH (a {name : 'lizhen'}) RETURN count(a)");
+                        result.Single()[0].ValueAs<int>().Should().Be(0);
                     }
                 }
             }
