@@ -97,5 +97,13 @@ namespace Neo4j.Driver.Internal.Routing
             _readers.Clear();
             _writers.Clear();
         }
+
+        public override string ToString()
+        {
+            return $"[{nameof(_routers)}: {_routers}], " +
+                   $"[{nameof(_detachedRouters)}: {_detachedRouters}], " +
+                   $"[{nameof(_readers)}: {_readers}], " +
+                   $"[{nameof(_writers)}: {_writers}]";
+        }
     }
 }

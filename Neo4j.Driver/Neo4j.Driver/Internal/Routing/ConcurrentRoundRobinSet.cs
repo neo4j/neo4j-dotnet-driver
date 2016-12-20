@@ -132,5 +132,10 @@ namespace Neo4j.Driver.Internal.Routing
         {
             return GetEnumerator();
         }
+
+        public override string ToString()
+        {
+            return string.Join(", ", _queue);
+        }
     }
 }

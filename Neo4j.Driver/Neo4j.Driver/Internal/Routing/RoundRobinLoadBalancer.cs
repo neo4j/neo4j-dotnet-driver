@@ -149,42 +149,45 @@ namespace Neo4j.Driver.Internal.Routing
 
         internal RoundRobinRoutingTable UpdateRoutingTable(Func<IPooledConnection, RoundRobinRoutingTable> rediscoveryFunc = null)
         {
-            while (true)
+            lock (_syncLock)
             {
-                Uri uri;
-                if (!_routingTable.TryNextRouter(out uri))
+                while (true)
                 {
-                    // no alive server
-                    break;
+                    Uri uri;
+                    if (!_routingTable.TryNextRouter(out uri))
+                    {
+                        // no alive server
+                        break;
+                    }
+                    try
+                    {
+                        IPooledConnection conn;
+                        if (_clusterConnectionPool.TryAcquire(uri, out conn))
+                        {
+                            return rediscoveryFunc == null ? Rediscovery(conn) : rediscoveryFunc.Invoke(conn);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");
+
+                        if (e is InvalidDiscoveryException)
+                        {
+                            // The result is invalid probably due to partition.
+                            _routingTable.Remove(uri);
+                        }
+                        //else if (e is SessionExpiredException)//{}
+                        // ignored
+                        // As already handled by connection pool error handler to remove from load balancer
+                    }
                 }
 
-                try
-                {
-                    IPooledConnection conn;
-                    if (_clusterConnectionPool.TryAcquire(uri, out conn))
-                    {
-                        return rediscoveryFunc == null ? Rediscovery(conn) : rediscoveryFunc.Invoke(conn);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");                    
-                    if (e is InvalidDiscoveryException)
-                    {
-                        // The result is invalid probably due to partition.
-                        _routingTable.Remove(uri);
-                    }
-                    //else if (e is SessionExpiredException)//{}
-                    // ignored
-                    // As already handled by connection pool error handler to remove from load balancer
-                }
+                // We retied and tried our best however there is just no cluster.
+                // This is the ultimate place we will inform the user that you need to re-create a driver
+                throw new ServiceUnavailableException(
+                    "Failed to connect to any routing server. " +
+                    "Please make sure that the cluster is up and can be accessed by the driver and retry.");
             }
-
-            // We retied and tried our best however there is just no cluster.
-            // This is the ultimate place we will inform the user that you need to re-create a driver
-            throw new ServiceUnavailableException(
-                "Failed to connect to any routing server. " +
-                "Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
         private RoundRobinRoutingTable Rediscovery(IPooledConnection conn)
