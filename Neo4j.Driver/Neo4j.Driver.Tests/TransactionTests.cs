@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Tests
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Failure();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
 
@@ -152,7 +152,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.ResetCalls();
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }
