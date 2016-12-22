@@ -32,17 +32,12 @@ namespace Neo4j.Driver.Examples
     public class Examples
     {
         private ITestOutputHelper Output { get; }
-        private readonly string _serverEndPoint;
-        private readonly IAuthToken _authToken;
-
         private readonly IDriver _driver;
 
         public Examples(ITestOutputHelper output, IntegrationTestFixture fixture)
         {
             Output = output;
-            _serverEndPoint = fixture.ServerEndPoint;
-            _authToken = fixture.AuthToken;
-            _driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
+            _driver = fixture.Driver;
             ClearDatabase();
         }
 
