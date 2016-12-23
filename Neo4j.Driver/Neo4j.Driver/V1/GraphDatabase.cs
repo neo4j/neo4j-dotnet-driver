@@ -102,21 +102,21 @@ namespace Neo4j.Driver.V1
         public static IDriver Driver(Uri uri, IAuthToken authToken, Config config = null)
         {
             config = config ?? Config.DefaultConfig;
-            var encryptionManager = new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger);
-            var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
-
             if (uri.Port == -1)
             {
                 var builder = new UriBuilder(uri.Scheme, uri.Host, DefaultBoltPort);
                 uri = builder.Uri;
             }
+            var encryptionManager = new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger);
+            var connectionSettings = new ConnectionSettings(uri, authToken, encryptionManager, config.ConnectionTimeout);
+            var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
 
             switch (uri.Scheme.ToLower())
             {
                 case "bolt":
-                    return new DirectDriver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+                    return new DirectDriver(connectionSettings, connectionPoolSettings, config.Logger);
                 case "bolt+routing":
-                    return new RoutingDriver(uri, authToken, encryptionManager, connectionPoolSettings, config.Logger);
+                    return new RoutingDriver(connectionSettings, connectionPoolSettings, config.Logger);
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {uri.Scheme}");
             }

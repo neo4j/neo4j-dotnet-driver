@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.V1
@@ -73,6 +74,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="TrustStrategy"/> : <c><see cref="TrustStrategy"/>TrustAllCertificates</c> </item>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
+        /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }
@@ -106,6 +108,11 @@ namespace Neo4j.Driver.V1
         /// </remarks>
         public int MaxIdleSessionPoolSize { get; set; } = 10;
 
+        /// <summary>
+        /// Gets or sets the connection timeout when establishing a connection with a server.
+        /// </summary>
+        public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
         private class ConfigBuilder : IConfigBuilder
         {
             private readonly Config _config;
@@ -136,6 +143,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithMaxIdleSessionPoolSize(int size)
             {
                 _config.MaxIdleSessionPoolSize = size;
+                return this;
+            }
+
+            public IConfigBuilder WithConnectionTimeout(TimeSpan timeSpan)
+            {
+                _config.ConnectionTimeout = timeSpan;
                 return this;
             }
 
@@ -191,5 +204,14 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithMaxIdleSessionPoolSize(int size);
+
+        /// <summary>
+        /// Specify socket connection timeout.
+        /// A <see cref="TimeSpan"/> that represents the number of milliseconds to wait, or a <see cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
+        /// </summary>
+        /// <param name="timeSpan">Represents the number of milliseconds to wait or -1 to wait indefinitely.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithConnectionTimeout(TimeSpan timeSpan);
     }
 }

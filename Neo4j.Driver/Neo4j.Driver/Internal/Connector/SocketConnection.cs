@@ -28,6 +28,8 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly ISocketClient _client;
         private readonly IAuthToken _authToken;
+        private readonly TimeSpan _connectionTimeout;
+        private readonly string _userAgent;
         private readonly IMessageResponseHandler _responseHandler;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
@@ -39,15 +41,26 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly ILogger _logger;
         private readonly IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
 
-        // for testing only
-        internal SocketConnection(ISocketClient socketClient, IAuthToken authToken, ILogger logger, IServerInfo server,
+        public SocketConnection(ConnectionSettings connectionSettings, ILogger logger)
+            : this(new SocketClient(connectionSettings.InitialServerUri, connectionSettings.EncryptionManager, logger),
+                  connectionSettings.AuthToken, connectionSettings.ConnectionTimeout, connectionSettings.UserAgent,
+                  logger, new ServerInfo(connectionSettings.InitialServerUri))
+        {
+        }
+
+        internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
+            TimeSpan connectionTimeout, string userAgent, ILogger logger, IServerInfo server,
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
+            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
+            Throw.ArgumentNullException.IfNull(userAgent, nameof(userAgent));
             Throw.ArgumentNullException.IfNull(server, nameof(server));
 
             _client = socketClient;
             _authToken = authToken;
+            _connectionTimeout = connectionTimeout;
+            _userAgent = userAgent;
             Server = server;
 
             _logger = logger;
@@ -58,7 +71,11 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                Task.Run(() => _client.Start()).Wait();
+                var connected = Task.Run(() => _client.Start()).Wait(_connectionTimeout);
+                if (!connected)
+                {
+                    throw new ClientException($"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
+                }
             }
             catch (Exception error)
             {
@@ -72,14 +89,9 @@ namespace Neo4j.Driver.Internal.Connector
         private void Init(IAuthToken authToken)
         {
             var initCollector = new InitCollector();
-            Enqueue(new InitMessage("neo4j-dotnet/1.1", authToken.AsDictionary()), initCollector);
+            Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
             Sync();
             ((ServerInfo)Server).Version = initCollector.Server;
-        }
-
-        public SocketConnection(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ILogger logger)
-            : this(new SocketClient(uri, encryptionManager, logger), authToken, logger, new ServerInfo(uri))
-        {
         }
 
         public void Sync()

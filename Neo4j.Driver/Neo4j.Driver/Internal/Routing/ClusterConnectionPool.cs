@@ -27,8 +27,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal class ClusterConnectionPool : LoggerBase, IClusterConnectionPool
     {
         private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools = new ConcurrentDictionary<Uri, IConnectionPool>();
-        private readonly IAuthToken _authToken;
-        private readonly EncryptionManager _encryptionManager;
+        private readonly ConnectionSettings _connectionSettings;
         private readonly ConnectionPoolSettings _poolSettings;
         private readonly Func<Uri, IConnectionErrorHandler> _clusterErrorHandlerCreator;
 
@@ -38,29 +37,27 @@ namespace Neo4j.Driver.Internal.Routing
         private volatile bool _disposeCalled;
 
         public ClusterConnectionPool(
-            Uri seedServer,
-            IAuthToken authToken,
-            EncryptionManager encryptionManager,
+            ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger,
             Func<Uri, IConnectionErrorHandler> clusterErrorHandlerCreator)
             : base(logger)
         {
-            _authToken = authToken;
-            _encryptionManager = encryptionManager;
+            _connectionSettings = connectionSettings;
             _poolSettings = poolSettings;
             _clusterErrorHandlerCreator = clusterErrorHandlerCreator;
-            if (seedServer != null)
+            if (connectionSettings?.InitialServerUri != null)
             {
-                Add(seedServer);
+                Add(connectionSettings.InitialServerUri);
             }
         }
 
         internal ClusterConnectionPool(IConnectionPool connectionPool,
             ConcurrentDictionary<Uri, IConnectionPool> clusterPool=null,
+            ConnectionSettings connSettings=null,
             ConnectionPoolSettings poolSettings=null,
             ILogger logger=null) :
-            this(null, null, null, poolSettings, logger, null)
+            this(connSettings, poolSettings, logger, null)
         {
             _fakeConnectionPool = connectionPool;
             _pools = clusterPool;
@@ -68,7 +65,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
-            return _fakeConnectionPool ?? new ConnectionPool(uri, _authToken, _encryptionManager, _poolSettings, Logger, _clusterErrorHandlerCreator.Invoke(uri));
+            return _fakeConnectionPool ?? new ConnectionPool(_connectionSettings, _poolSettings, Logger, _clusterErrorHandlerCreator.Invoke(uri));
         }
 
         public bool TryAcquire(Uri uri, out IPooledConnection conn)

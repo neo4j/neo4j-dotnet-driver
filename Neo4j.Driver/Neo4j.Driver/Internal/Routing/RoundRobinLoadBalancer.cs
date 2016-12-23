@@ -31,18 +31,15 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly Stopwatch _stopwatch;
 
         public RoundRobinLoadBalancer(
-            Uri seedServer,
-            IAuthToken authToken,
-            EncryptionManager encryptionManager,
+            ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger)
         {
             _clusterConnectionPool = new ClusterConnectionPool(
-                seedServer, authToken, encryptionManager,
-                poolSettings, logger, CreateClusterPooledConnectionErrorHandler);
+                connectionSettings, poolSettings, logger, CreateClusterPooledConnectionErrorHandler);
 
             _stopwatch = new Stopwatch();
-            _routingTable = new RoundRobinRoutingTable(seedServer, _stopwatch);
+            _routingTable = new RoundRobinRoutingTable(connectionSettings.InitialServerUri, _stopwatch);
 
             _logger = logger;
         }
