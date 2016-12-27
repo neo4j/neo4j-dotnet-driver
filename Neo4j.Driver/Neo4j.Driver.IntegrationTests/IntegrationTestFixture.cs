@@ -25,6 +25,7 @@ namespace Neo4j.Driver.IntegrationTests
     public class IntegrationTestFixture : IDisposable
     {
         private readonly INeo4jInstaller _installer = new ExternalPythonInstaller();
+        public IDriver Driver { private set; get; }
         public string Neo4jHome { get; }
 
         public string ServerEndPoint => "bolt://localhost";
@@ -44,25 +45,46 @@ namespace Neo4j.Driver.IntegrationTests
                 throw;
             }
             Neo4jHome = _installer.Neo4jHome.FullName;
+            NewDriver();
         }
 
+        private void NewDriver()
+        {
+            Driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
+        }
+
+        private void DisposeDriver()
+        {
+            Driver.Dispose();
+        }
+
+        /// <summary>
+        /// This method will always restart the server no matter if the setting is the same or not,
+        /// so do not call this method unless really necessary
+        /// </summary>
+        /// <param name="keyValuePair"></param>
         public void RestartServerWithUpdatedSettings(IDictionary<string, string> keyValuePair)
         {
+            DisposeDriver();
             try
             {
-                _installer.StopServer();
                 _installer.UpdateSettings(keyValuePair);
-                _installer.StartServer();
             }
             catch
             {
                 try { Dispose(); } catch { /*Do nothing*/ }
                 throw;
             }
+            NewDriver();
         }
 
+        /// <summary>
+        /// This method will not restart the server if the file already exist in path
+        /// </summary>
+        /// <param name="sourceProcedureJarPath"></param>
         public void RestartServerWithProcedures(string sourceProcedureJarPath)
         {
+            DisposeDriver();
             try
             {
                 _installer.EnsureProcedures(sourceProcedureJarPath);
@@ -72,10 +94,12 @@ namespace Neo4j.Driver.IntegrationTests
                 try { Dispose(); } catch { /*Do nothing*/ }
                 throw;
             }
+            NewDriver();
         }
 
         public void Dispose()
         {
+            DisposeDriver();
             try
             {
                 _installer.StopServer();

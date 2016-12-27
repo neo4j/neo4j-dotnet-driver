@@ -61,7 +61,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void UpdateSettings(IDictionary<string, string> keyValuePair)
         {
+            StopServer();
             Neo4jSettingsHelper.UpdateSettings(Neo4jHome.FullName, keyValuePair);
+            StartServer();
         }
 
         public void EnsureProcedures(string sourceProcedureJarPath)

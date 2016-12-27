@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using FluentAssertions;
 //tag::minimal-example-import[]
@@ -26,7 +25,6 @@ using Neo4j.Driver.V1;
 using Neo4j.Driver.IntegrationTests;
 using Xunit;
 using Xunit.Abstractions;
-using Path = System.IO.Path;
 
 namespace Neo4j.Driver.Examples
 {
@@ -34,14 +32,12 @@ namespace Neo4j.Driver.Examples
     public class Examples
     {
         private ITestOutputHelper Output { get; }
-        private readonly string _serverEndPoint;
-        private readonly IAuthToken _authToken;
+        private readonly IDriver _driver;
 
         public Examples(ITestOutputHelper output, IntegrationTestFixture fixture)
         {
             Output = output;
-            _serverEndPoint = fixture.ServerEndPoint;
-            _authToken = fixture.AuthToken;
+            _driver = fixture.Driver;
             ClearDatabase();
         }
 
@@ -89,231 +85,229 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void Statement()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-
-            //tag::statement[]
-            var result = session.Run("CREATE (person:Person {name: {name}})",
-                new Dictionary<string, object> { {"name", "Arthur"} });
-            //end::statement[]
-
-            result.Consume();
-            driver.Dispose();
+            using (var session = _driver.Session())
+            {
+                //tag::statement[]
+                var result = session.Run("CREATE (person:Person {name: {name}})",
+                    new Dictionary<string, object> {{"name", "Arthur"}});
+                //end::statement[]
+                result.Consume();
+            }
         }
 
         [Fact]
         public void StatementWithoutParams()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-
-            //tag::statement-without-parameters[]
-            var result = session.Run("CREATE (p:Person {name: 'Arthur'})");
-            //end::statement-without-parameters[]
-            result.Consume();
-            driver.Dispose();
+            using (var session = _driver.Session())
+            {
+                //tag::statement-without-parameters[]
+                var result = session.Run("CREATE (p:Person {name: 'Arthur'})");
+                //end::statement-without-parameters[]
+                result.Consume();
+            }
         }
 
         [Fact]
         public void ResultTraversal()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-            session.Run("CREATE (weapon:Weapon {name: {name}})",
-                        new Dictionary<string, object> { {"name", "Sword in the stone"} });
-
-            //tag::result-traversal[]
-            var searchTerm = "Sword";
-            var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} " +
-                                     "RETURN weapon.name",
-                                    new Dictionary<string, object> { {"term", searchTerm} });
-
-            Output.WriteLine($"List of weapons called {searchTerm}:");
-            foreach (var record in result)
+            using (var session = _driver.Session())
             {
-                Output.WriteLine(record["weapon.name"].As<string>());
-            }
-            //end::result-traversal[]
+                session.Run("CREATE (weapon:Weapon {name: {name}})",
+                    new Dictionary<string, object> {{"name", "Sword in the stone"}});
 
-            driver.Dispose();
+                //tag::result-traversal[]
+                var searchTerm = "Sword";
+                var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} " +
+                                         "RETURN weapon.name",
+                    new Dictionary<string, object> {{"term", searchTerm}});
+
+                Output.WriteLine($"List of weapons called {searchTerm}:");
+                foreach (var record in result)
+                {
+                    Output.WriteLine(record["weapon.name"].As<string>());
+                }
+                //end::result-traversal[]
+            }
         }
 
         [Fact]
         public void AccessRecord()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-            session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
-                        new Dictionary<string, object> { {"name", "Sword in the stone"}, {"owner", "Arthur"},
-                                                       {"material", "Stone"}, {"size", "Huge"} });
-
-            session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
-                        new Dictionary<string, object> { {"name", "Excalibur"}, {"owner", "Arthur"},
-                                                       {"material", "Iron"}, {"size", "Enormous"} });
-
-            //tag::access-record[]
-            var searchTerm = "Arthur";
-            var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} " +
-                                     "RETURN weapon.name, weapon.material, weapon.size",
-                                    new Dictionary<string, object> { {"term", searchTerm} });
-
-            Output.WriteLine($"List of weapons owned by {searchTerm}:");
-            foreach (var record in result)
+            using (var session = _driver.Session())
             {
-                var list = record.Keys.Select(key => $"{key}: {record[key]}").ToList();
-                Output.WriteLine(string.Join(", ", list));
-            }
-            //end::access-record[]
+                session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
+                    new Dictionary<string, object>
+                    {
+                        {"name", "Sword in the stone"},
+                        {"owner", "Arthur"},
+                        {"material", "Stone"},
+                        {"size", "Huge"}
+                    });
 
-            driver.Dispose();
+                session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
+                    new Dictionary<string, object>
+                    {
+                        {"name", "Excalibur"},
+                        {"owner", "Arthur"},
+                        {"material", "Iron"},
+                        {"size", "Enormous"}
+                    });
+
+                //tag::access-record[]
+                var searchTerm = "Arthur";
+                var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} " +
+                                         "RETURN weapon.name, weapon.material, weapon.size",
+                    new Dictionary<string, object> {{"term", searchTerm}});
+
+                Output.WriteLine($"List of weapons owned by {searchTerm}:");
+                foreach (var record in result)
+                {
+                    var list = record.Keys.Select(key => $"{key}: {record[key]}").ToList();
+                    Output.WriteLine(string.Join(", ", list));
+                }
+                //end::access-record[]
+            }
         }
 
         [Fact]
         public void RetainResultQuery()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-            session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
-                        new Dictionary<string, object> { {"name", "Lancelot"}, {"castle", "Camelot"} });
-
-            //tag::retain-result[]
-            var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
-                                     "RETURN knight.name AS name",
-                                    new Dictionary<string, object> { {"castle", "Camelot"} });
-
-            var records = result.ToList();
-            session.Dispose();
-
-            foreach (var record in records)
+            using (var session = _driver.Session())
             {
-                Output.WriteLine($"{record["name"].As<string>()} is a knight of Camelot");
+                session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
+                    new Dictionary<string, object> {{"name", "Lancelot"}, {"castle", "Camelot"}});
             }
-            //end::retain-result[]
 
-            driver.Dispose();
+            using (var session = _driver.Session())
+            {
+
+                //tag::retain-result[]
+                var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
+                                         "RETURN knight.name AS name",
+                    new Dictionary<string, object> {{"castle", "Camelot"}});
+
+                var records = result.ToList();
+
+                foreach (var record in records)
+                {
+                    Output.WriteLine($"{record["name"].As<string>()} is a knight of Camelot");
+                }
+                //end::retain-result[]
+            }
         }
 
         [Fact]
         public void NestedStatements()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-            session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
-                        new Dictionary<string, object> { {"name", "Lancelot"}, {"castle", "Camelot"} });
-
-            session.Run("CREATE (knight:Person {name: {name}, title: {title}})",
-                        new Dictionary<string, object> { {"name", "Arthur"}, {"title", "King"} });
-
-            //tag::nested-statements[]
-            var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
-                                     "RETURN id(knight) AS knight_id",
-                                    new Dictionary<string, object> { {"castle", "Camelot"} });
-
-            foreach (var record in result)
+            using (var session = _driver.Session())
             {
-                session.Run("MATCH (knight) WHERE id(knight) = {id} " +
-                            "MATCH (king:Person) WHERE king.name = {king} " +
-                            "CREATE (knight)-[:DEFENDS]->(king)",
-                    new Dictionary<string, object> { {"id", record["knight_id"]}, {"king", "Arthur"} });
+                session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
+                    new Dictionary<string, object> {{"name", "Lancelot"}, {"castle", "Camelot"}});
+
+                session.Run("CREATE (knight:Person {name: {name}, title: {title}})",
+                    new Dictionary<string, object> {{"name", "Arthur"}, {"title", "King"}});
+
+                //tag::nested-statements[]
+                var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
+                                         "RETURN id(knight) AS knight_id",
+                    new Dictionary<string, object> {{"castle", "Camelot"}});
+
+                foreach (var record in result)
+                {
+                    session.Run("MATCH (knight) WHERE id(knight) = {id} " +
+                                "MATCH (king:Person) WHERE king.name = {king} " +
+                                "CREATE (knight)-[:DEFENDS]->(king)",
+                        new Dictionary<string, object> {{"id", record["knight_id"]}, {"king", "Arthur"}});
+                }
+                //end::nested-statements[]
             }
-            //end::nested-statements[]
-            driver.Dispose();
         }
 
         [Fact]
         public void HandleCypherError()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-            var ex = Record.Exception(() =>
+            using (var session = _driver.Session())
             {
-                //tag::handle-cypher-error[]
-                try
+                var ex = Record.Exception(() =>
                 {
-                    session.Run("This will cause a syntax error").Consume();
-                }
-                catch (ClientException)
-                {
-                    throw new InvalidOperationException("Something really bad has happened!");
-                }
-                //end::handle-cypher-error[]
-            });
-
-            driver.Dispose();
-            ex.Should().BeOfType<InvalidOperationException>();
+                    //tag::handle-cypher-error[]
+                    try
+                    {
+                        session.Run("This will cause a syntax error").Consume();
+                    }
+                    catch (ClientException)
+                    {
+                        throw new InvalidOperationException("Something really bad has happened!");
+                    }
+                    //end::handle-cypher-error[]
+                });
+                ex.Should().BeOfType<InvalidOperationException>();
+            }
         }
 
         [Fact]
         public void TransactionCommit()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-
-            //tag::transaction-commit[]
-            using (var tx = session.BeginTransaction())
+            using (var session = _driver.Session())
             {
-                tx.Run("CREATE (:Person {name: {name}})",
-                        new Dictionary<string, object> { {"name", "Guinevere"} });
-                tx.Success();
+                //tag::transaction-commit[]
+                using (var tx = session.BeginTransaction())
+                {
+                    tx.Run("CREATE (:Person {name: {name}})",
+                        new Dictionary<string, object> {{"name", "Guinevere"}});
+                    tx.Success();
+                }
+                //end::transaction-commit[]
             }
-            //end::transaction-commit[]
-
-            driver.Dispose();
         }
 
         [Fact]
         public void TransactionRollback()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-
-            //tag::transaction-rollback[]
-            using (var tx = session.BeginTransaction())
+            using (var session = _driver.Session())
             {
-                tx.Run("CREATE (:Person {name: {name}})",
-                        new Dictionary<string, object> { {"name", "Merlin"} });
-                // optional to explicitly call tx.Failure();
+                //tag::transaction-rollback[]
+                using (var tx = session.BeginTransaction())
+                {
+                    tx.Run("CREATE (:Person {name: {name}})",
+                        new Dictionary<string, object> {{"name", "Merlin"}});
+                    // optional to explicitly call tx.Failure();
+                }
+                //end::transaction-rollback[]
             }
-            //end::transaction-rollback[]
-
-            driver.Dispose();
         }
 
         [Fact]
         public void ResultSummaryQueryProfile()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
+            using (var session = _driver.Session())
+            {
+                //tag::result-summary-query-profile[]
+                var result = session.Run("PROFILE MATCH (p:Person {name: {name}}) RETURN id(p)",
+                    new Dictionary<string, object> {{"name", "Arthur"}});
 
-            //tag::result-summary-query-profile[]
-            var result = session.Run("PROFILE MATCH (p:Person {name: {name}}) RETURN id(p)",
-                            new Dictionary<string, object> { {"name", "Arthur"} });
+                IResultSummary summary = result.Consume();
 
-            IResultSummary summary = result.Consume();
-
-            Output.WriteLine(summary.StatementType.ToString());
-            Output.WriteLine(summary.Profile.ToString());
-            //end::result-summary-query-profile[]
-
-            driver.Dispose();
+                Output.WriteLine(summary.StatementType.ToString());
+                Output.WriteLine(summary.Profile.ToString());
+                //end::result-summary-query-profile[]
+            }
         }
 
         [Fact]
         public void ResultSummaryNotifications()
         {
-            var driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-
-            //tag::result-summary-notifications[]
-            var summary = session.Run("EXPLAIN MATCH (king), (queen) RETURN king, queen").Consume();
-
-            foreach (var notification in summary.Notifications)
+            using (var session = _driver.Session())
             {
-                Output.WriteLine(notification.ToString());
-            }
-            //end::result-summary-notifications[]
+                //tag::result-summary-notifications[]
+                var summary = session.Run("EXPLAIN MATCH (king), (queen) RETURN king, queen").Consume();
 
-            driver.Dispose();
+                foreach (var notification in summary.Notifications)
+                {
+                    Output.WriteLine(notification.ToString());
+                }
+                //end::result-summary-notifications[]
+            }
         }
 
         [Fact(Skip = "Requires server certificate to be installed on host system.")]
@@ -349,34 +343,16 @@ namespace Neo4j.Driver.Examples
 
         private void ClearDatabase()
         {
-            IDriver driver = GraphDatabase.Driver(_serverEndPoint, _authToken);
-            var session = driver.Session();
-            var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
-            result.ToList();
-            driver.Dispose();
+            using (var session = _driver.Session())
+            {
+                var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
+                result.ToList();
+            }
         }
 
         //tag::tls-trust-on-first-use[]
         // Not supported in this driver
         //end::tls-trust-on-first-use[]
-
-        [Fact]
-        public void TlsTrustOnFirstUse()
-        {
-            var knownHostsFileName = Path.GetTempPath() + Guid.NewGuid() + ".tmp";
-            
-            var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
-                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).WithTrustStrategy(TrustStrategy.TrustAllCertificates)
-                .ToConfig());
-            using (var session = driver.Session())
-            {
-                var result = session.Run("RETURN 1 as n");
-                result.Single()["n"].As<int>().Should().Be(1);
-            }
-            driver.Dispose();
-
-            File.Delete(knownHostsFileName);
-        }
     }
 
     // TODO Remove it after we figure out a way to solve the naming problem

@@ -31,8 +31,6 @@ using System.Linq;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-
-
     public class DirectDriverIT
     {
         public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
@@ -115,22 +113,18 @@ namespace Neo4j.Driver.IntegrationTests
         public class ResultIT
         {
             private readonly ITestOutputHelper _output;
-
-            private readonly string _serverEndPoint;
-            private readonly IAuthToken _authToken;
+            private readonly IDriver _driver;
 
             public ResultIT(ITestOutputHelper output, IntegrationTestFixture fixture)
             {
                 _output = output;
-                _serverEndPoint = fixture.ServerEndPoint;
-                _authToken = fixture.AuthToken;
+                _driver = fixture.Driver;
             }
 
             [Fact]
             public void GetsSummary()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var result = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
                     var stats = result.Consume().Counters;
@@ -157,8 +151,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void AccessSummaryAfterFailure()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var result = session.Run("Invalid");
                     var error = Record.Exception(()=>result.Consume());
@@ -174,8 +167,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void BufferRecordsAfterSummary()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var result = session.Run("UNWIND [1,2] AS a RETURN a");
                     var summary = result.Summary;
@@ -192,8 +184,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void DiscardRecordsAfterConsume()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var result = session.Run("UNWIND [1,2] AS a RETURN a");
                     var summary = result.Consume();
@@ -209,8 +200,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void BuffersResultsOfRunSoTheyCanBeReadAfterAnotherSubsequentRun()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var result1 = session.Run("unwind range(1,3) as n RETURN n");
                     var result2 = session.Run("unwind range(4,6) as n RETURN n");
@@ -226,30 +216,26 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void BufferResultAfterSessionClose()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                IStatementResult result;
+                using (var session = _driver.Session())
                 {
-                    IStatementResult result;
-                    using (var session = driver.Session())
-                    {
-                        result = session.Run("unwind range(1,3) as n RETURN n");
-                    }
-                    var resultAll = result.ToList();
-
-                    // Records that has not been read inside session still saved
-                    resultAll.Count.Should().Be(3);
-                    resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
-
-                    // Summary is still saved
-                    result.Summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
-                    result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
+                    result = session.Run("unwind range(1,3) as n RETURN n");
                 }
+                var resultAll = result.ToList();
+
+                // Records that has not been read inside session still saved
+                resultAll.Count.Should().Be(3);
+                resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
+
+                // Summary is still saved
+                result.Summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
+                result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
             }
 
             [Fact]
             public void BuffersResultsAfterTxCloseSoTheyCanBeReadAfterAnotherSubsequentTx()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     IStatementResult result1, result2;
                     using (var tx = session.BeginTransaction())
@@ -277,7 +263,7 @@ namespace Neo4j.Driver.IntegrationTests
         public class SessionIT
         {
             private readonly ITestOutputHelper _output;
-
+            private readonly IDriver _driver;
             private readonly string _serverEndPoint;
             private readonly IAuthToken _authToken;
 
@@ -286,6 +272,7 @@ namespace Neo4j.Driver.IntegrationTests
                 _output = output;
                 _serverEndPoint = fixture.ServerEndPoint;
                 _authToken = fixture.AuthToken;
+                _driver = fixture.Driver;
             }
 
             [Fact]
@@ -306,8 +293,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldConnectAndRun()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var result = session.Run("RETURN 2 as Number");
                     result.Consume();
@@ -319,8 +305,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldBeAbleToRunMultiStatementsInOneTransaction()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 using (var tx = session.BeginTransaction())
                 {
                     // clean db
@@ -335,27 +320,23 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void TheSessionErrorShouldBeClearedForEachSession()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                using (var session = _driver.Session())
                 {
-                    using (var session = driver.Session())
-                    {
-                        var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
-                        ex.Should().BeOfType<ClientException>();
-                        ex.Message.Should().StartWith("Invalid input 'I'");
-                    }
-                    using (var session = driver.Session())
-                    {
-                        var result = session.Run("RETURN 1");
-                        result.Single()[0].ValueAs<int>().Should().Be(1);
-                    }
+                    var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
+                    ex.Should().BeOfType<ClientException>();
+                    ex.Message.Should().StartWith("Invalid input 'I'");
+                }
+                using (var session = _driver.Session())
+                {
+                    var result = session.Run("RETURN 1");
+                    result.Single()[0].ValueAs<int>().Should().Be(1);
                 }
             }
 
             [Fact]
             public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
                     ex.Should().BeOfType<ClientException>();
@@ -369,8 +350,7 @@ namespace Neo4j.Driver.IntegrationTests
             public void RollBackTxIfErrorWithConsume()
             {
                 // Given
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     // When failed to run a tx with consume
                     using (var tx = session.BeginTransaction())
@@ -390,8 +370,7 @@ namespace Neo4j.Driver.IntegrationTests
             public void RollBackTxIfErrorWithoutConsume()
             {
                 // Given
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     // When failed to run a tx without consume
 
@@ -439,28 +418,25 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldContainLastBookmarkAfterTx()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                string version;
+                using (var session = _driver.Session())
                 {
-                    string version;
-                    using (var session = driver.Session())
+                    version = session.Run("RETURN 1").Consume().Server.Version;
+                }
+                if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
+                {
+                    using (var session = _driver.Session())
                     {
-                        version = session.Run("RETURN 1").Consume().Server.Version;
-                    }
-                    if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
-                    {
-                        using (var session = driver.Session())
+                        session.LastBookmark.Should().BeNull();
+
+                        using (var tx = session.BeginTransaction())
                         {
-                            session.LastBookmark.Should().BeNull();
-
-                            using (var tx = session.BeginTransaction())
-                            {
-                                tx.Run("CREATE (a:Person)");
-                                tx.Success();
-                            }
-
-                            session.LastBookmark.Should().NotBeNull();
-                            session.LastBookmark.Should().StartWith("neo4j:bookmark:v1:tx");
+                            tx.Run("CREATE (a:Person)");
+                            tx.Success();
                         }
+
+                        session.LastBookmark.Should().NotBeNull();
+                        session.LastBookmark.Should().StartWith("neo4j:bookmark:v1:tx");
                     }
                 }
             }
@@ -468,62 +444,59 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldWaitOnBookmark()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
+                string version;
+                using (var session = _driver.Session())
                 {
-                    string version;
-                    using (var session = driver.Session())
+                    version = session.Run("RETURN 1").Consume().Server.Version;
+                }
+                if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
+                {
+                    using (var session = _driver.Session())
                     {
-                        version = session.Run("RETURN 1").Consume().Server.Version;
-                    }
-                    if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
-                    {
-                        using (var session = driver.Session())
+                        // get a bookmark
+                        session.LastBookmark.Should().BeNull();
+                        using (var tx = session.BeginTransaction())
                         {
-                            // get a bookmark
-                            session.LastBookmark.Should().BeNull();
-                            using (var tx = session.BeginTransaction())
-                            {
-                                tx.Run("CREATE (a:Person)");
-                                tx.Success();
-                            }
-
-                            session.LastBookmark.Should().NotBeNull();
-                            session.LastBookmark.Should().StartWith(BookmarkHeader);
-                            var lastBookmarkNum = BookmarkNum(session.LastBookmark);
-
-                            var queue = new ConcurrentQueue<long>();
-                            // start a thread to create lastBookmark + 1 tx
-                            Task.Factory.StartNew(() =>
-                            {
-                                Thread.Sleep(100);
-                                using (var anotherSession = driver.Session())
-                                {
-                                    using (var tx = anotherSession.BeginTransaction())
-                                    {
-                                        tx.Run("CREATE (a:Person)");
-                                        tx.Success();
-                                    }
-                                    queue.Enqueue(BookmarkNum(anotherSession.LastBookmark));
-                                }
-
-                            });
-
-                            // wait for lastBookmark + 1 and create lastBookmark + 2
-                            var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
-                            using (var tx = session.BeginTransaction(waitForBookmark))
-                            {
-                                tx.Run("CREATE (a:Person)");
-                                tx.Success();
-                            }
-                            queue.Enqueue(BookmarkNum(session.LastBookmark));
-
-                            queue.Count.Should().Be(2);
-                            long value;
-                            queue.TryDequeue(out value).Should().BeTrue();
-                            value.Should().Be(lastBookmarkNum + 1);
-                            queue.TryDequeue(out value).Should().BeTrue();
-                            value.Should().Be(lastBookmarkNum + 2);
+                            tx.Run("CREATE (a:Person)");
+                            tx.Success();
                         }
+
+                        session.LastBookmark.Should().NotBeNull();
+                        session.LastBookmark.Should().StartWith(BookmarkHeader);
+                        var lastBookmarkNum = BookmarkNum(session.LastBookmark);
+
+                        var queue = new ConcurrentQueue<long>();
+                        // start a thread to create lastBookmark + 1 tx
+                        Task.Factory.StartNew(() =>
+                        {
+                            Thread.Sleep(100);
+                            using (var anotherSession = _driver.Session())
+                            {
+                                using (var tx = anotherSession.BeginTransaction())
+                                {
+                                    tx.Run("CREATE (a:Person)");
+                                    tx.Success();
+                                }
+                                queue.Enqueue(BookmarkNum(anotherSession.LastBookmark));
+                            }
+
+                        });
+
+                        // wait for lastBookmark + 1 and create lastBookmark + 2
+                        var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
+                        using (var tx = session.BeginTransaction(waitForBookmark))
+                        {
+                            tx.Run("CREATE (a:Person)");
+                            tx.Success();
+                        }
+                        queue.Enqueue(BookmarkNum(session.LastBookmark));
+
+                        queue.Count.Should().Be(2);
+                        long value;
+                        queue.TryDequeue(out value).Should().BeTrue();
+                        value.Should().Be(lastBookmarkNum + 1);
+                        queue.TryDequeue(out value).Should().BeTrue();
+                        value.Should().Be(lastBookmarkNum + 2);
                     }
                 }
             }
@@ -540,23 +513,19 @@ namespace Neo4j.Driver.IntegrationTests
         public class SessionResetIT
         {
             private readonly ITestOutputHelper _output;
-
-            private readonly string _serverEndPoint;
-            private readonly IAuthToken _authToken;
+            private readonly IDriver _driver;
 
             public SessionResetIT(ITestOutputHelper output, IntegrationTestFixture fixture)
             {
                 _output = output;
-                _serverEndPoint = fixture.ServerEndPoint;
-                _authToken = fixture.AuthToken;
                 fixture.RestartServerWithProcedures(new DirectoryInfo("../../Resources/longRunningStatement.jar").FullName);
+                _driver = fixture.Driver;
             }
 
             [Fact]
             public async void ShouldKillLongRunningStatement()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var cancelTokenSource = new CancellationTokenSource();
                     var resetSession = ResetSessionAfterTimeout(session, 5, cancelTokenSource.Token);
@@ -587,8 +556,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public async void ShouldKillLongStreamingResult()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken, DebugConfig))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var cancelTokenSource = new CancellationTokenSource();
                     var resetSession = ResetSessionAfterTimeout(session, 5, cancelTokenSource.Token);
@@ -624,8 +592,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldAllowMoreStatementAfterSessionReset()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     session.Run("RETURN 1").Consume();
                     session.Reset();
@@ -636,8 +603,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldAllowMoreTxAfterSessionReset()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     using (var tx = session.BeginTransaction())
                     {
@@ -656,8 +622,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldAllowNewTxRunAfterSessionReset()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     using (var tx = session.BeginTransaction())
                     {
@@ -674,8 +639,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     using (var tx = session.BeginTransaction())
                     {
@@ -691,8 +655,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public void ShouldAllowBeginNewTxAfterResetAndResultConsumed()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     var tx1 = session.BeginTransaction();
                     var result = tx1.Run("Return 1");
@@ -717,8 +680,7 @@ namespace Neo4j.Driver.IntegrationTests
             [Fact]
             public async void ShouldThrowExceptionIfErrorAfterResetButNotConsumed()
             {
-                using (var driver = GraphDatabase.Driver(_serverEndPoint, _authToken))
-                using (var session = driver.Session())
+                using (var session = _driver.Session())
                 {
                     session.Run("CALL test.driver.longRunningStatement({seconds})",
                         new Dictionary<string, object> { { "seconds", 20 } });
