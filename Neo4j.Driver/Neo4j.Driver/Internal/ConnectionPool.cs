@@ -76,15 +76,25 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            var conn = _fakeConnection != null
-                ? new PooledConnection(_fakeConnection, Release)
-                : new PooledConnection(new SocketConnection(_connectionSettings, _logger), Release);
-            if (_externalErrorHandler != null)
+            PooledConnection conn = null;
+            try
             {
-                conn.AddConnectionErrorHander(_externalErrorHandler);
+                conn = _fakeConnection != null
+                    ? new PooledConnection(_fakeConnection, Release)
+                    : new PooledConnection(new SocketConnection(_connectionSettings, _logger), Release);
+                if (_externalErrorHandler != null)
+                {
+                    conn.AddConnectionErrorHander(_externalErrorHandler);
+                }
+                conn.Init();
+                return conn;
             }
-            conn.Init();
-            return conn;
+            finally
+            {
+                // shut down and clean all the resources of the conneciton if failed to establish
+                conn?.Close();
+            }
+
         }
 
         private void ThrowConnectionPoolClosedException()

@@ -142,6 +142,20 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public void ShouldCloseConnectionIfFailedToCreate()
+            {
+                var mockedConnection = new Mock<IConnection>();
+                mockedConnection.Setup(x => x.Init()).Throws(new InvalidOperationException());
+
+                var pool = new ConnectionPool(mockedConnection.Object);
+
+                Record.Exception(()=>pool.Acquire());
+                mockedConnection.Verify(x=>x.Close(), Times.Once);
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(0);
+            }
+
+            [Fact]
             public void ShouldCreateNewWhenQueueOnlyContainsUnhealthyConnections()
             {
                 var conns = new Queue<IPooledConnection>();
