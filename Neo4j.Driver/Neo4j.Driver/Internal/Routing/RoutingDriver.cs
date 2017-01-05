@@ -30,20 +30,15 @@ namespace Neo4j.Driver.Internal.Routing
 
 
         internal RoutingDriver(
-            Uri seedServer, 
-            IAuthToken authToken, 
-            EncryptionManager encryptionManager,
+            ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings, 
             ILogger logger)
         {
-            Throw.ArgumentNullException.IfNull(seedServer, nameof(seedServer));
-            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
-            Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
             Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
 
-            Uri = seedServer;
+            Uri = connectionSettings.InitialServerUri;
             _logger = logger;
-            _loadBalancer = new RoundRobinLoadBalancer(seedServer, authToken, encryptionManager, poolSettings, _logger);
+            _loadBalancer = new RoundRobinLoadBalancer(connectionSettings, poolSettings, _logger);
         }
 
         public override ISession NewSession(AccessMode mode)

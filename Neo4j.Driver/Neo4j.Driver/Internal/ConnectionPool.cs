@@ -23,11 +23,8 @@ namespace Neo4j.Driver.Internal
 {
     internal class ConnectionPool : LoggerBase, IConnectionPool
     {
-        private readonly Uri _uri;
-        private readonly IAuthToken _authToken;
-
-        private readonly EncryptionManager _encryptionManager;
         private readonly int _idleSessionPoolSize;
+        private readonly ConnectionSettings _connectionSettings;
 
         private readonly ILogger _logger;
 
@@ -49,18 +46,13 @@ namespace Neo4j.Driver.Internal
         }
 
         public ConnectionPool(
-            Uri uri,
-            IAuthToken authToken,
-            EncryptionManager encryptionManager,
+            ConnectionSettings connectionSettings,
             ConnectionPoolSettings connectionPoolSettings,
             ILogger logger,
             IConnectionErrorHandler exteralErrorHandler = null)
             : base(logger)
         {
-            _uri = uri;
-            _authToken = authToken;
-
-            _encryptionManager = encryptionManager;
+            _connectionSettings = connectionSettings;
             _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
 
             _externalErrorHandler = exteralErrorHandler;
@@ -74,8 +66,7 @@ namespace Neo4j.Driver.Internal
             ILogger logger = null,
             ConnectionPoolSettings settings = null,
             IConnectionErrorHandler exteralErrorHandler = null)
-            : this(null, null, null,
-                  settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
+            : this(null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
                   logger, exteralErrorHandler)
         {
             _fakeConnection = connection;
@@ -85,15 +76,25 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            var conn = _fakeConnection != null
-                ? new PooledConnection(_fakeConnection, Release)
-                : new PooledConnection(new SocketConnection(_uri, _authToken, _encryptionManager, _logger), Release);
-            if (_externalErrorHandler != null)
+            PooledConnection conn = null;
+            try
             {
-                conn.AddConnectionErrorHander(_externalErrorHandler);
+                conn = _fakeConnection != null
+                    ? new PooledConnection(_fakeConnection, Release)
+                    : new PooledConnection(new SocketConnection(_connectionSettings, _logger), Release);
+                if (_externalErrorHandler != null)
+                {
+                    conn.AddConnectionErrorHander(_externalErrorHandler);
+                }
+                conn.Init();
+                return conn;
             }
-            conn.Init();
-            return conn;
+            finally
+            {
+                // shut down and clean all the resources of the conneciton if failed to establish
+                conn?.Close();
+            }
+
         }
 
         private void ThrowConnectionPoolClosedException()

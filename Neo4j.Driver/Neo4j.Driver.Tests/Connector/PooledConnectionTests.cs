@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
@@ -26,11 +27,6 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class PooledConnectionTests
     {
-        private static ILogger Logger => new Mock<ILogger>().Object;
-        private static IServerInfo Server => new Mock<IServerInfo>().Object;
-
-        private static Mock<ISocketClient> MockSocketClient => new Mock<ISocketClient>();
-
         public class Constructor
         {
             [Fact]
@@ -38,7 +34,6 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockedSocketConn = new Mock<IConnection>();
                 var conn = new PooledConnection(mockedSocketConn.Object);
-
                 mockedSocketConn.Verify(x=>x.AddConnectionErrorHander(It.IsAny<PooledConnection.PooledConnectionErrorHandler>()), Times.Once);
             }
         }
@@ -48,9 +43,9 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldReportErrorIfIsTransientException()
             {
-                var mock = MockSocketClient;
+                
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new PooledConnection(new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object));
+                var con = new PooledConnection(SocketConnectionTests.NewSocketConnection(handler:mockResponseHandler.Object));
 
                 mockResponseHandler.Setup(x => x.Error).Returns(new TransientException("BLAH", "lalala"));
                 con.HasUnrecoverableError.Should().BeFalse();
@@ -59,9 +54,8 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldReportErrorIfIsDatabaseException()
             {
-                var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new PooledConnection(new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object));
+                var con = new PooledConnection(SocketConnectionTests.NewSocketConnection(handler: mockResponseHandler.Object));
 
                 mockResponseHandler.Setup(x => x.HasError).Returns(true);
                 mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException("BLAH", "lalala"));
@@ -77,9 +71,8 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldNotReportErrorIfIsOtherExceptions()
             {
-                var mock = MockSocketClient;
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new PooledConnection(new SocketConnection(mock.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object));
+                var con = new PooledConnection(SocketConnectionTests.NewSocketConnection(handler: mockResponseHandler.Object));
 
                 mockResponseHandler.Setup(x => x.Error).Returns(new ClientException("BLAH", "lalala"));
                 con.HasUnrecoverableError.Should().BeFalse();
@@ -96,7 +89,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 mockResponseHandler.Setup(x => x.Error).Returns(new ClientException()); // has no unrecoverable error
 
-                var conn = new PooledConnection(new SocketConnection(mockClient.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object));
+                var conn = new PooledConnection(SocketConnectionTests.NewSocketConnection(mockClient.Object, mockResponseHandler.Object));
                 conn.IsOpen.Should().BeFalse();
             }
 
@@ -108,7 +101,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException());  // unrecoverable error
 
-                var conn = new PooledConnection(new SocketConnection(mockClient.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object));
+                var conn = new PooledConnection(SocketConnectionTests.NewSocketConnection(mockClient.Object, mockResponseHandler.Object));
                 conn.IsOpen.Should().BeFalse();
             }
 
@@ -120,7 +113,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 mockResponseHandler.Setup(x => x.Error).Returns(new ClientException());  // has no unrecoverable error
 
-                var conn = new PooledConnection(new SocketConnection(mockClient.Object, AuthTokens.None, Logger, Server, mockResponseHandler.Object));
+                var conn = new PooledConnection(SocketConnectionTests.NewSocketConnection(mockClient.Object, mockResponseHandler.Object));
                 conn.IsOpen.Should().BeTrue();
             }
         }

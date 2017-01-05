@@ -23,7 +23,6 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -181,7 +180,7 @@ namespace Neo4j.Driver.Tests
                 MessagePair(PullAllMessage(), SuccessMessage())
             };
             var mock = new MockedMessagingClient(requestAndResponsePairs);
-            var conn = new SocketConnection(mock.Client, AuthTokens.None, null, new ServerInfo(new Uri("http://1234.com")));
+            var conn = SocketConnectionTests.NewSocketConnection(mock.Client);
             conn.Init();
             return conn;
         }

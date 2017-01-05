@@ -21,10 +21,9 @@ namespace Neo4j.Driver.Internal
     {
         public int MaxIdleSessionPoolSize { get; }
 
-        public ConnectionPoolSettings(){} // for test
-
         public ConnectionPoolSettings(int maxIdleSessionPoolSize)
         {
+            Throw.ArgumentNullException.IfNull(maxIdleSessionPoolSize, nameof(maxIdleSessionPoolSize));
             MaxIdleSessionPoolSize = maxIdleSessionPoolSize;
         }
     }

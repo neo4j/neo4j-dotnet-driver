@@ -26,16 +26,14 @@ namespace Neo4j.Driver.Internal
         private readonly IConnectionPool _connectionPool;
         private ILogger _logger;
 
-        internal DirectDriver(Uri uri, IAuthToken authToken, EncryptionManager encryptionManager, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
+        internal DirectDriver(ConnectionSettings connectionSettings, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
         {
-            Throw.ArgumentNullException.IfNull(uri, nameof(uri));
-            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
-            Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
+            Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(connectionPoolSettings, nameof(connectionPoolSettings));
 
-            Uri = uri;
+            Uri = connectionSettings.InitialServerUri;
             _logger = logger;
-            _connectionPool = new ConnectionPool(uri, authToken, encryptionManager, connectionPoolSettings, _logger);
+            _connectionPool = new ConnectionPool(connectionSettings, connectionPoolSettings, _logger);
         }
 
         public override ISession NewSession(AccessMode mode)
