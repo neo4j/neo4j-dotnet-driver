@@ -28,8 +28,8 @@ namespace Neo4j.Driver.IntegrationTests
         public IDriver Driver { private set; get; }
         public string Neo4jHome { get; }
 
-        public string ServerEndPoint => "bolt://localhost";
-        public IAuthToken AuthToken => AuthTokens.Basic("neo4j", "neo4j");
+        public const string ServerEndPoint = "bolt://localhost";
+        public static readonly IAuthToken AuthToken = AuthTokens.Basic("neo4j", "neo4j");
 
         public IntegrationTestFixture()
         {
