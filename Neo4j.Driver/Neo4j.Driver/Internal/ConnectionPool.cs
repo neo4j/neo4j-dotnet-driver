@@ -89,10 +89,11 @@ namespace Neo4j.Driver.Internal
                 conn.Init();
                 return conn;
             }
-            finally
+            catch
             {
                 // shut down and clean all the resources of the conneciton if failed to establish
                 conn?.Close();
+                throw;
             }
 
         }
