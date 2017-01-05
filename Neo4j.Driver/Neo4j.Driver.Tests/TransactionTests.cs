@@ -30,12 +30,13 @@ namespace Neo4j.Driver.Tests
         public class Constructor
         {
             [Fact]
-            public void ShouldRunBeginAndPullAll()
+            public void ShouldRunQueueBeginAndPullAllWhenNoBookmarkGiven()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
                 mockConn.Verify(x=>x.Run("BEGIN", new Dictionary<string, object>(), null, true), Times.Once);
+                mockConn.Verify(x=>x.Sync(), Times.Never);
             }
 
             [Fact]
@@ -48,8 +49,8 @@ namespace Neo4j.Driver.Tests
                 paramters.Add("bookmark", "a bookmark");
 
                 mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
             }
-
         }
 
         public class RunMethod
