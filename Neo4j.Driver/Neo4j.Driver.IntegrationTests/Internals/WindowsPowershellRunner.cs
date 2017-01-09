@@ -18,19 +18,27 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
-using System.Text;
-using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class WindowsPowershellRunner
     {
-        public static void RunPowershellCommand(string command, string argument)
+        public static string[] RunPythonCommand(string[] arguments)
         {
-            RunPowershellCommand(command, new []{argument});
+            return RunCommand("python", arguments);
         }
-        public static void RunPowershellCommand(string command, string[] arguments)
+
+        public static string[] RunCommand(string command, string argument)
+        {
+            return RunCommand(command, new[] {argument});
+        }
+
+        /// <summary>
+        /// Run the given commands with the multiple command arguments in powershell
+        /// Return the powershell output back
+        /// </summary>
+        public static string[] RunCommand(string command, string[] arguments)
         {
             using (var powershell = PowerShell.Create())
             {
@@ -40,21 +48,28 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     powershell.AddArgument(argument);
                 }
                 var results = powershell.Invoke();
+                
                 foreach (var result in results)
                 {
                     Console.WriteLine(result);
                 }
                 if (powershell.HadErrors)
                 {
-                    throw new Neo4jException("Integration", CollectAsString(powershell.Streams.Error));
+                    var errorMessage = CollectAsString(powershell.Streams.Error);
+                    throw new Neo4jException("Integration", errorMessage);
                 }
+                return CollectionAsStringArray(results);
             }
         }
 
-        private static string CollectAsString(PSDataCollection<ErrorRecord> errors)
+        private static string[] CollectionAsStringArray<T>(IEnumerable<T> lines)
         {
-            var output = errors.Select(error => error.ToString()).ToList();
-            return string.Join(Environment.NewLine, output);
+            return lines.Select(error => error.ToString()).ToArray();
+        }
+
+        private static string CollectAsString<T>(IEnumerable<T> lines)
+        {
+            return string.Join(Environment.NewLine, CollectionAsStringArray(lines));
         }
     }
 }

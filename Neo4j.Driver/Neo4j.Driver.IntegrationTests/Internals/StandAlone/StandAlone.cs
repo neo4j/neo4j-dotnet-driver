@@ -14,42 +14,45 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using Neo4j.Driver.IntegrationTests.Internals;
+
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
+using System.Linq;
 using Neo4j.Driver.V1;
-using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class IntegrationTestFixture : IDisposable
+    public class StandAlone : ISingleInstance, IDisposable
     {
-        private readonly INeo4jInstaller _installer = new ExternalPythonInstaller();
+        private readonly ExternalPythonInstaller _installer = new ExternalPythonInstaller();
         public IDriver Driver { private set; get; }
-        public string Neo4jHome { get; }
 
         public const string ServerEndPoint = "bolt://localhost";
-        public static readonly IAuthToken AuthToken = AuthTokens.Basic("neo4j", "neo4j");
+        private readonly ISingleInstance _delegator;
 
-        public IntegrationTestFixture()
+        public Uri HttpUri => _delegator?.HttpUri;
+        public Uri BoltUri => _delegator?.BoltUri;
+        public Uri BoltRoutingUri => _delegator?.BoltRoutingUri;
+        public string HomePath => _delegator?.HomePath;
+        public IAuthToken AuthToken => _delegator?.AuthToken;
+
+        public StandAlone()
         {
             try
             {
-                _installer.DownloadNeo4j();
-                _installer.InstallServer();
-                _installer.StartServer();
+                _installer.Install();
+                _delegator = _installer.Start().Single();
             }
             catch
             {
                 try { Dispose(); } catch { /*Do nothing*/ }
                 throw;
             }
-            Neo4jHome = _installer.Neo4jHome.FullName;
-            NewDriver();
+            NewBoltDriver();
         }
 
-        private void NewDriver()
+        private void NewBoltDriver()
         {
             var config = Config.DefaultConfig;
 #if DEBUG
@@ -58,9 +61,9 @@ namespace Neo4j.Driver.IntegrationTests
             Driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, config);
         }
 
-        private void DisposeDriver()
+        private void DisposeBoltDriver()
         {
-            Driver.Dispose();
+            Driver?.Dispose();
         }
 
         /// <summary>
@@ -70,7 +73,7 @@ namespace Neo4j.Driver.IntegrationTests
         /// <param name="keyValuePair"></param>
         public void RestartServerWithUpdatedSettings(IDictionary<string, string> keyValuePair)
         {
-            DisposeDriver();
+            DisposeBoltDriver();
             try
             {
                 _installer.UpdateSettings(keyValuePair);
@@ -80,7 +83,7 @@ namespace Neo4j.Driver.IntegrationTests
                 try { Dispose(); } catch { /*Do nothing*/ }
                 throw;
             }
-            NewDriver();
+            NewBoltDriver();
         }
 
         /// <summary>
@@ -89,7 +92,7 @@ namespace Neo4j.Driver.IntegrationTests
         /// <param name="sourceProcedureJarPath"></param>
         public void RestartServerWithProcedures(string sourceProcedureJarPath)
         {
-            DisposeDriver();
+            DisposeBoltDriver();
             try
             {
                 _installer.EnsureProcedures(sourceProcedureJarPath);
@@ -99,38 +102,25 @@ namespace Neo4j.Driver.IntegrationTests
                 try { Dispose(); } catch { /*Do nothing*/ }
                 throw;
             }
-            NewDriver();
+            NewBoltDriver();
         }
 
         public void Dispose()
         {
-            DisposeDriver();
+            DisposeBoltDriver();
             try
             {
-                _installer.StopServer();
+                _installer.Stop();
             }
             catch
             {
                 // ignored
             }
-            _installer.UninstallServer();
         }
-    }
 
-    [CollectionDefinition(CollectionName)]
-    public class IntegrationCollection : ICollectionFixture<IntegrationTestFixture>
-    {
-        public const string CollectionName = "Integration";
-        // This class has no code, and is never created. Its purpose is simply
-        // to be the place to apply [CollectionDefinition] and all the
-        // ICollectionFixture<> interfaces.
-    }
-
-    public static class Extensions
-    {
-        public static float BytesToMegabytes(this long bytes)
+        public override string ToString()
         {
-            return bytes/1024f/1024f;
+            return _delegator?.ToString() ?? "No server found";
         }
     }
 }

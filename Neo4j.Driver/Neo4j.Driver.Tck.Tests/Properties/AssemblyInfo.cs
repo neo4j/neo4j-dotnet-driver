@@ -17,6 +17,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -50,3 +51,7 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.1.*")]
 [assembly: AssemblyVersion("1.1.0.0")]
 [assembly: AssemblyFileVersion("1.1.0.0")]
+
+// The integration tests defined in this assembly require a database service running in the background.
+// The tests might rely on certain status of the database, therefore the tests should be executed sequentially.
+[assembly: CollectionBehavior(DisableTestParallelization = true)]

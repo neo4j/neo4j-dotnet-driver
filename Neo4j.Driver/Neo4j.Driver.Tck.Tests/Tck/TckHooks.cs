@@ -25,10 +25,10 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     [Binding]
     public static class TckHooks
     {
-        private static IDriver _driver;
-        public static INeo4jInstaller Installer;
-        public const string Uri = "bolt://localhost";
-        public static IAuthToken AuthToken;
+        private static IDriver _driver => Server.Driver;
+        public static StandAlone Server;
+        public static string Uri => Server.BoltUri.ToString();
+        public static IAuthToken AuthToken => Server.AuthToken;
 
         public static ISession CreateSession()
         {
@@ -55,43 +55,13 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [BeforeTestRun]
         public static void GlobalBeforeTestRun()
         {
-            Installer = new ExternalPythonInstaller();
-            Installer.DownloadNeo4j();
-            try
-            {
-                Installer.InstallServer();
-                Installer.StartServer();
-            }
-            catch
-            {
-                try
-                {
-                    GlobalAfterTestRun();
-                }
-                catch
-                {
-                    /*Do Nothing*/
-                }
-                throw;
-            }
-            AuthToken = AuthTokens.Basic("neo4j", "neo4j");
-            CreateNewDriver();
+            Server = new StandAlone();
         }
 
         [AfterTestRun]
         public static void GlobalAfterTestRun()
         {
-            DisposeDriver();
-
-            try
-            {
-                Installer.StopServer();
-            }
-            catch
-            {
-                // ignored
-            }
-            Installer.UninstallServer();
+            Server.Dispose();
         }
 
         [BeforeFeature]
@@ -108,16 +78,6 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 Console.WriteLine($"\nScenario: {ScenarioContext.Current.ScenarioInfo.Title}");
                 Console.WriteLine($"{ScenarioContext.Current.TestError}");
             }
-        }
-
-        private static void DisposeDriver()
-        {
-            _driver?.Dispose();
-        }
-
-        private static void CreateNewDriver()
-        {
-            _driver = GraphDatabase.Driver(Uri, AuthToken);
         }
     }
 }

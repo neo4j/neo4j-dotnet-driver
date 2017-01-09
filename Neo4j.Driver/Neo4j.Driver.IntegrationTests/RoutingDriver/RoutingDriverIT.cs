@@ -1,71 +1,95 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
     // If I have a cluster, then I should be able to do the following tests
-    public class RoutingDriverIT
+    [Collection(IntegrationCollection.CollectionName)]
+    public class RoutingDriverIT : IDisposable
     {
-        private string routingServer = "bolt+routing://localhost:20003";
-        private string wrongServer = "bolt+routing://localhost:1234";
-        private IAuthToken authToken = AuthTokens.Basic("neo4j", "1234");
+        public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig();
+        protected ITestOutputHelper Output { get; }
+        protected CausalCluster Cluster { get; }
+        protected IAuthToken AuthToken { get; }
+
+        private string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
+        private string WrongServer => "bolt+routing://localhost:1234";
+
+        public RoutingDriverIT(ITestOutputHelper output, IntegrationTestFixture fixture)
+        {
+            Output = output;
+            Cluster = fixture.Cluster;
+            IsClusterRunning = Cluster.IsClusterRunning();
+            AuthToken = Cluster.AuthToken;
+        }
+
+        public bool IsClusterRunning { get; }
+
+        public void Dispose()
+        {
+            // put some code that you want to run after each unit test
+        }
+
 
         [Fact]
         public void ShouldConnectClusterWithRoutingScheme()
         {
-            try
+            if (!IsClusterRunning)
             {
-                using (var driver = GraphDatabase.Driver(routingServer, authToken))
-                using (var session = driver.Session())
-                {
-                    var result = session.Run("UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)");
-                    result.Single()[0].ValueAs<int>().Should().Be(10001*10000/2);
-                }
+                return;
             }
-            catch (Exception e)
+
+            using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
+            using (var session = driver.Session())
             {
-                true.Should().BeFalse(e.Message);
+                var result = session.Run("UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)");
+                result.Single()[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
             }
         }
 
         [Fact]
         public void ShouldLoadBalanceBetweenServers()
         {
-            try
+            if (!IsClusterRunning)
             {
-                using (var driver = GraphDatabase.Driver(routingServer, authToken))
-                {
-                    string addr1, addr2;
-                    for (int i = 0; i < 10; i++)
-                    {
-                        using (var session = driver.Session(AccessMode.Read))
-                        {
-                            var result = session.Run("RETURN 1");
-                            addr1 = result.Summary.Server.Address;
-                        }
-                        using (var session = driver.Session(AccessMode.Read))
-                        {
-                            addr2 = session.Run("RETURN 2").Summary.Server.Address;
-                        }
-
-                        addr1.Should().NotBe(addr2);
-                    }
-                }
+                return;
             }
-            catch (Exception e)
+            using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
             {
-                true.Should().BeFalse(e.Message);
+                string addr1, addr2;
+                for (int i = 0; i < 10; i++)
+                {
+                    using (var session = driver.Session(AccessMode.Read))
+                    {
+                        var result = session.Run("RETURN 1");
+                        addr1 = result.Summary.Server.Address;
+                    }
+                    using (var session = driver.Session(AccessMode.Read))
+                    {
+                        addr2 = session.Run("RETURN 2").Summary.Server.Address;
+                    }
+                    addr1.Should().NotBe(addr2);
+                }
             }
         }
 
         [Fact]
         public void ShouldThrowServiceUnavailableExceptionIfNoServer()
         {
-            var driver = GraphDatabase.Driver(wrongServer, authToken);
+            if (!IsClusterRunning)
+            {
+                return;
+            }
+
+            var driver = GraphDatabase.Driver(WrongServer, AuthToken);
             var error = Record.Exception(()=>driver.Session());
             error.Should().BeOfType<ServiceUnavailableException>();
             error.Message.Should().Be("Failed to connect to any routing server. Please make sure that the cluster is up and can be accessed by the driver and retry.");
@@ -75,7 +99,11 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void ShouldDisallowMoreStatementAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(routingServer, authToken);
+            if (!IsClusterRunning)
+            {
+                return;
+            }
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
 
@@ -88,7 +116,12 @@ namespace Neo4j.Driver.IntegrationTests
         [Fact]
         public void ShouldDisallowMoreConnectionsAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(routingServer, authToken);
+            if (!IsClusterRunning)
+            {
+                return;
+            }
+
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
 
@@ -106,7 +139,12 @@ namespace Neo4j.Driver.IntegrationTests
 //        [InlineData(1000)]
         public void SoakRunTests(int threadCount)
         {
-            var driver = GraphDatabase.Driver(routingServer, authToken);
+            if (!IsClusterRunning)
+            {
+                return;
+            }
+
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var random = new Random();
             var job = new Job(driver, random);
 
@@ -151,11 +189,9 @@ namespace Neo4j.Driver.IntegrationTests
                     {
                         case 0:
                             result.Single()[0].ValueAs<int>().Should().Be(1337);
-                            Console.WriteLine($"Finished running query {Queries[i]}");
                             break;
                         case 1:
                             result.Single()[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
-                            Console.WriteLine($"Finished running query {Queries[i]}");
                             break;
                     }
                 }

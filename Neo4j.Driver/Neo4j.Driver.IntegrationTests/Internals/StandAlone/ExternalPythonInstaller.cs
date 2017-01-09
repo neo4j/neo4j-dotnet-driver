@@ -14,70 +14,68 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
+
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class ExternalPythonInstaller : INeo4jInstaller
+    public class ExternalPythonInstaller : IInstaller
     {
-        private static readonly string NeorunArgs = "-p neo4j";
+        private const string NeorunArgs = "-p neo4j";
         private static readonly string NeorunPath = new DirectoryInfo("../../../../neokit/neorun.py").FullName;
-        private static readonly string Neo4jHomePath = new DirectoryInfo("../../../../Target/neo4jhome").FullName;
+        private static readonly string HomePath = new DirectoryInfo("../../../../Target/neo4jhome").FullName;
 
-        public DirectoryInfo Neo4jHome => new DirectoryInfo(Neo4jHomePath);
+        private const string Password = "neo4j";
+        private const string HttpUri = "http://localhost:7474";
+        private const string BoltUri = "bolt://localhost:7687";
 
-        public void DownloadNeo4j()
+
+        public void Install()
         {
         }
 
-        public void InstallServer()
+        public ISet<ISingleInstance> Start()
         {
-        }
-
-        public void StartServer()
-        {
-            var args = new List<string> {NeorunPath, $"--start={Neo4jHome.FullName}"};
+            var args = new List<string> {NeorunPath, $"--start={HomePath}"};
             args.AddRange(NeorunArgs.Split(null));
-            WindowsPowershellRunner.RunPowershellCommand("python", args.ToArray());
+            WindowsPowershellRunner.RunPythonCommand(args.ToArray());
+            return new HashSet<ISingleInstance> {new SingleInstance(HttpUri, BoltUri, HomePath, Password)};
         }
 
-        public void StopServer()
+        public void Stop()
         {
-            WindowsPowershellRunner.RunPowershellCommand("python", new[]
+            WindowsPowershellRunner.RunPythonCommand(new[]
             {
                 NeorunPath,
-                $"--stop={Neo4jHome.FullName}"
+                $"--stop={HomePath}"
             });
         }
 
-        public void UninstallServer()
+        public void Kill()
         {
+            Stop();
         }
 
         public void UpdateSettings(IDictionary<string, string> keyValuePair)
         {
-            StopServer();
-            Neo4jSettingsHelper.UpdateSettings(Neo4jHome.FullName, keyValuePair);
-            StartServer();
+            Stop();
+            Neo4jSettingsHelper.UpdateSettings(HomePath, keyValuePair);
+            Start();
         }
 
         public void EnsureProcedures(string sourceProcedureJarPath)
         {
             var jarName = new DirectoryInfo(sourceProcedureJarPath).Name;
 
-            var pluginFolderPath = Path.Combine(Neo4jHome.FullName, "plugins");
+            var pluginFolderPath = Path.Combine(HomePath, "plugins");
             var destProcedureJarPath = Path.Combine(pluginFolderPath, jarName);
 
             if (!File.Exists(destProcedureJarPath))
             {
-                StopServer();
+                Stop();
                 File.Copy(sourceProcedureJarPath, destProcedureJarPath);
-                StartServer();
+                Start();
             }
         }
     }
