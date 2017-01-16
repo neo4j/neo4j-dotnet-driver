@@ -17,6 +17,7 @@
 using Neo4j.Driver.IntegrationTests.Internals;
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -28,8 +29,8 @@ namespace Neo4j.Driver.IntegrationTests
         public IDriver Driver { private set; get; }
         public string Neo4jHome { get; }
 
-        public string ServerEndPoint => "bolt://localhost";
-        public IAuthToken AuthToken => AuthTokens.Basic("neo4j", "neo4j");
+        public const string ServerEndPoint = "bolt://localhost";
+        public static readonly IAuthToken AuthToken = AuthTokens.Basic("neo4j", "neo4j");
 
         public IntegrationTestFixture()
         {
@@ -50,7 +51,11 @@ namespace Neo4j.Driver.IntegrationTests
 
         private void NewDriver()
         {
-            Driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
+            var config = Config.DefaultConfig;
+#if DEBUG
+            config = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
+#endif
+            Driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, config);
         }
 
         private void DisposeDriver()

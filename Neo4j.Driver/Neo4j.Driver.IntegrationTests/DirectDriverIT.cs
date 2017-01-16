@@ -32,7 +32,8 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class DirectDriverIT
     {
-        public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
+        public static readonly Config DebugConfig =
+            Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
 
         [Collection(IntegrationCollection.CollectionName)]
         public class AuthenticationIT
@@ -45,8 +46,8 @@ namespace Neo4j.Driver.IntegrationTests
             public AuthenticationIT(ITestOutputHelper output, IntegrationTestFixture fixture)
             {
                 _output = output;
-                _serverEndPoint = fixture.ServerEndPoint;
-                _authToken = fixture.AuthToken;
+                _serverEndPoint = IntegrationTestFixture.ServerEndPoint;
+                _authToken = IntegrationTestFixture.AuthToken;
             }
 
             [Fact]
@@ -129,8 +130,8 @@ namespace Neo4j.Driver.IntegrationTests
                     var stats = result.Consume().Counters;
                     stats.ToString().Should()
                         .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
-                        "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
-                        "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
+                            "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
+                            "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
                     var serverInfo = result.Summary.Server;
 
                     serverInfo.Address.Should().Be("localhost:7687");
@@ -153,7 +154,7 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = _driver.Session())
                 {
                     var result = session.Run("Invalid");
-                    var error = Record.Exception(()=>result.Consume());
+                    var error = Record.Exception(() => result.Consume());
                     error.Should().BeOfType<ClientException>();
                     var summary = result.Summary;
 
@@ -269,8 +270,8 @@ namespace Neo4j.Driver.IntegrationTests
             public SessionIT(ITestOutputHelper output, IntegrationTestFixture fixture)
             {
                 _output = output;
-                _serverEndPoint = fixture.ServerEndPoint;
-                _authToken = fixture.AuthToken;
+                _serverEndPoint = IntegrationTestFixture.ServerEndPoint;
+                _authToken = IntegrationTestFixture.AuthToken;
                 _driver = fixture.Driver;
             }
 
@@ -412,91 +413,157 @@ namespace Neo4j.Driver.IntegrationTests
                 driver.Dispose();
                 session.Dispose();
             }
+        }
 
+        [Collection(IntegrationCollection.CollectionName)]
+        public class BookmarkIT
+        {
+            private readonly ITestOutputHelper _output;
+            private readonly IDriver _driver;
+            private bool Skip { get; set; }
 
-            [Fact]
-            public void ShouldContainLastBookmarkAfterTx()
+            public BookmarkIT(ITestOutputHelper output, IntegrationTestFixture fixture)
             {
-                string version;
+                _output = output;
+                _driver = fixture.Driver;
+                CheckBookmarkSupport();
+            }
+
+            private void CheckBookmarkSupport()
+            {
+                string version = null;
                 using (var session = _driver.Session())
                 {
                     version = session.Run("RETURN 1").Consume().Server.Version;
                 }
                 if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
                 {
-                    using (var session = _driver.Session())
-                    {
-                        session.LastBookmark.Should().BeNull();
-
-                        using (var tx = session.BeginTransaction())
-                        {
-                            tx.Run("CREATE (a:Person)");
-                            tx.Success();
-                        }
-
-                        session.LastBookmark.Should().NotBeNull();
-                        session.LastBookmark.Should().StartWith("neo4j:bookmark:v1:tx");
-                    }
+                    Skip = false;
+                }
+                else
+                {
+                    Skip = true;
                 }
             }
 
             [Fact]
-            public void ShouldWaitOnBookmark()
+            public void ShouldContainLastBookmarkAfterTx()
             {
-                string version;
+                if (Skip) return;
                 using (var session = _driver.Session())
                 {
-                    version = session.Run("RETURN 1").Consume().Server.Version;
+                    session.LastBookmark.Should().BeNull();
+
+                    CreateNodeInTx(session);
+
+                    session.LastBookmark.Should().NotBeNull();
+                    session.LastBookmark.Should().StartWith("neo4j:bookmark:v1:tx");
                 }
-                if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
+            }
+
+            [Fact]
+            public void BookmarkSetToNullAfterRolledBackTx()
+            {
+                if (Skip) return;
+                using (var session = _driver.Session())
                 {
-                    using (var session = _driver.Session())
+                    CreateNodeInTx(session);
+                    session.LastBookmark.Should().NotBeNullOrEmpty();
+
+                    using (var tx = session.BeginTransaction())
                     {
-                        // get a bookmark
-                        session.LastBookmark.Should().BeNull();
-                        using (var tx = session.BeginTransaction())
-                        {
-                            tx.Run("CREATE (a:Person)");
-                            tx.Success();
-                        }
-
-                        session.LastBookmark.Should().NotBeNull();
-                        session.LastBookmark.Should().StartWith(BookmarkHeader);
-                        var lastBookmarkNum = BookmarkNum(session.LastBookmark);
-
-                        var queue = new ConcurrentQueue<long>();
-                        // start a thread to create lastBookmark + 1 tx
-                        Task.Factory.StartNew(() =>
-                        {
-                            Thread.Sleep(100);
-                            using (var anotherSession = _driver.Session())
-                            {
-                                using (var tx = anotherSession.BeginTransaction())
-                                {
-                                    tx.Run("CREATE (a:Person)");
-                                    tx.Success();
-                                }
-                                queue.Enqueue(BookmarkNum(anotherSession.LastBookmark));
-                            }
-
-                        });
-
-                        // wait for lastBookmark + 1 and create lastBookmark + 2
-                        var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
-                        using (var tx = session.BeginTransaction(waitForBookmark))
-                        {
-                            tx.Run("CREATE (a:Person)");
-                            tx.Success();
-                        }
-                        queue.Enqueue(BookmarkNum(session.LastBookmark));
-
-                        queue.Count.Should().Be(2);
-                        long value;
-                        queue.TryDequeue(out value).Should().BeTrue();
-                        value.Should().Be(lastBookmarkNum + 1);
-                        queue.TryDequeue(out value).Should().BeTrue();
-                        value.Should().Be(lastBookmarkNum + 2);
+                        tx.Run("CREATE (a:Person)");
+                        tx.Failure();
                     }
+                    session.LastBookmark.Should().BeNull();
+                }
+            }
+
+            [Fact]
+            public void BookmarkSetToNullAfterTxFailure()
+            {
+                if (Skip) return;
+                using (var session = _driver.Session())
+                {
+                    CreateNodeInTx(session);
+                    session.LastBookmark.Should().NotBeNullOrEmpty();
+
+                    var tx = session.BeginTransaction();
+                    tx.Run("RETURN");
+                    tx.Success();
+                    var exception = Record.Exception(() => tx.Dispose());
+                    exception.Should().BeOfType<ClientException>();
+                    session.LastBookmark.Should().BeNull();
+                }
+            }
+
+            [Fact]
+            public void ShouldThrowForInvalidBookmark()
+            {
+                if (Skip) return;
+                var invalidBookmark = "invalid bookmark format";
+                using (var session = _driver.Session())
+                {
+                    var exception = Record.Exception(() => session.BeginTransaction(invalidBookmark));
+                    exception.Should().BeOfType<ClientException>();
+                    exception.Message.Should().Contain($"does not conform to pattern {BookmarkHeader}");
+                }
+            }
+
+            [Fact]
+            public void ShouldThrowForUnreachableBookmark()
+            {
+                if (Skip) return;
+                using (var session = _driver.Session())
+                {
+                    CreateNodeInTx(session);
+
+                    // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
+                    var exception = Record.Exception(() => session.BeginTransaction(session.LastBookmark + "0"));
+                    exception.Should().BeOfType<TransientException>();
+                    exception.Message.Should().Contain("Database not up to the requested version:");
+                }
+            }
+
+
+            [Fact]
+            public void ShouldWaitOnBookmark()
+            {
+                if (Skip) return;
+                using (var session = _driver.Session())
+                {
+                    // get a bookmark
+                    session.LastBookmark.Should().BeNull();
+                    CreateNodeInTx(session);
+
+                    session.LastBookmark.Should().NotBeNull();
+                    session.LastBookmark.Should().StartWith(BookmarkHeader);
+                    var lastBookmarkNum = BookmarkNum(session.LastBookmark);
+
+                    var queue = new ConcurrentQueue<long>();
+                    // start a thread to create lastBookmark + 1 tx
+                    Task.Factory.StartNew(() =>
+                    {
+                        Thread.Sleep(100);
+                        using (var anotherSession = _driver.Session())
+                        {
+                            CreateNodeInTx(anotherSession);
+                            queue.Enqueue(BookmarkNum(anotherSession.LastBookmark));
+                        }
+                    });
+
+                    // wait for lastBookmark + 1 and create lastBookmark + 2
+                    var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
+                    CreateNodeInTx(session, waitForBookmark);
+
+                    queue.Enqueue(BookmarkNum(session.LastBookmark));
+
+                    queue.Count.Should().Be(2);
+                    long value;
+                    queue.TryDequeue(out value).Should().BeTrue();
+                    value.Should().Be(lastBookmarkNum + 1);
+                    queue.TryDequeue(out value).Should().BeTrue();
+                    value.Should().Be(lastBookmarkNum + 2);
                 }
             }
 
@@ -505,6 +572,15 @@ namespace Neo4j.Driver.IntegrationTests
             private long BookmarkNum(string bookmark)
             {
                 return Convert.ToInt64(bookmark.Substring(BookmarkHeader.Length));
+            }
+
+            private static void CreateNodeInTx(ISession session, string bookmark = null)
+            {
+                using (var tx = session.BeginTransaction(bookmark))
+                {
+                    tx.Run("CREATE (a:Person)");
+                    tx.Success();
+                }
             }
         }
 
@@ -517,7 +593,8 @@ namespace Neo4j.Driver.IntegrationTests
             public SessionResetIT(ITestOutputHelper output, IntegrationTestFixture fixture)
             {
                 _output = output;
-                fixture.RestartServerWithProcedures(new DirectoryInfo("../../Resources/longRunningStatement.jar").FullName);
+                fixture.RestartServerWithProcedures(
+                    new DirectoryInfo("../../Resources/longRunningStatement.jar").FullName);
                 _driver = fixture.Driver;
             }
 
@@ -577,7 +654,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             public async Task ResetSessionAfterTimeout(ISession session, int seconds, CancellationToken cancelToken)
             {
-                await Task.Delay(seconds * 1000, cancelToken);
+                await Task.Delay(seconds*1000, cancelToken);
                 if (cancelToken.IsCancellationRequested)
                 {
                     cancelToken.IsCancellationRequested.Should().Be(false);
@@ -682,14 +759,15 @@ namespace Neo4j.Driver.IntegrationTests
                 using (var session = _driver.Session())
                 {
                     session.Run("CALL test.driver.longRunningStatement({seconds})",
-                        new Dictionary<string, object> { { "seconds", 20 } });
-                    await Task.Delay(5 * 1000);
+                        new Dictionary<string, object> {{"seconds", 20}});
+                    await Task.Delay(5*1000);
                     session.Reset();
 
                     var exception = Record.Exception(() => session.BeginTransaction());
 
                     exception.Should().BeOfType<ClientException>();
-                    exception.Message.Should().StartWith("An error has occurred due to the cancellation of executing a previous statement.");
+                    exception.Message.Should()
+                        .StartWith("An error has occurred due to the cancellation of executing a previous statement.");
                 }
             }
         }
