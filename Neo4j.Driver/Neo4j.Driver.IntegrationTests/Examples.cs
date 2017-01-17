@@ -270,7 +270,7 @@ namespace Neo4j.Driver.Examples
                 {
                     tx.Run("CREATE (:Person {name: {name}})",
                         new Dictionary<string, object> {{"name", "Merlin"}});
-                    // optional to explicitly call tx.Failure();
+                    tx.Failure(); // This step is optional. If not called,  tx.Failure() is implicit.
                 }
                 //end::transaction-rollback[]
             }
