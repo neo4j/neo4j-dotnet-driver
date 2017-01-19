@@ -173,7 +173,10 @@ namespace Neo4j.Driver.Internal
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public void Reset()
+        /// <summary>
+        /// Internal use only.
+        /// </summary>
+        internal void Reset()
         {
             EnsureSessionIsOpen();
             EnsureConnectionIsHealthy();

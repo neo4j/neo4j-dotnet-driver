@@ -772,4 +772,12 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
     }
+    internal static class SessionExtension
+    {
+        public static void Reset(this ISession session)
+        {
+            var sessionWithReset = (Session)session;
+            sessionWithReset.Reset();
+        }
+    }
 }
