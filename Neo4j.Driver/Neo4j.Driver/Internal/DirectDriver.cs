@@ -24,15 +24,16 @@ namespace Neo4j.Driver.Internal
     {
         private readonly IConnectionPool _connectionPool;
         private ILogger _logger;
+        private readonly Uri _uri;
 
         internal DirectDriver(ConnectionSettings connectionSettings, ConnectionPoolSettings connectionPoolSettings, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(connectionPoolSettings, nameof(connectionPoolSettings));
 
-            Uri = connectionSettings.InitialServerUri;
+            _uri = connectionSettings.InitialServerUri;
             _logger = logger;
-            _connectionPool = new ConnectionPool(connectionSettings, connectionPoolSettings, _logger);
+            _connectionPool = new ConnectionPool(_uri, connectionSettings, connectionPoolSettings, _logger);
         }
 
         public override ISession NewSession(AccessMode mode)
@@ -48,6 +49,6 @@ namespace Neo4j.Driver.Internal
             _logger = null;
         }
 
-        public override Uri Uri { get; }
+        public override Uri Uri => _uri;
     }
 }

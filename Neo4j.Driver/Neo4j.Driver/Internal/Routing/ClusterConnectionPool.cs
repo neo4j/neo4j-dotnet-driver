@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
-            return _fakeConnectionPool ?? new ConnectionPool(_connectionSettings, _poolSettings, Logger, _clusterErrorHandlerCreator.Invoke(uri));
+            return _fakeConnectionPool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger, _clusterErrorHandlerCreator.Invoke(uri));
         }
 
         public bool TryAcquire(Uri uri, out IPooledConnection conn)

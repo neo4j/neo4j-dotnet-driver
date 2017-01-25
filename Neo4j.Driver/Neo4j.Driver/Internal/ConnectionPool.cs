@@ -37,6 +37,7 @@ namespace Neo4j.Driver.Internal
 
         // for test only
         private readonly IConnection _fakeConnection;
+        private readonly Uri _uri;
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
 
@@ -46,12 +47,14 @@ namespace Neo4j.Driver.Internal
         }
 
         public ConnectionPool(
+            Uri uri,
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings connectionPoolSettings,
             ILogger logger,
             IConnectionErrorHandler exteralErrorHandler = null)
             : base(logger)
         {
+            _uri = uri;
             _connectionSettings = connectionSettings;
             _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
 
@@ -66,7 +69,7 @@ namespace Neo4j.Driver.Internal
             ILogger logger = null,
             ConnectionPoolSettings settings = null,
             IConnectionErrorHandler exteralErrorHandler = null)
-            : this(null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
+            : this(null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
                   logger, exteralErrorHandler)
         {
             _fakeConnection = connection;
@@ -81,7 +84,7 @@ namespace Neo4j.Driver.Internal
             {
                 conn = _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, Release)
-                    : new PooledConnection(new SocketConnection(_connectionSettings, _logger), Release);
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), Release);
                 if (_externalErrorHandler != null)
                 {
                     conn.AddConnectionErrorHander(_externalErrorHandler);

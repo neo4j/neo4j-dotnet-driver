@@ -41,10 +41,10 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly ILogger _logger;
         private readonly IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
 
-        public SocketConnection(ConnectionSettings connectionSettings, ILogger logger)
-            : this(new SocketClient(connectionSettings.InitialServerUri, connectionSettings.EncryptionManager, logger),
+        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, ILogger logger)
+            : this(new SocketClient(uri, connectionSettings.EncryptionManager, logger),
                   connectionSettings.AuthToken, connectionSettings.ConnectionTimeout, connectionSettings.UserAgent,
-                  logger, new ServerInfo(connectionSettings.InitialServerUri))
+                  logger, new ServerInfo(uri))
         {
         }
 
@@ -79,8 +79,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception error)
             {
-                error = OnConnectionError(error);
-                throw error;
+                throw OnConnectionError(error);
             }
 
             Init(_authToken);
@@ -118,8 +117,7 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception error)
                 {
-                    error = OnConnectionError(error);
-                    throw error;
+                    throw OnConnectionError(error);
                 }
                 
                 _messages.Clear();
@@ -141,8 +139,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception error)
             {
-                error = OnConnectionError(error);
-                throw error;
+                throw OnConnectionError(error);
             }
             
             AssertNoServerFailure();
@@ -156,8 +153,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception error)
             {
-                error = OnConnectionError(error);
-                throw error;
+                throw OnConnectionError(error);
             }
             
             AssertNoServerFailure();
