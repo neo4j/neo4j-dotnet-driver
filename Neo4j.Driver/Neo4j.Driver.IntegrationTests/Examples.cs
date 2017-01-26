@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Examples
         {
             using (var session = Driver.Session())
             {
-                session.Run("MATCH (n) DETACH DELETE n RETURN count(*)").Consume();
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 

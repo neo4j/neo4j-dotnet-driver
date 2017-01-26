@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests
             // clean database after each test run
             using (var session = Server.Driver.Session())
             {
-                session.Run("MATCH (n) DETACH DELETE n RETURN count(*)").Consume();
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
     }
