@@ -156,15 +156,25 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
-    <Compile Include="DirectDriverIT.cs" />
+    <Compile Include="DirectDriver\AuthenticationIT.cs" />
+    <Compile Include="DirectDriver\DirectDriverIT.cs" />
+    <Compile Include="DirectDriver\ResultIT.cs" />
+    <Compile Include="DirectDriver\SessionIT.cs" />
+    <Compile Include="DirectDriver\SessionResetIT.cs" />
     <Compile Include="Examples.cs" />
+    <Compile Include="Internals\Cluster\CausalCluster.cs" />
+    <Compile Include="Internals\Cluster\SingleInstance.cs" />
+    <Compile Include="Internals\Cluster\ExternalPythonClusterInstaller.cs" />
+    <Compile Include="Internals\IInstaller.cs" />
+    <Compile Include="Internals\ISingleInstance.cs" />
+    <Compile Include="Internals\StandAlone\StandAlone.cs" />
     <Compile Include="Internals\ServerVersion.cs" />
-    <Compile Include="Internals\ExternalPythonInstaller.cs" />
-    <Compile Include="Internals\INeo4jInstaller.cs" />
-    <Compile Include="IntegrationTestFixture.cs" />
-    <Compile Include="Internals\Neo4jSettingsHelper.cs" />
+    <Compile Include="Internals\StandAlone\ExternalPythonInstaller.cs" />
+    <Compile Include="Internals\IntegrationTestFixture.cs" />
+    <Compile Include="Internals\StandAlone\Neo4jSettingsHelper.cs" />
     <Compile Include="Internals\WindowsPowershellRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RoutingDriver\RoutingDriverIT.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -176,6 +186,7 @@
       <Name>Neo4j.Driver</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

@@ -28,16 +28,23 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.Examples
 {
     [Collection(IntegrationCollection.CollectionName)]
-    public class Examples
+    public class Examples : IDisposable
     {
         private ITestOutputHelper Output { get; }
-        private readonly IDriver _driver;
+        private IDriver Driver { get; }
 
         public Examples(ITestOutputHelper output, IntegrationTestFixture fixture)
         {
             Output = output;
-            _driver = fixture.Driver;
-            ClearDatabase();
+            Driver = fixture.StandAlone.Driver;
+        }
+
+        public void Dispose()
+        {
+            using (var session = Driver.Session())
+            {
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
+            }
         }
 
         [Fact]
@@ -84,7 +91,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void Statement()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 //tag::statement[]
                 var result = session.Run("CREATE (person:Person {name: {name}})",
@@ -97,7 +104,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void StatementWithoutParams()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 //tag::statement-without-parameters[]
                 var result = session.Run("CREATE (p:Person {name: 'Arthur'})");
@@ -109,7 +116,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void ResultTraversal()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 session.Run("CREATE (weapon:Weapon {name: {name}})",
                     new Dictionary<string, object> {{"name", "Sword in the stone"}});
@@ -132,7 +139,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void AccessRecord()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
                     new Dictionary<string, object>
@@ -171,13 +178,13 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void RetainResultQuery()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
                     new Dictionary<string, object> {{"name", "Lancelot"}, {"castle", "Camelot"}});
             }
 
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
 
                 //tag::retain-result[]
@@ -198,7 +205,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void NestedStatements()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
                     new Dictionary<string, object> {{"name", "Lancelot"}, {"castle", "Camelot"}});
@@ -225,7 +232,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void HandleCypherError()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 var ex = Record.Exception(() =>
                 {
@@ -247,7 +254,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void TransactionCommit()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 //tag::transaction-commit[]
                 using (var tx = session.BeginTransaction())
@@ -263,7 +270,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void TransactionRollback()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 //tag::transaction-rollback[]
                 using (var tx = session.BeginTransaction())
@@ -279,7 +286,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void ResultSummaryQueryProfile()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 //tag::result-summary-query-profile[]
                 var result = session.Run("PROFILE MATCH (p:Person {name: {name}}) RETURN id(p)",
@@ -296,7 +303,7 @@ namespace Neo4j.Driver.Examples
         [Fact]
         public void ResultSummaryNotifications()
         {
-            using (var session = _driver.Session())
+            using (var session = Driver.Session())
             {
                 //tag::result-summary-notifications[]
                 var summary = session.Run("EXPLAIN MATCH (king), (queen) RETURN king, queen").Consume();
@@ -338,15 +345,6 @@ namespace Neo4j.Driver.Examples
                 Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
             //end::connect-with-auth-disabled[]
             driver.Dispose();
-        }
-
-        private void ClearDatabase()
-        {
-            using (var session = _driver.Session())
-            {
-                var result = session.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
-                result.ToList();
-            }
         }
 
         //tag::tls-trust-on-first-use[]
