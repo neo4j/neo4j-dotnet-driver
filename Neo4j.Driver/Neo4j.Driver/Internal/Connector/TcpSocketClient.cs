@@ -20,7 +20,10 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
+<<<<<<< HEAD
 using static System.Security.Authentication.SslProtocols;
+=======
+>>>>>>> Added support for security errors
 
 namespace Neo4j.Driver.Internal.Connector
 {
