@@ -20,7 +20,7 @@ using System.Diagnostics;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class RoundRobinRoutingTable
+    internal class RoundRobinRoutingTable : IRoutingTable
     {
         private const int MinRouterCount = 1;
         private readonly ConcurrentRoundRobinSet<Uri> _routers = new ConcurrentRoundRobinSet<Uri>();

@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
         }
 
-        /// <remarks>Throws <see cref="InvalidDiscoveryException"/> if the discovery result is invalid.</remarks>
+        /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
         public void Rediscovery()
         {
             try
@@ -69,19 +69,24 @@ namespace Neo4j.Driver.Internal.Routing
                     ExpireAfterSeconds = record["ttl"].As<long>();
                 }
             }
+            catch (ClientException e)
+            {
+                throw new ServiceUnavailableException(
+                    $"Error when calling `getServers` procedure: {e.Message}. " +
+                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.", e);
+            }
             catch (Exception e)
             {
                 // for any reason we failed to do a discovery
-                throw new InvalidDiscoveryException(
-                    $"Error when calling `getServers` procedure: {e.Message}. " +
-                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.");
+                throw new ProtocolException(
+                    $"Error when parsing `getServers` result: {e.Message}.");
             }
 
-            if (!Readers.Any() || !Writers.Any() || !Routers.Any())
+            if (!Readers.Any() || !Routers.Any())
             {
-                throw new InvalidDiscoveryException(
+                throw new ProtocolException(
                     $"Invalid discovery result: discovered {Routers.Count()} routers, " +
-                    $"{Writers.Count()} writers and {Readers.Count()} readers. A Redisvoery is required.");
+                    $"{Writers.Count()} writers and {Readers.Count()} readers.");
             }
         }
 
@@ -89,11 +94,5 @@ namespace Neo4j.Driver.Internal.Routing
         {
             return new Uri("bolt+routing://" + address);
         }
-    }
-
-    internal class InvalidDiscoveryException : Exception
-    {
-        public InvalidDiscoveryException(string message) : base(message)
-        {}
     }
 }

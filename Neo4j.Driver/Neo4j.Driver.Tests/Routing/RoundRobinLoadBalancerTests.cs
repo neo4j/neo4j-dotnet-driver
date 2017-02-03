@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using FluentAssertions;
 using Moq;
@@ -31,9 +32,73 @@ namespace Neo4j.Driver.Tests
 {
     public class RoundRobinLoadBalancerTests
     {
+        internal class ListBasedRoutingTable : IRoutingTable
+        {
+            private readonly List<Uri> _routers;
+            private readonly List<Uri> _removed;
+            private int _count = 0;
+
+            public ListBasedRoutingTable(List<Uri> routers)
+            {
+                _routers = routers;
+                _removed = new List<Uri>();
+            }
+            public bool IsStale()
+            {
+                return false;
+            }
+
+            public bool TryNextRouter(out Uri uri)
+            {
+                var pos = _count++ % _routers.Count;
+                uri = _routers[pos];
+                return true;
+            }
+
+            public bool TryNextReader(out Uri uri)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool TryNextWriter(out Uri uri)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Remove(Uri uri)
+            {
+                _removed.Add(uri);
+            }
+
+            public ISet<Uri> All()
+            {
+                return new HashSet<Uri>(_routers.Distinct().Except(_removed.Distinct()));
+            }
+
+            public void Clear()
+            {
+                throw new NotImplementedException();
+            }
+        }
         public class AcquireConnectionMethod
         {
-            private static RoundRobinRoutingTable NewRoutingTable(
+            private static IRoutingTable NewRoutingTable(int routerCount, int readerCount, int writerCount)
+            {
+                return NewRoutingTable(GenerateServerUris(routerCount), GenerateServerUris(readerCount),
+                    GenerateServerUris(writerCount));
+            }
+
+            private static IEnumerable<Uri> GenerateServerUris(int count)
+            {
+                var uris = new Uri[count];
+                for (var i = 0; i < count; i++)
+                {
+                    uris[i]=new Uri($"bolt+routing://127.0.0.1:{i + 9001}");
+                }
+                return uris;
+            }
+
+            private static IRoutingTable NewRoutingTable(
                 IEnumerable<Uri> routers = null,
                 IEnumerable<Uri> readers = null,
                 IEnumerable<Uri> writers = null)
@@ -64,29 +129,25 @@ namespace Neo4j.Driver.Tests
                 return SetupLoadBalancer(routingTable);
             }
 
-            private static RoundRobinLoadBalancer SetupLoadBalancer(RoundRobinRoutingTable routingTable, Mock<IPooledConnection> mockedConn = null)
+            private static RoundRobinLoadBalancer SetupLoadBalancer(IRoutingTable routingTable)
             {
                 var uris = routingTable.All();
 
-                // create a mocked connection pool which no matter what you ask, you will always get the same mocked connection
-                mockedConn = mockedConn ?? new Mock<IPooledConnection>();
-                var mockedConnPool = new Mock<IConnectionPool>();
-                mockedConnPool.Setup(x => x.Acquire()).Returns(mockedConn.Object);
-                var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                // create a mocked cluster connection pool, which will return the same connection for each different uri                
+                var mockedClusterPool = new Mock<IClusterConnectionPool>();
 
-                // add all routers/readers/writer uri and map it to the single mocked connection pool
                 foreach (var uri in uris)
                 {
-                    dict.TryAdd(uri, mockedConnPool.Object);
+                    var mockedConn = new Mock<IPooledConnection>();
+                    mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
+                    var conn = mockedConn.Object;
+                    mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
                 }
 
-                // create a cluster pool which knows the conns with the uri server
-                var clusterConnPool = new ClusterConnectionPool(null, dict);
-
-                return new RoundRobinLoadBalancer(clusterConnPool, routingTable);
+                return new RoundRobinLoadBalancer(mockedClusterPool.Object, routingTable);
             }
 
-            public class NewroutingTableMethod
+            public class UpdateRoutingTableMethod
             {
                 [Fact]
                 public void ConcurrentUpdateRequestsHaveNoEffect()
@@ -99,7 +160,7 @@ namespace Neo4j.Driver.Tests
                     var anotherUri = new Uri("bolt+routing://123:789");
                     var updateCount = 0;
                     var directReturnCount = 0;
-                    Func<IPooledConnection, RoundRobinRoutingTable> updateRoutingTableFunc =
+                    Func<IPooledConnection, IRoutingTable> updateRoutingTableFunc =
                         connection =>
                         {
                             if (!balancerRoutingTable.IsStale())
@@ -172,87 +233,127 @@ namespace Neo4j.Driver.Tests
                 }
 
                 [Fact]
-                public void ForgetUnavailableRouterIfUpdateRoutingTableThrowsInvalidDiscoveryException()
+                public void ShouldForgetAndTryNextRouterWhenFailedWithConnectionError()
                 {
                     // Given
-                    var uri = new Uri("bolt+routing://123:456");
-                    var uri2 = new Uri("bolt+routing://123:789");
-                    // a routing table which knows a read/write uri
-                    var routingTable = NewRoutingTable(new[] {uri, uri2});
+                    var uriA = new Uri("bolt+routing://123:456");
+                    var uriB = new Uri("bolt+routing://123:789");
 
+                    // This ensures that uri and uri2 will return in order
+                    var routingTable = new ListBasedRoutingTable(new List<Uri> {uriA, uriB});
                     var balancer = SetupLoadBalancer(routingTable);
 
                     // When
-                    var error = Record.Exception(() =>balancer.UpdateRoutingTable(connection =>
+                    var newRoutingTable = balancer.UpdateRoutingTable(connection =>
                     {
-                        // never successfully rediscovery
-                        throw new InvalidDiscoveryException("Invalid");
-                    }));
-
-                    // Then
-                    routingTable.All().Should().BeEmpty();
-                    error.Should().BeOfType<ServiceUnavailableException>();
-                }
-
-
-
-                [Fact]
-                public void ShouldUpdateSuccessfullyDespiteUnavailableRouters()
-                {
-                    // Given
-                    var uri = new Uri("bolt+routing://123:456");
-                    var mockedConn = new Mock<IPooledConnection>();
-                    mockedConn.Setup(x => x.Server.Address).Returns($"{uri.Host}:{uri.Port}");
-                    var mockedConnPool = new Mock<IConnectionPool>();
-                    mockedConnPool.Setup(x => x.Acquire()).Returns(mockedConn.Object);
-
-                    var uri2 = new Uri("bolt+routing://123:789");
-                    var mockedConn2 = new Mock<IPooledConnection>();
-                    mockedConn2.Setup(x => x.Server.Address).Returns($"{uri2.Host}:{uri2.Port}");
-                    var mockedConnPool2 = new Mock<IConnectionPool>();
-                    mockedConnPool2.Setup(x => x.Acquire()).Returns(mockedConn2.Object);
-
-                    var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                    dict.TryAdd(uri, mockedConnPool.Object);
-                    dict.TryAdd(uri2, mockedConnPool2.Object);
-
-                    // create a cluster pool which knows the conns with the uri server
-                    var clusterConnPool = new ClusterConnectionPool(null, dict);
-
-                    // a routing table which knows a read/write uri
-                    var routingTable = NewRoutingTable(new[] { uri, uri2 });
-
-                    var balancer = new RoundRobinLoadBalancer(clusterConnPool, routingTable);
-
-                    // When
-                    balancer.UpdateRoutingTable(connection =>
-                    {
-                        if (connection.Server.Address.Equals("123:789"))
+                        // the second connectin will give a new routingTable
+                        if (connection.Server.Address.Equals(uriA.ToString())) // uri2
                         {
-                            return NewRoutingTable(new[] {uri});
+                            throw balancer.CreateClusterPooledConnectionErrorHandler(uriA)
+                                .OnConnectionError(new IOException("failed init"));
+                        }
+                        if (connection.Server.Address.Equals(uriB.ToString())) // uri2
+                        {
+                            return NewRoutingTable(new[] {uriA}, new [] {uriA}, new []{uriA});
                         }
 
-                        // never successfully rediscovery
-                        throw new InvalidDiscoveryException("Invalid");
+                        throw new NotImplementedException($"Unknown uri: {connection.Server.Address}");
                     });
 
                     // Then
-                    routingTable.All().Should().ContainInOrder(uri2);
+                    newRoutingTable.All().Should().ContainInOrder(uriA);
+                    routingTable.All().Should().ContainInOrder(uriB);
+                }
+
+                [Fact]
+                public void ShouldPropagateServiceUnavailable()
+                {
+                    var balancer = SetupLoadBalancer(new[] {new Uri("bolt+routing://123:456")});
+
+                    var exception = Record.Exception(()=>balancer.UpdateRoutingTable(
+                        conn => { throw new ServiceUnavailableException("Procedure not found"); }));
+
+                    exception.Should().BeOfType<ServiceUnavailableException>();
+                    exception.Message.Should().Be("Procedure not found");
+                }
+
+                [Fact]
+                public void ShouldTryNextRouterIfNoWriters()
+                {
+                    // Given
+                    var uriA = new Uri("bolt+routing://123:1");
+                    var uriB = new Uri("bolt+routing://123:2");
+
+                    var uriX = new Uri("bolt+routing://456:1");
+                    var uriY = new Uri("bolt+routing://789:2");
+
+                    var balancer = SetupLoadBalancer(new ListBasedRoutingTable(new List<Uri> {uriA, uriB}));
+
+                    // When
+                    var updateRoutingTable = balancer.UpdateRoutingTable(conn =>
+                    {
+                        if (conn.Server.Address.Equals(uriA.ToString()))
+                        {
+                            return NewRoutingTable(new[] {uriX}, new[] {uriX});
+                        }
+                        if (conn.Server.Address.Equals(uriB.ToString()))
+                        {
+                            return NewRoutingTable(new[] {uriY}, new[] {uriY}, new[] {uriY});
+                        }
+                        throw new NotImplementedException($"Unknown uri: {conn.Server.Address}");
+                    });
+
+                    // Then
+                    updateRoutingTable.All().Should().ContainInOrder(uriY);
+                }
+
+                [Theory]
+                [InlineData(1, 1, 1)]
+                [InlineData(2, 1, 1)]
+                [InlineData(1, 2, 1)]
+                [InlineData(2, 2, 1)]
+                [InlineData(1, 1, 2)]
+                [InlineData(2, 1, 2)]
+                [InlineData(1, 2, 2)]
+                [InlineData(2, 2, 2)]
+                [InlineData(3, 1, 2)]
+                [InlineData(3, 2, 1)]
+                public void ShouldAcceptValidRoutingTables(int routerCount, int writerCount, int readerCount)
+                {
+                    var balancer = SetupLoadBalancer(new[] {new Uri("bolt+routing://123:45")});
+                    var newRoutingTable = NewRoutingTable(routerCount, readerCount, writerCount);
+                    var result = balancer.UpdateRoutingTable(connection => newRoutingTable);
+
+                    // Then
+                    result.All().Should().Contain(newRoutingTable.All());
+                    newRoutingTable.All().Should().Contain(result.All());
+                }
+
+                [Fact]
+                public void ShouldPropagateProtocolError()
+                {
+                    var balancer = SetupLoadBalancer(new[] { new Uri("bolt+routing://123:456") });
+
+                    var exception = Record.Exception(() => balancer.UpdateRoutingTable(
+                        conn => { throw new ProtocolException("Cannot parse procedure result"); }));
+
+                    exception.Should().BeOfType<ProtocolException>();
+                    exception.Message.Should().Be("Cannot parse procedure result");
                 }
             }
 
             public class AcquireReadWriteConnectionMethod
             {
-                private static RoundRobinRoutingTable CreateroutingTable(Uri uri, AccessMode mode)
+                private static IRoutingTable CreateRoutingTable(Uri uri, AccessMode mode)
                 {
-                    RoundRobinRoutingTable routingTable;
+                    IRoutingTable routingTable;
                     switch (mode)
                     {
                         case AccessMode.Read:
-                            routingTable = NewRoutingTable(null, new[] {uri});
+                            routingTable = NewRoutingTable(readers: new[] {uri});
                             break;
                         case AccessMode.Write:
-                            routingTable = NewRoutingTable(null, null, new[] {uri});
+                            routingTable = NewRoutingTable(writers: new[] {uri});
                             break;
                         default:
                             throw new InvalidOperationException($"Unknown type {mode} to this test.");
@@ -302,26 +403,25 @@ namespace Neo4j.Driver.Tests
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
                     // a routing table which knows a read/write uri
-                    var routingTable = CreateroutingTable(uri, mode);
-                    var mockedConn = new Mock<IPooledConnection>();
-                    var balancer = SetupLoadBalancer(routingTable, mockedConn);
+                    var routingTable = CreateRoutingTable(uri, mode);
+                    var balancer = SetupLoadBalancer(routingTable);
 
                     // When
                     var acquiredConn = AcquiredConn(balancer, mode);
 
                     // Then
-                    acquiredConn.Should().Be(mockedConn.Object);
+                    acquiredConn.Server.Address.Should().Be(uri.ToString());
                 }
 
                 [Theory]
                 [InlineData(AccessMode.Read)]
                 [InlineData(AccessMode.Write)]
-                public void ShouldRemoveFromRoutingTableIfFailedToEstablishConn(AccessMode mode)
+                public void ShouldForgetServerWhenFailedToEstablishConn(AccessMode mode)
                 {
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
                     // a routing table which knows a uri
-                    var routingTable = CreateroutingTable(uri, mode);
+                    var routingTable = CreateRoutingTable(uri, mode);
 
                     var mockedConnPool = new Mock<IConnectionPool>();
                     var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -334,15 +434,23 @@ namespace Neo4j.Driver.Tests
                     mockedConnPool.Setup(x => x.Acquire())
                         .Callback(() =>
                         {
-                            throw balancer.CreateClusterPooledConnectionErrorHandler(uri).OnConnectionError(new IOException("failed init"));
+                            throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
+                                .OnConnectionError(new IOException("failed init"));
                         });
 
                     // When
-                    var error = Record.Exception(()=>AcquiredConn(balancer, mode));
+                    var error = Record.Exception(() => AcquiredConn(balancer, mode));
 
                     // Then
                     error.Should().BeOfType<SessionExpiredException>();
                     error.Message.Should().Contain("Failed to connect to any");
+
+                    // should be removed
+                    Uri saveUri;
+                    IPooledConnection saveConn;
+                    routingTable.TryNextReader(out saveUri).Should().BeFalse();
+                    routingTable.TryNextWriter(out saveUri).Should().BeFalse();
+                    clusterConnPool.TryAcquire(uri, out saveConn).Should().BeFalse();
                 }
             }
         }

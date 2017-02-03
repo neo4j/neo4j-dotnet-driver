@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Diagnostics;
+using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -23,9 +24,9 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class RoundRobinLoadBalancer : ILoadBalancer
     {
-        private RoundRobinRoutingTable _routingTable;
+        private IRoutingTable _routingTable;
         private readonly IClusterConnectionPool _clusterConnectionPool;
-        private ILogger _logger;
+        private readonly ILogger _logger;
         private readonly object _syncLock = new object();
         private readonly Stopwatch _stopwatch;
 
@@ -46,7 +47,7 @@ namespace Neo4j.Driver.Internal.Routing
         // for test only
         internal RoundRobinLoadBalancer(
             IClusterConnectionPool clusterConnPool,
-            RoundRobinRoutingTable routingTable)
+            IRoutingTable routingTable)
         {
             _clusterConnectionPool = clusterConnPool;
             _routingTable = routingTable;
@@ -144,7 +145,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        internal RoundRobinRoutingTable UpdateRoutingTable(Func<IPooledConnection, RoundRobinRoutingTable> rediscoveryFunc = null)
+        internal IRoutingTable UpdateRoutingTable(Func<IPooledConnection, IRoutingTable> rediscoveryFunc = null)
         {
             lock (_syncLock)
             {
@@ -161,21 +162,25 @@ namespace Neo4j.Driver.Internal.Routing
                         IPooledConnection conn;
                         if (_clusterConnectionPool.TryAcquire(uri, out conn))
                         {
-                            return rediscoveryFunc == null ? Rediscovery(conn) : rediscoveryFunc.Invoke(conn);
+                            var roundRobinRoutingTable = rediscoveryFunc == null ? Rediscovery(conn) : rediscoveryFunc.Invoke(conn);
+                            if (!roundRobinRoutingTable.IsStale())
+                            {
+                                return roundRobinRoutingTable;
+                            }
                         }
                     }
-                    catch (Exception e)
+                    catch(Exception e)
                     {
                         _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");
-
-                        if (e is InvalidDiscoveryException)
+                        if (e is SessionExpiredException)
                         {
-                            // The result is invalid probably due to partition.
-                            _routingTable.Remove(uri);
+                            // ignored
+                            // As already handled by connection pool error handler to remove from load balancer
                         }
-                        //else if (e is SessionExpiredException)//{}
-                        // ignored
-                        // As already handled by connection pool error handler to remove from load balancer
+                        else // if (e is ServiceUnavailableException || e is ProtocolException)
+                        {
+                            throw;
+                        }
                     }
                 }
 
@@ -187,7 +192,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        private RoundRobinRoutingTable Rediscovery(IPooledConnection conn)
+        private IRoutingTable Rediscovery(IPooledConnection conn)
         {
             var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
             discoveryManager.Rediscovery();

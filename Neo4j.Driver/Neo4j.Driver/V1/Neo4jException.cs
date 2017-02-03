@@ -160,4 +160,20 @@ namespace Neo4j.Driver.V1
         {
         }
     }
+
+    /// <summary>
+    /// There was a bolt protocol violation of the contract between the driver and the server. 
+    /// When seen this error, contact driver developers.
+    /// </summary>
+    [DataContract]
+    public class ProtocolException : Neo4jException
+    {
+        public ProtocolException(string message) : base(message)
+        {
+        }
+
+        public ProtocolException(string message, Exception internaException) : base(message, internaException)
+        {
+        }
+    }
 }
