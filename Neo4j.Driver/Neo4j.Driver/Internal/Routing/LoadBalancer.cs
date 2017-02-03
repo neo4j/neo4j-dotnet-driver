@@ -22,7 +22,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class RoundRobinLoadBalancer : ILoadBalancer
+    internal class LoadBalancer : ILoadBalancer
     {
         private IRoutingTable _routingTable;
         private readonly IClusterConnectionPool _clusterConnectionPool;
@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly object _syncLock = new object();
         private readonly Stopwatch _stopwatch;
 
-        public RoundRobinLoadBalancer(
+        public LoadBalancer(
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger)
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         // for test only
-        internal RoundRobinLoadBalancer(
+        internal LoadBalancer(
             IClusterConnectionPool clusterConnPool,
             IRoutingTable routingTable)
         {
@@ -177,7 +177,7 @@ namespace Neo4j.Driver.Internal.Routing
                             // ignored
                             // As already handled by connection pool error handler to remove from load balancer
                         }
-                        else // if (e is ServiceUnavailableException || e is ProtocolException)
+                        else
                         {
                             throw;
                         }
@@ -202,7 +202,11 @@ namespace Neo4j.Driver.Internal.Routing
 
         private Exception OnConnectionError(Exception e, Uri uri)
         {
-            // ReSharper disable once InconsistentlySynchronizedField
+            if (e is SecurityException || e is ProtocolException)
+            {
+                return e;
+            }
+
             _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
             Forget(uri);
             return new SessionExpiredException($"Server at {uri} is no longer available due to error: {e.Message}.", e);

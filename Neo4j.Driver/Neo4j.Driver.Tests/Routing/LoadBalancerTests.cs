@@ -30,7 +30,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class RoundRobinLoadBalancerTests
+    public class LoadBalancerTests
     {
         internal class ListBasedRoutingTable : IRoutingTable
         {
@@ -57,12 +57,12 @@ namespace Neo4j.Driver.Tests
 
             public bool TryNextReader(out Uri uri)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             public bool TryNextWriter(out Uri uri)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             public void Remove(Uri uri)
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tests
 
             public void Clear()
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
         }
         public class AcquireConnectionMethod
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Tests
                 return new RoundRobinRoutingTable(routers, readers, writers, new Stopwatch(), 1000);
             }
 
-            private static RoundRobinLoadBalancer SetupLoadBalancer(
+            private static LoadBalancer SetupLoadBalancer(
                 IEnumerable<Uri> routers=null,
                 IEnumerable<Uri> readers=null,
                 IEnumerable<Uri> writers=null)
@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Tests
                 return SetupLoadBalancer(routingTable);
             }
 
-            private static RoundRobinLoadBalancer SetupLoadBalancer(IRoutingTable routingTable)
+            private static LoadBalancer SetupLoadBalancer(IRoutingTable routingTable)
             {
                 var uris = routingTable.All();
 
@@ -144,7 +144,7 @@ namespace Neo4j.Driver.Tests
                     mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
                 }
 
-                return new RoundRobinLoadBalancer(mockedClusterPool.Object, routingTable);
+                return new LoadBalancer(mockedClusterPool.Object, routingTable);
             }
 
             public class UpdateRoutingTableMethod
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
                 {
                     // Given
                     var routingTable = NewRoutingTable();
-                    var balancer = new RoundRobinLoadBalancer(null, routingTable);
+                    var balancer = new LoadBalancer(null, routingTable);
 
                     // When
                     var error = Record.Exception(() => balancer.UpdateRoutingTable());
@@ -257,7 +257,7 @@ namespace Neo4j.Driver.Tests
                             return NewRoutingTable(new[] {uriA}, new [] {uriA}, new []{uriA});
                         }
 
-                        throw new NotImplementedException($"Unknown uri: {connection.Server.Address}");
+                        throw new NotSupportedException($"Unknown uri: {connection.Server.Address}");
                     });
 
                     // Then
@@ -300,7 +300,7 @@ namespace Neo4j.Driver.Tests
                         {
                             return NewRoutingTable(new[] {uriY}, new[] {uriY}, new[] {uriY});
                         }
-                        throw new NotImplementedException($"Unknown uri: {conn.Server.Address}");
+                        throw new NotSupportedException($"Unknown uri: {conn.Server.Address}");
                     });
 
                     // Then
@@ -340,6 +340,36 @@ namespace Neo4j.Driver.Tests
                     exception.Should().BeOfType<ProtocolException>();
                     exception.Message.Should().Be("Cannot parse procedure result");
                 }
+
+                [Fact]
+                public void ShouldPropagateAuthenticationException()
+                {
+                    // Given
+                    var uri = new Uri("bolt+routing://123:456");
+                    // a routing table which knows a uri
+                    var routingTable = NewRoutingTable(new[] {uri});
+
+                    var mockedClusterPool = new Mock<IClusterConnectionPool>();
+                    var balancer = new LoadBalancer(mockedClusterPool.Object, routingTable);
+
+                    var mockedConn = new Mock<IPooledConnection>();
+                    var conn = mockedConn.Object;
+                    mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Callback(() =>
+                    {
+                        throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
+                            .OnConnectionError(new AuthenticationException("Failed to auth the client to the server."));
+                    });
+                    
+                    // When
+                    var error = Record.Exception(() => balancer.UpdateRoutingTable());
+
+                    // Then
+                    error.Should().BeOfType<AuthenticationException>();
+                    error.Message.Should().Contain("Failed to auth the client to the server.");
+
+                    // while the server is not removed
+                    routingTable.All().Should().ContainInOrder(uri);
+                }
             }
 
             public class AcquireReadWriteConnectionMethod
@@ -361,7 +391,7 @@ namespace Neo4j.Driver.Tests
                     return routingTable;
                 }
 
-                private static IPooledConnection AcquiredConn(RoundRobinLoadBalancer balancer, AccessMode mode)
+                private static IPooledConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
                 {
                     IPooledConnection acquiredConn;
                     switch (mode)
@@ -385,7 +415,7 @@ namespace Neo4j.Driver.Tests
                 {
                     // Given
                     var routingTable = NewRoutingTable();
-                    var balancer = new RoundRobinLoadBalancer(null, routingTable);
+                    var balancer = new LoadBalancer(null, routingTable);
 
                     // When
                     var error = Record.Exception(()=>AcquiredConn(balancer, mode));
@@ -429,7 +459,7 @@ namespace Neo4j.Driver.Tests
 
                     // a cluster pool which knows the conns with the read uri server
                     var clusterConnPool = new ClusterConnectionPool(null, dict);
-                    var balancer = new RoundRobinLoadBalancer(clusterConnPool, routingTable);
+                    var balancer = new LoadBalancer(clusterConnPool, routingTable);
 
                     mockedConnPool.Setup(x => x.Acquire())
                         .Callback(() =>
@@ -451,6 +481,79 @@ namespace Neo4j.Driver.Tests
                     routingTable.TryNextReader(out saveUri).Should().BeFalse();
                     routingTable.TryNextWriter(out saveUri).Should().BeFalse();
                     clusterConnPool.TryAcquire(uri, out saveConn).Should().BeFalse();
+                }
+
+
+                [Theory]
+                [InlineData(AccessMode.Read)]
+                [InlineData(AccessMode.Write)]
+                public void ShouldThrowErrorDirectlyIfSecurityError(AccessMode mode)
+                {
+                    // Given
+                    var uri = new Uri("bolt+routing://123:456");
+                    // a routing table which knows a uri
+                    var routingTable = CreateRoutingTable(uri, mode);
+
+                    var mockedConnPool = new Mock<IConnectionPool>();
+                    var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                    dict.TryAdd(uri, mockedConnPool.Object);
+
+                    // a cluster pool which knows the conns with the read uri server
+                    var clusterConnPool = new ClusterConnectionPool(null, dict);
+                    var balancer = new LoadBalancer(clusterConnPool, routingTable);
+
+                    mockedConnPool.Setup(x => x.Acquire())
+                        .Callback(() =>
+                        {
+                            throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
+                                .OnConnectionError(new SecurityException("Failed to establish ssl connection with the server"));
+                        });
+
+                    // When
+                    var error = Record.Exception(() => AcquiredConn(balancer, mode));
+
+                    // Then
+                    error.Should().BeOfType<SecurityException>();
+                    error.Message.Should().Contain("ssl connection with the server");
+
+                    // while the server is not removed
+                    routingTable.All().Should().ContainInOrder(uri);
+                }
+
+                [Theory]
+                [InlineData(AccessMode.Read)]
+                [InlineData(AccessMode.Write)]
+                public void ShouldThrowErrorDirectlyIfProtocolError(AccessMode mode)
+                {
+                    // Given
+                    var uri = new Uri("bolt+routing://123:456");
+                    // a routing table which knows a uri
+                    var routingTable = CreateRoutingTable(uri, mode);
+
+                    var mockedConnPool = new Mock<IConnectionPool>();
+                    var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                    dict.TryAdd(uri, mockedConnPool.Object);
+
+                    // a cluster pool which knows the conns with the read uri server
+                    var clusterConnPool = new ClusterConnectionPool(null, dict);
+                    var balancer = new LoadBalancer(clusterConnPool, routingTable);
+
+                    mockedConnPool.Setup(x => x.Acquire())
+                        .Callback(() =>
+                        {
+                            throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
+                                .OnConnectionError(new ProtocolException("do not understand struct 0x01"));
+                        });
+
+                    // When
+                    var error = Record.Exception(() => AcquiredConn(balancer, mode));
+
+                    // Then
+                    error.Should().BeOfType<ProtocolException>();
+                    error.Message.Should().Contain("do not understand struct 0x01");
+
+                    // while the server is not removed
+                    routingTable.All().Should().ContainInOrder(uri);
                 }
             }
         }

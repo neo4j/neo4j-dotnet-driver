@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             Close();
         }
-
+        
         public async Task ConnectAsync(Uri uri, bool useTls)
         {
             await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
@@ -56,13 +56,21 @@ namespace Neo4j.Driver.Internal.Connector
             }
             else
             {
-                _stream = new SslStream(_client.GetStream(), true,
-                    (sender, certificate, chain, errors) =>
-                        _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
+                try
+                {
+                    _stream = new SslStream(_client.GetStream(), true,
+                        (sender, certificate, chain, errors) =>
+                            _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
 
-                await ((SslStream)_stream)
-                    .AuthenticateAsClientAsync(uri.Host, null, System.Security.Authentication.SslProtocols.Tls12, false)
-                    .ConfigureAwait(false);
+                    await ((SslStream) _stream)
+                        .AuthenticateAsClientAsync(uri.Host, null, System.Security.Authentication.SslProtocols.Tls12,
+                            false)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
+                }
             }
         }
 

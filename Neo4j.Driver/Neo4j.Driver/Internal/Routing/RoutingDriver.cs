@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             Uri = connectionSettings.InitialServerUri;
             _logger = logger;
-            _loadBalancer = new RoundRobinLoadBalancer(connectionSettings, poolSettings, _logger);
+            _loadBalancer = new LoadBalancer(connectionSettings, poolSettings, _logger);
         }
 
         public override ISession NewSession(AccessMode mode)

@@ -168,7 +168,7 @@
     <Compile Include="Result\RecordSetTests.cs" />
     <Compile Include="Result\ResultBuilderTests.cs" />
     <Compile Include="ConnectionPoolTests.cs" />
-    <Compile Include="Routing\RoundRobinLoadBalancerTests.cs" />
+    <Compile Include="Routing\LoadBalancerTests.cs" />
     <Compile Include="Routing\RoundRobinRoutingTableTests.cs" />
     <Compile Include="SessionTests.cs" />
     <Compile Include="PackStream\UnpackerTests.cs" />
