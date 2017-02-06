@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools = new ConcurrentDictionary<Uri, IConnectionPool>();
         private readonly ConnectionSettings _connectionSettings;
         private readonly ConnectionPoolSettings _poolSettings;
-        private readonly Func<Uri, IConnectionErrorHandler> _clusterErrorHandlerCreator;
+        private readonly Func<Uri, IConnectionErrorHandler> _createClusterErrorHandlerFunc;
 
         // for test only
         private readonly IConnectionPool _fakeConnectionPool;
@@ -39,12 +39,12 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger,
-            Func<Uri, IConnectionErrorHandler> clusterErrorHandlerCreator)
+            Func<Uri, IConnectionErrorHandler> createClusterErrorHandlerFunc)
             : base(logger)
         {
             _connectionSettings = connectionSettings;
             _poolSettings = poolSettings;
-            _clusterErrorHandlerCreator = clusterErrorHandlerCreator;
+            _createClusterErrorHandlerFunc = createClusterErrorHandlerFunc;
             if (connectionSettings?.InitialServerUri != null)
             {
                 Add(connectionSettings.InitialServerUri);
@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
-            return _fakeConnectionPool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger, _clusterErrorHandlerCreator.Invoke(uri));
+            return _fakeConnectionPool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger, _createClusterErrorHandlerFunc.Invoke(uri));
         }
 
         public bool TryAcquire(Uri uri, out IPooledConnection conn)

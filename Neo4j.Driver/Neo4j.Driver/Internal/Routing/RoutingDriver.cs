@@ -33,6 +33,7 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionPoolSettings poolSettings, 
             ILogger logger)
         {
+            Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
 
             Uri = connectionSettings.InitialServerUri;

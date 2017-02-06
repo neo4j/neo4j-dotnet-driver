@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             using (driver)
             {
                 var exception = Record.Exception(() => driver.Session());
-                exception.Should().BeOfType<ClientException>();
+                exception.Should().BeOfType<AuthenticationException>();
                 exception.Message.Should().StartWith("The client is unauthorized due to authentication failure");
             }
         }

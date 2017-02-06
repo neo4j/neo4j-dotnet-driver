@@ -17,7 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
