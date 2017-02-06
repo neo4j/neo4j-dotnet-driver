@@ -19,6 +19,7 @@ using System.Collections;
 using System.Globalization;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Packstream
 {
@@ -218,7 +219,7 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value.GetType(),
+                    throw new ProtocolException(
                         $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
                 }
             }
@@ -345,7 +346,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     _out.Write(STRUCT_16, BitConverter.GetBytes((short) size)).Write(signature);
                 }
                 else
-                    throw new ArgumentOutOfRangeException(nameof(size), size,
+                    throw new ProtocolException(
                         $"Structures cannot have more than {short.MaxValue} fields");
             }
         }
@@ -365,7 +366,7 @@ namespace Neo4j.Driver.Internal.Packstream
                 byte markerByte = _in.ReadByte();
                 if (markerByte != NULL)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                    throw new ProtocolException(
                         $"Expected a null, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
                 }
                 return null;
@@ -381,7 +382,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case FALSE:
                         return false;
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Expected a boolean, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
                 }
             }
@@ -404,7 +405,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case INT_64:
                         return _in.ReadLong();
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Expected an integer, but got: 0x{markerByte.ToString("X2")}");
                 }
             }
@@ -416,7 +417,7 @@ namespace Neo4j.Driver.Internal.Packstream
                 {
                     return _in.ReadDouble();
                 }
-                throw new ArgumentOutOfRangeException( nameof(markerByte), markerByte,
+                throw new ProtocolException(
                     $"Expected a double, but got: 0x{markerByte.ToString("X2")}");
             }
 
@@ -450,12 +451,12 @@ namespace Neo4j.Driver.Internal.Packstream
                         }
                         else
                         {
-                            throw new ArgumentOutOfRangeException(nameof(size), size,
+                            throw new ProtocolException(
                                 $"BYTES_32 {size} too long for PackStream");
                         }
                     }
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Expected binary data, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
                 }
             }
@@ -489,11 +490,11 @@ namespace Neo4j.Driver.Internal.Packstream
                         {
                             return UnpackBytes((int) size);
                         }
-                        throw new ArgumentOutOfRangeException(nameof(size), size, 
+                        throw new ProtocolException(
                             $"STRING_32 {size} too long for PackStream");
                     }
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Expected a string, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
                 }
             }
@@ -517,7 +518,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case MAP_32:
                         return UnpackUint32();
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Expected a map, but got: {markerByte.ToString("X2")}");
                 }
             }
@@ -541,7 +542,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case LIST_32:
                         return UnpackUint32();
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Expected a list, but got: {(markerByte & 0xFF).ToString("X2")}");
                 }
             }
@@ -568,7 +569,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case STRUCT_16:
                         return UnpackUint16();
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Expected a struct, but got: {markerByte.ToString("X2")}");
                 }
             }
@@ -627,7 +628,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     case INT_64:
                         return PackType.Integer;
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(markerByte), markerByte,
+                        throw new ProtocolException(
                             $"Unknown type 0x{markerByte.ToString("X2")}");
                 }
             }
@@ -658,7 +659,6 @@ namespace Neo4j.Driver.Internal.Packstream
 
     internal interface IReader
     {
-//        bool HasNext();
         void Read(IMessageResponseHandler responseHandler);
     }
 }

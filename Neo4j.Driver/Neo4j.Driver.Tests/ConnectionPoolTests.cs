@@ -57,11 +57,11 @@ namespace Neo4j.Driver.Tests
                 var mockedHandler = new Mock<IConnectionErrorHandler>();
                 var connectionPool = new ConnectionPool(mock.Object, exteralErrorHandler:mockedHandler.Object);
                 // When
-                connectionPool.Acquire();
+                var conn = connectionPool.Acquire();
 
                 //Then
-                mock.Verify(x=>x.AddConnectionErrorHander(mockedHandler.Object), Times.Once);
-                mock.Verify(x => x.Init(), Times.Once);
+                mock.Verify(x => x.ExternalConnectionErrorHander(It.IsAny<IConnectionErrorHandler>()), Times.Once);
+                ((PooledConnection)conn).ExternalConnectionErrorHandler().Should().Be(mockedHandler.Object);
             }
 
             [Fact]

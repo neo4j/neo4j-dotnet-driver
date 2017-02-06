@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public static class ArgumentException
+        public static class ProtocolException
         {
             public static void IfNotEqual(int first, int second, string firstParam, string secondParam)
             {
@@ -54,13 +54,13 @@ namespace Neo4j.Driver.Internal
             public static void If(Func<bool> func, object first, object second, string firstParam, string secondParam)
             {
                 if(func())
-                    throw new System.ArgumentException($"{firstParam} ({first}) did not equal {secondParam} ({second})");
+                    throw new V1.ProtocolException($"{firstParam} ({first}) does not equal to {secondParam} ({second})");
             }
 
             public static void IfNotTrue(bool value, string nameofValue)
             {
                 if(!value)
-                    throw new System.ArgumentException($"Expecting {nameofValue} to be true, however the value is false");
+                    throw new V1.ProtocolException($"Expecting {nameofValue} to be true, however the value is false");
             }
         }
 
@@ -76,6 +76,11 @@ namespace Neo4j.Driver.Internal
             {
                 if(value > limit)
                     throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) cannot be greater than {limit}.");
+            }
+            public static void IfNotTrue(bool value, string nameofValue)
+            {
+                if (!value)
+                    throw new System.ArgumentOutOfRangeException($"Expecting {nameofValue} to be true, however the value is false");
             }
         }
     }

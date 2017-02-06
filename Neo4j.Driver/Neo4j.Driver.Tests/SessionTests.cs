@@ -123,28 +123,6 @@ namespace Neo4j.Driver.Tests
                 var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
             }
-
-            [Fact]
-            public void ShouldNotAllowMoreStatementsInSessionWhileConnectionHasUnrecoverableError()
-            {
-                var mockConn = new Mock<IPooledConnection>();
-                mockConn.Setup(x => x.HasUnrecoverableError).Returns(true);
-                var session = new Session(mockConn.Object, null);
-
-                var error = Record.Exception(() => session.Run("lalal"));
-                error.Should().BeOfType<ClientException>();
-            }
-
-            [Fact]
-            public void ShouldNotAllowMoreTransactionsInSessionWhileConnectionHasUnrecoverableError()
-            {
-                var mockConn = new Mock<IPooledConnection>();
-                mockConn.Setup(x => x.HasUnrecoverableError).Returns(true);
-                var session = new Session(mockConn.Object, null);
-
-                var error = Record.Exception(() => session.BeginTransaction());
-                error.Should().BeOfType<ClientException>();
-            }
         }
 
         public class DisposeMethod

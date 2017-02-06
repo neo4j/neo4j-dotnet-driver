@@ -23,8 +23,8 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    [Collection(IntegrationCollection.CollectionName)]
-    public class DirectDriverIT : IDisposable
+    [Collection(SIIntegrationCollection.CollectionName)]
+    public abstract class DirectDriverIT : IDisposable
     {
         public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
         protected ITestOutputHelper Output { get; }
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests
         protected string ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
-        public DirectDriverIT(ITestOutputHelper output, IntegrationTestFixture fixture)
+        protected DirectDriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
             Server = fixture.StandAlone;

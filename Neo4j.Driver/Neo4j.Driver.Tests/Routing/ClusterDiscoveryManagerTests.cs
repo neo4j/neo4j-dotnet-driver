@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should().Be("Error when parsing `getServers` result: keys (2) did not equal values (1).");
+                exception.Message.Should().Be("Error when parsing `getServers` result: keys (2) dose not equal values (1).");
                 clientMock.Verify(x => x.Dispose(), Times.Once);
             }
 

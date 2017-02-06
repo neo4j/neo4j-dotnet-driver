@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockedSocketConn = new Mock<IConnection>();
                 var conn = new PooledConnection(mockedSocketConn.Object);
-                mockedSocketConn.Verify(x=>x.AddConnectionErrorHander(It.IsAny<PooledConnection.PooledConnectionErrorHandler>()), Times.Once);
+                mockedSocketConn.Verify(x=>x.ExternalConnectionErrorHander(It.IsAny<PooledConnection.PooledConnectionErrorHandler>()), Times.Once);
             }
         }
 

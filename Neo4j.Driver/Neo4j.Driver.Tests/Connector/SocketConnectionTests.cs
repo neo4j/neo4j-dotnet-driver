@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -118,7 +119,7 @@ namespace Neo4j.Driver.Tests
                 // When
                 var error = Exception(()=>conn.Init());
                 // Then
-                error.Should().BeOfType<ClientException>();
+                error.Should().BeOfType<IOException>();
                 error.Message.Should().Be("Failed to connect to the server neo4j.com:80 within connection timeout 5000ms");
             }
         }

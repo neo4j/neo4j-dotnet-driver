@@ -27,13 +27,13 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Examples
 {
-    [Collection(IntegrationCollection.CollectionName)]
+    [Collection(SIIntegrationCollection.CollectionName)]
     public class Examples : IDisposable
     {
         private ITestOutputHelper Output { get; }
         private IDriver Driver { get; }
 
-        public Examples(ITestOutputHelper output, IntegrationTestFixture fixture)
+        public Examples(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
             Driver = fixture.StandAlone.Driver;

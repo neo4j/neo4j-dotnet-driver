@@ -10,8 +10,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    // If I have a cluster, then I should be able to do the following tests
-    [Collection(IntegrationCollection.CollectionName)]
+    [Collection(CCIntegrationCollection.CollectionName)]
     public class RoutingDriverIT : IDisposable
     {
         public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig();
@@ -22,7 +21,7 @@ namespace Neo4j.Driver.IntegrationTests
         private string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
         private string WrongServer => "bolt+routing://localhost:1234";
 
-        public RoutingDriverIT(ITestOutputHelper output, IntegrationTestFixture fixture)
+        public RoutingDriverIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
         {
             Output = output;
             Cluster = fixture.Cluster;

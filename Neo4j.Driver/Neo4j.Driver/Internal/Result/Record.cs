@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public Record(List<string>keys, object[] values)
         {
-            Throw.ArgumentException.IfNotEqual(keys.Count, values.Length, nameof(keys), nameof(values));
+            Throw.ProtocolException.IfNotEqual(keys.Count, values.Length, nameof(keys), nameof(values));
 
             var valueKeys = new Dictionary<string, object>();
 

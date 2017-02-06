@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Internal.Connector
             var numberOfbytesRead = _tcpSocketClient.ReadStream.Read(buffer);
             if (numberOfbytesRead != buffer.Length)
             {
-                throw new Neo4jException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
+                throw new ProtocolException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
             }
 
             _logger?.Trace("S: ", buffer, 0, buffer.Length);
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Internal.Connector
             ReadSpecifiedSize(_headTailBuffer);
             if (_headTailBuffer.Equals(Tail))
             {
-                throw new Neo4jException("Not chunked correctly");
+                throw new ProtocolException("Not chunked correctly");
             }
         }
 
