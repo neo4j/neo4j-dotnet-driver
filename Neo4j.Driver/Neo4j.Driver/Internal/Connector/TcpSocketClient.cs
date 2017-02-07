@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _uri = uri;
             _useTls = useTlsEncryption;
-            await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(true);
+            await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
         }
 
         protected virtual void Dispose(bool isDisposing)

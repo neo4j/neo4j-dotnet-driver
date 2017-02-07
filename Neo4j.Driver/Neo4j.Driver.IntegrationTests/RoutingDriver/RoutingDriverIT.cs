@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using FluentAssertions;
@@ -136,7 +135,7 @@ namespace Neo4j.Driver.IntegrationTests
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-//        [InlineData(1000)]
+        [InlineData(1000)]
         public void SoakRunTests(int threadCount)
         {
             if (!IsClusterRunning)
@@ -146,7 +145,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var random = new Random();
-            var job = new Job(driver, random);
+            var job = new Job(driver, random, Output);
 
             var threads= new Thread[threadCount];
             for (int j = 0; j < threadCount; j++)
@@ -170,11 +169,13 @@ namespace Neo4j.Driver.IntegrationTests
             private static readonly AccessMode[] Access = {AccessMode.Read, AccessMode.Write};
             private static readonly string[] Queries = { "RETURN 1295 + 42", "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)" };
             private readonly Random _random;
+            private readonly ITestOutputHelper _output;
 
-            public Job(IDriver driver, Random random)
+            public Job(IDriver driver, Random random, ITestOutputHelper output)
             {
                 _driver = driver;
                 _random = random;
+                _output = output;
             }
 
             public void Execute()
@@ -197,7 +198,7 @@ namespace Neo4j.Driver.IntegrationTests
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Failed to run query {Queries[i]} due to {e.Message}");
+                    _output.WriteLine($"Failed to run query {Queries[i]} due to {e.Message}");
                     e.Should().BeOfType<SessionExpiredException>();
                     e.Message.Should().Contain("no longer accepts writes");
                 }

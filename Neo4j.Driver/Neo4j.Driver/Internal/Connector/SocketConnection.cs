@@ -223,7 +223,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             try
             {
-                Task.Run(() => _client.Stop()).Wait();
+                _client.Dispose();
             }
             catch (Exception e)
             {

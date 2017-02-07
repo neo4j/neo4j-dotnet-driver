@@ -23,7 +23,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal class SocketClient :  ISocketClient, IDisposable
+    internal class SocketClient :  ISocketClient
     {
         private static class ProtocolVersion
         {
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task Stop()
+        private async Task Stop()
         {
             if (IsOpen && _tcpSocketClient != null)
             {
