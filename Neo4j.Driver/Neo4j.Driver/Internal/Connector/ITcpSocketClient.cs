@@ -25,6 +25,6 @@ namespace Neo4j.Driver.Internal.Connector
         Stream ReadStream { get;  }
         Stream WriteStream { get;  }
         Task DisconnectAsync();
-        Task ConnectAsync(Uri uri, bool useTlsEncryption);
+        Task ConnectAsync(Uri uri, bool useTls);
     }
 }

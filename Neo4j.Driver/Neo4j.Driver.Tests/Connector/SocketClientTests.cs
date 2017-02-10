@@ -276,7 +276,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class StopMethod
+        public class DisposeMethod
         {
             [Fact]
             public async Task ShouldCallDisconnectOnTheTcpSocketClient()
@@ -285,7 +285,7 @@ namespace Neo4j.Driver.Tests
                 {
                     harness.SetupReadStream("00 00 00 01");
                     await harness.Client.Start();
-                    await harness.Client.Stop();
+                    harness.Client.Dispose();
                     harness.MockTcpSocketClient.Verify(s => s.DisconnectAsync(), Times.Once);
                     harness.MockTcpSocketClient.Verify(s => s.Dispose(), Times.Once);
                     harness.Client.IsOpen.Should().BeFalse();

@@ -197,8 +197,10 @@ namespace Neo4j.Driver.Internal.Routing
 
         private Exception OnConnectionError(Exception e, Uri uri)
         {
+            // ReSharper disable once InconsistentlySynchronizedField
+            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
             Forget(uri);
-            return new SessionExpiredException($"Server at {uri} is no longer available", e);
+            return new SessionExpiredException($"Server at {uri} is no longer available due to error: {e.Message}.", e);
         }
 
         private Neo4jException OnNeo4jError(Neo4jException error, Uri uri)

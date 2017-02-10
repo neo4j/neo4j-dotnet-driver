@@ -19,67 +19,51 @@ using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
     internal class TcpSocketClient : ITcpSocketClient
     {
         private readonly TcpClient _client;
-        private bool _useTls;
         private Stream _stream;
-        private Uri _uri;
+        private ILogger _logger;
 
         private readonly EncryptionManager _encryptionManager;
 
-        public TcpSocketClient(EncryptionManager encryptionManager)
+        public TcpSocketClient(EncryptionManager encryptionManager, ILogger logger = null)
         {
-            _client = new TcpClient();
             _encryptionManager = encryptionManager;
-        }
-        
-        private Stream Stream
-        {
-            get
-            {
-                if (_client == null || _client.Connected == false)
-                {
-                    throw new InvalidOperationException("Can't get stream if not connected.");
-                }
-
-                if(_stream != null) 
-                    return _stream;
-
-                if (!_useTls)
-                {
-                    _stream = _client.GetStream();
-                }
-                else
-                {
-                    var secureStream = new SslStream(_client.GetStream(), true,
-                        (sender, certificate, chain, errors) =>
-                            _encryptionManager.TrustStrategy.ValidateServerCertificate(_uri, certificate, errors));
-                    var sslTask = secureStream.AuthenticateAsClientAsync(_uri.Host, null, System.Security.Authentication.SslProtocols.Tls12, false);
-                    sslTask.Wait();
-                    _stream = secureStream;
-                }
-
-                return _stream;
-            }
+            _client = new TcpClient();
+            _logger = logger;
         }
 
-        public Stream ReadStream => Stream;
-        public Stream WriteStream => Stream;
+        public Stream ReadStream => _stream;
+        public Stream WriteStream => _stream;
 
         public async Task DisconnectAsync()
         {
-            _client?.Dispose();
+            Close();
         }
 
-        public async Task ConnectAsync(Uri uri, bool useTlsEncryption)
+        public async Task ConnectAsync(Uri uri, bool useTls)
         {
-            _uri = uri;
-            _useTls = useTlsEncryption;
             await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
+
+            if (!useTls)
+            {
+                _stream = _client.GetStream();
+            }
+            else
+            {
+                _stream = new SslStream(_client.GetStream(), true,
+                    (sender, certificate, chain, errors) =>
+                        _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
+
+                await ((SslStream)_stream)
+                    .AuthenticateAsClientAsync(uri.Host, null, System.Security.Authentication.SslProtocols.Tls12, false)
+                    .ConfigureAwait(false);
+            }
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -87,6 +71,12 @@ namespace Neo4j.Driver.Internal.Connector
             if (!isDisposing)
                 return;
 
+            Close();
+        }
+
+        private void Close()
+        {
+            _stream?.Dispose();
             _client?.Dispose();
         }
 

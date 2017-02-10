@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal.Connector
             _uri = uri;
             _encryptionManager = encryptionManager;
             _logger = logger;
-            _tcpSocketClient = socketClient ?? new TcpSocketClient(_encryptionManager);
+            _tcpSocketClient = socketClient ?? new TcpSocketClient(_encryptionManager, _logger);
         }
 
         internal SocketClient(Uri uri, EncryptionManager encryptionManager, ITcpSocketClient socketClient)
@@ -72,8 +72,6 @@ namespace Neo4j.Driver.Internal.Connector
             switch (version)
             {
                 case ProtocolVersion.Version1:
-                    _logger?.Debug("S: [HANDSHAKE] 1");
-
                     var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _logger);
                     _writer = formatV1.Writer;
                     _reader = formatV1.Reader;
@@ -141,17 +139,18 @@ namespace Neo4j.Driver.Internal.Connector
 
         private async Task<int> DoHandshake()
         {
-            _logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
             int[] supportedVersion = {1, 0, 0, 0};
             
             var data = PackVersions(supportedVersion);
             await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
             await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
+            _logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
 
             data = new byte[4];
             await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
 
             var agreedVersion = GetAgreedVersion(data);
+            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
             return agreedVersion;
         }
 
