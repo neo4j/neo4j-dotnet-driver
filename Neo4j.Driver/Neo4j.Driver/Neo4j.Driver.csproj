@@ -49,6 +49,7 @@
     <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />
     <Compile Include="Internal\Routing\IClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\ILoadBalancer.cs" />
+    <Compile Include="Internal\Routing\IRoutingTable.cs" />
     <Compile Include="Internal\Routing\RoundRobinRoutingTable.cs" />
     <Compile Include="Internal\Routing\ConcurrentRoundRobinSet.cs" />
     <Compile Include="Internal\ConnectionPoolSettings.cs" />
@@ -58,7 +59,7 @@
     <Compile Include="Internal\Connector\TcpSocketClient.cs" />
     <Compile Include="Internal\Messaging\AckFailureMessage.cs" />
     <Compile Include="Internal\EncryptionManager.cs" />
-    <Compile Include="Internal\Routing\RoundRobinLoadBalancer.cs" />
+    <Compile Include="Internal\Routing\LoadBalancer.cs" />
     <Compile Include="Internal\Routing\RoutingDriver.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />

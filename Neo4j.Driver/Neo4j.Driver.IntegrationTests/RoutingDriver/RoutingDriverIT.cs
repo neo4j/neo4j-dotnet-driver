@@ -37,6 +37,23 @@ namespace Neo4j.Driver.IntegrationTests
             // put some code that you want to run after each unit test
         }
 
+        [Fact]
+        public void ShouldFailWithAuthenticationError()
+        {
+            if (!IsClusterRunning)
+            {
+                return;
+            }
+
+            Exception exception = null;
+            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake")))
+            {
+                exception = Record.Exception(() => driver.Session());
+            }
+            exception.Should().BeOfType<AuthenticationException>();
+            exception.Message.Should().Be("The client is unauthorized due to authentication failure.");
+        }
+
 
         [Fact]
         public void ShouldConnectClusterWithRoutingScheme()

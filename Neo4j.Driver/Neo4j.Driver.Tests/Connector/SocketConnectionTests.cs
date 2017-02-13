@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Tests
         private static TimeSpan ConnTimeout => Config.DefaultConfig.ConnectionTimeout;
         private static string UserAgent => ConnectionSettings.DefaultUserAgent;
         private static ILogger Logger => new Mock<ILogger>().Object;
-        private static IServerInfo Server => new ServerInfo(new Uri("http://1234.com"));
+        private static IServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
         internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null, IMessageResponseHandler handler = null)
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Tests
                 var error = Exception(()=>conn.Init());
                 // Then
                 error.Should().BeOfType<ClientException>();
-                error.Message.Should().Be("Failed to connect to the server 1234.com:80 within connection timeout 5000ms");
+                error.Message.Should().Be("Failed to connect to the server neo4j.com:80 within connection timeout 5000ms");
             }
         }
 

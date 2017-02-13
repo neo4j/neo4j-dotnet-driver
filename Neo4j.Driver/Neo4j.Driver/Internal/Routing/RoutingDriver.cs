@@ -33,11 +33,12 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionPoolSettings poolSettings, 
             ILogger logger)
         {
+            Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
 
             Uri = connectionSettings.InitialServerUri;
             _logger = logger;
-            _loadBalancer = new RoundRobinLoadBalancer(connectionSettings, poolSettings, _logger);
+            _loadBalancer = new LoadBalancer(connectionSettings, poolSettings, _logger);
         }
 
         public override ISession NewSession(AccessMode mode)

@@ -20,6 +20,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
+using static System.Security.Authentication.SslProtocols;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -56,13 +57,19 @@ namespace Neo4j.Driver.Internal.Connector
             }
             else
             {
-                _stream = new SslStream(_client.GetStream(), true,
-                    (sender, certificate, chain, errors) =>
-                        _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
+                try
+                {
+                    _stream = new SslStream(_client.GetStream(), true,
+                        (sender, certificate, chain, errors) =>
+                            _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
 
-                await ((SslStream)_stream)
-                    .AuthenticateAsClientAsync(uri.Host, null, System.Security.Authentication.SslProtocols.Tls12, false)
-                    .ConfigureAwait(false);
+                    await ((SslStream) _stream)
+                        .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
+                }
             }
         }
 

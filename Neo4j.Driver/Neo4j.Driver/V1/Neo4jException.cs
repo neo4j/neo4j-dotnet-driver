@@ -160,4 +160,54 @@ namespace Neo4j.Driver.V1
         {
         }
     }
+
+    /// <summary>
+    /// There was a bolt protocol violation of the contract between the driver and the server. 
+    /// When seen this error, contact driver developers.
+    /// </summary>
+    [DataContract]
+    public class ProtocolException : Neo4jException
+    {
+        public ProtocolException(string message) : base(message)
+        {
+        }
+
+        public ProtocolException(string message, Exception internaException) : base(message, internaException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Failed to connect the driver to the server due to security errors
+    /// When this type of error happens, recreation of the driver might be required.
+    /// </summary>
+    [DataContract]
+    public class SecurityException : Neo4jException
+    {
+        public SecurityException(string message) : base(message)
+        {
+        }
+
+        public SecurityException(string code, string message) : base(code, message)
+        {
+        }
+
+        public SecurityException(string message, Exception internaException) : base(message, internaException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Failed to authentication the client to the server due to bad credentials
+    /// To recover from this error, close the current driver and restart with the correct credentials 
+    /// </summary>
+    [DataContract]
+    public class AuthenticationException : SecurityException
+    {
+        internal const string ErrorCode = "Neo.ClientError.Security.Unauthorized";
+
+        public AuthenticationException(string message) : base(ErrorCode, message)
+        {
+        }
+    }
 }

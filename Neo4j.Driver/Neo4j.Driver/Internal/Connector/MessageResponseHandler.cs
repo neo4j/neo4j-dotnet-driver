@@ -86,7 +86,14 @@ namespace Neo4j.Driver.Internal.Connector
             switch (classification)
             {
                 case "clienterror":
-                    Error = new ClientException(code, message);
+                    if (code.Equals(AuthenticationException.ErrorCode))
+                    {
+                        Error = new AuthenticationException(message);
+                    }
+                    else
+                    {
+                        Error = new ClientException(code, message);
+                    }
                     break;
                 case "transienterror":
                     Error = new TransientException(code, message);
