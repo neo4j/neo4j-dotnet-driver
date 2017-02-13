@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal
                     throw new V1.ProtocolException($"{firstParam} ({first}) does not equal to {secondParam} ({second})");
             }
 
-            public static void IfNotTrue(bool value, string nameofValue)
+            public static void IfFalse(bool value, string nameofValue)
             {
                 if(!value)
                     throw new V1.ProtocolException($"Expecting {nameofValue} to be true, however the value is false");
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Internal
                 if(value > limit)
                     throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) cannot be greater than {limit}.");
             }
-            public static void IfNotTrue(bool value, string nameofValue)
+            public static void IfFalse(bool value, string nameofValue)
             {
                 if (!value)
                     throw new System.ArgumentOutOfRangeException($"Expecting {nameofValue} to be true, however the value is false");

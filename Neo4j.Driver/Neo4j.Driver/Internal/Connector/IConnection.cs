@@ -57,7 +57,8 @@ namespace Neo4j.Driver.Internal.Connector
         void Close();
 
         /// <summary>
-        /// Adds a external error handler that you wish to be called back when a consreponding error is received
+        /// Adds a external error handler that you wish to be called backa when a consreponding error is received.
+        /// The external error handler will be called after internal error handlers if any has been registered internally.
         /// </summary>
         /// <param name="handler">The extra error handler to add.</param>
         void ExternalConnectionErrorHander(IConnectionErrorHandler handler);

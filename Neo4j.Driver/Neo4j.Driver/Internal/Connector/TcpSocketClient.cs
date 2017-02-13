@@ -20,10 +20,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
-<<<<<<< HEAD
 using static System.Security.Authentication.SslProtocols;
-=======
->>>>>>> Added support for security errors
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -31,7 +28,6 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly TcpClient _client;
         private Stream _stream;
-        private ILogger _logger;
 
         private readonly EncryptionManager _encryptionManager;
 
@@ -39,7 +35,6 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _encryptionManager = encryptionManager;
             _client = new TcpClient();
-            _logger = logger;
         }
 
         public Stream ReadStream => _stream;

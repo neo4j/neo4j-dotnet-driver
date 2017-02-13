@@ -219,6 +219,30 @@ namespace Neo4j.Driver.Tests
                 mrh.Error.Should().BeOfType<ClientException>();
             }
 
+            [Theory, MemberData("ProtocolErrors")]
+            public void ShouldCreateProtocolExceptionWhenClassificationContainsProtocolError(string code)
+            {
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
+                var mrh = new MessageResponseHandler();
+                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+
+                mrh.HandleFailureMessage(code, "message");
+                mrh.HasError.Should().BeTrue();
+                mrh.Error.Should().BeOfType<ProtocolException>();
+            }
+
+            [Theory, MemberData("AuthErrors")]
+            public void ShouldCreateAuthExceptionWhenClassificationContainsAuthError(string code)
+            {
+                var mockResultBuilder = new Mock<IMessageResponseCollector>();
+                var mrh = new MessageResponseHandler();
+                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+
+                mrh.HandleFailureMessage(code, "message");
+                mrh.HasError.Should().BeTrue();
+                mrh.Error.Should().BeOfType<AuthenticationException>();
+            }
+
             [Theory, MemberData("TransientErrors")]
             public void ShouldCreateTransientExceptionWhenClassificationContainsTransientError(string code)
             {
@@ -291,12 +315,22 @@ namespace Neo4j.Driver.Tests
             }
 
             #region Test Data
+
+            public static IEnumerable<object[]> ProtocolErrors => new[]
+            {
+                new object[] {"Neo.ClientError.Request.Invalid"},
+                new object[] {"Neo.ClientError.Request.InvalidFormat"}
+            };
+
+            public static IEnumerable<object[]> AuthErrors => new[]
+            {
+                new object[] {"Neo.ClientError.Security.Unauthorized"}
+            };
+
             public static IEnumerable<object[]> ClientErrors => new[]
             {
                 new object[] {"Neo.ClientError.General.ReadOnly"},
                 new object[] {"Neo.ClientError.LegacyIndex.NoSuchIndex"},
-                new object[] {"Neo.ClientError.Request.Invalid"},
-                new object[] {"Neo.ClientError.Request.InvalidFormat"},
                 new object[] {"Neo.ClientError.Schema.ConstraintAlreadyExists"},
                 new object[] {"Neo.ClientError.Schema.ConstraintVerificationFailure"},
                 new object[] {"Neo.ClientError.Schema.ConstraintViolation"},

@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly object _syncLock = new object();
 
         private readonly ILogger _logger;
-        public IConnectionErrorHandler _externalErrorHandler;
+        private IConnectionErrorHandler _externalErrorHandler;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, ILogger logger)
             : this(new SocketClient(uri, connectionSettings.EncryptionManager, logger),
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 var error = _responseHandler.Error;
 
-                error = OnNeo4jError(error);
+                error = OnServerError(error);
 
                 _responseHandler.Error = null;
                 _interrupted = false;
@@ -247,7 +247,7 @@ namespace Neo4j.Driver.Internal.Connector
             return _externalErrorHandler == null ? e : _externalErrorHandler.OnConnectionError(e);
         }
 
-        public Neo4jException OnNeo4jError(Neo4jException e)
+        public Neo4jException OnServerError(Neo4jException e)
         {
             return _externalErrorHandler == null ? e : _externalErrorHandler.OnServerError(e);
         }

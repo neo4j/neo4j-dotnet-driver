@@ -150,14 +150,14 @@ namespace Neo4j.Driver.Internal.Connector
 
         internal class PooledConnectionErrorHandler : IConnectionErrorHandler
         {
-            private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
+            private readonly Func<Neo4jException, Neo4jException> _onServerErrorFunc;
             private readonly Func<Exception, Exception> _onConnErrorFunc;
 
             public PooledConnectionErrorHandler(
-                Func<Neo4jException, Neo4jException> onNeo4JErrorFunc,
+                Func<Neo4jException, Neo4jException> onServerErrorFunc,
                 Func<Exception, Exception> onConnectionErrorFunc)
             {
-                _onNeo4jErrorFunc = onNeo4JErrorFunc;
+                _onServerErrorFunc = onServerErrorFunc;
                 _onConnErrorFunc = onConnectionErrorFunc;
             }
 
@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             public Neo4jException OnServerError(Neo4jException e)
             {
-                return _onNeo4jErrorFunc.Invoke(e);
+                return _onServerErrorFunc.Invoke(e);
             }
         }
     }
