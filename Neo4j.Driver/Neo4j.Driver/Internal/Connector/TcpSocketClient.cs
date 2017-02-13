@@ -20,6 +20,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
+using static System.Security.Authentication.SslProtocols;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -45,7 +46,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             Close();
         }
-        
+
         public async Task ConnectAsync(Uri uri, bool useTls)
         {
             await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
@@ -63,9 +64,7 @@ namespace Neo4j.Driver.Internal.Connector
                             _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
 
                     await ((SslStream) _stream)
-                        .AuthenticateAsClientAsync(uri.Host, null, System.Security.Authentication.SslProtocols.Tls12,
-                            false)
-                        .ConfigureAwait(false);
+                        .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
