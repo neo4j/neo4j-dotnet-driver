@@ -519,7 +519,7 @@ namespace Neo4j.Driver.Internal.Packstream
                         return UnpackUint32();
                     default:
                         throw new ProtocolException(
-                            $"Expected a map, but got: {markerByte.ToString("X2")}");
+                            $"Expected a map, but got: 0x{markerByte.ToString("X2")}");
                 }
             }
 
@@ -543,7 +543,7 @@ namespace Neo4j.Driver.Internal.Packstream
                         return UnpackUint32();
                     default:
                         throw new ProtocolException(
-                            $"Expected a list, but got: {(markerByte & 0xFF).ToString("X2")}");
+                            $"Expected a list, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
                 }
             }
 
@@ -570,7 +570,7 @@ namespace Neo4j.Driver.Internal.Packstream
                         return UnpackUint16();
                     default:
                         throw new ProtocolException(
-                            $"Expected a struct, but got: {markerByte.ToString("X2")}");
+                            $"Expected a struct, but got: 0x{markerByte.ToString("X2")}");
                 }
             }
 

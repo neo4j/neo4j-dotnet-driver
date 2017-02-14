@@ -66,9 +66,9 @@ namespace Neo4j.Driver.IntegrationTests
     }
 
     [CollectionDefinition(CollectionName)]
-    public class SIIntegrationCollection : ICollectionFixture<StandAloneIntegrationTestFixture>
+    public class SAIntegrationCollection : ICollectionFixture<StandAloneIntegrationTestFixture>
     {
-        public const string CollectionName = "SAIntegration";
+        public const string CollectionName = "StandAloneIntegration";
         // This class has no code, and is never created. Its purpose is simply
         // to be the place to apply [CollectionDefinition] and all the
         // ICollectionFixture<> interfaces.
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.IntegrationTests
     [CollectionDefinition(CollectionName)]
     public class CCIntegrationCollection : ICollectionFixture<CausalClusterIntegrationTestFixture>
     {
-        public const string CollectionName = "CCIntegration";
+        public const string CollectionName = "CausalClusterIntegration";
         // This class has no code, and is never created. Its purpose is simply
         // to be the place to apply [CollectionDefinition] and all the
         // ICollectionFixture<> interfaces.

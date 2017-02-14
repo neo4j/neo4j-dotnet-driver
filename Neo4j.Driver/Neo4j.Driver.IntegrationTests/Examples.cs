@@ -27,7 +27,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Examples
 {
-    [Collection(SIIntegrationCollection.CollectionName)]
+    [Collection(SAIntegrationCollection.CollectionName)]
     public class Examples : IDisposable
     {
         private ITestOutputHelper Output { get; }

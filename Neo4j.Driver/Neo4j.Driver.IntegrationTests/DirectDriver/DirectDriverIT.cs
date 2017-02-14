@@ -23,7 +23,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    [Collection(SIIntegrationCollection.CollectionName)]
+    [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class DirectDriverIT : IDisposable
     {
         public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();

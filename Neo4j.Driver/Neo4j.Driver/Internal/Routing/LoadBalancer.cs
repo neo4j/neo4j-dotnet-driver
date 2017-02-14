@@ -238,12 +238,12 @@ namespace Neo4j.Driver.Internal.Routing
         internal class ClusterPooledConnectionErrorHandler : IConnectionErrorHandler
         {
             private Func<Exception, Exception> _onConnectionErrorFunc;
-            private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
+            private readonly Func<Neo4jException, Neo4jException> _onServerErrorFunc;
 
-            public ClusterPooledConnectionErrorHandler(Func<Exception, Exception> onConnectionErrorFuncFunc, Func<Neo4jException, Neo4jException> onNeo4JErrorFuncFunc)
+            public ClusterPooledConnectionErrorHandler(Func<Exception, Exception> onConnectionErrorFuncFunc, Func<Neo4jException, Neo4jException> onServerErrorFuncFunc)
             {
                 _onConnectionErrorFunc = onConnectionErrorFuncFunc;
-                _onNeo4jErrorFunc = onNeo4JErrorFuncFunc;
+                _onServerErrorFunc = onServerErrorFuncFunc;
             }
 
             public Exception OnConnectionError(Exception e)
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             public Neo4jException OnServerError(Neo4jException e)
             {
-                return _onNeo4jErrorFunc.Invoke(e);
+                return _onServerErrorFunc.Invoke(e);
             }
         }
 
