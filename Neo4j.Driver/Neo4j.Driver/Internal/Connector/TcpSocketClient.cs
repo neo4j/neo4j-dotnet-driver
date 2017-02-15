@@ -28,7 +28,6 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly TcpClient _client;
         private Stream _stream;
-        private ILogger _logger;
 
         private readonly EncryptionManager _encryptionManager;
 
@@ -36,7 +35,6 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _encryptionManager = encryptionManager;
             _client = new TcpClient();
-            _logger = logger;
         }
 
         public Stream ReadStream => _stream;

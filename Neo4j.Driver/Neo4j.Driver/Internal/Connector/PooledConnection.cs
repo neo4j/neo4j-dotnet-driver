@@ -16,6 +16,8 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Sockets;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -25,6 +27,7 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly Action<Guid> _releaseAction;
         private readonly IConnection _connection;
+        private IConnectionErrorHandler _externalErrorHandler;
 
         public PooledConnection(IConnection connection, Action<Guid> releaseAction = null)
         {
@@ -32,7 +35,7 @@ namespace Neo4j.Driver.Internal.Connector
             _releaseAction = releaseAction ?? (x => { });
 
             //Adds call back error handler
-            AddConnectionErrorHander(new PooledConnectionErrorHandler(OnNeo4jError));
+            _connection.ExternalConnectionErrorHander(new PooledConnectionErrorHandler(OnServerError, OnConnectionError));
         }
         public Guid Id { get; } = Guid.NewGuid();
 
@@ -93,11 +96,6 @@ namespace Neo4j.Driver.Internal.Connector
             _connection.Close();
         }
 
-        public void AddConnectionErrorHander(IConnectionErrorHandler handler)
-        {
-            _connection.AddConnectionErrorHander(handler);
-        }
-
         /// <summary>
         /// Disposing a pooled connection will try to release the connection resource back to pool
         /// </summary>
@@ -106,9 +104,13 @@ namespace Neo4j.Driver.Internal.Connector
             _releaseAction(Id);
         }
 
-        public bool HasUnrecoverableError { private set; get; }
+        /// <summary>
+        /// Return true if unrecoverable error has been received on this connection, otherwise false.
+        /// The connection that has been marked as has unrecoverable errors will be eventally closed when returning back to the pool.
+        /// </summary>
+        internal bool HasUnrecoverableError { private set; get; }
 
-        private Neo4jException OnNeo4jError(Neo4jException error)
+        private Neo4jException OnServerError(Neo4jException error)
         {
             if (error.IsRecoverableError())
             {
@@ -118,30 +120,55 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 HasUnrecoverableError = true;
             }
-            return error;
+            return _externalErrorHandler == null ? error: _externalErrorHandler.OnServerError(error);
+        }
+
+        private Exception OnConnectionError(Exception error)
+        {
+            // No connection error is recoverable
+            HasUnrecoverableError = true;
+
+            if ( error is IOException || error is SocketException ||
+                error.GetBaseException() is IOException || error.GetBaseException() is SocketException )
+            {
+                error = new ServiceUnavailableException(
+                    $"Connection with the server breaks due to {error.GetType().Name}: {error.Message}", error);
+            }
+
+            return _externalErrorHandler == null ? error: _externalErrorHandler.OnConnectionError(error);
+        }
+
+        public void ExternalConnectionErrorHander(IConnectionErrorHandler handler)
+        {
+            _externalErrorHandler = handler;
+        }
+
+        internal IConnectionErrorHandler ExternalConnectionErrorHandler()
+        {
+            return _externalErrorHandler;
         }
 
         internal class PooledConnectionErrorHandler : IConnectionErrorHandler
         {
-            private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
+            private readonly Func<Neo4jException, Neo4jException> _onServerErrorFunc;
             private readonly Func<Exception, Exception> _onConnErrorFunc;
 
             public PooledConnectionErrorHandler(
-                Func<Neo4jException, Neo4jException> onNeo4JErrorFunc,
-                Func<Exception, Exception> onConnectionErrorFunc = null)
+                Func<Neo4jException, Neo4jException> onServerErrorFunc,
+                Func<Exception, Exception> onConnectionErrorFunc)
             {
-                _onNeo4jErrorFunc = onNeo4JErrorFunc;
+                _onServerErrorFunc = onServerErrorFunc;
                 _onConnErrorFunc = onConnectionErrorFunc;
             }
 
             public Exception OnConnectionError(Exception e)
             {
-                return _onConnErrorFunc == null ? e : _onConnErrorFunc.Invoke(e);
+                return _onConnErrorFunc.Invoke(e);
             }
 
-            public Neo4jException OnNeo4jError(Neo4jException e)
+            public Neo4jException OnServerError(Neo4jException e)
             {
-                return _onNeo4jErrorFunc.Invoke(e);
+                return _onServerErrorFunc.Invoke(e);
             }
         }
     }

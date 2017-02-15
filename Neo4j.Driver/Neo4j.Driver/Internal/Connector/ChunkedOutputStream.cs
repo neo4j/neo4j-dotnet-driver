@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private void WriteBytesInChunk(byte[] bytes, int offset = 0, int? length = null)
         {
-            Throw.ArgumentException.IfNotTrue(_isInChunk, nameof(_isInChunk));
+            Throw.ArgumentOutOfRangeException.IfFalse(_isInChunk, nameof(_isInChunk));
             Array.Copy(bytes, offset, _buffer, _pos, length ?? bytes.Length);
             _pos += length ?? bytes.Length;
             _chunkLength += length ?? bytes.Length;

@@ -35,8 +35,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Neo4jException Error { get; set; }
         public bool HasError => Error != null;
-        public bool HasProtocolViolationError
-            => HasError && Error.Code.ToLowerInvariant().Contains("clienterror.request");
+        public bool HasProtocolViolationError => HasError && Error is ProtocolException;
 
         internal Queue<IMessageResponseCollector> ResultBuilders => new Queue<IMessageResponseCollector>(_resultBuilders);
         internal Queue<IRequestMessage> SentMessages => new Queue<IRequestMessage>(_unhandledMessages);
@@ -86,9 +85,13 @@ namespace Neo4j.Driver.Internal.Connector
             switch (classification)
             {
                 case "clienterror":
-                    if (code.Equals(AuthenticationException.ErrorCode))
+                    if (AuthenticationException.IsAuthenticationError(code))
                     {
                         Error = new AuthenticationException(message);
+                    }
+                    else if (ProtocolException.IsProtocolError(code))
+                    {
+                        Error = new ProtocolException(code, message);
                     }
                     else
                     {

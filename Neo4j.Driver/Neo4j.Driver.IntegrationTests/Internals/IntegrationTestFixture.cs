@@ -20,16 +20,37 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class IntegrationTestFixture : IDisposable
+    public class StandAloneIntegrationTestFixture : IDisposable
     {
         public StandAlone StandAlone { get; }
-        public CausalCluster Cluster { get; }
 
-        public IntegrationTestFixture()
+        public StandAloneIntegrationTestFixture()
         {
             try
             {
                 StandAlone = new StandAlone();
+            }
+            catch (Exception)
+            {
+                Dispose();
+                throw;
+            }
+        }
+
+        public void Dispose()
+        {
+            StandAlone?.Dispose();
+        }
+    }
+
+    public class CausalClusterIntegrationTestFixture : IDisposable
+    {
+        public CausalCluster Cluster { get; }
+
+        public CausalClusterIntegrationTestFixture()
+        {
+            try
+            {
                 Cluster = new CausalCluster();
             }
             catch (Exception)
@@ -37,20 +58,26 @@ namespace Neo4j.Driver.IntegrationTests
                 Dispose();
                 throw;
             }
-            
         }
-
         public void Dispose()
         {
-            StandAlone?.Dispose();
             Cluster?.Dispose();
         }
     }
 
     [CollectionDefinition(CollectionName)]
-    public class IntegrationCollection : ICollectionFixture<IntegrationTestFixture>
+    public class SAIntegrationCollection : ICollectionFixture<StandAloneIntegrationTestFixture>
     {
-        public const string CollectionName = "Integration";
+        public const string CollectionName = "StandAloneIntegration";
+        // This class has no code, and is never created. Its purpose is simply
+        // to be the place to apply [CollectionDefinition] and all the
+        // ICollectionFixture<> interfaces.
+    }
+
+    [CollectionDefinition(CollectionName)]
+    public class CCIntegrationCollection : ICollectionFixture<CausalClusterIntegrationTestFixture>
+    {
+        public const string CollectionName = "CausalClusterIntegration";
         // This class has no code, and is never created. Its purpose is simply
         // to be the place to apply [CollectionDefinition] and all the
         // ICollectionFixture<> interfaces.

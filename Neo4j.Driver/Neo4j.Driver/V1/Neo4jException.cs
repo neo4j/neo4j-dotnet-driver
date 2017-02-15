@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Runtime.Serialization;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.V1
 {
@@ -168,7 +169,19 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class ProtocolException : Neo4jException
     {
+        private const string ErrorCodeInvalid = "Neo.ClientError.Request.Invalid";
+        private const string ErrorCodeInvalidFormat = "Neo.ClientError.Request.InvalidFormat";
+
+        internal static bool IsProtocolError(string code)
+        {
+            return code.Equals(ErrorCodeInvalid) || code.Equals(ErrorCodeInvalidFormat);
+        }
+
         public ProtocolException(string message) : base(message)
+        {
+        }
+
+        public ProtocolException(string code, string message) : base(code, message)
         {
         }
 
@@ -204,7 +217,12 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class AuthenticationException : SecurityException
     {
-        internal const string ErrorCode = "Neo.ClientError.Security.Unauthorized";
+        private const string ErrorCode = "Neo.ClientError.Security.Unauthorized";
+
+        internal static bool IsAuthenticationError(string code)
+        {
+            return code.Equals(ErrorCode);
+        }
 
         public AuthenticationException(string message) : base(ErrorCode, message)
         {

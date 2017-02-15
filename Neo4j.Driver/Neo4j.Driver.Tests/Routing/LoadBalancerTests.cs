@@ -250,7 +250,7 @@ namespace Neo4j.Driver.Tests
                         if (connection.Server.Address.Equals(uriA.ToString())) // uri2
                         {
                             throw balancer.CreateClusterPooledConnectionErrorHandler(uriA)
-                                .OnConnectionError(new IOException("failed init"));
+                                .OnConnectionError(new ServiceUnavailableException("failed init"));
                         }
                         if (connection.Server.Address.Equals(uriB.ToString())) // uri2
                         {
@@ -465,7 +465,7 @@ namespace Neo4j.Driver.Tests
                         .Callback(() =>
                         {
                             throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
-                                .OnConnectionError(new IOException("failed init"));
+                                .OnConnectionError(new ServiceUnavailableException("failed init"));
                         });
 
                     // When

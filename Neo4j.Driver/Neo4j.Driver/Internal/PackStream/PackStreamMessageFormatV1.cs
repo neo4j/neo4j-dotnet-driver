@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal.Packstream
                         UnpackIgnoredMessage(responseHandler);
                         break;
                     default:
-                        throw new IOException("Unknown requestMessage type: " + type);
+                        throw new ProtocolException("Unknown requestMessage type: " + type);
                 }
                 UnPackMessageTail();
             }
@@ -98,13 +98,13 @@ namespace Neo4j.Driver.Internal.Packstream
                         switch (_unpacker.UnpackStructSignature())
                         {
                             case NODE:
-                                Throw.ArgumentException.IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
+                                Throw.ProtocolException.IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
                                 return UnpackNode();
                             case RELATIONSHIP:
-                                Throw.ArgumentException.IfNotEqual(RelationshipFields, size, nameof(RelationshipFields), nameof(size));
+                                Throw.ProtocolException.IfNotEqual(RelationshipFields, size, nameof(RelationshipFields), nameof(size));
                                 return UnpackRelationship();
                             case PATH:
-                                Throw.ArgumentException.IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
+                                Throw.ProtocolException.IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
                                 return UnpackPath();
                         }
                         break;
@@ -118,8 +118,8 @@ namespace Neo4j.Driver.Internal.Packstream
                 var uniqNodes = new INode[(int) _unpacker.UnpackListHeader()];
                 for(int i = 0; i < uniqNodes.Length; i ++)
                 {
-                    Throw.ArgumentException.IfNotEqual(NodeFields, _unpacker.UnpackStructHeader(), nameof(NodeFields), $"received{nameof(NodeFields)}");
-                    Throw.ArgumentException.IfNotEqual(NODE, _unpacker.UnpackStructSignature(),nameof(NODE), $"received{nameof(NODE)}");
+                    Throw.ProtocolException.IfNotEqual(NodeFields, _unpacker.UnpackStructHeader(), nameof(NodeFields), $"received{nameof(NodeFields)}");
+                    Throw.ProtocolException.IfNotEqual(NODE, _unpacker.UnpackStructSignature(),nameof(NODE), $"received{nameof(NODE)}");
                     uniqNodes[i]=UnpackNode();
                 }
 
@@ -127,8 +127,8 @@ namespace Neo4j.Driver.Internal.Packstream
                 var uniqRels = new Relationship[(int)_unpacker.UnpackListHeader()];
                 for (int i = 0; i < uniqRels.Length; i++)
                 {
-                    Throw.ArgumentException.IfNotEqual( UnboundRelationshipFields, _unpacker.UnpackStructHeader(), nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
-                    Throw.ArgumentException.IfNotEqual(UNBOUND_RELATIONSHIP, _unpacker.UnpackStructSignature(), nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
+                    Throw.ProtocolException.IfNotEqual( UnboundRelationshipFields, _unpacker.UnpackStructHeader(), nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
+                    Throw.ProtocolException.IfNotEqual(UNBOUND_RELATIONSHIP, _unpacker.UnpackStructSignature(), nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
                     var urn = _unpacker.UnpackLong();
                     var relType = _unpacker.UnpackString();
                     var props = UnpackMap();

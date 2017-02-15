@@ -12,7 +12,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         private IDriver Driver => Server.Driver;
 
-        public ResultIT(ITestOutputHelper output, IntegrationTestFixture fixture) : base(output, fixture)
+        public ResultIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {}
 
         [Fact]

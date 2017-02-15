@@ -20,6 +20,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Packstream;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -52,7 +53,7 @@ namespace Neo4j.Driver.Tests
                     var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackNull());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                 }
             }
 
@@ -92,7 +93,7 @@ namespace Neo4j.Driver.Tests
                     var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackBoolean());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                 }
             }
 
@@ -186,7 +187,7 @@ namespace Neo4j.Driver.Tests
                     var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackLong());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                 }
             }
 
@@ -216,7 +217,7 @@ namespace Neo4j.Driver.Tests
                     var unpacker = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackDouble());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                 }
             }
 
@@ -309,7 +310,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackString());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                     mockInput.Verify(x => x.ReadInt(), Times.Once);
                 }
@@ -323,7 +324,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackString());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
@@ -397,7 +398,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackBytes());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                     mockInput.Verify(x => x.ReadInt(), Times.Once);
                 }
@@ -411,7 +412,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackBytes());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
@@ -480,7 +481,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackMapHeader());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
@@ -549,7 +550,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackListHeader());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
@@ -620,7 +621,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackStructHeader());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
@@ -674,7 +675,7 @@ namespace Neo4j.Driver.Tests
                     var u = new PackStream.Unpacker(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.PeekNextType());
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.PeekByte(), Times.Once);
                 }
             }

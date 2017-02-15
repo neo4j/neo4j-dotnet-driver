@@ -202,17 +202,16 @@ namespace Neo4j.Driver.Internal.Routing
 
         private Exception OnConnectionError(Exception e, Uri uri)
         {
-            if (e is SecurityException || e is ProtocolException)
+            if (e is ServiceUnavailableException)
             {
-                return e;
+                _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+                Forget(uri);
+                return new SessionExpiredException($"Server at {uri} is no longer available due to error: {e.Message}.", e);
             }
-
-            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
-            Forget(uri);
-            return new SessionExpiredException($"Server at {uri} is no longer available due to error: {e.Message}.", e);
+            return e;
         }
 
-        private Neo4jException OnNeo4jError(Neo4jException error, Uri uri)
+        private Neo4jException OnServerError(Neo4jException error, Uri uri)
         {
             if (error.IsClusterNotALeaderError())
             {
@@ -233,18 +232,18 @@ namespace Neo4j.Driver.Internal.Routing
 
         internal ClusterPooledConnectionErrorHandler CreateClusterPooledConnectionErrorHandler(Uri uri)
         {
-            return new ClusterPooledConnectionErrorHandler(x => OnConnectionError(x, uri), x => OnNeo4jError(x, uri));
+            return new ClusterPooledConnectionErrorHandler(x => OnConnectionError(x, uri), x => OnServerError(x, uri));
         }
 
         internal class ClusterPooledConnectionErrorHandler : IConnectionErrorHandler
         {
             private Func<Exception, Exception> _onConnectionErrorFunc;
-            private readonly Func<Neo4jException, Neo4jException> _onNeo4jErrorFunc;
+            private readonly Func<Neo4jException, Neo4jException> _onServerErrorFunc;
 
-            public ClusterPooledConnectionErrorHandler(Func<Exception, Exception> onConnectionErrorFuncFunc, Func<Neo4jException, Neo4jException> onNeo4JErrorFuncFunc)
+            public ClusterPooledConnectionErrorHandler(Func<Exception, Exception> onConnectionErrorFuncFunc, Func<Neo4jException, Neo4jException> onServerErrorFuncFunc)
             {
                 _onConnectionErrorFunc = onConnectionErrorFuncFunc;
-                _onNeo4jErrorFunc = onNeo4JErrorFuncFunc;
+                _onServerErrorFunc = onServerErrorFuncFunc;
             }
 
             public Exception OnConnectionError(Exception e)
@@ -252,9 +251,9 @@ namespace Neo4j.Driver.Internal.Routing
                 return _onConnectionErrorFunc.Invoke(e);
             }
 
-            public Neo4jException OnNeo4jError(Neo4jException e)
+            public Neo4jException OnServerError(Neo4jException e)
             {
-                return _onNeo4jErrorFunc.Invoke(e);
+                return _onServerErrorFunc.Invoke(e);
             }
         }
 
