@@ -15,13 +15,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.IO;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
     internal interface IConnectionErrorHandler
     {
+        /// <summary>
+        /// Define what to do when a connection error happens when sending and receiving data
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         Exception OnConnectionError(Exception e);
-        Neo4jException OnNeo4jError(Neo4jException e);
+        /// <summary>
+        /// Define what to do when a failure received from the server after data received from the server
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        Neo4jException OnServerError(Neo4jException e);
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
@@ -9,9 +10,21 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class AuthenticationIT : DirectDriverIT
     {
-        public AuthenticationIT(ITestOutputHelper output, IntegrationTestFixture fixture)
+        public AuthenticationIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output, fixture)
         { }
+
+        [Fact]
+        public void AuthenticationErrorIfWrongAuthToken()
+        {
+            Exception exception;
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("fake", "fake")))
+            {
+                exception = Record.Exception(()=>driver.Session());
+            }
+            exception.Should().BeOfType<AuthenticationException>();
+            exception.Message.Should().Contain("The client is unauthorized due to authentication failure.");
+        }
 
         [Fact]
         public void ShouldProvideRealmWithBasicAuthToken()

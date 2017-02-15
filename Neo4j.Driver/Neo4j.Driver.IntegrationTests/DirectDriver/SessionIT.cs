@@ -4,6 +4,7 @@ using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
 using System.Linq;
+using System.Net.Sockets;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -11,8 +12,22 @@ namespace Neo4j.Driver.IntegrationTests
     {
         private IDriver Driver => Server.Driver;
 
-        public SessionIT(ITestOutputHelper output, IntegrationTestFixture fixture) : base(output, fixture)
+        public SessionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {
+        }
+
+        [Fact]
+        public void ServiceUnavailableErrorWhenFailedToConn()
+        {
+            Exception exception;
+            using (var driver = GraphDatabase.Driver("bolt://localhost:123"))
+            {
+               exception = Record.Exception(()=>driver.Session());
+            }
+            exception.Should().BeOfType<ServiceUnavailableException>();
+            exception.Message.Should().Be("Connection with the server breaks due to AggregateException: One or more errors occurred.");
+            exception.GetBaseException().Should().BeOfType<SocketException>();
+            exception.GetBaseException().Message.Should().Contain("No connection could be made because the target machine actively refused it");
         }
 
         [Fact]

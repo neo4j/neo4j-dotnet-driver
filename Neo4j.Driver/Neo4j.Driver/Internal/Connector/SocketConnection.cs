@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
@@ -39,7 +40,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly object _syncLock = new object();
 
         private readonly ILogger _logger;
-        private readonly IList<IConnectionErrorHandler> _handlers = new List<IConnectionErrorHandler>();
+        private IConnectionErrorHandler _externalErrorHandler;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, ILogger logger)
             : this(new SocketClient(uri, connectionSettings.EncryptionManager, logger),
@@ -74,7 +75,7 @@ namespace Neo4j.Driver.Internal.Connector
                 var connected = Task.Run(() => _client.Start()).Wait(_connectionTimeout);
                 if (!connected)
                 {
-                    throw new ClientException($"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
+                    throw new IOException($"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
                 }
             }
             catch (Exception error)
@@ -205,11 +206,6 @@ namespace Neo4j.Driver.Internal.Connector
             Dispose();
         }
 
-        public void AddConnectionErrorHander(IConnectionErrorHandler handler)
-        {
-            _handlers.Add(handler);
-        }
-
         public void Dispose()
         {
             Dispose(true);
@@ -238,7 +234,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 var error = _responseHandler.Error;
 
-                error = OnNeo4jError(error);
+                error = OnServerError(error);
 
                 _responseHandler.Error = null;
                 _interrupted = false;
@@ -248,20 +244,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         private Exception OnConnectionError(Exception e)
         {
-            foreach (var handler in _handlers)
-            {
-                e = handler.OnConnectionError(e);
-            }
-            return e;
+            return _externalErrorHandler == null ? e : _externalErrorHandler.OnConnectionError(e);
         }
 
-        public Neo4jException OnNeo4jError(Neo4jException e)
+        public Neo4jException OnServerError(Neo4jException e)
         {
-            foreach (var handler in _handlers)
-            {
-                e = handler.OnNeo4jError(e);
-            }
-            return e;
+            return _externalErrorHandler == null ? e : _externalErrorHandler.OnServerError(e);
         }
 
         private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null, IRequestMessage requestStreamingMessage = null)
@@ -299,6 +287,11 @@ namespace Neo4j.Driver.Internal.Connector
                         "running the statement which get reset in this session.", e);
                 }
             }
+        }
+
+        public void ExternalConnectionErrorHander(IConnectionErrorHandler handler)
+        {
+            _externalErrorHandler = handler;
         }
     }
 }

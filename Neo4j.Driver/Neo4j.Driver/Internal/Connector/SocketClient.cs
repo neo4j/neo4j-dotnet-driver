@@ -100,12 +100,21 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Send(IEnumerable<IRequestMessage> messages)
         {
-            foreach (var message in messages)
+            try
             {
-                _writer.Write(message);
-                _logger?.Debug("C: ", message);
+                foreach (var message in messages)
+                {
+                    _writer.Write(message);
+                    _logger?.Debug("C: ", message);
+                }
+                _writer.Flush();
             }
-            _writer.Flush();
+            catch (Exception ex)
+            {
+                _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
+                Task.Run(() => Stop()).Wait();
+                throw;
+            }
         }
 
         public bool IsOpen { get; private set; }
@@ -126,12 +135,13 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception ex)
             {
-                _logger?.Error("Unable to unpack message from server, connection has been terminated.", ex);
+                _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", ex);
                 Task.Run(() => Stop()).Wait();
                 throw;
             }
             if (responseHandler.HasProtocolViolationError)
             {
+                _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
                 Task.Run(() => Stop()).Wait();
                 throw responseHandler.Error;
             }

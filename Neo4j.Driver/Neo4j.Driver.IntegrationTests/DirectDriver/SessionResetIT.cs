@@ -15,7 +15,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         private IDriver Driver => Server.Driver;
 
-        public SessionResetIT(ITestOutputHelper output, IntegrationTestFixture fixture)
+        public SessionResetIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output, fixture)
         {
             Server.RestartServerWithProcedures(new DirectoryInfo("../../Resources/longRunningStatement.jar").FullName);

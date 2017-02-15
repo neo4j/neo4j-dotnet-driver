@@ -22,6 +22,7 @@ using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -440,7 +441,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var packer = new PackStream.Packer(null);
                     var ex = Xunit.Record.Exception(() => packer.Pack(new {Name = "Test"}));
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                 }
             }
 
@@ -564,7 +565,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var packer = new PackStream.Packer(null);
                     var ex = Xunit.Record.Exception(() => packer.PackStructHeader(short.MaxValue +1, 0x1));
-                    ex.Should().BeOfType<ArgumentOutOfRangeException>();
+                    ex.Should().BeOfType<ProtocolException>();
                 }
             }
 

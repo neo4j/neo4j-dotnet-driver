@@ -51,14 +51,14 @@ namespace Neo4j.Driver.Internal
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings connectionPoolSettings,
             ILogger logger,
-            IConnectionErrorHandler exteralErrorHandler = null)
+            IConnectionErrorHandler externalErrorHandler = null)
             : base(logger)
         {
             _uri = uri;
             _connectionSettings = connectionSettings;
             _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
 
-            _externalErrorHandler = exteralErrorHandler;
+            _externalErrorHandler = externalErrorHandler;
             _logger = logger;
         }
 
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal
                     : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), Release);
                 if (_externalErrorHandler != null)
                 {
-                    conn.AddConnectionErrorHander(_externalErrorHandler);
+                    conn.ExternalConnectionErrorHander(_externalErrorHandler);
                 }
                 conn.Init();
                 return conn;
@@ -264,10 +264,5 @@ namespace Neo4j.Driver.Internal
         /// Try to reset the connection to a clean state to prepare it for a new session.
         /// </summary>
         void ClearConnection();
-
-        /// <summary>
-        /// Return true if unrecoverable error has been received on this connection, otherwise false.
-        /// </summary>
-        bool HasUnrecoverableError { get; }
     }
 }

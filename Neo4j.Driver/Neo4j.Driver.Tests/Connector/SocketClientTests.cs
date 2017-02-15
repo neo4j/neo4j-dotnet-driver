@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class SendMethod
+        public class SendReceiveMethod
         {
             [Fact]
             public async Task ShouldSendMessagesAsExpected()
@@ -204,12 +204,12 @@ namespace Neo4j.Driver.Tests
                     await harness.Client.Start();
 
                     // force to recive an error
-                    messageHandler.Error = new ClientException("Neo.ClientError.Request.Invalid", "Test Message");
+                    messageHandler.Error = new ProtocolException("Neo.ClientError.Request.Invalid", "Test Message");
 
                     // When
                     harness.Client.Send(messages);
                     var ex = Record.Exception(() => harness.Client.Receive(messageHandler));
-                    ex.Should().BeOfType<ClientException>();
+                    ex.Should().BeOfType<ProtocolException>();
 
                     harness.MockTcpSocketClient.Verify(x => x.DisconnectAsync(), Times.Once);
                     harness.MockTcpSocketClient.Verify(x => x.Dispose(), Times.Once);
