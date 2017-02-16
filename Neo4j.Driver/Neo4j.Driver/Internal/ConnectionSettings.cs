@@ -27,9 +27,10 @@ namespace Neo4j.Driver.Internal
         public IAuthToken AuthToken { get; }
         public TimeSpan ConnectionTimeout { get; }
         public string UserAgent { get; }
-        public EncryptionManager EncryptionManager;
+        public EncryptionManager EncryptionManager { get; }
+        public bool SocketKeepAliveEnabled { get; }
 
-        public ConnectionSettings(Uri initialServerUri, IAuthToken authToken, EncryptionManager encryptionManager, TimeSpan connectionTimeout, string userAgent = null)
+        public ConnectionSettings(Uri initialServerUri, IAuthToken authToken, EncryptionManager encryptionManager, TimeSpan connectionTimeout, bool socketKeepAlive, string userAgent = null)
         {
             Throw.ArgumentNullException.IfNull(initialServerUri, nameof(initialServerUri));
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
@@ -40,6 +41,7 @@ namespace Neo4j.Driver.Internal
             EncryptionManager = encryptionManager;
             ConnectionTimeout = connectionTimeout;
             UserAgent = userAgent ?? DefaultUserAgent;
+            SocketKeepAliveEnabled = socketKeepAlive;
         }
     }
 }
