@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Tests
                 var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
                 set.Remove(0);
                 set.Remove(2);
-                set.ToList().Should().ContainInOrder(3, 1);
+                set.ToList().Should().ContainInOrder(1, 3);
             }
 
             [Fact]
@@ -108,52 +108,72 @@ namespace Neo4j.Driver.Tests
 
         public class ConcurrentAccessTests
         {
-            [Fact]
-            public void ShouldBeAbleToAccessNewlyAddedItem()
+            [Theory]
+            [InlineData(3)]
+            [InlineData(30)]
+            public void ShouldBeAbleToAccessNewlyAddedItem(int times)
             {
                 var set = new ConcurrentRoundRobinSet<int> {0, 1, 2, 3};
 
                 // we loop serveral turns on the full set
-                for (var i = 0; i < 3*set.Count; i++)
+                for (var j = 0; j < times; j++)
                 {
-                    int real;
-                    set.TryNext(out real).Should().BeTrue();
-                    real.Should().Be(i%set.Count);
+                    for (var i = 0; i < set.Count; i++)
+                    {
+                        int real;
+                        set.TryNext(out real).Should().BeTrue();
+                        real.Should().Be(i);
+                    }
                 }
 
                 // we add a new item into the set
                 set.Add(4);
 
                 // we loop again and everything is in set
-                for (var i = 0; i < 3*set.Count; i++)
+                for (var j = 0; j < times; j++)
                 {
                     int real;
+
+                    // first we got the newly added out
                     set.TryNext(out real).Should().BeTrue();
-                    real.Should().Be(i % set.Count);
+                    real.Should().Be(4);
+
+                    for (var i = 0; i < set.Count - 1; i++)
+                    {
+                        set.TryNext(out real).Should().BeTrue();
+                        real.Should().Be(i);
+                    }
                 }
+
             }
 
-            [Fact]
-            public void ShouldBeAbleToRemoveItem()
+            [Theory]
+            [InlineData(3)]
+            [InlineData(40)]
+            public void ShouldBeAbleToRemoveItem(int times)
             {
                 var set = new ConcurrentRoundRobinSet<int> {0, 1, 2, 3};
-
-                for (var i = 0; i < 3 * set.Count; i++)
+                for (var j = 0; j < times; j++)
                 {
-                    int real;
-                    set.TryNext(out real).Should().BeTrue();
-                    var expect = i % set.Count;
-                    real.Should().Be(expect);
+                    for (var i = 0; i < set.Count; i++)
+                    {
+                        int real;
+                        set.TryNext(out real).Should().BeTrue();
+                        real.Should().Be(i);
+                    }
                 }
 
                 set.Remove(3);
 
-                for (var i = 0; i < 3 * set.Count; i++)
+                for (var j = 0; j < times; j++)
                 {
-                    int real;
-                    set.TryNext(out real).Should().BeTrue();
-                    var expect = i % set.Count;
-                    real.Should().Be(expect);
+                    for (var i = 0; i < set.Count; i++)
+                    {
+                        int real;
+                        set.TryNext(out real).Should().BeTrue();
+                        real.Should().Be(i);
+                    }
+
                 }
             }
         }

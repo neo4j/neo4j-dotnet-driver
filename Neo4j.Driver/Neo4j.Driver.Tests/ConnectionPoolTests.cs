@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -158,7 +159,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldCreateNewWhenQueueOnlyContainsUnhealthyConnections()
             {
-                var conns = new Queue<IPooledConnection>();
+                var conns = new ConcurrentQueue<IPooledConnection>();
                 var unhealthyId = Guid.NewGuid();
                 var unhealthyMock = new Mock<IPooledConnection>();
                 unhealthyMock.Setup(x => x.IsOpen).Returns(false);
@@ -184,7 +185,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldReuseOldWhenReusableConnectionInQueue()
             {
-                var conns = new Queue<IPooledConnection>();
+                var conns = new ConcurrentQueue<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
 
@@ -205,7 +206,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldReuseReusableWhenReusableConnectionInQueue()
             {
-                var conns = new Queue<IPooledConnection>();
+                var conns = new ConcurrentQueue<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
                 healthyMock.Setup(x => x.IsOpen).Returns(true);
                 var unhealthyMock = new Mock<IPooledConnection>();
@@ -242,7 +243,7 @@ namespace Neo4j.Driver.Tests
                 }
 
                 var mockConns = new Queue<Mock<IPooledConnection>>();
-                var conns = new Queue<IPooledConnection>();
+                var conns = new ConcurrentQueue<IPooledConnection>();
                 for (var i = 0; i < numberOfThreads; i++)
                 {
                     var mock = new Mock<IPooledConnection>();
@@ -312,7 +313,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseAcquiredConnectionIfPoolDisposeStarted()
             {
                 // Given
-                var conns = new Queue<IPooledConnection>();
+                var conns = new ConcurrentQueue<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
                 var pool = new ConnectionPool(MockedConnection, conns);
 
@@ -345,16 +346,15 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
-                var id = new Guid();
 
-                var inUseconns = new Dictionary<Guid, IPooledConnection>();
-                inUseconns.Add(id, mock.Object);
-                var pool = new ConnectionPool(null, null, inUseconns);
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
+                var pool = new ConnectionPool(null, null, inUseConns);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(id);
+                pool.Release(mock.Object);
 
                 pool.NumberOfAvailableConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -365,16 +365,15 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(false);
-                var id = new Guid();
 
-                var inUseConns = new Dictionary<Guid, IPooledConnection>();
-                inUseConns.Add(id, mock.Object);
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
                 var pool = new ConnectionPool(null, null, inUseConns);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(id);
+                pool.Release(mock.Object);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -387,16 +386,15 @@ namespace Neo4j.Driver.Tests
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
                 mock.Setup(x => x.ClearConnection()).Throws<ClientException>();
-                var id = new Guid();
 
-                var inUseConns = new Dictionary<Guid, IPooledConnection>();
-                inUseConns.Add(id, mock.Object);
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
                 var pool = new ConnectionPool(null, null, inUseConns);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(id);
+                pool.Release(mock.Object);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -408,12 +406,11 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
-                var id = new Guid();
 
-                var inUseConns = new Dictionary<Guid, IPooledConnection>();
-                inUseConns.Add(id, mock.Object);
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
 
-                var availableConns = new Queue<IPooledConnection>();
+                var availableConns = new ConcurrentQueue<IPooledConnection>();
                 var pooledConnMock = new Mock<IPooledConnection>();
                 for (int i = 0; i < Config.DefaultConfig.MaxIdleSessionPoolSize; i++)
                 {
@@ -425,7 +422,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableConnections.Should().Be(10);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(id);
+                pool.Release(mock.Object);
 
                 pool.NumberOfAvailableConnections.Should().Be(10);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -438,15 +435,14 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseConnectionIfPoolDisposeStarted()
             {
                 // Given
-                var inUseConns = new Dictionary<Guid, IPooledConnection>();
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
                 var pool = new ConnectionPool(null, null, inUseConns);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
                 var mock = new Mock<IPooledConnection>();
-                var id = new Guid();
-                inUseConns.Add(id, mock.Object);
+                inUseConns.TryAdd(mock.Object);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
                 // When
@@ -455,7 +451,7 @@ namespace Neo4j.Driver.Tests
                 // Note: Once dispose get called, it is forbiden to put anything into queue.
                 mock.Setup(x => x.IsOpen).Returns(true)
                     .Callback(() => pool.DisposeCalled = true); // Simulte Dispose get called at this time
-                pool.Release(id);
+                pool.Release(mock.Object);
 
                 // Then
                 pool.NumberOfAvailableConnections.Should().Be(0);
@@ -471,11 +467,10 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
-                var id = Guid.NewGuid();
-                var inUseConns = new Dictionary<Guid, IPooledConnection>();
-                inUseConns.Add(id, mock.Object);
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
 
-                var availableConns = new Queue<IPooledConnection>();
+                var availableConns = new ConcurrentQueue<IPooledConnection>();
                 var mock1 = new Mock<IPooledConnection>();
                 mock1.Setup(x => x.IsOpen).Returns(true);
 
@@ -497,11 +492,10 @@ namespace Neo4j.Driver.Tests
                 var mockLogger = new Mock<ILogger>();
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
-                var id = Guid.NewGuid();
-                var inUseConns = new Dictionary<Guid, IPooledConnection>();
-                inUseConns.Add(id, mock.Object);
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
 
-                var availableConns = new Queue<IPooledConnection>();
+                var availableConns = new ConcurrentQueue<IPooledConnection>();
                 var mock1 = new Mock<IPooledConnection>();
                 mock1.Setup(x => x.IsOpen).Returns(true);
 
@@ -522,13 +516,13 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
-                var id = Guid.NewGuid();
-                var inUseConns = new Dictionary<Guid, IPooledConnection> {{id, mock.Object}};
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
                 var pool = new ConnectionPool(null, null, inUseConns);
 
                 // When
                 pool.Dispose();
-                pool.Release(id);
+                pool.Release(mock.Object);
 
                 // Then
                 mock.Verify(x => x.Close(), Times.Once);
@@ -539,8 +533,8 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
-                var id = Guid.NewGuid();
-                var inUseConns = new Dictionary<Guid, IPooledConnection> { { id, mock.Object } };
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
                 var pool = new ConnectionPool(null, null, inUseConns);
 
                 // When

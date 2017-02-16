@@ -16,9 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -26,10 +24,8 @@ namespace Neo4j.Driver.Internal.Routing
     // Make this class lock free if it is possible.
     internal class ConcurrentRoundRobinSet<T> : IEnumerable<T>
     {
-        private readonly ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();
-
-        // We need a lock when we cannot finish modification of the queue in one concurrent method call
-        private readonly object _syncLock = new object();
+        private readonly IList<T> _items = new List<T>();
+        private int _index = 0;
 
         /// <summary>
         /// Add one item into this set.
@@ -37,29 +33,26 @@ namespace Neo4j.Driver.Internal.Routing
         /// <param name="item">The item to add</param>
         public void Add(T item)
         {
-            lock (_syncLock)
+            lock (_items)
             {
-                if (!_queue.Contains(item))
+                if (!_items.Contains(item))
                 {
-                    _queue.Enqueue(item);
+                    _items.Add(item);
                 }
             }
         }
 
         /// <summary>
-        /// Adds several items into this set.
+        /// Adds several _items into this set.
         /// </summary>
-        /// <param name="items">The items to add</param>
+        /// <param name="items">The _items to add</param>
         public void Add(IEnumerable<T> items)
         {
-            lock (_syncLock)
+            lock (_items)
             {
                 foreach (var item in items)
                 {
-                    if (!_queue.Contains(item))
-                    {
-                        _queue.Enqueue(item);
-                    }
+                    Add(item);
                 }
             }
         }
@@ -70,38 +63,34 @@ namespace Neo4j.Driver.Internal.Routing
         /// <param name="item"></param>
         public void Remove(T item)
         {
-            lock (_syncLock)
+            lock (_items)
             {
-                // Note: no one could add or remove to the set or the queue at the same time
-                var count = _queue.Count;
-                for (var i = 0; i < count; i++)
+                var pos = _items.IndexOf(item);
+                _items.Remove(item);
+                if (_index > pos)
                 {
-                    T value;
-                    _queue.TryDequeue(out value);
-
-                    if (value.Equals(item)) // found the item
-                    {
-                        // removed the item
-                        break;
-                    }
-                    // if not found, then put it back to the end of the queue
-                    _queue.Enqueue(value);
+                    _index--;
                 }
             }
         }
 
+        /// <summary>
+        /// Round robin to get the next item in the set
+        /// </summary>
+        /// <param name="value">The next item in the set</param>
+        /// <returns>true if succesfully find an item, otherwise false if the set is empty</returns>
         public bool TryNext(out T value)
         {
-            lock (_syncLock)
+            lock (_items)
             {
-                if (_queue.Count == 0)
+                if (_items.Count == 0)
                 {
                     value = default(T);
                     return false;
                 }
-                // change to no memory copy, e.g. list
-                _queue.TryDequeue(out value);
-                _queue.Enqueue(value);
+                // ensure the index is in range
+                _index = _index % _items.Count;
+                value = _items[_index++];
             }
             return true;
         }
@@ -111,30 +100,47 @@ namespace Neo4j.Driver.Internal.Routing
         /// </summary>
         public void Clear()
         {
-            lock (_syncLock)
+            lock (_items)
             {
-                T ignored;
-                while (_queue.TryDequeue(out ignored)) {}
+                _items.Clear();
             }
         }
 
-        public int Count => _queue.Count;
+        /// <summary>
+        /// Not thread safe
+        /// </summary>
+        public int Count => _items.Count;
 
-        public bool IsEmpty => _queue.IsEmpty;
+        /// <summary>
+        /// Not thread safe
+        /// </summary>
+        public bool IsEmpty => _items.Count == 0;
 
+        /// <summary>
+        /// Not thread safe.
+        /// </summary>
+        /// <returns>The enumerator of the current snapshot of the set</returns>
         public IEnumerator<T> GetEnumerator()
         {
-            return _queue.GetEnumerator();
+            return _items.GetEnumerator();
         }
 
+        /// <summary>
+        /// Not thread safe
+        /// </summary>
+        /// <returns>The eumerator of the current snapshot of the set</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Not thread safe
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
-            return string.Join(", ", _queue);
+            return string.Join(", ", _items);
         }
     }
 }

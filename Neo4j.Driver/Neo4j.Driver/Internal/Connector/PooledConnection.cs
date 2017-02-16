@@ -25,11 +25,11 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class PooledConnection : IPooledConnection
     {
-        private readonly Action<Guid> _releaseAction;
+        private readonly Action<IPooledConnection> _releaseAction;
         private readonly IConnection _connection;
         private IConnectionErrorHandler _externalErrorHandler;
 
-        public PooledConnection(IConnection connection, Action<Guid> releaseAction = null)
+        public PooledConnection(IConnection connection, Action<IPooledConnection> releaseAction = null)
         {
             _connection = connection;
             _releaseAction = releaseAction ?? (x => { });
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         public void Dispose()
         {
-            _releaseAction(Id);
+            _releaseAction(this);
         }
 
         /// <summary>
