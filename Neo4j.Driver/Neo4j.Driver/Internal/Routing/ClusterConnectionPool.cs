@@ -18,7 +18,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
@@ -28,10 +27,10 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools = new ConcurrentDictionary<Uri, IConnectionPool>();
         private readonly ConnectionSettings _connectionSettings;
         private readonly ConnectionPoolSettings _poolSettings;
-        private readonly Func<Uri, IConnectionErrorHandler> _createClusterErrorHandlerFunc;
+        private readonly Action<Uri, Exception> _onErrorAction;
 
         // for test only
-        private readonly IConnectionPool _fakeConnectionPool;
+        private readonly IConnectionPool _fakePool;
 
         private volatile bool _disposeCalled;
 
@@ -39,35 +38,38 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger,
-            Func<Uri, IConnectionErrorHandler> createClusterErrorHandlerFunc)
+            Action<Uri, Exception> onErrorAction=null)
             : base(logger)
         {
             _connectionSettings = connectionSettings;
             _poolSettings = poolSettings;
-            _createClusterErrorHandlerFunc = createClusterErrorHandlerFunc;
+            _onErrorAction = onErrorAction ?? ((uri, e)=> { throw e; });
             if (connectionSettings?.InitialServerUri != null)
             {
                 Add(connectionSettings.InitialServerUri);
             }
         }
 
-        internal ClusterConnectionPool(IConnectionPool connectionPool,
+        internal ClusterConnectionPool(
+            IConnectionPool connectionPool,
             ConcurrentDictionary<Uri, IConnectionPool> clusterPool=null,
             ConnectionSettings connSettings=null,
             ConnectionPoolSettings poolSettings=null,
-            ILogger logger=null) :
-            this(connSettings, poolSettings, logger, null)
+            ILogger logger=null,
+            Action<Uri, Exception> onErrorAction = null
+            ) :
+            this(connSettings, poolSettings, logger, onErrorAction)
         {
-            _fakeConnectionPool = connectionPool;
+            _fakePool = connectionPool;
             _pools = clusterPool;
         }
 
         private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
-            return _fakeConnectionPool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger, _createClusterErrorHandlerFunc.Invoke(uri));
+            return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger);
         }
 
-        public bool TryAcquire(Uri uri, out IPooledConnection conn)
+        public bool TryAcquire(Uri uri, out IClusterConnection conn)
         {
             IConnectionPool pool;
             if (!_pools.TryGetValue(uri, out pool))
@@ -76,8 +78,13 @@ namespace Neo4j.Driver.Internal.Routing
                 return false;
             }
 
-            conn = pool.Acquire();
+            conn = CreateNewClusterConnection(pool, uri);
             return true;
+        }
+
+        private IClusterConnection CreateNewClusterConnection(IConnectionPool pool, Uri uri)
+        {
+            return new ClusterConnection(()=>pool.Acquire(), e => _onErrorAction.Invoke(uri, e));
         }
 
         // This is the ultimate method to add a pool

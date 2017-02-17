@@ -36,11 +36,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
-        private volatile bool _interrupted;
-        private readonly object _syncLock = new object();
-
         private readonly ILogger _logger;
-        private IConnectionErrorHandler _externalErrorHandler;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, ILogger logger)
             : this(new SocketClient(uri, connectionSettings.EncryptionManager, connectionSettings.SocketKeepAliveEnabled, logger),
@@ -70,17 +66,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Init()
         {
-            try
+
+            var connected = Task.Run(() => _client.Start()).Wait(_connectionTimeout);
+            if (!connected)
             {
-                var connected = Task.Run(() => _client.Start()).Wait(_connectionTimeout);
-                if (!connected)
-                {
-                    throw new IOException($"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
-                }
-            }
-            catch (Exception error)
-            {
-                throw OnConnectionError(error);
+                throw new IOException(
+                    $"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
             }
 
             Init(_authToken);
@@ -102,27 +93,15 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Send()
         {
-            lock (_syncLock)
+            if (_messages.Count == 0)
             {
-                EnsureNotInterrupted();
-                if (_messages.Count == 0)
-                {
-                    // nothing to send
-                    return;
-                }
-                // blocking to send
-
-                try
-                {
-                    _client.Send(_messages);
-                }
-                catch (Exception error)
-                {
-                    throw OnConnectionError(error);
-                }
-                
-                _messages.Clear();
+                // nothing to send
+                return;
             }
+            // blocking to send
+            _client.Send(_messages);
+
+            _messages.Clear();
         }
 
         private void Receive()
@@ -134,29 +113,13 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             // blocking to receive
-            try
-            {
-                _client.Receive(_responseHandler);
-            }
-            catch (Exception error)
-            {
-                throw OnConnectionError(error);
-            }
-            
+            _client.Receive(_responseHandler);
             AssertNoServerFailure();
         }
 
         public void ReceiveOne()
         {
-            try
-            {
-                _client.ReceiveOne(_responseHandler);
-            }
-            catch (Exception error)
-            {
-                throw OnConnectionError(error);
-            }
-            
+            _client.ReceiveOne(_responseHandler);
             AssertNoServerFailure();
         }
 
@@ -179,23 +142,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void AckFailure()
         {
-            if (!_interrupted)
-            {
-                Enqueue(new AckFailureMessage());
-            }
-        }
 
-        public void ResetAsync()
-        {
-            lock (_syncLock)
-            {
-                if (!_interrupted)
-                {
-                    Enqueue(new ResetMessage(), new ResetCollector(() => { _interrupted = false; }));
-                    Send();
-                    _interrupted = true;
-                }
-            }
+            Enqueue(new AckFailureMessage());
         }
 
         public bool IsOpen => _client.IsOpen;
@@ -233,65 +181,23 @@ namespace Neo4j.Driver.Internal.Connector
             if (_responseHandler.HasError)
             {
                 var error = _responseHandler.Error;
-
-                error = OnServerError(error);
-
                 _responseHandler.Error = null;
-                _interrupted = false;
                 throw error;
             }
         }
 
-        private Exception OnConnectionError(Exception e)
+        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
+            IRequestMessage requestStreamingMessage = null)
         {
-            return _externalErrorHandler == null ? e : _externalErrorHandler.OnConnectionError(e);
-        }
 
-        public Neo4jException OnServerError(Neo4jException e)
-        {
-            return _externalErrorHandler == null ? e : _externalErrorHandler.OnServerError(e);
-        }
+            _messages.Enqueue(requestMessage);
+            _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
 
-        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null, IRequestMessage requestStreamingMessage = null)
-        {
-            lock (_syncLock)
+            if (requestStreamingMessage != null)
             {
-                EnsureNotInterrupted();
-                _messages.Enqueue(requestMessage);
-                _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
-
-                if (requestStreamingMessage != null)
-                {
-                    _messages.Enqueue(requestStreamingMessage);
-                    _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
-                }
+                _messages.Enqueue(requestStreamingMessage);
+                _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
             }
-        }
-
-        private void EnsureNotInterrupted()
-        {
-            if (_interrupted)
-            {
-                try
-                {
-                    while (_responseHandler.UnhandledMessageSize > 0)
-                    {
-                        ReceiveOne();
-                    }
-                }
-                catch (Neo4jException e)
-                {
-                    throw new ClientException(
-                        "An error has occurred due to the cancellation of executing a previous statement. " +
-                        "You received this error probably because you did not consume the result immediately after " +
-                        "running the statement which get reset in this session.", e);
-                }
-            }
-        }
-
-        public void ExternalConnectionErrorHander(IConnectionErrorHandler handler)
-        {
-            _externalErrorHandler = handler;
         }
     }
 }
