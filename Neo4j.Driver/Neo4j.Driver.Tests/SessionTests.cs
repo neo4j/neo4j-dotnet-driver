@@ -31,11 +31,11 @@ namespace Neo4j.Driver.Tests
         public class RunMethod
         {
             [Fact]
-            public void ShouldSyncOnRun()
+            public void ShouldSendOnRun()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
                 session.Run("lalalal");
 
                 mockConn.Verify(x => x.Run("lalalal", null, It.IsAny<ResultBuilder>(), true), Times.Once);
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
                 session.Run("lalalal");
 
                 mockConn.Verify(x => x.Server, Times.Once);
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
                 session.BeginTransaction();
                 var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
                 tx = session.BeginTransaction();
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
                 var tx = session.BeginTransaction();
 
                 var error = Record.Exception(() => session.Run("lalal"));
@@ -95,7 +95,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
 
@@ -103,22 +103,22 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldNotAllowMoreStatementsInSessionWhileConnectionClosed()
+            public void ShouldClosePreviousRunConnectionWhenRunMoreStatements()
             {
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
+                session.Run("lalal");
 
-                var error = Record.Exception(() => session.Run("lalal"));
-                error.Should().BeOfType<ClientException>();
+                session.Run("bibib");
+                mockConn.Verify(c=>c.Dispose(), Times.Once);
             }
 
             [Fact]
-            public void ShouldNotAllowMoreTransactionsInSessionWhileConnectionClosed()
+            public void ShouldClosePreviousRunConnectionWhenRunMoreTransactions()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
 
                 var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
                 var tx = session.BeginTransaction();
                 session.Dispose();
 
@@ -143,9 +143,12 @@ namespace Neo4j.Driver.Tests
             public void ShouldDisposeConnectinOnDispose()
             {
                 var mockConn = new Mock<IConnection>();
-                var session = new Session(mockConn.Object, null);
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = new Session(mockConn.Object);
+                session.Run("lalal");
                 session.Dispose();
 
+                mockConn.Verify(x => x.Sync(), Times.Once);
                 mockConn.Verify(x => x.Dispose(), Times.Once);
             }
 
@@ -154,17 +157,15 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockConn = new Mock<IConnection>();
-                var session = new Session(mockConn.Object, null);
+                var session = new Session(mockConn.Object);
 
                 // When
                 session.Dispose();
                 var exception = Record.Exception(()=>session.Dispose());
 
                 // Then
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Be("Failed to dispose this seesion as it has already been disposed.");
-
-                mockConn.Verify(x => x.Dispose(), Times.Once);
+                exception.Should().BeOfType<ObjectDisposedException>();
+                exception.Message.Should().Contain("Failed to dispose this seesion as it has already been disposed.");
             }
         }
     }

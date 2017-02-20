@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests
             {
                 var builder = GenerateBuilder();
                 var i = 0;
-                builder.SetReceiveOneFunc(() =>
+                builder.SetReceiveOneAction(() =>
                 {
                     if (i++ >= 3)
                     {
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnNoResultsWhenNoneRecieved()
             {
                 var builder = GenerateBuilder();
-                builder.SetReceiveOneFunc(() =>
+                builder.SetReceiveOneAction(() =>
                 {
                     builder.CollectSummary(null);
                 });
@@ -1003,7 +1003,7 @@ namespace Neo4j.Driver.Tests
             {
                 var builder = GenerateBuilder();
                 var i = 0;
-                builder.SetReceiveOneFunc(() =>
+                builder.SetReceiveOneAction(() =>
                 {
                     if (i++ >= 3)
                     {

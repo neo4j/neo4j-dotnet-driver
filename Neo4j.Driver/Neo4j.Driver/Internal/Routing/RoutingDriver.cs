@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public override ISession NewSession(AccessMode mode)
         {
-            return new Session(_loadBalancer.AcquireConnection(mode), _logger);
+            return new Session(()=>_loadBalancer.AcquireConnection(mode), _logger);
         }
 
         public override void ReleaseUnmanagedResources()

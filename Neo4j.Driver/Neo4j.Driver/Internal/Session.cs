@@ -24,24 +24,29 @@ namespace Neo4j.Driver.Internal
 {
     internal class Session : StatementRunner, ISession
     {
-        private readonly IConnection _connection;
+        // If the connection is ever successfully created, 
+        // then it is session's responsibility to dispose them properly
+        // without any possible connection leak.
+        private readonly Func<IConnection> _acquireConnFunc;
+        private IConnection _connection;
 
-        /* 
-         * All operations that modify transation status or 
-         * perform a certain action depending on the current transaction status 
-         * should be syncronized,
-         * as both reset thread and running thread could modify this filed at the same time.
-         */
+        private IStatementResult _sessionRunResult;
+
         private Transaction _transaction;
-
         private readonly Action _transactionCleanupAction;
 
         private readonly ILogger _logger;
         private bool _isOpen = true;
 
-        public Session(IConnection conn, ILogger logger):base(logger)
+        public Session(IConnection conn, ILogger logger=null) : this(() => conn, logger)
         {
-            _connection = conn;
+            // If this connection is not used in run or beginTx, then it might not be disposed by session
+        }
+
+        public Session(Func<IConnection> acquireConnFunc, ILogger logger):base(logger)
+        {
+            _acquireConnFunc = acquireConnFunc;
+
             _transactionCleanupAction = () =>
             {
                 LastBookmark = _transaction?.Bookmark;
@@ -49,6 +54,39 @@ namespace Neo4j.Driver.Internal
             };
             _logger = logger;
         }
+
+        public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
+        {
+            return TryExecute(() =>
+            {
+                EnsureCanRunMoreStatements();
+
+                _connection = _acquireConnFunc.Invoke();
+                var resultBuilder = new ResultBuilder(statement, statementParameters, 
+                    () => _connection.ReceiveOne(), _connection.Server);
+                
+                _connection.Run(statement, statementParameters, resultBuilder);
+                _connection.Send();
+                _sessionRunResult = resultBuilder.PreBuild();
+                return _sessionRunResult;
+            });
+        }
+
+        public ITransaction BeginTransaction(string bookmark = null)
+        {
+            return TryExecute(() =>
+            {
+                EnsureCanRunMoreStatements();
+
+                _connection = _acquireConnFunc.Invoke();
+                _transaction = new Transaction(_connection, _transactionCleanupAction, _logger, bookmark);
+                return _transaction;
+            });
+        }
+
+        public string LastBookmark { get; private set; }
+
+        public Guid Id { get; } = Guid.NewGuid();
 
         protected override void Dispose(bool isDisposing)
         {
@@ -67,72 +105,79 @@ namespace Neo4j.Driver.Internal
                 }
                 else
                 {
-                    throw new InvalidOperationException("Failed to dispose this seesion as it has already been disposed.");
-                }
-                if (!_connection.IsOpen)
-                {
-                    // can not sync any data on this connection
-                    _connection.Dispose();
-                }
-                else
-                {
-                    if (_transaction != null)
-                    {
-                        try
-                        {
-                            _transaction.Dispose();
-                        }
-                        catch
-                        {
-                            // Best-effort
-                        }
-                    }
-                    try
-                    {
-                        _connection.Sync();
-                    }
-                    finally
-                    {
-                        _connection.Dispose();
-                    }
-
+                    throw new ObjectDisposedException(GetType().Name,"Failed to dispose this seesion as it has already been disposed.");
                 }
 
+                DisposeOpenConnection();
             });
             base.Dispose(true);
         }
 
-        public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
-        {
-            return TryExecute(() =>
-            {
-                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne(),
-                    _connection.Server);
-
-                EnsureCanRunMoreStatements();
-                _connection.Run(statement, statementParameters, resultBuilder);
-                _connection.Send();
-                return resultBuilder.PreBuild();
-            });
-        }
-
-        public ITransaction BeginTransaction(string bookmark = null)
-        {
-            return TryExecute(() =>
-            {
-                EnsureCanRunMoreStatements();
-                _transaction = new Transaction(_connection, _transactionCleanupAction, _logger, bookmark);
-                return _transaction;
-            });
-        }
-
-        public string LastBookmark { get; private set; }
-
         private void EnsureCanRunMoreStatements()
         {
-            EnsureConnectionIsHealthy();
-            EnsureNoOpenTransaction();
             EnsureSessionIsOpen();
+            // Enusre dispose open connection will also try to close any existing open transaction,
+            // So the check of no open transaction should always be in front of dispose open connection.
+            EnsureNoOpenTransaction();
+            DisposeOpenConnection();
+        }
+
+        private void DisposeOpenConnection()
+        {
+            // clean any session.run result reference.
+            if (_sessionRunResult != null)
+            {
+                LastBookmark = null;
+                _sessionRunResult = null;
+            }
+
+            // always close connection if connection is not null
+            if (_connection != null)
+            {
+                try
+                {
+                    if (_connection.IsOpen)
+                    {
+                        DisposeTransaction();
+                        _connection.Sync(); // this will pull all unread records into buffer
+                    }
+                }
+                finally
+                {
+                    _connection.Dispose();
+                    _connection = null;
+                }
+            }
+        }
+
+        private void DisposeTransaction()
+        {
+            // When there is a open transation, this method will aslo try to close the tx
+            if (_transaction != null)
+            {
+                try
+                {
+                    _transaction.Dispose();
+                }
+                catch (Exception e)
+                {
+                    // only log the error but not throw
+                    _logger.Error($"Failed to dispose transaction due to error: {e.Message}", e);
+                }
+                finally
+                {
+                    _transaction = null;
+                }
+            }
+        }
+
+        private void EnsureNoOpenTransaction()
+        {
+            if (_transaction != null)
+            {
+                throw new ClientException("Please close the currently open transaction object before running " +
+                                          "more statements/transactions in the current session.");
+            }
         }
 
         private void EnsureSessionIsOpen()
@@ -144,26 +189,5 @@ namespace Neo4j.Driver.Internal
                                           "and retry your statement in another new session.");
             }
         }
-
-        private void EnsureConnectionIsHealthy()
-        {
-            if (!_connection.IsOpen)
-            {
-                throw new ClientException("The current session cannot be reused as the underlying connection with the " +
-                                           "server has been closed or is going to be closed due to unrecoverable errors. " +
-                                           "Please close this session and retry your statement in another new session.");
-            }
-        }
-
-        private void EnsureNoOpenTransaction()
-        {
-            if (_transaction != null)
-            {
-                throw new ClientException("Please close the currently open transaction object before running " +
-                                           "more statements/transactions in the current session.");
-            }
-        }
-
-        public Guid Id { get; } = Guid.NewGuid();
     }
 }
