@@ -19,8 +19,9 @@ namespace Neo4j.Driver.IntegrationTests
         {
             Exception exception;
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("fake", "fake")))
+            using (var session = driver.Session())
             {
-                exception = Record.Exception(()=>driver.Session());
+                exception = Record.Exception(() =>session.Run("Return 1"));
             }
             exception.Should().BeOfType<AuthenticationException>();
             exception.Message.Should().Contain("The client is unauthorized due to authentication failure.");

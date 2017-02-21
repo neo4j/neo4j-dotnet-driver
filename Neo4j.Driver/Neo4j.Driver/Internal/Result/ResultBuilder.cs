@@ -32,19 +32,22 @@ namespace Neo4j.Driver.Internal.Result
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
-        public ResultBuilder() : this(null, null, null, null)
+        private readonly Action _sessionCleanupAction;
+
+        public ResultBuilder() : this(null, null, null, null, null)
         {
         }
 
-        public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server)
+        public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, Action sessionCleanupAction=null)
         {
             _summaryBuilder = new SummaryBuilder(statement, server);
-            _receiveOneAction = receiveOneAction;
+            _sessionCleanupAction = sessionCleanupAction ?? (() => { });
+            SetReceiveOneAction(receiveOneAction);
         }
 
         public ResultBuilder(string statement, IDictionary<string, object> parameters, 
-            Action receiveOneAction, IServerInfo server)
-            : this(new Statement(statement, parameters), receiveOneAction, server)
+            Action receiveOneAction, IServerInfo server, Action sessionCleanupAction=null)
+            : this(new Statement(statement, parameters), receiveOneAction, server, sessionCleanupAction)
         {
         }
 
@@ -87,7 +90,16 @@ namespace Neo4j.Driver.Internal.Result
 
         internal void SetReceiveOneAction(Action receiveOneAction)
         {
-            _receiveOneAction = receiveOneAction;
+            _receiveOneAction = () =>
+            {
+                receiveOneAction.Invoke();
+                if (!_hasMoreRecords)
+                {
+                    // The last message received is a reply to pull_all,
+                    // we are good to do a reset and return the connection to pool
+                    _sessionCleanupAction();
+                }
+            };
         }
 
         public void CollectRecord(object[] fields)

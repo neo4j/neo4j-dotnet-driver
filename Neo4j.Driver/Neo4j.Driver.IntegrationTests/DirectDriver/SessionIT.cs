@@ -21,8 +21,9 @@ namespace Neo4j.Driver.IntegrationTests
         {
             Exception exception;
             using (var driver = GraphDatabase.Driver("bolt://localhost:123"))
+            using (var session = driver.Session())
             {
-               exception = Record.Exception(()=>driver.Session());
+                exception = Record.Exception(() => session.Run("RETURN 1"));
             }
             exception.Should().BeOfType<ServiceUnavailableException>();
             exception.Message.Should().Be("Connection with the server breaks due to AggregateException: One or more errors occurred.");

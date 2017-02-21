@@ -33,7 +33,6 @@ namespace Neo4j.Driver.Internal
         private IStatementResult _sessionRunResult;
 
         private Transaction _transaction;
-        private readonly Action _transactionCleanupAction;
 
         private readonly ILogger _logger;
         private bool _isOpen = true;
@@ -46,12 +45,6 @@ namespace Neo4j.Driver.Internal
         public Session(Func<IConnection> acquireConnFunc, ILogger logger):base(logger)
         {
             _acquireConnFunc = acquireConnFunc;
-
-            _transactionCleanupAction = () =>
-            {
-                LastBookmark = _transaction?.Bookmark;
-                _transaction = null;
-            };
             _logger = logger;
         }
 
@@ -63,7 +56,7 @@ namespace Neo4j.Driver.Internal
 
                 _connection = _acquireConnFunc.Invoke();
                 var resultBuilder = new ResultBuilder(statement, statementParameters, 
-                    () => _connection.ReceiveOne(), _connection.Server);
+                    () => _connection.ReceiveOne(), _connection.Server, RunResultCleanupCallback);
                 
                 _connection.Run(statement, statementParameters, resultBuilder);
                 _connection.Send();
@@ -79,7 +72,7 @@ namespace Neo4j.Driver.Internal
                 EnsureCanRunMoreStatements();
 
                 _connection = _acquireConnFunc.Invoke();
-                _transaction = new Transaction(_connection, _transactionCleanupAction, _logger, bookmark);
+                _transaction = new Transaction(_connection, TransactionCleanupCallback, _logger, bookmark);
                 return _transaction;
             });
         }
@@ -108,7 +101,8 @@ namespace Neo4j.Driver.Internal
                     throw new ObjectDisposedException(GetType().Name,"Failed to dispose this seesion as it has already been disposed.");
                 }
 
-                DisposeOpenConnection();
+                DisposeSessionResult();
+                DisposeTransaction();
             });
             base.Dispose(true);
         }
@@ -116,40 +110,79 @@ namespace Neo4j.Driver.Internal
         private void EnsureCanRunMoreStatements()
         {
             EnsureSessionIsOpen();
-            // Enusre dispose open connection will also try to close any existing open transaction,
-            // So the check of no open transaction should always be in front of dispose open connection.
             EnsureNoOpenTransaction();
-            DisposeOpenConnection();
+            DisposeSessionResult();
         }
 
-        private void DisposeOpenConnection()
-        {
-            // clean any session.run result reference.
-            if (_sessionRunResult != null)
-            {
-                LastBookmark = null;
-                _sessionRunResult = null;
-            }
 
-            // always close connection if connection is not null
-            if (_connection != null)
+        /// <summary>
+        ///  This method will be called back by <see cref="ResultBuilder"/> after it consumed result
+        /// </summary>
+        private void RunResultCleanupCallback()
+        {
+            Throw.ArgumentNullException.IfNull(_sessionRunResult, nameof(_sessionRunResult));
+            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+
+            CleanRunResultResources();
+        }
+
+        private void CleanRunResultResources()
+        {
+            LastBookmark = null;
+            _sessionRunResult = null;
+
+            // always try to close connection used by the result too
+            _connection?.Dispose();
+            _connection = null;
+        }
+
+        /// <summary>
+        /// Called back in <see cref="Transaction.Dispose"/>
+        /// </summary>
+        private void TransactionCleanupCallback()
+        {
+            Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
+            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+
+            LastBookmark = _transaction.Bookmark;
+            _transaction = null;
+
+            // always dispose connection used by the transaction too
+            _connection.Dispose();
+            _connection = null;
+        }
+
+        /// <summary>
+        /// Clean any session.run result reference.
+        /// If session.run result is not fully consumed, then pull full result into memory.
+        /// </summary>
+        /// <exception cref="ClientException">If error when pulling result into memory</exception>
+        private void DisposeSessionResult()
+        {
+            if (_sessionRunResult != null)
             {
                 try
                 {
-                    if (_connection.IsOpen)
-                    {
-                        DisposeTransaction();
-                        _connection.Sync(); // this will pull all unread records into buffer
-                    }
+                    // this will enfore to buffer all unconsumed result
+                    _connection.Sync();
+                }
+                catch (Exception e)
+                {
+                    throw new ClientException($"Error when pulling unconsumed session.run records into memory in session: {e.Message}", e);
                 }
                 finally
                 {
-                    _connection.Dispose();
-                    _connection = null;
+                    // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
+                    CleanRunResultResources();
                 }
             }
         }
 
+        /// <summary>
+        /// Clean any transaction reference.
+        /// If transaction result is not commited, then rollback the transaction.
+        /// </summary>
+        /// <exception cref="ClientException">If error when rollback the transaction</exception>
         private void DisposeTransaction()
         {
             // When there is a open transation, this method will aslo try to close the tx
@@ -161,12 +194,7 @@ namespace Neo4j.Driver.Internal
                 }
                 catch (Exception e)
                 {
-                    // only log the error but not throw
-                    _logger.Error($"Failed to dispose transaction due to error: {e.Message}", e);
-                }
-                finally
-                {
-                    _transaction = null;
+                    throw new ClientException($"Error when disposing unclosed transaction in session: {e.Message}", e);
                 }
             }
         }
