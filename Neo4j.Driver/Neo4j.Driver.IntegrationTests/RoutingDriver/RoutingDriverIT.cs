@@ -106,7 +106,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
 
             Exception error = null;
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake")))
+            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake")))
             using (var session = driver.Session())
             {
                 error = Record.Exception(() => session.Run("RETURN 1"));
@@ -128,8 +128,8 @@ namespace Neo4j.Driver.IntegrationTests
 
             driver.Dispose();
             var error = Record.Exception(() => session.Run("RETURN 1"));
-            error.Should().BeOfType<ClientException>();
-            error.Message.Should().Contain("The current session cannot be reused as the underlying connection with the server has been closed");
+            error.Should().BeOfType<ObjectDisposedException>();
+            error.Message.Should().StartWith("Cannot acquire a new connection as LoadBalancer has already been disposed.");
         }
 
         [Fact]

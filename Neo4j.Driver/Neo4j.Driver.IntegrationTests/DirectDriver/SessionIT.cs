@@ -47,6 +47,20 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Fact]
+        public void DisallowRunInSessionAfterDriverDispose()
+        {
+            var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
+            var session = driver.Session(AccessMode.Write);
+            session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
+
+            driver.Dispose();
+
+            var error = Record.Exception(() => session.Run("RETURN 1"));
+            error.Should().BeOfType<ObjectDisposedException>();
+            error.Message.Should().StartWith("Cannot acquire a new connection as ConnectionPool has already been disposed.");
+        }
+
+        [Fact]
         public void ShouldConnectAndRun()
         {
             using (var session = Driver.Session())

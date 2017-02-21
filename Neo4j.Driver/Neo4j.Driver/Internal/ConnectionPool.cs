@@ -225,7 +225,7 @@ namespace Neo4j.Driver.Internal
 
         private void ThrowConnectionPoolClosedException()
         {
-            throw new ObjectDisposedException(GetType().Name, "Cannot acquire a new connection from the connection pool as the pool has already been disposed.");
+            throw new ObjectDisposedException(GetType().Name, $"Cannot acquire a new connection as {GetType().Name} has already been disposed.");
         }
     }
 

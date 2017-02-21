@@ -119,9 +119,10 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
                 var session = new Session(mockConn.Object);
+                session.Run("lala");
 
-                var error = Record.Exception(() => session.BeginTransaction());
-                error.Should().BeOfType<ClientException>();
+                session.BeginTransaction();
+                mockConn.Verify(c=>c.Dispose(), Times.Once);
             }
         }
 

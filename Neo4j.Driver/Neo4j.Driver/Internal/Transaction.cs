@@ -131,7 +131,6 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-
                 EnsureNotFailed();
                 try
                 {

@@ -29,6 +29,8 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly object _syncLock = new object();
         private readonly Stopwatch _stopwatch;
 
+        private volatile bool _disposeCalled = false;
+
         public LoadBalancer(
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
@@ -54,16 +56,35 @@ namespace Neo4j.Driver.Internal.Routing
 
         public IConnection AcquireConnection(AccessMode mode)
         {
+            if (_disposeCalled)
+            {
+                ThrowObjectClosedException();
+            }
+
             EnsureRoutingTableIsFresh();
+            IConnection conn = null;
             switch (mode)
             {
                 case AccessMode.Read:
-                    return AcquireReadConnection();
+                    conn = AcquireReadConnection();
+                    break;
                 case AccessMode.Write:
-                    return AcquireWriteConnection();
+                    conn = AcquireWriteConnection();
+                    break;
                 default:
                     throw new InvalidOperationException($"Unknown access mode {mode}.");
             }
+
+            if (_disposeCalled)
+            {
+                ThrowObjectClosedException();
+            }
+            return conn;
+        }
+
+        private void ThrowObjectClosedException()
+        {
+            throw new ObjectDisposedException(GetType().Name, $"Cannot acquire a new connection as {GetType().Name} has already been disposed.");
         }
 
         internal IConnection AcquireReadConnection()
@@ -227,7 +248,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (!isDisposing)
                 return;
-
+            _disposeCalled = true;
             // We cannot set routing table and cluster conn pool to null as we do not want get NPE in concurrent call of dispose and acquire
             _routingTable.Clear();
             _clusterConnectionPool.Dispose();

@@ -75,8 +75,9 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         public void WhenISetUpADriverToAnIncorrectPort()
         {
             using (var driver = GraphDatabase.Driver("bolt://localhost:1234"))
+            using (var session = driver.Session())
             {
-                var ex = Xunit.Record.Exception(() => driver.Session());
+                var ex = Xunit.Record.Exception(() => session.Run("RETURN 1"));
                 ex.Should().BeOfType<ServiceUnavailableException>();
                 ex = ex.GetBaseException();
                 ex.Should().BeOfType<SocketException>();
