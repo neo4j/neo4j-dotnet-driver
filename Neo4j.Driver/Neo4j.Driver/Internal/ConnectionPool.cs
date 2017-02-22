@@ -228,6 +228,12 @@ namespace Neo4j.Driver.Internal
         {
             FailedToCreateConnection(this);
         }
+
+        public override string ToString()
+        {
+            return $"{nameof(_availableConnections)}: {{{_availableConnections.ValueToString()}}}, " +
+                   $"{nameof(_inUseConnections)}: {{{_inUseConnections}}}";
+        }
     }
 
     internal interface IConnectionPool : IDisposable

@@ -74,7 +74,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
         /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
-        /// <item><see cref="KeepAlive"/>: <c>]true</c></item>
+        /// <item><see cref="SocketKeepAlive"/>: <c>]true</c></item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }

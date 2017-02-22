@@ -30,10 +30,8 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly Stopwatch _stopwatch;
         private readonly long _expireAfterSeconds;
 
-        public RoundRobinRoutingTable(Uri seed, Stopwatch stopwatch, long expireAfterSeconds = 0)
+        public RoundRobinRoutingTable(Stopwatch stopwatch, long expireAfterSeconds = 0)
         {
-            _routers.Add(seed);
-
             _expireAfterSeconds = expireAfterSeconds;
             _stopwatch = stopwatch;
             _stopwatch.Restart();
@@ -103,6 +101,14 @@ namespace Neo4j.Driver.Internal.Routing
                    $"[{nameof(_detachedRouters)}: {_detachedRouters}], " +
                    $"[{nameof(_readers)}: {_readers}], " +
                    $"[{nameof(_writers)}: {_writers}]";
+        }
+
+        public void EnsureRouter(IEnumerable<Uri> ips)
+        {
+            if (_routers.Count == 0)
+            {
+                _routers.Add(ips);
+            }
         }
     }
 }

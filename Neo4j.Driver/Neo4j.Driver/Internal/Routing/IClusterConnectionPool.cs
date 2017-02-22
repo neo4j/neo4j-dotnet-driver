@@ -24,6 +24,8 @@ namespace Neo4j.Driver.Internal.Routing
     {
         // Try to acquire a connection with the server specified by the uri
         bool TryAcquire(Uri uri, out IClusterConnection conn);
+        // Add a set of uri to this pool
+        void Add(IEnumerable<Uri> uris);
         // Update the pool keys with the new server uris
         void Update(IEnumerable<Uri> uris);
         // Remove all the connection pool with the server specified by the uri

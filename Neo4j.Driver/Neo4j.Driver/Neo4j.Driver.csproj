@@ -63,6 +63,7 @@
     <Compile Include="Internal\EncryptionManager.cs" />
     <Compile Include="Internal\Routing\LoadBalancer.cs" />
     <Compile Include="Internal\Routing\RoutingDriver.cs" />
+    <Compile Include="Internal\Routing\RoutingExtensions.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />

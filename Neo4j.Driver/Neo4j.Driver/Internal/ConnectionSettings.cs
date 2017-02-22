@@ -30,7 +30,15 @@ namespace Neo4j.Driver.Internal
         public EncryptionManager EncryptionManager { get; }
         public bool SocketKeepAliveEnabled { get; }
 
-        public ConnectionSettings(Uri initialServerUri, IAuthToken authToken, EncryptionManager encryptionManager, TimeSpan connectionTimeout, bool socketKeepAlive, string userAgent = null)
+        public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
+        : this(uri, auth, new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger),
+              config.ConnectionTimeout, config.SocketKeepAlive)
+        {
+        }
+
+        public ConnectionSettings(Uri initialServerUri, IAuthToken authToken, 
+            EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
+            bool socketKeepAlive, string userAgent = null)
         {
             Throw.ArgumentNullException.IfNull(initialServerUri, nameof(initialServerUri));
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));

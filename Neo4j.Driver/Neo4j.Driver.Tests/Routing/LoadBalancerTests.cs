@@ -18,7 +18,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using FluentAssertions;
@@ -33,119 +32,24 @@ namespace Neo4j.Driver.Tests
 {
     public class LoadBalancerTests
     {
-        internal class ListBasedRoutingTable : IRoutingTable
-        {
-            private readonly List<Uri> _routers;
-            private readonly List<Uri> _removed;
-            private int _count = 0;
-
-            public ListBasedRoutingTable(List<Uri> routers)
-            {
-                _routers = routers;
-                _removed = new List<Uri>();
-            }
-            public bool IsStale()
-            {
-                return false;
-            }
-
-            public bool TryNextRouter(out Uri uri)
-            {
-                var pos = _count++ % _routers.Count;
-                uri = _routers[pos];
-                return true;
-            }
-
-            public bool TryNextReader(out Uri uri)
-            {
-                throw new NotSupportedException();
-            }
-
-            public bool TryNextWriter(out Uri uri)
-            {
-                throw new NotSupportedException();
-            }
-
-            public void Remove(Uri uri)
-            {
-                _removed.Add(uri);
-            }
-
-            public ISet<Uri> All()
-            {
-                return new HashSet<Uri>(_routers.Distinct().Except(_removed.Distinct()));
-            }
-
-            public void Clear()
-            {
-                throw new NotSupportedException();
-            }
-        }
         public class AcquireConnectionMethod
         {
-            private static IRoutingTable NewRoutingTable(int routerCount, int readerCount, int writerCount)
+            public class Constructor
             {
-                return NewRoutingTable(GenerateServerUris(routerCount), GenerateServerUris(readerCount),
-                    GenerateServerUris(writerCount));
-            }
-
-            private static IEnumerable<Uri> GenerateServerUris(int count)
-            {
-                var uris = new Uri[count];
-                for (var i = 0; i < count; i++)
+                [Fact]
+                public void ShouldEnsureInitialRouter()
                 {
-                    uris[i]=new Uri($"bolt+routing://127.0.0.1:{i + 9001}");
+                    var uri = new Uri("bolt://123:456");
+                    var config = Config.DefaultConfig;
+                    var connSettings = new ConnectionSettings(uri, new Mock<IAuthToken>().Object, config);
+                    var poolSettings = new ConnectionPoolSettings(config);
+
+                    var loadbalancer = new LoadBalancer(connSettings, poolSettings, null);
+
+                    loadbalancer.ToString().Should().Be(
+                        "_routingTable: {[_routers: bolt://123:456/], [_detachedRouters: ], [_readers: ], [_writers: ]}, " +
+                        "_clusterConnectionPool: {[{bolt://123:456/ : _availableConnections: {[]}, _inUseConnections: {[]}}]}");
                 }
-                return uris;
-            }
-
-            private static IRoutingTable NewRoutingTable(
-                IEnumerable<Uri> routers = null,
-                IEnumerable<Uri> readers = null,
-                IEnumerable<Uri> writers = null)
-            {
-                // assign default value of uri
-                if (routers == null)
-                {
-                    routers = new Uri[0];
-                }
-                if (readers == null)
-                {
-                    readers = new Uri[0];
-                }
-                if (writers == null)
-                {
-                    writers = new Uri[0];
-                }
-                return new RoundRobinRoutingTable(routers, readers, writers, new Stopwatch(), 1000);
-            }
-
-            private static LoadBalancer SetupLoadBalancer(
-                IEnumerable<Uri> routers=null,
-                IEnumerable<Uri> readers=null,
-                IEnumerable<Uri> writers=null)
-            {
-                // create a routing table which knows a few servers
-                var routingTable = NewRoutingTable(routers, readers, writers);
-                return SetupLoadBalancer(routingTable);
-            }
-
-            private static LoadBalancer SetupLoadBalancer(IRoutingTable routingTable)
-            {
-                var uris = routingTable.All();
-
-                // create a mocked cluster connection pool, which will return the same connection for each different uri                
-                var mockedClusterPool = new Mock<IClusterConnectionPool>();
-
-                foreach (var uri in uris)
-                {
-                    var mockedConn = new Mock<IClusterConnection>();
-                    mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
-                    var conn = mockedConn.Object;
-                    mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
-                }
-
-                return new LoadBalancer(mockedClusterPool.Object, routingTable);
             }
 
             public class UpdateRoutingTableMethod
@@ -199,18 +103,36 @@ namespace Neo4j.Driver.Tests
                 }
 
                 [Fact]
-                public void ShouldThrowServerUnavailableExceptionWhenNoAvailableRouters()
+                public void ShouldAddInitialUriWhenNoAvailableRouters()
                 {
                     // Given
-                    var routingTable = NewRoutingTable();
-                    var balancer = new LoadBalancer(null, routingTable);
+                    var uri = new Uri("bolt+routing://123:456");
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    routingTableMock.Setup(x => x.TryNextRouter(out uri)).Returns(true);
+                    routingTableMock.Setup(x => x.EnsureRouter(It.IsAny<IEnumerable<Uri>>()))
+                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+
+                    var poolMock = new Mock<IClusterConnectionPool>();
+                    var conn = new Mock<IClusterConnection>().Object;
+                    poolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
+                    poolMock.Setup(x => x.Add(It.IsAny<IEnumerable<Uri>>()))
+                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+
+                    var balancer = new LoadBalancer(poolMock.Object, routingTableMock.Object, uri);
+
+                    var routingTableReturnMock = new Mock<IRoutingTable>();
+                    routingTableReturnMock.Setup(x => x.IsStale()).Returns(false);
 
                     // When
-                    var error = Record.Exception(() => balancer.UpdateRoutingTable());
+                    balancer.UpdateRoutingTable(c =>
+                    {
+                        c.Should().Be(conn);
+                        return routingTableReturnMock.Object;
+                    });
 
                     // Then
-                    error.Should().BeOfType<ServiceUnavailableException>();
-                    error.Message.Should().Contain("Failed to connect to any routing server.");
+                    poolMock.Verify(x=>x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                    routingTableMock.Verify(x=>x.EnsureRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
                 }
 
                 [Fact]
@@ -546,6 +468,123 @@ namespace Neo4j.Driver.Tests
                     routingTable.All().Should().ContainInOrder(uri);
                 }
             }
+        }
+
+        internal class ListBasedRoutingTable : IRoutingTable
+        {
+            private readonly List<Uri> _routers;
+            private readonly List<Uri> _removed;
+            private int _count = 0;
+
+            public ListBasedRoutingTable(List<Uri> routers)
+            {
+                _routers = routers;
+                _removed = new List<Uri>();
+            }
+            public bool IsStale()
+            {
+                return false;
+            }
+
+            public bool TryNextRouter(out Uri uri)
+            {
+                var pos = _count++ % _routers.Count;
+                uri = _routers[pos];
+                return true;
+            }
+
+            public bool TryNextReader(out Uri uri)
+            {
+                throw new NotSupportedException();
+            }
+
+            public bool TryNextWriter(out Uri uri)
+            {
+                throw new NotSupportedException();
+            }
+
+            public void Remove(Uri uri)
+            {
+                _removed.Add(uri);
+            }
+
+            public ISet<Uri> All()
+            {
+                return new HashSet<Uri>(_routers.Distinct().Except(_removed.Distinct()));
+            }
+
+            public void Clear()
+            {
+                throw new NotSupportedException();
+            }
+
+            public void EnsureRouter(IEnumerable<Uri> ips)
+            {
+            }
+        }
+
+        private static IRoutingTable NewRoutingTable(int routerCount, int readerCount, int writerCount)
+        {
+            return NewRoutingTable(GenerateServerUris(routerCount), GenerateServerUris(readerCount),
+                GenerateServerUris(writerCount));
+        }
+
+        private static IEnumerable<Uri> GenerateServerUris(int count)
+        {
+            var uris = new Uri[count];
+            for (var i = 0; i < count; i++)
+            {
+                uris[i] = new Uri($"bolt+routing://127.0.0.1:{i + 9001}");
+            }
+            return uris;
+        }
+
+        private static IRoutingTable NewRoutingTable(
+            IEnumerable<Uri> routers = null,
+            IEnumerable<Uri> readers = null,
+            IEnumerable<Uri> writers = null)
+        {
+            // assign default value of uri
+            if (routers == null)
+            {
+                routers = new Uri[0];
+            }
+            if (readers == null)
+            {
+                readers = new Uri[0];
+            }
+            if (writers == null)
+            {
+                writers = new Uri[0];
+            }
+            return new RoundRobinRoutingTable(routers, readers, writers, new Stopwatch(), 1000);
+        }
+
+        private static LoadBalancer SetupLoadBalancer(
+            IEnumerable<Uri> routers = null,
+            IEnumerable<Uri> readers = null,
+            IEnumerable<Uri> writers = null)
+        {
+            // create a routing table which knows a few servers
+            var routingTable = NewRoutingTable(routers, readers, writers);
+            return SetupLoadBalancer(routingTable);
+        }
+
+        private static LoadBalancer SetupLoadBalancer(IRoutingTable routingTable)
+        {
+            var uris = routingTable.All();
+
+            // create a mocked cluster connection pool, which will return the same connection for each different uri
+            var mockedClusterPool = new Mock<IClusterConnectionPool>();
+
+            foreach (var uri in uris)
+            {
+                var mockedConn = new Mock<IClusterConnection>();
+                mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
+                var conn = mockedConn.Object;
+                mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
+            }
+            return new LoadBalancer(mockedClusterPool.Object, routingTable);
         }
     }
 }

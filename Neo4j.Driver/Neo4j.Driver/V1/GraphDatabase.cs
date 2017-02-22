@@ -106,8 +106,7 @@ namespace Neo4j.Driver.V1
                 var builder = new UriBuilder(uri.Scheme, uri.Host, DefaultBoltPort);
                 uri = builder.Uri;
             }
-            var encryptionManager = new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger);
-            var connectionSettings = new ConnectionSettings(uri, authToken, encryptionManager, config.ConnectionTimeout, config.SocketKeepAlive);
+            var connectionSettings = new ConnectionSettings(uri, authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
 
             switch (uri.Scheme.ToLower())

@@ -44,10 +44,7 @@ namespace Neo4j.Driver.Internal.Routing
             _connectionSettings = connectionSettings;
             _poolSettings = poolSettings;
             _onErrorAction = onErrorAction ?? ((uri, e)=> { throw e; });
-            if (connectionSettings?.InitialServerUri != null)
-            {
-                Add(connectionSettings.InitialServerUri);
-            }
+
         }
 
         internal ClusterConnectionPool(
@@ -99,6 +96,14 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
+        public void Add(IEnumerable<Uri> servers)
+        {
+            foreach (var uri in servers)
+            {
+                Add(uri);
+            }
+        }
+
         public void Update(IEnumerable<Uri> servers)
         {
             foreach (var uri in _pools.Keys)
@@ -137,6 +142,11 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _disposeCalled = true;
             Clear();
+        }
+
+        public override string ToString()
+        {
+            return _pools.ValueToString();
         }
     }
 }
