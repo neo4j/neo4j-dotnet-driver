@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -23,13 +23,15 @@ namespace Neo4j.Driver.Internal
 {
     internal class ConnectionPool : LoggerBase, IConnectionPool
     {
+        private readonly Uri _uri;
+
         private readonly int _idleSessionPoolSize;
         private readonly ConnectionSettings _connectionSettings;
 
         private readonly ILogger _logger;
 
-        private readonly Queue<IPooledConnection> _availableConnections = new Queue<IPooledConnection>();
-        private readonly Dictionary<Guid, IPooledConnection> _inUseConnections = new Dictionary<Guid, IPooledConnection>();
+        private readonly ConcurrentQueue<IPooledConnection> _availableConnections = new ConcurrentQueue<IPooledConnection>();
+        private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
 
         private readonly IConnectionErrorHandler _externalErrorHandler;
 
@@ -37,7 +39,7 @@ namespace Neo4j.Driver.Internal
 
         // for test only
         private readonly IConnection _fakeConnection;
-        private readonly Uri _uri;
+
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
 
@@ -64,8 +66,8 @@ namespace Neo4j.Driver.Internal
 
         internal ConnectionPool(
             IConnection connection,
-            Queue<IPooledConnection> availableConnections = null,
-            Dictionary<Guid, IPooledConnection> inUseConnections = null,
+            ConcurrentQueue<IPooledConnection> availableConnections = null,
+            ConcurrentSet<IPooledConnection> inUseConnections = null,
             ILogger logger = null,
             ConnectionPoolSettings settings = null,
             IConnectionErrorHandler exteralErrorHandler = null)
@@ -73,8 +75,8 @@ namespace Neo4j.Driver.Internal
                   logger, exteralErrorHandler)
         {
             _fakeConnection = connection;
-            _availableConnections = availableConnections ?? new Queue<IPooledConnection>();
-            _inUseConnections = inUseConnections ?? new Dictionary<Guid, IPooledConnection>();
+            _availableConnections = availableConnections ?? new ConcurrentQueue<IPooledConnection>();
+            _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
         }
 
         private IPooledConnection CreateNewPooledConnection()
@@ -114,14 +116,9 @@ namespace Neo4j.Driver.Internal
                 {
                     ThrowConnectionPoolClosedException();
                 }
-                IPooledConnection connection = null;
-                lock (_availableConnections)
-                {
-                    if (_availableConnections.Count != 0)
-                        connection = _availableConnections.Dequeue();
-                }
+                IPooledConnection connection;
 
-                if (connection == null)
+                if (!_availableConnections.TryDequeue(out connection))
                 {
                     connection = CreateNewPooledConnection();
                 }
@@ -131,15 +128,16 @@ namespace Neo4j.Driver.Internal
                     return Acquire();
                 }
 
-                lock (_inUseConnections)
+                _inUseConnections.TryAdd(connection);
+                if (_disposeCalled)
                 {
-                    if (_disposeCalled)
+                    if (_inUseConnections.TryRemove(connection))
                     {
                         connection.Close();
-                        ThrowConnectionPoolClosedException();
                     }
-                    _inUseConnections.Add(connection.Id, connection);
+                    ThrowConnectionPoolClosedException();
                 }
+
                 return connection;
             });
         }
@@ -167,7 +165,7 @@ namespace Neo4j.Driver.Internal
             return _availableConnections.Count >= _idleSessionPoolSize && _idleSessionPoolSize != Config.InfiniteMaxIdleSessionPoolSize;
         }
 
-        public void Release(Guid id)
+        public void Release(IPooledConnection connection)
         {
             TryExecute(() =>
             {
@@ -176,31 +174,27 @@ namespace Neo4j.Driver.Internal
                     // pool already disposed
                     return;
                 }
-                IPooledConnection connection;
-                lock (_inUseConnections)
+                if (!_inUseConnections.TryRemove(connection))
                 {
-                    if (!_inUseConnections.ContainsKey(id))
-                    {
-                        // pool already disposed
-                        return;
-                    }
-
-                    connection = _inUseConnections[id];
-                    _inUseConnections.Remove(id);
+                    // pool already disposed
+                    return;
                 }
 
                 if (IsConnectionReusable(connection))
                 {
-                    lock (_availableConnections)
+                    if (IsPoolFull())
                     {
-                        if (_disposeCalled || IsPoolFull())
-                        {
-                            connection.Close();
-                        }
-                        else
-                        {
-                            _availableConnections.Enqueue(connection);
-                        }
+                        connection.Close();
+                    }
+                    else
+                    {
+                        _availableConnections.Enqueue(connection);
+                    }
+
+                    // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
+                    if (_disposeCalled && _availableConnections.TryDequeue(out connection))
+                    {
+                        connection.Close();
                     }
                 }
                 else
@@ -223,24 +217,20 @@ namespace Neo4j.Driver.Internal
             TryExecute(() =>
             {
                 _disposeCalled = true;
-                lock (_inUseConnections)
+                foreach (var inUseConnection in _inUseConnections)
                 {
-                    var connections = new List<IPooledConnection>(_inUseConnections.Values);
-                    _inUseConnections.Clear();
-                    foreach (var inUseConnection in connections)
+                    Logger?.Info($"Disposing In Use Connection {inUseConnection.Id}");
+                    if (_inUseConnections.TryRemove(inUseConnection))
                     {
-                        Logger?.Info($"Disposing In Use Connection {inUseConnection.Id}");
                         inUseConnection.Close();
                     }
                 }
-                lock (_availableConnections)
+
+                IPooledConnection connection;
+                while (_availableConnections.TryDequeue(out connection))
                 {
-                    while (_availableConnections.Count > 0)
-                    {
-                        var connection = _availableConnections.Dequeue();
-                        Logger?.Debug($"Disposing Available Connection {connection.Id}");
-                        connection.Close();
-                    }
+                    Logger?.Debug($"Disposing Available Connection {connection.Id}");
+                    connection.Close();
                 }
             });
             base.Dispose(true);
@@ -250,7 +240,7 @@ namespace Neo4j.Driver.Internal
     internal interface IConnectionPool : IDisposable
     {
         IPooledConnection Acquire();
-        void Release(Guid id);
+        void Release(IPooledConnection connection);
     }
 
     internal interface IPooledConnection : IConnection
