@@ -74,6 +74,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
         /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
+        /// <item><see cref="KeepAlive"/>: <c>]true</c></item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }
@@ -111,6 +112,11 @@ namespace Neo4j.Driver.V1
         /// Gets or sets the connection timeout when establishing a connection with a server.
         /// </summary>
         public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// Gets or sets the socket keep alive option.
+        /// </summary>
+        public bool SocketKeepAlive { get; set; } = true;
 
         private class ConfigBuilder : IConfigBuilder
         {
@@ -154,6 +160,12 @@ namespace Neo4j.Driver.V1
             public Config ToConfig()
             {
                 return _config;
+            }
+
+            public IConfigBuilder WithSocketKeepAliveEnabled(bool enable)
+            {
+                _config.SocketKeepAlive = enable;
+                return this;
             }
         }
     }
@@ -212,5 +224,13 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithConnectionTimeout(TimeSpan timeSpan);
+
+        /// <summary>
+        /// Enable socket to send keep alive pings on TCP level to prevent pooled socket connections from getting killed after leaving client idle for a long time.
+        /// The interval of keep alive pings are set via your OS system.
+        /// </summary>
+        /// <param name="enable"></param>
+        /// <returns></returns>
+        IConfigBuilder WithSocketKeepAliveEnabled(bool enable);
     }
 }

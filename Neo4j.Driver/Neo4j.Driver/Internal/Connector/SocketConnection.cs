@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Connector
         private IConnectionErrorHandler _externalErrorHandler;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, ILogger logger)
-            : this(new SocketClient(uri, connectionSettings.EncryptionManager, logger),
+            : this(new SocketClient(uri, connectionSettings.EncryptionManager, connectionSettings.SocketKeepAliveEnabled, logger),
                   connectionSettings.AuthToken, connectionSettings.ConnectionTimeout, connectionSettings.UserAgent,
                   logger, new ServerInfo(uri))
         {

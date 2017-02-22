@@ -37,22 +37,15 @@ namespace Neo4j.Driver.Internal.Connector
         private IReader _reader;
         private IWriter _writer;
 
-        private readonly EncryptionManager _encryptionManager;
         private readonly ILogger _logger;
 
         public static readonly BigEndianTargetBitConverter BitConverter = new BigEndianTargetBitConverter();
 
-        public SocketClient(Uri uri, EncryptionManager encryptionManager, ILogger logger, ITcpSocketClient socketClient = null)
+        public SocketClient(Uri uri, EncryptionManager encryptionManager, bool socketKeepAlive, ILogger logger, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
-            _encryptionManager = encryptionManager;
             _logger = logger;
-            _tcpSocketClient = socketClient ?? new TcpSocketClient(_encryptionManager, _logger);
-        }
-
-        internal SocketClient(Uri uri, EncryptionManager encryptionManager, ITcpSocketClient socketClient)
-            :this(uri, encryptionManager, null, socketClient)
-        {
+            _tcpSocketClient = socketClient ?? new TcpSocketClient(encryptionManager, socketKeepAlive, _logger);
         }
 
         public void Dispose()
@@ -63,7 +56,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task Start()
         {
-            await _tcpSocketClient.ConnectAsync(_uri, _encryptionManager.UseTls).ConfigureAwait(false);
+            await _tcpSocketClient.ConnectAsync(_uri).ConfigureAwait(false);
             IsOpen = true;
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
