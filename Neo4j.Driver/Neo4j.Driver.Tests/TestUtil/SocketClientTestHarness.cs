@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -32,11 +33,11 @@ namespace Neo4j.Driver.Tests
         public Mock<ITcpSocketClient> MockTcpSocketClient { get; }
         string _received = string.Empty;
 
-        public SocketClientTestHarness(Uri uri=null, EncryptionManager encryptionManager = null)
+        public SocketClientTestHarness(Uri uri=null)
         {
             MockTcpSocketClient = new Mock<ITcpSocketClient>();
             MockWriteStream = TestHelper.TcpSocketClientSetup.CreateWriteStreamMock(MockTcpSocketClient);
-            Client = new SocketClient(uri, encryptionManager?? new Mock<EncryptionManager>().Object, MockTcpSocketClient.Object);
+            Client = new SocketClient(uri, new Mock<EncryptionManager>().Object, true, new Mock<ILogger>().Object, MockTcpSocketClient.Object);
                
         }
 

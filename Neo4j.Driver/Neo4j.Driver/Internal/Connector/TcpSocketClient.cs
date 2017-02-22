@@ -31,10 +31,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         private readonly EncryptionManager _encryptionManager;
 
-        public TcpSocketClient(EncryptionManager encryptionManager, ILogger logger = null)
+        public TcpSocketClient(EncryptionManager encryptionManager, bool keepAlive, ILogger logger = null)
         {
             _encryptionManager = encryptionManager;
             _client = new TcpClient();
+            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, keepAlive);
         }
 
         public Stream ReadStream => _stream;
@@ -45,11 +46,11 @@ namespace Neo4j.Driver.Internal.Connector
             Close();
         }
 
-        public async Task ConnectAsync(Uri uri, bool useTls)
+        public async Task ConnectAsync(Uri uri)
         {
             await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
 
-            if (!useTls)
+            if (!_encryptionManager.UseTls)
             {
                 _stream = _client.GetStream();
             }

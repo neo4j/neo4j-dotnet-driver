@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests
                 {
                     harness.SetupReadStream(new byte[] {0, 0, 0, 1});
                     await harness.Client.Start();
-                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri, false),
+                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri),
                         Times.Once);
                 }
             }
