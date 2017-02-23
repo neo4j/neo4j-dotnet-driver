@@ -160,7 +160,6 @@
     <Compile Include="DirectDriver\DirectDriverIT.cs" />
     <Compile Include="DirectDriver\ResultIT.cs" />
     <Compile Include="DirectDriver\SessionIT.cs" />
-    <Compile Include="DirectDriver\SessionResetIT.cs" />
     <Compile Include="Examples.cs" />
     <Compile Include="Internals\Cluster\CausalCluster.cs" />
     <Compile Include="Internals\Cluster\SingleInstance.cs" />
