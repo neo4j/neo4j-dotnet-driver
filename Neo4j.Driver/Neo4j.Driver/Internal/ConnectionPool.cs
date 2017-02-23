@@ -18,6 +18,7 @@ using System;
 using System.Collections.Concurrent;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal
 {
@@ -101,7 +102,7 @@ namespace Neo4j.Driver.Internal
             {
                 if (_disposeCalled)
                 {
-                    ThrowConnectionPoolClosedException();
+                    ThrowObjectDisposedException();
                 }
                 IPooledConnection connection;
 
@@ -122,7 +123,7 @@ namespace Neo4j.Driver.Internal
                     {
                         connection.Close();
                     }
-                    ThrowConnectionPoolClosedException();
+                    ThrowObjectDisposedException();
                 }
 
                 return connection;
@@ -223,9 +224,9 @@ namespace Neo4j.Driver.Internal
             base.Dispose(true);
         }
 
-        private void ThrowConnectionPoolClosedException()
+        private void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(GetType().Name, $"Cannot acquire a new connection as {GetType().Name} has already been disposed.");
+            FailedToCreateConnection(this);
         }
     }
 

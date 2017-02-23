@@ -129,7 +129,7 @@ namespace Neo4j.Driver.IntegrationTests
             driver.Dispose();
             var error = Record.Exception(() => session.Run("RETURN 1"));
             error.Should().BeOfType<ObjectDisposedException>();
-            error.Message.Should().StartWith("Cannot acquire a new connection as LoadBalancer has already been disposed.");
+            error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         [Fact]

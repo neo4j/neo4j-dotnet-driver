@@ -18,6 +18,7 @@ using System;
 using System.Diagnostics;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -58,7 +59,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (_disposeCalled)
             {
-                ThrowObjectClosedException();
+                ThrowObjectDisposedException();
             }
 
             EnsureRoutingTableIsFresh();
@@ -77,14 +78,14 @@ namespace Neo4j.Driver.Internal.Routing
 
             if (_disposeCalled)
             {
-                ThrowObjectClosedException();
+                ThrowObjectDisposedException();
             }
             return conn;
         }
 
-        private void ThrowObjectClosedException()
+        private void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(GetType().Name, $"Cannot acquire a new connection as {GetType().Name} has already been disposed.");
+            FailedToCreateConnection(this);
         }
 
         internal IConnection AcquireReadConnection()

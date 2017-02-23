@@ -20,6 +20,14 @@ namespace Neo4j.Driver.Internal
 {
     internal static class Throw
     {
+        public static class DriverDisposedException
+        {
+            public static void FailedToCreateConnection(object obj)
+            {
+                throw new ObjectDisposedException(obj.GetType().Name, "Failed to acquire a new connection as the driver has already been disposed.");
+            }
+        }
+
         public static class ArgumentNullException
         {
             public static void IfNull(object parameter, string paramName)
