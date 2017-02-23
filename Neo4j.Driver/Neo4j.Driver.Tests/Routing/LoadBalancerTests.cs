@@ -24,6 +24,7 @@ using System.Threading;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -138,7 +139,7 @@ namespace Neo4j.Driver.Tests
 
                 foreach (var uri in uris)
                 {
-                    var mockedConn = new Mock<IPooledConnection>();
+                    var mockedConn = new Mock<IClusterConnection>();
                     mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
                     var conn = mockedConn.Object;
                     mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
@@ -160,7 +161,7 @@ namespace Neo4j.Driver.Tests
                     var anotherUri = new Uri("bolt+routing://123:789");
                     var updateCount = 0;
                     var directReturnCount = 0;
-                    Func<IPooledConnection, IRoutingTable> updateRoutingTableFunc =
+                    Func<IConnection, IRoutingTable> updateRoutingTableFunc =
                         connection =>
                         {
                             if (!balancerRoutingTable.IsStale())
@@ -247,12 +248,11 @@ namespace Neo4j.Driver.Tests
                     var newRoutingTable = balancer.UpdateRoutingTable(connection =>
                     {
                         // the second connectin will give a new routingTable
-                        if (connection.Server.Address.Equals(uriA.ToString())) // uri2
+                        if (connection.Server.Address.Equals(uriA.ToString())) // uriA
                         {
-                            throw balancer.CreateClusterPooledConnectionErrorHandler(uriA)
-                                .OnConnectionError(new ServiceUnavailableException("failed init"));
+                            balancer.OnError(new ServiceUnavailableException("failed init"), uriA);
                         }
-                        if (connection.Server.Address.Equals(uriB.ToString())) // uri2
+                        if (connection.Server.Address.Equals(uriB.ToString())) // uriB
                         {
                             return NewRoutingTable(new[] {uriA}, new [] {uriA}, new []{uriA});
                         }
@@ -352,12 +352,11 @@ namespace Neo4j.Driver.Tests
                     var mockedClusterPool = new Mock<IClusterConnectionPool>();
                     var balancer = new LoadBalancer(mockedClusterPool.Object, routingTable);
 
-                    var mockedConn = new Mock<IPooledConnection>();
+                    var mockedConn = new Mock<IClusterConnection>();
                     var conn = mockedConn.Object;
                     mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Callback(() =>
                     {
-                        throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
-                            .OnConnectionError(new AuthenticationException("Failed to auth the client to the server."));
+                        balancer.OnError(new AuthenticationException("Failed to auth the client to the server."), uri);
                     });
                     
                     // When
@@ -391,9 +390,9 @@ namespace Neo4j.Driver.Tests
                     return routingTable;
                 }
 
-                private static IPooledConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
+                private static IConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
                 {
-                    IPooledConnection acquiredConn;
+                    IConnection acquiredConn;
                     switch (mode)
                     {
                         case AccessMode.Read:
@@ -464,8 +463,7 @@ namespace Neo4j.Driver.Tests
                     mockedConnPool.Setup(x => x.Acquire())
                         .Callback(() =>
                         {
-                            throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
-                                .OnConnectionError(new ServiceUnavailableException("failed init"));
+                            balancer.OnError(new ServiceUnavailableException("failed init"), uri);
                         });
 
                     // When
@@ -477,7 +475,7 @@ namespace Neo4j.Driver.Tests
 
                     // should be removed
                     Uri saveUri;
-                    IPooledConnection saveConn;
+                    IClusterConnection saveConn;
                     routingTable.TryNextReader(out saveUri).Should().BeFalse();
                     routingTable.TryNextWriter(out saveUri).Should().BeFalse();
                     clusterConnPool.TryAcquire(uri, out saveConn).Should().BeFalse();
@@ -494,19 +492,16 @@ namespace Neo4j.Driver.Tests
                     // a routing table which knows a uri
                     var routingTable = CreateRoutingTable(uri, mode);
 
-                    var mockedConnPool = new Mock<IConnectionPool>();
-                    var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                    dict.TryAdd(uri, mockedConnPool.Object);
 
-                    // a cluster pool which knows the conns with the read uri server
-                    var clusterConnPool = new ClusterConnectionPool(null, dict);
-                    var balancer = new LoadBalancer(clusterConnPool, routingTable);
+                    var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
+                    var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTable);
 
-                    mockedConnPool.Setup(x => x.Acquire())
+                    IClusterConnection conn = null;
+                    clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
                         .Callback(() =>
                         {
-                            throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
-                                .OnConnectionError(new SecurityException("Failed to establish ssl connection with the server"));
+                            balancer.OnError(
+                                new SecurityException("Failed to establish ssl connection with the server"), uri);
                         });
 
                     // When
@@ -530,19 +525,14 @@ namespace Neo4j.Driver.Tests
                     // a routing table which knows a uri
                     var routingTable = CreateRoutingTable(uri, mode);
 
-                    var mockedConnPool = new Mock<IConnectionPool>();
-                    var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                    dict.TryAdd(uri, mockedConnPool.Object);
+                    var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
+                    var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTable);
 
-                    // a cluster pool which knows the conns with the read uri server
-                    var clusterConnPool = new ClusterConnectionPool(null, dict);
-                    var balancer = new LoadBalancer(clusterConnPool, routingTable);
-
-                    mockedConnPool.Setup(x => x.Acquire())
+                    IClusterConnection conn = null;
+                    clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
                         .Callback(() =>
                         {
-                            throw balancer.CreateClusterPooledConnectionErrorHandler(uri)
-                                .OnConnectionError(new ProtocolException("do not understand struct 0x01"));
+                            balancer.OnError(new ProtocolException("do not understand struct 0x01"), uri);
                         });
 
                     // When

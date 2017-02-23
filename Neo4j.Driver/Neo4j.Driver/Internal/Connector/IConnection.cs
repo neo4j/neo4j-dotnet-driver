@@ -38,9 +38,6 @@ namespace Neo4j.Driver.Internal.Connector
         // Enqueue a ackFailure message
         void AckFailure();
 
-        //Asynchronously sending reset to the socket output channel. Enqueue reset + send all
-        void ResetAsync();
-
         /// <summary>
         /// Return true if the underlying socket connection is till open, otherwise false.
         /// </summary>
@@ -55,12 +52,5 @@ namespace Neo4j.Driver.Internal.Connector
         /// Close and release related resources
         /// </summary>
         void Close();
-
-        /// <summary>
-        /// Adds a external error handler that you wish to be called backa when a consreponding error is received.
-        /// The external error handler will be called after internal error handlers if any has been registered internally.
-        /// </summary>
-        /// <param name="handler">The extra error handler to add.</param>
-        void ExternalConnectionErrorHander(IConnectionErrorHandler handler);
     }
 }

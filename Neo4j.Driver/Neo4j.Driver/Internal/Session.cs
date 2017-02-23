@@ -33,7 +33,6 @@ namespace Neo4j.Driver.Internal
          * as both reset thread and running thread could modify this filed at the same time.
          */
         private Transaction _transaction;
-        private readonly object _txSyncLock = new object();
 
         private readonly Action _transactionCleanupAction;
 
@@ -77,30 +76,28 @@ namespace Neo4j.Driver.Internal
                 }
                 else
                 {
-                    lock (_txSyncLock)
+                    if (_transaction != null)
                     {
-                        if (_transaction != null)
-                        {
-                            try
-                            {
-                                _transaction.Dispose();
-                            }
-                            catch
-                            {
-                                // Best-effort
-                            }
-                        }
                         try
                         {
-                            _connection.Sync();
+                            _transaction.Dispose();
                         }
-                        finally
+                        catch
                         {
-                            _connection.Dispose();
+                            // Best-effort
                         }
                     }
+                    try
+                    {
+                        _connection.Sync();
+                    }
+                    finally
+                    {
+                        _connection.Dispose();
+                    }
+
                 }
-                
+
             });
             base.Dispose(true);
         }
@@ -109,13 +106,12 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne(), _connection.Server);
-                lock (_txSyncLock)
-                {
-                    EnsureCanRunMoreStatements();
-                    _connection.Run(statement, statementParameters, resultBuilder);
-                    _connection.Send();
-                }
+                var resultBuilder = new ResultBuilder(statement, statementParameters, () => _connection.ReceiveOne(),
+                    _connection.Server);
+
+                EnsureCanRunMoreStatements();
+                _connection.Run(statement, statementParameters, resultBuilder);
+                _connection.Send();
                 return resultBuilder.PreBuild();
             });
         }
@@ -124,11 +120,8 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                lock (_txSyncLock)
-                {
-                    EnsureCanRunMoreStatements();
-                    _transaction = new Transaction(_connection, _transactionCleanupAction, _logger, bookmark);
-                }
+                EnsureCanRunMoreStatements();
+                _transaction = new Transaction(_connection, _transactionCleanupAction, _logger, bookmark);
                 return _transaction;
             });
         }
@@ -172,21 +165,5 @@ namespace Neo4j.Driver.Internal
         }
 
         public Guid Id { get; } = Guid.NewGuid();
-
-        /// <summary>
-        /// Internal use only.
-        /// </summary>
-        internal void Reset()
-        {
-            EnsureSessionIsOpen();
-            EnsureConnectionIsHealthy();
-
-            lock (_txSyncLock)
-            {
-                _transaction?.MarkToClose();
-                _transactionCleanupAction.Invoke();
-            }
-            _connection.ResetAsync();
-        }
     }
 }

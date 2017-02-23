@@ -16,8 +16,6 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net.Sockets;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -27,21 +25,31 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly Action<IPooledConnection> _releaseAction;
         private readonly IConnection _connection;
-        private IConnectionErrorHandler _externalErrorHandler;
 
-        public PooledConnection(IConnection connection, Action<IPooledConnection> releaseAction = null)
+        public PooledConnection(Func<IConnection> acquireConnFunc, Action<IPooledConnection> releaseAction = null)
         {
-            _connection = connection;
+            try
+            {
+                _connection = acquireConnFunc.Invoke();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
             _releaseAction = releaseAction ?? (x => { });
-
-            //Adds call back error handler
-            _connection.ExternalConnectionErrorHander(new PooledConnectionErrorHandler(OnServerError, OnConnectionError));
         }
         public Guid Id { get; } = Guid.NewGuid();
 
         public void Init()
         {
-            _connection.Init();
+            try
+            {
+                _connection.Init();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
         }
 
         public void ClearConnection()
@@ -52,37 +60,76 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Sync()
         {
-            _connection.Sync();
+            try
+            {
+                _connection.Sync();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
         }
 
         public void Send()
         {
-            _connection.Send();
+            try
+            {
+                _connection.Send();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+            
         }
 
         public void ReceiveOne()
         {
-            _connection.ReceiveOne();
+            try
+            {
+                _connection.ReceiveOne();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+            
         }
 
         public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
         {
-            _connection.Run(statement, parameters, resultBuilder, pullAll);
+            try
+            {
+                _connection.Run(statement, parameters, resultBuilder, pullAll);
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
         }
 
         public void Reset()
         {
-            _connection.Reset();
+            try
+            {
+                _connection.Reset();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
         }
 
         public void AckFailure()
         {
-            _connection.AckFailure();
-        }
-
-        public void ResetAsync()
-        {
-            _connection.ResetAsync();
+            try
+            {
+                _connection.AckFailure();
+            }
+            catch (Exception e)
+            {
+               OnError(e);
+            }
         }
 
         public bool IsOpen => _connection.IsOpen && !HasUnrecoverableError;
@@ -110,7 +157,7 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
-        private Neo4jException OnServerError(Neo4jException error)
+        private void OnError(Exception error)
         {
             if (error.IsRecoverableError())
             {
@@ -120,55 +167,15 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 HasUnrecoverableError = true;
             }
-            return _externalErrorHandler == null ? error: _externalErrorHandler.OnServerError(error);
-        }
 
-        private Exception OnConnectionError(Exception error)
-        {
-            // No connection error is recoverable
-            HasUnrecoverableError = true;
-
-            if ( error is IOException || error is SocketException ||
-                error.GetBaseException() is IOException || error.GetBaseException() is SocketException )
+            if (error.IsConnectionError())
             {
-                error = new ServiceUnavailableException(
+                throw new ServiceUnavailableException(
                     $"Connection with the server breaks due to {error.GetType().Name}: {error.Message}", error);
             }
-
-            return _externalErrorHandler == null ? error: _externalErrorHandler.OnConnectionError(error);
-        }
-
-        public void ExternalConnectionErrorHander(IConnectionErrorHandler handler)
-        {
-            _externalErrorHandler = handler;
-        }
-
-        internal IConnectionErrorHandler ExternalConnectionErrorHandler()
-        {
-            return _externalErrorHandler;
-        }
-
-        internal class PooledConnectionErrorHandler : IConnectionErrorHandler
-        {
-            private readonly Func<Neo4jException, Neo4jException> _onServerErrorFunc;
-            private readonly Func<Exception, Exception> _onConnErrorFunc;
-
-            public PooledConnectionErrorHandler(
-                Func<Neo4jException, Neo4jException> onServerErrorFunc,
-                Func<Exception, Exception> onConnectionErrorFunc)
+            else
             {
-                _onServerErrorFunc = onServerErrorFunc;
-                _onConnErrorFunc = onConnectionErrorFunc;
-            }
-
-            public Exception OnConnectionError(Exception e)
-            {
-                return _onConnErrorFunc.Invoke(e);
-            }
-
-            public Neo4jException OnServerError(Neo4jException e)
-            {
-                return _onServerErrorFunc.Invoke(e);
+                throw error;
             }
         }
     }

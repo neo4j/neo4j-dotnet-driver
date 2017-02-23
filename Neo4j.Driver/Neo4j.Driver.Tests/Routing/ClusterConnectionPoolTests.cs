@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests
                 connectionPoolDict.Count.Should().Be(0);
 
                 // When
-                IPooledConnection connection;
+                IClusterConnection connection;
                 var acquired = pool.TryAcquire(ServerUri, out connection);
 
                 // Then
@@ -57,24 +57,33 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
+                mockedConnection.Setup(c => c.Init()).Throws(new InvalidOperationException("An exception"));
                 mockedConnectionPool.Setup(x => x.Acquire()).Returns(mockedConnection.Object);
 
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
 
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+                var pool = new ClusterConnectionPool(null, connectionPoolDict, onErrorAction: (uri, e) => {
+                    if (uri.Equals(ServerUri))
+                    {
+                        throw e;
+                    }
+                    });
 
                 connectionPoolDict.Count.Should().Be(1);
                 connectionPoolDict.Keys.Single().Should().Be(ServerUri);
                 connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
 
                 // When
-                IPooledConnection connection;
+                IClusterConnection connection;
                 var acquired = pool.TryAcquire(ServerUri, out connection);
 
                 // Then
                 acquired.Should().BeTrue();
-                connection.Should().Be(mockedConnection.Object);
+                var exception = Record.Exception(()=>connection.Init());
+                mockedConnection.Verify(c=>c.Init(), Times.Once);
+                exception.Should().BeOfType<InvalidOperationException>();
+                exception.Message.Should().Be("An exception");
             }
 
             [Theory]
@@ -90,7 +99,7 @@ namespace Neo4j.Driver.Tests
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
-                IPooledConnection ignored;
+                IClusterConnection ignored;
                 pool.TryAcquire(new Uri(second), out ignored).Should().Be(expectedResult);
             }
         }

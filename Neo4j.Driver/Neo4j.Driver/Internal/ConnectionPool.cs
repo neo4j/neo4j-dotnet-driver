@@ -33,8 +33,6 @@ namespace Neo4j.Driver.Internal
         private readonly ConcurrentQueue<IPooledConnection> _availableConnections = new ConcurrentQueue<IPooledConnection>();
         private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
 
-        private readonly IConnectionErrorHandler _externalErrorHandler;
-
         private volatile bool _disposeCalled;
 
         // for test only
@@ -52,15 +50,13 @@ namespace Neo4j.Driver.Internal
             Uri uri,
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings connectionPoolSettings,
-            ILogger logger,
-            IConnectionErrorHandler externalErrorHandler = null)
+            ILogger logger)
             : base(logger)
         {
             _uri = uri;
             _connectionSettings = connectionSettings;
             _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
 
-            _externalErrorHandler = externalErrorHandler;
             _logger = logger;
         }
 
@@ -69,10 +65,9 @@ namespace Neo4j.Driver.Internal
             ConcurrentQueue<IPooledConnection> availableConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ILogger logger = null,
-            ConnectionPoolSettings settings = null,
-            IConnectionErrorHandler exteralErrorHandler = null)
+            ConnectionPoolSettings settings = null)
             : this(null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
-                  logger, exteralErrorHandler)
+                  logger)
         {
             _fakeConnection = connection;
             _availableConnections = availableConnections ?? new ConcurrentQueue<IPooledConnection>();
@@ -85,12 +80,9 @@ namespace Neo4j.Driver.Internal
             try
             {
                 conn = _fakeConnection != null
-                    ? new PooledConnection(_fakeConnection, Release)
-                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), Release);
-                if (_externalErrorHandler != null)
-                {
-                    conn.ExternalConnectionErrorHander(_externalErrorHandler);
-                }
+                    ? new PooledConnection(()=>_fakeConnection, Release)
+                    : new PooledConnection(()=>new SocketConnection(_uri, _connectionSettings, _logger), Release);
+
                 conn.Init();
                 return conn;
             }
@@ -101,11 +93,6 @@ namespace Neo4j.Driver.Internal
                 throw;
             }
 
-        }
-
-        private void ThrowConnectionPoolClosedException()
-        {
-            throw new ObjectDisposedException(GetType().Name, "Cannot acquire a new connection from the connection pool as the pool has already been disposed.");
         }
 
         public IPooledConnection Acquire()
@@ -234,6 +221,11 @@ namespace Neo4j.Driver.Internal
                 }
             });
             base.Dispose(true);
+        }
+
+        private void ThrowConnectionPoolClosedException()
+        {
+            throw new ObjectDisposedException(GetType().Name, "Cannot acquire a new connection from the connection pool as the pool has already been disposed.");
         }
     }
 
