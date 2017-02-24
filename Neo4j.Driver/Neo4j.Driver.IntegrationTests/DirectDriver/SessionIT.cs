@@ -21,8 +21,9 @@ namespace Neo4j.Driver.IntegrationTests
         {
             Exception exception;
             using (var driver = GraphDatabase.Driver("bolt://localhost:123"))
+            using (var session = driver.Session())
             {
-               exception = Record.Exception(()=>driver.Session());
+                exception = Record.Exception(() => session.Run("RETURN 1"));
             }
             exception.Should().BeOfType<ServiceUnavailableException>();
             exception.Message.Should().Be("Connection with the server breaks due to AggregateException: One or more errors occurred.");
@@ -43,6 +44,20 @@ namespace Neo4j.Driver.IntegrationTests
             var error = Record.Exception(() => driver.Session());
             error.Should().BeOfType<ObjectDisposedException>();
             error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
+        }
+
+        [Fact]
+        public void DisallowRunInSessionAfterDriverDispose()
+        {
+            var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
+            var session = driver.Session(AccessMode.Write);
+            session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
+
+            driver.Dispose();
+
+            var error = Record.Exception(() => session.Run("RETURN 1"));
+            error.Should().BeOfType<ObjectDisposedException>();
+            error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         [Fact]

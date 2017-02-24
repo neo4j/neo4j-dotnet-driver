@@ -18,6 +18,7 @@ using System;
 using System.Diagnostics;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -28,6 +29,8 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ILogger _logger;
         private readonly object _syncLock = new object();
         private readonly Stopwatch _stopwatch;
+
+        private volatile bool _disposeCalled = false;
 
         public LoadBalancer(
             ConnectionSettings connectionSettings,
@@ -54,16 +57,35 @@ namespace Neo4j.Driver.Internal.Routing
 
         public IConnection AcquireConnection(AccessMode mode)
         {
+            if (_disposeCalled)
+            {
+                ThrowObjectDisposedException();
+            }
+
             EnsureRoutingTableIsFresh();
+            IConnection conn = null;
             switch (mode)
             {
                 case AccessMode.Read:
-                    return AcquireReadConnection();
+                    conn = AcquireReadConnection();
+                    break;
                 case AccessMode.Write:
-                    return AcquireWriteConnection();
+                    conn = AcquireWriteConnection();
+                    break;
                 default:
                     throw new InvalidOperationException($"Unknown access mode {mode}.");
             }
+
+            if (_disposeCalled)
+            {
+                ThrowObjectDisposedException();
+            }
+            return conn;
+        }
+
+        private void ThrowObjectDisposedException()
+        {
+            FailedToCreateConnection(this);
         }
 
         internal IConnection AcquireReadConnection()
@@ -227,7 +249,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (!isDisposing)
                 return;
-
+            _disposeCalled = true;
             // We cannot set routing table and cluster conn pool to null as we do not want get NPE in concurrent call of dispose and acquire
             _routingTable.Clear();
             _clusterConnectionPool.Dispose();

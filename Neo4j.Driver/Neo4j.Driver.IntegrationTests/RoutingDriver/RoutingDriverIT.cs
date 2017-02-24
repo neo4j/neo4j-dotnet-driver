@@ -46,8 +46,9 @@ namespace Neo4j.Driver.IntegrationTests
 
             Exception exception = null;
             using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake")))
+            using(var session = driver.Session())
             {
-                exception = Record.Exception(() => driver.Session());
+                exception = Record.Exception(() => session.Run("RETURN 1"));
             }
             exception.Should().BeOfType<AuthenticationException>();
             exception.Message.Should().Be("The client is unauthorized due to authentication failure.");
@@ -104,11 +105,14 @@ namespace Neo4j.Driver.IntegrationTests
                 return;
             }
 
-            var driver = GraphDatabase.Driver(WrongServer, AuthToken);
-            var error = Record.Exception(()=>driver.Session());
+            Exception error = null;
+            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake")))
+            using (var session = driver.Session())
+            {
+                error = Record.Exception(() => session.Run("RETURN 1"));
+            }
             error.Should().BeOfType<ServiceUnavailableException>();
             error.Message.Should().Be("Failed to connect to any routing server. Please make sure that the cluster is up and can be accessed by the driver and retry.");
-            driver.Dispose();
         }
 
         [Fact]
@@ -124,8 +128,8 @@ namespace Neo4j.Driver.IntegrationTests
 
             driver.Dispose();
             var error = Record.Exception(() => session.Run("RETURN 1"));
-            error.Should().BeOfType<ClientException>();
-            error.Message.Should().Contain("The current session cannot be reused as the underlying connection with the server has been closed");
+            error.Should().BeOfType<ObjectDisposedException>();
+            error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         [Fact]

@@ -27,23 +27,27 @@ namespace Neo4j.Driver.Internal.Result
         private readonly List<string> _keys = new List<string>();
         private readonly SummaryBuilder _summaryBuilder;
 
-        private Action _receiveOneFun;
+        private Action _receiveOneAction;
 
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
-        public ResultBuilder() : this(null, null, null, null)
+        private readonly Action _sessionCleanupAction;
+
+        public ResultBuilder() : this(null, null, null, null, null)
         {
         }
 
-        public ResultBuilder(Statement statement, Action receiveOneFun, IServerInfo server)
+        public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, Action sessionCleanupAction=null)
         {
             _summaryBuilder = new SummaryBuilder(statement, server);
-            _receiveOneFun = receiveOneFun;
+            _sessionCleanupAction = sessionCleanupAction ?? (() => { });
+            SetReceiveOneAction(receiveOneAction);
         }
 
-        public ResultBuilder(string statement, IDictionary<string, object> parameters, Action receiveOneFun, IServerInfo server)
-            : this(new Statement(statement, parameters), receiveOneFun, server)
+        public ResultBuilder(string statement, IDictionary<string, object> parameters, 
+            Action receiveOneAction, IServerInfo server, Action sessionCleanupAction=null)
+            : this(new Statement(statement, parameters), receiveOneAction, server, sessionCleanupAction)
         {
         }
 
@@ -61,7 +65,7 @@ namespace Neo4j.Driver.Internal.Result
             // read all records into memory
             while (_hasMoreRecords)
             {
-                _receiveOneFun.Invoke();
+                _receiveOneAction.Invoke();
             }
             // return the summary
             return _summaryBuilder.Build();
@@ -79,14 +83,23 @@ namespace Neo4j.Driver.Internal.Result
             }
             while (_hasMoreRecords && _records.Count <= 0)
             {
-                _receiveOneFun.Invoke();
+                _receiveOneAction.Invoke();
             }
             return _records.Count > 0 ? _records.Dequeue() : null;
         }
 
-        internal void SetReceiveOneFunc(Action receiveOneFunc)
+        internal void SetReceiveOneAction(Action receiveOneAction)
         {
-            _receiveOneFun = receiveOneFunc;
+            _receiveOneAction = () =>
+            {
+                receiveOneAction.Invoke();
+                if (!_hasMoreRecords)
+                {
+                    // The last message received is a reply to pull_all,
+                    // we are good to do a reset and return the connection to pool
+                    _sessionCleanupAction();
+                }
+            };
         }
 
         public void CollectRecord(object[] fields)
@@ -113,12 +126,12 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectSummary(IDictionary<string, object> meta)
         {
-            _hasMoreRecords = false;
+            NoMoreRecords();
+
             if (meta == null)
             {
                 return;
             }
-
             CollectType(meta, "type");
             CollectCounters(meta, "stats");
             CollectPlan(meta, "plan");
@@ -134,15 +147,15 @@ namespace Neo4j.Driver.Internal.Result
 
         public void DoneFailure()
         {
-            InvalidateResult();// an error received, so the result is broken
+            NoMoreRecords();// an error received, so the result is broken
         }
 
         public void DoneIgnored()
         {
-            InvalidateResult();// the result is ignored
+            NoMoreRecords();// the result is ignored
         }
 
-        private void InvalidateResult()
+        private void NoMoreRecords()
         {
             _hasMoreRecords = false;
         }

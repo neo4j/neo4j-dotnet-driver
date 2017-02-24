@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal
     internal class Transaction : StatementRunner, ITransaction
     {
         private readonly IConnection _connection;
-        private readonly Action _cleanupAction;
+        private readonly Action _sessionCleanupAction;
 
         internal const string BookmarkKey = "bookmark";
         internal string Bookmark { get; private set; }
@@ -34,17 +34,12 @@ namespace Neo4j.Driver.Internal
         private const string Commit = "COMMIT";
         private const string Rollback = "ROLLBACK";
 
-        /* 
-         * All the blocks that modifies the state of this tx and perform certain actoin based on the current tx state should be syncronized
-         * as a reset thread and a run thread could modify this state at the same time.
-         */
         private State _state = State.Active;
-        private readonly object _syncLock = new object();
 
         public Transaction(IConnection connection, Action cleanupAction=null, ILogger logger=null, string bookmark = null) : base(logger)
         {
             _connection = connection;
-            _cleanupAction = cleanupAction ?? (() => { });
+            _sessionCleanupAction = cleanupAction ?? (() => { });
 
             IDictionary<string, object> paramters = new Dictionary<string, object>();
             if (bookmark != null)
@@ -90,40 +85,37 @@ namespace Neo4j.Driver.Internal
             }
             try
             {
-                lock (_syncLock)
+                if (_state == State.MarkedSuccess)
                 {
-                    if (_state == State.MarkedSuccess)
+                    try
                     {
+                        _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = s));
+                        _connection.Sync();
+                        _state = State.Succeeded;
+                    }
+                    catch (Exception)
+                    {
+                        // if we ever failed to commit, then we rollback the tx
                         try
                         {
-                            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = s));
-                            _connection.Sync();
-                            _state = State.Succeeded;
+                            RollBackTx();
                         }
-                        catch(Exception)
+                        catch (Exception)
                         {
-                            // if we ever failed to commit, then we rollback the tx
-                            try
-                            {
-                                RollBackTx();
-                            }
-                            catch (Exception)
-                            {
-                                // ignored
-                            }
-
-                            throw;
+                            // ignored
                         }
+
+                        throw;
                     }
-                    else if (_state == State.MarkedFailed || _state == State.Active)
-                    {
-                        RollBackTx();
-                    }
+                }
+                else if (_state == State.MarkedFailed || _state == State.Active)
+                {
+                    RollBackTx();
                 }
             }
             finally
             {
-                _cleanupAction.Invoke();
+                _sessionCleanupAction.Invoke();
                 base.Dispose(true);
             }
         }
@@ -139,22 +131,21 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                lock (_syncLock)
+                EnsureNotFailed();
+                try
                 {
-                    EnsureNotFailed();
-                    try
-                    {
-                        var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(), _connection.Server);
-                        _connection.Run(statement, parameters, resultBuilder);
-                        _connection.Send();
-                        return resultBuilder.PreBuild();
-                    }
-                    catch (Neo4jException)
-                    {
-                        _state = State.Failed;
-                        throw;
-                    }
+                    var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
+                        _connection.Server);
+                    _connection.Run(statement, parameters, resultBuilder);
+                    _connection.Send();
+                    return resultBuilder.PreBuild();
                 }
+                catch (Neo4jException)
+                {
+                    _state = State.Failed;
+                    throw;
+                }
+
             });
         }
 
@@ -172,32 +163,23 @@ namespace Neo4j.Driver.Internal
 
         public void Success()
         {
-            lock (_syncLock)
+            if (_state == State.Active)
             {
-                if (_state == State.Active)
-                {
-                    _state = State.MarkedSuccess;
-                }
+                _state = State.MarkedSuccess;
             }
         }
 
         public void Failure()
         {
-            lock (_syncLock)
+            if (_state == State.Active || _state == State.MarkedSuccess)
             {
-                if (_state == State.Active || _state == State.MarkedSuccess)
-                {
-                    _state = State.MarkedFailed;
-                }
+                _state = State.MarkedFailed;
             }
         }
 
         public void MarkToClose()
         {
-            lock (_syncLock)
-            {
-                _state = State.Failed;
-            }
+            _state = State.Failed;
         }
     }
 }

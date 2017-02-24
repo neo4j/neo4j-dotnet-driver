@@ -287,7 +287,7 @@ namespace Neo4j.Driver.Tests
                 pool.Dispose();
                 var exception = Record.Exception(() => pool.Acquire());
                 exception.Should().BeOfType<ObjectDisposedException>();
-                exception.Message.Should().Contain("Cannot acquire a new connection from the connection pool");
+                exception.Message.Should().StartWith("Failed to acquire a new connection");
             }
 
             // thread-safe test
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.Tests
                 healthyMock.Verify(x => x.IsOpen, Times.Once);
                 healthyMock.Verify(x => x.Close(), Times.Once);
                 exception.Should().BeOfType<ObjectDisposedException>();
-                exception.Message.Should().Contain("Cannot acquire a new connection from the connection pool");
+                exception.Message.Should().StartWith("Failed to acquire a new connection");
             }
         }
 
