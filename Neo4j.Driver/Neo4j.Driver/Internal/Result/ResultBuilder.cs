@@ -32,22 +32,22 @@ namespace Neo4j.Driver.Internal.Result
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
-        private readonly Action _sessionCleanupAction;
+        private readonly IResultResourceHandler _resourceHandler;
 
         public ResultBuilder() : this(null, null, null, null, null)
         {
         }
 
-        public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, Action sessionCleanupAction=null)
+        public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler = null)
         {
             _summaryBuilder = new SummaryBuilder(statement, server);
-            _sessionCleanupAction = sessionCleanupAction ?? (() => { });
+            _resourceHandler = resourceHandler;
             SetReceiveOneAction(receiveOneAction);
         }
 
         public ResultBuilder(string statement, IDictionary<string, object> parameters, 
-            Action receiveOneAction, IServerInfo server, Action sessionCleanupAction=null)
-            : this(new Statement(statement, parameters), receiveOneAction, server, sessionCleanupAction)
+            Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler= null)
+            : this(new Statement(statement, parameters), receiveOneAction, server, resourceHandler)
         {
         }
 
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Internal.Result
                 {
                     // The last message received is a reply to pull_all,
                     // we are good to do a reset and return the connection to pool
-                    _sessionCleanupAction();
+                    _resourceHandler.OnResultComsumed();
                 }
             };
         }

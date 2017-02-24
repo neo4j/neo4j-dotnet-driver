@@ -41,4 +41,15 @@ namespace Neo4j.Driver.Internal
             return Run(statement, paramDictionary);
         }
     }
+
+    internal interface IResultResourceHandler
+    {
+        void OnResultComsumed();
+    }
+
+    internal interface ITransactionResourceHandler
+    {
+        void OnTransactionDispose();
+        void OnConnectionError();
+    }
 }

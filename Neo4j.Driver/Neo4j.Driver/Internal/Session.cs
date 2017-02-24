@@ -22,15 +22,13 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Session : StatementRunner, ISession
+    internal class Session : StatementRunner, ISession, IResultResourceHandler, ITransactionResourceHandler
     {
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
         // without any possible connection leak.
         private readonly Func<IConnection> _acquireConnFunc;
         private IConnection _connection;
-
-        private IStatementResult _sessionRunResult;
 
         private Transaction _transaction;
 
@@ -56,12 +54,11 @@ namespace Neo4j.Driver.Internal
 
                 _connection = _acquireConnFunc.Invoke();
                 var resultBuilder = new ResultBuilder(statement, statementParameters, 
-                    () => _connection.ReceiveOne(), _connection.Server, RunResultCleanupCallback);
-                
+                    () => _connection.ReceiveOne(), _connection.Server, this);
                 _connection.Run(statement, statementParameters, resultBuilder);
                 _connection.Send();
-                _sessionRunResult = resultBuilder.PreBuild();
-                return _sessionRunResult;
+
+                return resultBuilder.PreBuild();
             });
         }
 
@@ -72,7 +69,7 @@ namespace Neo4j.Driver.Internal
                 EnsureCanRunMoreStatements();
 
                 _connection = _acquireConnFunc.Invoke();
-                _transaction = new Transaction(_connection, TransactionCleanupCallback, _logger, bookmark);
+                _transaction = new Transaction(_connection, this, _logger, bookmark);
                 return _transaction;
             });
         }
@@ -101,8 +98,8 @@ namespace Neo4j.Driver.Internal
                     throw new ObjectDisposedException(GetType().Name,"Failed to dispose this seesion as it has already been disposed.");
                 }
 
-                DisposeSessionResult();
                 DisposeTransaction();
+                DisposeSessionResult();
             });
             base.Dispose(true);
         }
@@ -118,9 +115,8 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         ///  This method will be called back by <see cref="ResultBuilder"/> after it consumed result
         /// </summary>
-        private void RunResultCleanupCallback()
+        public void OnResultComsumed()
         {
-            Throw.ArgumentNullException.IfNull(_sessionRunResult, nameof(_sessionRunResult));
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
 
             CleanRunResultResources();
@@ -129,7 +125,6 @@ namespace Neo4j.Driver.Internal
         private void CleanRunResultResources()
         {
             LastBookmark = null;
-            _sessionRunResult = null;
 
             // always try to close connection used by the result too
             _connection?.Dispose();
@@ -139,7 +134,7 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         /// Called back in <see cref="Transaction.Dispose"/>
         /// </summary>
-        private void TransactionCleanupCallback()
+        public void OnTransactionDispose()
         {
             Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
@@ -159,7 +154,7 @@ namespace Neo4j.Driver.Internal
         /// <exception cref="ClientException">If error when pulling result into memory</exception>
         private void DisposeSessionResult()
         {
-            if (_sessionRunResult != null)
+            if (_connection.IsOpen)
             {
                 try
                 {
@@ -175,6 +170,10 @@ namespace Neo4j.Driver.Internal
                     // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
                     CleanRunResultResources();
                 }
+            }
+            else
+            {
+                CleanRunResultResources();
             }
         }
 
@@ -216,6 +215,11 @@ namespace Neo4j.Driver.Internal
                                           "Make sure that you do not have a bad reference to a disposed session " +
                                           "and retry your statement in another new session.");
             }
+        }
+
+        public void OnConnectionError()
+        {
+            throw new NotImplementedException();
         }
     }
 }

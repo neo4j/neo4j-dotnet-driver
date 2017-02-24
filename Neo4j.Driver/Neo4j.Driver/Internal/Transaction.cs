@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal
     internal class Transaction : StatementRunner, ITransaction
     {
         private readonly IConnection _connection;
-        private readonly Action _sessionCleanupAction;
+        private readonly ITransactionResourceHandler _resourceHandler;
 
         internal const string BookmarkKey = "bookmark";
         internal string Bookmark { get; private set; }
@@ -36,10 +36,10 @@ namespace Neo4j.Driver.Internal
 
         private State _state = State.Active;
 
-        public Transaction(IConnection connection, Action cleanupAction=null, ILogger logger=null, string bookmark = null) : base(logger)
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler, ILogger logger=null, string bookmark = null) : base(logger)
         {
             _connection = connection;
-            _sessionCleanupAction = cleanupAction ?? (() => { });
+            _resourceHandler = resourceHandler;
 
             IDictionary<string, object> paramters = new Dictionary<string, object>();
             if (bookmark != null)
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal
             }
             finally
             {
-                _sessionCleanupAction.Invoke();
+                _resourceHandler.OnTransactionDispose();
                 base.Dispose(true);
             }
         }
