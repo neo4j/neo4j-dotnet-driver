@@ -103,12 +103,14 @@ namespace Neo4j.Driver.Internal.Routing
                    $"[{nameof(_writers)}: {_writers}]";
         }
 
-        public void EnsureRouter(IEnumerable<Uri> ips)
+        public void AddRouter(IEnumerable<Uri> ips)
         {
-            if (_routers.Count == 0)
-            {
-                _routers.Add(ips);
-            }
+            _routers.Add(ips);
+        }
+
+        public bool HasNoRouter()
+        {
+            return _routers.Count == 0;
         }
     }
 }

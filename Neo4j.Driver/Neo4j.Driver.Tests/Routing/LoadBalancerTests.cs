@@ -107,16 +107,18 @@ namespace Neo4j.Driver.Tests
                 {
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
+
                     var routingTableMock = new Mock<IRoutingTable>();
-                    routingTableMock.Setup(x => x.TryNextRouter(out uri)).Returns(true);
-                    routingTableMock.Setup(x => x.EnsureRouter(It.IsAny<IEnumerable<Uri>>()))
+                    routingTableMock.Setup(x => x.HasNoRouter()).Returns(true);
+                    routingTableMock.Setup(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()))
                         .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+                    routingTableMock.Setup(x => x.TryNextRouter(out uri)).Returns(true);
 
                     var poolMock = new Mock<IClusterConnectionPool>();
                     var conn = new Mock<IClusterConnection>().Object;
-                    poolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
                     poolMock.Setup(x => x.Add(It.IsAny<IEnumerable<Uri>>()))
                         .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+                    poolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
 
                     var balancer = new LoadBalancer(poolMock.Object, routingTableMock.Object, uri);
 
@@ -132,7 +134,7 @@ namespace Neo4j.Driver.Tests
 
                     // Then
                     poolMock.Verify(x=>x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
-                    routingTableMock.Verify(x=>x.EnsureRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                    routingTableMock.Verify(x=>x.AddRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
                 }
 
                 [Fact]
@@ -518,8 +520,14 @@ namespace Neo4j.Driver.Tests
                 throw new NotSupportedException();
             }
 
-            public void EnsureRouter(IEnumerable<Uri> ips)
+            public void AddRouter(IEnumerable<Uri> ips)
             {
+                throw new NotSupportedException();
+            }
+
+            public bool HasNoRouter()
+            {
+                return false;
             }
         }
 

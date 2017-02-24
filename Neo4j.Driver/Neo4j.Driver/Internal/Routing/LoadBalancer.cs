@@ -221,9 +221,12 @@ namespace Neo4j.Driver.Internal.Routing
 
         private void EnsureInitialRouter()
         {
-            var ips = _seed.ToIps();
-            _routingTable.EnsureRouter(ips);
-            _clusterConnectionPool.Add(ips);
+            if (_routingTable.HasNoRouter())
+            {
+                var ips = _seed.ToIps();
+                _routingTable.AddRouter(ips);
+                _clusterConnectionPool.Add(ips);
+            }
         }
 
         private IRoutingTable Rediscovery(IConnection conn)

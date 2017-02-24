@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
 
 namespace Neo4j.Driver.Internal
 {
@@ -40,9 +41,11 @@ namespace Neo4j.Driver.Internal
             EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
             bool socketKeepAlive, string userAgent = null)
         {
-            Throw.ArgumentNullException.IfNull(initialServerUri, nameof(initialServerUri));
-            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
-            Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
+            IfNull(initialServerUri, nameof(initialServerUri));
+            IfNull(authToken, nameof(authToken));
+            IfNull(encryptionManager, nameof(encryptionManager));
+            IfNull(connectionTimeout, nameof(connectionTimeout));
+            IfNull(socketKeepAlive, nameof(socketKeepAlive));
 
             InitialServerUri = initialServerUri;
             AuthToken = authToken;
