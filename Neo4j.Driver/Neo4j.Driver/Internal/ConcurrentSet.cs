@@ -45,5 +45,10 @@ namespace Neo4j.Driver.Internal
         {
             return _dictionary.Keys.GetEnumerator();
         }
+
+        public override string ToString()
+        {
+            return _dictionary.Keys.ValueToString();
+        }
     }
 }

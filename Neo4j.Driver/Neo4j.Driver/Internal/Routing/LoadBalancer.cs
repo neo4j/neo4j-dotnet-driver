@@ -29,6 +29,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ILogger _logger;
         private readonly object _syncLock = new object();
         private readonly Stopwatch _stopwatch;
+        private readonly Uri _seed;
 
         private volatile bool _disposeCalled = false;
 
@@ -41,18 +42,23 @@ namespace Neo4j.Driver.Internal.Routing
                 connectionSettings, poolSettings, logger, (uri, e)=>OnError(e, uri));
 
             _stopwatch = new Stopwatch();
-            _routingTable = new RoundRobinRoutingTable(connectionSettings.InitialServerUri, _stopwatch);
+            _routingTable = new RoundRobinRoutingTable(_stopwatch);
 
+            _seed = connectionSettings.InitialServerUri;
             _logger = logger;
+
+            EnsureInitialRouter();
         }
 
         // for test only
         internal LoadBalancer(
             IClusterConnectionPool clusterConnPool,
-            IRoutingTable routingTable)
+            IRoutingTable routingTable,
+            Uri seed = null)
         {
             _clusterConnectionPool = clusterConnPool;
             _routingTable = routingTable;
+            _seed = seed;
         }
 
         public IConnection AcquireConnection(AccessMode mode)
@@ -169,6 +175,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             lock (_syncLock)
             {
+                EnsureInitialRouter();
                 while (true)
                 {
                     Uri uri;
@@ -209,6 +216,16 @@ namespace Neo4j.Driver.Internal.Routing
                 throw new ServiceUnavailableException(
                     "Failed to connect to any routing server. " +
                     "Please make sure that the cluster is up and can be accessed by the driver and retry.");
+            }
+        }
+
+        private void EnsureInitialRouter()
+        {
+            if (_routingTable.HasNoRouter())
+            {
+                var ips = _seed.ToIps();
+                _routingTable.AddRouter(ips);
+                _clusterConnectionPool.Add(ips);
             }
         }
 
@@ -261,6 +278,12 @@ namespace Neo4j.Driver.Internal.Routing
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public override string ToString()
+        {
+            return $"{nameof(_routingTable)}: {{{_routingTable}}}, " +
+                   $"{nameof(_clusterConnectionPool)}: {{{_clusterConnectionPool}}}";
         }
     }
 }

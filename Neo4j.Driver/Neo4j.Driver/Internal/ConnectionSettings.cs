@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
 
 namespace Neo4j.Driver.Internal
 {
@@ -30,11 +31,21 @@ namespace Neo4j.Driver.Internal
         public EncryptionManager EncryptionManager { get; }
         public bool SocketKeepAliveEnabled { get; }
 
-        public ConnectionSettings(Uri initialServerUri, IAuthToken authToken, EncryptionManager encryptionManager, TimeSpan connectionTimeout, bool socketKeepAlive, string userAgent = null)
+        public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
+        : this(uri, auth, new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger),
+              config.ConnectionTimeout, config.SocketKeepAlive)
         {
-            Throw.ArgumentNullException.IfNull(initialServerUri, nameof(initialServerUri));
-            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
-            Throw.ArgumentNullException.IfNull(encryptionManager, nameof(encryptionManager));
+        }
+
+        public ConnectionSettings(Uri initialServerUri, IAuthToken authToken, 
+            EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
+            bool socketKeepAlive, string userAgent = null)
+        {
+            IfNull(initialServerUri, nameof(initialServerUri));
+            IfNull(authToken, nameof(authToken));
+            IfNull(encryptionManager, nameof(encryptionManager));
+            IfNull(connectionTimeout, nameof(connectionTimeout));
+            IfNull(socketKeepAlive, nameof(socketKeepAlive));
 
             InitialServerUri = initialServerUri;
             AuthToken = authToken;
