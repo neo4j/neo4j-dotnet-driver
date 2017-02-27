@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.Routing
             _seed = seed;
         }
 
-        public IConnection AcquireConnection(AccessMode mode)
+        public IClusterConnection AcquireConnection(AccessMode mode)
         {
             if (_disposeCalled)
             {
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             EnsureRoutingTableIsFresh();
-            IConnection conn = null;
+            IClusterConnection conn = null;
             switch (mode)
             {
                 case AccessMode.Read:
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Internal.Routing
             FailedToCreateConnection(this);
         }
 
-        internal IConnection AcquireReadConnection()
+        internal IClusterConnection AcquireReadConnection()
         {
             while (true)
             {
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Internal.Routing
             throw new SessionExpiredException("Failed to connect to any read server.");
         }
 
-        internal IConnection AcquireWriteConnection()
+        internal IClusterConnection AcquireWriteConnection()
         {
             while(true)
             {

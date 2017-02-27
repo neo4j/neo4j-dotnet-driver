@@ -119,20 +119,23 @@ namespace Neo4j.Driver.Tests
             public void ShouldCommitOnSuccess()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new Transaction(mockConn.Object);
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.ResetCalls();
                 tx.Success();
                 tx.Dispose();
                 mockConn.Verify(x => x.Run("COMMIT", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
+                mockHandler.Verify(x=>x.OnTransactionDispose(), Times.Once);
             }
 
             [Fact]
             public void ShouldRollbackOnFailure()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new Transaction(mockConn.Object);
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.ResetCalls();
                 tx.Success();
@@ -141,19 +144,22 @@ namespace Neo4j.Driver.Tests
                 tx.Dispose();
                 mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDispose(), Times.Once);
             }
 
             [Fact]
             public void ShouldRollbackOnNoExplicitSuccess()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new Transaction(mockConn.Object);
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.ResetCalls();
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Dispose();
                 mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDispose(), Times.Once);
             }
         }
 

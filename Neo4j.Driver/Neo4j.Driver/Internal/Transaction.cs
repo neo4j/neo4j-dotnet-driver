@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal
 {
     internal class Transaction : StatementRunner, ITransaction
     {
-        private readonly IConnection _connection;
+        private readonly IStatementRunnerConnection _connection;
         private readonly ITransactionResourceHandler _resourceHandler;
 
         internal const string BookmarkKey = "bookmark";
@@ -36,9 +36,9 @@ namespace Neo4j.Driver.Internal
 
         private State _state = State.Active;
 
-        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler, ILogger logger=null, string bookmark = null) : base(logger)
+        public Transaction(IStatementRunnerConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, string bookmark = null) : base(logger)
         {
-            _connection = connection;
+            _connection = new TransactionConnection(this, connection);
             _resourceHandler = resourceHandler;
 
             IDictionary<string, object> paramters = new Dictionary<string, object>();
@@ -115,7 +115,8 @@ namespace Neo4j.Driver.Internal
             }
             finally
             {
-                _resourceHandler.OnTransactionDispose();
+                _connection.Dispose();
+                _resourceHandler?.OnTransactionDispose();
                 base.Dispose(true);
             }
         }
@@ -132,20 +133,12 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() =>
             {
                 EnsureNotFailed();
-                try
-                {
-                    var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
-                        _connection.Server);
-                    _connection.Run(statement, parameters, resultBuilder);
-                    _connection.Send();
-                    return resultBuilder.PreBuild();
-                }
-                catch (Neo4jException)
-                {
-                    _state = State.Failed;
-                    throw;
-                }
 
+                var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
+                    _connection.Server);
+                _connection.Run(statement, parameters, resultBuilder);
+                _connection.Send();
+                return resultBuilder.PreBuild();
             });
         }
 
@@ -180,6 +173,91 @@ namespace Neo4j.Driver.Internal
         public void MarkToClose()
         {
             _state = State.Failed;
+        }
+
+        private class TransactionConnection : IStatementRunnerConnection
+        {
+            private IStatementRunnerConnection _delegate;
+            private Transaction _transaction;
+
+            public TransactionConnection(Transaction transaction, IStatementRunnerConnection connection)
+            {
+                _transaction = transaction;
+                _delegate = connection;
+            }
+
+            public void Sync()
+            {
+                try
+                {
+                    _delegate.Sync();
+                }
+                catch (Exception e)
+                {
+                    OnError(e);
+                }
+            }
+
+            public void Send()
+            {
+                try
+                {
+                    _delegate.Send();
+                }
+                catch (Exception e)
+                {
+                    OnError(e);
+                }
+            }
+
+            public void ReceiveOne()
+            {
+                try
+                {
+                    _delegate.ReceiveOne();
+                }
+                catch (Exception e)
+                {
+                    OnError(e);
+                }
+            }
+
+            public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
+                bool pullAll = true)
+            {
+                try
+                {
+                    _delegate.Run(statement, parameters, resultBuilder, pullAll);
+                }
+                catch (Exception e)
+                {
+                    OnError(e);
+                }
+            }
+
+            public void Dispose()
+            {
+                // no resouce will be closed as the resources passed in this class are managed outside this class
+                _delegate = null;
+                _transaction = null;
+            }
+
+            public bool IsOpen => _delegate.IsOpen;
+
+            public IServerInfo Server => _delegate.Server;
+
+            private void OnError(Exception error)
+            {
+                if (_delegate.IsOpen)
+                {
+                    _transaction.Failure();
+                }
+                else
+                {
+                    _transaction.MarkToClose();
+                }
+                throw error;
+            }
         }
     }
 }

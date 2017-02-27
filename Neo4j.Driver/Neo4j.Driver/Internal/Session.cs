@@ -27,20 +27,20 @@ namespace Neo4j.Driver.Internal
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
         // without any possible connection leak.
-        private readonly Func<IConnection> _acquireConnFunc;
-        private IConnection _connection;
+        private readonly Func<IStatementRunnerConnection> _acquireConnFunc;
+        private IStatementRunnerConnection _connection;
 
         private Transaction _transaction;
 
         private readonly ILogger _logger;
         private bool _isOpen = true;
 
-        public Session(IConnection conn, ILogger logger=null) : this(() => conn, logger)
+        public Session(IStatementRunnerConnection conn, ILogger logger=null) : this(() => conn, logger)
         {
             // If this connection is not used in run or beginTx, then it might not be disposed by session
         }
 
-        public Session(Func<IConnection> acquireConnFunc, ILogger logger):base(logger)
+        public Session(Func<IStatementRunnerConnection> acquireConnFunc, ILogger logger):base(logger)
         {
             _acquireConnFunc = acquireConnFunc;
             _logger = logger;
@@ -53,8 +53,8 @@ namespace Neo4j.Driver.Internal
                 EnsureCanRunMoreStatements();
 
                 _connection = _acquireConnFunc.Invoke();
-                var resultBuilder = new ResultBuilder(statement, statementParameters, 
-                    () => _connection.ReceiveOne(), _connection.Server, this);
+                var resultBuilder = new ResultBuilder(statement, statementParameters,
+                    ()=>_connection.ReceiveOne(), _connection.Server, this);
                 _connection.Run(statement, statementParameters, resultBuilder);
                 _connection.Send();
 
@@ -104,31 +104,13 @@ namespace Neo4j.Driver.Internal
             base.Dispose(true);
         }
 
-        private void EnsureCanRunMoreStatements()
-        {
-            EnsureSessionIsOpen();
-            EnsureNoOpenTransaction();
-            DisposeSessionResult();
-        }
-
-
         /// <summary>
         ///  This method will be called back by <see cref="ResultBuilder"/> after it consumed result
         /// </summary>
         public void OnResultComsumed()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-
             CleanRunResultResources();
-        }
-
-        private void CleanRunResultResources()
-        {
-            LastBookmark = null;
-
-            // always try to close connection used by the result too
-            _connection?.Dispose();
-            _connection = null;
         }
 
         /// <summary>
@@ -145,36 +127,6 @@ namespace Neo4j.Driver.Internal
             // always dispose connection used by the transaction too
             _connection.Dispose();
             _connection = null;
-        }
-
-        /// <summary>
-        /// Clean any session.run result reference.
-        /// If session.run result is not fully consumed, then pull full result into memory.
-        /// </summary>
-        /// <exception cref="ClientException">If error when pulling result into memory</exception>
-        private void DisposeSessionResult()
-        {
-            if (_connection.IsOpen)
-            {
-                try
-                {
-                    // this will enfore to buffer all unconsumed result
-                    _connection.Sync();
-                }
-                catch (Exception e)
-                {
-                    throw new ClientException($"Error when pulling unconsumed session.run records into memory in session: {e.Message}", e);
-                }
-                finally
-                {
-                    // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
-                    CleanRunResultResources();
-                }
-            }
-            else
-            {
-                CleanRunResultResources();
-            }
         }
 
         /// <summary>
@@ -198,6 +150,58 @@ namespace Neo4j.Driver.Internal
             }
         }
 
+        /// <summary>
+        /// Clean any session.run result reference.
+        /// If session.run result is not fully consumed, then pull full result into memory.
+        /// </summary>
+        /// <exception cref="ClientException">If error when pulling result into memory</exception>
+        private void DisposeSessionResult()
+        {
+            if (_connection == null)
+            {
+                // there is no session result resources to dispose
+                return;
+            }
+
+            if (_connection.IsOpen)
+            {
+                try
+                {
+                    // this will enfore to buffer all unconsumed result
+                    _connection.Sync();
+                }
+                catch (Exception e)
+                {
+                    throw new ClientException($"Error when pulling unconsumed session.run records into memory in session: {e.Message}", e);
+                }
+                finally
+                {
+                    // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
+                    CleanRunResultResources();
+                }
+            }
+            else
+            {
+                CleanRunResultResources();
+            }
+        }
+
+        private void CleanRunResultResources()
+        {
+            LastBookmark = null;
+
+            // always try to close connection used by the result too
+            _connection?.Dispose();
+            _connection = null;
+        }
+
+        private void EnsureCanRunMoreStatements()
+        {
+            EnsureSessionIsOpen();
+            EnsureNoOpenTransaction();
+            DisposeSessionResult();
+        }
+
         private void EnsureNoOpenTransaction()
         {
             if (_transaction != null)
@@ -215,11 +219,6 @@ namespace Neo4j.Driver.Internal
                                           "Make sure that you do not have a bad reference to a disposed session " +
                                           "and retry your statement in another new session.");
             }
-        }
-
-        public void OnConnectionError()
-        {
-            throw new NotImplementedException();
         }
     }
 }
