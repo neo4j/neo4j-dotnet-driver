@@ -74,7 +74,6 @@
     <Compile Include="V1\Neo4jException.cs" />
     <Compile Include="Internal\Extensions\Throw.cs" />
     <Compile Include="Internal\Extensions\ByteExtensions.cs" />
-    <Compile Include="Internal\Extensions\Extensions.cs" />
     <Compile Include="V1\INotification.cs" />
     <Compile Include="Internal\Extensions\CollectionExtensions.cs" />
     <Compile Include="Internal\Messaging\IgnoredMessage.cs" />

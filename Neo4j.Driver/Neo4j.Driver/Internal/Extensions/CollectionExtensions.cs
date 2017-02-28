@@ -15,12 +15,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
     internal static class CollectionExtensions
     {
+        public static T[] DequeueToArray<T>(this Queue<T> queue, int length)
+        {
+            var output = new T[length];
+            for (var i = 0; i < length; i++)
+            {
+                output[i] = queue.Dequeue();
+            }
+            return output;
+        }
+
+        public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key)
+        {
+            if (!dictionary.ContainsKey(key))
+                throw new Neo4jException($"Required property '{key}' is not in the response.");
+
+            return (T)dictionary[key];
+        }
+
+        public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue)
+        {
+            return dict.ContainsKey(key) ? (T)dict[key] : defaultValue;
+        }
+
+        public static string ToContentString<K, V>(this IDictionary<K, V> dict)
+        {
+            var output = dict.Select(item => $"{{{item.Key}, {item.Value}}}");
+            return $"[{string.Join(", ", output)}]";
+        }
+
+        public static string ToContentString<K>(this IEnumerable<K> enumerable)
+        {
+            var output = enumerable.Select(item => $"{item}");
+            return $"[{string.Join(", ", output)}]";
+        }
+
         public static string ValueToString(this object o)
         {
             if (o == null)
