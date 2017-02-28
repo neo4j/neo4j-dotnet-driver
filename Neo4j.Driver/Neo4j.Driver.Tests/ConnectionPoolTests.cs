@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Tests
                 var connectionPoolSettings = new ConnectionPoolSettings(2);
                 var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
 
-                var conns = new List<IPooledConnection>();
+                var conns = new List<IConnection>();
                 for (var i = 0; i < 4; i++)
                 {
                     conns.Add(pool.Acquire());
@@ -162,7 +162,7 @@ namespace Neo4j.Driver.Tests
                 unhealthyMock.Verify(x => x.Close(), Times.Once);
 
                 conn.Should().NotBeNull();
-                conn.Id.Should().NotBe(unhealthyId);
+                ((IPooledConnection)conn).Id.Should().NotBe(unhealthyId);
             }
 
             [Fact]
@@ -255,7 +255,7 @@ namespace Neo4j.Driver.Tests
                                 Task.Delay(500);
                                 var conn = pool.Acquire();
                                 lock (receivedIds)
-                                    receivedIds.Add(conn.Id);
+                                    receivedIds.Add(((IPooledConnection)conn).Id);
                             }
                             catch (Exception ex)
                             {

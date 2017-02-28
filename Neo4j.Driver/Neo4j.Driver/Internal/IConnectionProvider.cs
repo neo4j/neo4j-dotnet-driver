@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -18,10 +18,31 @@ using System;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal
 {
-    internal interface ILoadBalancer : IDisposable
+    internal interface IConnectionProvider : IDisposable
     {
-        IStatementRunnerConnection AcquireConnection(AccessMode mode);
+        IConnection Acquire(AccessMode mode);
+    }
+
+    internal class SingleConnectionBasedConnectionProvider : IConnectionProvider
+    {
+        private IConnection _connection;
+
+        public SingleConnectionBasedConnectionProvider(IConnection connection)
+        {
+            _connection = connection;
+        }
+        public void Dispose()
+        {
+            _connection?.Dispose();
+        }
+
+        public IConnection Acquire(AccessMode mode)
+        {
+            var conn = _connection;
+            _connection = null;
+            return conn;
+        }
     }
 }

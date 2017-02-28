@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -96,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             if (Skip) return;
             var invalidBookmark = "invalid bookmark format";
-            using (var session = Driver.Session())
+            using (var session = (Session)Driver.Session())
             {
                 var exception = Record.Exception(() => session.BeginTransaction(invalidBookmark));
                 exception.Should().BeOfType<ClientException>();
@@ -108,7 +109,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldThrowForUnreachableBookmark()
         {
             if (Skip) return;
-            using (var session = Driver.Session())
+            using (var session = (Session)Driver.Session())
             {
                 CreateNodeInTx(session);
 
@@ -170,7 +171,7 @@ namespace Neo4j.Driver.IntegrationTests
 
         private static void CreateNodeInTx(ISession session, string bookmark = null)
         {
-            using (var tx = session.BeginTransaction(bookmark))
+            using (var tx = ((Session)session).BeginTransaction(bookmark))
             {
                 tx.Run("CREATE (a:Person)");
                 tx.Success();

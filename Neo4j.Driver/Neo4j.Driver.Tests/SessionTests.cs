@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object, "a bookmark");
+                var session = new Session(mockConn.Object, bookmark:"a bookmark");
                 session.LastBookmark.Should().Be("a bookmark");
                 session.BeginTransaction("set new bookmark");
                 session.LastBookmark.Should().Be("set new bookmark");

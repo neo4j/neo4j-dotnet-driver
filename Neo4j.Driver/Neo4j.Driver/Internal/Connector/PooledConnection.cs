@@ -15,35 +15,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Collections.Generic;
-using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal class PooledConnection : IPooledConnection
+    internal class PooledConnection : DelegatedConnection, IPooledConnection
     {
         private readonly Action<IPooledConnection> _releaseAction;
-        private readonly IConnection _connection;
 
         public PooledConnection(IConnection conn, Action<IPooledConnection> releaseAction = null)
+            :base (conn)
         {
-            _connection = conn;
             _releaseAction = releaseAction ?? (x => { });
         }
         public Guid Id { get; } = Guid.NewGuid();
-
-        public void Init()
-        {
-            try
-            {
-                _connection.Init();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
 
         public void ClearConnection()
         {
@@ -51,95 +36,12 @@ namespace Neo4j.Driver.Internal.Connector
             Sync();
         }
 
-        public void Sync()
-        {
-            try
-            {
-                _connection.Sync();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
-        public void Send()
-        {
-            try
-            {
-                _connection.Send();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-            
-        }
-
-        public void ReceiveOne()
-        {
-            try
-            {
-                _connection.ReceiveOne();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-            
-        }
-
-        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
-        {
-            try
-            {
-                _connection.Run(statement, parameters, resultBuilder, pullAll);
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
-        public void Reset()
-        {
-            try
-            {
-                _connection.Reset();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
-        public void AckFailure()
-        {
-            try
-            {
-                _connection.AckFailure();
-            }
-            catch (Exception e)
-            {
-               OnError(e);
-            }
-        }
-
-        public bool IsOpen => _connection.IsOpen && !HasUnrecoverableError;
-        public IServerInfo Server => _connection.Server;
-
-        /// <summary>
-        /// Close the connection and all resources all for good
-        /// </summary>
-        public void Close()
-        {
-            _connection.Close();
-        }
+        public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;
 
         /// <summary>
         /// Disposing a pooled connection will try to release the connection resource back to pool
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             _releaseAction(this);
         }
@@ -150,11 +52,11 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
-        private void OnError(Exception error)
+        public override void OnError(Exception error)
         {
             if (error.IsRecoverableError())
             {
-                _connection.AckFailure();
+                Delegate.AckFailure();
             }
             else
             {

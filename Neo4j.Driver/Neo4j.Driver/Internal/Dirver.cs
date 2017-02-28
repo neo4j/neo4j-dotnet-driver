@@ -19,28 +19,21 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal abstract class BaseDriver : IDriver
+    internal class Dirver : IDriver
     {
-        public abstract ISession NewSession(AccessMode defaultMode, string bookmark);
-        public abstract void ReleaseUnmanagedResources();
-        public abstract Uri Uri { get; }
-
         private volatile bool _disposeCalled = false;
 
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-            {
-                return;
-            }
-            _disposeCalled = true;
-            ReleaseUnmanagedResources();
-        }
+        private readonly IConnectionProvider _connectionProvider;
+        private ILogger _logger;
+        public Uri Uri { get; }
 
-        public void Dispose()
+        internal Dirver(Uri uri, IConnectionProvider connectionProvider, ILogger logger)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
+
+            Uri = uri;
+            _logger = logger;
+            _connectionProvider = connectionProvider;
         }
 
         public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
@@ -50,7 +43,7 @@ namespace Neo4j.Driver.Internal
                 ThrowDriverClosedException();
             }
 
-            var session = NewSession(defaultMode, bookmark);
+            var session = new Session(_connectionProvider, _logger, defaultMode, bookmark);
 
             if (_disposeCalled)
             {
@@ -58,6 +51,26 @@ namespace Neo4j.Driver.Internal
                 ThrowDriverClosedException();
             }
             return session;
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (!isDisposing)
+            {
+                return;
+            }
+            _disposeCalled = true;
+
+            // We cannot set connection pool to be null,
+            // otherwise we might get NPE when using concurrently with NewSession
+            _connectionProvider.Dispose();
+            _logger = null;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         private void ThrowDriverClosedException()

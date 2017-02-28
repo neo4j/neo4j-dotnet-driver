@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Internal
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
         }
 
-        private IPooledConnection CreateNewPooledConnection()
+        public IPooledConnection CreateNewPooledConnection()
         {
             PooledConnection conn = null;
             try
@@ -93,7 +93,11 @@ namespace Neo4j.Driver.Internal
                 conn?.Close();
                 throw;
             }
+        }
 
+        public IConnection Acquire(AccessMode mode)
+        {
+            return Acquire();
         }
 
         public IPooledConnection Acquire()
@@ -194,7 +198,9 @@ namespace Neo4j.Driver.Internal
         }
 
         // For concurrent calling: you are free to get something from inUseConn or availConn when we dispose.
+
         // However it is forbiden to put something back to the conn queues after we've already started disposing.
+
         protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
@@ -236,22 +242,9 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    internal interface IConnectionPool : IDisposable
+    internal interface IConnectionPool : IConnectionProvider
     {
         IPooledConnection Acquire();
         void Release(IPooledConnection connection);
-    }
-
-    internal interface IPooledConnection : IConnection
-    {
-        /// <summary>
-        /// An identifer of this connection for pooling
-        /// </summary>
-        Guid Id { get; }
-
-        /// <summary>
-        /// Try to reset the connection to a clean state to prepare it for a new session.
-        /// </summary>
-        void ClearConnection();
     }
 }

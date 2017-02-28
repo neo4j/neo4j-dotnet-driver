@@ -31,6 +31,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         ///     Gets the <see cref="Uri" /> of the Neo4j database.
         /// </summary>
+        [Obsolete("Use Result.Summary.Server.Address instead.")]
         Uri Uri { get; }
 
         /// <summary>

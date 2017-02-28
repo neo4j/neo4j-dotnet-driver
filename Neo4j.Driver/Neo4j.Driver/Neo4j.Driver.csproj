@@ -43,15 +43,16 @@
   <ItemGroup>
     <Compile Include="Internal\ConcurrentSet.cs" />
     <Compile Include="Internal\ConnectionSettings.cs" />
-    <Compile Include="Internal\Connector\DelegatedStatementRunnerConnection.cs" />
+    <Compile Include="Internal\Connector\DelegatedConnection.cs" />
     <Compile Include="Internal\Extensions\ErrorExtensions.cs" />
-    <Compile Include="Internal\BaseDriver.cs" />
+    <Compile Include="Internal\Dirver.cs" />
+    <Compile Include="Internal\IConnectionProvider.cs" />
+    <Compile Include="Internal\IPooledConnection.cs" />
     <Compile Include="Internal\Routing\ClusterConnection.cs" />
     <Compile Include="Internal\Routing\ClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />
     <Compile Include="Internal\Routing\IClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\IClusterErrorHandler.cs" />
-    <Compile Include="Internal\Routing\ILoadBalancer.cs" />
     <Compile Include="Internal\Routing\IRoutingTable.cs" />
     <Compile Include="Internal\Routing\RoundRobinRoutingTable.cs" />
     <Compile Include="Internal\Routing\ConcurrentRoundRobinSet.cs" />
@@ -63,7 +64,6 @@
     <Compile Include="Internal\Messaging\AckFailureMessage.cs" />
     <Compile Include="Internal\EncryptionManager.cs" />
     <Compile Include="Internal\Routing\LoadBalancer.cs" />
-    <Compile Include="Internal\Routing\RoutingDriver.cs" />
     <Compile Include="Internal\Routing\RoutingExtensions.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />
@@ -108,7 +108,6 @@
     <Compile Include="Internal\Packstream\BitConverterBase.cs" />
     <Compile Include="V1\Config.cs" />
     <Compile Include="Internal\Connector\IConnection.cs" />
-    <Compile Include="Internal\DirectDriver.cs" />
     <Compile Include="V1\GraphDatabase.cs" />
     <Compile Include="Internal\Session.cs" />
     <Compile Include="Internal\Messaging\RunMessage.cs" />

@@ -27,8 +27,9 @@ namespace Neo4j.Driver.Internal
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
         // without any possible connection leak.
-        private readonly Func<IStatementRunnerConnection> _acquireConnFunc;
-        private IStatementRunnerConnection _connection;
+        private readonly IConnectionProvider _connectionProvider;
+        private readonly AccessMode _defaultMode;
+        private IConnection _connection;
 
         private Transaction _transaction;
 
@@ -41,15 +42,16 @@ namespace Neo4j.Driver.Internal
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IStatementRunnerConnection conn, string bookmark = null) : this(() => conn, null, bookmark)
+        public Session(IConnection conn, ILogger logger = null, AccessMode defalutMode = AccessMode.Write, string bookmark = null) 
+            : this(new SingleConnectionBasedConnectionProvider(conn), logger, defalutMode, bookmark)
         {
-            // If this connection is not used in run or beginTx, then it might not be disposed by session
         }
 
-        public Session(Func<IStatementRunnerConnection> acquireConnFunc, ILogger logger, string bookmark = null) :base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, AccessMode defaultMode, string bookmark = null) :base(logger)
         {
-            _acquireConnFunc = acquireConnFunc;
+            _connectionProvider = provider;
             _logger = logger;
+            _defaultMode = defaultMode;
             _bookmark = bookmark;
         }
 
@@ -59,7 +61,7 @@ namespace Neo4j.Driver.Internal
             {
                 EnsureCanRunMoreStatements();
 
-                _connection = _acquireConnFunc.Invoke();
+                _connection = _connectionProvider.Acquire(_defaultMode);
                 var resultBuilder = new ResultBuilder(statement, statementParameters,
                     ()=>_connection.ReceiveOne(), _connection.Server, this);
                 _connection.Run(statement, statementParameters, resultBuilder);
@@ -71,14 +73,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction()
         {
-            return TryExecute(() =>
-            {
-                EnsureCanRunMoreStatements();
-
-                _connection = _acquireConnFunc.Invoke();
-                _transaction = new Transaction(_connection, this, _logger, _bookmark);
-                return _transaction;
-            });
+            return BeginTransaction(_defaultMode);
         }
 
 
@@ -86,6 +81,36 @@ namespace Neo4j.Driver.Internal
         {
             _bookmark = bookmark;
             return BeginTransaction();
+        }
+
+        private ITransaction BeginTransaction(AccessMode mode)
+        {
+            return TryExecute(() =>
+            {
+                EnsureCanRunMoreStatements();
+
+                _connection = _connectionProvider.Acquire(mode);
+                _transaction = new Transaction(_connection, this, _logger, _bookmark);
+                return _transaction;
+            });
+        }
+
+        public T ReadTransaction<T>(Func<ITransaction, T> work)
+        {
+            return RunTransaction(work, AccessMode.Read);
+        }
+
+        public T WriteTransaction<T>(Func<ITransaction, T> work)
+        {
+            return RunTransaction(work, AccessMode.Write);
+        }
+
+        private T RunTransaction<T>(Func<ITransaction, T> work, AccessMode mode)
+        {
+            using (var tx = BeginTransaction(mode))
+            {
+                return work.Invoke(tx);
+            }
         }
 
         protected override void Dispose(bool isDisposing)
@@ -131,7 +156,7 @@ namespace Neo4j.Driver.Internal
             Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
 
-            if (_transaction.Status == Transaction.State.Succeeded)
+            if (_transaction.Bookmark != null)
             {
                 _bookmark = _transaction.Bookmark;
             }

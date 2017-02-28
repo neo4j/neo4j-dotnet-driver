@@ -22,7 +22,7 @@ using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class LoadBalancer : ILoadBalancer, IClusterErrorHandler
+    internal class LoadBalancer : IConnectionProvider, IClusterErrorHandler
     {
         private IRoutingTable _routingTable;
         private readonly IClusterConnectionPool _clusterConnectionPool;
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.Routing
             _seed = seed;
         }
 
-        public IStatementRunnerConnection AcquireConnection(AccessMode mode)
+        public IConnection Acquire(AccessMode mode)
         {
             if (_disposeCalled)
             {
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             EnsureRoutingTableIsFresh();
-            IStatementRunnerConnection conn = null;
+            IConnection conn = null;
             switch (mode)
             {
                 case AccessMode.Read:
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Internal.Routing
             return conn;
         }
 
-        internal IStatementRunnerConnection AcquireReadConnection()
+        internal IConnection AcquireReadConnection()
         {
             while (true)
             {
@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Internal.Routing
                     // no server known to routingTable
                     break;
                 }
-                IStatementRunnerConnection conn = CreateClusterConnection(uri);
+                IConnection conn = CreateClusterConnection(uri);
                 if (conn != null)
                 {
                     return conn;
@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Internal.Routing
             throw new SessionExpiredException("Failed to connect to any read server.");
         }
 
-        internal IStatementRunnerConnection AcquireWriteConnection()
+        internal IConnection AcquireWriteConnection()
         {
             while(true)
             {
@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Internal.Routing
                     break;
                 }
 
-                IStatementRunnerConnection conn = CreateClusterConnection(uri, AccessMode.Write);
+                IConnection conn = CreateClusterConnection(uri, AccessMode.Write);
                 if (conn != null)
                 {
                     return conn;
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        internal IRoutingTable UpdateRoutingTable(Func<IStatementRunnerConnection, IRoutingTable> rediscoveryFunc = null)
+        internal IRoutingTable UpdateRoutingTable(Func<IConnection, IRoutingTable> rediscoveryFunc = null)
         {
             lock (_syncLock)
             {
@@ -156,7 +156,7 @@ namespace Neo4j.Driver.Internal.Routing
                         // no alive server
                         break;
                     }
-                    IStatementRunnerConnection conn = CreateClusterConnection(uri);
+                    IConnection conn = CreateClusterConnection(uri);
                     if (conn != null)
                     {
                         try
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        private IRoutingTable Rediscovery(IStatementRunnerConnection conn)
+        private IRoutingTable Rediscovery(IConnection conn)
         {
             var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
             discoveryManager.Rediscovery();

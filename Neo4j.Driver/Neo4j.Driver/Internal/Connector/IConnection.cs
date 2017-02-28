@@ -21,9 +21,18 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal interface IConnection : IStatementRunnerConnection
+    internal interface IConnection : IDisposable
     {
         void Init();
+        // send all and receive all
+        void Sync();
+        // send all
+        void Send();
+        // receive one
+        void ReceiveOne();
+
+        // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
+        void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true);
 
         // Enqueue a reset message
         void Reset();
@@ -34,20 +43,7 @@ namespace Neo4j.Driver.Internal.Connector
         /// Close and release related resources
         /// </summary>
         void Close();
-    }
 
-    internal interface IStatementRunnerConnection : IDisposable
-    {
-        // send all and receive all
-        void Sync();
-        // send all
-        void Send();
-        // receive one
-        void ReceiveOne();
-
-        // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
-        void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true);
-        
         /// <summary>
         /// Return true if the underlying socket connection is till open, otherwise false.
         /// </summary>

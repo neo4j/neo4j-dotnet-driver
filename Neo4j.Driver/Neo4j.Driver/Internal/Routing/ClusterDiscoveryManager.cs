@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterDiscoveryManager
     {
-        private readonly IStatementRunnerConnection _conn;
+        private readonly IConnection _conn;
         private readonly ILogger _logger;
         public IEnumerable<Uri> Readers { get; internal set; } = new Uri[0];
         public IEnumerable<Uri> Writers { get; internal set; } = new Uri[0];
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.Routing
         public long ExpireAfterSeconds { get; internal set; }
 
         private const string ProcedureName = "dbms.cluster.routing.getServers";
-        public ClusterDiscoveryManager(IStatementRunnerConnection connection, ILogger logger)
+        public ClusterDiscoveryManager(IConnection connection, ILogger logger)
         {
             _conn = connection;
             _logger = logger;
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                using (var session = new Session(()=>_conn, _logger))
+                using (var session = new Session(_conn, _logger))
                 {
                     var result = session.Run($"CALL {ProcedureName}");
                     var record = result.Single();

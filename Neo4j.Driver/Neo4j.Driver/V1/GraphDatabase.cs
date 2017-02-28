@@ -108,16 +108,22 @@ namespace Neo4j.Driver.V1
             }
             var connectionSettings = new ConnectionSettings(uri, authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
+            var logger = config.Logger;
+            IConnectionProvider connectionProvider = null;
 
             switch (uri.Scheme.ToLower())
             {
                 case "bolt":
-                    return new DirectDriver(connectionSettings, connectionPoolSettings, config.Logger);
+                    connectionProvider = new ConnectionPool(uri, connectionSettings, connectionPoolSettings, logger);
+                    break;
                 case "bolt+routing":
-                    return new RoutingDriver(connectionSettings, connectionPoolSettings, config.Logger);
+                    connectionProvider = new LoadBalancer(connectionSettings, connectionPoolSettings, logger);
+                    break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {uri.Scheme}");
             }
+
+            return new Dirver(uri, connectionProvider, logger);
         }
     }
 }
