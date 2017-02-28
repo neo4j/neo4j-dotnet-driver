@@ -175,80 +175,26 @@ namespace Neo4j.Driver.Internal
             _state = State.Failed;
         }
 
-        private class TransactionConnection : IStatementRunnerConnection
+        private class TransactionConnection : DelegatedStatementRunnerConnection
         {
-            private IStatementRunnerConnection _delegate;
             private Transaction _transaction;
 
             public TransactionConnection(Transaction transaction, IStatementRunnerConnection connection)
+                :base(connection)
             {
                 _transaction = transaction;
-                _delegate = connection;
             }
 
-            public void Sync()
-            {
-                try
-                {
-                    _delegate.Sync();
-                }
-                catch (Exception e)
-                {
-                    OnError(e);
-                }
-            }
-
-            public void Send()
-            {
-                try
-                {
-                    _delegate.Send();
-                }
-                catch (Exception e)
-                {
-                    OnError(e);
-                }
-            }
-
-            public void ReceiveOne()
-            {
-                try
-                {
-                    _delegate.ReceiveOne();
-                }
-                catch (Exception e)
-                {
-                    OnError(e);
-                }
-            }
-
-            public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
-                bool pullAll = true)
-            {
-                try
-                {
-                    _delegate.Run(statement, parameters, resultBuilder, pullAll);
-                }
-                catch (Exception e)
-                {
-                    OnError(e);
-                }
-            }
-
-            public void Dispose()
+            public override void Dispose()
             {
                 // no resouce will be closed as the resources passed in this class are managed outside this class
-                _delegate = null;
+                Delegate = null;
                 _transaction = null;
             }
 
-            public bool IsOpen => _delegate.IsOpen;
-
-            public IServerInfo Server => _delegate.Server;
-
-            private void OnError(Exception error)
+            public override void OnError(Exception error)
             {
-                if (_delegate.IsOpen)
+                if (Delegate.IsOpen)
                 {
                     _transaction.Failure();
                 }

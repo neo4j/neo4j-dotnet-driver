@@ -41,12 +41,12 @@ namespace Neo4j.Driver.Internal
                    || IsForbiddenOnReadOnlyDatabaseError(error);
         }
 
-        public static bool IsClusterNotALeaderError(this Exception error)
+        private static bool IsClusterNotALeaderError(this Exception error)
         {
             return error.HasErrorCode("Neo.ClientError.Cluster.NotALeader");
         }
 
-        public static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
+        private static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
         {
             return error.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
         }
