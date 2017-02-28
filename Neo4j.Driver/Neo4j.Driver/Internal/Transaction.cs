@@ -36,6 +36,8 @@ namespace Neo4j.Driver.Internal
 
         private State _state = State.Active;
 
+        public State Status => _state;
+
         public Transaction(IStatementRunnerConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, string bookmark = null) : base(logger)
         {
             _connection = new TransactionConnection(this, connection);
@@ -53,7 +55,7 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private enum State
+        internal enum State
         {
             /** The transaction is running with no explicit success or failure marked */
             Active,

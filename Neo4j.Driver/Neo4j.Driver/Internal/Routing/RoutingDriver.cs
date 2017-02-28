@@ -41,9 +41,9 @@ namespace Neo4j.Driver.Internal.Routing
             _loadBalancer = new LoadBalancer(connectionSettings, poolSettings, _logger);
         }
 
-        public override ISession NewSession(AccessMode mode)
+        public override ISession NewSession(AccessMode defaultMode, string bookmark)
         {
-            return new Session(()=>_loadBalancer.AcquireConnection(mode), _logger);
+            return new Session(()=>_loadBalancer.AcquireConnection(defaultMode), _logger, bookmark);
         }
 
         public override void ReleaseUnmanagedResources()

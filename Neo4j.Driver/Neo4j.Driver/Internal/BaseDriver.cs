@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Internal
 {
     internal abstract class BaseDriver : IDriver
     {
-        public abstract ISession NewSession(AccessMode mode);
+        public abstract ISession NewSession(AccessMode defaultMode, string bookmark);
         public abstract void ReleaseUnmanagedResources();
         public abstract Uri Uri { get; }
 
@@ -43,19 +43,14 @@ namespace Neo4j.Driver.Internal
             GC.SuppressFinalize(this);
         }
 
-        public ISession Session()
-        {
-            return Session(AccessMode.Write);
-        }
-
-        public ISession Session(AccessMode mode)
+        public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
         {
             if (_disposeCalled)
             {
                 ThrowDriverClosedException();
             }
 
-            var session = NewSession(mode);
+            var session = NewSession(defaultMode, bookmark);
 
             if (_disposeCalled)
             {

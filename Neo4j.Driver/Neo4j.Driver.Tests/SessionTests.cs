@@ -57,6 +57,17 @@ namespace Neo4j.Driver.Tests
         public class BeginTransactionMethod
         {
             [Fact]
+            public void ShouldIgnoreBookmark()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = new Session(mockConn.Object, "a bookmark");
+                session.LastBookmark.Should().Be("a bookmark");
+                session.BeginTransaction("set new bookmark");
+                session.LastBookmark.Should().Be("set new bookmark");
+            }
+
+            [Fact]
             public void ShouldNotAllowNewTxWhileOneIsRunning()
             {
                 var mockConn = new Mock<IConnection>();

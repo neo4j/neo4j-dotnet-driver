@@ -35,9 +35,10 @@ namespace Neo4j.Driver.Internal
             _connectionPool = new ConnectionPool(_uri, connectionSettings, connectionPoolSettings, _logger);
         }
 
-        public override ISession NewSession(AccessMode mode)
+        public override ISession NewSession(AccessMode defaultMode, string bookmark)
         {
-            return new Session(()=>_connectionPool.Acquire(), _logger);
+            // access mode is ignored
+            return new Session(()=>_connectionPool.Acquire(), _logger, bookmark);
         }
 
         public override void ReleaseUnmanagedResources()

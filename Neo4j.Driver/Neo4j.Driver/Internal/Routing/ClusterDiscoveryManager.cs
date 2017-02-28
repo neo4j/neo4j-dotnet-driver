@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                using (var session = new Session(_conn, _logger))
+                using (var session = new Session(()=>_conn, _logger))
                 {
                     var result = session.Run($"CALL {ProcedureName}");
                     var record = result.Single();

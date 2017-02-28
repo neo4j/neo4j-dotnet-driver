@@ -34,16 +34,16 @@ namespace Neo4j.Driver.V1
         Uri Uri { get; }
 
         /// <summary>
-        ///     Establish a session with Neo4j instance.
+        /// Obtain a session with the default <see cref="AccessMode"/> and start bookmark.
         /// </summary>
-        /// <returns>
-        ///     An <see cref="ISession" /> that could be used to <see cref="IStatementRunner.Run(Statement)" /> a statement or begin a
-        ///     transaction.
-        /// </returns>
-        ISession Session();
-
-
-        ISession Session(AccessMode mode);
+        /// <param name="defaultMode">The default access mode of the session. 
+        /// If no access mode is specified when using the statement running methods inside this session,
+        /// the statement will be executed in connections satisfying the default access mode.</param>
+        /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
+        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
+        /// Specify a bookmark if the statement excuted inside this session need to be chained after statements from other sessions.</param>
+        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
+        ISession Session(AccessMode defaultMode = AccessMode.Write, string bookmark = null);
     }
 
     public enum AccessMode

@@ -46,15 +46,15 @@ namespace Neo4j.Driver.V1
         /// method.
         ///
         /// </summary>
-        /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
-        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
-        /// </param>
         /// <returns>A new transaction.</returns>
-        ITransaction BeginTransaction(string bookmark = null);
+        ITransaction BeginTransaction();
+
+        [Obsolete("Pass in bookmark at session instead.")]
+        ITransaction BeginTransaction(string bookmark);
 
         /// <summary>
-        /// Gets the bookmark received following the last completed <see cref="ITransaction"/>.
-        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will be null.
+        /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>.
+        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
         string LastBookmark { get; }
     }
