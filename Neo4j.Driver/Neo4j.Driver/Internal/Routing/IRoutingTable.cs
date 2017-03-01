@@ -10,6 +10,7 @@ namespace Neo4j.Driver.Internal.Routing
         bool TryNextReader(out Uri uri);
         bool TryNextWriter(out Uri uri);
         void Remove(Uri uri);
+        void RemoveWriter(Uri uri);
         ISet<Uri> All();
         void Clear();
         void AddRouter(IEnumerable<Uri> ips);

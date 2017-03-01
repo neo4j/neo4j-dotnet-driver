@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.ErrorExtensions;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -80,31 +81,7 @@ namespace Neo4j.Driver.Internal.Connector
         public void HandleFailureMessage(string code, string message)
         {
             DequeueMessage();
-            var parts = code.Split('.');
-            var classification = parts[1].ToLowerInvariant();
-            switch (classification)
-            {
-                case "clienterror":
-                    if (AuthenticationException.IsAuthenticationError(code))
-                    {
-                        Error = new AuthenticationException(message);
-                    }
-                    else if (ProtocolException.IsProtocolError(code))
-                    {
-                        Error = new ProtocolException(code, message);
-                    }
-                    else
-                    {
-                        Error = new ClientException(code, message);
-                    }
-                    break;
-                case "transienterror":
-                    Error = new TransientException(code, message);
-                    break;
-                default:
-                    Error = new DatabaseException(code, message);
-                    break;
-            }
+            Error = ParseServerException(code, message);
             CurrentResponseCollector?.DoneFailure();
             _logger?.Debug("S: ", new FailureMessage(code, message));
         }

@@ -219,7 +219,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public void OnWriteError(Uri uri)
         {
-            _routingTable.Remove(uri);
+            _routingTable.RemoveWriter(uri);
         }
 
         protected virtual void Dispose(bool isDisposing)

@@ -32,26 +32,26 @@ namespace Neo4j.Driver.Tests
 {
     public class LoadBalancerTests
     {
+        public class Constructor
+        {
+            [Fact]
+            public void ShouldEnsureInitialRouter()
+            {
+                var uri = new Uri("bolt://123:456");
+                var config = Config.DefaultConfig;
+                var connSettings = new ConnectionSettings(uri, new Mock<IAuthToken>().Object, config);
+                var poolSettings = new ConnectionPoolSettings(config);
+
+                var loadbalancer = new LoadBalancer(connSettings, poolSettings, null);
+
+                loadbalancer.ToString().Should().Be(
+                    "_routingTable: {[_routers: bolt://123:456/], [_detachedRouters: ], [_readers: ], [_writers: ]}, " +
+                    "_clusterConnectionPool: {[{bolt://123:456/ : _availableConnections: {[]}, _inUseConnections: {[]}}]}");
+            }
+        }
+
         public class AcquireConnectionMethod
         {
-            public class Constructor
-            {
-                [Fact]
-                public void ShouldEnsureInitialRouter()
-                {
-                    var uri = new Uri("bolt://123:456");
-                    var config = Config.DefaultConfig;
-                    var connSettings = new ConnectionSettings(uri, new Mock<IAuthToken>().Object, config);
-                    var poolSettings = new ConnectionPoolSettings(config);
-
-                    var loadbalancer = new LoadBalancer(connSettings, poolSettings, null);
-
-                    loadbalancer.ToString().Should().Be(
-                        "_routingTable: {[_routers: bolt://123:456/], [_detachedRouters: ], [_readers: ], [_writers: ]}, " +
-                        "_clusterConnectionPool: {[{bolt://123:456/ : _availableConnections: {[]}, _inUseConnections: {[]}}]}");
-                }
-            }
-
             public class UpdateRoutingTableMethod
             {
                 [Fact]
@@ -470,6 +470,43 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class ClusterErrorHandlerTests
+        {
+            public class OnConnectionErrorMethod
+            {
+                [Fact]
+                public void ShouldRmoveFromLoadBalancer()
+                {
+                    var clusterPoolMock = new Mock<IClusterConnectionPool>();
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    var uri = new Uri("https://neo4j.com");
+                    var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableMock.Object);
+
+                    loadBalancer.OnConnectionError(uri, new ClientException());
+                    clusterPoolMock.Verify(x=>x.Purge(uri),Times.Once);
+                    routingTableMock.Verify(x=>x.Remove(uri),Times.Once);
+                    routingTableMock.Verify(x=>x.RemoveWriter(uri),Times.Never);
+                }
+            }
+
+            public class OnWriteErrorMethod
+            {
+                [Fact]
+                public void ShouldRemoveWriterFromRoutingTable()
+                {
+                    var clusterPoolMock = new Mock<IClusterConnectionPool>();
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    var uri = new Uri("https://neo4j.com");
+                    var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableMock.Object);
+
+                    loadBalancer.OnWriteError(uri);
+                    clusterPoolMock.Verify(x => x.Purge(uri), Times.Never);
+                    routingTableMock.Verify(x => x.Remove(uri), Times.Never);
+                    routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Once);
+                }
+            }
+        }
+
         internal class ListBasedRoutingTable : IRoutingTable
         {
             private readonly List<Uri> _routers;
@@ -506,6 +543,11 @@ namespace Neo4j.Driver.Tests
             public void Remove(Uri uri)
             {
                 _removed.Add(uri);
+            }
+
+            public void RemoveWriter(Uri uri)
+            {
+                throw new NotSupportedException();
             }
 
             public ISet<Uri> All()
