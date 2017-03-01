@@ -1,0 +1,82 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Moq;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.V1;
+using Xunit;
+
+namespace Neo4j.Driver.Tests.Routing
+{
+    public class ClusterConnectionTests
+    {
+        private static Uri Uri => new Uri("https://neo4j.com");
+        public class OnErrorMethod
+        {
+            [Fact]
+            public void ConvertConnectionErrorToSessionExpired()
+            {
+                var connMock = new Mock<IConnection>();
+                var handlerMock = new Mock<IClusterErrorHandler>();
+                var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
+
+                var inError = new ServiceUnavailableException("Connection error");
+                var outError = Record.Exception(()=>clusterConn.OnError(inError));
+                outError.Should().BeOfType<SessionExpiredException>();
+                handlerMock.Verify(x=>x.OnConnectionError(Uri, inError), Times.Once);
+                handlerMock.Verify(x=>x.OnWriteError(Uri), Times.Never);
+            }
+
+            [Theory]
+            [InlineData("Neo.ClientError.Cluster.NotALeader")]
+            [InlineData("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase")]
+            public void ConvertReadClusterErrorToClientError(string code)
+            {
+                var connMock = new Mock<IConnection>();
+                var handlerMock = new Mock<IClusterErrorHandler>();
+                var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
+
+                var inError = ErrorExtensions.ParseServerException(code, null);
+                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                outError.Should().BeOfType<ClientException>();
+                handlerMock.Verify(x => x.OnConnectionError(Uri, inError), Times.Never);
+                handlerMock.Verify(x => x.OnWriteError(Uri), Times.Never);
+            }
+
+            [Theory]
+            [InlineData("Neo.ClientError.Cluster.NotALeader")]
+            [InlineData("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase")]
+            public void ConvertWriteClusterErrorToSessionExpiredError(string code)
+            {
+                var connMock = new Mock<IConnection>();
+                var handlerMock = new Mock<IClusterErrorHandler>();
+                var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Write, handlerMock.Object);
+
+                var inError = ErrorExtensions.ParseServerException(code, null);
+                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                outError.Should().BeOfType<SessionExpiredException>();
+                handlerMock.Verify(x => x.OnConnectionError(Uri, inError), Times.Never);
+                handlerMock.Verify(x => x.OnWriteError(Uri), Times.Once);
+            }
+
+            [Fact]
+            public void ConvertClusterErrorToClientError()
+            {
+                var connMock = new Mock<IConnection>();
+                var handlerMock = new Mock<IClusterErrorHandler>();
+                var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
+
+                var inError = new ClientException("random error");
+                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                outError.Should().Be(inError);
+                handlerMock.Verify(x => x.OnConnectionError(Uri, inError), Times.Never);
+                handlerMock.Verify(x => x.OnWriteError(Uri), Times.Never);
+            }
+        }
+    }
+}

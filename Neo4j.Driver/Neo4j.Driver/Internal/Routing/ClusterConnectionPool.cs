@@ -27,7 +27,6 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools = new ConcurrentDictionary<Uri, IConnectionPool>();
         private readonly ConnectionSettings _connectionSettings;
         private readonly ConnectionPoolSettings _poolSettings;
-        private readonly Action<Uri, Exception> _onErrorAction;
 
         // for test only
         private readonly IConnectionPool _fakePool;
@@ -37,13 +36,12 @@ namespace Neo4j.Driver.Internal.Routing
         public ClusterConnectionPool(
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
-            ILogger logger,
-            Action<Uri, Exception> onErrorAction=null)
+            ILogger logger
+            )
             : base(logger)
         {
             _connectionSettings = connectionSettings;
             _poolSettings = poolSettings;
-            _onErrorAction = onErrorAction ?? ((uri, e)=> { throw e; });
 
         }
 
@@ -52,10 +50,9 @@ namespace Neo4j.Driver.Internal.Routing
             ConcurrentDictionary<Uri, IConnectionPool> clusterPool=null,
             ConnectionSettings connSettings=null,
             ConnectionPoolSettings poolSettings=null,
-            ILogger logger=null,
-            Action<Uri, Exception> onErrorAction = null
+            ILogger logger=null
             ) :
-            this(connSettings, poolSettings, logger, onErrorAction)
+            this(connSettings, poolSettings, logger)
         {
             _fakePool = connectionPool;
             _pools = clusterPool;
@@ -66,7 +63,7 @@ namespace Neo4j.Driver.Internal.Routing
             return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger);
         }
 
-        public bool TryAcquire(Uri uri, out IClusterConnection conn)
+        public bool TryAcquire(Uri uri, out IPooledConnection conn)
         {
             IConnectionPool pool;
             if (!_pools.TryGetValue(uri, out pool))
@@ -75,13 +72,8 @@ namespace Neo4j.Driver.Internal.Routing
                 return false;
             }
 
-            conn = CreateNewClusterConnection(pool, uri);
+            conn = pool.Acquire();
             return true;
-        }
-
-        private IClusterConnection CreateNewClusterConnection(IConnectionPool pool, Uri uri)
-        {
-            return new ClusterConnection(()=>pool.Acquire(), e => _onErrorAction.Invoke(uri, e));
         }
 
         // This is the ultimate method to add a pool

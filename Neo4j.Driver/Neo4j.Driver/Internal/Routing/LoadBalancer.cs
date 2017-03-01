@@ -22,7 +22,7 @@ using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class LoadBalancer : ILoadBalancer
+    internal class LoadBalancer : ILoadBalancer, IClusterErrorHandler
     {
         private IRoutingTable _routingTable;
         private readonly IClusterConnectionPool _clusterConnectionPool;
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.Routing
             ILogger logger)
         {
             _clusterConnectionPool = new ClusterConnectionPool(
-                connectionSettings, poolSettings, logger, (uri, e)=>OnError(e, uri));
+                connectionSettings, poolSettings, logger);
 
             _stopwatch = new Stopwatch();
             _routingTable = new RoundRobinRoutingTable(_stopwatch);
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.Routing
             _seed = seed;
         }
 
-        public IConnection AcquireConnection(AccessMode mode)
+        public IStatementRunnerConnection AcquireConnection(AccessMode mode)
         {
             if (_disposeCalled)
             {
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             EnsureRoutingTableIsFresh();
-            IConnection conn = null;
+            IStatementRunnerConnection conn = null;
             switch (mode)
             {
                 case AccessMode.Read:
@@ -89,12 +89,7 @@ namespace Neo4j.Driver.Internal.Routing
             return conn;
         }
 
-        private void ThrowObjectDisposedException()
-        {
-            FailedToCreateConnection(this);
-        }
-
-        internal IConnection AcquireReadConnection()
+        internal IStatementRunnerConnection AcquireReadConnection()
         {
             while (true)
             {
@@ -104,25 +99,16 @@ namespace Neo4j.Driver.Internal.Routing
                     // no server known to routingTable
                     break;
                 }
-
-                try
+                IStatementRunnerConnection conn = CreateClusterConnection(uri);
+                if (conn != null)
                 {
-                    IClusterConnection conn;
-                    if (_clusterConnectionPool.TryAcquire(uri, out conn))
-                    {
-                        return conn;
-                    }
-                }
-                catch (SessionExpiredException)
-                {
-                    // ignored
-                    // Already handled by clusterConn.OnError to remove from load balancer
+                    return conn;
                 }
             }
             throw new SessionExpiredException("Failed to connect to any read server.");
         }
 
-        internal IConnection AcquireWriteConnection()
+        internal IStatementRunnerConnection AcquireWriteConnection()
         {
             while(true)
             {
@@ -132,30 +118,16 @@ namespace Neo4j.Driver.Internal.Routing
                     break;
                 }
 
-                try
+                IStatementRunnerConnection conn = CreateClusterConnection(uri, AccessMode.Write);
+                if (conn != null)
                 {
-                    IClusterConnection conn;
-                    if (_clusterConnectionPool.TryAcquire(uri, out conn))
-                    {
-                        return conn;
-                    }
-                }
-                catch (SessionExpiredException)
-                {
-                    // ignored
-                    // Already handled by clusterConn.OnError to remove from load balancer
+                    return conn;
                 }
             }
             throw new SessionExpiredException("Failed to connect to any write server.");
         }
 
-        public void Forget(Uri uri)
-        {
-            _routingTable.Remove(uri);
-            _clusterConnectionPool.Purge(uri);
-        }
-
-        internal void EnsureRoutingTableIsFresh()
+        private void EnsureRoutingTableIsFresh()
         {
             lock (_syncLock)
             {
@@ -171,7 +143,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        internal IRoutingTable UpdateRoutingTable(Func<IConnection, IRoutingTable> rediscoveryFunc = null)
+        internal IRoutingTable UpdateRoutingTable(Func<IStatementRunnerConnection, IRoutingTable> rediscoveryFunc = null)
         {
             lock (_syncLock)
             {
@@ -184,29 +156,30 @@ namespace Neo4j.Driver.Internal.Routing
                         // no alive server
                         break;
                     }
-                    try
+                    IStatementRunnerConnection conn = CreateClusterConnection(uri);
+                    if (conn != null)
                     {
-                        IClusterConnection conn;
-                        if (_clusterConnectionPool.TryAcquire(uri, out conn))
+                        try
                         {
-                            var roundRobinRoutingTable = rediscoveryFunc == null ? Rediscovery(conn) : rediscoveryFunc.Invoke(conn);
+                            var roundRobinRoutingTable = rediscoveryFunc != null ? rediscoveryFunc.Invoke(conn) : Rediscovery(conn);
+
                             if (!roundRobinRoutingTable.IsStale())
                             {
                                 return roundRobinRoutingTable;
                             }
                         }
-                    }
-                    catch(Exception e)
-                    {
-                        _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");
-                        if (e is SessionExpiredException)
+                        catch (Exception e)
                         {
-                            // ignored
-                            // Already handled by clusterConn.OnError to remove from load balancer
-                        }
-                        else
-                        {
-                            throw;
+                            _logger?.Info($"Failed to update routing table with server uri={uri} due to error {e.Message}");
+                            if (e is SessionExpiredException)
+                            {
+                                // ignored
+                                // Already handled by clusterConn.OnConnectionError to remove from load balancer
+                            }
+                            else
+                            {
+                                throw;
+                            }
                         }
                     }
                 }
@@ -229,7 +202,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        private IRoutingTable Rediscovery(IConnection conn)
+        private IRoutingTable Rediscovery(IStatementRunnerConnection conn)
         {
             var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
             discoveryManager.Rediscovery();
@@ -237,29 +210,16 @@ namespace Neo4j.Driver.Internal.Routing
                 discoveryManager.Writers, _stopwatch, discoveryManager.ExpireAfterSeconds);
         }
 
-        internal void OnError(Exception e, Uri uri)
+        public void OnConnectionError(Uri uri, Exception e)
         {
-            if (e is ServiceUnavailableException)
-            {
-                _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
-                Forget(uri);
-                throw new SessionExpiredException($"Server at {uri} is no longer available due to error: {e.Message}.", e);
-            }
-            else if (e.IsClusterNotALeaderError())
-            {
-                // The lead is no longer a leader, a.k.a. the write server no longer accepts writes
-                // However the server is still available for possible reads.
-                // Therefore we just remove it from ClusterView but keep it in connection pool.
-                _routingTable.Remove(uri);
-                throw new SessionExpiredException($"Server at {uri} no longer accepts writes");
-            }
-            else if (e.IsForbiddenOnReadOnlyDatabaseError())
-            {
-                // The user was trying to run a write in a read session
-                // So inform the user and let him try with a proper session mode
-                throw new ClientException("Write queries cannot be performed in READ access mode.");
-            }
-            throw e;
+            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+            _routingTable.Remove(uri);
+            _clusterConnectionPool.Purge(uri);
+        }
+
+        public void OnWriteError(Uri uri)
+        {
+            _routingTable.RemoveWriter(uri);
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -278,6 +238,31 @@ namespace Neo4j.Driver.Internal.Routing
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        private ClusterConnection CreateClusterConnection(Uri uri, AccessMode mode = AccessMode.Read)
+        {
+            try
+            {
+                IPooledConnection conn;
+                if (_clusterConnectionPool.TryAcquire(uri, out conn))
+                {
+                    return new ClusterConnection(conn, uri, mode, this);
+                }
+                OnConnectionError(uri, new ArgumentException(
+                    $"Routing table {_routingTable} contains a server {uri} " +
+                    $"that is not known to cluster connection pool {_clusterConnectionPool}."));
+            }
+            catch (ServiceUnavailableException e)
+            {
+                OnConnectionError(uri, e);
+            }
+            return null;
+        }
+
+        private void ThrowObjectDisposedException()
+        {
+            FailedToCreateConnection(this);
         }
 
         public override string ToString()

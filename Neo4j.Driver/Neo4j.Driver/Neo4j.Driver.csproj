@@ -43,13 +43,14 @@
   <ItemGroup>
     <Compile Include="Internal\ConcurrentSet.cs" />
     <Compile Include="Internal\ConnectionSettings.cs" />
-    <Compile Include="Internal\Connector\IConnectionErrorHandler.cs" />
+    <Compile Include="Internal\Connector\DelegatedStatementRunnerConnection.cs" />
     <Compile Include="Internal\Extensions\ErrorExtensions.cs" />
     <Compile Include="Internal\BaseDriver.cs" />
     <Compile Include="Internal\Routing\ClusterConnection.cs" />
     <Compile Include="Internal\Routing\ClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />
     <Compile Include="Internal\Routing\IClusterConnectionPool.cs" />
+    <Compile Include="Internal\Routing\IClusterErrorHandler.cs" />
     <Compile Include="Internal\Routing\ILoadBalancer.cs" />
     <Compile Include="Internal\Routing\IRoutingTable.cs" />
     <Compile Include="Internal\Routing\RoundRobinRoutingTable.cs" />
@@ -73,7 +74,6 @@
     <Compile Include="V1\Neo4jException.cs" />
     <Compile Include="Internal\Extensions\Throw.cs" />
     <Compile Include="Internal\Extensions\ByteExtensions.cs" />
-    <Compile Include="Internal\Extensions\Extensions.cs" />
     <Compile Include="V1\INotification.cs" />
     <Compile Include="Internal\Extensions\CollectionExtensions.cs" />
     <Compile Include="Internal\Messaging\IgnoredMessage.cs" />

@@ -155,6 +155,7 @@
     <Compile Include="Connector\PooledConnectionTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
     <Compile Include="Routing\ClusterConnectionPoolTests.cs" />
+    <Compile Include="Routing\ClusterConnectionTests.cs" />
     <Compile Include="Routing\ClusterDiscoveryManagerTests.cs" />
     <Compile Include="Routing\ConcurrentRoundRobinSetTests.cs" />
     <Compile Include="ConfigTests.cs" />

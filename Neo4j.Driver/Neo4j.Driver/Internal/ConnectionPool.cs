@@ -81,8 +81,8 @@ namespace Neo4j.Driver.Internal
             try
             {
                 conn = _fakeConnection != null
-                    ? new PooledConnection(()=>_fakeConnection, Release)
-                    : new PooledConnection(()=>new SocketConnection(_uri, _connectionSettings, _logger), Release);
+                    ? new PooledConnection(_fakeConnection, Release)
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), Release);
 
                 conn.Init();
                 return conn;

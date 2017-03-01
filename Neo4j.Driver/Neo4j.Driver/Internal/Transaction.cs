@@ -24,8 +24,8 @@ namespace Neo4j.Driver.Internal
 {
     internal class Transaction : StatementRunner, ITransaction
     {
-        private readonly IConnection _connection;
-        private readonly Action _sessionCleanupAction;
+        private readonly IStatementRunnerConnection _connection;
+        private readonly ITransactionResourceHandler _resourceHandler;
 
         internal const string BookmarkKey = "bookmark";
         internal string Bookmark { get; private set; }
@@ -36,10 +36,10 @@ namespace Neo4j.Driver.Internal
 
         private State _state = State.Active;
 
-        public Transaction(IConnection connection, Action cleanupAction=null, ILogger logger=null, string bookmark = null) : base(logger)
+        public Transaction(IStatementRunnerConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, string bookmark = null) : base(logger)
         {
-            _connection = connection;
-            _sessionCleanupAction = cleanupAction ?? (() => { });
+            _connection = new TransactionConnection(this, connection);
+            _resourceHandler = resourceHandler;
 
             IDictionary<string, object> paramters = new Dictionary<string, object>();
             if (bookmark != null)
@@ -115,7 +115,8 @@ namespace Neo4j.Driver.Internal
             }
             finally
             {
-                _sessionCleanupAction.Invoke();
+                _connection.Dispose();
+                _resourceHandler?.OnTransactionDispose();
                 base.Dispose(true);
             }
         }
@@ -132,20 +133,12 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() =>
             {
                 EnsureNotFailed();
-                try
-                {
-                    var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
-                        _connection.Server);
-                    _connection.Run(statement, parameters, resultBuilder);
-                    _connection.Send();
-                    return resultBuilder.PreBuild();
-                }
-                catch (Neo4jException)
-                {
-                    _state = State.Failed;
-                    throw;
-                }
 
+                var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
+                    _connection.Server);
+                _connection.Run(statement, parameters, resultBuilder);
+                _connection.Send();
+                return resultBuilder.PreBuild();
             });
         }
 
@@ -180,6 +173,37 @@ namespace Neo4j.Driver.Internal
         public void MarkToClose()
         {
             _state = State.Failed;
+        }
+
+        private class TransactionConnection : DelegatedStatementRunnerConnection
+        {
+            private Transaction _transaction;
+
+            public TransactionConnection(Transaction transaction, IStatementRunnerConnection connection)
+                :base(connection)
+            {
+                _transaction = transaction;
+            }
+
+            public override void Dispose()
+            {
+                // no resouce will be closed as the resources passed in this class are managed outside this class
+                Delegate = null;
+                _transaction = null;
+            }
+
+            public override void OnError(Exception error)
+            {
+                if (Delegate.IsOpen)
+                {
+                    _transaction.Failure();
+                }
+                else
+                {
+                    _transaction.MarkToClose();
+                }
+                throw error;
+            }
         }
     }
 }

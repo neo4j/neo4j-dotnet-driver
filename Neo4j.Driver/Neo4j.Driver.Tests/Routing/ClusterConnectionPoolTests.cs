@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests
                 connectionPoolDict.Count.Should().Be(0);
 
                 // When
-                IClusterConnection connection;
+                IPooledConnection connection;
                 var acquired = pool.TryAcquire(ServerUri, out connection);
 
                 // Then
@@ -63,19 +63,14 @@ namespace Neo4j.Driver.Tests
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
 
-                var pool = new ClusterConnectionPool(null, connectionPoolDict, onErrorAction: (uri, e) => {
-                    if (uri.Equals(ServerUri))
-                    {
-                        throw e;
-                    }
-                    });
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
                 connectionPoolDict.Count.Should().Be(1);
                 connectionPoolDict.Keys.Single().Should().Be(ServerUri);
                 connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
 
                 // When
-                IClusterConnection connection;
+                IPooledConnection connection;
                 var acquired = pool.TryAcquire(ServerUri, out connection);
 
                 // Then
@@ -99,7 +94,7 @@ namespace Neo4j.Driver.Tests
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
-                IClusterConnection ignored;
+                IPooledConnection ignored;
                 pool.TryAcquire(new Uri(second), out ignored).Should().Be(expectedResult);
             }
         }

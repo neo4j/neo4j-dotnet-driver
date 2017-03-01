@@ -24,6 +24,37 @@ namespace Neo4j.Driver.Internal
 {
     internal static class ErrorExtensions
     {
+        public static Neo4jException ParseServerException(string code, string message)
+        {
+            Neo4jException error;
+            var parts = code.Split('.');
+            var classification = parts[1].ToLowerInvariant();
+            switch (classification)
+            {
+                case "clienterror":
+                    if (AuthenticationException.IsAuthenticationError(code))
+                    {
+                        error = new AuthenticationException(message);
+                    }
+                    else if (ProtocolException.IsProtocolError(code))
+                    {
+                        error = new ProtocolException(code, message);
+                    }
+                    else
+                    {
+                        error = new ClientException(code, message);
+                    }
+                    break;
+                case "transienterror":
+                    error = new TransientException(code, message);
+                    break;
+                default:
+                    error = new DatabaseException(code, message);
+                    break;
+            }
+            return error;
+        }
+
         public static bool IsRecoverableError(this Exception error)
         {
             return error is ClientException || error is TransientException;
@@ -41,12 +72,12 @@ namespace Neo4j.Driver.Internal
                    || IsForbiddenOnReadOnlyDatabaseError(error);
         }
 
-        public static bool IsClusterNotALeaderError(this Exception error)
+        private static bool IsClusterNotALeaderError(this Exception error)
         {
             return error.HasErrorCode("Neo.ClientError.Cluster.NotALeader");
         }
 
-        public static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
+        private static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
         {
             return error.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
         }

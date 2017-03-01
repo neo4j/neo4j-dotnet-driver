@@ -78,6 +78,11 @@ namespace Neo4j.Driver.Internal.Routing
             _writers.Remove(uri);
         }
 
+        public void RemoveWriter(Uri uri)
+        {
+            _writers.Remove(uri);
+        }
+
         public ISet<Uri> All()
         {
             var all = new HashSet<Uri>();

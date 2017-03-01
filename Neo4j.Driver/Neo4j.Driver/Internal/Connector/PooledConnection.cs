@@ -26,16 +26,9 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Action<IPooledConnection> _releaseAction;
         private readonly IConnection _connection;
 
-        public PooledConnection(Func<IConnection> acquireConnFunc, Action<IPooledConnection> releaseAction = null)
+        public PooledConnection(IConnection conn, Action<IPooledConnection> releaseAction = null)
         {
-            try
-            {
-                _connection = acquireConnFunc.Invoke();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
+            _connection = conn;
             _releaseAction = releaseAction ?? (x => { });
         }
         public Guid Id { get; } = Guid.NewGuid();

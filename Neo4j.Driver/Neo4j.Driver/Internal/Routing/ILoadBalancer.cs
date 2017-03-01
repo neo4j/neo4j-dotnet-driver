@@ -22,6 +22,6 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal interface ILoadBalancer : IDisposable
     {
-        IConnection AcquireConnection(AccessMode mode);
+        IStatementRunnerConnection AcquireConnection(AccessMode mode);
     }
 }

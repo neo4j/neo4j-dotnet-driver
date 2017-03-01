@@ -32,26 +32,26 @@ namespace Neo4j.Driver.Tests
 {
     public class LoadBalancerTests
     {
+        public class Constructor
+        {
+            [Fact]
+            public void ShouldEnsureInitialRouter()
+            {
+                var uri = new Uri("bolt://123:456");
+                var config = Config.DefaultConfig;
+                var connSettings = new ConnectionSettings(uri, new Mock<IAuthToken>().Object, config);
+                var poolSettings = new ConnectionPoolSettings(config);
+
+                var loadbalancer = new LoadBalancer(connSettings, poolSettings, null);
+
+                loadbalancer.ToString().Should().Be(
+                    "_routingTable: {[_routers: bolt://123:456/], [_detachedRouters: ], [_readers: ], [_writers: ]}, " +
+                    "_clusterConnectionPool: {[{bolt://123:456/ : _availableConnections: {[]}, _inUseConnections: {[]}}]}");
+            }
+        }
+
         public class AcquireConnectionMethod
         {
-            public class Constructor
-            {
-                [Fact]
-                public void ShouldEnsureInitialRouter()
-                {
-                    var uri = new Uri("bolt://123:456");
-                    var config = Config.DefaultConfig;
-                    var connSettings = new ConnectionSettings(uri, new Mock<IAuthToken>().Object, config);
-                    var poolSettings = new ConnectionPoolSettings(config);
-
-                    var loadbalancer = new LoadBalancer(connSettings, poolSettings, null);
-
-                    loadbalancer.ToString().Should().Be(
-                        "_routingTable: {[_routers: bolt://123:456/], [_detachedRouters: ], [_readers: ], [_writers: ]}, " +
-                        "_clusterConnectionPool: {[{bolt://123:456/ : _availableConnections: {[]}, _inUseConnections: {[]}}]}");
-                }
-            }
-
             public class UpdateRoutingTableMethod
             {
                 [Fact]
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
                     var anotherUri = new Uri("bolt+routing://123:789");
                     var updateCount = 0;
                     var directReturnCount = 0;
-                    Func<IConnection, IRoutingTable> updateRoutingTableFunc =
+                    Func<IStatementRunnerConnection, IRoutingTable> updateRoutingTableFunc =
                         connection =>
                         {
                             if (!balancerRoutingTable.IsStale())
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Tests
                     routingTableMock.Setup(x => x.TryNextRouter(out uri)).Returns(true);
 
                     var poolMock = new Mock<IClusterConnectionPool>();
-                    var conn = new Mock<IClusterConnection>().Object;
+                    var conn = new Mock<IPooledConnection>().Object;
                     poolMock.Setup(x => x.Add(It.IsAny<IEnumerable<Uri>>()))
                         .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
                     poolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
@@ -128,7 +128,6 @@ namespace Neo4j.Driver.Tests
                     // When
                     balancer.UpdateRoutingTable(c =>
                     {
-                        c.Should().Be(conn);
                         return routingTableReturnMock.Object;
                     });
 
@@ -174,7 +173,7 @@ namespace Neo4j.Driver.Tests
                         // the second connectin will give a new routingTable
                         if (connection.Server.Address.Equals(uriA.ToString())) // uriA
                         {
-                            balancer.OnError(new ServiceUnavailableException("failed init"), uriA);
+                            ((ClusterConnection)connection).OnError(new ServiceUnavailableException("failed init"));
                         }
                         if (connection.Server.Address.Equals(uriB.ToString())) // uriB
                         {
@@ -276,11 +275,11 @@ namespace Neo4j.Driver.Tests
                     var mockedClusterPool = new Mock<IClusterConnectionPool>();
                     var balancer = new LoadBalancer(mockedClusterPool.Object, routingTable);
 
-                    var mockedConn = new Mock<IClusterConnection>();
+                    var mockedConn = new Mock<IPooledConnection>();
                     var conn = mockedConn.Object;
                     mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Callback(() =>
                     {
-                        balancer.OnError(new AuthenticationException("Failed to auth the client to the server."), uri);
+                        throw new AuthenticationException("Failed to auth the client to the server.");
                     });
                     
                     // When
@@ -314,9 +313,9 @@ namespace Neo4j.Driver.Tests
                     return routingTable;
                 }
 
-                private static IConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
+                private static IStatementRunnerConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
                 {
-                    IConnection acquiredConn;
+                    IStatementRunnerConnection acquiredConn;
                     switch (mode)
                     {
                         case AccessMode.Read:
@@ -387,7 +386,7 @@ namespace Neo4j.Driver.Tests
                     mockedConnPool.Setup(x => x.Acquire())
                         .Callback(() =>
                         {
-                            balancer.OnError(new ServiceUnavailableException("failed init"), uri);
+                            throw new ServiceUnavailableException("failed init");
                         });
 
                     // When
@@ -399,7 +398,7 @@ namespace Neo4j.Driver.Tests
 
                     // should be removed
                     Uri saveUri;
-                    IClusterConnection saveConn;
+                    IPooledConnection saveConn;
                     routingTable.TryNextReader(out saveUri).Should().BeFalse();
                     routingTable.TryNextWriter(out saveUri).Should().BeFalse();
                     clusterConnPool.TryAcquire(uri, out saveConn).Should().BeFalse();
@@ -420,12 +419,11 @@ namespace Neo4j.Driver.Tests
                     var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                     var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTable);
 
-                    IClusterConnection conn = null;
+                    IPooledConnection conn = null;
                     clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
                         .Callback(() =>
                         {
-                            balancer.OnError(
-                                new SecurityException("Failed to establish ssl connection with the server"), uri);
+                            throw new SecurityException("Failed to establish ssl connection with the server");
                         });
 
                     // When
@@ -452,11 +450,11 @@ namespace Neo4j.Driver.Tests
                     var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                     var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTable);
 
-                    IClusterConnection conn = null;
+                    IPooledConnection conn = null;
                     clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
                         .Callback(() =>
                         {
-                            balancer.OnError(new ProtocolException("do not understand struct 0x01"), uri);
+                            throw new ProtocolException("do not understand struct 0x01");
                         });
 
                     // When
@@ -468,6 +466,43 @@ namespace Neo4j.Driver.Tests
 
                     // while the server is not removed
                     routingTable.All().Should().ContainInOrder(uri);
+                }
+            }
+        }
+
+        public class ClusterErrorHandlerTests
+        {
+            public class OnConnectionErrorMethod
+            {
+                [Fact]
+                public void ShouldRmoveFromLoadBalancer()
+                {
+                    var clusterPoolMock = new Mock<IClusterConnectionPool>();
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    var uri = new Uri("https://neo4j.com");
+                    var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableMock.Object);
+
+                    loadBalancer.OnConnectionError(uri, new ClientException());
+                    clusterPoolMock.Verify(x=>x.Purge(uri),Times.Once);
+                    routingTableMock.Verify(x=>x.Remove(uri),Times.Once);
+                    routingTableMock.Verify(x=>x.RemoveWriter(uri),Times.Never);
+                }
+            }
+
+            public class OnWriteErrorMethod
+            {
+                [Fact]
+                public void ShouldRemoveWriterFromRoutingTable()
+                {
+                    var clusterPoolMock = new Mock<IClusterConnectionPool>();
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    var uri = new Uri("https://neo4j.com");
+                    var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableMock.Object);
+
+                    loadBalancer.OnWriteError(uri);
+                    clusterPoolMock.Verify(x => x.Purge(uri), Times.Never);
+                    routingTableMock.Verify(x => x.Remove(uri), Times.Never);
+                    routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Once);
                 }
             }
         }
@@ -508,6 +543,11 @@ namespace Neo4j.Driver.Tests
             public void Remove(Uri uri)
             {
                 _removed.Add(uri);
+            }
+
+            public void RemoveWriter(Uri uri)
+            {
+                throw new NotSupportedException();
             }
 
             public ISet<Uri> All()
@@ -587,7 +627,7 @@ namespace Neo4j.Driver.Tests
 
             foreach (var uri in uris)
             {
-                var mockedConn = new Mock<IClusterConnection>();
+                var mockedConn = new Mock<IPooledConnection>();
                 mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
                 var conn = mockedConn.Object;
                 mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
