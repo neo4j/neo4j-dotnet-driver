@@ -74,7 +74,8 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
         /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
-        /// <item><see cref="SocketKeepAlive"/>: <c>]true</c></item>
+        /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
+        /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }
@@ -98,6 +99,11 @@ namespace Neo4j.Driver.V1
         /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
         /// </summary>
         public ILogger Logger { get; set; } = new DebugLogger {Level = LogLevel.Info};
+
+        /// <summary>
+        /// Gets or sets the maximum transaction rety time.
+        /// </summary>
+        public TimeSpan MaxTransactionRetryTime { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Gets or sets the max idle session pool size.
@@ -167,6 +173,12 @@ namespace Neo4j.Driver.V1
                 _config.SocketKeepAlive = enable;
                 return this;
             }
+
+            public IConfigBuilder WithMaxTransactionRetryTime(TimeSpan time)
+            {
+                _config.MaxTransactionRetryTime = time;
+                return this;
+            }
         }
     }
     /// <summary>
@@ -230,7 +242,19 @@ namespace Neo4j.Driver.V1
         /// The interval of keep alive pings are set via your OS system.
         /// </summary>
         /// <param name="enable"></param>
-        /// <returns></returns>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithSocketKeepAliveEnabled(bool enable);
+
+        /// <summary>
+        /// Specify the maximum time transactions are allowed to retry via <see cref="ISession.ReadTransaction"/> and <see cref="ISession.WriteTransaction"/>.
+        /// These methods will retry the given unit of work on <see cref="SessionExpiredException"/>, <see cref="TransientException"/> and <see cref="ServiceUnavailableException"/>
+        /// with exponential backoff using initial delay of 1 second.
+        /// Default value is 30 seconds.
+        /// </summary>
+        /// <param name="time">Specify the maximum retry time. </param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithMaxTransactionRetryTime(TimeSpan time);
     }
 }

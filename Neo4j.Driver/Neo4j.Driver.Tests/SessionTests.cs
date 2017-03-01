@@ -28,9 +28,9 @@ namespace Neo4j.Driver.Tests
 {
     public class SessionTests
     {
-        internal static Session NewSession(IConnection connection, ILogger logger=null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        internal static Session NewSession(IConnection connection, ILogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
-            return new Session(new TestConnectionProvider(connection), logger, mode, bookmark);
+            return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, bookmark);
         }
 
         public class RunMethod

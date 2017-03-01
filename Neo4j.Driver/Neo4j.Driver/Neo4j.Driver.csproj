@@ -45,9 +45,10 @@
     <Compile Include="Internal\ConnectionSettings.cs" />
     <Compile Include="Internal\Connector\DelegatedConnection.cs" />
     <Compile Include="Internal\Extensions\ErrorExtensions.cs" />
-    <Compile Include="Internal\Dirver.cs" />
+    <Compile Include="Internal\Driver.cs" />
     <Compile Include="Internal\IConnectionProvider.cs" />
     <Compile Include="Internal\IPooledConnection.cs" />
+    <Compile Include="Internal\RetryLogic.cs" />
     <Compile Include="Internal\Routing\ClusterConnection.cs" />
     <Compile Include="Internal\Routing\ClusterConnectionPool.cs" />
     <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />

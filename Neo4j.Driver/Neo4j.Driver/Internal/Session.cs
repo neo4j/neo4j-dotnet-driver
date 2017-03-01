@@ -33,19 +33,22 @@ namespace Neo4j.Driver.Internal
 
         private Transaction _transaction;
 
+        private readonly IRetryLogic _retryLogic;
         private readonly ILogger _logger;
         private bool _isOpen = true;
 
         private string _bookmark;
-
         public string LastBookmark => _bookmark;
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IConnectionProvider provider, ILogger logger, AccessMode defaultMode = AccessMode.Write, string bookmark = null) :base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, string bookmark = null) :base(logger)
         {
             _connectionProvider = provider;
+            _retryLogic = retryLogic;
+
             _logger = logger;
+
             _defaultMode = defaultMode;
             _bookmark = bookmark;
         }
@@ -68,7 +71,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction()
         {
-            return BeginTransaction(_defaultMode);
+            return TryExecute(() => BeginTransactionWithoutLogging(_defaultMode));
         }
 
 
@@ -78,16 +81,13 @@ namespace Neo4j.Driver.Internal
             return BeginTransaction();
         }
 
-        private ITransaction BeginTransaction(AccessMode mode)
+        private ITransaction BeginTransactionWithoutLogging(AccessMode mode)
         {
-            return TryExecute(() =>
-            {
-                EnsureCanRunMoreStatements();
+            EnsureCanRunMoreStatements();
 
-                _connection = _connectionProvider.Acquire(mode);
-                _transaction = new Transaction(_connection, this, _logger, _bookmark);
-                return _transaction;
-            });
+            _connection = _connectionProvider.Acquire(mode);
+            _transaction = new Transaction(_connection, this, _logger, _bookmark);
+            return _transaction;
         }
 
         public T ReadTransaction<T>(Func<ITransaction, T> work)
@@ -102,10 +102,13 @@ namespace Neo4j.Driver.Internal
 
         private T RunTransaction<T>(Func<ITransaction, T> work, AccessMode mode)
         {
-            using (var tx = BeginTransaction(mode))
+            return TryExecute(()=>_retryLogic.Retry(() =>
             {
-                return work.Invoke(tx);
-            }
+                using (var tx = BeginTransactionWithoutLogging(mode))
+                {
+                    return work.Invoke(tx);
+                }
+            }));
         }
 
         protected override void Dispose(bool isDisposing)
