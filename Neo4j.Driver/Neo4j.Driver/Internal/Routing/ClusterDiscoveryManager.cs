@@ -44,7 +44,8 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                using (var session = new Session(_conn, _logger))
+                using (var provider = new SingleConnectionBasedConnectionProvider(_conn))
+                using (var session = new Session(provider, _logger))
                 {
                     var result = session.Run($"CALL {ProcedureName}");
                     var record = result.Single();
@@ -93,6 +94,27 @@ namespace Neo4j.Driver.Internal.Routing
         private Uri BoltRoutingUri(string address)
         {
             return new Uri("bolt+routing://" + address);
+        }
+
+        private class SingleConnectionBasedConnectionProvider : IConnectionProvider
+        {
+            private IConnection _connection;
+
+            public SingleConnectionBasedConnectionProvider(IConnection connection)
+            {
+                _connection = connection;
+            }
+            public void Dispose()
+            {
+                _connection?.Dispose();
+            }
+
+            public IConnection Acquire(AccessMode mode)
+            {
+                var conn = _connection;
+                _connection = null;
+                return conn;
+            }
         }
     }
 }

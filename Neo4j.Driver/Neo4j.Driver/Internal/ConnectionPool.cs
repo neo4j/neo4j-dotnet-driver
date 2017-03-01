@@ -22,7 +22,7 @@ using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class ConnectionPool : LoggerBase, IConnectionPool
+    internal class ConnectionPool : LoggerBase, IConnectionPool, IConnectionProvider
     {
         private readonly Uri _uri;
 
@@ -242,7 +242,7 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    internal interface IConnectionPool : IConnectionProvider
+    internal interface IConnectionPool : IDisposable
     {
         IPooledConnection Acquire();
         void Release(IPooledConnection connection);

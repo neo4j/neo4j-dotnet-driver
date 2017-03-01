@@ -383,10 +383,9 @@ namespace Neo4j.Driver.Tests
                     var clusterConnPool = new ClusterConnectionPool(null, dict);
                     var balancer = new LoadBalancer(clusterConnPool, routingTable);
 
-                    mockedConnPool.Setup(x => x.Acquire(It.IsAny<AccessMode>()))
-                        .Callback<AccessMode>((m) =>
+                    mockedConnPool.Setup(x => x.Acquire())
+                        .Callback(()=>
                         {
-                            m.Should().Be(mode);
                             throw new ServiceUnavailableException("failed init");
                         });
 

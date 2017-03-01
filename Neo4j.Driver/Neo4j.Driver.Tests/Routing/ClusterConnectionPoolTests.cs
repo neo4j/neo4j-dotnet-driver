@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
                 mockedConnection.Setup(c => c.Init()).Throws(new InvalidOperationException("An exception"));
-                mockedConnectionPool.Setup(x => x.Acquire(It.IsAny<AccessMode>())).Returns(mockedConnection.Object);
+                mockedConnectionPool.Setup(x => x.Acquire()).Returns(mockedConnection.Object);
 
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);

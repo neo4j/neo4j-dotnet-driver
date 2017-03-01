@@ -24,25 +24,4 @@ namespace Neo4j.Driver.Internal
     {
         IConnection Acquire(AccessMode mode);
     }
-
-    internal class SingleConnectionBasedConnectionProvider : IConnectionProvider
-    {
-        private IConnection _connection;
-
-        public SingleConnectionBasedConnectionProvider(IConnection connection)
-        {
-            _connection = connection;
-        }
-        public void Dispose()
-        {
-            _connection?.Dispose();
-        }
-
-        public IConnection Acquire(AccessMode mode)
-        {
-            var conn = _connection;
-            _connection = null;
-            return conn;
-        }
-    }
 }

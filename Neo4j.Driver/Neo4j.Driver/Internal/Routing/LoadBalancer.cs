@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Internal.Routing
                     // no server known to routingTable
                     break;
                 }
-                IConnection conn = CreateClusterConnection(uri);
+                IConnection conn = CreateClusterConnection(uri, AccessMode.Read);
                 if (conn != null)
                 {
                     return conn;
@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Internal.Routing
                     break;
                 }
 
-                IConnection conn = CreateClusterConnection(uri, AccessMode.Write);
+                IConnection conn = CreateClusterConnection(uri);
                 if (conn != null)
                 {
                     return conn;
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Internal.Routing
             GC.SuppressFinalize(this);
         }
 
-        private ClusterConnection CreateClusterConnection(Uri uri, AccessMode mode = AccessMode.Read)
+        private ClusterConnection CreateClusterConnection(Uri uri, AccessMode mode = AccessMode.Write)
         {
             try
             {

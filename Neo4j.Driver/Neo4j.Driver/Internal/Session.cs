@@ -42,12 +42,7 @@ namespace Neo4j.Driver.Internal
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IConnection conn, ILogger logger = null, AccessMode defalutMode = AccessMode.Write, string bookmark = null) 
-            : this(new SingleConnectionBasedConnectionProvider(conn), logger, defalutMode, bookmark)
-        {
-        }
-
-        public Session(IConnectionProvider provider, ILogger logger, AccessMode defaultMode, string bookmark = null) :base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, AccessMode defaultMode = AccessMode.Write, string bookmark = null) :base(logger)
         {
             _connectionProvider = provider;
             _logger = logger;
