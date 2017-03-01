@@ -21,7 +21,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class ClusterConnection : DelegatedStatementRunnerConnection
+    internal class ClusterConnection : DelegatedConnection
     {
         private readonly Uri _uri;
         private readonly AccessMode _mode;

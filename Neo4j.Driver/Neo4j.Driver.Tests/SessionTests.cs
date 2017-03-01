@@ -28,6 +28,11 @@ namespace Neo4j.Driver.Tests
 {
     public class SessionTests
     {
+        internal static Session NewSession(IConnection connection, ILogger logger=null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        {
+            return new Session(new TestConnectionProvider(connection), logger, mode, bookmark);
+        }
+
         public class RunMethod
         {
             [Fact]
@@ -35,7 +40,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 session.Run("lalalal");
 
                 mockConn.Verify(x => x.Run("lalalal", null, It.IsAny<ResultBuilder>(), true), Times.Once);
@@ -47,7 +52,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 session.Run("lalalal");
 
                 mockConn.Verify(x => x.Server, Times.Once);
@@ -57,11 +62,22 @@ namespace Neo4j.Driver.Tests
         public class BeginTransactionMethod
         {
             [Fact]
+            public void ShouldIgnoreBookmark()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object, bookmark:"a bookmark");
+                session.LastBookmark.Should().Be("a bookmark");
+                session.BeginTransaction("set new bookmark");
+                session.LastBookmark.Should().Be("set new bookmark");
+            }
+
+            [Fact]
             public void ShouldNotAllowNewTxWhileOneIsRunning()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 session.BeginTransaction();
                 var error = Record.Exception(() => session.BeginTransaction());
                 error.Should().BeOfType<ClientException>();
@@ -72,7 +88,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
                 tx = session.BeginTransaction();
@@ -83,7 +99,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 var tx = session.BeginTransaction();
 
                 var error = Record.Exception(() => session.Run("lalal"));
@@ -95,7 +111,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
 
@@ -106,7 +122,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldClosePreviousRunConnectionWhenRunMoreStatements()
             {
                 var mockConn = new Mock<IConnection>();
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 session.Run("lalal");
 
                 session.Run("bibib");
@@ -118,7 +134,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 session.Run("lala");
 
                 session.BeginTransaction();
@@ -133,7 +149,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 var tx = session.BeginTransaction();
                 session.Dispose();
 
@@ -145,7 +161,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
                 session.Run("lalal");
                 session.Dispose();
 
@@ -158,7 +174,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockConn = new Mock<IConnection>();
-                var session = new Session(mockConn.Object);
+                var session = NewSession(mockConn.Object);
 
                 // When
                 session.Dispose();
@@ -167,6 +183,27 @@ namespace Neo4j.Driver.Tests
                 // Then
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().Contain("Failed to dispose this seesion as it has already been disposed.");
+            }
+        }
+
+        private class TestConnectionProvider : IConnectionProvider
+        {
+            private IConnection Connection { get; set; }
+            private AccessMode Mode { get; set; }
+
+            public TestConnectionProvider(IConnection connection)
+            {
+                Connection = connection;
+            }
+            public void Dispose()
+            {
+                // do nothing
+            }
+
+            public IConnection Acquire(AccessMode mode)
+            {
+                Mode = mode;
+                return Connection;
             }
         }
     }

@@ -46,15 +46,31 @@ namespace Neo4j.Driver.V1
         /// method.
         ///
         /// </summary>
-        /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
-        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
-        /// </param>
         /// <returns>A new transaction.</returns>
-        ITransaction BeginTransaction(string bookmark = null);
+        ITransaction BeginTransaction();
+
+        [Obsolete("Pass in bookmark at session instead.")]
+        ITransaction BeginTransaction(string bookmark);
 
         /// <summary>
-        /// Gets the bookmark received following the last completed <see cref="ITransaction"/>.
-        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will be null.
+        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
+        /// <returns>A result as returned by the given unit of work.</returns>
+        T ReadTransaction<T>(Func<ITransaction, T> work);
+
+        /// <summary>
+        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
+        /// <returns>A result as returned by the given unit of work.</returns>
+        T WriteTransaction<T>(Func<ITransaction, T> work);
+
+        /// <summary>
+        /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>.
+        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
         string LastBookmark { get; }
     }

@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterDiscoveryManager
     {
-        private readonly IStatementRunnerConnection _conn;
+        private readonly IConnection _conn;
         private readonly ILogger _logger;
         public IEnumerable<Uri> Readers { get; internal set; } = new Uri[0];
         public IEnumerable<Uri> Writers { get; internal set; } = new Uri[0];
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.Routing
         public long ExpireAfterSeconds { get; internal set; }
 
         private const string ProcedureName = "dbms.cluster.routing.getServers";
-        public ClusterDiscoveryManager(IStatementRunnerConnection connection, ILogger logger)
+        public ClusterDiscoveryManager(IConnection connection, ILogger logger)
         {
             _conn = connection;
             _logger = logger;
@@ -44,7 +44,8 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                using (var session = new Session(_conn, _logger))
+                using (var provider = new SingleConnectionBasedConnectionProvider(_conn))
+                using (var session = new Session(provider, _logger))
                 {
                     var result = session.Run($"CALL {ProcedureName}");
                     var record = result.Single();
@@ -93,6 +94,27 @@ namespace Neo4j.Driver.Internal.Routing
         private Uri BoltRoutingUri(string address)
         {
             return new Uri("bolt+routing://" + address);
+        }
+
+        private class SingleConnectionBasedConnectionProvider : IConnectionProvider
+        {
+            private IConnection _connection;
+
+            public SingleConnectionBasedConnectionProvider(IConnection connection)
+            {
+                _connection = connection;
+            }
+            public void Dispose()
+            {
+                _connection?.Dispose();
+            }
+
+            public IConnection Acquire(AccessMode mode)
+            {
+                var conn = _connection;
+                _connection = null;
+                return conn;
+            }
         }
     }
 }

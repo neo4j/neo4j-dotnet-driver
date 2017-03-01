@@ -21,11 +21,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal abstract class DelegatedStatementRunnerConnection : IStatementRunnerConnection
+    internal abstract class DelegatedConnection : IConnection
     {
-        protected IStatementRunnerConnection Delegate { get; set; }
+        protected IConnection Delegate { get; set; }
 
-        protected DelegatedStatementRunnerConnection(IStatementRunnerConnection connection)
+        protected DelegatedConnection(IConnection connection)
         {
             Delegate = connection;
         }
@@ -86,8 +86,48 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public bool IsOpen => Delegate.IsOpen;
+        public virtual bool IsOpen => Delegate.IsOpen;
 
         public IServerInfo Server => Delegate.Server;
+        public void Init()
+        {
+            try
+            {
+                Delegate.Init();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
+        public void Reset()
+        {
+            try
+            {
+                Delegate.Reset();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
+        public void AckFailure()
+        {
+            try
+            {
+                Delegate.AckFailure();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
+        public void Close()
+        {
+            Delegate.Close();
+        }
     }
 }

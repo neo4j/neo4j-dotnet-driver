@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
                     var anotherUri = new Uri("bolt+routing://123:789");
                     var updateCount = 0;
                     var directReturnCount = 0;
-                    Func<IStatementRunnerConnection, IRoutingTable> updateRoutingTableFunc =
+                    Func<IConnection, IRoutingTable> updateRoutingTableFunc =
                         connection =>
                         {
                             if (!balancerRoutingTable.IsStale())
@@ -313,9 +313,9 @@ namespace Neo4j.Driver.Tests
                     return routingTable;
                 }
 
-                private static IStatementRunnerConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
+                private static IConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
                 {
-                    IStatementRunnerConnection acquiredConn;
+                    IConnection acquiredConn;
                     switch (mode)
                     {
                         case AccessMode.Read:
@@ -384,7 +384,7 @@ namespace Neo4j.Driver.Tests
                     var balancer = new LoadBalancer(clusterConnPool, routingTable);
 
                     mockedConnPool.Setup(x => x.Acquire())
-                        .Callback(() =>
+                        .Callback(()=>
                         {
                             throw new ServiceUnavailableException("failed init");
                         });

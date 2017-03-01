@@ -19,13 +19,39 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal abstract class BaseDriver : IDriver
+    internal class Dirver : IDriver
     {
-        public abstract ISession NewSession(AccessMode mode);
-        public abstract void ReleaseUnmanagedResources();
-        public abstract Uri Uri { get; }
-
         private volatile bool _disposeCalled = false;
+
+        private readonly IConnectionProvider _connectionProvider;
+        private ILogger _logger;
+        public Uri Uri { get; }
+
+        internal Dirver(Uri uri, IConnectionProvider connectionProvider, ILogger logger)
+        {
+            Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
+
+            Uri = uri;
+            _logger = logger;
+            _connectionProvider = connectionProvider;
+        }
+
+        public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
+        {
+            if (_disposeCalled)
+            {
+                ThrowDriverClosedException();
+            }
+
+            var session = new Session(_connectionProvider, _logger, defaultMode, bookmark);
+
+            if (_disposeCalled)
+            {
+                session.Dispose();
+                ThrowDriverClosedException();
+            }
+            return session;
+        }
 
         protected virtual void Dispose(bool isDisposing)
         {
@@ -34,35 +60,17 @@ namespace Neo4j.Driver.Internal
                 return;
             }
             _disposeCalled = true;
-            ReleaseUnmanagedResources();
+
+            // We cannot set connection pool to be null,
+            // otherwise we might get NPE when using concurrently with NewSession
+            _connectionProvider.Dispose();
+            _logger = null;
         }
 
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
-        }
-
-        public ISession Session()
-        {
-            return Session(AccessMode.Write);
-        }
-
-        public ISession Session(AccessMode mode)
-        {
-            if (_disposeCalled)
-            {
-                ThrowDriverClosedException();
-            }
-
-            var session = NewSession(mode);
-
-            if (_disposeCalled)
-            {
-                session.Dispose();
-                ThrowDriverClosedException();
-            }
-            return session;
         }
 
         private void ThrowDriverClosedException()

@@ -27,23 +27,27 @@ namespace Neo4j.Driver.Internal
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
         // without any possible connection leak.
-        private readonly Func<IStatementRunnerConnection> _acquireConnFunc;
-        private IStatementRunnerConnection _connection;
+        private readonly IConnectionProvider _connectionProvider;
+        private readonly AccessMode _defaultMode;
+        private IConnection _connection;
 
         private Transaction _transaction;
 
         private readonly ILogger _logger;
         private bool _isOpen = true;
 
-        public Session(IStatementRunnerConnection conn, ILogger logger=null) : this(() => conn, logger)
-        {
-            // If this connection is not used in run or beginTx, then it might not be disposed by session
-        }
+        private string _bookmark;
 
-        public Session(Func<IStatementRunnerConnection> acquireConnFunc, ILogger logger):base(logger)
+        public string LastBookmark => _bookmark;
+
+        public Guid Id { get; } = Guid.NewGuid();
+
+        public Session(IConnectionProvider provider, ILogger logger, AccessMode defaultMode = AccessMode.Write, string bookmark = null) :base(logger)
         {
-            _acquireConnFunc = acquireConnFunc;
+            _connectionProvider = provider;
             _logger = logger;
+            _defaultMode = defaultMode;
+            _bookmark = bookmark;
         }
 
         public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
@@ -52,7 +56,7 @@ namespace Neo4j.Driver.Internal
             {
                 EnsureCanRunMoreStatements();
 
-                _connection = _acquireConnFunc.Invoke();
+                _connection = _connectionProvider.Acquire(_defaultMode);
                 var resultBuilder = new ResultBuilder(statement, statementParameters,
                     ()=>_connection.ReceiveOne(), _connection.Server, this);
                 _connection.Run(statement, statementParameters, resultBuilder);
@@ -62,21 +66,47 @@ namespace Neo4j.Driver.Internal
             });
         }
 
-        public ITransaction BeginTransaction(string bookmark = null)
+        public ITransaction BeginTransaction()
+        {
+            return BeginTransaction(_defaultMode);
+        }
+
+
+        public ITransaction BeginTransaction(string bookmark)
+        {
+            _bookmark = bookmark;
+            return BeginTransaction();
+        }
+
+        private ITransaction BeginTransaction(AccessMode mode)
         {
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
 
-                _connection = _acquireConnFunc.Invoke();
-                _transaction = new Transaction(_connection, this, _logger, bookmark);
+                _connection = _connectionProvider.Acquire(mode);
+                _transaction = new Transaction(_connection, this, _logger, _bookmark);
                 return _transaction;
             });
         }
 
-        public string LastBookmark { get; private set; }
+        public T ReadTransaction<T>(Func<ITransaction, T> work)
+        {
+            return RunTransaction(work, AccessMode.Read);
+        }
 
-        public Guid Id { get; } = Guid.NewGuid();
+        public T WriteTransaction<T>(Func<ITransaction, T> work)
+        {
+            return RunTransaction(work, AccessMode.Write);
+        }
+
+        private T RunTransaction<T>(Func<ITransaction, T> work, AccessMode mode)
+        {
+            using (var tx = BeginTransaction(mode))
+            {
+                return work.Invoke(tx);
+            }
+        }
 
         protected override void Dispose(bool isDisposing)
         {
@@ -121,7 +151,10 @@ namespace Neo4j.Driver.Internal
             Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
 
-            LastBookmark = _transaction.Bookmark;
+            if (_transaction.Bookmark != null)
+            {
+                _bookmark = _transaction.Bookmark;
+            }
             _transaction = null;
 
             // always dispose connection used by the transaction too
@@ -188,8 +221,6 @@ namespace Neo4j.Driver.Internal
 
         private void CleanRunResultResources()
         {
-            LastBookmark = null;
-
             // always try to close connection used by the result too
             _connection?.Dispose();
             _connection = null;

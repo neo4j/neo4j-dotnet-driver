@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal
 {
     internal class Transaction : StatementRunner, ITransaction
     {
-        private readonly IStatementRunnerConnection _connection;
+        private readonly IConnection _connection;
         private readonly ITransactionResourceHandler _resourceHandler;
 
         internal const string BookmarkKey = "bookmark";
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal
 
         private State _state = State.Active;
 
-        public Transaction(IStatementRunnerConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, string bookmark = null) : base(logger)
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, string bookmark = null) : base(logger)
         {
             _connection = new TransactionConnection(this, connection);
             _resourceHandler = resourceHandler;
@@ -175,11 +175,11 @@ namespace Neo4j.Driver.Internal
             _state = State.Failed;
         }
 
-        private class TransactionConnection : DelegatedStatementRunnerConnection
+        private class TransactionConnection : DelegatedConnection
         {
             private Transaction _transaction;
 
-            public TransactionConnection(Transaction transaction, IStatementRunnerConnection connection)
+            public TransactionConnection(Transaction transaction, IConnection connection)
                 :base(connection)
             {
                 _transaction = transaction;

@@ -4,18 +4,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.DirectDriver
+namespace Neo4j.Driver.IntegrationTests
 {
     public class BookmarkIT : DirectDriverIT
     {
         private IDriver Driver => Server.Driver;
         private bool Skip { get; set; }
 
-        public BookmarkIT(ITestOutputHelper output, IntegrationTestFixture fixture) : base(output, fixture)
+        public BookmarkIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {
             CheckBookmarkSupport();
         }
@@ -34,6 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.DirectDriver
             else
             {
                 Skip = true;
+                Output.WriteLine("Bookmark tests did not run");
             }
         }
 
@@ -53,38 +55,40 @@ namespace Neo4j.Driver.IntegrationTests.DirectDriver
         }
 
         [Fact]
-        public void BookmarkSetToNullAfterRolledBackTx()
+        public void BookmarkUnchangedAfterRolledBackTx()
         {
             if (Skip) return;
             using (var session = Driver.Session())
             {
                 CreateNodeInTx(session);
-                session.LastBookmark.Should().NotBeNullOrEmpty();
+                var bookmark = session.LastBookmark;
+                bookmark.Should().NotBeNullOrEmpty();
 
                 using (var tx = session.BeginTransaction())
                 {
                     tx.Run("CREATE (a:Person)");
                     tx.Failure();
                 }
-                session.LastBookmark.Should().BeNull();
+                session.LastBookmark.Should().Be(bookmark);
             }
         }
 
         [Fact]
-        public void BookmarkSetToNullAfterTxFailure()
+        public void BookmarkUnchangedAfterTxFailure()
         {
             if (Skip) return;
             using (var session = Driver.Session())
             {
                 CreateNodeInTx(session);
-                session.LastBookmark.Should().NotBeNullOrEmpty();
+                var bookmark = session.LastBookmark;
+                bookmark.Should().NotBeNullOrEmpty();
 
                 var tx = session.BeginTransaction();
                 tx.Run("RETURN");
                 tx.Success();
                 var exception = Record.Exception(() => tx.Dispose());
                 exception.Should().BeOfType<ClientException>();
-                session.LastBookmark.Should().BeNull();
+                session.LastBookmark.Should().Be(bookmark);
             }
         }
 
@@ -93,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests.DirectDriver
         {
             if (Skip) return;
             var invalidBookmark = "invalid bookmark format";
-            using (var session = Driver.Session())
+            using (var session = (Session)Driver.Session())
             {
                 var exception = Record.Exception(() => session.BeginTransaction(invalidBookmark));
                 exception.Should().BeOfType<ClientException>();
@@ -105,7 +109,7 @@ namespace Neo4j.Driver.IntegrationTests.DirectDriver
         public void ShouldThrowForUnreachableBookmark()
         {
             if (Skip) return;
-            using (var session = Driver.Session())
+            using (var session = (Session)Driver.Session())
             {
                 CreateNodeInTx(session);
 
@@ -167,7 +171,7 @@ namespace Neo4j.Driver.IntegrationTests.DirectDriver
 
         private static void CreateNodeInTx(ISession session, string bookmark = null)
         {
-            using (var tx = session.BeginTransaction(bookmark))
+            using (var tx = ((Session)session).BeginTransaction(bookmark))
             {
                 tx.Run("CREATE (a:Person)");
                 tx.Success();

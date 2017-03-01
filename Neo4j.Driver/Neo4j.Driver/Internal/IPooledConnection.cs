@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -16,12 +16,19 @@
 // limitations under the License.
 using System;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal
 {
-    internal interface ILoadBalancer : IDisposable
+    internal interface IPooledConnection : IConnection
     {
-        IStatementRunnerConnection AcquireConnection(AccessMode mode);
+        /// <summary>
+        /// An identifer of this connection for pooling
+        /// </summary>
+        Guid Id { get; }
+
+        /// <summary>
+        /// Try to reset the connection to a clean state to prepare it for a new session.
+        /// </summary>
+        void ClearConnection();
     }
 }

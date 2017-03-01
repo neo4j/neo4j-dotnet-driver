@@ -157,6 +157,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="DirectDriver\AuthenticationIT.cs" />
+    <Compile Include="DirectDriver\BookmarkIT.cs" />
     <Compile Include="DirectDriver\DirectDriverIT.cs" />
     <Compile Include="DirectDriver\ResultIT.cs" />
     <Compile Include="DirectDriver\SessionIT.cs" />
