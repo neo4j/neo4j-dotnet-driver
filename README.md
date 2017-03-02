@@ -1,5 +1,5 @@
 # Neo4j .NET Driver
-This is the source code of the driver under development. To get the lateset statble released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/)
+This is the source code of the driver under development. To get the lateset statble released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/). To find changelogs, rich examples of how to use the driver, and API documents of the driver, checkout [wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki). 
 
 ## Minimum viable snippet
 
