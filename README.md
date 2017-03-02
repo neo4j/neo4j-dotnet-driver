@@ -1,5 +1,5 @@
 # Neo4j .NET Driver
-
+This is the source code of the driver under development. To get the lateset statble released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/)
 
 ## Minimum viable snippet
 
@@ -29,7 +29,7 @@ Snapshot builds are available at our [MyGet feed](https://www.myget.org/feed/neo
 
 * [https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json](https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json)
 
-# Building
+# Building the source code
 
 ## Visual Studio Version
 
