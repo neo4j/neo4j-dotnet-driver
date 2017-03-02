@@ -76,6 +76,7 @@ namespace Neo4j.Driver.Internal
                 }
             } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
 
+            timer.Stop();
             throw exception;
         }
 

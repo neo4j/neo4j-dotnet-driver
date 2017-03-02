@@ -154,6 +154,7 @@
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
+    <Compile Include="RetryLogicTests.cs" />
     <Compile Include="Routing\ClusterConnectionPoolTests.cs" />
     <Compile Include="Routing\ClusterConnectionTests.cs" />
     <Compile Include="Routing\ClusterDiscoveryManagerTests.cs" />
