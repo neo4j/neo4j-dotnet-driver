@@ -92,21 +92,40 @@ namespace Neo4j.Driver.Internal
 
         public T ReadTransaction<T>(Func<ITransaction, T> work)
         {
-            return RunTransaction(work, AccessMode.Read);
+            return RunTransaction(AccessMode.Read, work);
+        }
+
+        public void ReadTransaction(Action<ITransaction> work)
+        {
+            RunTransaction(AccessMode.Read, work);
         }
 
         public T WriteTransaction<T>(Func<ITransaction, T> work)
         {
-            return RunTransaction(work, AccessMode.Write);
+            return RunTransaction(AccessMode.Write, work);
         }
 
-        private T RunTransaction<T>(Func<ITransaction, T> work, AccessMode mode)
+        public void WriteTransaction(Action<ITransaction> work)
+        {
+            RunTransaction(AccessMode.Write, work);
+        }
+
+        private void RunTransaction(AccessMode mode, Action<ITransaction> work)
+        {
+            RunTransaction<object>(mode, tx =>
+            {
+                work(tx);
+                return null;
+            });
+        }
+
+        private T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work)
         {
             return TryExecute(()=>_retryLogic.Retry(() =>
             {
                 using (var tx = BeginTransactionWithoutLogging(mode))
                 {
-                    return work.Invoke(tx);
+                    return work(tx);
                 }
             }));
         }

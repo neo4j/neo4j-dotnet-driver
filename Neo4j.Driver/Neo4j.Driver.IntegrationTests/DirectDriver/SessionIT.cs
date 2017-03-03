@@ -24,10 +24,9 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 var timer = new Stopwatch();
                 timer.Start();
-                var e = Record.Exception(()=>session.WriteTransaction<double>((tx) =>
+                var e = Record.Exception(()=>session.WriteTransaction(tx =>
                 {
                     throw new SessionExpiredException($"Failed at {timer.Elapsed}");
-                    return timer.Elapsed.TotalMilliseconds;
                 }));
                 timer.Stop();
 

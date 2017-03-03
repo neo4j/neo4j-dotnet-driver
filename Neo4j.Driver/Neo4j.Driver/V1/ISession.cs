@@ -61,12 +61,24 @@ namespace Neo4j.Driver.V1
         T ReadTransaction<T>(Func<ITransaction, T> work);
 
         /// <summary>
+        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
+        /// </summary>
+        /// <param name="work">The <see cref="Action{T}"/> to be applied to a new read transaction.</param>
+        void ReadTransaction(Action<ITransaction> work);
+
+        /// <summary>
         ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
         /// <returns>A result as returned by the given unit of work.</returns>
         T WriteTransaction<T>(Func<ITransaction, T> work);
+
+        /// <summary>
+        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
+        /// </summary>
+        /// <param name="work">The <see cref="Action{T}"/> to be applied to a new write transaction.</param>
+        void WriteTransaction(Action<ITransaction> work);
 
         /// <summary>
         /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>.

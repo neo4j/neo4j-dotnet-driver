@@ -80,6 +80,7 @@ namespace Neo4j.Driver.Internal
             throw exception;
         }
 
+
         private double ComputeDelayWithJitter(double delayMs)
         {
             var jitter = delayMs * _jitterFactor;
