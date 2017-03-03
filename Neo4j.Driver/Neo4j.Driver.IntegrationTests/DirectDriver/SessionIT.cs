@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using FluentAssertions;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -14,6 +15,30 @@ namespace Neo4j.Driver.IntegrationTests
 
         public SessionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {
+        }
+
+        [Fact]
+        public void ShouldRetry()
+        {
+            using (var session = Driver.Session())
+            {
+                var timer = new Stopwatch();
+                timer.Start();
+                var e = Record.Exception(()=>session.WriteTransaction(tx =>
+                {
+                    throw new SessionExpiredException($"Failed at {timer.Elapsed}");
+                }));
+                timer.Stop();
+
+                var error = e as AggregateException;
+                var innerErrors = error.Flatten().InnerExceptions;
+                foreach (var innerError in innerErrors)
+                {
+                    Output.WriteLine(innerError.Message);
+                }
+                innerErrors.Count.Should().BeGreaterOrEqualTo(5);
+                timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(30);
+            }
         }
 
         [Fact]

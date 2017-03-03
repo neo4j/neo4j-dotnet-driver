@@ -108,6 +108,7 @@ namespace Neo4j.Driver.V1
             }
             var connectionSettings = new ConnectionSettings(uri, authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
+            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime);
             var logger = config.Logger;
             IConnectionProvider connectionProvider = null;
 
@@ -123,7 +124,7 @@ namespace Neo4j.Driver.V1
                     throw new NotSupportedException($"Unsupported URI scheme: {uri.Scheme}");
             }
 
-            return new Dirver(uri, connectionProvider, logger);
+            return new Internal.Driver(uri, connectionProvider, retryLogic, logger);
         }
     }
 }

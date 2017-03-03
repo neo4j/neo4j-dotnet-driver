@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using FluentAssertions;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -26,7 +25,7 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public void ShouldUseDefaultPortWhenPortNotSet()
         {
-            using (var driver = (Dirver)GraphDatabase.Driver("bolt://localhost"))
+            using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost"))
             {
                 driver.Uri.Port.Should().Be(7687);
                 driver.Uri.Scheme.Should().Be("bolt");
@@ -37,7 +36,7 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public void ShouldUseSpecifiedPortWhenPortSet()
         {
-            using (var driver = (Dirver)GraphDatabase.Driver("bolt://localhost:8888"))
+            using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost:8888"))
             {
                 driver.Uri.Port.Should().Be(8888);
                 driver.Uri.Scheme.Should().Be("bolt");

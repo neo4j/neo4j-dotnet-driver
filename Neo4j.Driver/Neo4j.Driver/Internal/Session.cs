@@ -33,19 +33,22 @@ namespace Neo4j.Driver.Internal
 
         private Transaction _transaction;
 
+        private readonly IRetryLogic _retryLogic;
         private readonly ILogger _logger;
         private bool _isOpen = true;
 
         private string _bookmark;
-
         public string LastBookmark => _bookmark;
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IConnectionProvider provider, ILogger logger, AccessMode defaultMode = AccessMode.Write, string bookmark = null) :base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, string bookmark = null) :base(logger)
         {
             _connectionProvider = provider;
+            _retryLogic = retryLogic;
+
             _logger = logger;
+
             _defaultMode = defaultMode;
             _bookmark = bookmark;
         }
@@ -68,7 +71,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction()
         {
-            return BeginTransaction(_defaultMode);
+            return TryExecute(() => BeginTransactionWithoutLogging(_defaultMode));
         }
 
 
@@ -78,34 +81,53 @@ namespace Neo4j.Driver.Internal
             return BeginTransaction();
         }
 
-        private ITransaction BeginTransaction(AccessMode mode)
+        private ITransaction BeginTransactionWithoutLogging(AccessMode mode)
         {
-            return TryExecute(() =>
-            {
-                EnsureCanRunMoreStatements();
+            EnsureCanRunMoreStatements();
 
-                _connection = _connectionProvider.Acquire(mode);
-                _transaction = new Transaction(_connection, this, _logger, _bookmark);
-                return _transaction;
-            });
+            _connection = _connectionProvider.Acquire(mode);
+            _transaction = new Transaction(_connection, this, _logger, _bookmark);
+            return _transaction;
         }
 
         public T ReadTransaction<T>(Func<ITransaction, T> work)
         {
-            return RunTransaction(work, AccessMode.Read);
+            return RunTransaction(AccessMode.Read, work);
+        }
+
+        public void ReadTransaction(Action<ITransaction> work)
+        {
+            RunTransaction(AccessMode.Read, work);
         }
 
         public T WriteTransaction<T>(Func<ITransaction, T> work)
         {
-            return RunTransaction(work, AccessMode.Write);
+            return RunTransaction(AccessMode.Write, work);
         }
 
-        private T RunTransaction<T>(Func<ITransaction, T> work, AccessMode mode)
+        public void WriteTransaction(Action<ITransaction> work)
         {
-            using (var tx = BeginTransaction(mode))
+            RunTransaction(AccessMode.Write, work);
+        }
+
+        private void RunTransaction(AccessMode mode, Action<ITransaction> work)
+        {
+            RunTransaction<object>(mode, tx =>
             {
-                return work.Invoke(tx);
-            }
+                work(tx);
+                return null;
+            });
+        }
+
+        private T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work)
+        {
+            return TryExecute(()=>_retryLogic.Retry(() =>
+            {
+                using (var tx = BeginTransactionWithoutLogging(mode))
+                {
+                    return work(tx);
+                }
+            }));
         }
 
         protected override void Dispose(bool isDisposing)

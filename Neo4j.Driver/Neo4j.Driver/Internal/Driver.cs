@@ -19,21 +19,23 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Dirver : IDriver
+    internal class Driver : IDriver
     {
         private volatile bool _disposeCalled = false;
 
         private readonly IConnectionProvider _connectionProvider;
+        private readonly IRetryLogic _retryLogic;
         private ILogger _logger;
         public Uri Uri { get; }
 
-        internal Dirver(Uri uri, IConnectionProvider connectionProvider, ILogger logger)
+        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
 
             Uri = uri;
             _logger = logger;
             _connectionProvider = connectionProvider;
+            _retryLogic = retryLogic;
         }
 
         public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
@@ -43,7 +45,7 @@ namespace Neo4j.Driver.Internal
                 ThrowDriverClosedException();
             }
 
-            var session = new Session(_connectionProvider, _logger, defaultMode, bookmark);
+            var session = new Session(_connectionProvider, _logger, _retryLogic, defaultMode, bookmark);
 
             if (_disposeCalled)
             {
