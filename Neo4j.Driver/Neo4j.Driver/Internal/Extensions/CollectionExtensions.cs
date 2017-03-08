@@ -17,6 +17,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
@@ -81,6 +82,12 @@ namespace Neo4j.Driver.Internal
             }
 
             return o.ToString();
+        }
+
+        public static IDictionary<string, object> ToDictionary(this object o)
+        {
+            return o.GetType().GetRuntimeProperties()
+                .ToDictionary(prop => prop.Name, prop => prop.GetValue(o, null));
         }
     }
 }

@@ -107,7 +107,7 @@ namespace Neo4j.Driver.V1
                 uri = builder.Uri;
             }
             var connectionSettings = new ConnectionSettings(uri, authToken, config);
-            var connectionPoolSettings = new ConnectionPoolSettings(config.MaxIdleSessionPoolSize);
+            var connectionPoolSettings = new ConnectionPoolSettings(config);
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime);
             var logger = config.Logger;
             IConnectionProvider connectionProvider = null;
