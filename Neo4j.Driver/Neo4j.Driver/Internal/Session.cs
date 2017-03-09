@@ -125,7 +125,17 @@ namespace Neo4j.Driver.Internal
             {
                 using (var tx = BeginTransactionWithoutLogging(mode))
                 {
-                    return work(tx);
+                    try
+                    {
+                        var result = work(tx);
+                        tx.Success();
+                        return result;
+                    }
+                    catch
+                    {
+                        tx.Failure();
+                        throw;
+                    }
                 }
             }));
         }
