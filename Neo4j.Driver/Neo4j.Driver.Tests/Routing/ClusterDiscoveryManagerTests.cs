@@ -185,7 +185,7 @@ namespace Neo4j.Driver.Tests
         internal static InitMessage InitMessage(IAuthToken auth = null)
         {
             auth = auth ?? AuthTokens.None;
-            return new InitMessage("neo4j-dotnet/1.2", auth.AsDictionary());
+            return new InitMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary());
         }
 
         internal static SuccessMessage SuccessMessage(IList<object> fileds = null)
