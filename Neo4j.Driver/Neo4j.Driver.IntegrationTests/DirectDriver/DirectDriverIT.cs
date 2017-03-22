@@ -29,14 +29,14 @@ namespace Neo4j.Driver.IntegrationTests
         public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
         protected ITestOutputHelper Output { get; }
         protected StandAlone Server { get; }
-        protected string ServerEndPoint { get; }
+        protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
         protected DirectDriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
             Server = fixture.StandAlone;
-            ServerEndPoint = Server.BoltUri.ToString();
+            ServerEndPoint = Server.BoltUri;
             AuthToken = Server.AuthToken;
         }
 

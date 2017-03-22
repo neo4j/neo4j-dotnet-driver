@@ -25,10 +25,10 @@ namespace Neo4j.Driver.Tck.Tests.TCK
     [Binding]
     public static class TckHooks
     {
-        private static IDriver _driver => Server.Driver;
         public static StandAlone Server;
-        public static string Uri => Server.BoltUri.ToString();
-        public static IAuthToken AuthToken => Server.AuthToken;
+        public static Uri Uri => Server?.BoltUri;
+        public static IAuthToken AuthToken => Server?.AuthToken;
+        private static IDriver _driver => Server?.Driver;
 
         public static ISession CreateSession()
         {

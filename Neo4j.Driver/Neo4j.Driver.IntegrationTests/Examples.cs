@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void MinimalExample()
         {
             //tag::minimal-example[]
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Examples
             //end::minimal-example[]
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ConstructDriver()
         {
             //tag::construct-driver[]
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Examples
             driver.Dispose();
         }
 
-        [Fact]
+        [RequireServerFact]
         public void Configuration()
         {
             //tag::configuration[]
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Examples
             driver.Dispose();
         }
 
-        [Fact]
+        [RequireServerFact]
         public void Statement()
         {
             using (var session = Driver.Session())
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void StatementWithoutParams()
         {
             using (var session = Driver.Session())
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ResultTraversal()
         {
             using (var session = Driver.Session())
@@ -136,7 +136,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void AccessRecord()
         {
             using (var session = Driver.Session())
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void RetainResultQuery()
         {
             using (var session = Driver.Session())
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void NestedStatements()
         {
             using (var session = Driver.Session())
@@ -229,7 +229,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void HandleCypherError()
         {
             using (var session = Driver.Session())
@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void TransactionCommit()
         {
             using (var session = Driver.Session())
@@ -267,7 +267,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void TransactionRollback()
         {
             using (var session = Driver.Session())
@@ -283,7 +283,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ResultSummaryQueryProfile()
         {
             using (var session = Driver.Session())
@@ -300,7 +300,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ResultSummaryNotifications()
         {
             using (var session = Driver.Session())
@@ -316,7 +316,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        [Fact(Skip = "Requires server certificate to be installed on host system.")]
+        [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
         public void TlsRequireEncryption()
         {
             //tag::tls-require-encryption[]
@@ -326,7 +326,7 @@ namespace Neo4j.Driver.Examples
             driver.Dispose();
         }
 
-        [Fact(Skip = "Requires server certificate to be installed on host system.")]
+        [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
         public void TlsSigned()
         {
             //tag::tls-signed[]
@@ -337,7 +337,7 @@ namespace Neo4j.Driver.Examples
             driver.Dispose();
         }
 
-        [Fact(Skip = "Requires server certificate to be installed on host system.")]
+        [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
         public void ConnectWithAuthDisabled()
         {
             //tag::connect-with-auth-disabled[]
