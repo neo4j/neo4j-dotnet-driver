@@ -74,7 +74,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="TrustStrategy"/> : <c><see cref="TrustStrategy"/>TrustAllCertificates</c> </item>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
-        /// <item><see cref="ConnectionTimeout"/>: <c>wait infinitly</c> </item>
+        /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
         /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
         /// </list>
@@ -118,7 +118,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets or sets the connection timeout when establishing a connection with a server.
         /// </summary>
-        public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromMilliseconds(-1);
+        public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
         /// <summary>
         /// Gets or sets the socket keep alive option.
