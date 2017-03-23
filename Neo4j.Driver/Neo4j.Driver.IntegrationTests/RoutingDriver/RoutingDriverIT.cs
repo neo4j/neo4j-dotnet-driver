@@ -1,4 +1,20 @@
-﻿using System;
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+using System;
 using System.Linq;
 using System.Threading;
 using FluentAssertions;
@@ -25,25 +41,17 @@ namespace Neo4j.Driver.IntegrationTests
         {
             Output = output;
             Cluster = fixture.Cluster;
-            IsClusterRunning = Cluster.IsClusterRunning();
             AuthToken = Cluster.AuthToken;
         }
-
-        public bool IsClusterRunning { get; }
 
         public void Dispose()
         {
             // put some code that you want to run after each unit test
         }
 
-        [Fact]
+        [RequireClusterFact]
         public void ShouldFailWithAuthenticationError()
         {
-            if (!IsClusterRunning)
-            {
-                return;
-            }
-
             Exception exception = null;
             using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake")))
             using(var session = driver.Session())
@@ -55,14 +63,9 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
 
-        [Fact]
+        [RequireClusterFact]
         public void ShouldConnectClusterWithRoutingScheme()
         {
-            if (!IsClusterRunning)
-            {
-                return;
-            }
-
             using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
             using (var session = driver.Session())
             {
@@ -71,13 +74,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireClusterFact]
         public void ShouldLoadBalanceBetweenServers()
         {
-            if (!IsClusterRunning)
-            {
-                return;
-            }
             using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
             {
                 string addr1, addr2;
@@ -97,14 +96,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireClusterFact]
         public void ShouldThrowServiceUnavailableExceptionIfNoServer()
         {
-            if (!IsClusterRunning)
-            {
-                return;
-            }
-
             Exception error = null;
             using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake")))
             using (var session = driver.Session())
@@ -115,13 +109,9 @@ namespace Neo4j.Driver.IntegrationTests
             error.Message.Should().Be("Failed to connect to any routing server. Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
-        [Fact]
+        [RequireClusterFact]
         public void ShouldDisallowMoreStatementAfterDriverDispose()
         {
-            if (!IsClusterRunning)
-            {
-                return;
-            }
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
@@ -132,14 +122,9 @@ namespace Neo4j.Driver.IntegrationTests
             error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
 
-        [Fact]
+        [RequireClusterFact]
         public void ShouldDisallowMoreConnectionsAfterDriverDispose()
         {
-            if (!IsClusterRunning)
-            {
-                return;
-            }
-
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
@@ -152,17 +137,12 @@ namespace Neo4j.Driver.IntegrationTests
             error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
         }
 
-        [Theory]
+        [RequireClusterTheory]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
         public void SoakRunTests(int threadCount)
         {
-            if (!IsClusterRunning)
-            {
-                return;
-            }
-
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var random = new Random();
             var job = new Job(driver, random, Output);

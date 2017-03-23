@@ -14,7 +14,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
@@ -25,10 +24,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class StandAlone : ISingleInstance, IDisposable
     {
-        private readonly ExternalPythonInstaller _installer = new ExternalPythonInstaller();
+        private readonly ExternalBoltkitInstaller _installer = new ExternalBoltkitInstaller();
         public IDriver Driver { private set; get; }
 
-        public const string ServerEndPoint = "bolt://localhost";
         private readonly ISingleInstance _delegator;
 
         public Uri HttpUri => _delegator?.HttpUri;
@@ -58,7 +56,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 #if DEBUG
             config = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
 #endif
-            Driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, config);
+            Driver = GraphDatabase.Driver(BoltUri, AuthToken, config);
         }
 
         private void DisposeBoltDriver()
@@ -114,7 +112,14 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
             catch
             {
-                // ignored
+                try
+                {
+                    _installer.Kill();
+                }
+                catch
+                {
+                    // ignored
+                }
             }
         }
 

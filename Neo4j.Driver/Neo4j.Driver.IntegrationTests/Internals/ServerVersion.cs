@@ -27,7 +27,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public static readonly ServerVersion V3_1_0 = new ServerVersion(3,1,0);
 
-        private static readonly Regex VersionRegex = new Regex(@"Neo4j/(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?", RegexOptions.IgnoreCase);
+        private static readonly Regex VersionRegex = new Regex(@"(Neo4j/)?(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?", RegexOptions.IgnoreCase);
 
         public ServerVersion(int major, int minor, int patch)
         {
@@ -45,9 +45,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             var match = VersionRegex.Match(version);
             if (match.Success)
             {
-                var major = int.Parse(match.Groups[1].ToString());
-                var minor = int.Parse(match.Groups[2].ToString());
-                var patch = int.Parse(match.Groups[3].ToString());
+                var major = int.Parse(match.Groups[2].ToString());
+                var minor = int.Parse(match.Groups[3].ToString());
+                var patch = int.Parse(match.Groups[4].ToString());
                 return new ServerVersion(major, minor, patch);
             }
             return null;
