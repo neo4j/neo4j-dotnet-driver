@@ -1,3 +1,8 @@
+If ($args.Length -ne 0)
+{
+	$env:NeoctrlArgs="$args"
+	echo $Env:NeoctrlArgs
+}
 $scriptpath = $MyInvocation.MyCommand.Path
 $dir = Split-Path $scriptpath
 
