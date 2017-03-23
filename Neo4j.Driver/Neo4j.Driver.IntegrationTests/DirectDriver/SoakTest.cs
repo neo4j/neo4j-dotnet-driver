@@ -16,7 +16,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [Theory]
+        [RequireServerTheory]
         [InlineData(5000)]
 //        [InlineData(50000)] leave this to a long dedicated build
         public void SoakRun(int threadCount)
