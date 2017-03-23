@@ -39,6 +39,8 @@ namespace Neo4j.Driver.Internal
         // for test only
         private readonly IConnection _fakeConnection;
 
+        private readonly ConnectionPoolStatistics _statistics;
+
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
 
@@ -59,6 +61,13 @@ namespace Neo4j.Driver.Internal
             _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
 
             _logger = logger;
+
+            var statisticsCollector = connectionPoolSettings.StatisticsCollector;
+            if (statisticsCollector != null)
+            {
+                _statistics = new ConnectionPoolStatistics(this);
+                statisticsCollector.Register(_statistics);
+            }
         }
 
         internal ConnectionPool(
@@ -67,7 +76,7 @@ namespace Neo4j.Driver.Internal
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ILogger logger = null,
             ConnectionPoolSettings settings = null)
-            : this(null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig.MaxIdleSessionPoolSize), 
+            : this(null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig), 
                   logger)
         {
             _fakeConnection = connection;
@@ -80,19 +89,36 @@ namespace Neo4j.Driver.Internal
             PooledConnection conn = null;
             try
             {
+                _statistics?.IncrementConnectionToCreate();
+
                 conn = _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, Release)
                     : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), Release);
-
                 conn.Init();
+
+                _statistics?.IncrementConnectionCreated();
                 return conn;
             }
             catch
             {
+                _statistics?.IncrementConnectionFailedToCreate();
+
                 // shut down and clean all the resources of the conneciton if failed to establish
-                conn?.Close();
+                if (conn != null)
+                {
+                    CloseConnection(conn);
+                }
                 throw;
             }
+        }
+
+        private void CloseConnection(IPooledConnection conn)
+        {
+            _statistics?.IncrementConnectionToClose();
+
+            conn.Close();
+
+            _statistics?.IncrementConnectionClosed();
         }
 
         public IConnection Acquire(AccessMode mode)
@@ -116,7 +142,7 @@ namespace Neo4j.Driver.Internal
                 }
                 else if (!connection.IsOpen)
                 {
-                    connection.Close();
+                    CloseConnection(connection);
                     return Acquire();
                 }
 
@@ -125,7 +151,7 @@ namespace Neo4j.Driver.Internal
                 {
                     if (_inUseConnections.TryRemove(connection))
                     {
-                        connection.Close();
+                        CloseConnection(connection);
                     }
                     ThrowObjectDisposedException();
                 }
@@ -176,7 +202,7 @@ namespace Neo4j.Driver.Internal
                 {
                     if (IsPoolFull())
                     {
-                        connection.Close();
+                        CloseConnection(connection);
                     }
                     else
                     {
@@ -186,21 +212,19 @@ namespace Neo4j.Driver.Internal
                     // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
                     if (_disposeCalled && _availableConnections.TryDequeue(out connection))
                     {
-                        connection.Close();
+                        CloseConnection(connection);
                     }
                 }
                 else
                 {
                     //release resources by connection
-                    connection.Close();
+                    CloseConnection(connection);
                 }
             });
         }
 
         // For concurrent calling: you are free to get something from inUseConn or availConn when we dispose.
-
         // However it is forbiden to put something back to the conn queues after we've already started disposing.
-
         protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
@@ -216,7 +240,7 @@ namespace Neo4j.Driver.Internal
                     Logger?.Info($"Disposing In Use Connection {inUseConnection.Id}");
                     if (_inUseConnections.TryRemove(inUseConnection))
                     {
-                        inUseConnection.Close();
+                        CloseConnection(inUseConnection);
                     }
                 }
 
@@ -224,9 +248,10 @@ namespace Neo4j.Driver.Internal
                 while (_availableConnections.TryDequeue(out connection))
                 {
                     Logger?.Debug($"Disposing Available Connection {connection.Id}");
-                    connection.Close();
+                    CloseConnection(connection);
                 }
             });
+            _statistics?.Dispose();
             base.Dispose(true);
         }
 

@@ -22,16 +22,18 @@ namespace Neo4j.Driver.Internal
     internal class ConnectionPoolSettings
     {
         public int MaxIdleSessionPoolSize { get; }
+        public IStatisticsCollector StatisticsCollector { get; }
 
         public ConnectionPoolSettings(Config config)
-            :this(config.MaxIdleSessionPoolSize)
+            :this(config.MaxIdleSessionPoolSize, config.DriverStatisticsCollector)
         {
         }
 
-        public ConnectionPoolSettings(int maxIdleSessionPoolSize)
+        public ConnectionPoolSettings(int maxIdleSessionPoolSize, IStatisticsCollector statisticsCollector=null)
         {
             Throw.ArgumentNullException.IfNull(maxIdleSessionPoolSize, nameof(maxIdleSessionPoolSize));
             MaxIdleSessionPoolSize = maxIdleSessionPoolSize;
+            StatisticsCollector = statisticsCollector;
         }
     }
 }
