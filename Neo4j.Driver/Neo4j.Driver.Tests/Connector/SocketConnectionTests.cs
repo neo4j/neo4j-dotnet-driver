@@ -114,13 +114,12 @@ namespace Neo4j.Driver.Tests
                 var mockClient = new Mock<ISocketClient>();
                 mockClient.Setup(x => x.Start()).Returns(Task.Delay(TimeSpan.FromMinutes(1)));
                 // ReSharper disable once ObjectCreationAsStatement
-                var conn = NewSocketConnection(mockClient.Object);
-
+                var conn = new SocketConnection(mockClient.Object, AuthToken, TimeSpan.FromSeconds(1), UserAgent, Logger, Server);
                 // When
                 var error = Exception(()=>conn.Init());
                 // Then
                 error.Should().BeOfType<IOException>();
-                error.Message.Should().Be("Failed to connect to the server neo4j.com:80 within connection timeout 5000ms");
+                error.Message.Should().Be("Failed to connect to the server neo4j.com:80 within connection timeout 1000ms");
             }
         }
 

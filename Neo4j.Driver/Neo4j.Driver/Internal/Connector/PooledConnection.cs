@@ -73,5 +73,10 @@ namespace Neo4j.Driver.Internal.Connector
                 throw error;
             }
         }
+
+        public override string ToString()
+        {
+            return Id.ToString();
+        }
     }
 }

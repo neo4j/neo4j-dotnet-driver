@@ -42,6 +42,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Internal\ConcurrentSet.cs" />
+    <Compile Include="Internal\ConnectionPoolStatistics.cs" />
     <Compile Include="Internal\ConnectionSettings.cs" />
     <Compile Include="Internal\Connector\DelegatedConnection.cs" />
     <Compile Include="Internal\Extensions\ErrorExtensions.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="Internal\EncryptionManager.cs" />
     <Compile Include="Internal\Routing\LoadBalancer.cs" />
     <Compile Include="Internal\Routing\RoutingExtensions.cs" />
+    <Compile Include="IStatisticsCollector.cs" />
     <Compile Include="V1\IAuthToken.cs" />
     <Compile Include="V1\IDriver.cs" />
     <Compile Include="Internal\AuthToken.cs" />

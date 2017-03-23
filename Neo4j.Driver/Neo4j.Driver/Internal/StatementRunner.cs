@@ -36,8 +36,7 @@ namespace Neo4j.Driver.Internal
 
         public IStatementResult Run(string statement, object parameters)
         {
-            var paramDictionary = parameters.GetType().GetRuntimeProperties()
-                .ToDictionary(prop => prop.Name, prop => prop.GetValue(parameters, null));
+            var paramDictionary = parameters.ToDictionary();
             return Run(statement, paramDictionary);
         }
     }

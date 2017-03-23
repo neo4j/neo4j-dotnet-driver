@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.V1
@@ -123,6 +124,11 @@ namespace Neo4j.Driver.V1
         /// Gets or sets the socket keep alive option.
         /// </summary>
         public bool SocketKeepAlive { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the statistics collector to which the statistics inside the driver could be published.
+        /// </summary>
+        internal IStatisticsCollector DriverStatisticsCollector { get; set; }
 
         private class ConfigBuilder : IConfigBuilder
         {
