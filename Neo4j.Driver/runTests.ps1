@@ -1,9 +1,3 @@
-If ($args.Length -ne 0)
-{
-	$env:NEORUN_START_ARGS="$args"
-	echo $Env:NEORUN_START_ARGS
-}
-
 $scriptpath = $MyInvocation.MyCommand.Path
 $dir = Split-Path $scriptpath
 

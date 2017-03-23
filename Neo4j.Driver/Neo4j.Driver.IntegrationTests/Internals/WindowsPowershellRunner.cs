@@ -34,6 +34,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return RunCommand(command, new[] {argument});
         }
 
+        public static void Debug(string message)
+        {
+            Console.WriteLine(message);
+        }
+
         /// <summary>
         /// Run the given commands with the multiple command arguments in powershell
         /// Return the powershell output back
@@ -51,7 +56,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 
                 foreach (var result in results)
                 {
-                    Console.WriteLine(result);
+                    Debug(result.ToString());
                 }
                 if (powershell.HadErrors)
                 {

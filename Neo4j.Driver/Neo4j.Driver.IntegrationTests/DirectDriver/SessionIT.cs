@@ -1,4 +1,20 @@
-﻿using System;
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+using System;
 using FluentAssertions;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -16,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ServiceUnavailableErrorWhenFailedToConn()
         {
             Exception exception;
@@ -31,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests
             exception.GetBaseException().Message.Should().Contain("No connection could be made because the target machine actively refused it");
         }
 
-        [Fact]
+        [RequireServerFact]
         public void DisallowNewSessionAfterDriverDispose()
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
@@ -46,7 +62,7 @@ namespace Neo4j.Driver.IntegrationTests
             error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
         }
 
-        [Fact]
+        [RequireServerFact]
         public void DisallowRunInSessionAfterDriverDispose()
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
@@ -60,7 +76,7 @@ namespace Neo4j.Driver.IntegrationTests
             error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ShouldConnectAndRun()
         {
             using (var session = Driver.Session())
@@ -72,7 +88,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ShouldBeAbleToRunMultiStatementsInOneTransaction()
         {
             using (var session = Driver.Session())
@@ -87,7 +103,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void TheSessionErrorShouldBeClearedForEachSession()
         {
             using (var session = Driver.Session())
@@ -103,7 +119,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
         {
             using (var session = Driver.Session())
@@ -116,7 +132,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void RollBackTxIfErrorWithConsume()
         {
             // Given
@@ -136,7 +152,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void RollBackTxIfErrorWithoutConsume()
         {
             // Given
@@ -163,7 +179,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Fact]
+        [RequireServerFact]
         public void ShouldNotThrowExceptionWhenDisposeSessionAfterDriver()
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
