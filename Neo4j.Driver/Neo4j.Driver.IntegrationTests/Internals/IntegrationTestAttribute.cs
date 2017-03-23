@@ -27,7 +27,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireServerFactAttribute()
         {
-            if (!BoltkitHelper.IsAvaliable())
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
                 Skip = BoltkitHelper.TestRequireBoltkit;
             }
@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterFactAttribute()
         {
-            if (!BoltkitHelper.IsAvaliable())
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
                 Skip = BoltkitHelper.TestRequireBoltkit;
             }
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterTheoryAttribute()
         {
-            if (!BoltkitHelper.IsAvaliable())
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
                 Skip = BoltkitHelper.TestRequireBoltkit;
             }

@@ -36,10 +36,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 _installer.Install();
                 ClusterMembers = _installer.Start();
-                foreach (var singleInstance in ClusterMembers)
-                {
-                    Console.WriteLine(singleInstance);
-                }
             }
             catch
             {

@@ -26,8 +26,31 @@ namespace Neo4j.Driver.IntegrationTests
         public const string TestRequireBoltkit = "Boltkit required to run test not accessible";
         public static readonly string BoltkitArgs = Environment.GetEnvironmentVariable("neoctrl.args") ?? "-e 3.1.2";
         public static readonly string TargetDir = new DirectoryInfo("../../../../Target").FullName;
+        private static BoltkitStatus _boltkitAvailable = BoltkitStatus.Unknown;
+        private static readonly object _syncLock = new object();
 
-        public static bool IsAvaliable()
+        private enum BoltkitStatus
+        {
+            Unknown, Installed, Unavailable
+        }
+
+        public static bool IsBoltkitAvailable()
+        {
+            if (_boltkitAvailable == BoltkitStatus.Unknown)
+            {
+                lock (_syncLock)
+                {
+                    // only update it once
+                    if (_boltkitAvailable == BoltkitStatus.Unknown)
+                    {
+                        _boltkitAvailable = TestBoltkitAvailability();
+                    }
+                }
+            }
+            return _boltkitAvailable == BoltkitStatus.Installed;
+        }
+
+        private static BoltkitStatus TestBoltkitAvailability()
         {
             try
             {
@@ -35,9 +58,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
             catch
             {
-                return false;
+                return BoltkitStatus.Unavailable;
             }
-            return true;
+            return BoltkitStatus.Installed;
         }
 
         public static string ServerVersion()

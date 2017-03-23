@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using static Neo4j.Driver.IntegrationTests.Internals.WindowsPowershellRunner;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
@@ -31,24 +32,28 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Install()
         {
-
             if (Directory.Exists(ClusterDir))
             {
+                Debug($"Found and using cluster intalled at `{ClusterDir}`.");
                 // no need to redownload and change the password if already downloaded locally
                 return;
             }
 
-            WindowsPowershellRunner.RunCommand("neoctrl-cluster", new[] {
+            RunCommand("neoctrl-cluster", new[] {
                 "install",
                 "--cores", $"{Cores}", //"--read-replicas", $"{ReadReplicas}", TODO
                 "--password", Password,
                 BoltkitHelper.ServerVersion(), ClusterDir});
+            Debug($"Installed cluster at `{ClusterDir}`.");
         }
 
         public ISet<ISingleInstance> Start()
         {
-            return ParseClusterMember(
-                WindowsPowershellRunner.RunCommand("neoctrl-cluster", new[] { "start", ClusterDir }));
+            Debug("Starting cluster...");
+            var ret = ParseClusterMember(
+                RunCommand("neoctrl-cluster", new[] { "start", ClusterDir }));
+            Debug("Cluster started.");
+            return ret;
         }
 
         private ISet<ISingleInstance> ParseClusterMember(string[] lines)
@@ -77,12 +82,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Stop()
         {
-            WindowsPowershellRunner.RunCommand("neoctrl-cluster", new []{ "stop", ClusterDir });
+            Debug("Stopping cluster...");
+            RunCommand("neoctrl-cluster", new []{ "stop", ClusterDir });
+            Debug("Cluster stopped.");
         }
 
         public void Kill()
         {
-            WindowsPowershellRunner.RunCommand("neoctrl-cluster", new []{ "stop", "--kill", ClusterDir });
+            Debug("Killing cluster...");
+            RunCommand("neoctrl-cluster", new []{ "stop", "--kill", ClusterDir });
+            Debug("Cluster killed.");
         }
     }
 }

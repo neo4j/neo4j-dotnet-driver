@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(0, 2, 1, 5*60, true)] // no router
             [InlineData(2, 2, 0, 5*60, true)] // no writer
             [InlineData(2, 2, 0, 5*60, true)] // no reader
-            [InlineData(1, 2, 1, 0, true)] // expire immediately
+            [InlineData(1, 2, 1, -1, true)] // expire immediately
             public void ShouldBeStateIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount, long expireAfterSeconds, bool isStale)
             {
                 var table = new RoundRobinRoutingTable(

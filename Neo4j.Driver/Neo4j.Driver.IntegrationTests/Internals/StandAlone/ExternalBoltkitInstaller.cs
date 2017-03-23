@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
+using static Neo4j.Driver.IntegrationTests.Internals.WindowsPowershellRunner;
 using Path = System.IO.Path;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
@@ -36,27 +37,27 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             if (Directory.Exists(HomeDir))
             {
-                Debug($"Found and using server intalled at `{HomeDir}`");
+                Debug($"Found and using server intalled at `{HomeDir}`.");
             }
             else
             {
                 var args = new List<string>();
                 args.AddRange(BoltkitHelper.BoltkitArgs.Split(null));
                 args.Add(BoltkitHelper.TargetDir);
-                var tempHomeDir = WindowsPowershellRunner.RunCommand("neoctrl-install", args.ToArray()).Single();
-                Debug($"Downloaded server at `{tempHomeDir}`, now renaming to `{HomeDir}`");
+                var tempHomeDir = RunCommand("neoctrl-install", args.ToArray()).Single();
+                Debug($"Downloaded server at `{tempHomeDir}`, now renaming to `{HomeDir}`.");
 
-                File.Move(tempHomeDir, HomeDir);
-                Debug($"Installed server at `{HomeDir}`");
+                Directory.Move(tempHomeDir, HomeDir);
+                Debug($"Installed server at `{HomeDir}`.");
             }
 
-            WindowsPowershellRunner.RunCommand("neoctrl-create-user", new[] { HomeDir, "neo4j", "neo4j" });
+            RunCommand("neoctrl-create-user", new[] { HomeDir, "neo4j", "neo4j" });
         }
 
         public ISet<ISingleInstance> Start()
         {
             Debug("Starting server...");
-            WindowsPowershellRunner.RunCommand("neoctrl-start", HomeDir);
+            RunCommand("neoctrl-start", HomeDir);
             Debug("Server started.");
             return new HashSet<ISingleInstance> { new SingleInstance(HttpUri, BoltUri, HomeDir, Password) };
         }
@@ -64,21 +65,18 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public void Stop()
         {
             Debug("Stopping server...");
-            WindowsPowershellRunner.RunCommand("neoctrl-stop", HomeDir);
+            RunCommand("neoctrl-stop", HomeDir);
             Debug("Server stopped.");
         }
 
         public void Kill()
         {
             Debug("Killing server...");
-            WindowsPowershellRunner.RunCommand("neoctrl-stop", new []{"-k", HomeDir});
+            RunCommand("neoctrl-stop", new []{"-k", HomeDir});
             Debug("Server killed.");
         }
 
-        private void Debug(string message)
-        {
-            Console.WriteLine(message);
-        }
+
 
         public void UpdateSettings(IDictionary<string, string> keyValuePair)
         {
