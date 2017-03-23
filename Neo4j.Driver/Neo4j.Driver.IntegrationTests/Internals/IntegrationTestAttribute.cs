@@ -21,7 +21,7 @@ using Xunit;
 namespace Neo4j.Driver.IntegrationTests
 {
     /// <summary>
-    /// Use `RequireServerFact` tag for the tests that requires a single instance
+    /// Use `RequireServerFact` tag for the tests that require a single instance
     /// </summary>
     public class RequireServerFactAttribute : FactAttribute
     {
@@ -35,7 +35,21 @@ namespace Neo4j.Driver.IntegrationTests
     }
 
     /// <summary>
-    /// Use `RequireClusterFact` tag for the tests that requires a cluster
+    /// Use `RequireServerTheory` tag for the tests that require a single instance
+    /// </summary>
+    public class RequireServerTheoryAttribute : TheoryAttribute
+    {
+        public RequireServerTheoryAttribute()
+        {
+            if (!BoltkitHelper.IsBoltkitAvailable())
+            {
+                Skip = BoltkitHelper.TestRequireBoltkit;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Use `RequireClusterFact` tag for the tests that require a cluster
     /// </summary>
     public class RequireClusterFactAttribute : FactAttribute
     {
@@ -53,7 +67,7 @@ namespace Neo4j.Driver.IntegrationTests
     }
 
     /// <summary>
-    /// Use `RequireClusterTheory` tag for the tests that requires a cluster
+    /// Use `RequireClusterTheory` tag for the tests that require a cluster
     /// </summary>
     public class RequireClusterTheoryAttribute : TheoryAttribute
     {
