@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var session = Driver.Session())
             {
-                var result = session.Run("PROFILE CREATE (p:Person { Name: 'Test'})");
+                var result = session.Run("CREATE (p:Person { Name: 'Test'})");
                 var stats = result.Consume().Counters;
                 stats.ToString().Should()
                     .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
