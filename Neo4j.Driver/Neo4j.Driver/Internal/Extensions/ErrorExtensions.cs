@@ -55,6 +55,15 @@ namespace Neo4j.Driver.Internal
             return error;
         }
 
+        public static bool IsRetriableTransientError(this Exception error)
+        {
+            return error is TransientException &&
+                // These error code only happens if the transaction is terminated by client.
+                // We should not retry on these errors
+                !error.HasErrorCode("Neo.TransientError.Transaction.Terminated") &&
+                   !error.HasErrorCode("Neo.TransientError.Transaction.LockClientStopped");
+        }
+
         public static bool IsRecoverableError(this Exception error)
         {
             return error is ClientException || error is TransientException;
