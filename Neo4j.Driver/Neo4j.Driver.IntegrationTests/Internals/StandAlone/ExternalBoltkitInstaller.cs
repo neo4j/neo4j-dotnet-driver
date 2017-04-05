@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
+using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;
 using static Neo4j.Driver.IntegrationTests.Internals.WindowsPowershellRunner;
 using Path = System.IO.Path;
 
@@ -51,7 +52,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 Debug($"Installed server at `{HomeDir}`.");
             }
 
-            RunCommand("neoctrl-create-user", new[] { HomeDir, "neo4j", "neo4j" });
+            RunCommand("neoctrl-create-user", new[] { HomeDir, "neo4j", Password });
+            UpdateSettings(new Dictionary<string, string> { {ListenAddr, Ipv6EnabledAddr} });
         }
 
         public ISet<ISingleInstance> Start()
@@ -76,14 +78,17 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             Debug("Server killed.");
         }
 
-
-
-        public void UpdateSettings(IDictionary<string, string> keyValuePair)
+        public void EnsureRunningWithSettings(IDictionary<string, string> keyValuePair)
         {
             Stop();
+            UpdateSettings(keyValuePair);
+            Start();
+        }
+
+        private void UpdateSettings(IDictionary<string, string> keyValuePair)
+        {
             Debug($"Updating server config to {keyValuePair.ValueToString()}");
             Neo4jSettingsHelper.UpdateSettings(HomeDir, keyValuePair);
-            Start();
         }
 
         public void EnsureProcedures(string sourceProcedureJarPath)

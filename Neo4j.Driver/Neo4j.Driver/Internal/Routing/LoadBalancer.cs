@@ -196,7 +196,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (_routingTable.HasNoRouter())
             {
-                var ips = _seed.ToIps();
+                var ips = _seed.ResolveDns();
                 _routingTable.AddRouter(ips);
                 _clusterConnectionPool.Add(ips);
             }
