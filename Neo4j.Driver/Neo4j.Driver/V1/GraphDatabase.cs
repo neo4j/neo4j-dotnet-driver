@@ -108,8 +108,8 @@ namespace Neo4j.Driver.V1
             }
             var connectionSettings = new ConnectionSettings(uri, authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config);
-            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime);
             var logger = config.Logger;
+            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
             IConnectionProvider connectionProvider = null;
 
             switch (uri.Scheme.ToLower())

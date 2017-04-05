@@ -41,14 +41,17 @@ namespace Neo4j.Driver.Internal
         private const double RetryDelayMultiplier = 2.0;
         private const double RetryDelayJitterFactor = 0.2;
 
+        private readonly ILogger _logger;
+
         public ExponentialBackoffRetryLogic(Config config)
-            :this(config.MaxTransactionRetryTime)
+            :this(config.MaxTransactionRetryTime, config.Logger)
         {
         }
 
-        public ExponentialBackoffRetryLogic(TimeSpan maxRetryTimeout)
+        public ExponentialBackoffRetryLogic(TimeSpan maxRetryTimeout, ILogger logger = null)
         {
             _maxRetryTimeMs = maxRetryTimeout.TotalMilliseconds;
+            _logger = logger;
             _initialRetryDelayMs = InitialRetryDelayMs;
             _multiplier = RetryDelayMultiplier;
             _jitterFactor = RetryDelayJitterFactor;
@@ -71,6 +74,7 @@ namespace Neo4j.Driver.Internal
                     exception = exception == null ? new AggregateException(e) : new AggregateException(exception, e);
 
                     var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
+                    _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
                     Task.Delay(delay).Wait(); // blocking for this delay
                     delayMs = delayMs * _multiplier;
                 }
