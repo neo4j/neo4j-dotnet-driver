@@ -18,338 +18,571 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
-//tag::minimal-example-import[]
+//tag::example-import[]
 using Neo4j.Driver.V1;
-//end::minimal-example-import[]
+//end::example-import[]
 using Neo4j.Driver.IntegrationTests;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.Examples
 {
-    [Collection(SAIntegrationCollection.CollectionName)]
-    public class Examples : IDisposable
+    /// <summary>
+    /// The driver examples for 1.2 driver
+    /// </summary>
+    public class Examples
     {
-        private ITestOutputHelper Output { get; }
-        private IDriver Driver { get; }
+        public class AutocommitTransactionExample : BaseExample
+        {
+            public AutocommitTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
 
-        public Examples(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            // tag::autocommit-transaction[]
+            public void AddPerson(string name)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.Run("CREATE (a:Person {name: $name})", new {name});
+                }
+            }
+            // end::autocommit-transaction[]
+
+            [RequireServerFact]
+            public void TestAutocommitTransactionExample()
+            {
+                // Given & When
+                AddPerson("Alice");
+                // Then
+                CountPerson("Alice").Should().Be(1);
+            }
+        }
+
+        public class BasicAuthExample : BaseExample
+        {
+            public BasicAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::basic-auth[]
+            public IDriver CreateDriverWithBasicAuth(string uri, string user, string password)
+            {
+                return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+            }
+            // end::basic-auth[]
+
+            [RequireServerFact]
+            public void TestBasicAuthExample()
+            {
+                // Given
+                using (var driver = CreateDriverWithBasicAuth(Uri, User, Password))
+                using (var session = driver.Session())
+                {
+                    // When & Then
+                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class ConfigConnectionTimeoutExample : BaseExample
+        {
+            public ConfigConnectionTimeoutExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::config-connection-timeout[]
+            public IDriver CreateDriverWithCustomizedConnectionTimeout(string uri, string user, string password)
+            {
+                return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+                    new Config {ConnectionTimeout = TimeSpan.FromSeconds(15)});
+            }
+            // end::config-connection-timeout[]
+
+            [RequireServerFact]
+            public void TestConfigConnectionTimeoutExample()
+            {
+                // Given
+                using (var driver = CreateDriverWithCustomizedConnectionTimeout(Uri, User, Password))
+                using (var session = driver.Session())
+                {
+                    // When & Then
+                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class ConfigMaxRetryTimeExample : BaseExample
+        {
+            public ConfigMaxRetryTimeExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::config-max-retry-time[]
+            public IDriver CreateDriverWithCustomizedMaxRetryTime(string uri, string user, string password)
+            {
+                return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(15)});
+            }
+            // end::config-max-retry-time[]
+
+            [RequireServerFact]
+            public void TestConfigMaxRetryTimeExample()
+            {
+                // Given
+                using (var driver = CreateDriverWithCustomizedMaxRetryTime(Uri, User, Password))
+                using (var session = driver.Session())
+                {
+                    // When & Then
+                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class ConfigTrustExample : BaseExample
+        {
+            public ConfigTrustExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::config-trust[]
+            public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
+            {
+                return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+                    new Config {TrustStrategy = TrustStrategy.TrustSystemCaSignedCertificates});
+            }
+            // end::config-trust[]
+
+            [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
+            public void TestConfigTrustExample()
+            {
+                // Given
+                using (var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password))
+                using (var session = driver.Session())
+                {
+                    // When & Then
+                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class ConfigUnencryptedExample : BaseExample
+        {
+            public ConfigUnencryptedExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::config-unencrypted[]
+            public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
+            {
+                return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+                    new Config {EncryptionLevel = EncryptionLevel.None});
+            }
+            // end::config-unencrypted[]
+
+            [RequireServerFact]
+            public void TestConfigUnencryptedExample()
+            {
+                // Given
+                using (var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password))
+                using (var session = driver.Session())
+                {
+                    // When & Then
+                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class CustomAuthExample : BaseExample
+        {
+            public CustomAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::custom-auth[]
+            public IDriver CreateDriverWithCustomizedAuth(string uri,
+                string principal, string credentials, string realm, string scheme, Dictionary<string, object> parameters)
+            {
+                return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
+                    new Config {EncryptionLevel = EncryptionLevel.None});
+            }
+            // end::custom-auth[]
+
+            [RequireServerFact]
+            public void TestCustomAuthExample()
+            {
+                // Given
+                using (var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", "basic", null))
+                using (var session = driver.Session())
+                {
+                    // When & Then
+                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class CypherErrorExample : BaseExample
+        {
+            public CypherErrorExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::cypher-error[]
+            public int GetEmployeeNumber(string name)
+            {
+                using (var session = Driver.Session())
+                {
+                    return session.ReadTransaction(tx => SelectEmployee(tx, name));
+                }
+            }
+
+            private int SelectEmployee(ITransaction tx, string name)
+            {
+                try
+                {
+                    var result = tx.Run("SELECT * FROM Employees WHERE name = $name", new {name});
+                    return result.Single()["employee_number"].As<int>();
+                }
+                catch (ClientException ex)
+                {
+                    Output.WriteLine(ex.Message);
+                    return -1;
+                }
+            }
+            // end::cypher-error[]
+
+            [RequireServerFact]
+            public void TestCypherErrorExample()
+            {
+                // When & Then
+                GetEmployeeNumber("Alice").Should().Be(-1);
+            }
+        }
+
+        public class DriverLifecycleExampleTest : BaseExample
+        {
+            public DriverLifecycleExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::driver-lifecycle[]
+            public class DriverLifecycleExample : IDisposable
+            {
+                public IDriver Driver { get; }
+
+                public DriverLifecycleExample(string uri, string user, string password)
+                {
+                    Driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+                }
+
+                public void Dispose()
+                {
+                    Driver?.Dispose();
+                }
+            }
+            // end::driver-lifecycle[]
+
+            [RequireServerFact]
+            public void TestDriverLifecycleExample()
+            {
+                // Given
+                var driver = new DriverLifecycleExample(Uri, User, Password).Driver;
+                using (var session = driver.Session())
+                {
+                    // When & Then
+                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class HelloWorldExampleTest : BaseExample
+        {
+            public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            [RequireServerFact]
+            public void TestHelloWorldExample()
+            {
+                // Given
+                var example = new HelloWorldExample(Uri, User, Password);
+                // When & Then
+                example.PrintGreeting("Hello, world");
+            }
+
+            // tag::hello-world[]
+            public class HelloWorldExample : IDisposable
+            {
+                private readonly IDriver _driver;
+
+                public HelloWorldExample(string uri, string user, string password)
+                {
+                    _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+                }
+
+                public void PrintGreeting(string message)
+                {
+                    using (var session = _driver.Session())
+                    {
+                        var greeting = session.WriteTransaction(tx =>
+                        {
+                            var result = tx.Run("CREATE (a:Greeting) " +
+                                                "SET a.message = $message " +
+                                                "RETURN a.message + ', from node ' + id(a)",
+                                new {message});
+                            return result.Single()[0].As<string>();
+                        });
+                        Console.WriteLine(greeting);
+                    }
+                }
+
+                public void Dispose()
+                {
+                    _driver?.Dispose();
+                }
+
+                public static void Main()
+                {
+                    var greater = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password");
+                    greater.PrintGreeting("hello, world");
+                }
+            }
+            // end::hello-world[]
+        }
+
+        public class ReadWriteTransactionExample : BaseExample
+        {
+            public ReadWriteTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            [RequireServerFact]
+            public void TestReadWriteTransactionExample()
+            {
+                // When & Then
+                AddPerson("Alice").Should().BeGreaterOrEqualTo(0L);
+            }
+
+            // tag::read-write-transaction[]
+            public long AddPerson(string name)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.WriteTransaction(tx => CreatePersonNode(tx, name));
+                    return session.ReadTransaction(tx => MatchPersonNode(tx, name));
+                }
+            }
+
+            private static void CreatePersonNode(ITransaction tx, string name)
+            {
+                tx.Run("CREATE (a:Person {name: $name})", new {name});
+            }
+
+            private static long MatchPersonNode(ITransaction tx, string name)
+            {
+                var result = tx.Run("MATCH (a:Person {name: $name}) RETURN id(a)", new {name});
+                return result.Single()[0].As<long>();
+            }
+            // end::read-write-transaction[]
+        }
+
+        public class ResultConsumeExample : BaseExample
+        {
+            public ResultConsumeExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::result-consume[]
+            public List<string> GetPeople()
+            {
+                using (var session = Driver.Session())
+                {
+                    return session.ReadTransaction(tx =>
+                    {
+                        var result = tx.Run("MATCH (a:Person) RETURN a.name ORDER BY a.name");
+                        return result.Select(record => record[0].As<string>()).ToList();
+                    });
+                }
+            }
+            // end::result-consume[]
+
+            [RequireServerFact]
+            public void TestResultConsumeExample()
+            {
+                // Given
+                Write("CREATE (a:Person {name: 'Alice'})");
+                Write("CREATE (a:Person {name: 'Bob'})");
+                // When & Then
+                GetPeople().Should().Contain(new[] {"Alice", "Bob"});
+            }
+        }
+
+        public class ServiceUnavailableExample : BaseExample
+        {
+            private readonly IDriver _baseDriver;
+
+            public ServiceUnavailableExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+                _baseDriver = Driver;
+                Driver = GraphDatabase.Driver("bolt://localhost:8080", AuthTokens.Basic(User, Password),
+                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(3)});
+            }
+
+            protected override void Dispose(bool isDisposing)
+            {
+                if (!isDisposing)
+                    return;
+
+                Driver = _baseDriver;
+                base.Dispose(true);
+            }
+
+            // tag::service-unavailable[]
+            public bool AddItem()
+            {
+                try
+                {
+                    using (var session = Driver.Session())
+                    {
+                        return session.WriteTransaction(
+                            tx =>
+                            {
+                                tx.Run("CREATE (a:Item)");
+                                return true;
+                            }
+                        );
+                    }
+                }
+                catch (AggregateException)
+                {
+                    return false;
+                }
+            }
+            // end::service-unavailable[]
+
+            [RequireServerFact]
+            public void TestServiceUnavailableExample()
+            {
+                AddItem().Should().BeFalse();
+            }
+        }
+
+        public class SessionExample : BaseExample
+        {
+            public SessionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::session[]
+            public void AddPerson(string name)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.Run("CREATE (a:Person {name: $name})", new {name});
+                }
+            }
+            // end::session[]
+
+            [RequireServerFact]
+            public void TestSessionExample()
+            {
+                // Given & When
+                AddPerson("Alice");
+                // Then
+                CountPerson("Alice").Should().Be(1);
+            }
+        }
+
+        public class TransactionFunctionExample : BaseExample
+        {
+            public TransactionFunctionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) 
+                : base(output, fixture)
+            {
+            }
+
+            // tag::transaction-function[]
+            public void AddPerson(string name)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}));
+                }
+            }
+            // end::transaction-function[]
+
+            [RequireServerFact]
+            public void TestTransactionFunctionExample()
+            {
+                // Given & When
+                AddPerson("Alice");
+                // Then
+                CountPerson("Alice").Should().Be(1);
+            }
+        }
+    }
+
+    [Collection(SAIntegrationCollection.CollectionName)]
+    public abstract class BaseExample : IDisposable
+    {
+        protected ITestOutputHelper Output { get; }
+        protected IDriver Driver { set; get; }
+        protected const string Uri = "bolt://localhost:7687";
+        protected const string User = "neo4j";
+        protected const string Password = "neo4j";
+
+        protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
             Driver = fixture.StandAlone.Driver;
         }
 
-        public void Dispose()
+        protected virtual void Dispose(bool isDisposing)
         {
+            if (!isDisposing)
+                return;
+
             using (var session = Driver.Session())
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 
-        [RequireServerFact]
-        public void MinimalExample()
+        public void Dispose()
         {
-            //tag::minimal-example[]
-            using (var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j")))
-            using (var session = driver.Session())
-            {
-                session.Run("CREATE (a:Person {name: {name}, title: {title}})",
-                            new Dictionary<string, object> { {"name", "Arthur"}, {"title", "King"} });
-
-                var result = session.Run("MATCH (a:Person) WHERE a.name = {name} " +
-                                         "RETURN a.name AS name, a.title AS title",
-                                         new Dictionary<string, object> { {"name", "Arthur"} });
-
-                foreach (var record in result)
-                {
-                    Output.WriteLine($"{record["title"].As<string>()} {record["name"].As<string>()}");
-                }
-            }
-            //end::minimal-example[]
+            Dispose(true);
         }
 
-        [RequireServerFact]
-        public void ConstructDriver()
-        {
-            //tag::construct-driver[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"));
-            //end::construct-driver[]
-            driver.Dispose();
-        }
-
-        [RequireServerFact]
-        public void Configuration()
-        {
-            //tag::configuration[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"),
-                Config.Builder.WithMaxIdleSessionPoolSize(10).ToConfig());
-            //end::configuration[]
-            driver.Dispose();
-        }
-
-        [RequireServerFact]
-        public void Statement()
+        protected int CountPerson(string name)
         {
             using (var session = Driver.Session())
             {
-                //tag::statement[]
-                var result = session.Run("CREATE (person:Person {name: {name}})",
-                    new Dictionary<string, object> {{"name", "Arthur"}});
-                //end::statement[]
-                result.Consume();
+                return session.ReadTransaction(
+                    tx => tx.Run("MATCH (a:Person {name: $name}) RETURN count(a)",
+                    new { name }).Single()[0].As<int>());
             }
         }
 
-        [RequireServerFact]
-        public void StatementWithoutParams()
+        protected void Write(string statement, IDictionary<string, object> parameters = null)
         {
             using (var session = Driver.Session())
             {
-                //tag::statement-without-parameters[]
-                var result = session.Run("CREATE (p:Person {name: 'Arthur'})");
-                //end::statement-without-parameters[]
-                result.Consume();
+                session.WriteTransaction(tx =>
+                    tx.Run(statement, parameters));
             }
         }
-
-        [RequireServerFact]
-        public void ResultTraversal()
-        {
-            using (var session = Driver.Session())
-            {
-                session.Run("CREATE (weapon:Weapon {name: {name}})",
-                    new Dictionary<string, object> {{"name", "Sword in the stone"}});
-
-                //tag::result-traversal[]
-                var searchTerm = "Sword";
-                var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} " +
-                                         "RETURN weapon.name",
-                    new Dictionary<string, object> {{"term", searchTerm}});
-
-                Output.WriteLine($"List of weapons called {searchTerm}:");
-                foreach (var record in result)
-                {
-                    Output.WriteLine(record["weapon.name"].As<string>());
-                }
-                //end::result-traversal[]
-            }
-        }
-
-        [RequireServerFact]
-        public void AccessRecord()
-        {
-            using (var session = Driver.Session())
-            {
-                session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
-                    new Dictionary<string, object>
-                    {
-                        {"name", "Sword in the stone"},
-                        {"owner", "Arthur"},
-                        {"material", "Stone"},
-                        {"size", "Huge"}
-                    });
-
-                session.Run("CREATE (weapon:Weapon {name: {name}, owner: {owner}, material: {material}, size: {size}})",
-                    new Dictionary<string, object>
-                    {
-                        {"name", "Excalibur"},
-                        {"owner", "Arthur"},
-                        {"material", "Iron"},
-                        {"size", "Enormous"}
-                    });
-
-                //tag::access-record[]
-                var searchTerm = "Arthur";
-                var result = session.Run("MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} " +
-                                         "RETURN weapon.name, weapon.material, weapon.size",
-                    new Dictionary<string, object> {{"term", searchTerm}});
-
-                Output.WriteLine($"List of weapons owned by {searchTerm}:");
-                foreach (var record in result)
-                {
-                    var list = record.Keys.Select(key => $"{key}: {record[key]}").ToList();
-                    Output.WriteLine(string.Join(", ", list));
-                }
-                //end::access-record[]
-            }
-        }
-
-        [RequireServerFact]
-        public void RetainResultQuery()
-        {
-            using (var session = Driver.Session())
-            {
-                session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
-                    new Dictionary<string, object> {{"name", "Lancelot"}, {"castle", "Camelot"}});
-            }
-
-            using (var session = Driver.Session())
-            {
-
-                //tag::retain-result[]
-                var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
-                                         "RETURN knight.name AS name",
-                    new Dictionary<string, object> {{"castle", "Camelot"}});
-
-                var records = result.ToList();
-
-                foreach (var record in records)
-                {
-                    Output.WriteLine($"{record["name"].As<string>()} is a knight of Camelot");
-                }
-                //end::retain-result[]
-            }
-        }
-
-        [RequireServerFact]
-        public void NestedStatements()
-        {
-            using (var session = Driver.Session())
-            {
-                session.Run("CREATE (knight:Person:Knight {name: {name}, castle: {castle}})",
-                    new Dictionary<string, object> {{"name", "Lancelot"}, {"castle", "Camelot"}});
-
-                session.Run("CREATE (knight:Person {name: {name}, title: {title}})",
-                    new Dictionary<string, object> {{"name", "Arthur"}, {"title", "King"}});
-
-                //tag::nested-statements[]
-                var result = session.Run("MATCH (knight:Person:Knight) WHERE knight.castle = {castle} " +
-                                         "RETURN id(knight) AS knight_id",
-                    new Dictionary<string, object> {{"castle", "Camelot"}});
-
-                foreach (var record in result)
-                {
-                    session.Run("MATCH (knight) WHERE id(knight) = {id} " +
-                                "MATCH (king:Person) WHERE king.name = {king} " +
-                                "CREATE (knight)-[:DEFENDS]->(king)",
-                        new Dictionary<string, object> {{"id", record["knight_id"]}, {"king", "Arthur"}});
-                }
-                //end::nested-statements[]
-            }
-        }
-
-        [RequireServerFact]
-        public void HandleCypherError()
-        {
-            using (var session = Driver.Session())
-            {
-                var ex = Record.Exception(() =>
-                {
-                    //tag::handle-cypher-error[]
-                    try
-                    {
-                        session.Run("This will cause a syntax error").Consume();
-                    }
-                    catch (ClientException)
-                    {
-                        throw new InvalidOperationException("Something really bad has happened!");
-                    }
-                    //end::handle-cypher-error[]
-                });
-                ex.Should().BeOfType<InvalidOperationException>();
-            }
-        }
-
-        [RequireServerFact]
-        public void TransactionCommit()
-        {
-            using (var session = Driver.Session())
-            {
-                //tag::transaction-commit[]
-                using (var tx = session.BeginTransaction())
-                {
-                    tx.Run("CREATE (:Person {name: {name}})",
-                        new Dictionary<string, object> {{"name", "Guinevere"}});
-                    tx.Success();
-                }
-                //end::transaction-commit[]
-            }
-        }
-
-        [RequireServerFact]
-        public void TransactionRollback()
-        {
-            using (var session = Driver.Session())
-            {
-                //tag::transaction-rollback[]
-                using (var tx = session.BeginTransaction())
-                {
-                    tx.Run("CREATE (:Person {name: {name}})",
-                        new Dictionary<string, object> {{"name", "Merlin"}});
-                    tx.Failure(); // This step is optional. If not called,  tx.Failure() is implicit.
-                }
-                //end::transaction-rollback[]
-            }
-        }
-
-        [RequireServerFact]
-        public void ResultSummaryQueryProfile()
-        {
-            using (var session = Driver.Session())
-            {
-                //tag::result-summary-query-profile[]
-                var result = session.Run("PROFILE MATCH (p:Person {name: {name}}) RETURN id(p)",
-                    new Dictionary<string, object> {{"name", "Arthur"}});
-
-                IResultSummary summary = result.Consume();
-
-                Output.WriteLine(summary.StatementType.ToString());
-                Output.WriteLine(summary.Profile.ToString());
-                //end::result-summary-query-profile[]
-            }
-        }
-
-        [RequireServerFact]
-        public void ResultSummaryNotifications()
-        {
-            using (var session = Driver.Session())
-            {
-                //tag::result-summary-notifications[]
-                var summary = session.Run("EXPLAIN MATCH (king), (queen) RETURN king, queen").Consume();
-
-                foreach (var notification in summary.Notifications)
-                {
-                    Output.WriteLine(notification.ToString());
-                }
-                //end::result-summary-notifications[]
-            }
-        }
-
-        [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
-        public void TlsRequireEncryption()
-        {
-            //tag::tls-require-encryption[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "neo4j"),
-                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
-            //end::tls-require-encryption[]
-            driver.Dispose();
-        }
-
-        [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
-        public void TlsSigned()
-        {
-            //tag::tls-signed[]
-            var driver = GraphDatabase.Driver("bolt://localhost", AuthTokens.Basic("neo4j", "neo4j"),
-                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted)
-                    .WithTrustStrategy(TrustStrategy.TrustSystemCaSignedCertificates).ToConfig());
-            //end::tls-signed[]
-            driver.Dispose();
-        }
-
-        [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
-        public void ConnectWithAuthDisabled()
-        {
-            //tag::connect-with-auth-disabled[]
-            var driver = GraphDatabase.Driver("bolt://localhost:7687",
-                Config.Builder.WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig());
-            //end::connect-with-auth-disabled[]
-            driver.Dispose();
-        }
-
-        //tag::tls-trust-on-first-use[]
-        // Not supported in this driver
-        //end::tls-trust-on-first-use[]
     }
 
     // TODO Remove it after we figure out a way to solve the naming problem
