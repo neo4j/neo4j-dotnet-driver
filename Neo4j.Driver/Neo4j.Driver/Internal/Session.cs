@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal
             _logger = logger;
 
             _defaultMode = defaultMode;
-            Bookmark(bookmark);
+            UpdateBookmark(bookmark);
         }
 
         public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction(string bookmark)
         {
-            Bookmark(bookmark);
+            UpdateBookmark(bookmark);
             return BeginTransaction();
         }
 
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Internal
             Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
 
-            Bookmark(_transaction.Bookmark);
+            UpdateBookmark(_transaction.Bookmark);
             _transaction = null;
 
             // always dispose connection used by the transaction too
@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Internal
         /// Only set the bookmark to a new value if the new value is not null
         /// </summary>
         /// <param name="bookmark">The new bookmark</param>
-        private void Bookmark(string bookmark)
+        private void UpdateBookmark(string bookmark)
         {
             if (bookmark != null)
             {
