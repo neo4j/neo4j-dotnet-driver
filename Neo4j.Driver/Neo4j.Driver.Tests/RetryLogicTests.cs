@@ -19,10 +19,12 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.Internal.ErrorExtensions;
 
 namespace Neo4j.Driver.Tests
 {
@@ -41,19 +43,22 @@ namespace Neo4j.Driver.Tests
         [InlineData(20)]
         public void ShouldRetry(int index)
         {
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30));
+            var mockLogger = new Mock<ILogger>();
+            mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
             Parallel.For(0, index, i=>Retry(i, retryLogic));
+
+            mockLogger.Verify(l=>l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.AtLeast(5*index));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
         {
             var timer = new Stopwatch();
             timer.Start();
-            var e = Record.Exception(() => retryLogic.Retry(() =>
+            var e = Record.Exception(() => retryLogic.Retry<int>(() =>
             {
                 var errorMessage = $"Thread {index} Failed at {timer.Elapsed}";
                 throw new SessionExpiredException(errorMessage);
-                return timer.Elapsed.TotalMilliseconds;
             }));
             timer.Stop();
 
@@ -62,6 +67,27 @@ namespace Neo4j.Driver.Tests
 
             innerErrors.Count.Should().BeGreaterOrEqualTo(5);
             timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(30);
+        }
+
+        [Theory]
+        [InlineData("Neo.TransientError.Transaction.Terminated")]
+        [InlineData("Neo.TransientError.Transaction.LockClientStopped")]
+        public void ShouldNotRetryOnError(string errorCode)
+        {
+            var mockLogger = new Mock<ILogger>();
+            mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
+            var timer = new Stopwatch();
+            timer.Start();
+            var e = Record.Exception(() => retryLogic.Retry<int>(() =>
+            {
+                throw ParseServerException(errorCode, "an error");
+            }));
+            timer.Stop();
+            e.Should().BeOfType<TransientException>();
+            (e as TransientException).Code.Should().Be(errorCode);
+            timer.Elapsed.TotalMilliseconds.Should().BeLessThan(10);
+            mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.Never);
         }
     }
 }
