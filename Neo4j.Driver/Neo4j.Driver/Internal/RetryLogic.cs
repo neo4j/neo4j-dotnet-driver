@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Internal
                 {
                     return runTxFunc();
                 }
-                catch (Exception e) when (e is SessionExpiredException || e.IsRecoverableError() || e is ServiceUnavailableException)
+                catch (Exception e) when (e is SessionExpiredException || e.IsRetriableTransientError() || e is ServiceUnavailableException)
                 {
                     exception = exception == null ? new AggregateException(e) : new AggregateException(exception, e);
 
