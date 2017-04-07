@@ -18,9 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
-//tag::example-import[]
+//The only imported needed for using this driver
 using Neo4j.Driver.V1;
-//end::example-import[]
 using Neo4j.Driver.IntegrationTests;
 using Xunit;
 using Xunit.Abstractions;
@@ -153,11 +152,11 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {TrustStrategy = TrustStrategy.TrustSystemCaSignedCertificates});
+                    new Config {TrustStrategy = TrustStrategy.TrustAllCertificates});
             }
             // end::config-trust[]
 
-            [RequireServerFact(Skip = "Requires server certificate to be installed on host system.")]
+            [RequireServerFact]
             public void TestConfigTrustExample()
             {
                 // Given
@@ -314,9 +313,11 @@ namespace Neo4j.Driver.Examples
             public void TestHelloWorldExample()
             {
                 // Given
-                var example = new HelloWorldExample(Uri, User, Password);
-                // When & Then
-                example.PrintGreeting("Hello, world");
+                using (var example = new HelloWorldExample(Uri, User, Password))
+                {
+                    // When & Then
+                    example.PrintGreeting("Hello, world");
+                }
             }
 
             // tag::hello-world[]
@@ -352,8 +353,10 @@ namespace Neo4j.Driver.Examples
 
                 public static void Main()
                 {
-                    var greater = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password");
-                    greater.PrintGreeting("hello, world");
+                    using (var greeter = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password"))
+                    {
+                        greeter.PrintGreeting("hello, world");
+                    }
                 }
             }
             // end::hello-world[]
@@ -425,6 +428,44 @@ namespace Neo4j.Driver.Examples
                 Write("CREATE (a:Person {name: 'Bob'})");
                 // When & Then
                 GetPeople().Should().Contain(new[] {"Alice", "Bob"});
+            }
+        }
+
+        public class ResultRetainExample : BaseExample
+        {
+            public ResultRetainExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::result-retain[]
+            public int AddEmployees(string companyName)
+            {
+                using (var session = Driver.Session())
+                {
+                    var persons = session.ReadTransaction(tx => tx.Run("MATCH (a:Person) RETURN a.name AS name").ToList());
+                    return persons.Sum(person => session.WriteTransaction(tx =>
+                    {
+                        tx.Run("MATCH (emp:Person {name: $person_name}) " +
+                            "MERGE (com:Company {name: $company_name}) " +
+                            "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new {person_name = person["name"].As<string>(), company_name = companyName});
+                        return 1;
+                    }));
+                }
+            }
+            // end::result-retain[]
+
+            [RequireServerFact]
+            public void TestResultConsumeExample()
+            {
+                // Given
+                Write("CREATE (a:Person {name: 'Alice'})");
+                Write("CREATE (a:Person {name: 'Bob'})");
+                // When & Then
+                AddEmployees("Acme").Should().Be(2);
+                Read("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)")
+                    .Single()[0].As<int>().Should().Be(2);
             }
         }
 
@@ -580,6 +621,15 @@ namespace Neo4j.Driver.Examples
             using (var session = Driver.Session())
             {
                 session.WriteTransaction(tx =>
+                    tx.Run(statement, parameters));
+            }
+        }
+
+        protected IStatementResult Read(string statement, IDictionary<string, object> parameters = null)
+        {
+            using (var session = Driver.Session())
+            {
+                return session.WriteTransaction(tx =>
                     tx.Run(statement, parameters));
             }
         }
