@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using FluentAssertions;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -42,6 +44,24 @@ namespace Neo4j.Driver.Tests
                 driver.Uri.Scheme.Should().Be("bolt");
                 driver.Uri.Host.Should().Be("localhost");
             }
+        }
+
+        [Fact]
+        public void ShouldSupportIPv6()
+        {
+            using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://[::1]"))
+            {
+                driver.Uri.Port.Should().Be(7687);
+                driver.Uri.Scheme.Should().Be("bolt");
+                driver.Uri.Host.Should().Be("[::1]");
+            }
+        }
+
+        [Fact]
+        public void ShouldErrorIfUriWrongFormat()
+        {
+            var exception = Record.Exception(() => GraphDatabase.Driver("bolt://*"));
+            exception.Should().BeOfType<UriFormatException>();
         }
     }
 }

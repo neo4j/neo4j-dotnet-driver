@@ -19,7 +19,6 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -30,35 +29,14 @@ namespace Neo4j.Driver.IntegrationTests
     public class BookmarkIT : DirectDriverIT
     {
         private IDriver Driver => Server.Driver;
-        private bool Skip { get; set; }
 
         public BookmarkIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {
-            CheckBookmarkSupport();
         }
 
-        private void CheckBookmarkSupport()
-        {
-            string version = null;
-            using (var session = Driver.Session())
-            {
-                version = session.Run("RETURN 1").Consume().Server.Version;
-            }
-            if (ServerVersion.Version(version) >= ServerVersion.V3_1_0)
-            {
-                Skip = false;
-            }
-            else
-            {
-                Skip = true;
-                Output.WriteLine("Bookmark tests did not run");
-            }
-        }
-
-        [RequireServerFact]
+        [Require31ServerFact]
         public void ShouldContainLastBookmarkAfterTx()
         {
-            if (Skip) return;
             using (var session = Driver.Session())
             {
                 session.LastBookmark.Should().BeNull();
@@ -70,10 +48,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact]
+        [Require31ServerFact]
         public void BookmarkUnchangedAfterRolledBackTx()
         {
-            if (Skip) return;
             using (var session = Driver.Session())
             {
                 CreateNodeInTx(session);
@@ -89,10 +66,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact]
+        [Require31ServerFact]
         public void BookmarkUnchangedAfterTxFailure()
         {
-            if (Skip) return;
             using (var session = Driver.Session())
             {
                 CreateNodeInTx(session);
@@ -108,10 +84,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact]
+        [Require31ServerFact]
         public void ShouldThrowForInvalidBookmark()
         {
-            if (Skip) return;
             var invalidBookmark = "invalid bookmark format";
             using (var session = (Session)Driver.Session())
             {
@@ -121,10 +96,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact]
+        [Require31ServerFact]
         public void ShouldThrowForUnreachableBookmark()
         {
-            if (Skip) return;
             using (var session = (Session)Driver.Session())
             {
                 CreateNodeInTx(session);
@@ -137,10 +111,9 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
 
-        [RequireServerFact]
+        [Require31ServerFact]
         public void ShouldWaitOnBookmark()
         {
-            if (Skip) return;
             using (var session = Driver.Session())
             {
                 // get a bookmark

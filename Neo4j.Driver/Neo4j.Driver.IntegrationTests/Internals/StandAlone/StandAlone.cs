@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             DisposeBoltDriver();
             try
             {
-                _installer.UpdateSettings(keyValuePair);
+                _installer.EnsureRunningWithSettings(keyValuePair);
             }
             catch
             {
