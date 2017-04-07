@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
+using System.IO;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -62,7 +64,27 @@ namespace Neo4j.Driver.Tests
         public class BeginTransactionMethod
         {
             [Fact]
-            public void ShouldIgnoreBookmark()
+            public void NullDefaultBookmark()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                session.LastBookmark.Should().Be(null);
+            }
+
+            [Fact]
+            public void ShouldIgnoreNullBookmark()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object, bookmark: "a bookmark");
+                session.LastBookmark.Should().Be("a bookmark");
+                session.BeginTransaction(null);
+                session.LastBookmark.Should().Be("a bookmark");
+            }
+
+            [Fact]
+            public void ShouldSetNewBookmark()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
@@ -140,10 +162,69 @@ namespace Neo4j.Driver.Tests
                 session.BeginTransaction();
                 mockConn.Verify(c=>c.Dispose(), Times.Once);
             }
+
+            [Fact]
+            public void ShouldDisposeConnectionOnRunIfBeginTxFailed()
+            {
+                // Given
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                    .Throws(new IOException("Triggered an error when beginTx"));
+                var session = NewSession(mockConn.Object);
+                Record.Exception(() => session.BeginTransaction()).Should().BeOfType<IOException>();
+
+                // When
+                session.Run("lala");
+
+                // Then
+                mockConn.Verify(x => x.Dispose(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldDisposeConnectionOnNewBeginTxIfBeginTxFailed()
+            {
+                // Given
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var calls = 0;
+                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                    .Callback(() =>
+                    {
+                        // only throw exception on the first beginTx call
+                        calls++;
+                        if (calls == 1)
+                        {
+                            throw new IOException("Triggered an error when beginTx");
+                        }
+                    });
+                var session = NewSession(mockConn.Object);
+                Record.Exception(() => session.BeginTransaction()).Should().BeOfType<IOException>();
+
+                // When
+                session.BeginTransaction();
+
+                // Then
+                mockConn.Verify(x => x.Dispose(), Times.Once);
+            }
         }
 
         public class DisposeMethod
         {
+            [Fact]
+            public void ShouldDisposeConnectionIfBeginTxFailed()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                    .Throws(new IOException("Triggered an error when beginTx"));
+                var session = NewSession(mockConn.Object);
+                Record.Exception(()=>session.BeginTransaction()).Should().BeOfType<IOException>();
+                session.Dispose();
+
+                mockConn.Verify(x => x.Dispose(), Times.Once);
+            }
+
             [Fact]
             public void ShouldDisposeTxOnDispose()
             {
@@ -154,6 +235,7 @@ namespace Neo4j.Driver.Tests
                 session.Dispose();
 
                 mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Dispose(), Times.Once);
             }
 
             [Fact]
