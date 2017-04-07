@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 ex.Should().BeOfType<ServiceUnavailableException>();
                 ex = ex.GetBaseException();
                 ex.Should().BeOfType<SocketException>();
-                ex.Message.Should().Be("No connection could be made because the target machine actively refused it 127.0.0.1:1234");
+                ex.Message.Should().Contain("No connection could be made because the target machine actively refused it");
             }
         }
 

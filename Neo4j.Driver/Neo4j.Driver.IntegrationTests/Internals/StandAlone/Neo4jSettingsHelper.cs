@@ -21,6 +21,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     internal static class Neo4jSettingsHelper
     {
+        public const string ListenAddr = "dbms.connectors.default_listen_address"; // only valid for 3.1+
+        public const string Ipv6EnabledAddr = "::";
+
         /// <summary>
         ///     Updates the settings of the Neo4j server
         /// </summary>

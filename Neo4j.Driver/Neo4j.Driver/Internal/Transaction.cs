@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal
 {
     internal class Transaction : StatementRunner, ITransaction
     {
-        private readonly IConnection _connection;
+        private readonly TransactionConnection _connection;
         private readonly ITransactionResourceHandler _resourceHandler;
 
         internal const string BookmarkKey = "bookmark";

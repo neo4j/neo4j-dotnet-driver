@@ -34,7 +34,8 @@ namespace Neo4j.Driver.Internal.Connector
         public TcpSocketClient(EncryptionManager encryptionManager, bool keepAlive, ILogger logger = null)
         {
             _encryptionManager = encryptionManager;
-            _client = new TcpClient();
+            _client = new TcpClient(AddressFamily.InterNetworkV6);
+            _client.Client.DualMode = true;
             _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, keepAlive);
         }
 

@@ -1,3 +1,20 @@
+// Copyright (c) 2002-2017 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 using System;
 using System.Linq;
 using System.Threading;
@@ -10,10 +27,33 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class SoakTest : DirectDriverIT
+    public class DriverIT : DirectDriverIT
     {
-        public SoakTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
+        public DriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {
+        }
+
+        [Require31ServerFact]
+        public void ShouldConnectIPv6Address()
+        {
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken))
+            using (var session = driver.Session())
+            {
+                var ret = session.Run("RETURN 1").Single();
+                ret[0].ValueAs<int>().Should().Be(1);
+            }
+        }
+
+        [RequireServerFact]
+        public void ShouldConnectIPv4Address()
+        {
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
+            using (var session = driver.Session())
+            {
+                var ret = session.Run("RETURN 1").Single();
+                ret[0].ValueAs<int>().Should().Be(1);
+            }
+
         }
 
         [RequireServerTheory]
@@ -22,7 +62,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void SoakRun(int threadCount)
         {
             var statisticsCollector = new StatisticsCollector();
-            var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("neo4j", "neo4j"), new Config
+            var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
                 {
                     DriverStatisticsCollector = statisticsCollector,
                     ConnectionTimeout = TimeSpan.FromMilliseconds(-1),

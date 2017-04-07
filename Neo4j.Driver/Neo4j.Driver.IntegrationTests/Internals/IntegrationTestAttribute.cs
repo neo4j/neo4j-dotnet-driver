@@ -15,11 +15,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
+using static Neo4j.Driver.IntegrationTests.BoltkitHelper;
+using static Neo4j.Driver.IntegrationTests.Internals.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests
 {
+    /// <summary>
+    /// Use `Require31ServerFact` tag for the tests that require a server with version equals to or greater than 3.1
+    /// </summary>
+    public class Require31ServerFactAttribute : FactAttribute
+    {
+        public Require31ServerFactAttribute()
+        {
+            if (!IsBoltkitAvailable())
+            {
+                Skip = TestRequireBoltkit;
+            }
+            if (!(Version(ServerVersion()) >= V3_1_0))
+            {
+                Skip = $"Require server version >= 3.1, while current server version is {ServerVersion()}";
+            }
+        }
+    }
+
     /// <summary>
     /// Use `RequireServerFact` tag for the tests that require a single instance
     /// </summary>
@@ -27,9 +46,9 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireServerFactAttribute()
         {
-            if (!BoltkitHelper.IsBoltkitAvailable())
+            if (!IsBoltkitAvailable())
             {
-                Skip = BoltkitHelper.TestRequireBoltkit;
+                Skip = TestRequireBoltkit;
             }
         }
     }
@@ -41,9 +60,9 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireServerTheoryAttribute()
         {
-            if (!BoltkitHelper.IsBoltkitAvailable())
+            if (!IsBoltkitAvailable())
             {
-                Skip = BoltkitHelper.TestRequireBoltkit;
+                Skip = TestRequireBoltkit;
             }
         }
     }
@@ -55,13 +74,13 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterFactAttribute()
         {
-            if (!BoltkitHelper.IsBoltkitAvailable())
+            if (!IsBoltkitAvailable())
             {
-                Skip = BoltkitHelper.TestRequireBoltkit;
+                Skip = TestRequireBoltkit;
             }
-            if (!(ServerVersion.Version(BoltkitHelper.ServerVersion()) >= ServerVersion.V3_1_0))
+            if (!(Version(ServerVersion()) >= V3_1_0))
             {
-                Skip = $"Server {BoltkitHelper.ServerVersion()} does not support causal cluster";
+                Skip = $"Server {ServerVersion()} does not support causal cluster";
             }
         }
     }
@@ -73,13 +92,13 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterTheoryAttribute()
         {
-            if (!BoltkitHelper.IsBoltkitAvailable())
+            if (!IsBoltkitAvailable())
             {
-                Skip = BoltkitHelper.TestRequireBoltkit;
+                Skip = TestRequireBoltkit;
             }
-            if (!(ServerVersion.Version(BoltkitHelper.ServerVersion()) >= ServerVersion.V3_1_0))
+            if (!(Version(ServerVersion()) >= V3_1_0))
             {
-                Skip = $"Server {BoltkitHelper.ServerVersion()} does not support causal cluster";
+                Skip = $"Server {ServerVersion()} does not support causal cluster";
             }
         }
     }
