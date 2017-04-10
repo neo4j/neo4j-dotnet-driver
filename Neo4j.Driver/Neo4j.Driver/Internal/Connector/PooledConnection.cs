@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Diagnostics;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -27,6 +28,7 @@ namespace Neo4j.Driver.Internal.Connector
             :base (conn)
         {
             _releaseAction = releaseAction ?? (x => { });
+            IdleTimer = new StopwatchBasedTimer();
         }
         public Guid Id { get; } = Guid.NewGuid();
 
@@ -77,6 +79,28 @@ namespace Neo4j.Driver.Internal.Connector
         public override string ToString()
         {
             return Id.ToString();
+        }
+
+        public ITimer IdleTimer { get; }
+    }
+
+    internal class StopwatchBasedTimer : ITimer
+    {
+        private readonly Stopwatch _stopwatch;
+        public StopwatchBasedTimer()
+        {
+            _stopwatch = new Stopwatch();
+        }
+
+        public long ElapsedMilliseconds => _stopwatch.ElapsedMilliseconds;
+        public void Reset()
+        {
+            _stopwatch.Reset();
+        }
+
+        public void Start()
+        {
+            _stopwatch.Start();
         }
     }
 }

@@ -26,7 +26,8 @@ namespace Neo4j.Driver.Internal
     {
         private readonly Uri _uri;
 
-        private readonly int _idleSessionPoolSize;
+        private readonly int _idlePoolSize;
+        private readonly TimeSpan _connectionIdleTimeout;
         private readonly ConnectionSettings _connectionSettings;
 
         private readonly ILogger _logger;
@@ -58,7 +59,8 @@ namespace Neo4j.Driver.Internal
         {
             _uri = uri;
             _connectionSettings = connectionSettings;
-            _idleSessionPoolSize = connectionPoolSettings.MaxIdleSessionPoolSize;
+            _connectionIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
+            _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
 
             _logger = logger;
 
@@ -140,7 +142,7 @@ namespace Neo4j.Driver.Internal
                 {
                     connection = CreateNewPooledConnection();
                 }
-                else if (!connection.IsOpen)
+                else if (!connection.IsOpen || HasBeenIdleForTooLong(connection))
                 {
                     CloseConnection(connection);
                     return Acquire();
@@ -158,6 +160,25 @@ namespace Neo4j.Driver.Internal
 
                 return connection;
             });
+        }
+
+        private bool IsConnectionIdleDetectionEnabled()
+        {
+            return _connectionIdleTimeout.TotalMilliseconds >= 0;
+        }
+
+        private bool HasBeenIdleForTooLong(IPooledConnection connection)
+        {
+            if (!IsConnectionIdleDetectionEnabled())
+            {
+                return false;
+            }
+            if (connection.IdleTimer.ElapsedMilliseconds > _connectionIdleTimeout.TotalMilliseconds)
+            {
+                return true;
+            }
+            connection.IdleTimer.Reset();
+            return false;
         }
 
         private bool IsConnectionReusable(IPooledConnection connection)
@@ -180,7 +201,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsPoolFull()
         {
-            return _availableConnections.Count >= _idleSessionPoolSize && _idleSessionPoolSize != Config.InfiniteMaxIdleSessionPoolSize;
+            return _availableConnections.Count >= _idlePoolSize && _idlePoolSize != Config.InfiniteMaxIdleSessionPoolSize;
         }
 
         public void Release(IPooledConnection connection)
@@ -206,6 +227,10 @@ namespace Neo4j.Driver.Internal
                     }
                     else
                     {
+                        if (IsConnectionIdleDetectionEnabled())
+                        {
+                            connection.IdleTimer.Start();
+                        }
                         _availableConnections.Enqueue(connection);
                     }
 

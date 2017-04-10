@@ -15,24 +15,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
     internal class ConnectionPoolSettings
     {
-        public int MaxIdleSessionPoolSize { get; }
+        public int MaxIdleConnectionPoolSize { get; }
         public IStatisticsCollector StatisticsCollector { get; }
+        public TimeSpan ConnectionIdleTimeout { get; }
+        
 
         public ConnectionPoolSettings(Config config)
-            :this(config.MaxIdleSessionPoolSize, config.DriverStatisticsCollector)
+            :this(config.MaxIdleSessionPoolSize, config.ConnectionIdleTimeout, config.DriverStatisticsCollector)
         {
         }
 
-        public ConnectionPoolSettings(int maxIdleSessionPoolSize, IStatisticsCollector statisticsCollector=null)
+        public ConnectionPoolSettings(int maxIdleConnectionPoolSize, TimeSpan connectionIdleTimeout, IStatisticsCollector statisticsCollector=null)
         {
-            Throw.ArgumentNullException.IfNull(maxIdleSessionPoolSize, nameof(maxIdleSessionPoolSize));
-            MaxIdleSessionPoolSize = maxIdleSessionPoolSize;
+            Throw.ArgumentNullException.IfNull(maxIdleConnectionPoolSize, nameof(maxIdleConnectionPoolSize));
+            Throw.ArgumentNullException.IfNull(connectionIdleTimeout, nameof(connectionIdleTimeout));
+            MaxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
+            ConnectionIdleTimeout = connectionIdleTimeout;
             StatisticsCollector = statisticsCollector;
         }
     }

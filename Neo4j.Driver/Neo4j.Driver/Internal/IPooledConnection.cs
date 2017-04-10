@@ -30,5 +30,20 @@ namespace Neo4j.Driver.Internal
         /// Try to reset the connection to a clean state to prepare it for a new session.
         /// </summary>
         void ClearConnection();
+
+        ITimer IdleTimer { get; }
+    }
+
+    internal interface ITimer
+    {
+        /// <summary>Gets the total elapsed time measured by the current instance, in milliseconds.</summary>
+        /// <returns>A read-only long integer representing the total number of milliseconds measured by the current instance.</returns>
+        /// <filterpriority>1</filterpriority>
+        long ElapsedMilliseconds { get; }
+
+        /// <summary>Stops time interval measurement and resets the elapsed time to zero.</summary>
+        void Reset();
+        /// <summary>Starts, or resumes, measuring elapsed time for an interval.</summary>
+        void Start();
     }
 }

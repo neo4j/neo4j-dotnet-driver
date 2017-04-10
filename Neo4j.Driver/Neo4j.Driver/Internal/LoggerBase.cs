@@ -22,12 +22,12 @@ namespace Neo4j.Driver.Internal
 {
     internal abstract class LoggerBase : IDisposable
     {
+        protected ILogger Logger { get; private set; }
+
         protected LoggerBase(ILogger logger)
         {
             Logger = logger;
         }
-
-        protected ILogger Logger { get; private set; }
 
         protected void TryExecute(Action action)
         {
