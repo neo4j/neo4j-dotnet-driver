@@ -53,7 +53,39 @@ namespace Neo4j.Driver.IntegrationTests
                 var ret = session.Run("RETURN 1").Single();
                 ret[0].ValueAs<int>().Should().Be(1);
             }
+        }
 
+        [RequireServerTheory]
+        [InlineData(2)]
+        [InlineData(10)]
+        public void ShouldCloseIdleForTooLongConns(int sessionCount)
+        {
+            // Given
+            var statisticsCollector = new StatisticsCollector();
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config
+            {
+                DriverStatisticsCollector = statisticsCollector,
+                ConnectionIdleTimeout = TimeSpan.Zero // enable but always timeout idle connections
+            }))
+            {
+                // When
+                for (var i = 0; i < sessionCount; i++)
+                {
+                    // should not reuse the same connection as it should timeout
+                    using (var session = driver.Session())
+                    {
+                        var ret = session.Run("RETURN 1").Single();
+                        ret[0].ValueAs<int>().Should().Be(1);
+                        Thread.Sleep(1); // block to let the timer aware the timeout
+                    }
+                }
+
+                // Then
+                var st = ConnectionPoolStatistics.Read(statisticsCollector.CollectStatistics());
+                Output.WriteLine(st.ReportStatistics().ToContentString());
+                st.ConnCreated.Should().Be(sessionCount);
+                st.ConnCreated.Should().Be(st.ConnClosed + 1);
+            }
         }
 
         [RequireServerTheory]
@@ -65,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
                 {
                     DriverStatisticsCollector = statisticsCollector,
-                    ConnectionTimeout = TimeSpan.FromMilliseconds(-1),
+                    ConnectionTimeout = Config.Infinite,
                     EncryptionLevel = EncryptionLevel.Encrypted
                 });
 

@@ -77,6 +77,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
         /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
+        /// <item><see cref="ConnectionIdleTimeout"/>: <c>Infinite(-1ms)</c></item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }
@@ -124,6 +125,16 @@ namespace Neo4j.Driver.V1
         /// Gets or sets the socket keep alive option.
         /// </summary>
         public bool SocketKeepAlive { get; set; } = true;
+
+        internal static readonly TimeSpan Infinite = TimeSpan.FromMilliseconds(-1);
+
+        /// <summary>
+        /// Gets or sets the idle timeout on pooled connecitons.
+        /// A connection that has been idled in connection pool for longer than the given timeout is stale and will be closed once it is seen.
+        /// Any negative <see cref="TimeSpan"/> value will be considered to be "Infinite",
+        /// a.k.a. pooled connections will never be stale.
+        /// </summary>
+        public TimeSpan ConnectionIdleTimeout { get; set; } = Infinite;
 
         /// <summary>
         /// Gets or sets the statistics collector to which the statistics inside the driver could be published.

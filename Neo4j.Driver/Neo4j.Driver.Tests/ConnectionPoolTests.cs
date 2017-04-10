@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
             {
                 get
                 {
-                    var mock = new Mock<IConnection>();
+                    var mock = new Mock<IPooledConnection>();
                     mock.Setup(x => x.IsOpen).Returns(true);
                     return mock.Object;
                 }
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotThrowExceptionWhenIdlePoolSizeReached()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(2);
+                var connectionPoolSettings = new ConnectionPoolSettings(2, Config.Infinite);
                 var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
                 pool.Acquire();
                 pool.Acquire();
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotExceedIdleLimit()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(2);
+                var connectionPoolSettings = new ConnectionPoolSettings(2, Config.Infinite);
                 var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
 
                 var conns = new List<IConnection>();
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAcquireFromPoolIfAvailable()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(2);
+                var connectionPoolSettings = new ConnectionPoolSettings(2, Config.Infinite);
                 var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
 
                 for (var i = 0; i < 4; i++)
@@ -140,15 +140,15 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldCreateNewWhenQueueOnlyContainsUnhealthyConnections()
+            public void ShouldCreateNewWhenQueueOnlyContainsClosedConnections()
             {
                 var conns = new ConcurrentQueue<IPooledConnection>();
-                var unhealthyId = Guid.NewGuid();
-                var unhealthyMock = new Mock<IPooledConnection>();
-                unhealthyMock.Setup(x => x.IsOpen).Returns(false);
-                unhealthyMock.Setup(x => x.Id).Returns(unhealthyId);
+                var closedId = Guid.NewGuid();
+                var closedMock = new Mock<IPooledConnection>();
+                closedMock.Setup(x => x.IsOpen).Returns(false);
+                closedMock.Setup(x => x.Id).Returns(closedId);
 
-                conns.Enqueue(unhealthyMock.Object);
+                conns.Enqueue(closedMock.Object);
                 var pool = new ConnectionPool(MockedConnection, conns);
 
                 pool.NumberOfAvailableConnections.Should().Be(1);
@@ -158,15 +158,15 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
-                unhealthyMock.Verify(x => x.IsOpen, Times.Once);
-                unhealthyMock.Verify(x => x.Close(), Times.Once);
+                closedMock.Verify(x => x.IsOpen, Times.Once);
+                closedMock.Verify(x => x.Close(), Times.Once);
 
                 conn.Should().NotBeNull();
-                ((IPooledConnection)conn).Id.Should().NotBe(unhealthyId);
+                conn.Id.Should().NotBe(closedId);
             }
 
             [Fact]
-            public void ShouldReuseOldWhenReusableConnectionInQueue()
+            public void ShouldReuseWhenOpenConnectionInQueue()
             {
                 var conns = new ConcurrentQueue<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
@@ -187,7 +187,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReuseReusableWhenReusableConnectionInQueue()
+            public void ShouldReuseOpenConnectionWhenOpenAndClosedConnectionsInQueue()
             {
                 var conns = new ConcurrentQueue<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
@@ -209,6 +209,71 @@ namespace Neo4j.Driver.Tests
                 unhealthyMock.Verify(x => x.Close(), Times.Once);
                 healthyMock.Verify(x => x.Close(), Times.Never);
                 conn.Should().Be(healthyMock.Object);
+            }
+
+            [Fact]
+            public void ShouldCloseIdleTooLongConn()
+            {
+                // Given
+                var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.IsOpen).Returns(true);
+                var timerMock = new Mock<ITimer>();
+                timerMock.Setup(x => x.ElapsedMilliseconds).Returns(1000);
+                mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
+                var idleTooLongId = Guid.NewGuid();
+                mock.Setup(x => x.Id).Returns(idleTooLongId);
+
+                var conns = new ConcurrentQueue<IPooledConnection>();
+                conns.Enqueue(mock.Object);
+                var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
+                var poolSettings = new ConnectionPoolSettings(2, enableIdleTooLongTest);
+                var pool = new ConnectionPool(MockedConnection, conns, settings:poolSettings);
+
+                pool.NumberOfAvailableConnections.Should().Be(1);
+                pool.NumberOfInUseConnections.Should().Be(0);
+
+                // When
+                var conn = pool.Acquire();
+
+                // Then
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(1);
+                mock.Verify(x => x.Close(), Times.Once);
+
+                conn.Should().NotBeNull();
+                conn.Id.Should().NotBe(idleTooLongId);
+            }
+
+            [Fact]
+            public void ShouldReuseIdleNotTooLongConn()
+            {
+                // Given
+                var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.IsOpen).Returns(true);
+                var timerMock = new Mock<ITimer>();
+                timerMock.Setup(x => x.ElapsedMilliseconds).Returns(10);
+                mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
+                var idleTooLongId = Guid.NewGuid();
+                mock.Setup(x => x.Id).Returns(idleTooLongId);
+
+                var conns = new ConcurrentQueue<IPooledConnection>();
+                conns.Enqueue(mock.Object);
+                var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
+                var poolSettings = new ConnectionPoolSettings(2, enableIdleTooLongTest);
+                var pool = new ConnectionPool(MockedConnection, conns, settings: poolSettings);
+
+                pool.NumberOfAvailableConnections.Should().Be(1);
+                pool.NumberOfInUseConnections.Should().Be(0);
+
+                // When
+                var conn = pool.Acquire();
+
+                // Then
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(1);
+
+                conn.Should().Be(mock.Object);
+                conn.Id.Should().Be(idleTooLongId);
             }
 
             [Theory]
@@ -279,6 +344,8 @@ namespace Neo4j.Driver.Tests
                 }
             }
 
+            // thread-safe test
+            // concurrent call of Acquire and Dispose
             [Fact]
             public void ShouldThrowExceptionWhenAcquireCalledAfterDispose()
             {
@@ -344,7 +411,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldCloseConnectionWhenConnectionIsUnhealthy()
+            public void ShouldCloseConnectionWhenConnectionIsClosed()
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(false);
@@ -385,7 +452,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldCloseTheConnectionIfSessionIsReusableButThePoolIsFull()
+            public void ShouldCloseTheConnectionWhenConnectionIsReusableButThePoolIsFull()
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
@@ -410,6 +477,61 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableConnections.Should().Be(10);
                 pool.NumberOfInUseConnections.Should().Be(0);
                 mock.Verify(x => x.Close(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldStartTimerBeforeReturnToPoolWhenIdleDetectionEnabled()
+            {
+                // Given
+                var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.IsOpen).Returns(true);
+                var timerMock = new Mock<ITimer>();
+                mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
+
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
+                var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
+                var poolSettings = new ConnectionPoolSettings(2, enableIdleTooLongTest);
+                var pool = new ConnectionPool(null, null, inUseConns, settings:poolSettings);
+
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(1);
+
+                //When
+                pool.Release(mock.Object);
+
+                // Then
+                pool.NumberOfAvailableConnections.Should().Be(1);
+                pool.NumberOfInUseConnections.Should().Be(0);
+
+                timerMock.Verify(x=>x.Start(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldNotStartTimerBeforeReturnToPoolWhenIdleDetectionDisabled()
+            {
+                // Given
+                var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.IsOpen).Returns(true);
+                var timerMock = new Mock<ITimer>();
+                mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
+
+                var inUseConns = new ConcurrentSet<IPooledConnection>();
+                inUseConns.TryAdd(mock.Object);
+                // default pool setting have timer disabled
+                var pool = new ConnectionPool(null, null, inUseConns);
+
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(1);
+
+                //When
+                pool.Release(mock.Object);
+
+                // Then
+                pool.NumberOfAvailableConnections.Should().Be(1);
+                pool.NumberOfInUseConnections.Should().Be(0);
+
+                timerMock.Verify(x => x.Start(), Times.Never);
             }
 
             // thread safe test
