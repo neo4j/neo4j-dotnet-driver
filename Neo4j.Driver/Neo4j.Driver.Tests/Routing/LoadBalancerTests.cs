@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Tests
                     {
                         var thread = new Thread(() =>
                         {
-                            var result = balancer.UpdateRoutingTable(updateRoutingTableFunc);
+                            var result = balancer.UpdateRoutingTableWithInitialUri(updateRoutingTableFunc);
                             result.All().Should().ContainInOrder(anotherUri);
                         });
                         threads[i] = thread;
@@ -109,10 +109,9 @@ namespace Neo4j.Driver.Tests
                     var uri = new Uri("bolt+routing://123:456");
 
                     var routingTableMock = new Mock<IRoutingTable>();
-                    routingTableMock.Setup(x => x.HasNoRouter()).Returns(true);
                     routingTableMock.Setup(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()))
                         .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
-                    routingTableMock.Setup(x => x.TryNextRouter(out uri)).Returns(true);
+                    routingTableMock.SetupSequence(x => x.TryNextRouter(out uri)).Returns(false).Returns(true);
 
                     var poolMock = new Mock<IClusterConnectionPool>();
                     var conn = new Mock<IPooledConnection>().Object;
@@ -126,10 +125,7 @@ namespace Neo4j.Driver.Tests
                     routingTableReturnMock.Setup(x => x.IsStale()).Returns(false);
 
                     // When
-                    balancer.UpdateRoutingTable(c =>
-                    {
-                        return routingTableReturnMock.Object;
-                    });
+                    balancer.UpdateRoutingTableWithInitialUri(c => routingTableReturnMock.Object);
 
                     // Then
                     poolMock.Verify(x=>x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
@@ -149,7 +145,7 @@ namespace Neo4j.Driver.Tests
                     var uriX = new Uri("bolt+routing://123x:789");
                     var uriY = new Uri("bolt+routing://123y:789");
                     var uriZ = new Uri("bolt+routing://123z:789");
-                    var result = balancer.UpdateRoutingTable(connection
+                    var result = balancer.UpdateRoutingTableWithInitialUri(connection
                         => NewRoutingTable(new[] {uriX}, new[] { uriY }, new[] { uriZ }));
 
                     // Then
@@ -168,7 +164,7 @@ namespace Neo4j.Driver.Tests
                     var balancer = SetupLoadBalancer(routingTable);
 
                     // When
-                    var newRoutingTable = balancer.UpdateRoutingTable(connection =>
+                    var newRoutingTable = balancer.UpdateRoutingTableWithInitialUri(connection =>
                     {
                         // the second connectin will give a new routingTable
                         if (connection.Server.Address.Equals(uriA.ToString())) // uriA
@@ -193,7 +189,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var balancer = SetupLoadBalancer(new[] {new Uri("bolt+routing://123:456")});
 
-                    var exception = Record.Exception(()=>balancer.UpdateRoutingTable(
+                    var exception = Record.Exception(()=>balancer.UpdateRoutingTableWithInitialUri(
                         conn => { throw new ServiceUnavailableException("Procedure not found"); }));
 
                     exception.Should().BeOfType<ServiceUnavailableException>();
@@ -213,7 +209,7 @@ namespace Neo4j.Driver.Tests
                     var balancer = SetupLoadBalancer(new ListBasedRoutingTable(new List<Uri> {uriA, uriB}));
 
                     // When
-                    var updateRoutingTable = balancer.UpdateRoutingTable(conn =>
+                    var updateRoutingTable = balancer.UpdateRoutingTableWithInitialUri(conn =>
                     {
                         if (conn.Server.Address.Equals(uriA.ToString()))
                         {
@@ -245,7 +241,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var balancer = SetupLoadBalancer(new[] {new Uri("bolt+routing://123:45")});
                     var newRoutingTable = NewRoutingTable(routerCount, readerCount, writerCount);
-                    var result = balancer.UpdateRoutingTable(connection => newRoutingTable);
+                    var result = balancer.UpdateRoutingTableWithInitialUri(connection => newRoutingTable);
 
                     // Then
                     result.All().Should().Contain(newRoutingTable.All());
@@ -257,7 +253,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var balancer = SetupLoadBalancer(new[] { new Uri("bolt+routing://123:456") });
 
-                    var exception = Record.Exception(() => balancer.UpdateRoutingTable(
+                    var exception = Record.Exception(() => balancer.UpdateRoutingTableWithInitialUri(
                         conn => { throw new ProtocolException("Cannot parse procedure result"); }));
 
                     exception.Should().BeOfType<ProtocolException>();
@@ -283,7 +279,7 @@ namespace Neo4j.Driver.Tests
                     });
                     
                     // When
-                    var error = Record.Exception(() => balancer.UpdateRoutingTable());
+                    var error = Record.Exception(() => balancer.UpdateRoutingTableWithInitialUri());
 
                     // Then
                     error.Should().BeOfType<AuthenticationException>();
@@ -563,11 +559,6 @@ namespace Neo4j.Driver.Tests
             public void AddRouter(IEnumerable<Uri> ips)
             {
                 throw new NotSupportedException();
-            }
-
-            public bool HasNoRouter()
-            {
-                return false;
             }
         }
 

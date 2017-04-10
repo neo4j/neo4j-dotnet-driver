@@ -15,7 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
@@ -47,7 +49,10 @@ namespace Neo4j.Driver.Internal.Routing
             _seed = connectionSettings.InitialServerUri;
             _logger = logger;
 
-            EnsureInitialRouter();
+            var uris = _seed.ResolveDns();
+            _routingTable.AddRouter(uris);
+            _clusterConnectionPool.Add(uris);
+
         }
 
         // for test only
@@ -136,32 +141,67 @@ namespace Neo4j.Driver.Internal.Routing
                     return;
                 }
 
-                var routingTable = UpdateRoutingTable();
+                var routingTable = UpdateRoutingTableWithInitialUri();
                 _clusterConnectionPool.Update(routingTable.All());
                 _routingTable = routingTable;
                 _logger?.Info($"Updated routingTable to be {_routingTable}");
             }
         }
 
-        internal IRoutingTable UpdateRoutingTable(Func<IConnection, IRoutingTable> rediscoveryFunc = null)
+        internal IRoutingTable UpdateRoutingTableWithInitialUri(Func<IConnection, IRoutingTable> rediscoveryFunc = null)
         {
             lock (_syncLock)
             {
-                EnsureInitialRouter();
+                var triedUris = new HashSet<Uri>();
+                var routingTable = UpdateRoutingTable(rediscoveryFunc, triedUris);
+                if (routingTable != null)
+                {
+                    return routingTable;
+                }
+
+                var uris = _seed.ResolveDns();
+                uris.ExceptWith(triedUris);
+                if (uris.Count != 0)
+                {
+                    _routingTable.AddRouter(uris);
+                    _clusterConnectionPool.Add(uris);
+                    routingTable = UpdateRoutingTable(rediscoveryFunc);
+                    if (routingTable != null)
+                    {
+                        return routingTable;
+                    }
+                }
+
+                // We retied and tried our best however there is just no cluster.
+                // This is the ultimate place we will inform the user that you need to re-create a driver
+                throw new ServiceUnavailableException(
+                    "Failed to connect to any routing server. " +
+                    "Please make sure that the cluster is up and can be accessed by the driver and retry.");
+            }
+        }
+
+        internal IRoutingTable UpdateRoutingTable(Func<IConnection, IRoutingTable> rediscoveryFunc,
+            HashSet<Uri> triedUris = null)
+        {
+            lock (_syncLock)
+            {
                 while (true)
                 {
                     Uri uri;
                     if (!_routingTable.TryNextRouter(out uri))
                     {
                         // no alive server
-                        break;
+                        return null;
                     }
+                    triedUris?.Add(uri);
                     IConnection conn = CreateClusterConnection(uri);
                     if (conn != null)
                     {
                         try
                         {
-                            var roundRobinRoutingTable = rediscoveryFunc != null ? rediscoveryFunc.Invoke(conn) : Rediscovery(conn);
+                            var roundRobinRoutingTable = rediscoveryFunc != null
+                                ? rediscoveryFunc.Invoke(conn)
+                                : Rediscovery(conn);
 
                             if (!roundRobinRoutingTable.IsStale())
                             {
@@ -183,22 +223,6 @@ namespace Neo4j.Driver.Internal.Routing
                         }
                     }
                 }
-
-                // We retied and tried our best however there is just no cluster.
-                // This is the ultimate place we will inform the user that you need to re-create a driver
-                throw new ServiceUnavailableException(
-                    "Failed to connect to any routing server. " +
-                    "Please make sure that the cluster is up and can be accessed by the driver and retry.");
-            }
-        }
-
-        private void EnsureInitialRouter()
-        {
-            if (_routingTable.HasNoRouter())
-            {
-                var ips = _seed.ResolveDns();
-                _routingTable.AddRouter(ips);
-                _clusterConnectionPool.Add(ips);
             }
         }
 

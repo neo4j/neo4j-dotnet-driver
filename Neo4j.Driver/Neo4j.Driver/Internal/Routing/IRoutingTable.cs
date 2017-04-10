@@ -14,6 +14,5 @@ namespace Neo4j.Driver.Internal.Routing
         ISet<Uri> All();
         void Clear();
         void AddRouter(IEnumerable<Uri> ips);
-        bool HasNoRouter();
     }
 }

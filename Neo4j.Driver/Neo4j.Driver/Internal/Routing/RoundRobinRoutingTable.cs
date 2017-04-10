@@ -112,10 +112,5 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _routers.Add(ips);
         }
-
-        public bool HasNoRouter()
-        {
-            return _routers.Count == 0;
-        }
     }
 }
