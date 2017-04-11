@@ -17,7 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
@@ -50,9 +49,7 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
 
             var uris = _seed.ResolveDns();
-            _routingTable.AddRouter(uris);
-            _clusterConnectionPool.Add(uris);
-
+            AddRouters(uris);
         }
 
         // for test only
@@ -94,6 +91,58 @@ namespace Neo4j.Driver.Internal.Routing
             return conn;
         }
 
+        public void OnConnectionError(Uri uri, Exception e)
+        {
+            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+            _routingTable.Remove(uri);
+            _clusterConnectionPool.Purge(uri);
+        }
+
+        public void OnWriteError(Uri uri)
+        {
+            _routingTable.RemoveWriter(uri);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (!isDisposing)
+                return;
+            _disposeCalled = true;
+            // We cannot set routing table and cluster conn pool to null as we do not want get NPE in concurrent call of dispose and acquire
+            _routingTable.Clear();
+            _clusterConnectionPool.Dispose();
+
+            // cannot set logger to null here otherwise we might concurrent call log and set log to null.
+        }
+
+        private void AddRouters(ISet<Uri> uris)
+        {
+            _routingTable.AddRouter(uris);
+            _clusterConnectionPool.Add(uris);
+        }
+
+        private void EnsureRoutingTableIsFresh()
+        {
+            lock (_syncLock)
+            {
+                if (!_routingTable.IsStale())
+                {
+                    return;
+                }
+
+                var routingTable = UpdateRoutingTableWithInitialUri();
+                _clusterConnectionPool.Update(routingTable.All());
+                _routingTable = routingTable;
+                _logger?.Info($"Updated routingTable to be {_routingTable}");
+            }
+        }
+
         internal IConnection AcquireReadConnection()
         {
             while (true)
@@ -132,40 +181,26 @@ namespace Neo4j.Driver.Internal.Routing
             throw new SessionExpiredException("Failed to connect to any write server.");
         }
 
-        private void EnsureRoutingTableIsFresh()
+        internal IRoutingTable UpdateRoutingTableWithInitialUri(Func<ISet<Uri>, IRoutingTable> updateRoutingTableFunc = null,
+            Func<ISet<Uri>> resolveInitialUriFunc = null)
         {
             lock (_syncLock)
             {
-                if (!_routingTable.IsStale())
-                {
-                    return;
-                }
-
-                var routingTable = UpdateRoutingTableWithInitialUri();
-                _clusterConnectionPool.Update(routingTable.All());
-                _routingTable = routingTable;
-                _logger?.Info($"Updated routingTable to be {_routingTable}");
-            }
-        }
-
-        internal IRoutingTable UpdateRoutingTableWithInitialUri(Func<IConnection, IRoutingTable> rediscoveryFunc = null)
-        {
-            lock (_syncLock)
-            {
+                updateRoutingTableFunc = updateRoutingTableFunc ?? (u => UpdateRoutingTable(null, u));
+                resolveInitialUriFunc = resolveInitialUriFunc ?? _seed.ResolveDns; 
                 var triedUris = new HashSet<Uri>();
-                var routingTable = UpdateRoutingTable(rediscoveryFunc, triedUris);
+                var routingTable = updateRoutingTableFunc(triedUris);
                 if (routingTable != null)
                 {
                     return routingTable;
                 }
 
-                var uris = _seed.ResolveDns();
+                var uris = resolveInitialUriFunc();
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
-                    _routingTable.AddRouter(uris);
-                    _clusterConnectionPool.Add(uris);
-                    routingTable = UpdateRoutingTable(rediscoveryFunc);
+                    AddRouters(uris);
+                    routingTable = updateRoutingTableFunc(null);
                     if (routingTable != null)
                     {
                         return routingTable;
@@ -180,11 +215,12 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        internal IRoutingTable UpdateRoutingTable(Func<IConnection, IRoutingTable> rediscoveryFunc,
-            HashSet<Uri> triedUris = null)
+        internal IRoutingTable UpdateRoutingTable(Func<IConnection, IRoutingTable> rediscoveryFunc = null,
+            ISet < Uri> triedUris = null)
         {
             lock (_syncLock)
             {
+                rediscoveryFunc = rediscoveryFunc ?? Rediscovery;
                 while (true)
                 {
                     Uri uri;
@@ -199,9 +235,7 @@ namespace Neo4j.Driver.Internal.Routing
                     {
                         try
                         {
-                            var roundRobinRoutingTable = rediscoveryFunc != null
-                                ? rediscoveryFunc.Invoke(conn)
-                                : Rediscovery(conn);
+                            var roundRobinRoutingTable = rediscoveryFunc(conn);
 
                             if (!roundRobinRoutingTable.IsStale())
                             {
@@ -226,44 +260,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        private IRoutingTable Rediscovery(IConnection conn)
-        {
-            var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
-            discoveryManager.Rediscovery();
-            return new RoundRobinRoutingTable(discoveryManager.Routers, discoveryManager.Readers,
-                discoveryManager.Writers, _stopwatch, discoveryManager.ExpireAfterSeconds);
-        }
-
-        public void OnConnectionError(Uri uri, Exception e)
-        {
-            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
-            _routingTable.Remove(uri);
-            _clusterConnectionPool.Purge(uri);
-        }
-
-        public void OnWriteError(Uri uri)
-        {
-            _routingTable.RemoveWriter(uri);
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-            _disposeCalled = true;
-            // We cannot set routing table and cluster conn pool to null as we do not want get NPE in concurrent call of dispose and acquire
-            _routingTable.Clear();
-            _clusterConnectionPool.Dispose();
-
-            // cannot set logger to null here otherwise we might concurrent call log and set log to null.
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
         private ClusterConnection CreateClusterConnection(Uri uri, AccessMode mode = AccessMode.Write)
         {
             try
@@ -282,6 +278,14 @@ namespace Neo4j.Driver.Internal.Routing
                 OnConnectionError(uri, e);
             }
             return null;
+        }
+
+        private IRoutingTable Rediscovery(IConnection conn)
+        {
+            var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
+            discoveryManager.Rediscovery();
+            return new RoundRobinRoutingTable(discoveryManager.Routers, discoveryManager.Readers,
+                discoveryManager.Writers, _stopwatch, discoveryManager.ExpireAfterSeconds);
         }
 
         private void ThrowObjectDisposedException()

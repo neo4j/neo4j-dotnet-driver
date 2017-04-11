@@ -108,9 +108,9 @@ namespace Neo4j.Driver.Internal.Routing
                    $"[{nameof(_writers)}: {_writers}]";
         }
 
-        public void AddRouter(IEnumerable<Uri> ips)
+        public void AddRouter(IEnumerable<Uri> uris)
         {
-            _routers.Add(ips);
+            _routers.Add(uris);
         }
     }
 }
