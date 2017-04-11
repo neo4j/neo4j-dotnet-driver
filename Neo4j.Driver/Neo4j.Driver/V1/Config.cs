@@ -196,6 +196,12 @@ namespace Neo4j.Driver.V1
                 _config.MaxTransactionRetryTime = time;
                 return this;
             }
+
+            public IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan)
+            {
+                _config.ConnectionIdleTimeout = timeSpan;
+                return this;
+            }
         }
     }
     /// <summary>
@@ -249,7 +255,7 @@ namespace Neo4j.Driver.V1
         /// Specify socket connection timeout.
         /// A <see cref="TimeSpan"/> that represents the number of milliseconds to wait, or a <see cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
         /// </summary>
-        /// <param name="timeSpan">Represents the number of milliseconds to wait or -1 to wait indefinitely.</param>
+        /// <param name="timeSpan">Represents the number of milliseconds to wait or -1 ms to wait indefinitely.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithConnectionTimeout(TimeSpan timeSpan);
@@ -273,5 +279,14 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithMaxTransactionRetryTime(TimeSpan time);
+
+        /// <summary>
+        /// Specify the connection idle timeout.
+        /// The connection that has been idled in pool for longer than specified timeout will not be reused but closed.
+        /// </summary>
+        /// <param name="timeSpan">The max timespan that a connection can be reused after has been idle for.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan);
     }
 }
