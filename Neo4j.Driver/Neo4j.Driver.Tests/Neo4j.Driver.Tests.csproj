@@ -113,6 +113,7 @@
   <ItemGroup>
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
+    <Compile Include="NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
     <Compile Include="RetryLogicTests.cs" />
     <Compile Include="Routing\ClusterConnectionPoolTests.cs" />

@@ -31,11 +31,22 @@ namespace Neo4j.Driver.Internal.Routing
         public IEnumerable<Uri> Routers { get; internal set; } = new Uri[0];
         public long ExpireAfterSeconds { get; internal set; }
 
-        private const string ProcedureName = "dbms.cluster.routing.getServers";
-        public ClusterDiscoveryManager(IConnection connection, ILogger logger)
+        private const string GetServersProcedure = "dbms.cluster.routing.getServers";
+        private const string GetRoutingTableProcedure = "dbms.cluster.routing.getRoutingTable";
+        public Statement DiscoveryProcedure { get; }
+        public ClusterDiscoveryManager(IConnection connection, IDictionary<string, string> context, ILogger logger)
         {
             _conn = connection;
             _logger = logger;
+            if (ServerVersion.Version(_conn.Server.Version) >= ServerVersion.V3_2_0)
+            {
+                DiscoveryProcedure = new Statement($"CALL {GetRoutingTableProcedure}({{context}})",
+                    new Dictionary<string, object> {{"context", context}});
+            }
+            else
+            {
+                DiscoveryProcedure = new Statement($"CALL {GetServersProcedure}");
+            }
         }
 
         /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
@@ -47,7 +58,7 @@ namespace Neo4j.Driver.Internal.Routing
                 using (var provider = new SingleConnectionBasedConnectionProvider(_conn))
                 using (var session = new Session(provider, _logger))
                 {
-                    var result = session.Run($"CALL {ProcedureName}");
+                    var result = session.Run(DiscoveryProcedure);
                     var record = result.Single();
 
                     foreach (var servers in record["servers"].As<List<Dictionary<string, object>>>())

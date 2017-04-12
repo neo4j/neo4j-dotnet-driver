@@ -31,6 +31,11 @@ namespace Neo4j.Driver.Tests
 {
     public class ClusterDiscoveryManagerTests
     {
+        private static ClusterDiscoveryManager CreateDiscoveryManager(IConnection connection, IDictionary<string, string> context=null, ILogger logger=null)
+        {
+            return new ClusterDiscoveryManager(connection, context, logger);
+        }
+
         public class RediscoveryMethod
         {
             [Theory]
@@ -49,7 +54,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var clientMock = new Mock<ISocketClient>();
-                var manager = new ClusterDiscoveryManager(SetupSocketConnection(recordFields, clientMock), null);
+                var manager = CreateDiscoveryManager(SetupSocketConnection(recordFields, clientMock));
 
                 // When
                 manager.Rediscovery();
@@ -78,7 +83,7 @@ namespace Neo4j.Driver.Tests
                 var conn = SocketConnectionTests.NewSocketConnection(messagingClient.Client);
                 conn.Init();
 
-                var manager = new ClusterDiscoveryManager(conn, null);
+                var manager = CreateDiscoveryManager(conn, null);
 
                 // When
                 var exception = Record.Exception(()=>manager.Rediscovery());
@@ -94,7 +99,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var clientMock = new Mock<ISocketClient>();
-                var manager = new ClusterDiscoveryManager(SetupSocketConnection(new List<object[]>(), clientMock), null);
+                var manager = CreateDiscoveryManager(SetupSocketConnection(new List<object[]>(), clientMock));
 
                 // When
                 var exception = Record.Exception(() => manager.Rediscovery());
@@ -110,7 +115,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var clientMock = new Mock<ISocketClient>();
-                var manager = new ClusterDiscoveryManager(SetupSocketConnection(new List<object[]>
+                var manager = CreateDiscoveryManager(SetupSocketConnection(new List<object[]>
                 {
                     CreateGetServersResponseRecordFields(3,2,1),
                     CreateGetServersResponseRecordFields(3,2,1)
@@ -130,7 +135,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var clientMock = new Mock<ISocketClient>();
-                var manager = new ClusterDiscoveryManager(SetupSocketConnection(new object[] {1}, clientMock), null);
+                var manager = CreateDiscoveryManager(SetupSocketConnection(new object[] {1}, clientMock));
 
                 // When
                 var exception = Record.Exception(() => manager.Rediscovery());
@@ -147,7 +152,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var clientMock = new Mock<ISocketClient>();
                 var recordFields = CreateGetServersResponseRecordFields(0,2,1);
-                var manager = new ClusterDiscoveryManager(SetupSocketConnection(recordFields, clientMock), null);
+                var manager = CreateDiscoveryManager(SetupSocketConnection(recordFields, clientMock));
 
                 // When
                 var exception = Record.Exception(() => manager.Rediscovery());
@@ -167,7 +172,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var clientMock = new Mock<ISocketClient>();
                 var procedureReplyRecordFields = CreateGetServersResponseRecordFields(3,1,0);
-                var manager = new ClusterDiscoveryManager(SetupSocketConnection(procedureReplyRecordFields, clientMock), null);
+                var manager = CreateDiscoveryManager(SetupSocketConnection(procedureReplyRecordFields, clientMock));
 
                 // When
                 var exception = Record.Exception(() => manager.Rediscovery());

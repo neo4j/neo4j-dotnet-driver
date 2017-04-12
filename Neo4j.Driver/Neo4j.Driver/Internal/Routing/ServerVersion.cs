@@ -14,10 +14,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Text.RegularExpressions;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+namespace Neo4j.Driver.Internal.Routing
 {
     internal class ServerVersion : IComparable<ServerVersion>
     {
@@ -26,6 +27,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public int Patch { get; }
 
         public static readonly ServerVersion V3_1_0 = new ServerVersion(3,1,0);
+        public static readonly ServerVersion V3_2_0 = new ServerVersion(3,2,0);
 
         private static readonly Regex VersionRegex = new Regex(@"(Neo4j/)?(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?", RegexOptions.IgnoreCase);
 

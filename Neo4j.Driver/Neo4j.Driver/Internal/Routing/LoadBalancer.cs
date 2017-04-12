@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Internal.Routing
     {
         private IRoutingTable _routingTable;
         private readonly IClusterConnectionPool _clusterConnectionPool;
+        private readonly IDictionary<string, string> _routingContext;
         private readonly ILogger _logger;
         private readonly object _syncLock = new object();
         private readonly Stopwatch _stopwatch;
@@ -35,6 +36,7 @@ namespace Neo4j.Driver.Internal.Routing
         private volatile bool _disposeCalled = false;
 
         public LoadBalancer(
+            RoutingSettings routingSettings,
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger)
@@ -46,6 +48,7 @@ namespace Neo4j.Driver.Internal.Routing
             _routingTable = new RoundRobinRoutingTable(_stopwatch);
 
             _seed = connectionSettings.InitialServerUri;
+            _routingContext = routingSettings.RoutingContext;
             _logger = logger;
 
             var uris = _seed.Resolve();
@@ -282,7 +285,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private IRoutingTable Rediscovery(IConnection conn)
         {
-            var discoveryManager = new ClusterDiscoveryManager(conn, _logger);
+            var discoveryManager = new ClusterDiscoveryManager(conn, _routingContext, _logger);
             discoveryManager.Rediscovery();
             return new RoundRobinRoutingTable(discoveryManager.Routers, discoveryManager.Readers,
                 discoveryManager.Writers, _stopwatch, discoveryManager.ExpireAfterSeconds);

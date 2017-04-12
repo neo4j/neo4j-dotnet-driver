@@ -63,5 +63,24 @@ namespace Neo4j.Driver.Tests
             var exception = Record.Exception(() => GraphDatabase.Driver("bolt://*"));
             exception.Should().BeOfType<UriFormatException>();
         }
+
+        [Fact]
+        public void ShouldErrorIfBoltSchemeWithRoutingContext()
+        {
+            var exception = Record.Exception(() => GraphDatabase.Driver("bolt://localhost/?name=molly&age=1&color=white"));
+            exception.Should().BeOfType<ArgumentException>();
+            exception.Message.Should().Contain("Routing context are not supported with scheme 'bolt'");
+        }
+
+        [Fact]
+        public void ShouldAcceptIfRoutingSchemeWithRoutingContext()
+        {
+            using (var driver = (Internal.Driver) GraphDatabase.Driver("bolt+routing://localhost/?name=molly&age=1&color=white"))
+            {
+                driver.Uri.Port.Should().Be(7687);
+                driver.Uri.Scheme.Should().Be("bolt+routing");
+                driver.Uri.Host.Should().Be("localhost");
+            }
+        }
     }
 }

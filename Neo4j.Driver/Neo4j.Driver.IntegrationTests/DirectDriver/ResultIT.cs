@@ -16,11 +16,11 @@
 // limitations under the License.
 using System;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
 using System.Linq;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.IntegrationTests
 {

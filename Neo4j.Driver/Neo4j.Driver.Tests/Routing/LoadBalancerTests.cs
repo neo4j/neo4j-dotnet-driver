@@ -39,10 +39,11 @@ namespace Neo4j.Driver.Tests
             {
                 var uri = new Uri("bolt://123:456");
                 var config = Config.DefaultConfig;
+                var routingSettings = new RoutingSettings(new Dictionary<string, string>());
                 var connSettings = new ConnectionSettings(uri, new Mock<IAuthToken>().Object, config);
                 var poolSettings = new ConnectionPoolSettings(config);
 
-                var loadbalancer = new LoadBalancer(connSettings, poolSettings, null);
+                var loadbalancer = new LoadBalancer(routingSettings, connSettings, poolSettings, null);
 
                 loadbalancer.ToString().Should().Be(
                     "_routingTable: {[_routers: bolt://123:456/], [_detachedRouters: ], [_readers: ], [_writers: ]}, " +
