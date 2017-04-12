@@ -52,6 +52,79 @@ namespace Neo4j.Driver.Tests
 
         public class AcquireConnectionMethod
         {
+            public class UpdateRoutingTableWithInitialUriMethod
+            {
+                [Fact]
+                public void ShouldAddInitialUriWhenNoAvailableRouters()
+                {
+                    // Given
+                    var uri = new Uri("bolt+routing://123:456");
+
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    routingTableMock.Setup(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()))
+                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+
+                    var poolMock = new Mock<IClusterConnectionPool>();
+                    poolMock.Setup(x => x.Add(It.IsAny<IEnumerable<Uri>>()))
+                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+
+                    var balancer = new LoadBalancer(poolMock.Object, routingTableMock.Object, uri);
+
+                    var routingTableReturnMock = new Mock<IRoutingTable>();
+
+                    // When
+                    balancer.UpdateRoutingTableWithInitialUri(c => c != null ? null : routingTableReturnMock.Object);
+
+                    // Then
+                    poolMock.Verify(x => x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                    routingTableMock.Verify(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                }
+
+                [Fact]
+                public void ShouldNotTryInitialUriIfAlreadyTried()
+                {
+                    // Given
+                    var a = new Uri("bolt+routing://123:456");
+                    var b = new Uri("bolt+routing://123:789");
+                    var s = a; // should not be retried
+                    var t = new Uri("bolt+routing://222:123"); // this should be retried
+
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    routingTableMock.Setup(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()))
+                        // ensure the retried is only t
+                        .Callback<IEnumerable<Uri>>(set => set.Single().Should().Be(t));
+
+                    var poolMock = new Mock<IClusterConnectionPool>();
+                    poolMock.Setup(x => x.Add(It.IsAny<IEnumerable<Uri>>()))
+                        // ensure the retried is only t
+                        .Callback<IEnumerable<Uri>>(set => set.Single().Should().Be(t));
+
+                    var balancer = new LoadBalancer(poolMock.Object, routingTableMock.Object);
+                    
+                    Func<ISet<Uri>, IRoutingTable> updateRoutingTableFunc = set =>
+                    {
+                        if (set != null)
+                        {
+                            set.Add(a);
+                            set.Add(b);
+                            return null;
+                        }
+                        else
+                        {
+                            return new Mock<IRoutingTable>().Object;
+                        }
+                    };
+                    Func<ISet<Uri>> resolveInitialUriFunc = () => new HashSet<Uri> {s, t};
+                    // When
+                    balancer.UpdateRoutingTableWithInitialUri(updateRoutingTableFunc, resolveInitialUriFunc);
+
+                    // Then
+                    // verify the method is actually called
+                    poolMock.Verify(x => x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                    routingTableMock.Verify(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                }
+            }
+
             public class UpdateRoutingTableMethod
             {
                 [Fact]
@@ -100,40 +173,6 @@ namespace Neo4j.Driver.Tests
                     }
                     updateCount.Should().Be(1);
                     directReturnCount.Should().Be(size-1);
-                }
-
-                [Fact]
-                public void ShouldAddInitialUriWhenNoAvailableRouters()
-                {
-                    // Given
-                    var uri = new Uri("bolt+routing://123:456");
-
-                    var routingTableMock = new Mock<IRoutingTable>();
-                    routingTableMock.Setup(x => x.HasNoRouter()).Returns(true);
-                    routingTableMock.Setup(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()))
-                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
-                    routingTableMock.Setup(x => x.TryNextRouter(out uri)).Returns(true);
-
-                    var poolMock = new Mock<IClusterConnectionPool>();
-                    var conn = new Mock<IPooledConnection>().Object;
-                    poolMock.Setup(x => x.Add(It.IsAny<IEnumerable<Uri>>()))
-                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
-                    poolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
-
-                    var balancer = new LoadBalancer(poolMock.Object, routingTableMock.Object, uri);
-
-                    var routingTableReturnMock = new Mock<IRoutingTable>();
-                    routingTableReturnMock.Setup(x => x.IsStale()).Returns(false);
-
-                    // When
-                    balancer.UpdateRoutingTable(c =>
-                    {
-                        return routingTableReturnMock.Object;
-                    });
-
-                    // Then
-                    poolMock.Verify(x=>x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
-                    routingTableMock.Verify(x=>x.AddRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
                 }
 
                 [Fact]
@@ -560,14 +599,9 @@ namespace Neo4j.Driver.Tests
                 throw new NotSupportedException();
             }
 
-            public void AddRouter(IEnumerable<Uri> ips)
+            public void AddRouter(IEnumerable<Uri> uris)
             {
                 throw new NotSupportedException();
-            }
-
-            public bool HasNoRouter()
-            {
-                return false;
             }
         }
 
