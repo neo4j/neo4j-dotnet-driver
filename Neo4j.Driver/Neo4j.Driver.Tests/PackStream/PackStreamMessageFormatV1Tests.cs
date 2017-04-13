@@ -26,6 +26,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Tests.TcpSocketClientTestSetup;
 
 namespace Neo4j.Driver.Tests
 {
@@ -331,7 +332,7 @@ namespace Neo4j.Driver.Tests
                     };
                     bytes.AddRange(data);
 
-                    TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes.ToArray());
+                    SetupClientReadStream(mockTcpSocketClient, bytes.ToArray());
 
                     PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                         new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -346,7 +347,7 @@ namespace Neo4j.Driver.Tests
                     {
                         var bytes = "00 07 B5 52 01 02 03 80 a0 00 00".ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -366,7 +367,7 @@ namespace Neo4j.Driver.Tests
                     {
                         var bytes = "00 06 B3 4E 01 90 A0 00 00".ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -384,7 +385,7 @@ namespace Neo4j.Driver.Tests
                     {
                         var bytes = "00 0A B3 50 91 B3 4E 01 90 A0 90 90 A0 00 00".ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -409,7 +410,7 @@ namespace Neo4j.Driver.Tests
                             "00 2C B3 50 91 B3 4E C9 03 E9    92 86 50 65 72 73 6F 6E    88 45 6D 70 6C 6F 79 65    65 A2 84 6E 61 6D 65 85 41 6C 69 63 65 83 61 67    65 21 90 90 00 00"
                                 .ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -434,7 +435,7 @@ namespace Neo4j.Driver.Tests
                             "00 66 B3 50 92 B3 4E C9 03 E9    92 86 50 65 72 73 6F 6E    88 45 6D 70 6C 6F 79 65    65 A2 84 6E 61 6D 65 85 41 6C 69 63 65 83 61 67    65 21 B3 4E C9 03 EA 92    86 50 65 72 73 6F 6E 88    45 6D 70 6C 6F 79 65 65 A2 84 6E 61 6D 65 83 42    6F 62 83 61 67 65 2C 91    B3 72 0C 85 4B 4E 4F 57    53 A1 85 73 69 6E 63 65 C9 07 CF 92 01 01 00 00"
                                 .ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -461,7 +462,7 @@ namespace Neo4j.Driver.Tests
                             "00 73 B35093B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766592B3720D854C494B4553A0B372228A4D4152524945445F544FA09401010202 00 00"
                                 .ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null)
@@ -498,7 +499,7 @@ namespace Neo4j.Driver.Tests
                             "00 b0 B35094B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766593B3720C854B4E4F5753A18573696E6365C907CFB37220884449534C494B4553A0B372228A4D4152524945445F544FA0960101FE020303 00 00"
                                 .ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -541,7 +542,7 @@ namespace Neo4j.Driver.Tests
                             "00 9E B35093B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EB9186506572736F6EA1846E616D65854361726F6C93B3720C854B4E4F5753A18573696E6365C907CFB3720D854C494B4553A0B37220884449534C494B4553A09A0101FF0002020301FD02 00 00"
                                 .ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -588,7 +589,7 @@ namespace Neo4j.Driver.Tests
                             "00 BE B35094B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EC90A1846E616D65844461766594B3720D854C494B4553A0B37220884449534C494B4553A0B3720C854B4E4F5753A18573696E6365C907CFB372228A4D4152524945445F544FA09A01010202FD0001010403 00 00"
                                 .ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
@@ -635,7 +636,7 @@ namespace Neo4j.Driver.Tests
                             "00 50 B35092B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766592B372228A4D4152524945445F544FA0B3722C89574F524B535F464F52A09401010201 00 00"
                                 .ToByteArray();
                         var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                        TestHelper.TcpSocketClientSetup.SetupClientReadStream(mockTcpSocketClient, bytes);
+                        SetupClientReadStream(mockTcpSocketClient, bytes);
 
                         PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
                             new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;

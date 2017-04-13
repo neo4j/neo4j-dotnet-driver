@@ -113,7 +113,7 @@
   <ItemGroup>
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
-    <Compile Include="NetworkExtensionsTests.cs" />
+    <Compile Include="TestUtil\NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
     <Compile Include="RetryLogicTests.cs" />
     <Compile Include="Routing\ClusterConnectionPoolTests.cs" />
@@ -141,11 +141,10 @@
     <Compile Include="PackStream\PackStreamMessageFormatV1Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StatementRunnerTests.cs" />
-    <Compile Include="TestUtil\ExtensionsTests.cs" />
+    <Compile Include="TestUtil\CollectionExtensionsTests.cs" />
     <Compile Include="TestUtil\SocketClientTestHarness.cs" />
     <Compile Include="Connector\SocketClientTests.cs" />
     <Compile Include="Connector\SocketConnectionTests.cs" />
-    <Compile Include="TestUtil\TestHelper.cs" />
     <Compile Include="TransactionTests.cs" />
     <Compile Include="ValueExtensionsTests.cs" />
   </ItemGroup>

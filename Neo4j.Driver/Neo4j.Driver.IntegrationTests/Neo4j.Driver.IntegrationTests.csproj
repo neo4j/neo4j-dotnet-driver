@@ -116,6 +116,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="BoltStubServerTests.cs" />
     <Compile Include="DirectDriver\AuthenticationIT.cs" />
     <Compile Include="DirectDriver\BookmarkIT.cs" />
     <Compile Include="DirectDriver\DirectDriverIT.cs" />
@@ -125,6 +126,7 @@
     <Compile Include="DirectDriver\DriverIT.cs" />
     <Compile Include="Examples.cs" />
     <Compile Include="Internals\BoltkitHelper.cs" />
+    <Compile Include="Internals\BoltStubServer.cs" />
     <Compile Include="Internals\IntegrationTestAttribute.cs" />
     <Compile Include="Internals\Cluster\CausalCluster.cs" />
     <Compile Include="Internals\Cluster\SingleInstance.cs" />
@@ -142,6 +144,10 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="Resources\get_routing_table.script" />
+    <None Include="Resources\get_routing_table_with_context.script">
+      <Generator>ResXFileCodeGenerator</Generator>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj">

@@ -19,10 +19,10 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.Tests.TcpSocketClientTestSetup;
 
 namespace Neo4j.Driver.Tests
 {
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnTheCorrectValue(byte[] response, sbyte correctValue)
             {
                 var clientMock = new Mock<ITcpSocketClient>();
-                TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, response);
+                SetupClientReadStream(clientMock, response);
 
                 var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                 var actual = chunkedInput.ReadSByte();
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReadMessageAcrossChunks(byte[] input, byte[] correctValue)
             {
                 var clientMock = new Mock<ITcpSocketClient>();
-                TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
+                SetupClientReadStream(clientMock, input);
 
                 var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                 byte[] actual = new byte[3];
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tests
                 var loggerMock = new Mock<ILogger>();
                 loggerMock.Setup(x => x.Trace(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<int>(), It.IsAny<int>()))
                     .Callback<string, object[]>((s, o) => _output.WriteLine(s +  ((byte[])o[0]).ToHexString(showX:true)));
-                TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
+                SetupClientReadStream(clientMock, input);
 
                 var chunkedInput = new ChunkedInputStream(clientMock.Object, loggerMock.Object);
                 byte[] actual = new byte[3];
@@ -92,7 +92,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReadMessageBiggerThanChunkSize(byte[] input, byte[] correctValue)
             {
                 var clientMock = new Mock<ITcpSocketClient>();
-                TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
+                SetupClientReadStream(clientMock, input);
 
                 var chunkedInput = new ChunkedInputStream(clientMock.Object, null, 1);
                 byte[] actual = new byte[3];
@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Tests
                     }
 
                     var clientMock = new Mock<ITcpSocketClient>();
-                    TestHelper.TcpSocketClientSetup.SetupClientReadStream(clientMock, input);
+                    SetupClientReadStream(clientMock, input);
 
                     var chunkedInput = new ChunkedInputStream(clientMock.Object, null);
                     byte[] actual = new byte[chunkHeaderSize];

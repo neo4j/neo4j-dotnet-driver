@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal
             return new HashSet<Uri> { uri };
         }
 
-        public static async Task<IPAddress[]> ResolveAsyc(this Uri uri, bool ipv6Enabled)
+        public static async Task<IPAddress[]> ResolveAsync(this Uri uri, bool ipv6Enabled)
         {
             IPAddress[] addresses;
             IPAddress address;
