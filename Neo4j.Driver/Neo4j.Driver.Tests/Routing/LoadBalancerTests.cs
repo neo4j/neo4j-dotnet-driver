@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -54,8 +53,37 @@ namespace Neo4j.Driver.Tests.Routing
 
         public class AcquireConnectionMethod
         {
-            public class UpdateRoutingTableWithInitialUriMethod
+            public class UpdateRoutingTableWithInitialUriFallbackMethod
             {
+                [Fact]
+                public void ShouldPrependInitialRouterIfWriterIsAbsent()
+                {
+                    // Given
+                    var uri = new Uri("bolt+routing://123:456");
+
+                    var routingTableMock = new Mock<IRoutingTable>();
+                    routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
+                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+
+                    var poolMock = new Mock<IClusterConnectionPool>();
+                    poolMock.Setup(x => x.Add(It.IsAny<IEnumerable<Uri>>()))
+                        .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+
+                    var balancer = new LoadBalancer(poolMock.Object, routingTableMock.Object, uri);
+                    balancer.IsReadingInAbsenceOfWriter = true;
+                    var routingTableReturnMock = new Mock<IRoutingTable>();
+
+                    // When
+                    // should throw an exception as the initial routers should not be tried again
+                    var exception = Record.Exception(()=>
+                    balancer.UpdateRoutingTableWithInitialUriFallback(c => c != null ? null : routingTableReturnMock.Object));
+                    exception.Should().BeOfType<ServiceUnavailableException>();
+
+                    // Then
+                    poolMock.Verify(x => x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                    routingTableMock.Verify(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                }
+
                 [Fact]
                 public void ShouldAddInitialUriWhenNoAvailableRouters()
                 {
@@ -63,7 +91,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var uri = new Uri("bolt+routing://123:456");
 
                     var routingTableMock = new Mock<IRoutingTable>();
-                    routingTableMock.Setup(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()))
+                    routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
                         .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
 
                     var poolMock = new Mock<IClusterConnectionPool>();
@@ -75,11 +103,11 @@ namespace Neo4j.Driver.Tests.Routing
                     var routingTableReturnMock = new Mock<IRoutingTable>();
 
                     // When
-                    balancer.UpdateRoutingTableWithInitialUri(c => c != null ? null : routingTableReturnMock.Object);
+                    balancer.UpdateRoutingTableWithInitialUriFallback(c => c != null ? null : routingTableReturnMock.Object);
 
                     // Then
                     poolMock.Verify(x => x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
-                    routingTableMock.Verify(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                    routingTableMock.Verify(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()), Times.Once);
                 }
 
                 [Fact]
@@ -92,7 +120,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var t = new Uri("bolt+routing://222:123"); // this should be retried
 
                     var routingTableMock = new Mock<IRoutingTable>();
-                    routingTableMock.Setup(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()))
+                    routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
                         // ensure the retried is only t
                         .Callback<IEnumerable<Uri>>(set => set.Single().Should().Be(t));
 
@@ -118,12 +146,12 @@ namespace Neo4j.Driver.Tests.Routing
                     };
                     Func<ISet<Uri>> resolveInitialUriFunc = () => new HashSet<Uri> {s, t};
                     // When
-                    balancer.UpdateRoutingTableWithInitialUri(updateRoutingTableFunc, resolveInitialUriFunc);
+                    balancer.UpdateRoutingTableWithInitialUriFallback(updateRoutingTableFunc, resolveInitialUriFunc);
 
                     // Then
                     // verify the method is actually called
                     poolMock.Verify(x => x.Add(It.IsAny<IEnumerable<Uri>>()), Times.Once);
-                    routingTableMock.Verify(x => x.AddRouter(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                    routingTableMock.Verify(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()), Times.Once);
                 }
             }
 
@@ -143,7 +171,7 @@ namespace Neo4j.Driver.Tests.Routing
                     Func<IConnection, IRoutingTable> updateRoutingTableFunc =
                         connection =>
                         {
-                            if (!balancerRoutingTable.IsStale())
+                            if (!balancerRoutingTable.IsStale(AccessMode.Write))
                             {
                                 Interlocked.Add(ref directReturnCount, 1);
                                 return balancerRoutingTable;
@@ -242,7 +270,7 @@ namespace Neo4j.Driver.Tests.Routing
                 }
 
                 [Fact]
-                public void ShouldTryNextRouterIfNoWriters()
+                public void ShouldTryNextRouterIfNoReader()
                 {
                     // Given
                     var uriA = new Uri("bolt+routing://123:1");
@@ -258,7 +286,7 @@ namespace Neo4j.Driver.Tests.Routing
                     {
                         if (conn.Server.Address.Equals(uriA.ToString()))
                         {
-                            return NewRoutingTable(new[] {uriX}, new[] {uriX});
+                            return NewRoutingTable(new[] {uriX}, new Uri[0], new[] {uriX});
                         }
                         if (conn.Server.Address.Equals(uriB.ToString()))
                         {
@@ -269,6 +297,31 @@ namespace Neo4j.Driver.Tests.Routing
 
                     // Then
                     updateRoutingTable.All().Should().ContainInOrder(uriY);
+                    balancer.IsReadingInAbsenceOfWriter.Should().BeFalse();
+                }
+
+                [Fact]
+                public void ShouldAcceptRoutingTableIfNoWriter()
+                {
+                    // Given
+                    var uriA = new Uri("bolt+routing://123:1");
+                    var uriX = new Uri("bolt+routing://456:1");
+
+                    var balancer = SetupLoadBalancer(new ListBasedRoutingTable(new List<Uri> { uriA }));
+
+                    // When
+                    var updateRoutingTable = balancer.UpdateRoutingTable(conn =>
+                    {
+                        if (conn.Server.Address.Equals(uriA.ToString()))
+                        {
+                            return NewRoutingTable(new[] {uriX}, new[] {uriX});
+                        }
+                        throw new NotSupportedException($"Unknown uri: {conn.Server.Address}");
+                    });
+
+                    // Then
+                    updateRoutingTable.All().Should().ContainInOrder(uriX);
+                    balancer.IsReadingInAbsenceOfWriter.Should().BeTrue();
                 }
 
                 [Theory]
@@ -291,6 +344,7 @@ namespace Neo4j.Driver.Tests.Routing
                     // Then
                     result.All().Should().Contain(newRoutingTable.All());
                     newRoutingTable.All().Should().Contain(result.All());
+                    balancer.IsReadingInAbsenceOfWriter.Should().BeFalse();
                 }
 
                 [Fact]
@@ -337,51 +391,17 @@ namespace Neo4j.Driver.Tests.Routing
 
             public class AcquireReadWriteConnectionMethod
             {
-                private static IRoutingTable CreateRoutingTable(Uri uri, AccessMode mode)
-                {
-                    IRoutingTable routingTable;
-                    switch (mode)
-                    {
-                        case AccessMode.Read:
-                            routingTable = NewRoutingTable(readers: new[] {uri});
-                            break;
-                        case AccessMode.Write:
-                            routingTable = NewRoutingTable(writers: new[] {uri});
-                            break;
-                        default:
-                            throw new InvalidOperationException($"Unknown type {mode} to this test.");
-                    }
-                    return routingTable;
-                }
-
-                private static IConnection AcquiredConn(LoadBalancer balancer, AccessMode mode)
-                {
-                    IConnection acquiredConn;
-                    switch (mode)
-                    {
-                        case AccessMode.Read:
-                            acquiredConn = balancer.AcquireReadConnection();
-                            break;
-                        case AccessMode.Write:
-                            acquiredConn = balancer.AcquireWriteConnection();
-                            break;
-                        default:
-                            throw new InvalidOperationException($"Unknown type {mode} to this test.");
-                    }
-                    return acquiredConn;
-                }
-
                 [Theory]
                 [InlineData(AccessMode.Read)]
                 [InlineData(AccessMode.Write)]
                 public void ShouldThrowSessionExpiredExceptionIfNoServerAvailable(AccessMode mode)
                 {
                     // Given
-                    var routingTable = NewRoutingTable();
-                    var balancer = new LoadBalancer(null, routingTable);
+                    var mock = CreateRoutingTable(mode, null, false);
+                    var balancer = new LoadBalancer(null, mock.Object);
 
                     // When
-                    var error = Record.Exception(()=>AcquiredConn(balancer, mode));
+                    var error = Record.Exception(()=>balancer.Acquire(mode));
 
                     // Then
                     error.Should().BeOfType<SessionExpiredException>();
@@ -395,15 +415,30 @@ namespace Neo4j.Driver.Tests.Routing
                 {
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
-                    // a routing table which knows a read/write uri
-                    var routingTable = CreateRoutingTable(uri, mode);
-                    var balancer = SetupLoadBalancer(routingTable);
+                    var mock = CreateRoutingTable(mode, uri);
+                    mock.Setup(m => m.All()).Returns(new HashSet<Uri> { uri });
+                    var balancer = SetupLoadBalancer(mock.Object);
 
                     // When
-                    var acquiredConn = AcquiredConn(balancer, mode);
+                    var acquiredConn = balancer.Acquire(mode);
 
                     // Then
                     acquiredConn.Server.Address.Should().Be(uri.ToString());
+                }
+
+                private static Mock<IRoutingTable> CreateRoutingTable(AccessMode mode, Uri uri, bool hasNext = true)
+                {
+                    var mock = new Mock<IRoutingTable>();
+                    mock.Setup(m => m.IsStale(It.IsAny<AccessMode>())).Returns(false);
+                    if (mode == AccessMode.Read)
+                    {
+                        mock.SetupSequence(m => m.TryNextReader(out uri)).Returns(hasNext).Returns(false);
+                    }
+                    else
+                    {
+                        mock.SetupSequence(m => m.TryNextWriter(out uri)).Returns(hasNext).Returns(false);
+                    }
+                    return mock;
                 }
 
                 [Theory]
@@ -413,38 +448,29 @@ namespace Neo4j.Driver.Tests.Routing
                 {
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
-                    // a routing table which knows a uri
-                    var routingTable = CreateRoutingTable(uri, mode);
+                    var routingTableMock = CreateRoutingTable(mode, uri);
 
-                    var mockedConnPool = new Mock<IConnectionPool>();
-                    var dict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                    dict.TryAdd(uri, mockedConnPool.Object);
-
-                    // a cluster pool which knows the conns with the read uri server
-                    var clusterConnPool = new ClusterConnectionPool(null, dict);
-                    var balancer = new LoadBalancer(clusterConnPool, routingTable);
-
-                    mockedConnPool.Setup(x => x.Acquire())
-                        .Callback(()=>
+                    var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
+                    IPooledConnection conn = null;
+                    clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn))
+                        .Callback(() =>
                         {
                             throw new ServiceUnavailableException("failed init");
                         });
 
+                    var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTableMock.Object);
+
                     // When
-                    var error = Record.Exception(() => AcquiredConn(balancer, mode));
+                    var error = Record.Exception(() => balancer.Acquire(mode));
 
                     // Then
                     error.Should().BeOfType<SessionExpiredException>();
                     error.Message.Should().Contain("Failed to connect to any");
 
                     // should be removed
-                    Uri saveUri;
-                    IPooledConnection saveConn;
-                    routingTable.TryNextReader(out saveUri).Should().BeFalse();
-                    routingTable.TryNextWriter(out saveUri).Should().BeFalse();
-                    clusterConnPool.TryAcquire(uri, out saveConn).Should().BeFalse();
+                    routingTableMock.Verify(m=>m.Remove(uri), Times.Once);
+                    clusterConnPoolMock.Verify(m=>m.Purge(uri), Times.Once);
                 }
-
 
                 [Theory]
                 [InlineData(AccessMode.Read)]
@@ -453,29 +479,28 @@ namespace Neo4j.Driver.Tests.Routing
                 {
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
-                    // a routing table which knows a uri
-                    var routingTable = CreateRoutingTable(uri, mode);
-
+                    var routingTableMock = CreateRoutingTable(mode, uri);
 
                     var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                    var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTable);
-
                     IPooledConnection conn = null;
-                    clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
+                    clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn))
                         .Callback(() =>
                         {
                             throw new SecurityException("Failed to establish ssl connection with the server");
                         });
 
+                    var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTableMock.Object);
+
                     // When
-                    var error = Record.Exception(() => AcquiredConn(balancer, mode));
+                    var error = Record.Exception(() => balancer.Acquire(mode));
 
                     // Then
                     error.Should().BeOfType<SecurityException>();
                     error.Message.Should().Contain("ssl connection with the server");
 
                     // while the server is not removed
-                    routingTable.All().Should().ContainInOrder(uri);
+                    routingTableMock.Verify(m => m.Remove(uri), Times.Never);
+                    clusterConnPoolMock.Verify(m => m.Purge(uri), Times.Never);
                 }
 
                 [Theory]
@@ -485,12 +510,9 @@ namespace Neo4j.Driver.Tests.Routing
                 {
                     // Given
                     var uri = new Uri("bolt+routing://123:456");
-                    // a routing table which knows a uri
-                    var routingTable = CreateRoutingTable(uri, mode);
+                    var routingTableMock = CreateRoutingTable(mode, uri);
 
                     var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                    var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTable);
-
                     IPooledConnection conn = null;
                     clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
                         .Callback(() =>
@@ -498,15 +520,18 @@ namespace Neo4j.Driver.Tests.Routing
                             throw new ProtocolException("do not understand struct 0x01");
                         });
 
+                    var balancer = new LoadBalancer(clusterConnPoolMock.Object, routingTableMock.Object);
+
                     // When
-                    var error = Record.Exception(() => AcquiredConn(balancer, mode));
+                    var error = Record.Exception(() => balancer.Acquire(mode));
 
                     // Then
                     error.Should().BeOfType<ProtocolException>();
                     error.Message.Should().Contain("do not understand struct 0x01");
 
                     // while the server is not removed
-                    routingTable.All().Should().ContainInOrder(uri);
+                    routingTableMock.Verify(m => m.Remove(uri), Times.Never);
+                    clusterConnPoolMock.Verify(m => m.Purge(uri), Times.Never);
                 }
             }
         }
@@ -559,7 +584,7 @@ namespace Neo4j.Driver.Tests.Routing
                 _routers = routers;
                 _removed = new List<Uri>();
             }
-            public bool IsStale()
+            public bool IsStale(AccessMode mode)
             {
                 return false;
             }
@@ -601,7 +626,7 @@ namespace Neo4j.Driver.Tests.Routing
                 throw new NotSupportedException();
             }
 
-            public void AddRouter(IEnumerable<Uri> uris)
+            public void PrependRouters(IEnumerable<Uri> uris)
             {
                 throw new NotSupportedException();
             }
