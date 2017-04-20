@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests.Routing
         public class ClearMethod
         {
             [Fact]
-            public void ShouldRemoveAdd()
+            public void ShouldClear()
             {
                 // Given
                 var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
