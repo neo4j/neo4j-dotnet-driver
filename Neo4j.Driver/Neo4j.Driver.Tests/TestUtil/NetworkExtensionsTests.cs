@@ -71,6 +71,17 @@ namespace Neo4j.Driver.Tests
             [Theory]
             [InlineData("bolt")]
             [InlineData("bolt+routing")]
+            public void ShouldParseEmptyRoutingContext(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var routingContext = raw.ParseRoutingContext();
+
+                routingContext.Should().BeEmpty();
+            }
+
+            [Theory]
+            [InlineData("bolt")]
+            [InlineData("bolt+routing")]
             public void ShouldParseMultipleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&age=1&color=white");
