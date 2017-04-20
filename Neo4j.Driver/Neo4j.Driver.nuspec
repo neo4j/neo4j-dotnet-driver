@@ -20,6 +20,7 @@
         <dependency id="NETStandard.Library" version="1.6.0" />
         <dependency id="System.Net.Security" version="4.0.0" />
         <dependency id="System.Net.Sockets" version="4.1.0" />
+        <dependency id="System.Net.NameResolution" version="4.0.0"/>
         <dependency id="System.Runtime.Serialization.Primitives" version="4.1.1" />
       </group>
       <group targetFramework="netstandard1.0">
@@ -27,6 +28,7 @@
         <dependency id="NETStandard.Library" version="1.6.0" />
         <dependency id="System.Net.Security" version="4.0.0" />
         <dependency id="System.Net.Sockets" version="4.1.0" />
+        <dependency id="System.Net.NameResolution" version="4.0.0"/>
         <dependency id="System.Runtime.Serialization.Primitives" version="4.1.1" />
       </group>
     </dependencies>
