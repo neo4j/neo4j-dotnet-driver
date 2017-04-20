@@ -49,8 +49,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task ConnectAsync(Uri uri)
         {
-            await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
-
+            await Connect(uri);
             if (!_encryptionManager.UseTls)
             {
                 _stream = _client.GetStream();
@@ -63,12 +62,32 @@ namespace Neo4j.Driver.Internal.Connector
                         (sender, certificate, chain, errors) =>
                             _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
 
-                    await ((SslStream) _stream)
+                    await ((SslStream)_stream)
                         .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
                     throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
+                }
+            }
+        }
+
+        private async Task Connect(Uri uri)
+        {
+            var addresses = await uri.ResolveAsyc();
+            for (var i = 0; i < addresses.Length; i++)
+            {
+                try
+                {
+                    await _client.ConnectAsync(addresses[i], uri.Port).ConfigureAwait(false);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    if (i == addresses.Length - 1)
+                    {
+                        throw new IOException($"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}': {e.Message}", e);
+                    }
                 }
             }
         }
