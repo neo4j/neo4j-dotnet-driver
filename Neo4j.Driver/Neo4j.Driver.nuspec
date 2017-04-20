@@ -15,28 +15,24 @@
     <iconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</iconUrl>
     <tags>Cypher NoSql Graph Bolt Neo4j</tags>
     <dependencies>
-      <group targetFramework="dotnet">
-        <dependency id="Microsoft.NETCore.Portable.Compatibility" version="1.0.1" />
+      <group targetFramework="netstandard1.3">
         <dependency id="NETStandard.Library" version="1.6.0" />
         <dependency id="System.Net.Security" version="4.0.0" />
         <dependency id="System.Net.Sockets" version="4.1.0" />
         <dependency id="System.Runtime.Serialization.Primitives" version="4.1.1" />
       </group>
-      <group targetFramework="netstandard1.0">
-        <dependency id="Microsoft.NETCore.Portable.Compatibility" version="1.0.1" />
-        <dependency id="NETStandard.Library" version="1.6.0" />
+      <group targetFramework="net46">
         <dependency id="System.Net.Security" version="4.0.0" />
         <dependency id="System.Net.Sockets" version="4.1.0" />
-        <dependency id="System.Runtime.Serialization.Primitives" version="4.1.1" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.dll" target="lib\dotnet" />
-    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.pdb" target="lib\dotnet" />
-    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.xml" target="lib\dotnet" />
-    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.dll" target="lib\netstandard1.0" />
-    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.pdb" target="lib\netstandard1.0" />
-    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.xml" target="lib\netstandard1.0" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.dll" target="lib\netstandard1.3" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.pdb" target="lib\netstandard1.3" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.xml" target="lib\netstandard1.3" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.dll" target="lib\net46" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.pdb" target="lib\net46" />
+    <file src="Neo4j.Driver\bin\$configuration$\Neo4j.Driver.xml" target="lib\net46" />
   </files>
 </package>
