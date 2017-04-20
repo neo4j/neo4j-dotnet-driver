@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
         {
             MockTcpSocketClient = new Mock<ITcpSocketClient>();
             MockWriteStream = TestHelper.TcpSocketClientSetup.CreateWriteStreamMock(MockTcpSocketClient);
-            Client = new SocketClient(uri, new Mock<EncryptionManager>().Object, true, new Mock<ILogger>().Object, MockTcpSocketClient.Object);
+            Client = new SocketClient(uri, new Mock<EncryptionManager>().Object, true, false, new Mock<ILogger>().Object, MockTcpSocketClient.Object);
                
         }
 

@@ -28,14 +28,23 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly TcpClient _client;
         private Stream _stream;
+        private readonly bool _ipv6Enabled = false;
 
         private readonly EncryptionManager _encryptionManager;
 
-        public TcpSocketClient(EncryptionManager encryptionManager, bool keepAlive, ILogger logger = null)
+        public TcpSocketClient(EncryptionManager encryptionManager, bool keepAlive, bool ipv6Enabled, ILogger logger = null)
         {
             _encryptionManager = encryptionManager;
-            _client = new TcpClient(AddressFamily.InterNetworkV6);
-            _client.Client.DualMode = true;
+            _ipv6Enabled = ipv6Enabled;
+            if (_ipv6Enabled)
+            {
+                _client = new TcpClient(AddressFamily.InterNetworkV6);
+                _client.Client.DualMode = true;
+            }
+            else
+            {
+                _client = new TcpClient();
+            }
             _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, keepAlive);
         }
 
@@ -74,7 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private async Task Connect(Uri uri)
         {
-            var addresses = await uri.ResolveAsyc();
+            var addresses = await uri.ResolveAsyc(_ipv6Enabled);
             for (var i = 0; i < addresses.Length; i++)
             {
                 try

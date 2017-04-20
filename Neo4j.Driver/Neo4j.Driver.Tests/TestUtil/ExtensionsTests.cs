@@ -45,6 +45,25 @@ namespace Neo4j.Driver.Tests
                 addresses[1].ToString().Should().Be("10.0.0.1");
                 addresses[2].ToString().Should().Be("192.168.0.11");
             }
+
+            [Fact]
+            public async void ShouldOnlyGiveIpv4AddressWhenIpv6IsNotEnabled()
+            {
+                var url = new Uri("bolt://127.0.0.1");
+                var ips = await url.ResolveAsyc(false);
+                ips.Length.Should().Be(1);
+                ips[0].ToString().Should().Be("127.0.0.1");
+            }
+
+            [Fact]
+            public async void ShouldGiveIpv4Ipv6AddressWhenIpv6IsEnabled()
+            {
+                var url = new Uri("bolt://127.0.0.1");
+                var ips = await url.ResolveAsyc(true);
+                ips.Length.Should().Be(2);
+                ips[0].ToString().Should().Be("127.0.0.1");
+                ips[1].ToString().Should().Be("::ffff:127.0.0.1");
+            }
         }
 
         public class GetValueMethod
