@@ -14,13 +14,14 @@ namespace Neo4j.Driver.Internal
             return new HashSet<Uri> { uri };
         }
 
-        public static async Task<IPAddress[]> ResolveAsyc(this Uri uri)
+        public static async Task<IPAddress[]> ResolveAsyc(this Uri uri, bool ipv6Enabled)
         {
             IPAddress[] addresses;
             IPAddress address;
+
             if (IPAddress.TryParse(uri.Host, out address))
             {
-                if (address.AddressFamily == AddressFamily.InterNetwork)
+                if (ipv6Enabled && address.AddressFamily == AddressFamily.InterNetwork)
                 {
                     // if it is a ipv4 address, then add the ipv6 address as the first attempt
                     addresses = new[] { address.MapToIPv6(), address };
@@ -32,8 +33,9 @@ namespace Neo4j.Driver.Internal
             }
             else
             {
+                var prefered = ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
                 addresses = (await Dns.GetHostAddressesAsync(uri.Host).ConfigureAwait(false))
-                    .OrderBy(x=>x, new AddressComparer(AddressFamily.InterNetworkV6)).ToArray();
+                    .OrderBy(x=>x, new AddressComparer(prefered)).ToArray();
             }
             return addresses;
         }

@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly ILogger _logger;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, ILogger logger)
-            : this(new SocketClient(uri, connectionSettings.EncryptionManager, connectionSettings.SocketKeepAliveEnabled, logger),
+            : this(new SocketClient(uri, connectionSettings.EncryptionManager, connectionSettings.SocketKeepAliveEnabled, connectionSettings.Ipv6Enabled, logger),
                   connectionSettings.AuthToken, connectionSettings.ConnectionTimeout, connectionSettings.UserAgent,
                   logger, new ServerInfo(uri))
         {

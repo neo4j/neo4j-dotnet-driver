@@ -41,11 +41,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         public static readonly BigEndianTargetBitConverter BitConverter = new BigEndianTargetBitConverter();
 
-        public SocketClient(Uri uri, EncryptionManager encryptionManager, bool socketKeepAlive, ILogger logger, ITcpSocketClient socketClient = null)
+        public SocketClient(Uri uri, EncryptionManager encryptionManager, bool socketKeepAlive, bool ipv6Enabled, ILogger logger, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
-            _tcpSocketClient = socketClient ?? new TcpSocketClient(encryptionManager, socketKeepAlive, _logger);
+            _tcpSocketClient = socketClient ?? new TcpSocketClient(encryptionManager, socketKeepAlive, ipv6Enabled, _logger);
         }
 
         public void Dispose()

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,9 +35,32 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Require31ServerFact]
-        public void ShouldConnectIPv6Address()
+        public void ShouldConnectIPv6AddressIfEnabled()
+        {
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = true}))
+            using (var session = driver.Session())
+            {
+                var ret = session.Run("RETURN 1").Single();
+                ret[0].ValueAs<int>().Should().Be(1);
+            }
+        }
+
+        [Require31ServerFact]
+        public void ShouldNotConnectIPv6AddressIfDisabled()
         {
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken))
+            using (var session = driver.Session())
+            {
+                var exception = Record.Exception(()=> session.Run("RETURN 1"));
+                exception.GetBaseException().Should().BeOfType<NotSupportedException>();
+                exception.GetBaseException().Message.Should().Contain("This protocol version is not supported");
+            }
+        }
+
+        [RequireServerFact]
+        public void ShouldConnectIPv4AddressIfIpv6Disabled()
+        {
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
             using (var session = driver.Session())
             {
                 var ret = session.Run("RETURN 1").Single();
@@ -45,9 +69,9 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact]
-        public void ShouldConnectIPv4Address()
+        public void ShouldConnectIPv4AddressIfIpv6Enabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config {Ipv6Enabled = true}))
             using (var session = driver.Session())
             {
                 var ret = session.Run("RETURN 1").Single();
