@@ -17,16 +17,36 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
+using System.Net.Sockets;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Xunit;
+using static Neo4j.Driver.Internal.NetworkExtensions;
 
 namespace Neo4j.Driver.Tests
 {
     public class ExtensionsTests
     {
+        public class NetworkExtensions
+        {
+            [Fact]
+            public void ShouldSortIPv6AddrInFront()
+            {
+                var ipAddresses = new List<IPAddress>
+                {
+                    IPAddress.Parse("10.0.0.1"),
+                    IPAddress.Parse("192.168.0.11"),
+                    IPAddress.Parse("[::1]")
+                };
+                var addresses = ipAddresses.OrderBy(x => x, new AddressComparer(AddressFamily.InterNetworkV6)).ToArray();
+                addresses.Length.Should().Be(3);
+                addresses[0].ToString().Should().Be("::1");
+                addresses[1].ToString().Should().Be("10.0.0.1");
+                addresses[2].ToString().Should().Be("192.168.0.11");
+            }
+        }
+
         public class GetValueMethod
         {
             [Fact]

@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Internal.Routing
             _seed = connectionSettings.InitialServerUri;
             _logger = logger;
 
-            var uris = _seed.ResolveDns();
+            var uris = _seed.Resolve();
             AddRouters(uris);
         }
 
@@ -187,7 +187,7 @@ namespace Neo4j.Driver.Internal.Routing
             lock (_syncLock)
             {
                 updateRoutingTableFunc = updateRoutingTableFunc ?? (u => UpdateRoutingTable(null, u));
-                resolveInitialUriFunc = resolveInitialUriFunc ?? _seed.ResolveDns; 
+                resolveInitialUriFunc = resolveInitialUriFunc ?? _seed.Resolve; 
                 var triedUris = new HashSet<Uri>();
                 var routingTable = updateRoutingTableFunc(triedUris);
                 if (routingTable != null)
