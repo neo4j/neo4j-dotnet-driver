@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal
         {
         }
 
-        public ConnectionPoolSettings(int maxIdleConnectionPoolSize, TimeSpan connectionIdleTimeout, IStatisticsCollector statisticsCollector=null)
+        internal ConnectionPoolSettings(int maxIdleConnectionPoolSize, TimeSpan connectionIdleTimeout, IStatisticsCollector statisticsCollector=null)
         {
             Throw.ArgumentNullException.IfNull(maxIdleConnectionPoolSize, nameof(maxIdleConnectionPoolSize));
             Throw.ArgumentNullException.IfNull(connectionIdleTimeout, nameof(connectionIdleTimeout));

@@ -137,6 +137,11 @@ namespace Neo4j.Driver.V1
         public TimeSpan ConnectionIdleTimeout { get; set; } = Infinite;
 
         /// <summary>
+        /// Gets or sets the connections to support ipv6 addresses.
+        /// </summary>
+        public bool Ipv6Enabled { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the statistics collector to which the statistics inside the driver could be published.
         /// </summary>
         internal IStatisticsCollector DriverStatisticsCollector { get; set; }
@@ -200,6 +205,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan)
             {
                 _config.ConnectionIdleTimeout = timeSpan;
+                return this;
+            }
+
+            public IConfigBuilder WithIpv6Enabled(bool enable)
+            {
+                _config.Ipv6Enabled = enable;
                 return this;
             }
         }
@@ -288,5 +299,12 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan);
+
+        /// <summary>
+        /// Setting this option to true will enable ipv6 on socket connections.
+        /// </summary>
+        /// <param name="enable">true to enable ipv6, false to only support ipv4 addresses.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        IConfigBuilder WithIpv6Enabled(bool enable);
     }
 }

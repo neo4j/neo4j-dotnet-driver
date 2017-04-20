@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
         [When(@"I set up a driver to an incorrect port")]
         public void WhenISetUpADriverToAnIncorrectPort()
         {
-            using (var driver = GraphDatabase.Driver("bolt://localhost:1234"))
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:1234"))
             using (var session = driver.Session())
             {
                 var ex = Xunit.Record.Exception(() => session.Run("RETURN 1"));
