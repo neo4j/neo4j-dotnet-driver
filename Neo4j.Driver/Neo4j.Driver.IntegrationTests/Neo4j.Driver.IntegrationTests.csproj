@@ -145,9 +145,7 @@
     <None Include="App.config" />
     <None Include="packages.config" />
     <None Include="Resources\get_routing_table.script" />
-    <None Include="Resources\get_routing_table_with_context.script">
-      <Generator>ResXFileCodeGenerator</Generator>
-    </None>
+    <None Include="Resources\get_routing_table_with_context.script" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj">

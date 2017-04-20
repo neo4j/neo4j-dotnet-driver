@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
             public async void ShouldOnlyGiveIpv4AddressWhenIpv6IsNotEnabled()
             {
                 var url = new Uri("bolt://127.0.0.1");
-                var ips = await url.ResolveAsyc(false);
+                var ips = await url.ResolveAsync(false);
                 ips.Length.Should().Be(1);
                 ips[0].ToString().Should().Be("127.0.0.1");
             }
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests
             public async void ShouldGiveIpv4Ipv6AddressWhenIpv6IsEnabled()
             {
                 var url = new Uri("bolt://127.0.0.1");
-                var ips = await url.ResolveAsyc(true);
+                var ips = await url.ResolveAsync(true);
                 ips.Length.Should().Be(2);
                 ips[0].ToString().Should().Be("::ffff:127.0.0.1");
                 ips[1].ToString().Should().Be("127.0.0.1");
