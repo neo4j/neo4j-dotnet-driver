@@ -61,8 +61,8 @@ namespace Neo4j.Driver.Tests
                 var url = new Uri("bolt://127.0.0.1");
                 var ips = await url.ResolveAsyc(true);
                 ips.Length.Should().Be(2);
-                ips[0].ToString().Should().Be("127.0.0.1");
-                ips[1].ToString().Should().Be("::ffff:127.0.0.1");
+                ips[0].ToString().Should().Be("::ffff:127.0.0.1");
+                ips[1].ToString().Should().Be("127.0.0.1");
             }
         }
 
