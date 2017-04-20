@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Internal
             return addresses;
         }
 
-        private class AddressComparer : IComparer<IPAddress>
+        internal class AddressComparer : IComparer<IPAddress>
         {
             private readonly AddressFamily _preferred;
 

@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Internal.Connector
                 {
                     if (i == addresses.Length - 1)
                     {
-                        throw new IOException($"Failed to connect to server {uri}: {e.Message}", e);
+                        throw new IOException($"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}': {e.Message}", e);
                     }
                 }
             }
