@@ -19,31 +19,31 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
 {
     public class RoundRobinRoutingTableTests
     {
+        private static IEnumerable<Uri> CreateUriArray(int count)
+        {
+            var uris = new Uri[count];
+            for (int i = 0; i < count; i++)
+            {
+                uris[i] = new Uri($"http://neo4j:1{i}");
+            }
+            return uris;
+        }
+
         public class IsStatleMethod
         {
-            private IEnumerable<Uri> CreateUriArray(int count)
-            {
-                var uris = new Uri[count];
-                for (int i = 0; i < count; i++)
-                {
-                    uris[i] = new Uri($"http://neo4j:1{i}");
-                }
-                return uris;
-            }
-
-            [Theory]
-            [InlineData(1, 2, 1, 5*60, false)] // 1 router, 2 reader, 1 writer
-            [InlineData(0, 2, 1, 5*60, true)] // no router
-            [InlineData(2, 2, 0, 5*60, true)] // no writer
-            [InlineData(2, 2, 0, 5*60, true)] // no reader
+            [Theory] [InlineData(1, 2, 1, 5 * 60, false)] // 1 router, 2 reader, 1 writer
+            [InlineData(0, 2, 1, 5 * 60, true)] // no router
+            [InlineData(2, 2, 0, 5 * 60, false)] // no writer
+            [InlineData(2, 0, 2, 5 * 60, true)] // no reader
             [InlineData(1, 2, 1, -1, true)] // expire immediately
-            public void ShouldBeStateIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount, long expireAfterSeconds, bool isStale)
+            public void ShouldBeStaleInReadModeIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount, long expireAfterSeconds, bool isStale)
             {
                 var table = new RoundRobinRoutingTable(
                     CreateUriArray(routerCount),
@@ -51,8 +51,57 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateUriArray(writerCount),
                     new Stopwatch(),
                     expireAfterSeconds);
-                table.IsStale().Should().Be(isStale);
+                table.IsStale(AccessMode.Read).Should().Be(isStale);
             }
-        } 
+
+            [Theory]
+            [InlineData(1, 2, 1, 5 * 60, false)] // 1 router, 2 reader, 1 writer
+            [InlineData(0, 2, 1, 5 * 60, true)] // no router
+            [InlineData(2, 2, 0, 5 * 60, true)] // no writer
+            [InlineData(2, 0, 2, 5 * 60, false)] // no reader
+            [InlineData(1, 2, 1, -1, true)] // expire immediately
+            public void ShouldBeStaleInWriteModeIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount, long expireAfterSeconds, bool isStale)
+            {
+                var table = new RoundRobinRoutingTable(
+                    CreateUriArray(routerCount),
+                    CreateUriArray(readerCount),
+                    CreateUriArray(writerCount),
+                    new Stopwatch(),
+                    expireAfterSeconds);
+                table.IsStale(AccessMode.Write).Should().Be(isStale);
+            }
+        }
+
+        public class PrependRouterMethod
+        {
+            [Fact]
+            public void ShouldInjectInFront()
+            {
+                // Given
+                var table = new RoundRobinRoutingTable(
+                    CreateUriArray(3),
+                    CreateUriArray(0),
+                    CreateUriArray(0),
+                    new Stopwatch(), 5 * 60);
+                Uri router;
+                table.TryNextRouter(out router);
+                var head = new Uri("http://neo4j:10");
+                router.Should().Be(head);
+
+                // When
+                var first = new Uri("me://12");
+                var second = new Uri("me://22");
+                table.PrependRouters(new List<Uri> {first, second});
+
+                // Then
+                table.TryNextRouter(out router);
+                router.Should().Be(first);
+                table.TryNextRouter(out router);
+                router.Should().Be(second);
+                table.TryNextRouter(out router);
+                router.Should().Be(head);
+            }
+        }
+
     }
 }

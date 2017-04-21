@@ -27,6 +27,8 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IList<T> _items = new List<T>();
         private int _index = 0;
 
+        internal int Index => _index;
+
         /// <summary>
         /// Add one item into this set.
         /// </summary>
@@ -103,6 +105,7 @@ namespace Neo4j.Driver.Internal.Routing
             lock (_items)
             {
                 _items.Clear();
+                _index = 0;
             }
         }
 

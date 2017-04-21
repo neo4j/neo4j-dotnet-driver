@@ -99,11 +99,20 @@ namespace Neo4j.Driver.Tests.Routing
         public class ClearMethod
         {
             [Fact]
-            public void ShouldRemoveAdd()
+            public void ShouldClear()
             {
+                // Given
                 var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
+                int ignored;
+                set.TryNext(out ignored);
+                set.Index.Should().Be(1);
+
+                // When
                 set.Clear();
+
+                // Then
                 set.Should().BeEmpty();
+                set.Index.Should().Be(0);
             }
         }
 

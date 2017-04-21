@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -49,9 +51,11 @@ namespace Neo4j.Driver.Internal.Routing
             _stopwatch.Restart();
         }
 
-        public bool IsStale()
+        public bool IsStale(AccessMode mode)
         {
-            return _routers.Count < MinRouterCount || _readers.IsEmpty || _writers.IsEmpty
+            return _routers.Count < MinRouterCount
+                || mode == AccessMode.Read && _readers.IsEmpty
+                || mode == AccessMode.Write && _writers.IsEmpty
                 || _expireAfterSeconds < _stopwatch.Elapsed.TotalSeconds;
         }
 
@@ -108,9 +112,12 @@ namespace Neo4j.Driver.Internal.Routing
                    $"[{nameof(_writers)}: {_writers}]";
         }
 
-        public void AddRouter(IEnumerable<Uri> uris)
+        public void PrependRouters(IEnumerable<Uri> uris)
         {
+            var existing = _routers.ToList();
+            _routers.Clear();
             _routers.Add(uris);
+            _routers.Add(existing);
         }
     }
 }
