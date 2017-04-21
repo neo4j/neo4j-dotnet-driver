@@ -75,6 +75,25 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
+        /// The kerberos authentication scheme, using a base64 encoded ticket. 
+        /// </summary>
+        /// <param name="base64EncodedTicket">A base64 encoded service ticket.</param>
+        /// <returns>an authentication token that can be used to connect to Neo4j.</returns>
+        /// <remarks>
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        /// </remarks>
+        public static IAuthToken Kerberos(string base64EncodedTicket)
+        {
+            var token = new Dictionary<string, object>
+            {
+                {"scheme", "kerberos"},
+                {"principal", ""},//This empty string is required for backwards compatibility.
+                {"credentials", base64EncodedTicket}
+            };
+            return new AuthToken(token);
+        }
+
+        /// <summary>
         ///     Gets an authentication token that can be used to connect to Neo4j instances with auth disabled.
         ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
         /// </summary>

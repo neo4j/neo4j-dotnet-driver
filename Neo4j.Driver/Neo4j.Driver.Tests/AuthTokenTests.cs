@@ -51,6 +51,20 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class KerberosAuthToken
+        {
+            [Fact]
+            public void ShouldCreateKerberosAuthToken()
+            {
+                var authToken = AuthTokens.Kerberos("aBase64Str");
+                var dict = authToken.AsDictionary();
+                dict.Count.Should().Be(3);
+                dict["scheme"].Should().Be("kerberos");
+                dict["principal"].Should().Be("");
+                dict["credentials"].Should().Be("aBase64Str");
+            }
+        }
+
         public class CustomAuthToken
         {
             [Fact]
