@@ -87,6 +87,7 @@ namespace Neo4j.Driver.V1
             var token = new Dictionary<string, object>
             {
                 {"scheme", "kerberos"},
+                {"principal", ""},//This empty string is required for backwards compatibility.
                 {"credentials", base64EncodedTicket}
             };
             return new AuthToken(token);
