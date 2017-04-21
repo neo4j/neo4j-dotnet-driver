@@ -84,6 +84,7 @@ namespace Neo4j.Driver.Internal.Connector
         private async Task Connect(Uri uri)
         {
             var addresses = await uri.ResolveAsyc(_ipv6Enabled);
+            AggregateException innerErrors = null;
             for (var i = 0; i < addresses.Length; i++)
             {
                 try
@@ -93,9 +94,14 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception e)
                 {
+                    var error = new IOException($"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);
+                    innerErrors = innerErrors == null ? new AggregateException(error) : new AggregateException(innerErrors, error);
+
                     if (i == addresses.Length - 1)
                     {
-                        throw new IOException($"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}': {e.Message}", e);
+                        // if all failed
+                        throw new IOException(
+                            $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'." , innerErrors);
                     }
                 }
             }

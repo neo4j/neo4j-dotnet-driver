@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ServiceUnavailableErrorWhenFailedToConn()
         {
             Exception exception;
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:123"))
+            using (var driver = GraphDatabase.Driver("bolt://localhost:123"))
             using (var session = driver.Session())
             {
                 exception = Record.Exception(() => session.Run("RETURN 1"));
