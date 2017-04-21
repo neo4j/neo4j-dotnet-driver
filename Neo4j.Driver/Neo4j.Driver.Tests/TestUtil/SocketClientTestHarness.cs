@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Tests.TcpSocketClientTestSetup;
 
 namespace Neo4j.Driver.Tests
 {
@@ -36,9 +37,8 @@ namespace Neo4j.Driver.Tests
         public SocketClientTestHarness(Uri uri=null)
         {
             MockTcpSocketClient = new Mock<ITcpSocketClient>();
-            MockWriteStream = TestHelper.TcpSocketClientSetup.CreateWriteStreamMock(MockTcpSocketClient);
+            MockWriteStream = CreateWriteStreamMock(MockTcpSocketClient);
             Client = new SocketClient(uri, new Mock<EncryptionManager>().Object, true, false, new Mock<ILogger>().Object, MockTcpSocketClient.Object);
-               
         }
 
         public async Task ExpectException<T>(Func<Task> func, string errorMessage=null) where T : Exception
@@ -96,7 +96,27 @@ namespace Neo4j.Driver.Tests
 
         public void SetupReadStream(byte[] bytes)
         {
-            TestHelper.TcpSocketClientSetup.SetupClientReadStream(MockTcpSocketClient, bytes);
+            SetupClientReadStream(MockTcpSocketClient, bytes);
+        }
+    }
+
+    internal static class TcpSocketClientTestSetup
+    {
+        public static void SetupClientReadStream(Mock<ITcpSocketClient> mock, byte[] response)
+        {
+            var memoryStream = new MemoryStream();
+            memoryStream.Write(response);
+            memoryStream.Flush();
+            memoryStream.Position = 0;
+            mock.Setup(c => c.ReadStream).Returns(memoryStream);
+        }
+
+        public static Mock<Stream> CreateWriteStreamMock(Mock<ITcpSocketClient> mock)
+        {
+            var mockedStream = new Mock<Stream>();
+            mock.Setup(c => c.WriteStream).Returns(mockedStream.Object);
+
+            return mockedStream;
         }
     }
 }

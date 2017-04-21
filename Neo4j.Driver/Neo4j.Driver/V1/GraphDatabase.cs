@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
 
@@ -101,30 +102,35 @@ namespace Neo4j.Driver.V1
         public static IDriver Driver(Uri uri, IAuthToken authToken, Config config = null)
         {
             config = config ?? Config.DefaultConfig;
-            if (uri.Port == -1)
-            {
-                var builder = new UriBuilder(uri.Scheme, uri.Host, DefaultBoltPort);
-                uri = builder.Uri;
-            }
-            var connectionSettings = new ConnectionSettings(uri, authToken, config);
+
+            var parsedUri = uri.ParseUri(DefaultBoltPort);
+            var routingContext = uri.ParseRoutingContext();
+
+            var routingSettings = new RoutingSettings(routingContext);
+            var connectionSettings = new ConnectionSettings(parsedUri, authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config);
+
             var logger = config.Logger;
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
-            IConnectionProvider connectionProvider = null;
 
-            switch (uri.Scheme.ToLower())
+            IConnectionProvider connectionProvider = null;
+            switch (parsedUri.Scheme.ToLower())
             {
                 case "bolt":
-                    connectionProvider = new ConnectionPool(uri, connectionSettings, connectionPoolSettings, logger);
+                    if (routingContext.Count != 0)
+                    {
+                        throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
+                    }
+                    connectionProvider = new ConnectionPool(parsedUri, connectionSettings, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(connectionSettings, connectionPoolSettings, logger);
+                    connectionProvider = new LoadBalancer(routingSettings, connectionSettings, connectionPoolSettings, logger);
                     break;
                 default:
-                    throw new NotSupportedException($"Unsupported URI scheme: {uri.Scheme}");
+                    throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(uri, connectionProvider, retryLogic, logger);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger);
         }
     }
 }

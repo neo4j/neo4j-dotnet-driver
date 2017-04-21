@@ -39,10 +39,11 @@ namespace Neo4j.Driver.Tests
         private static IServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
-        internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null, IMessageResponseHandler handler = null)
+        internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null, IMessageResponseHandler handler = null, IServerInfo server = null)
         {
             socketClient = socketClient ?? SocketClient;
-            return new SocketConnection(socketClient, AuthToken, ConnTimeout, UserAgent, Logger, Server, handler);
+            server = server ?? Server;
+            return new SocketConnection(socketClient, AuthToken, ConnTimeout, UserAgent, Logger, server, handler);
         }
 
         public class Construction

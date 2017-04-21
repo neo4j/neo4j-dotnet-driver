@@ -14,12 +14,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.IO;
 using System.Linq;
-using Neo4j.Driver.IntegrationTests.Internals;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class BoltkitHelper
     {

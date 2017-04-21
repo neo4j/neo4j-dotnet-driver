@@ -24,16 +24,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class WindowsPowershellRunner
     {
-        public static string[] RunPythonCommand(string[] arguments)
-        {
-            return RunCommand("python", arguments);
-        }
-
-        public static string[] RunCommand(string command, string argument)
-        {
-            return RunCommand(command, new[] {argument});
-        }
-
         public static void Debug(string message)
         {
             Console.WriteLine(message);
@@ -43,7 +33,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         /// Run the given commands with the multiple command arguments in powershell
         /// Return the powershell output back
         /// </summary>
-        public static string[] RunCommand(string command, string[] arguments)
+        public static string[] RunCommand(string command, params string[] arguments)
         {
             using (var powershell = PowerShell.Create())
             {
@@ -67,12 +57,12 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
         }
 
-        private static string[] CollectionAsStringArray<T>(IEnumerable<T> lines)
+        public static string[] CollectionAsStringArray<T>(IEnumerable<T> lines)
         {
             return lines.Select(error => error.ToString()).ToArray();
         }
 
-        private static string CollectAsString<T>(IEnumerable<T> lines)
+        public static string CollectAsString<T>(IEnumerable<T> lines)
         {
             return string.Join(Environment.NewLine, CollectionAsStringArray(lines));
         }

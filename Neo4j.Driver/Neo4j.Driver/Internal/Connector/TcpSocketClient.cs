@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private async Task Connect(Uri uri)
         {
-            var addresses = await uri.ResolveAsyc(_ipv6Enabled);
+            var addresses = await uri.ResolveAsync(_ipv6Enabled);
             AggregateException innerErrors = null;
             for (var i = 0; i < addresses.Length; i++)
             {

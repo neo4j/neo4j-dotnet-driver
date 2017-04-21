@@ -52,7 +52,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 Debug($"Installed server at `{HomeDir}`.");
             }
 
-            RunCommand("neoctrl-create-user", new[] { HomeDir, "neo4j", Password });
+            RunCommand("neoctrl-create-user", HomeDir, "neo4j", Password);
             UpdateSettings(new Dictionary<string, string> { {ListenAddr, Ipv6EnabledAddr} });
         }
 
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public void Kill()
         {
             Debug("Killing server...");
-            RunCommand("neoctrl-stop", new []{"-k", HomeDir});
+            RunCommand("neoctrl-stop", "-k", HomeDir);
             Debug("Server killed.");
         }
 

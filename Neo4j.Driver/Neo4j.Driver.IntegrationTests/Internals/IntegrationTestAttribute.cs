@@ -16,11 +16,22 @@
 // limitations under the License.
 
 using Xunit;
-using static Neo4j.Driver.IntegrationTests.BoltkitHelper;
-using static Neo4j.Driver.IntegrationTests.Internals.ServerVersion;
+using static Neo4j.Driver.IntegrationTests.Internals.BoltkitHelper;
+using static Neo4j.Driver.Internal.Routing.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests
 {
+    public class RequireBoltStubServerFactAttribute : FactAttribute
+    {
+        public RequireBoltStubServerFactAttribute()
+        {
+            if (!IsBoltkitAvailable())
+            {
+                Skip = TestRequireBoltkit;
+            }
+        }
+    }
+
     /// <summary>
     /// Use `Require31ServerFact` tag for the tests that require a server with version equals to or greater than 3.1
     /// </summary>

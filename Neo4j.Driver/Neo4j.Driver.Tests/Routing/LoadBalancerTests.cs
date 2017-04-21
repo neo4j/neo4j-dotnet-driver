@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests.Routing
 {
     public class LoadBalancerTests
     {
@@ -39,10 +40,11 @@ namespace Neo4j.Driver.Tests
             {
                 var uri = new Uri("bolt://123:456");
                 var config = Config.DefaultConfig;
+                var routingSettings = new RoutingSettings(new Dictionary<string, string>());
                 var connSettings = new ConnectionSettings(uri, new Mock<IAuthToken>().Object, config);
                 var poolSettings = new ConnectionPoolSettings(config);
 
-                var loadbalancer = new LoadBalancer(connSettings, poolSettings, null);
+                var loadbalancer = new LoadBalancer(routingSettings, connSettings, poolSettings, null);
 
                 loadbalancer.ToString().Should().Be(
                     "_routingTable: {[_routers: bolt://123:456/], [_detachedRouters: ], [_readers: ], [_writers: ]}, " +
