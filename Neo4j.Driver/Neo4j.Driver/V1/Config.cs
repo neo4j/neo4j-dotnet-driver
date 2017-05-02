@@ -134,7 +134,7 @@ namespace Neo4j.Driver.V1
         /// Any negative <see cref="TimeSpan"/> value will be considered to be "Infinite",
         /// a.k.a. pooled connections will never be stale.
         /// </summary>
-        internal TimeSpan ConnectionIdleTimeout { get; set; } = Infinite;
+        public TimeSpan ConnectionIdleTimeout { get; set; } = Infinite;
 
         /// <summary>
         /// Gets or sets the connections to support ipv6 addresses.
@@ -199,6 +199,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithMaxTransactionRetryTime(TimeSpan time)
             {
                 _config.MaxTransactionRetryTime = time;
+                return this;
+            }
+
+            public IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan)
+            {
+                _config.ConnectionIdleTimeout = timeSpan;
                 return this;
             }
 
@@ -284,6 +290,15 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithMaxTransactionRetryTime(TimeSpan time);
+
+        /// <summary>
+        /// Specify the connection idle timeout.
+        /// The connection that has been idled in pool for longer than specified timeout will not be reused but closed.
+        /// </summary>
+        /// <param name="timeSpan">The max timespan that a connection can be reused after has been idle for.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan);
 
         /// <summary>
         /// Setting this option to true will enable ipv6 on socket connections.
