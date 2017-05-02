@@ -177,7 +177,7 @@ namespace Neo4j.Driver.Examples
             }
 
             // tag::config-unencrypted[]
-            public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
+            public IDriver CreateDriverWithCustomizedSecurityStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
                     new Config {EncryptionLevel = EncryptionLevel.None});
@@ -188,7 +188,7 @@ namespace Neo4j.Driver.Examples
             public void TestConfigUnencryptedExample()
             {
                 // Given
-                using (var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password))
+                using (var driver = CreateDriverWithCustomizedSecurityStrategy(Uri, User, Password))
                 using (var session = driver.Session())
                 {
                     // When & Then
@@ -222,6 +222,33 @@ namespace Neo4j.Driver.Examples
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                }
+            }
+        }
+
+        public class KerberosAuthExample : BaseExample
+        {
+            public KerberosAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::kerberos-auth[]
+            public IDriver CreateDriverWithKerberosAuth(string uri, string ticket)
+            {
+                return GraphDatabase.Driver(uri, AuthTokens.Kerberos(ticket),
+                    new Config { EncryptionLevel = EncryptionLevel.None });
+            }
+            // end::kerberos-auth[]
+
+            [RequireServerFact]
+            public void TestKerberosAuthExample()
+            {
+                // Given
+                using (var driver = CreateDriverWithKerberosAuth(Uri, "kerberos ticket"))
+                {
+                    // When & Then
+                    driver.Should().BeOfType<Internal.Driver>();
                 }
             }
         }
