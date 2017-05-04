@@ -16,6 +16,9 @@
 // limitations under the License.
 namespace Neo4j.Driver.V1
 {
+    /// <summary>
+    /// Provides basic information of the server where the cypher statement was executed.
+    /// </summary>
     public interface IServerInfo
     {
         /// <summary>

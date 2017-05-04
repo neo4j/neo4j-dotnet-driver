@@ -46,9 +46,18 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
         ISession Session(AccessMode defaultMode = AccessMode.Write, string bookmark = null);
     }
-
+    /// <summary>
+    /// Used by driver to route a cypher statement to a write server or a read server.
+    /// </summary>
     public enum AccessMode
     {
-        Read, Write
+        /// <summary>
+        /// Requires cypher statememt to be carried out on a read server
+        /// </summary>
+        Read,
+        /// <summary>
+        /// Requires cypher statement to be executed on a write server
+        /// </summary>
+        Write
     }
 }
