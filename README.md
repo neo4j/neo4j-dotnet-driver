@@ -1,11 +1,11 @@
 # Neo4j .NET Driver
-This is the source code of the driver under development. To get the lateset statble released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/). To find changelogs, rich examples of how to use the driver, and API documents of the driver, checkout [wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki). 
+This is the source code of the driver under development. To get the latest stable released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/). To find changelogs, rich examples of how to use the driver and API documents of the driver, checkout the [wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki). 
 
 ## Minimum viable snippet
 
-Add the driver to your project using Nuget Package Manager:
+Add the driver to your project using the Nuget Package Manager:
 
-    PM> Install-Package Neo4j.Driver -Pre
+    PM> Install-Package Neo4j.Driver
 
 Connect to a Neo4j 3.1.0+ database
 
@@ -41,7 +41,7 @@ The integration tests will use [boltkit](https://github.com/neo4j-contrib/boltki
 They can fail for three main reasons:
 
 1. Python.exe and Python scripts folder is not installed and added in the system PATH variable
-2. The tests aren't run as Administrator (so you'll need to run Visual Studio as administrator)
+2. The tests aren't run as Administrator (you'll need to run Visual Studio as administrator)
 3. You have an instance of Neo4j already installed / running on your local machine.
 
 ## Run tests
