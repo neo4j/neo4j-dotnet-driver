@@ -45,6 +45,8 @@
     <Compile Include="Internal\ConnectionPoolStatistics.cs" />
     <Compile Include="Internal\ConnectionSettings.cs" />
     <Compile Include="Internal\Connector\DelegatedConnection.cs" />
+    <Compile Include="Internal\Connector\IChunkedInputStream.cs" />
+    <Compile Include="Internal\Connector\IChunkedOutputStream.cs" />
     <Compile Include="Internal\Extensions\ErrorExtensions.cs" />
     <Compile Include="Internal\Driver.cs" />
     <Compile Include="Internal\IConnectionProvider.cs" />

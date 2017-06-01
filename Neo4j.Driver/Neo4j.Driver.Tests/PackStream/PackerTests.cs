@@ -85,20 +85,6 @@ namespace Neo4j.Driver.Tests
 
             }
 
-//            public class PackRawMethod
-//            {
-//                [Fact]
-//                public void ShouldUnpacPawBytesSuccessfully()
-//                {
-//                    var mocks = new Mocks();
-//                    var u = new PackStream.Packer(mocks.OutputStream);
-//
-//                    var bytes = new byte[] { 1, 2, 3 };
-//                    u.PackRaw(bytes);
-//                    mocks.VerifyWrite(bytes);
-//                }
-//            }
-
             public class PackLongMethod
             {
                 [Theory]

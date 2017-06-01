@@ -51,6 +51,60 @@ namespace Neo4j.Driver.IntegrationTests
     }
 
     /// <summary>
+    /// Use `Require32ServerFact` tag for the tests that require a server with version equals to or greater than 3.2
+    /// </summary>
+    public class Require32ServerFactAttribute : FactAttribute
+    {
+        public Require32ServerFactAttribute()
+        {
+            if (!IsBoltkitAvailable())
+            {
+                Skip = TestRequireBoltkit;
+            }
+            if (!(Version(ServerVersion()) >= V3_2_0))
+            {
+                Skip = $"Require server version >= 3.2, while current server version is {ServerVersion()}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Use `RequireServerVersionGreaterThanOrEqualToFactAttribute` tag for the tests that require a server with version equals to or greater than given version
+    /// </summary>
+    public class RequireServerVersionGreaterThanOrEqualToFactAttribute : FactAttribute
+    {
+        public RequireServerVersionGreaterThanOrEqualToFactAttribute(string version)
+        {
+            if (!IsBoltkitAvailable())
+            {
+                Skip = TestRequireBoltkit;
+            }
+            if (!(Version(ServerVersion()) >= Version(version)))
+            {
+                Skip = $"Require server version >= {version}, while current server version is {ServerVersion()}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Use `RequireServerVersionLessThanFactAttribute` tag for the tests that require a server with version less than the given version
+    /// </summary>
+    public class RequireServerVersionLessThanFactAttribute : FactAttribute
+    {
+        public RequireServerVersionLessThanFactAttribute(string version)
+        {
+            if (!IsBoltkitAvailable())
+            {
+                Skip = TestRequireBoltkit;
+            }
+            if (!(Version(version) >= Version(ServerVersion())))
+            {
+                Skip = $"Require server version < {version}, while current server version is {ServerVersion()}";
+            }
+        }
+    }
+
+    /// <summary>
     /// Use `RequireServerFact` tag for the tests that require a single instance
     /// </summary>
     public class RequireServerFactAttribute : FactAttribute

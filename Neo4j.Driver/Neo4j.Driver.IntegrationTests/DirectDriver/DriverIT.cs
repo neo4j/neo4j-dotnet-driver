@@ -16,12 +16,14 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -32,6 +34,49 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public DriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.2.0")]
+        public void ShouldPackAndUnpackBytes()
+        {
+            // Given
+            var converter = new BigEndianTargetBitConverter();
+            byte[] byteArray = converter.GetBytes("hello, world");
+
+            // When
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
+            using (var session = driver.Session())
+            {
+                var result = session.Run(
+                    "CREATE (a {value:{value}}) RETURN a.value", new Dictionary<string, object> {{"value", byteArray}});
+                // Then
+                foreach (var record in result)
+                {
+                    var value = record["a.value"].ValueAs<byte[]>();
+                    value.Should().BeEquivalentTo(byteArray);
+                }
+            }
+        }
+
+        [RequireServerVersionLessThanFact("3.2.0")]
+        public void ShouldNotPackBytes()
+        {
+            // Given
+            var converter = new BigEndianTargetBitConverter();
+            byte[] byteArray = converter.GetBytes("hello, world");
+
+            // When
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
+            using (var session = driver.Session())
+            {
+                var exception = Record.Exception(() =>
+                            session.Run("CREATE (a {value:{value}})",
+                                new Dictionary<string, object> {{"value", byteArray}}));
+
+                // Then
+                exception.Should().BeOfType<ProtocolException>();
+                exception.Message.Should().Be("Cannot understand value with type System.Byte[]");
+            }
         }
 
         [Require31ServerFact]
@@ -51,7 +96,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken))
             using (var session = driver.Session())
             {
-                var exception = Record.Exception(()=> session.Run("RETURN 1"));
+                var exception = Record.Exception(() => session.Run("RETURN 1"));
                 exception.GetBaseException().Should().BeOfType<NotSupportedException>();
                 exception.GetBaseException().Message.Should().Contain("This protocol version is not supported");
             }
@@ -71,7 +116,8 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireServerFact]
         public void ShouldConnectIPv4AddressIfIpv6Enabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config {Ipv6Enabled = true}))
+            using (
+                var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config {Ipv6Enabled = true}))
             using (var session = driver.Session())
             {
                 var ret = session.Run("RETURN 1").Single();
@@ -119,11 +165,11 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var statisticsCollector = new StatisticsCollector();
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
-                {
-                    DriverStatisticsCollector = statisticsCollector,
-                    ConnectionTimeout = Config.Infinite,
-                    EncryptionLevel = EncryptionLevel.Encrypted
-                });
+            {
+                DriverStatisticsCollector = statisticsCollector,
+                ConnectionTimeout = Config.Infinite,
+                EncryptionLevel = EncryptionLevel.Encrypted
+            });
 
             Output.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Started");
 
@@ -134,7 +180,11 @@ namespace Neo4j.Driver.IntegrationTests
                     Output.WriteLine(statisticsCollector.CollectStatistics().ToContentString());
                 }
 
-                string[] queries = { "RETURN 1295 + 42", "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)" };
+                string[] queries =
+                {
+                    "RETURN 1295 + 42",
+                    "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
+                };
                 try
                 {
                     using (var session = driver.Session())
@@ -144,7 +194,8 @@ namespace Neo4j.Driver.IntegrationTests
                 }
                 catch (Exception e)
                 {
-                    Output.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Thread {i} failed to run query {queries[i%2]} due to {e.Message}");
+                    Output.WriteLine(
+                        $"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Thread {i} failed to run query {queries[i % 2]} due to {e.Message}");
                 }
             });
 
