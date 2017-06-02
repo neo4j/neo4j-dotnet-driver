@@ -37,12 +37,12 @@ namespace Neo4j.Driver.Internal
         private readonly ILogger _logger;
         private bool _isOpen = true;
 
-        private string _bookmark;
-        public string LastBookmark => _bookmark;
+        private Bookmark _bookmark;
+        public string LastBookmark => _bookmark?.MaxBookmarkAsString();
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, string bookmark = null) :base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null) :base(logger)
         {
             _connectionProvider = provider;
             _retryLogic = retryLogic;
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction(string bookmark)
         {
-            UpdateBookmark(bookmark);
+            UpdateBookmark(Bookmark.From(bookmark));
             return BeginTransaction();
         }
 
@@ -194,9 +194,9 @@ namespace Neo4j.Driver.Internal
         /// Only set the bookmark to a new value if the new value is not null
         /// </summary>
         /// <param name="bookmark">The new bookmark</param>
-        private void UpdateBookmark(string bookmark)
+        private void UpdateBookmark(Bookmark bookmark)
         {
-            if (bookmark != null)
+            if (bookmark != null && !bookmark.IsEmpty())
             {
                 _bookmark = bookmark;
             }

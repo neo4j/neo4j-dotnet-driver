@@ -27,8 +27,7 @@ namespace Neo4j.Driver.Internal
         private readonly TransactionConnection _connection;
         private readonly ITransactionResourceHandler _resourceHandler;
 
-        internal const string BookmarkKey = "bookmark";
-        internal string Bookmark { get; private set; }
+        internal Bookmark Bookmark { get; private set; }
 
         private const string Begin = "BEGIN";
         private const string Commit = "COMMIT";
@@ -36,18 +35,19 @@ namespace Neo4j.Driver.Internal
 
         private State _state = State.Active;
 
-        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, string bookmark = null) : base(logger)
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
         {
             _connection = new TransactionConnection(this, connection);
             _resourceHandler = resourceHandler;
 
             IDictionary<string, object> paramters = new Dictionary<string, object>();
-            if (bookmark != null)
+            var isBookmarkAvailable = bookmark != null && !bookmark.IsEmpty();
+            if (isBookmarkAvailable)
             {
-                paramters.Add(BookmarkKey, bookmark);
+                paramters = bookmark.AsBeginTransactionParameters();
             }
             _connection.Run(Begin, paramters);
-            if (bookmark != null)
+            if (isBookmarkAvailable)
             {
                 _connection.Sync();
             }
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Internal
                 {
                     try
                     {
-                        _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = s));
+                        _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
                         _connection.Sync();
                         _state = State.Succeeded;
                     }

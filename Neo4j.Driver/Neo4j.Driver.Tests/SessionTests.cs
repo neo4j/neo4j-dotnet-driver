@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests
     {
         internal static Session NewSession(IConnection connection, ILogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
-            return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, bookmark);
+            return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, Bookmark.From(bookmark));
         }
 
         public class RunMethod
@@ -72,15 +72,20 @@ namespace Neo4j.Driver.Tests
                 session.LastBookmark.Should().Be(null);
             }
 
+            private string FakeABookmark(int num)
+            {
+                return $"{Bookmark.BookmarkPrefix}{num}";
+            }
+
             [Fact]
             public void ShouldIgnoreNullBookmark()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object, bookmark: "a bookmark");
-                session.LastBookmark.Should().Be("a bookmark");
+                var session = NewSession(mockConn.Object, bookmark: FakeABookmark(123));
+                session.LastBookmark.Should().EndWith("123");
                 session.BeginTransaction(null);
-                session.LastBookmark.Should().Be("a bookmark");
+                session.LastBookmark.Should().EndWith("123");
             }
 
             [Fact]
@@ -88,10 +93,11 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object, bookmark:"a bookmark");
-                session.LastBookmark.Should().Be("a bookmark");
-                session.BeginTransaction("set new bookmark");
-                session.LastBookmark.Should().Be("set new bookmark");
+                var session = NewSession(mockConn.Object, bookmark:FakeABookmark(123));
+                session.LastBookmark.Should().EndWith("123");
+                // begin tx will directly override the bookmark that was originally set before
+                session.BeginTransaction(FakeABookmark(12));
+                session.LastBookmark.Should().EndWith("12");
             }
 
             [Fact]

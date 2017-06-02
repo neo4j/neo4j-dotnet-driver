@@ -43,10 +43,10 @@ namespace Neo4j.Driver.Tests
             public void ShouldSendBookmarkIfPresents()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new Transaction(mockConn.Object, null, null, "a bookmark");
+                var bookmark = Bookmark.From("a bookmark");
+                var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
-                IDictionary<string, object> paramters = new Dictionary<string, object>();
-                paramters.Add("bookmark", "a bookmark");
+                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
 
                 mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);

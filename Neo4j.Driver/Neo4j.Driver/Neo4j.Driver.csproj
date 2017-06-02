@@ -41,6 +41,7 @@
     <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Internal\Bookmark.cs" />
     <Compile Include="Internal\ConcurrentSet.cs" />
     <Compile Include="Internal\ConnectionPoolStatistics.cs" />
     <Compile Include="Internal\ConnectionSettings.cs" />

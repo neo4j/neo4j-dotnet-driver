@@ -121,7 +121,7 @@ namespace Neo4j.Driver.Internal.Result
         public void CollectBookmark(IDictionary<string, object> meta)
         {
             throw new NotSupportedException(
-                $"Should not get a bookmark on a result. bookmark = {meta[Transaction.BookmarkKey].As<string>()}");
+                $"Should not get a bookmark on a result. bookmark = {meta[Bookmark.BookmarkKey].As<string>()}");
         }
 
         public void CollectSummary(IDictionary<string, object> meta)

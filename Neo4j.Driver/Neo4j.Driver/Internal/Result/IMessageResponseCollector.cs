@@ -45,9 +45,9 @@ namespace Neo4j.Driver.Internal.Result
 
         public override void CollectBookmark(IDictionary<string, object> meta)
         {
-            if (meta.ContainsKey(Transaction.BookmarkKey))
+            if (meta.ContainsKey(Bookmark.BookmarkKey))
             {
-                var bookmark = meta[Transaction.BookmarkKey].As<string>();
+                var bookmark = meta[Bookmark.BookmarkKey].As<string>();
                 _setBookmarkCallbackAction.Invoke(bookmark);
             }
         }
