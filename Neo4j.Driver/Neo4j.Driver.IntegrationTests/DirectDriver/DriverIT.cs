@@ -79,7 +79,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void ShouldConnectIPv6AddressIfEnabled()
         {
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = true}))
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void ShouldNotConnectIPv6AddressIfDisabled()
         {
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken))

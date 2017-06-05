@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void ShouldContainLastBookmarkAfterTx()
         {
             using (var session = Driver.Session())
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void BookmarkUnchangedAfterRolledBackTx()
         {
             using (var session = Driver.Session())
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void BookmarkUnchangedAfterTxFailure()
         {
             using (var session = Driver.Session())
@@ -84,7 +84,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void ShouldThrowForInvalidBookmark()
         {
             var invalidBookmark = "invalid bookmark format";
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void ShouldThrowForUnreachableBookmark()
         {
             using (var session = (Session)Driver.Session())
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
 
-        [Require31ServerFact]
+        [RequireServerVersionGreaterThanOrEqualToFactAttribute("3.1.0")]
         public void ShouldWaitOnBookmark()
         {
             using (var session = Driver.Session())
