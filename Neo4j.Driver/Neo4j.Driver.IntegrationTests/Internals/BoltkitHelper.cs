@@ -24,7 +24,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     public class BoltkitHelper
     {
         public const string TestRequireBoltkit = "Boltkit required to run test not accessible";
-        public static readonly string BoltkitArgs = Environment.GetEnvironmentVariable("NeoctrlArgs") ?? "-e 3.1.2";
+        public static readonly string BoltkitArgs = Environment.GetEnvironmentVariable("NeoctrlArgs") ?? "-e 3.2.1";
         public static readonly string TargetDir = new DirectoryInfo("../../../../Target").FullName;
         private static BoltkitStatus _boltkitAvailable = BoltkitStatus.Unknown;
         private static readonly object _syncLock = new object();
