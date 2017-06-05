@@ -83,6 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
             Sync();
             ((ServerInfo)Server).Version = initCollector.Server;
+            _client.UpdatePackStream(initCollector.Server);
         }
 
         public void Sync()

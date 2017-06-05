@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,10 +27,51 @@ namespace Neo4j.Driver.Internal.Packstream
 {
     internal class PackStreamMessageFormatV1
     {
-        public PackStreamMessageFormatV1(ITcpSocketClient tcpSocketClient, ILogger logger)
+        public PackStreamMessageFormatV1(ITcpSocketClient tcpSocketClient, ILogger logger, bool supportBytes=true)
         {
-            Writer = new WriterV1(new ChunkedOutputStream(tcpSocketClient, logger));
-            Reader = new ReaderV1(new ChunkedInputStream(tcpSocketClient, logger));
+            var output = new ChunkedOutputStream(tcpSocketClient, logger);
+            var input = new ChunkedInputStream(tcpSocketClient, logger);
+            if (supportBytes)
+            {
+                Writer = new WriterV1(output);
+                Reader = new ReaderV1(input);
+            }
+            else
+            {
+                Writer = new WriterBytesIncompatibleV1(output);
+                Reader = new ReaderBytesIncompatibleV1(input);
+            }
+        }
+
+        public class WriterBytesIncompatibleV1 : WriterV1
+        {
+            public WriterBytesIncompatibleV1(IChunkedOutputStream outputStream) : base(outputStream)
+            {
+            }
+            public override void PackValue(object value)
+            {
+                if (value is byte[])
+                {
+                    throw new ProtocolException($"Cannot understand { nameof(value) } with type { value.GetType().FullName}");
+                }
+                base.PackValue(value);
+            }
+        }
+
+        public class ReaderBytesIncompatibleV1 : ReaderV1
+        {
+            public ReaderBytesIncompatibleV1(IChunkedInputStream inputStream) : base(inputStream)
+            {
+            }
+
+            public override object UnpackValue(PackStream.PackType type)
+            {
+                if (type == PackStream.PackType.Bytes)
+                {
+                    throw new ProtocolException($"Unsupported type {type}.");
+                }
+                return base.UnpackValue(type);
+            }
         }
 
         public IWriter Writer { get; }
@@ -38,10 +80,10 @@ namespace Neo4j.Driver.Internal.Packstream
         public class ReaderV1 : IReader
         {
             private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
-            private readonly ChunkedInputStream _inputStream;
+            private readonly IChunkedInputStream _inputStream;
             private readonly PackStream.Unpacker _unpacker;
 
-            public ReaderV1(ChunkedInputStream inputStream)
+            public ReaderV1(IChunkedInputStream inputStream)
             {
                 _inputStream = inputStream;
                 _unpacker = new PackStream.Unpacker(_inputStream);
@@ -75,10 +117,15 @@ namespace Neo4j.Driver.Internal.Packstream
             public object UnpackValue()
             {
                 var type = _unpacker.PeekNextType();
+                return UnpackValue(type);
+            }
+
+            public virtual object UnpackValue(PackStream.PackType type)
+            {
                 switch (type)
                 {
                     case PackStream.PackType.Bytes:
-                        break;
+                        return _unpacker.UnpackBytes();
                     case PackStream.PackType.Null:
                         return _unpacker.UnpackNull();
                     case PackStream.PackType.Boolean:
@@ -101,7 +148,8 @@ namespace Neo4j.Driver.Internal.Packstream
                                 Throw.ProtocolException.IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
                                 return UnpackNode();
                             case RELATIONSHIP:
-                                Throw.ProtocolException.IfNotEqual(RelationshipFields, size, nameof(RelationshipFields), nameof(size));
+                                Throw.ProtocolException.IfNotEqual(RelationshipFields, size, nameof(RelationshipFields),
+                                    nameof(size));
                                 return UnpackRelationship();
                             case PATH:
                                 Throw.ProtocolException.IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
@@ -113,30 +161,34 @@ namespace Neo4j.Driver.Internal.Packstream
             }
 
             private IPath UnpackPath()
-            { 
+            {
                 // List of unique nodes
                 var uniqNodes = new INode[(int) _unpacker.UnpackListHeader()];
-                for(int i = 0; i < uniqNodes.Length; i ++)
+                for (int i = 0; i < uniqNodes.Length; i++)
                 {
-                    Throw.ProtocolException.IfNotEqual(NodeFields, _unpacker.UnpackStructHeader(), nameof(NodeFields), $"received{nameof(NodeFields)}");
-                    Throw.ProtocolException.IfNotEqual(NODE, _unpacker.UnpackStructSignature(),nameof(NODE), $"received{nameof(NODE)}");
-                    uniqNodes[i]=UnpackNode();
+                    Throw.ProtocolException.IfNotEqual(NodeFields, _unpacker.UnpackStructHeader(), nameof(NodeFields),
+                        $"received{nameof(NodeFields)}");
+                    Throw.ProtocolException.IfNotEqual(NODE, _unpacker.UnpackStructSignature(), nameof(NODE),
+                        $"received{nameof(NODE)}");
+                    uniqNodes[i] = UnpackNode();
                 }
 
                 // List of unique relationships, without start/end information
-                var uniqRels = new Relationship[(int)_unpacker.UnpackListHeader()];
+                var uniqRels = new Relationship[(int) _unpacker.UnpackListHeader()];
                 for (int i = 0; i < uniqRels.Length; i++)
                 {
-                    Throw.ProtocolException.IfNotEqual( UnboundRelationshipFields, _unpacker.UnpackStructHeader(), nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
-                    Throw.ProtocolException.IfNotEqual(UNBOUND_RELATIONSHIP, _unpacker.UnpackStructSignature(), nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
+                    Throw.ProtocolException.IfNotEqual(UnboundRelationshipFields, _unpacker.UnpackStructHeader(),
+                        nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
+                    Throw.ProtocolException.IfNotEqual(UNBOUND_RELATIONSHIP, _unpacker.UnpackStructSignature(),
+                        nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
                     var urn = _unpacker.UnpackLong();
                     var relType = _unpacker.UnpackString();
                     var props = UnpackMap();
-                    uniqRels[i]=new Relationship(urn, -1, -1, relType, props);
+                    uniqRels[i] = new Relationship(urn, -1, -1, relType, props);
                 }
 
                 // Path sequence
-                var length = (int)_unpacker.UnpackListHeader();
+                var length = (int) _unpacker.UnpackListHeader();
 
                 // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in their "path order"
                 var segments = new ISegment[length / 2];
@@ -149,8 +201,8 @@ namespace Neo4j.Driver.Internal.Packstream
                 nodes[0] = prevNode;
                 for (int i = 0; i < segments.Length; i++)
                 {
-                    int relIdx = (int)_unpacker.UnpackLong();
-                    nextNode = uniqNodes[(int)_unpacker.UnpackLong()];
+                    int relIdx = (int) _unpacker.UnpackLong();
+                    nextNode = uniqNodes[(int) _unpacker.UnpackLong()];
                     // Negative rel index means this rel was traversed "inversed" from its direction
                     if (relIdx < 0)
                     {
@@ -168,7 +220,7 @@ namespace Neo4j.Driver.Internal.Packstream
                     segments[i] = new Segment(prevNode, rel, nextNode);
                     prevNode = nextNode;
                 }
-                return new Path(segments.ToList(), nodes.ToList(),rels.ToList());
+                return new Path(segments.ToList(), nodes.ToList(), rels.ToList());
             }
 
             private IRelationship UnpackRelationship()
@@ -186,13 +238,13 @@ namespace Neo4j.Driver.Internal.Packstream
             {
                 var urn = _unpacker.UnpackLong();
 
-                var numLabels = (int)_unpacker.UnpackListHeader();
+                var numLabels = (int) _unpacker.UnpackListHeader();
                 var labels = new List<string>(numLabels);
                 for (var i = 0; i < numLabels; i++)
                 {
                     labels.Add(_unpacker.UnpackString());
                 }
-                var numProps = (int)_unpacker.UnpackMapHeader();
+                var numProps = (int) _unpacker.UnpackMapHeader();
                 var props = new Dictionary<string, object>(numProps);
                 for (var j = 0; j < numProps; j++)
                 {
@@ -219,7 +271,7 @@ namespace Neo4j.Driver.Internal.Packstream
 
             private void UnpackRecordMessage(IMessageResponseHandler responseHandler)
             {
-                var fieldCount = (int)_unpacker.UnpackListHeader();
+                var fieldCount = (int) _unpacker.UnpackListHeader();
                 var fields = new object[fieldCount];
                 for (var i = 0; i < fieldCount; i++)
                 {
@@ -241,7 +293,7 @@ namespace Neo4j.Driver.Internal.Packstream
 
             private Dictionary<string, object> UnpackMap()
             {
-                var size = (int)_unpacker.UnpackMapHeader();
+                var size = (int) _unpacker.UnpackMapHeader();
                 if (size == 0)
                 {
                     return EmptyStringValueMap;
@@ -257,7 +309,7 @@ namespace Neo4j.Driver.Internal.Packstream
 
             private IList<object> UnpackList()
             {
-                var size = (int)_unpacker.UnpackListHeader();
+                var size = (int) _unpacker.UnpackListHeader();
                 var vals = new object[size];
                 for (var j = 0; j < size; j++)
                 {
@@ -269,11 +321,11 @@ namespace Neo4j.Driver.Internal.Packstream
 
         public class WriterV1 : IWriter, IMessageRequestHandler
         {
-            private readonly ChunkedOutputStream _outputStream;
+            private readonly IChunkedOutputStream _outputStream;
             private readonly PackStream.Packer _packer;
-            
 
-            public WriterV1(ChunkedOutputStream outputStream)
+
+            public WriterV1(IChunkedOutputStream outputStream)
             {
                 _outputStream = outputStream;
                 _packer = new PackStream.Packer(_outputStream);
@@ -309,13 +361,13 @@ namespace Neo4j.Driver.Internal.Packstream
 
             public void HandleResetMessage()
             {
-                _packer.PackStructHeader( 0, MSG_RESET );
+                _packer.PackStructHeader(0, MSG_RESET);
                 PackMessageTail();
             }
 
             public void HandleAckFailureMessage()
             {
-                _packer.PackStructHeader(0, MSG_ACK_FAILURE );
+                _packer.PackStructHeader(0, MSG_ACK_FAILURE);
                 PackMessageTail();
             }
 
@@ -351,7 +403,7 @@ namespace Neo4j.Driver.Internal.Packstream
             }
 
 
-            private void PackValue(object value)
+            public virtual void PackValue(object value)
             {
                 _packer.Pack(value);
                 // the driver should never pack node, relationship or path

@@ -32,8 +32,27 @@ namespace Neo4j.Driver.Tests
 {
     public class PackStreamMessageFormatV1Tests
     {
-        public class WriterV1
+        public class WriterV1Tests
         {
+            public class PackValueMethod
+            {
+                [Fact]
+                public void ShouldPackBytes()
+                {
+                    var outputStreamMock = new Mock<IChunkedOutputStream>();
+
+                    var writer = new PackStreamMessageFormatV1.WriterV1(outputStreamMock.Object);
+                    var converter = new BigEndianTargetBitConverter();
+                    var value = new byte[0];
+
+                    outputStreamMock.Setup(x => x.Write(It.IsAny<byte[]>())).Callback((byte[] data)=>value = data);
+
+                    var byteArray = converter.GetBytes("hello, world");
+                    writer.PackValue(byteArray);
+                    converter.ToString(value).Should().Be("hello, world");
+                }
+            }
+
             private class Mocks
             {
                 public Mock<Stream> MockStream { get; }
@@ -278,10 +297,48 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class ReaderBytesIncompatibleV1Tests
+        {
+            public class UnpackValueMethod
+            {
+                [Fact]
+                public void ShouldThrowExceptionForUnpackingBytes()
+                {
+                    var reader = new PackStreamMessageFormatV1.ReaderBytesIncompatibleV1(null);
+                    var ex = Record.Exception(()=> reader.UnpackValue(PackStream.PackType.Bytes));
+                    ex.Should().BeOfType<ProtocolException>();
+                }
+            }
+        }
+
+        public class WriterBytesIncompatibleV2Tests
+        {
+            public class PackValueMethod
+            {
+                [Fact]
+                public void ShouldThrowExceptionForPackingBytes()
+                {
+                    var writer = new PackStreamMessageFormatV1.WriterBytesIncompatibleV1(null);
+                    var ex = Record.Exception(() => writer.PackValue(new byte[] {0xCB}));
+                    ex.Should().BeOfType<ProtocolException>();
+                }
+            }
+        }
+
         public class ReaderV1Tests
         {
             public class UnpackValueMethod
             {
+                public void ShouldPackBytes()
+                {
+                    var inputStreamMock = new Mock<IChunkedInputStream>();
+                    inputStreamMock.SetupSequence(x => x.ReadByte()).Returns(PackStream.BYTES_8).Returns((byte)0x00);
+                    var reader = new PackStreamMessageFormatV1.ReaderV1(inputStreamMock.Object);
+
+                    var unpackValue = reader.UnpackValue(PackStream.PackType.Bytes).ValueAs<byte[]>();
+                    unpackValue.Length.Should().Be(0);
+                }
+
                 [Theory]
                 [InlineData(2147483648, new byte[] {0xCB, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00})]
                 [InlineData(9223372036854775807, new byte[] {0xCB, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF})]

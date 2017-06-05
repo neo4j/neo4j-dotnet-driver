@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Packstream;
+using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -65,9 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
             switch (version)
             {
                 case ProtocolVersion.Version1:
-                    var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _logger);
-                    _writer = formatV1.Writer;
-                    _reader = formatV1.Reader;
+                    SetupPackStreamFormatWriterAndReader();
                     break;
                 case ProtocolVersion.NoVersion:
                     throw new NotSupportedException("The Neo4j server does not support any of the protocol versions supported by this client. " +
@@ -80,6 +79,14 @@ namespace Neo4j.Driver.Internal.Connector
 
             }
         }
+
+        private void SetupPackStreamFormatWriterAndReader(bool supportBytes = true)
+        {
+            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _logger, supportBytes);
+            _writer = formatV1.Writer;
+            _reader = formatV1.Reader;
+        }
+
 
         private async Task Stop()
         {
@@ -182,6 +189,16 @@ namespace Neo4j.Driver.Internal.Connector
                 return;
 
             Task.Run(() => Stop()).Wait();
+        }
+
+        public void UpdatePackStream(string serverVersion)
+        {
+            var version = ServerVersion.Version(serverVersion);
+            if ( version >= ServerVersion.V3_2_0 )
+            {
+                return;
+            }
+            SetupPackStreamFormatWriterAndReader(false);
         }
     }
 }

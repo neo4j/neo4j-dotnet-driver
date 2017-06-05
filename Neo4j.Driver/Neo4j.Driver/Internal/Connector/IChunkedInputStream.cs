@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -14,21 +14,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Messaging;
-
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal interface ISocketClient : IDisposable
+    internal interface IChunkedInputStream : IInputStream
     {
-        Task Start();
-        void Send(IEnumerable<IRequestMessage> messages);
-        void Receive(IMessageResponseHandler responseHandler);
-        void ReceiveOne(IMessageResponseHandler responseHandler);
-        bool IsOpen { get; }
-        void UpdatePackStream(string serverVersion);
+        void ReadMessageTail();
     }
 }

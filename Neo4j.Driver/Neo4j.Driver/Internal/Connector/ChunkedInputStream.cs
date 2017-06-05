@@ -20,7 +20,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal class ChunkedInputStream : IInputStream
+    internal class ChunkedInputStream : IChunkedInputStream
     {
         private const int ChunkSize = 1024*8; 
         public static readonly byte[] Tail = {0x00, 0x00};

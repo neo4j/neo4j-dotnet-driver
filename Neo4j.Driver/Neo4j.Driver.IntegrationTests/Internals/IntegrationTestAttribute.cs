@@ -33,19 +33,37 @@ namespace Neo4j.Driver.IntegrationTests
     }
 
     /// <summary>
-    /// Use `Require31ServerFact` tag for the tests that require a server with version equals to or greater than 3.1
+    /// Use `RequireServerVersionGreaterThanOrEqualToFact` tag for the tests that require a server with version equals to or greater than given version
     /// </summary>
-    public class Require31ServerFactAttribute : FactAttribute
+    public class RequireServerVersionGreaterThanOrEqualToFact : FactAttribute
     {
-        public Require31ServerFactAttribute()
+        public RequireServerVersionGreaterThanOrEqualToFact(string version)
         {
             if (!IsBoltkitAvailable())
             {
                 Skip = TestRequireBoltkit;
             }
-            if (!(Version(ServerVersion()) >= V3_1_0))
+            if (!(Version(ServerVersion()) >= Version(version)))
             {
-                Skip = $"Require server version >= 3.1, while current server version is {ServerVersion()}";
+                Skip = $"Require server version >= {version}, while current server version is {ServerVersion()}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Use `RequireServerVersionLessThanFact` tag for the tests that require a server with version less than the given version
+    /// </summary>
+    public class RequireServerVersionLessThanFact : FactAttribute
+    {
+        public RequireServerVersionLessThanFact(string version)
+        {
+            if (!IsBoltkitAvailable())
+            {
+                Skip = TestRequireBoltkit;
+            }
+            if (!(Version(version) >= Version(ServerVersion())))
+            {
+                Skip = $"Require server version < {version}, while current server version is {ServerVersion()}";
             }
         }
     }

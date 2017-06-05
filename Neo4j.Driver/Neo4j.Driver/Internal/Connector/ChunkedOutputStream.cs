@@ -20,7 +20,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal class ChunkedOutputStream : IOutputStream
+    internal class ChunkedOutputStream : IChunkedOutputStream
     {
         internal const int BufferSize = 1024*8;
         private const int ChunkHeaderBufferSize = 2;
