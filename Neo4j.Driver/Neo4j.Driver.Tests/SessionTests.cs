@@ -32,7 +32,12 @@ namespace Neo4j.Driver.Tests
     {
         internal static Session NewSession(IConnection connection, ILogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
-            return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, bookmark);
+            return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, Bookmark.From(bookmark));
+        }
+
+        internal static string FakeABookmark(int num)
+        {
+            return $"{Bookmark.BookmarkPrefix}{num}";
         }
 
         public class RunMethod
@@ -77,10 +82,10 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object, bookmark: "a bookmark");
-                session.LastBookmark.Should().Be("a bookmark");
+                var session = NewSession(mockConn.Object, bookmark: FakeABookmark(123));
+                session.LastBookmark.Should().EndWith("123");
                 session.BeginTransaction(null);
-                session.LastBookmark.Should().Be("a bookmark");
+                session.LastBookmark.Should().EndWith("123");
             }
 
             [Fact]
@@ -88,10 +93,11 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object, bookmark:"a bookmark");
-                session.LastBookmark.Should().Be("a bookmark");
-                session.BeginTransaction("set new bookmark");
-                session.LastBookmark.Should().Be("set new bookmark");
+                var session = NewSession(mockConn.Object, bookmark:FakeABookmark(123));
+                session.LastBookmark.Should().EndWith("123");
+                // begin tx will directly override the bookmark that was originally set before
+                session.BeginTransaction(FakeABookmark(12));
+                session.LastBookmark.Should().EndWith("12");
             }
 
             [Fact]
@@ -169,7 +175,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 Record.Exception(() => session.BeginTransaction()).Should().BeOfType<IOException>();
@@ -188,7 +194,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
                 var calls = 0;
-                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Callback(() =>
                     {
                         // only throw exception on the first beginTx call
@@ -216,7 +222,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 Record.Exception(()=>session.BeginTransaction()).Should().BeOfType<IOException>();

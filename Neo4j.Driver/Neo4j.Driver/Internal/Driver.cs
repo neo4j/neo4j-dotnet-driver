@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
@@ -40,19 +41,7 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
         {
-            if (_disposeCalled)
-            {
-                ThrowDriverClosedException();
-            }
-
-            var session = new Session(_connectionProvider, _logger, _retryLogic, defaultMode, bookmark);
-
-            if (_disposeCalled)
-            {
-                session.Dispose();
-                ThrowDriverClosedException();
-            }
-            return session;
+            return Session(defaultMode, Bookmark.From(bookmark, _logger));
         }
 
         protected virtual void Dispose(bool isDisposing)
@@ -78,6 +67,33 @@ namespace Neo4j.Driver.Internal
         private void ThrowDriverClosedException()
         {
             throw new ObjectDisposedException(GetType().Name, "Cannot open a new session on a driver that is already disposed.");
+        }
+
+        public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
+        {
+            return Session(defaultMode, Bookmark.From(bookmarks));
+        }
+
+        public ISession Session(IEnumerable<string> bookmarks)
+        {
+            return Session(AccessMode.Write, bookmarks);
+        }
+
+        private ISession Session(AccessMode defaultMode, Bookmark bookmark)
+        {
+            if (_disposeCalled)
+            {
+                ThrowDriverClosedException();
+            }
+
+            var session = new Session(_connectionProvider, _logger, _retryLogic, defaultMode, bookmark);
+
+            if (_disposeCalled)
+            {
+                session.Dispose();
+                ThrowDriverClosedException();
+            }
+            return session;
         }
     }
 }

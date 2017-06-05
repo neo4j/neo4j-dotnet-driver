@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -85,15 +86,18 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
-        public void ShouldThrowForInvalidBookmark()
+        public void ShouldIgnoreButLogInvalidBookmark()
         {
             var invalidBookmark = "invalid bookmark format";
-            using (var session = (Session)Driver.Session())
+            var loggerMock = new Mock<ILogger>();
+            using(var driver = GraphDatabase.Driver(Server.BoltUri, Server.AuthToken, new Config {Logger = loggerMock.Object}))
+            using (var session = (Session)driver.Session())
             {
-                var exception = Record.Exception(() => session.BeginTransaction(invalidBookmark));
-                exception.Should().BeOfType<ClientException>();
-                exception.Message.Should().Contain($"does not conform to pattern {BookmarkHeader}");
+                session.BeginTransaction(invalidBookmark);
+                session.LastBookmark.Should().BeNull(); // ignored
             }
+            loggerMock.Verify(x=>x.Info("Failed to recognize bookmark 'invalid bookmark format' and this bookmark is ignored.",
+                It.IsAny<object[]>()), Times.Once); // but logged
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
