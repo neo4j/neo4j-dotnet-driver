@@ -33,11 +33,11 @@ namespace Neo4j.Driver.IntegrationTests
     }
 
     /// <summary>
-    /// Use `RequireServerVersionGreaterThanOrEqualToFactAttribute` tag for the tests that require a server with version equals to or greater than given version
+    /// Use `RequireServerVersionGreaterThanOrEqualToFact` tag for the tests that require a server with version equals to or greater than given version
     /// </summary>
-    public class RequireServerVersionGreaterThanOrEqualToFactAttribute : FactAttribute
+    public class RequireServerVersionGreaterThanOrEqualToFact : FactAttribute
     {
-        public RequireServerVersionGreaterThanOrEqualToFactAttribute(string version)
+        public RequireServerVersionGreaterThanOrEqualToFact(string version)
         {
             if (!IsBoltkitAvailable())
             {
@@ -51,11 +51,11 @@ namespace Neo4j.Driver.IntegrationTests
     }
 
     /// <summary>
-    /// Use `RequireServerVersionLessThanFactAttribute` tag for the tests that require a server with version less than the given version
+    /// Use `RequireServerVersionLessThanFact` tag for the tests that require a server with version less than the given version
     /// </summary>
-    public class RequireServerVersionLessThanFactAttribute : FactAttribute
+    public class RequireServerVersionLessThanFact : FactAttribute
     {
-        public RequireServerVersionLessThanFactAttribute(string version)
+        public RequireServerVersionLessThanFact(string version)
         {
             if (!IsBoltkitAvailable())
             {
