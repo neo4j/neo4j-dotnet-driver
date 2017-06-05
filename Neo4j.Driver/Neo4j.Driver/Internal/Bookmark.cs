@@ -1,5 +1,22 @@
+// Copyright (c) 2002-2017 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
@@ -11,27 +28,29 @@ namespace Neo4j.Driver.Internal
         private const long UnknownBookmarkValue = -1;
         internal const string BookmarkPrefix = "neo4j:bookmark:v1:tx";
 
-        private readonly IEnumerable<string> _values;
-        private readonly string _maxBookmark;
+        private readonly IEnumerable<string> _values;// nullable or contain null items
+        private readonly string _maxBookmark;        // nullable
+        private readonly ILogger _logger;
 
-        private Bookmark(IEnumerable<string> values)
+        private Bookmark(IEnumerable<string> values, ILogger logger)
         {
+            _logger = logger;
             _values = values;
             _maxBookmark = MaxBookmark(values);
         }
 
-        public static Bookmark From(string bookmark)
+        public static Bookmark From(string bookmark, ILogger logger = null)
         {
             if (bookmark == null)
             {
-                return new Bookmark(null);
+                return new Bookmark(null, logger);
             }
-            return new Bookmark(new []{bookmark});
+            return new Bookmark(new []{bookmark}, logger);
         }
 
-        public static Bookmark From(IEnumerable<string> values)
+        public static Bookmark From(IEnumerable<string> values, ILogger logger = null)
         {
-            return new Bookmark(values);
+            return new Bookmark(values, null);
         }
 
         public string MaxBookmarkAsString()
@@ -46,11 +65,14 @@ namespace Neo4j.Driver.Internal
 
         public IDictionary<string, object> AsBeginTransactionParameters()
         {
-            var parameters = new Dictionary<string, object>
+            if (IsEmpty())
+            {
+                return null;
+            }
+            return new Dictionary<string, object>
             {
                 {BookmarksKey, _values}, {BookmarkKey, _maxBookmark}
             };
-            return parameters;
         }
 
         private string MaxBookmark(IEnumerable<string> values)
@@ -75,20 +97,31 @@ namespace Neo4j.Driver.Internal
             return null;
         }
 
-        private static long BookmarkValue(string value)
+        private long BookmarkValue(string value)
         {
-            if (value != null && value.StartsWith(BookmarkPrefix))
+            if (value == null)
             {
-                try
-                {
-                    return Convert.ToInt64(value.Substring(BookmarkPrefix.Length));
-                }
-                catch (FormatException)
-                {
-                    return UnknownBookmarkValue;
-                }
+                return UnknownBookmarkValue;
             }
-            return UnknownBookmarkValue;
+            if (!value.StartsWith(BookmarkPrefix))
+            {
+                LogIllegalBookmark(value);
+                return UnknownBookmarkValue;
+            }
+            try
+            {
+                return Convert.ToInt64(value.Substring(BookmarkPrefix.Length));
+            }
+            catch (FormatException)
+            {
+                LogIllegalBookmark(value);
+                return UnknownBookmarkValue;
+            }
+        }
+
+        private void LogIllegalBookmark(string value)
+        {
+            _logger?.Info($"Failed to recognize bookmark '{value}' and this bookmark is ignored.");
         }
     }
 }

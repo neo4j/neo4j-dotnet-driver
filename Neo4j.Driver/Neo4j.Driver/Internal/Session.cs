@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction(string bookmark)
         {
-            UpdateBookmark(Bookmark.From(bookmark));
+            UpdateBookmark(Bookmark.From(bookmark, _logger));
             return BeginTransaction();
         }
 

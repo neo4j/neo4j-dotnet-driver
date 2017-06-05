@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
         {
-            return Session(defaultMode, Bookmark.From(bookmark));
+            return Session(defaultMode, Bookmark.From(bookmark, _logger));
         }
 
         protected virtual void Dispose(bool isDisposing)

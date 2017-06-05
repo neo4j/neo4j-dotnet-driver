@@ -112,6 +112,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AuthTokenTests.cs" />
+    <Compile Include="BookmarkTests.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
     <Compile Include="TestUtil\NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />

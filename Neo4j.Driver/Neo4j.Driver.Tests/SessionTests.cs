@@ -35,6 +35,11 @@ namespace Neo4j.Driver.Tests
             return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, Bookmark.From(bookmark));
         }
 
+        internal static string FakeABookmark(int num)
+        {
+            return $"{Bookmark.BookmarkPrefix}{num}";
+        }
+
         public class RunMethod
         {
             [Fact]
@@ -70,11 +75,6 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = NewSession(mockConn.Object);
                 session.LastBookmark.Should().Be(null);
-            }
-
-            private string FakeABookmark(int num)
-            {
-                return $"{Bookmark.BookmarkPrefix}{num}";
             }
 
             [Fact]
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 Record.Exception(() => session.BeginTransaction()).Should().BeOfType<IOException>();
@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
                 var calls = 0;
-                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Callback(() =>
                     {
                         // only throw exception on the first beginTx call
@@ -222,7 +222,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
-                mockConn.Setup(x => x.Run("BEGIN", new Dictionary<string, object>(), null, true))
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 Record.Exception(()=>session.BeginTransaction()).Should().BeOfType<IOException>();

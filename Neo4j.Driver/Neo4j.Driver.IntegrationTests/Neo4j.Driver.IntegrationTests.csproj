@@ -146,6 +146,7 @@
     <None Include="packages.config" />
     <None Include="Resources\get_routing_table.script" />
     <None Include="Resources\get_routing_table_with_context.script" />
+    <None Include="Resources\multiple_bookmarks.script" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj">

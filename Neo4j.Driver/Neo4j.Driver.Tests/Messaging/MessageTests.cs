@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
                 }
             };
 
-            [Theory, MemberData("MessageData")]
+            [Theory, MemberData(nameof(MessageData))]
             internal void ShouldPrintTheMessageAsExpected(IMessage message, string expected)
             {
                 message.ToString().Should().Be(expected);

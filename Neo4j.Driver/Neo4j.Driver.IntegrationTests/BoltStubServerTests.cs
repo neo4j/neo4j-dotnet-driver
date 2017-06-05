@@ -42,5 +42,30 @@ namespace Neo4j.Driver.IntegrationTests
                 }
             }
         }
+
+        [RequireBoltStubServerFact]
+        public void CanSendMultipleBookmarks()
+        {
+            var bookmarks = new[]
+            {
+                "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
+                "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
+                "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68"
+            };
+            using (BoltStubServer.Start("multiple_bookmarks", 9001))
+            {
+                var uri = new Uri("bolt://127.0.0.1:9001");
+                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                using (var session = driver.Session(bookmarks))
+                {
+                    using (var tx = session.BeginTransaction())
+                    {
+                        tx.Run("CREATE (n {name:'Bob'})");
+                        tx.Success();
+                    }
+                    session.LastBookmark.Should().Be("neo4j:bookmark:v1:tx95");
+                }
+            }
+        }
     }
 }

@@ -40,14 +40,9 @@ namespace Neo4j.Driver.Internal
             _connection = new TransactionConnection(this, connection);
             _resourceHandler = resourceHandler;
 
-            IDictionary<string, object> paramters = new Dictionary<string, object>();
-            var isBookmarkAvailable = bookmark != null && !bookmark.IsEmpty();
-            if (isBookmarkAvailable)
-            {
-                paramters = bookmark.AsBeginTransactionParameters();
-            }
+            IDictionary<string, object> paramters = bookmark?.AsBeginTransactionParameters();
             _connection.Run(Begin, paramters);
-            if (isBookmarkAvailable)
+            if (paramters != null)
             {
                 _connection.Sync();
             }

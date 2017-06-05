@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Tests.SessionTests;
 
 namespace Neo4j.Driver.Tests
 {
@@ -30,26 +31,36 @@ namespace Neo4j.Driver.Tests
         public class Constructor
         {
             [Fact]
-            public void ShouldRunQueueBeginAndPullAllWhenNoBookmarkGiven()
+            public void ShouldNotSyncWhenNoBookmarkGiven()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Verify(x=>x.Run("BEGIN", new Dictionary<string, object>(), null, true), Times.Once);
+                mockConn.Verify(x=>x.Run("BEGIN", null, null, true), Times.Once);
                 mockConn.Verify(x=>x.Sync(), Times.Never);
             }
 
             [Fact]
-            public void ShouldSendBookmarkIfPresents()
+            public void ShouldSyncIfBookmarkPresents()
             {
                 var mockConn = new Mock<IConnection>();
-                var bookmark = Bookmark.From("a bookmark");
+                var bookmark = Bookmark.From(FakeABookmark(234));
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
                 IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
 
                 mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldNotKeepInitialBookmark()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From(FakeABookmark(234));
+                var tx = new Transaction(mockConn.Object, null, null, bookmark);
+
+                tx.Bookmark.Should().BeNull();
             }
         }
 
