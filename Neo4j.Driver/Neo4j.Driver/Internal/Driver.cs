@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal
             _retryLogic = retryLogic;
         }
 
-        public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
+        public ISessionAsync Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
         {
             return Session(defaultMode, Bookmark.From(bookmark, _logger));
         }
@@ -69,17 +69,17 @@ namespace Neo4j.Driver.Internal
             throw new ObjectDisposedException(GetType().Name, "Cannot open a new session on a driver that is already disposed.");
         }
 
-        public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
+        public ISessionAsync Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
         {
             return Session(defaultMode, Bookmark.From(bookmarks));
         }
 
-        public ISession Session(IEnumerable<string> bookmarks)
+        public ISessionAsync Session(IEnumerable<string> bookmarks)
         {
             return Session(AccessMode.Write, bookmarks);
         }
 
-        private ISession Session(AccessMode defaultMode, Bookmark bookmark)
+        private ISessionAsync Session(AccessMode defaultMode, Bookmark bookmark)
         {
             if (_disposeCalled)
             {

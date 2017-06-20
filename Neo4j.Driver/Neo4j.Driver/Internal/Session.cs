@@ -16,13 +16,14 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Session : StatementRunner, ISession, IResultResourceHandler, ITransactionResourceHandler
+    internal class Session : StatementRunner, ISessionAsync, IResultResourceHandler, ITransactionResourceHandler
     {
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
@@ -291,5 +292,143 @@ namespace Neo4j.Driver.Internal
                                           "and retry your statement in another new session.");
             }
         }
+
+ 
+        private Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
+        {
+            EnsureCanRunMoreStatements();
+
+            TaskCompletionSource<ITransactionAsync> completionSource = new TaskCompletionSource<ITransactionAsync>();
+
+            try
+            {
+                _connection = _connectionProvider.Acquire(mode);
+                _transaction = new Transaction(_connection, this, _logger, _bookmark);
+
+                completionSource.SetResult(_transaction);
+            }
+            catch (Exception exc)
+            {
+                completionSource.SetException(exc);
+            }
+
+            return completionSource.Task;
+        }
+
+
+        public Task<ITransactionAsync> BeginTransactionAsync()
+        {
+            return BeginTransactionAsyncWithoutLogging(_defaultMode);
+        }
+
+        public async Task<T> ReadTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        {
+            T result = default(T);
+
+            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Read).ConfigureAwait(false))
+            {
+                try
+                {
+                    result = await work(txc);
+
+                    await txc.SuccessAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    await txc.FailureAsync().ConfigureAwait(false);
+
+                    throw;
+                }
+            }
+
+            return result;
+        }
+
+        public async Task ReadTransactionAsync(Func<ITransactionAsync, Task> work)
+        {
+            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Read).ConfigureAwait(false))
+            {
+                try
+                {
+                    await work(txc);
+
+                    await txc.SuccessAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    await txc.FailureAsync().ConfigureAwait(false);
+
+                    throw;
+                }
+            }
+        }
+
+        public async Task<T> WriteTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        {
+            T result = default(T);
+
+            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Write).ConfigureAwait(false))
+            {
+                try
+                {
+                    result = await work(txc);
+
+                    await txc.SuccessAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    await txc.FailureAsync().ConfigureAwait(false);
+
+                    throw;
+                }
+            }
+
+            return result;
+        }
+
+        public async Task WriteTransactionAsync(Func<ITransactionAsync, Task> work)
+        {
+            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Write).ConfigureAwait(false))
+            {
+                try
+                {
+                    await work(txc);
+
+                    await txc.SuccessAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    await txc.FailureAsync().ConfigureAwait(false);
+
+                    throw;
+                }
+            }
+        }
+
+        public Task<IStatementResultAsync> RunAsync(string statement, IDictionary<string, object> parameters = null)
+        {
+            return RunAsync(new Statement(statement, parameters));
+        }
+        public Task<IStatementResultAsync> RunAsync(string statement, object parameters)
+        {
+            return RunAsync(new Statement(statement,  parameters.ToDictionary()));
+        }
+
+        public Task<IStatementResultAsync> RunAsync(Statement statement)
+        {
+            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
+
+            try
+            {
+                completionSource.SetResult((IStatementResultAsync)Run(statement));
+            }
+            catch (Exception exc)
+            {
+                completionSource.SetException(exc);
+            }
+
+            return completionSource.Task;
+        }
+
     }
 }

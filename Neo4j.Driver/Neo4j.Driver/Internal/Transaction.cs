@@ -16,13 +16,14 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Transaction : StatementRunner, ITransaction
+    internal class Transaction : StatementRunner, ITransactionAsync
     {
         private readonly TransactionConnection _connection;
         private readonly ITransactionResourceHandler _resourceHandler;
@@ -168,6 +169,46 @@ namespace Neo4j.Driver.Internal
         public void MarkToClose()
         {
             _state = State.Failed;
+        }
+
+        public Task SuccessAsync()
+        {
+            Success();
+
+            return Task.FromResult(true);
+        }
+
+        public Task FailureAsync()
+        {
+            Failure();
+
+            return Task.FromResult(true);
+        }
+
+        public Task<IStatementResultAsync> RunAsync(string statement, IDictionary<string, object> parameters = null)
+        {
+            return RunAsync(new Statement(statement, parameters));
+        }
+
+        public Task<IStatementResultAsync> RunAsync(string statement, object parameters)
+        {
+            return RunAsync(new Statement(statement, parameters.ToDictionary()));
+        }
+
+        public Task<IStatementResultAsync> RunAsync(Statement statement)
+        {
+            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
+
+            try
+            {
+                completionSource.SetResult((IStatementResultAsync)Run(statement));
+            }
+            catch (Exception exc)
+            {
+                completionSource.SetException(exc);
+            }
+
+            return completionSource.Task;
         }
 
         private class TransactionConnection : DelegatedConnection
