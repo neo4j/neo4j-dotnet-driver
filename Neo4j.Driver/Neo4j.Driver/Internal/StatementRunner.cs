@@ -14,30 +14,44 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal abstract class StatementRunner : LoggerBase
+    internal abstract class StatementRunner : LoggerBase, IStatementRunner, IStatementRunnerAsync
     {
         protected StatementRunner(ILogger logger) : base(logger)
         {
         }
 
-        public abstract IStatementResult Run(string statement, IDictionary<string, object> parameters = null);
+        public abstract IStatementResult Run(Statement statement);
+        public abstract Task<IStatementResultAsync> RunAsync(Statement statement);
 
-        public IStatementResult Run(Statement statement)
+        public IStatementResult Run(string statement, IDictionary<string, object> parameters = null)
         {
-            return Run(statement.Text, statement.Parameters);
+            return Run(new Statement(statement, parameters));
         }
 
         public IStatementResult Run(string statement, object parameters)
         {
-            var paramDictionary = parameters.ToDictionary();
-            return Run(statement, paramDictionary);
+            var cypherStatement = new Statement(statement, parameters.ToDictionary());
+            return Run(cypherStatement);
+        }
+
+        public Task<IStatementResultAsync> RunAsync(string statement, IDictionary<string, object> parameters = null)
+        {
+            return RunAsync(new Statement(statement, parameters));
+        }
+
+        public Task<IStatementResultAsync> RunAsync(string statement, object parameters)
+        {
+            return RunAsync(new Statement(statement, parameters.ToDictionary()));
         }
     }
 

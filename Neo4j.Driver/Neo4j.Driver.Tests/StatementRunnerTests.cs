@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
@@ -30,11 +31,16 @@ namespace Neo4j.Driver.Tests
             public string Statement { private set; get; }
             public IDictionary<string, object> Parameters { private set; get; } 
 
-            public override IStatementResult Run(string statement, IDictionary<string,object> parameters = null)
+            public override IStatementResult Run(Statement statement)
             {
-                Statement = statement;
-                Parameters = parameters;
+                Statement = statement.Text;
+                Parameters = statement.Parameters;
                 return null; // nah, I do not care
+            }
+
+            public override Task<IStatementResultAsync> RunAsync(Statement statement)
+            {
+                throw new System.NotImplementedException();
             }
 
             public MyStatementRunner() : base(null)

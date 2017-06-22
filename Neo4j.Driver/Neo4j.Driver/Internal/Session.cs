@@ -23,7 +23,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Session : StatementRunner, ISessionAsync, IResultResourceHandler, ITransactionResourceHandler
+    internal class Session : StatementRunner, ISession, IResultResourceHandler, ITransactionResourceHandler
     {
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
@@ -54,20 +54,36 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(bookmark);
         }
 
-        public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
+        public override IStatementResult Run(Statement statement)
         {
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
 
                 _connection = _connectionProvider.Acquire(_defaultMode);
-                var resultBuilder = new ResultBuilder(statement, statementParameters,
+                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
                     ()=>_connection.ReceiveOne(), _connection.Server, this);
-                _connection.Run(statement, statementParameters, resultBuilder);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
 
                 return resultBuilder.PreBuild();
             });
+        }
+
+        public override Task<IStatementResultAsync> RunAsync(Statement statement)
+        {
+            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
+
+            try
+            {
+                completionSource.SetResult((IStatementResultAsync)Run(statement));
+            }
+            catch (Exception exc)
+            {
+                completionSource.SetException(exc);
+            }
+
+            return completionSource.Task;
         }
 
         public ITransaction BeginTransaction()
@@ -292,7 +308,6 @@ namespace Neo4j.Driver.Internal
                                           "and retry your statement in another new session.");
             }
         }
-
  
         private Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
         {
@@ -315,120 +330,62 @@ namespace Neo4j.Driver.Internal
             return completionSource.Task;
         }
 
-
         public Task<ITransactionAsync> BeginTransactionAsync()
         {
             return BeginTransactionAsyncWithoutLogging(_defaultMode);
         }
 
-        public async Task<T> ReadTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        private Task RunTransactionAsync(AccessMode mode, Func<ITransactionAsync, Task> work)
         {
-            T result = default(T);
-
-            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Read).ConfigureAwait(false))
+            return RunTransactionAsync(mode, async tx =>
             {
-                try
-                {
-                    result = await work(txc);
-
-                    await txc.SuccessAsync().ConfigureAwait(false);
-                }
-                catch
-                {
-                    await txc.FailureAsync().ConfigureAwait(false);
-
-                    throw;
-                }
-            }
-
-            return result;
+                await work(tx).ConfigureAwait(false);
+                var ignored = 1;
+                return ignored;
+            });
         }
 
-        public async Task ReadTransactionAsync(Func<ITransactionAsync, Task> work)
+        private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransactionAsync, Task<T>> work)
         {
-            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Read).ConfigureAwait(false))
+            return TryExecuteAsync(async() => await _retryLogic.RetryAsync(async() =>
             {
-                try
+                ITransactionAsync tx = await BeginTransactionAsyncWithoutLogging(AccessMode.Read).ConfigureAwait(false);
                 {
-                    await work(txc);
-
-                    await txc.SuccessAsync().ConfigureAwait(false);
+                    try
+                    {
+                        var result = await work(tx).ConfigureAwait(false);
+                        await tx.CommitAsync().ConfigureAwait(false);
+                        return result;
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync().ConfigureAwait(false);
+                        throw;
+                    }
                 }
-                catch
-                {
-                    await txc.FailureAsync().ConfigureAwait(false);
-
-                    throw;
-                }
-            }
+            }).ConfigureAwait(false));
         }
 
-        public async Task<T> WriteTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        public Task<T> ReadTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
         {
-            T result = default(T);
-
-            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Write).ConfigureAwait(false))
-            {
-                try
-                {
-                    result = await work(txc);
-
-                    await txc.SuccessAsync().ConfigureAwait(false);
-                }
-                catch
-                {
-                    await txc.FailureAsync().ConfigureAwait(false);
-
-                    throw;
-                }
-            }
-
-            return result;
+            return RunTransactionAsync(AccessMode.Read, work);
         }
 
-        public async Task WriteTransactionAsync(Func<ITransactionAsync, Task> work)
+        public Task ReadTransactionAsync(Func<ITransactionAsync, Task> work)
         {
-            using (ITransactionAsync txc = await BeginTransactionAsyncWithoutLogging(AccessMode.Write).ConfigureAwait(false))
-            {
-                try
-                {
-                    await work(txc);
-
-                    await txc.SuccessAsync().ConfigureAwait(false);
-                }
-                catch
-                {
-                    await txc.FailureAsync().ConfigureAwait(false);
-
-                    throw;
-                }
-            }
+            return RunTransactionAsync(AccessMode.Read, work);
         }
 
-        public Task<IStatementResultAsync> RunAsync(string statement, IDictionary<string, object> parameters = null)
+        public Task<T> WriteTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
         {
-            return RunAsync(new Statement(statement, parameters));
+            return RunTransactionAsync(AccessMode.Write, work);
         }
-        public Task<IStatementResultAsync> RunAsync(string statement, object parameters)
+
+        public Task WriteTransactionAsync(Func<ITransactionAsync, Task> work)
         {
-            return RunAsync(new Statement(statement,  parameters.ToDictionary()));
+            return RunTransactionAsync(AccessMode.Write, work);
         }
 
-        public Task<IStatementResultAsync> RunAsync(Statement statement)
-        {
-            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
-
-            try
-            {
-                completionSource.SetResult((IStatementResultAsync)Run(statement));
-            }
-            catch (Exception exc)
-            {
-                completionSource.SetException(exc);
-            }
-
-            return completionSource.Task;
-        }
 
     }
 }

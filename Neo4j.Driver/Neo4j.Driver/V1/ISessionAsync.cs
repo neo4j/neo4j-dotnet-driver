@@ -19,7 +19,7 @@ namespace Neo4j.Driver.V1
     /// Session objects are not thread safe, if you want to run concurrent operations against the database,
     /// simply create multiple session objects.
     /// </summary>
-    public interface ISessionAsync : ISession, IStatementRunnerAsync
+    public interface ISessionAsync : IStatementRunnerAsync
     {
         /// <summary>
         /// Asynchronously begin a new transaction in this session. A session can have at most one transaction running at a time, if you
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.V1
     /// <remarks>
     /// <see cref="ISessionAsync"/> and <see cref="ITransactionAsync"/>
     /// </remarks>
-    public interface IStatementRunnerAsync : IStatementRunner
+    public interface IStatementRunnerAsync
     {
         /// <summary>
         /// 
@@ -117,20 +117,17 @@ namespace Neo4j.Driver.V1
     /// It is designed to minimize the complexity of the code you need to write to use transactions in a safe way, ensuring
     /// that transactions are properly rolled back even if there is an exception while the transaction is running.
     /// </summary>
-    public interface ITransactionAsync : ITransaction, IStatementRunnerAsync
+    public interface ITransactionAsync : IStatementRunnerAsync
     {
         /// <summary>
-        /// Asynchronously mark this transaction as successful. You must call this method before calling <see cref="IDisposable.Dispose"/> to have your
-        /// transaction committed.
+        /// Asynchronously commit this transaction.
         /// </summary>
-        Task SuccessAsync();
+        Task CommitAsync();
 
         /// <summary>
-        /// Asynchronously mark this transaction as failed. Calling <see cref="IDisposable.Dispose"/> will roll back the transaction.
-        ///
-        /// Marking a transaction as failed is irreversable and guarantees that subsequent calls to <see cref="SuccessAsync"/> will not change it's status.
+        /// Asynchronously roll back this transaction.
         /// </summary>
-        Task FailureAsync();
+        Task RollbackAsync();
 
     }
 
