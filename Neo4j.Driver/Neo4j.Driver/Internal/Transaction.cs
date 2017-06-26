@@ -23,7 +23,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Transaction : StatementRunner, ITransactionAsync
+    internal class Transaction : StatementRunner, ITransaction
     {
         private readonly TransactionConnection _connection;
         private readonly ITransactionResourceHandler _resourceHandler;
@@ -124,15 +124,15 @@ namespace Neo4j.Driver.Internal
             _state = State.RolledBack;
         }
 
-        public override IStatementResult Run(string statement, IDictionary<string, object> parameters=null)
+        public override IStatementResult Run(Statement statement)
         {
             return TryExecute(() =>
             {
                 EnsureNotFailed();
 
-                var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
+                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOne(),
                     _connection.Server);
-                _connection.Run(statement, parameters, resultBuilder);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
                 return resultBuilder.PreBuild();
             });
@@ -171,31 +171,21 @@ namespace Neo4j.Driver.Internal
             _state = State.Failed;
         }
 
-        public Task SuccessAsync()
+        public Task CommitAsync()
         {
             Success();
 
             return Task.FromResult(true);
         }
 
-        public Task FailureAsync()
+        public Task RollbackAsync()
         {
             Failure();
 
             return Task.FromResult(true);
         }
 
-        public Task<IStatementResultAsync> RunAsync(string statement, IDictionary<string, object> parameters = null)
-        {
-            return RunAsync(new Statement(statement, parameters));
-        }
-
-        public Task<IStatementResultAsync> RunAsync(string statement, object parameters)
-        {
-            return RunAsync(new Statement(statement, parameters.ToDictionary()));
-        }
-
-        public Task<IStatementResultAsync> RunAsync(Statement statement)
+        public override Task<IStatementResultAsync> RunAsync(Statement statement)
         {
             TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
 

@@ -44,8 +44,8 @@ namespace Neo4j.Driver.V1
         /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
         /// Specify a bookmark if the statement excuted inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="ISessionAsync"/> that could be used to execute statements.</returns>
-        ISessionAsync Session(AccessMode defaultMode = AccessMode.Write, string bookmark = null);
+        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
+        ISession Session(AccessMode defaultMode = AccessMode.Write, string bookmark = null);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/> and a series of start bookmars.
@@ -56,8 +56,8 @@ namespace Neo4j.Driver.V1
         /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
         /// Specify bookmarks if the statement excuted inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="ISessionAsync"/> that could be used to execute statements.</returns>
-        ISessionAsync Session(AccessMode defaultMode, IEnumerable<string> bookmarks);
+        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
+        ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode.Write"/> access mode and a series of start bookmars.
@@ -65,8 +65,8 @@ namespace Neo4j.Driver.V1
         /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
         /// Specify bookmarks if the statement excuted inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="ISessionAsync"/> that could be used to execute statements.</returns>
-        ISessionAsync Session(IEnumerable<string> bookmarks);
+        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
+        ISession Session(IEnumerable<string> bookmarks);
     }
     /// <summary>
     /// Used by driver to route a cypher statement to a write server or a read server.
