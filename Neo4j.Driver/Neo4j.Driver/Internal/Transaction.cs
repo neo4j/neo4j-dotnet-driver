@@ -173,16 +173,28 @@ namespace Neo4j.Driver.Internal
 
         public Task CommitAsync()
         {
-            Success();
-
-            return Task.FromResult(true);
+            try
+            {
+                Success();
+                return Task.FromResult(true);
+            }
+            finally
+            {
+                Dispose();
+            }
         }
 
         public Task RollbackAsync()
         {
-            Failure();
-
-            return Task.FromResult(true);
+            try
+            {
+                Failure();
+                return Task.FromResult(true);
+            }
+            finally
+            {
+                Dispose();
+            }
         }
 
         public override Task<IStatementResultAsync> RunAsync(Statement statement)

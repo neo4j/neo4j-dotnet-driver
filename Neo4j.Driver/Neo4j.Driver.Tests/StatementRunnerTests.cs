@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Tests
                 var stRunner = new MyStatementRunner();
                 stRunner.Run(new Statement("lalalala"));
                 stRunner.Statement.Should().Be("lalalala");
-                stRunner.Parameters.Should().BeEmpty();
+                stRunner.Parameters.Should().BeNull();
             }
 
             [Fact]

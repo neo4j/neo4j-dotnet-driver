@@ -570,7 +570,7 @@ namespace Neo4j.Driver.ExamplesAsync
                         );
                     }
                 }
-                catch (ServiceUnavailableException)
+                catch (AggregateException)
                 {
                     return false;
                 }
