@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
@@ -123,15 +124,15 @@ namespace Neo4j.Driver.Internal
             _state = State.RolledBack;
         }
 
-        public override IStatementResult Run(string statement, IDictionary<string, object> parameters=null)
+        public override IStatementResult Run(Statement statement)
         {
             return TryExecute(() =>
             {
                 EnsureNotFailed();
 
-                var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
+                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOne(),
                     _connection.Server);
-                _connection.Run(statement, parameters, resultBuilder);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
                 return resultBuilder.PreBuild();
             });
@@ -168,6 +169,48 @@ namespace Neo4j.Driver.Internal
         public void MarkToClose()
         {
             _state = State.Failed;
+        }
+
+        public Task CommitAsync()
+        {
+            try
+            {
+                Success();
+                return Task.FromResult(true);
+            }
+            finally
+            {
+                Dispose();
+            }
+        }
+
+        public Task RollbackAsync()
+        {
+            try
+            {
+                Failure();
+                return Task.FromResult(true);
+            }
+            finally
+            {
+                Dispose();
+            }
+        }
+
+        public override Task<IStatementResultAsync> RunAsync(Statement statement)
+        {
+            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
+
+            try
+            {
+                completionSource.SetResult((IStatementResultAsync)Run(statement));
+            }
+            catch (Exception exc)
+            {
+                completionSource.SetException(exc);
+            }
+
+            return completionSource.Task;
         }
 
         private class TransactionConnection : DelegatedConnection

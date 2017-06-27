@@ -79,6 +79,8 @@
     <Compile Include="Internal\DebugLogger.cs" />
     <Compile Include="Internal\Result\RecordSet.cs" />
     <Compile Include="V1\IServerInfo.cs" />
+    <Compile Include="V1\ISessionAsync.cs" />
+    <Compile Include="V1\IStatementResultAsync.cs" />
     <Compile Include="V1\Neo4jException.cs" />
     <Compile Include="Internal\Extensions\Throw.cs" />
     <Compile Include="Internal\Extensions\ByteExtensions.cs" />

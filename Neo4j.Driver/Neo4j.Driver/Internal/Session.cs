@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
@@ -53,20 +54,36 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(bookmark);
         }
 
-        public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
+        public override IStatementResult Run(Statement statement)
         {
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
 
                 _connection = _connectionProvider.Acquire(_defaultMode);
-                var resultBuilder = new ResultBuilder(statement, statementParameters,
+                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
                     ()=>_connection.ReceiveOne(), _connection.Server, this);
-                _connection.Run(statement, statementParameters, resultBuilder);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
 
                 return resultBuilder.PreBuild();
             });
+        }
+
+        public override Task<IStatementResultAsync> RunAsync(Statement statement)
+        {
+            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
+
+            try
+            {
+                completionSource.SetResult((IStatementResultAsync)Run(statement));
+            }
+            catch (Exception exc)
+            {
+                completionSource.SetException(exc);
+            }
+
+            return completionSource.Task;
         }
 
         public ITransaction BeginTransaction()
@@ -291,5 +308,84 @@ namespace Neo4j.Driver.Internal
                                           "and retry your statement in another new session.");
             }
         }
+ 
+        private Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
+        {
+            EnsureCanRunMoreStatements();
+
+            TaskCompletionSource<ITransactionAsync> completionSource = new TaskCompletionSource<ITransactionAsync>();
+
+            try
+            {
+                _connection = _connectionProvider.Acquire(mode);
+                _transaction = new Transaction(_connection, this, _logger, _bookmark);
+
+                completionSource.SetResult(_transaction);
+            }
+            catch (Exception exc)
+            {
+                completionSource.SetException(exc);
+            }
+
+            return completionSource.Task;
+        }
+
+        public Task<ITransactionAsync> BeginTransactionAsync()
+        {
+            return BeginTransactionAsyncWithoutLogging(_defaultMode);
+        }
+
+        private Task RunTransactionAsync(AccessMode mode, Func<ITransactionAsync, Task> work)
+        {
+            return RunTransactionAsync(mode, async tx =>
+            {
+                await work(tx).ConfigureAwait(false);
+                var ignored = 1;
+                return ignored;
+            });
+        }
+
+        private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransactionAsync, Task<T>> work)
+        {
+            return TryExecuteAsync(async() => await _retryLogic.RetryAsync(async() =>
+            {
+                ITransactionAsync tx = await BeginTransactionAsyncWithoutLogging(AccessMode.Read).ConfigureAwait(false);
+                {
+                    try
+                    {
+                        var result = await work(tx).ConfigureAwait(false);
+                        await tx.CommitAsync().ConfigureAwait(false);
+                        return result;
+                    }
+                    catch
+                    {
+                        await tx.RollbackAsync().ConfigureAwait(false);
+                        throw;
+                    }
+                }
+            }).ConfigureAwait(false));
+        }
+
+        public Task<T> ReadTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        {
+            return RunTransactionAsync(AccessMode.Read, work);
+        }
+
+        public Task ReadTransactionAsync(Func<ITransactionAsync, Task> work)
+        {
+            return RunTransactionAsync(AccessMode.Read, work);
+        }
+
+        public Task<T> WriteTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        {
+            return RunTransactionAsync(AccessMode.Write, work);
+        }
+
+        public Task WriteTransactionAsync(Func<ITransactionAsync, Task> work)
+        {
+            return RunTransactionAsync(AccessMode.Write, work);
+        }
+
+
     }
 }

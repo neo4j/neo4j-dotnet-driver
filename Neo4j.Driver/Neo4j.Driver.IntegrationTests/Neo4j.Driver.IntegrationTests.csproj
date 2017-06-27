@@ -125,6 +125,7 @@
     <Compile Include="DirectDriver\TransactionIT.cs" />
     <Compile Include="DirectDriver\DriverIT.cs" />
     <Compile Include="Examples.cs" />
+    <Compile Include="ExamplesAsync.cs" />
     <Compile Include="Internals\BoltkitHelper.cs" />
     <Compile Include="Internals\BoltStubServer.cs" />
     <Compile Include="Internals\IntegrationTestAttribute.cs" />

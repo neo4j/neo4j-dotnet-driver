@@ -28,6 +28,7 @@ namespace Neo4j.Driver.Internal
     internal interface IRetryLogic
     {
         T Retry<T>(Func<T> runTxFunc);
+        Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc);
     }
 
     internal class ExponentialBackoffRetryLogic : IRetryLogic
@@ -84,6 +85,32 @@ namespace Neo4j.Driver.Internal
             throw exception;
         }
 
+        public async Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc)
+        {
+            AggregateException exception = null;
+            var timer = new Stopwatch();
+            timer.Start();
+            var delayMs = _initialRetryDelayMs;
+            do
+            {
+                try
+                {
+                    return await runTxAsyncFunc().ConfigureAwait(false);
+                }
+                catch (Exception e) when (e is SessionExpiredException || e.IsRetriableTransientError() || e is ServiceUnavailableException)
+                {
+                    exception = exception == null ? new AggregateException(e) : new AggregateException(exception, e);
+
+                    var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
+                    _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
+                    Task.Delay(delay).Wait(); // blocking for this delay
+                    delayMs = delayMs * _multiplier;
+                }
+            } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
+
+            timer.Stop();
+            throw exception;
+        }
 
         private double ComputeDelayWithJitter(double delayMs)
         {
