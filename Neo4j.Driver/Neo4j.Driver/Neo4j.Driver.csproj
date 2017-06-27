@@ -1,150 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F5E54582-C024-4B99-AFEB-CA9638617BA0}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Neo4j.Driver</RootNamespace>
+    <TargetFramework>netstandard1.3</TargetFramework>
     <AssemblyName>Neo4j.Driver</AssemblyName>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
-    <DocumentationFile>bin\Debug\Neo4j.Driver.xml</DocumentationFile>
-    <NoWarn>1591</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Neo4j.Driver.xml</DocumentationFile>
+    <PackageId>Neo4j.Driver</PackageId>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Internal\Bookmark.cs" />
-    <Compile Include="Internal\ConcurrentSet.cs" />
-    <Compile Include="Internal\ConnectionPoolStatistics.cs" />
-    <Compile Include="Internal\ConnectionSettings.cs" />
-    <Compile Include="Internal\Connector\DelegatedConnection.cs" />
-    <Compile Include="Internal\Connector\IChunkedInputStream.cs" />
-    <Compile Include="Internal\Connector\IChunkedOutputStream.cs" />
-    <Compile Include="Internal\Extensions\ErrorExtensions.cs" />
-    <Compile Include="Internal\Driver.cs" />
-    <Compile Include="Internal\IConnectionProvider.cs" />
-    <Compile Include="Internal\IPooledConnection.cs" />
-    <Compile Include="Internal\RetryLogic.cs" />
-    <Compile Include="Internal\RoutingSettings.cs" />
-    <Compile Include="Internal\Routing\ClusterConnection.cs" />
-    <Compile Include="Internal\Routing\ClusterConnectionPool.cs" />
-    <Compile Include="Internal\Routing\ClusterDiscoveryManager.cs" />
-    <Compile Include="Internal\Routing\IClusterConnectionPool.cs" />
-    <Compile Include="Internal\Routing\IClusterErrorHandler.cs" />
-    <Compile Include="Internal\Routing\IRoutingTable.cs" />
-    <Compile Include="Internal\Routing\RoundRobinRoutingTable.cs" />
-    <Compile Include="Internal\Routing\ConcurrentRoundRobinSet.cs" />
-    <Compile Include="Internal\ConnectionPoolSettings.cs" />
-    <Compile Include="Internal\Connector\ITrustStrategy.cs" />
-    <Compile Include="Internal\Connector\PooledConnection.cs" />
-    <Compile Include="Internal\Connector\ITcpSocketClient.cs" />
-    <Compile Include="Internal\Connector\TcpSocketClient.cs" />
-    <Compile Include="Internal\Messaging\AckFailureMessage.cs" />
-    <Compile Include="Internal\EncryptionManager.cs" />
-    <Compile Include="Internal\Routing\LoadBalancer.cs" />
-    <Compile Include="Internal\Extensions\NetworkExtensions.cs" />
-    <Compile Include="Internal\IStatisticsCollector.cs" />
-    <Compile Include="Internal\Routing\ServerVersion.cs" />
-    <Compile Include="V1\IAuthToken.cs" />
-    <Compile Include="V1\IDriver.cs" />
-    <Compile Include="Internal\AuthToken.cs" />
-    <Compile Include="Internal\DebugLogger.cs" />
-    <Compile Include="Internal\Result\RecordSet.cs" />
-    <Compile Include="V1\IServerInfo.cs" />
-    <Compile Include="V1\Neo4jException.cs" />
-    <Compile Include="Internal\Extensions\Throw.cs" />
-    <Compile Include="Internal\Extensions\ByteExtensions.cs" />
-    <Compile Include="V1\INotification.cs" />
-    <Compile Include="Internal\Extensions\CollectionExtensions.cs" />
-    <Compile Include="Internal\Messaging\IgnoredMessage.cs" />
-    <Compile Include="Internal\Connector\IInputStream.cs" />
-    <Compile Include="Internal\Connector\IOutputStream.cs" />
-    <Compile Include="Internal\Connector\ISocketClient.cs" />
-    <Compile Include="V1\IEntity.cs" />
-    <Compile Include="Internal\LoggerBase.cs" />
-    <Compile Include="Internal\Messaging\RecordMessage.cs" />
-    <Compile Include="Internal\Messaging\SuccessMessage.cs" />
-    <Compile Include="Internal\Messaging\FailureMessage.cs" />
-    <Compile Include="Internal\Entity.cs" />
-    <Compile Include="Internal\Result\IRecordSet.cs" />
-    <Compile Include="Internal\Result\IMessageResponseCollector.cs" />
-    <Compile Include="Internal\ConnectionPool.cs" />
-    <Compile Include="Internal\StatementRunner.cs" />
-    <Compile Include="Internal\Transaction.cs" />
-    <Compile Include="Internal\Messaging\DiscardAllMessage.cs" />
-    <Compile Include="Internal\Messaging\ResetMessage.cs" />
-    <Compile Include="Internal\Packstream\PackStream.cs" />
-    <Compile Include="Internal\Packstream\PackStreamMessageFormatV1.cs" />
-    <Compile Include="Internal\Connector\ChunkedInputStream.cs" />
-    <Compile Include="Internal\Connector\ChunkedOutputStream.cs" />
-    <Compile Include="Internal\Connector\SocketClient.cs" />
-    <Compile Include="Internal\Connector\SocketExtensions.cs" />
-    <Compile Include="Internal\Connector\MessageResponseHandler.cs" />
-    <Compile Include="Internal\Messaging\IMessage.cs" />
-    <Compile Include="Internal\Messaging\IMessageHandler.cs" />
-    <Compile Include="Internal\Messaging\InitMessage.cs" />
-    <Compile Include="Internal\Messaging\PullAllMessage.cs" />
-    <Compile Include="Internal\Packstream\BigEndianTargetBitConverter.cs" />
-    <Compile Include="Internal\Packstream\BitConverterBase.cs" />
-    <Compile Include="V1\Config.cs" />
-    <Compile Include="Internal\Connector\IConnection.cs" />
-    <Compile Include="V1\GraphDatabase.cs" />
-    <Compile Include="Internal\Session.cs" />
-    <Compile Include="Internal\Messaging\RunMessage.cs" />
-    <Compile Include="Internal\Result\ResultBuilder.cs" />
-    <Compile Include="Internal\Connector\SocketConnection.cs" />
-    <Compile Include="Internal\Result\SummaryBuilder.cs" />
-    <Compile Include="V1\IPlan.cs" />
-    <Compile Include="V1\IProfiledPlan.cs" />
-    <Compile Include="V1\IRecord.cs" />
-    <Compile Include="V1\IStatementResult.cs" />
-    <Compile Include="V1\IResultSummary.cs" />
-    <Compile Include="V1\ILogger.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Internal\Result\Record.cs" />
-    <Compile Include="Internal\Result\StatementResult.cs" />
-    <Compile Include="V1\ISession.cs" />
-    <Compile Include="V1\Statement.cs" />
-    <Compile Include="V1\ICounters.cs" />
-    <Compile Include="V1\ValueExtensions.cs" />
+    <PackageReference Include="System.Net.NameResolution" Version="4.0.0" />
+    <PackageReference Include="System.Net.Security" Version="4.0.0" />
+    <PackageReference Include="System.Net.Sockets" Version="4.1.0" />
+    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.1.1" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>
