@@ -17,6 +17,7 @@
 using System;
 using System.Collections;
 using System.Globalization;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
@@ -372,9 +373,35 @@ namespace Neo4j.Driver.Internal.Packstream
                 return null;
             }
 
+            public async Task<object> UnpackNullAsync()
+            {
+                byte markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+                if (markerByte != NULL)
+                {
+                    throw new ProtocolException(
+                        $"Expected a null, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+                return null;
+            }
+
             public bool UnpackBoolean()
             {
                 byte markerByte = _in.ReadByte();
+                switch (markerByte)
+                {
+                    case TRUE:
+                        return true;
+                    case FALSE:
+                        return false;
+                    default:
+                        throw new ProtocolException(
+                            $"Expected a boolean, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
+            public async Task<bool> UnpackBooleanAsync()
+            {
+                byte markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
                 switch (markerByte)
                 {
                     case TRUE:
@@ -410,12 +437,46 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public async Task<long> UnpackLongAsync()
+            {
+                byte markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+                if ((sbyte)markerByte >= MINUS_2_TO_THE_4)
+                {
+                    return (sbyte)markerByte;
+                }
+                switch (markerByte)
+                {
+                    case INT_8:
+                        return await _in.ReadSByteAsync().ConfigureAwait(false);
+                    case INT_16:
+                        return await _in.ReadShortAsync().ConfigureAwait(false);
+                    case INT_32:
+                        return await _in.ReadIntAsync().ConfigureAwait(false);
+                    case INT_64:
+                        return await _in.ReadLongAsync().ConfigureAwait(false);
+                    default:
+                        throw new ProtocolException(
+                            $"Expected an integer, but got: 0x{markerByte.ToString("X2")}");
+                }
+            }
+
             public double UnpackDouble()
             {
                 byte markerByte = _in.ReadByte();
                 if (markerByte == FLOAT_64)
                 {
                     return _in.ReadDouble();
+                }
+                throw new ProtocolException(
+                    $"Expected a double, but got: 0x{markerByte.ToString("X2")}");
+            }
+
+            public async Task<double> UnpackDoubleAsync()
+            {
+                byte markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+                if (markerByte == FLOAT_64)
+                {
+                    return await _in.ReadDoubleAsync().ConfigureAwait(false);
                 }
                 throw new ProtocolException(
                     $"Expected a double, but got: 0x{markerByte.ToString("X2")}");
@@ -430,6 +491,17 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
 
                 return BitConverter.ToString(UnpackUtf8(markerByte));
+            }
+
+            public async Task<string> UnpackStringAsync()
+            {
+                var markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+                if (markerByte == TINY_STRING) // Note no mask, so we compare to 0x80.
+                {
+                    return string.Empty;
+                }
+
+                return BitConverter.ToString(await UnpackUtf8Async(markerByte).ConfigureAwait(false));
             }
 
             public byte[] UnpackBytes()
@@ -461,10 +533,46 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public async Task<byte[]> UnpackBytesAsync()
+            {
+                byte markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+
+                switch (markerByte)
+                {
+                    case BYTES_8:
+                        return await UnpackBytesAsync(await UnpackUint8Async().ConfigureAwait(false)).ConfigureAwait(false);
+                    case BYTES_16:
+                        return await UnpackBytesAsync(await UnpackUint16Async().ConfigureAwait(false)).ConfigureAwait(false);
+                    case BYTES_32:
+                    {
+                        long size = await UnpackUint32Async().ConfigureAwait(false);
+                        if (size <= int.MaxValue)
+                        {
+                            return await UnpackBytesAsync((int)size).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            throw new ProtocolException(
+                                $"BYTES_32 {size} too long for PackStream");
+                        }
+                    }
+                    default:
+                        throw new ProtocolException(
+                            $"Expected binary data, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
             private byte[] UnpackBytes(int size)
             {
                 var heapBuffer = new byte[size];
                 _in.ReadBytes(heapBuffer);
+                return heapBuffer;
+            }
+
+            private async Task<byte[]> UnpackBytesAsync(int size)
+            {
+                var heapBuffer = new byte[size];
+                await _in.ReadBytesAsync(heapBuffer).ConfigureAwait(false);
                 return heapBuffer;
             }
 
@@ -499,6 +607,37 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            private async Task<byte[]> UnpackUtf8Async(byte markerByte)
+            {
+                var markerHighNibble = (byte)(markerByte & 0xF0);
+                var markerLowNibble = (byte)(markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_STRING)
+                {
+                    return await UnpackBytesAsync(markerLowNibble).ConfigureAwait(false);
+                }
+                switch (markerByte)
+                {
+                    case STRING_8:
+                        return await UnpackBytesAsync(await UnpackUint8Async().ConfigureAwait(false)).ConfigureAwait(false);
+                    case STRING_16:
+                        return await UnpackBytesAsync(await UnpackUint16Async().ConfigureAwait(false)).ConfigureAwait(false);
+                    case STRING_32:
+                    {
+                        var size = await UnpackUint32Async().ConfigureAwait(false);
+                        if (size <= int.MaxValue)
+                        {
+                            return await UnpackBytesAsync((int)size).ConfigureAwait(false);
+                        }
+                        throw new ProtocolException(
+                            $"STRING_32 {size} too long for PackStream");
+                    }
+                    default:
+                        throw new ProtocolException(
+                            $"Expected a string, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
             public long UnpackMapHeader()
             {
                 var markerByte = _in.ReadByte();
@@ -517,6 +656,30 @@ namespace Neo4j.Driver.Internal.Packstream
                         return UnpackUint16();
                     case MAP_32:
                         return UnpackUint32();
+                    default:
+                        throw new ProtocolException(
+                            $"Expected a map, but got: 0x{markerByte.ToString("X2")}");
+                }
+            }
+
+            public async Task<long> UnpackMapHeaderAsync()
+            {
+                var markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+                var markerHighNibble = (byte)(markerByte & 0xF0);
+                var markerLowNibble = (byte)(markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_MAP)
+                {
+                    return markerLowNibble;
+                }
+                switch (markerByte)
+                {
+                    case MAP_8:
+                        return await UnpackUint8Async().ConfigureAwait(false);
+                    case MAP_16:
+                        return await UnpackUint16Async().ConfigureAwait(false);
+                    case MAP_32:
+                        return await UnpackUint32Async().ConfigureAwait(false);
                     default:
                         throw new ProtocolException(
                             $"Expected a map, but got: 0x{markerByte.ToString("X2")}");
@@ -547,9 +710,38 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public async Task<long> UnpackListHeaderAsync()
+            {
+                var markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+                var markerHighNibble = (byte)(markerByte & 0xF0);
+                var markerLowNibble = (byte)(markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_LIST)
+                {
+                    return markerLowNibble;
+                }
+                switch (markerByte)
+                {
+                    case LIST_8:
+                        return await UnpackUint8Async().ConfigureAwait(false);
+                    case LIST_16:
+                        return await UnpackUint16Async().ConfigureAwait(false);
+                    case LIST_32:
+                        return await UnpackUint32Async().ConfigureAwait(false);
+                    default:
+                        throw new ProtocolException(
+                            $"Expected a list, but got: 0x{(markerByte & 0xFF).ToString("X2")}");
+                }
+            }
+
             public byte UnpackStructSignature()
             {
                 return _in.ReadByte();
+            }
+
+            public Task<byte> UnpackStructSignatureAsync()
+            {
+                return _in.ReadByteAsync();
             }
 
             public long UnpackStructHeader()
@@ -568,6 +760,28 @@ namespace Neo4j.Driver.Internal.Packstream
                         return UnpackUint8();
                     case STRUCT_16:
                         return UnpackUint16();
+                    default:
+                        throw new ProtocolException(
+                            $"Expected a struct, but got: 0x{markerByte.ToString("X2")}");
+                }
+            }
+
+            public async Task<long> UnpackStructHeaderAsync()
+            {
+                var markerByte = await _in.ReadByteAsync().ConfigureAwait(false);
+                var markerHighNibble = (byte)(markerByte & 0xF0);
+                var markerLowNibble = (byte)(markerByte & 0x0F);
+
+                if (markerHighNibble == TINY_STRUCT)
+                {
+                    return markerLowNibble;
+                }
+                switch (markerByte)
+                {
+                    case STRUCT_8:
+                        return await UnpackUint8Async().ConfigureAwait(false);
+                    case STRUCT_16:
+                        return await UnpackUint16Async().ConfigureAwait(false);
                     default:
                         throw new ProtocolException(
                             $"Expected a struct, but got: 0x{markerByte.ToString("X2")}");
@@ -633,9 +847,73 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public async Task<PackType> PeekNextTypeAsync()
+            {
+                var markerByte = await _in.PeekByteAsync().ConfigureAwait(false);
+                var markerHighNibble = (byte)(markerByte & 0xF0);
+
+                switch (markerHighNibble)
+                {
+                    case TINY_STRING:
+                        return PackType.String;
+                    case TINY_LIST:
+                        return PackType.List;
+                    case TINY_MAP:
+                        return PackType.Map;
+                    case TINY_STRUCT:
+                        return PackType.Struct;
+                }
+
+                if ((sbyte)markerByte >= MINUS_2_TO_THE_4)
+                    return PackType.Integer;
+
+                switch (markerByte)
+                {
+                    case NULL:
+                        return PackType.Null;
+                    case TRUE:
+                    case FALSE:
+                        return PackType.Boolean;
+                    case FLOAT_64:
+                        return PackType.Float;
+                    case BYTES_8:
+                    case BYTES_16:
+                    case BYTES_32:
+                        return PackType.Bytes;
+                    case STRING_8:
+                    case STRING_16:
+                    case STRING_32:
+                        return PackType.String;
+                    case LIST_8:
+                    case LIST_16:
+                    case LIST_32:
+                        return PackType.List;
+                    case MAP_8:
+                    case MAP_16:
+                    case MAP_32:
+                        return PackType.Map;
+                    case STRUCT_8:
+                    case STRUCT_16:
+                        return PackType.Struct;
+                    case INT_8:
+                    case INT_16:
+                    case INT_32:
+                    case INT_64:
+                        return PackType.Integer;
+                    default:
+                        throw new ProtocolException(
+                            $"Unknown type 0x{markerByte:X2}");
+                }
+            }
+
             private int UnpackUint8()
             {
                 return _in.ReadByte() & 0xFF;
+            }
+
+            private async Task<int> UnpackUint8Async()
+            {
+                return (await _in.ReadByteAsync().ConfigureAwait(false)) & 0xFF;
             }
 
             private int UnpackUint16()
@@ -643,9 +921,19 @@ namespace Neo4j.Driver.Internal.Packstream
                 return _in.ReadShort() & 0xFFFF;
             }
 
+            private async Task<int> UnpackUint16Async()
+            {
+                return (await _in.ReadShortAsync().ConfigureAwait(false)) & 0xFFFF;
+            }
+
             private long UnpackUint32()
             {
                 return _in.ReadInt() & 0xFFFFFFFFL;
+            }
+
+            private async Task<long> UnpackUint32Async()
+            {
+                return (await _in.ReadIntAsync().ConfigureAwait(false)) & 0xFFFFFFFFL;
             }
 
         }
@@ -655,10 +943,12 @@ namespace Neo4j.Driver.Internal.Packstream
     {
         void Write(IRequestMessage requestMessage);
         void Flush();
+        Task FlushAsync();
     }
 
     internal interface IReader
     {
         void Read(IMessageResponseHandler responseHandler);
+        Task ReadAsync(IMessageResponseHandler responseHandler);
     }
 }

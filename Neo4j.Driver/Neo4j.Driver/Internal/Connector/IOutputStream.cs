@@ -14,6 +14,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System.Threading.Tasks;
+
 namespace Neo4j.Driver.Internal.Connector
 {
     internal interface IOutputStream
@@ -21,5 +24,6 @@ namespace Neo4j.Driver.Internal.Connector
         IOutputStream Write(byte b, params byte[] bytes);
         IOutputStream Write(byte[] bytes);
         IOutputStream Flush();
+        Task<IOutputStream> FlushAsync();
     }
 }
