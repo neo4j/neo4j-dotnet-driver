@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -43,7 +44,7 @@ namespace Neo4j.Driver.Tests
                 {
                     harness.SetupReadStream(new byte[] {0, 0, 0, 1});
                     await harness.Client.Start();
-                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri),
+                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri, Timeout.InfiniteTimeSpan),
                         Times.Once);
                 }
             }
@@ -212,7 +213,7 @@ namespace Neo4j.Driver.Tests
                     var ex = Record.Exception(() => harness.Client.Receive(messageHandler));
                     ex.Should().BeOfType<ProtocolException>();
 
-                    harness.MockTcpSocketClient.Verify(x => x.DisconnectAsync(), Times.Once);
+                    harness.MockTcpSocketClient.Verify(x => x.Disconnect(), Times.Once);
                     harness.MockTcpSocketClient.Verify(x => x.Dispose(), Times.Once);
                 }
             }
@@ -287,7 +288,7 @@ namespace Neo4j.Driver.Tests
                     harness.SetupReadStream("00 00 00 01");
                     await harness.Client.Start();
                     harness.Client.Dispose();
-                    harness.MockTcpSocketClient.Verify(s => s.DisconnectAsync(), Times.Once);
+                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
                     harness.MockTcpSocketClient.Verify(s => s.Dispose(), Times.Once);
                     harness.Client.IsOpen.Should().BeFalse();
                 }

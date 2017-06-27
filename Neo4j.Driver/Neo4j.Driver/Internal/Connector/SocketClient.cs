@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Packstream;
@@ -55,9 +56,14 @@ namespace Neo4j.Driver.Internal.Connector
             GC.SuppressFinalize(this);
         }
 
-        public async Task Start()
+        public Task Start()
         {
-            await _tcpSocketClient.ConnectAsync(_uri).ConfigureAwait(false);
+            return Start(Timeout.InfiniteTimeSpan);
+        }
+
+        public async Task Start(TimeSpan timeOut)
+        {
+            await _tcpSocketClient.ConnectAsync(_uri, timeOut).ConfigureAwait(false);
             IsOpen = true;
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
@@ -92,7 +98,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (IsOpen && _tcpSocketClient != null)
             {
-                await _tcpSocketClient.DisconnectAsync().ConfigureAwait(false);
+                _tcpSocketClient.Disconnect();
                 _tcpSocketClient.Dispose();
             }
             IsOpen = false;
