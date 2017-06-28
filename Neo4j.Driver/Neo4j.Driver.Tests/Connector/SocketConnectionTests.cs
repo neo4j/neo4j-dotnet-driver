@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Tests
                 conn.Init();
 
                 // Then
-                mockClient.Verify(c => c.Start(), Times.Once);
+                mockClient.Verify(c => c.Start(It.IsAny<TimeSpan>()), Times.Once);
             }
 
             [Fact]
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.Start()).Returns(Task.Delay(TimeSpan.FromMinutes(1)));
+                mockClient.Setup(x => x.Start(It.IsAny<TimeSpan>())).Returns(Task.Delay(TimeSpan.FromMinutes(1)));
                 // ReSharper disable once ObjectCreationAsStatement
                 var conn = new SocketConnection(mockClient.Object, AuthToken, TimeSpan.FromSeconds(1), UserAgent, Logger, Server);
                 // When

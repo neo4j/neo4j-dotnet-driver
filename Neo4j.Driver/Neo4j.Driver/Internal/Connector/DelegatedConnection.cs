@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -49,11 +50,35 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
+        public async Task SyncAsync()
+        {
+            try
+            {
+                await Delegate.SyncAsync();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
         public void Send()
         {
             try
             {
                 Delegate.Send();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
+        public async Task SendAsync()
+        {
+            try
+            {
+                await Delegate.SendAsync();
             }
             catch (Exception e)
             {
@@ -73,6 +98,18 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
+        public async Task ReceiveOneAsync()
+        {
+            try
+            {
+                await Delegate.ReceiveOneAsync();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
         public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
             bool pullAll = true)
         {
@@ -85,15 +122,28 @@ namespace Neo4j.Driver.Internal.Connector
                 OnError(e);
             }
         }
-
+        
         public virtual bool IsOpen => Delegate.IsOpen;
 
         public IServerInfo Server => Delegate.Server;
+
         public void Init()
         {
             try
             {
                 Delegate.Init();
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
+        public async Task InitAsync()
+        {
+            try
+            {
+                await Delegate.InitAsync();
             }
             catch (Exception e)
             {
@@ -124,10 +174,11 @@ namespace Neo4j.Driver.Internal.Connector
                 OnError(e);
             }
         }
-
+        
         public void Close()
         {
             Delegate.Close();
         }
+        
     }
 }

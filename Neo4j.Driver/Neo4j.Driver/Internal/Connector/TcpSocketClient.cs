@@ -97,6 +97,10 @@ namespace Neo4j.Driver.Internal.Connector
                         await _client.ConnectAsync(addresses[i], uri.Port).ConfigureAwait(false);
                         return;
                     }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
                     catch (Exception e)
                     {
                         var error = new IOException($"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);

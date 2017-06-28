@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -24,18 +25,30 @@ namespace Neo4j.Driver.Internal.Connector
     internal interface IConnection : IDisposable
     {
         void Init();
+
+        Task InitAsync();
+
         // send all and receive all
         void Sync();
+
+        Task SyncAsync();
+
         // send all
         void Send();
+
+        Task SendAsync();
+
         // receive one
         void ReceiveOne();
+
+        Task ReceiveOneAsync();
 
         // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
         void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true);
 
         // Enqueue a reset message
         void Reset();
+
         // Enqueue a ackFailure message
         void AckFailure();
 
