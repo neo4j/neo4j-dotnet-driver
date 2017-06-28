@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
 
@@ -84,6 +86,24 @@ namespace Neo4j.Driver.Internal.Connector
             _tcpSocketClient.WriteStream.Write(_buffer, 0, _pos);
             _tcpSocketClient.WriteStream.Flush();
             
+            DisposeBuffer();
+
+            return this;
+        }
+
+        public async Task<IOutputStream> FlushAsync()
+        {
+            if (_isInChunk)
+            {
+                WriteUShortInChunkHeader((ushort)_chunkLength);
+                CloseChunk();
+            }
+            // else means WriteMessageTail has close the chunk with 0s
+
+            _logger?.Trace("C: ", _buffer, 0, _pos);
+            await _tcpSocketClient.WriteStream.WriteAsync(_buffer, 0, _pos, CancellationToken.None).ConfigureAwait(false);
+            await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
+
             DisposeBuffer();
 
             return this;

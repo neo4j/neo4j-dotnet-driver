@@ -18,6 +18,7 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 using static System.Security.Authentication.SslProtocols;
@@ -51,14 +52,14 @@ namespace Neo4j.Driver.Internal.Connector
         public Stream ReadStream => _stream;
         public Stream WriteStream => _stream;
 
-        public async Task DisconnectAsync()
+        public void Disconnect()
         {
             Close();
         }
 
-        public async Task ConnectAsync(Uri uri)
+        public async Task ConnectAsync(Uri uri, TimeSpan timeOut)
         {
-            await Connect(uri);
+            await Connect(uri, timeOut);
             if (!_encryptionManager.UseTls)
             {
                 _stream = _client.GetStream();
@@ -81,27 +82,32 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private async Task Connect(Uri uri)
+        private async Task Connect(Uri uri, TimeSpan timeOut)
         {
-            var addresses = await uri.ResolveAsync(_ipv6Enabled);
-            AggregateException innerErrors = null;
-            for (var i = 0; i < addresses.Length; i++)
+            using (CancellationTokenSource cancellationSource = new CancellationTokenSource(timeOut))
             {
-                try
+                var addresses = await uri.ResolveAsync(_ipv6Enabled);
+                AggregateException innerErrors = null;
+                for (var i = 0; i < addresses.Length; i++)
                 {
-                    await _client.ConnectAsync(addresses[i], uri.Port).ConfigureAwait(false);
-                    return;
-                }
-                catch (Exception e)
-                {
-                    var error = new IOException($"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);
-                    innerErrors = innerErrors == null ? new AggregateException(error) : new AggregateException(innerErrors, error);
-
-                    if (i == addresses.Length - 1)
+                    try
                     {
-                        // if all failed
-                        throw new IOException(
-                            $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'." , innerErrors);
+                        cancellationSource.Token.ThrowIfCancellationRequested();
+
+                        await _client.ConnectAsync(addresses[i], uri.Port).ConfigureAwait(false);
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        var error = new IOException($"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);
+                        innerErrors = innerErrors == null ? new AggregateException(error) : new AggregateException(innerErrors, error);
+
+                        if (i == addresses.Length - 1)
+                        {
+                            // if all failed
+                            throw new IOException(
+                                $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.", innerErrors);
+                        }
                     }
                 }
             }

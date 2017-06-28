@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.V1;
 
@@ -44,10 +45,19 @@ namespace Neo4j.Driver.Internal.Connector
             Ensure(1);
             return (sbyte) _chunkBuffer.Dequeue();
         }
-
+        public async Task<sbyte> ReadSByteAsync()
+        {
+            await EnsureAsync(1).ConfigureAwait(false);
+            return (sbyte)_chunkBuffer.Dequeue();
+        }
         public byte ReadByte()
         {
             Ensure(1);
+            return _chunkBuffer.Dequeue();
+        }
+        public async Task<byte> ReadByteAsync()
+        {
+            await EnsureAsync(1).ConfigureAwait(false);
             return _chunkBuffer.Dequeue();
         }
 
@@ -56,10 +66,21 @@ namespace Neo4j.Driver.Internal.Connector
             Ensure(2);
             return BitConverter.ToInt16(_chunkBuffer.DequeueToArray(2));
         }
+        public async Task<short> ReadShortAsync()
+        {
+            await EnsureAsync(2).ConfigureAwait(false);
+            return BitConverter.ToInt16(_chunkBuffer.DequeueToArray(2));
+        }
 
         public int ReadInt()
         {
             Ensure(4);
+            return BitConverter.ToInt32(_chunkBuffer.DequeueToArray(4));
+        }
+
+        public async Task<int> ReadIntAsync()
+        {
+            await EnsureAsync(4).ConfigureAwait(false);
             return BitConverter.ToInt32(_chunkBuffer.DequeueToArray(4));
         }
 
@@ -72,9 +93,27 @@ namespace Neo4j.Driver.Internal.Connector
             return BitConverter.ToInt64(bytes);
         }
 
+        public async Task<long> ReadLongAsync()
+        {
+            await EnsureAsync(8).ConfigureAwait(false);
+
+            var bytes = _chunkBuffer.DequeueToArray(8);
+
+            return BitConverter.ToInt64(bytes);
+        }
+
         public double ReadDouble()
         {
             Ensure(8);
+
+            var bytes = _chunkBuffer.DequeueToArray(8);
+
+            return BitConverter.ToDouble(bytes);
+        }
+
+        public async Task<double> ReadDoubleAsync()
+        {
+            await EnsureAsync(8).ConfigureAwait(false);
 
             var bytes = _chunkBuffer.DequeueToArray(8);
 
@@ -93,9 +132,27 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
+        public async Task ReadBytesAsync(byte[] buffer, int offset = 0, int? length = null)
+        {
+            if (length == null)
+                length = buffer.Length;
+
+            await EnsureAsync(length.Value).ConfigureAwait(false);
+            for (int i = 0; i < length.Value; i++)
+            {
+                buffer[i + offset] = _chunkBuffer.Dequeue();
+            }
+        }
+
         public byte PeekByte()
         {
             Ensure(1);
+            return _chunkBuffer.Peek();
+        }
+
+        public async Task<byte> PeekByteAsync()
+        {
+            await EnsureAsync(1).ConfigureAwait(false);
             return _chunkBuffer.Peek();
         }
 
@@ -118,6 +175,25 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
+        private async Task EnsureAsync(int size)
+        {
+            while (_chunkBuffer.Count < size)
+            {
+                // head
+                await ReadSpecifiedSizeAsync(_headTailBuffer).ConfigureAwait(false);
+                var chunkSize = BitConverter.ToUInt16(_headTailBuffer);
+
+                // chunk
+                var chunk = new byte[chunkSize];
+                await ReadSpecifiedSizeAsync(chunk).ConfigureAwait(false);
+                for (var i = 0; i < chunkSize; i++)
+                {
+                    _chunkBuffer.Enqueue(chunk[i]);
+                }
+
+            }
+        }
+
         private void ReadSpecifiedSize(byte[] buffer)
         {
             if (buffer.Length == 0)
@@ -133,10 +209,35 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Trace("S: ", buffer, 0, buffer.Length);
         }
 
+        private async Task ReadSpecifiedSizeAsync(byte[] buffer)
+        {
+            if (buffer.Length == 0)
+            {
+                return;
+            }
+            var numberOfbytesRead = await _tcpSocketClient.ReadStream.ReadAsync(buffer, 0, buffer.Length);
+            if (numberOfbytesRead != buffer.Length)
+            {
+                throw new ProtocolException($"Expect {buffer.Length}, but got {numberOfbytesRead}");
+            }
+
+            _logger?.Trace("S: ", buffer, 0, buffer.Length);
+        }
+
         public void ReadMessageTail()
         {
             // tail 00 00 
             ReadSpecifiedSize(_headTailBuffer);
+            if (_headTailBuffer.Equals(Tail))
+            {
+                throw new ProtocolException("Not chunked correctly");
+            }
+        }
+
+        public async Task ReadMessageTailAsync()
+        {
+            // tail 00 00 
+            await ReadSpecifiedSizeAsync(_headTailBuffer).ConfigureAwait(false);
             if (_headTailBuffer.Equals(Tail))
             {
                 throw new ProtocolException("Not chunked correctly");
