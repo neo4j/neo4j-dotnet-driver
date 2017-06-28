@@ -89,6 +89,20 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             using (var session = TckHooks.CreateSelfManagedSession())
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
+
+                var dropConstraints =
+                    session.Run("CALL db.constraints() YIELD description RETURN 'DROP ' + description");
+                foreach (var drop in dropConstraints)
+                {
+                    session.Run(drop[0].ToString()).Consume();
+                }
+
+                var dropIndices =
+                    session.Run("CALL db.indexes() YIELD description RETURN 'DROP ' + description");
+                foreach (var drop in dropIndices)
+                {
+                    session.Run(drop[0].ToString()).Consume();
+                }
             }
         }
 
