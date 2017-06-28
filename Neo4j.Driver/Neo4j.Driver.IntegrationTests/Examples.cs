@@ -27,7 +27,7 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.Examples
 {
     /// <summary>
-    /// The driver examples for 1.2 driver
+    /// The driver examples since 1.2 driver
     /// </summary>
     public class Examples
     {
