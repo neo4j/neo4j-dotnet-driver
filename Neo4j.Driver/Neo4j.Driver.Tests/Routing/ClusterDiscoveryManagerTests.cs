@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var discoveryManager = new ClusterDiscoveryManager(mock.Object, null, null);
                 // Then
                 discoveryManager.DiscoveryProcedure.Text.Should().Be("CALL dbms.cluster.routing.getServers");
-                discoveryManager.DiscoveryProcedure.Parameters.Should().BeNull();
+                discoveryManager.DiscoveryProcedure.Parameters.Should().BeEmpty();
             }
 
             [Theory]
@@ -368,7 +368,7 @@ namespace Neo4j.Driver.Tests.Routing
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
                 MessagePair(InitMessage(), SuccessMessage()),
-                MessagePair(new RunMessage("CALL dbms.cluster.routing.getServers"),
+                MessagePair(new RunMessage("CALL dbms.cluster.routing.getServers", new Dictionary<string, object>()),
                     SuccessMessage(new List<object> {"ttl", "servers"}))
             };
 
