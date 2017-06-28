@@ -23,7 +23,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Neo4j.Driver")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("The official .NET driver for the Neo4j Graph Database over the Bolt protocol.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Neo4j.Driver")]
