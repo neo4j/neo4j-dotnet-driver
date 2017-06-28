@@ -24,6 +24,13 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public class Statement
     {
+        private static IDictionary<string, object> NoParameter { get; }
+
+        static Statement()
+        {
+            NoParameter = new Dictionary<string, object>();
+        }
+         
         /// <summary>
         /// Gets the statement's text.
         /// </summary>
@@ -41,12 +48,12 @@ namespace Neo4j.Driver.V1
         public Statement(string text, IDictionary<string, object> parameters = null)
         {
             Text = text;
-            Parameters = parameters;
+            Parameters = parameters ?? NoParameter;
         }
 
         public override string ToString()
         {
-            return $"`{Text}`, {Parameters.ValueToString()}";
+            return $"`{Text}`, {Parameters.ToContentString()}";
         }
     }
 
