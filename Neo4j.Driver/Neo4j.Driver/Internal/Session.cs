@@ -70,20 +70,21 @@ namespace Neo4j.Driver.Internal
             });
         }
 
-        public override Task<IStatementResultAsync> RunAsync(Statement statement)
+        public override Task<IStatementResultReader> RunAsync(Statement statement)
         {
-            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
-
-            try
+            return TryExecuteAsync(async () =>
             {
-                completionSource.SetResult((IStatementResultAsync)Run(statement));
-            }
-            catch (Exception exc)
-            {
-                completionSource.SetException(exc);
-            }
+                EnsureCanRunMoreStatements();
 
-            return completionSource.Task;
+                _connection = _connectionProvider.Acquire(_defaultMode);
+                var resultBuilder = new ResultReaderBuilder(statement.Text, statement.Parameters,
+                    () => _connection.ReceiveOneAsync(), _connection.Server, this);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
+
+                await _connection.SendAsync().ConfigureAwait(false);
+
+                return resultBuilder.PreBuild();
+            });
         }
 
         public ITransaction BeginTransaction()
@@ -349,7 +350,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecuteAsync(async() => await _retryLogic.RetryAsync(async() =>
             {
-                ITransactionAsync tx = await BeginTransactionAsyncWithoutLogging(AccessMode.Read).ConfigureAwait(false);
+                ITransactionAsync tx = await BeginTransactionAsyncWithoutLogging(mode).ConfigureAwait(false);
                 {
                     try
                     {

@@ -197,20 +197,18 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public override Task<IStatementResultAsync> RunAsync(Statement statement)
+        public override Task<IStatementResultReader> RunAsync(Statement statement)
         {
-            TaskCompletionSource<IStatementResultAsync> completionSource = new TaskCompletionSource<IStatementResultAsync>();
-
-            try
+            return TryExecuteAsync(async () =>
             {
-                completionSource.SetResult((IStatementResultAsync)Run(statement));
-            }
-            catch (Exception exc)
-            {
-                completionSource.SetException(exc);
-            }
+                EnsureNotFailed();
 
-            return completionSource.Task;
+                var resultBuilder = new ResultReaderBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(),
+                    _connection.Server);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
+                await _connection.SendAsync().ConfigureAwait(false);
+                return resultBuilder.PreBuild();
+            });
         }
 
         private class TransactionConnection : DelegatedConnection
