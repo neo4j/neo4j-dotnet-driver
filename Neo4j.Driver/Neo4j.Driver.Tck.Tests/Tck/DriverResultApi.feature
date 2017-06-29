@@ -149,7 +149,6 @@ Feature: Tests the uniform API of the driver
       | constraints added     | 0      |
       | constraints removed   | 0      |
       | contains updates      | true   |
-	And running: DROP INDEX on :Label(prop)
 
   Scenario: Access Update Statistics and check delete index
     Given init: CREATE INDEX on :Label(prop)
@@ -187,7 +186,6 @@ Feature: Tests the uniform API of the driver
       | constraints added     | 1      |
       | constraints removed   | 0      |
       | contains updates      | true   |
-	Then running: DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
 
   Scenario: Access Update Statistics and check delete constraint
     Given init: CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
@@ -217,8 +215,18 @@ Feature: Tests the uniform API of the driver
       | read only    | RETURN 1                             |
       | read write   | CREATE (n) WITH * MATCH (n) RETURN n |
       | write only   | CREATE (n)                           |
-      | schema write | CREATE INDEX on :Label(prop)         |
-      | schema write | DROP INDEX on :Label(prop)           |
+
+  
+  Scenario: Access Statement Type When Creating Index
+    Given running: CREATE INDEX on :Label(prop)
+    When the `Statement Result` is consumed a `Result Summary` is returned
+    Then requesting the `Statement Type` should give schema write
+
+  Scenario: Access Statement Type When Dropping Index
+	Given init: CREATE INDEX on :Label(prop)
+    Given running: DROP INDEX on :Label(prop) 
+    When the `Statement Result` is consumed a `Result Summary` is returned
+    Then requesting the `Statement Type` should give schema write
 
   Scenario: Check that plan and no profile is available
     Given running: EXPLAIN CREATE (n) RETURN n
