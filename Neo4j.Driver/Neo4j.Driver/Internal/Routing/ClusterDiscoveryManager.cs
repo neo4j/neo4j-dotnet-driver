@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -117,7 +118,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
             public void Dispose()
             {
-                _connection?.Dispose();
+                _connection?.Close();
             }
 
             public IConnection Acquire(AccessMode mode)
@@ -125,6 +126,11 @@ namespace Neo4j.Driver.Internal.Routing
                 var conn = _connection;
                 _connection = null;
                 return conn;
+            }
+
+            public Task<IConnection> AcquireAsync(AccessMode mode)
+            {
+                throw new NotImplementedException();
             }
         }
     }

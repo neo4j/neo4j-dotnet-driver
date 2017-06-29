@@ -189,7 +189,7 @@ namespace Neo4j.Driver.Internal
         public void OnResultComsumed()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-            CleanRunResultResources();
+            DisposeConnection();
         }
 
         /// <summary>
@@ -203,9 +203,7 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(_transaction.Bookmark);
             _transaction = null;
 
-            // always dispose connection used by the transaction too
-            _connection.Dispose();
-            _connection = null;
+            DisposeConnection();
         }
 
         /// <summary>
@@ -268,19 +266,19 @@ namespace Neo4j.Driver.Internal
                 finally
                 {
                     // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
-                    CleanRunResultResources();
+                    DisposeConnection();
                 }
             }
             else
             {
-                CleanRunResultResources();
+                DisposeConnection();
             }
         }
 
-        private void CleanRunResultResources()
+        private void DisposeConnection()
         {
             // always try to close connection used by the result too
-            _connection?.Dispose();
+            _connection?.Close();
             _connection = null;
         }
 
@@ -386,7 +384,5 @@ namespace Neo4j.Driver.Internal
         {
             return RunTransactionAsync(AccessMode.Write, work);
         }
-
-
     }
 }

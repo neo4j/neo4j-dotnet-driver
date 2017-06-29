@@ -52,11 +52,6 @@ namespace Neo4j.Driver.Internal.Connector
         public Stream ReadStream => _stream;
         public Stream WriteStream => _stream;
 
-        public void Disconnect()
-        {
-            Close();
-        }
-
         public async Task ConnectAsync(Uri uri, TimeSpan timeOut)
         {
             await Connect(uri, timeOut);

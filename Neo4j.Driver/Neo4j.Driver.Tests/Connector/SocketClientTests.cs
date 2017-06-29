@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream(new byte[] {0, 0, 0, 1});
-                    await harness.Client.Start();
+                    await harness.Client.StartAsync();
                     harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri, Timeout.InfiniteTimeSpan),
                         Times.Once);
                 }
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream(response);
-                    await harness.ExpectException<NotSupportedException>(() => harness.Client.Start(), errorMessage);
+                    await harness.ExpectException<NotSupportedException>(() => harness.Client.StartAsync(), errorMessage);
                 }
             }
         }
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests
                                             "00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75 6d 00 00");
                     harness.SetupWriteStream();
 
-                    await harness.Client.Start();
+                    await harness.Client.StartAsync();
                     harness.ResetCalls();
 
                     // When
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Tests
 
                     harness.SetupWriteStream();
 
-                    await harness.Client.Start();
+                    await harness.Client.StartAsync();
                     harness.ResetCalls();
 
                     // When
@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Tests
 
                     harness.SetupWriteStream();
 
-                    await harness.Client.Start();
+                    await harness.Client.StartAsync();
                     harness.ResetCalls();
 
                     // When
@@ -203,7 +203,7 @@ namespace Neo4j.Driver.Tests
 
                     harness.SetupWriteStream();
 
-                    await harness.Client.Start();
+                    await harness.Client.StartAsync();
 
                     // force to recive an error
                     messageHandler.Error = new ProtocolException("Neo.ClientError.Request.Invalid", "Test Message");
@@ -213,7 +213,6 @@ namespace Neo4j.Driver.Tests
                     var ex = Record.Exception(() => harness.Client.Receive(messageHandler));
                     ex.Should().BeOfType<ProtocolException>();
 
-                    harness.MockTcpSocketClient.Verify(x => x.Disconnect(), Times.Once);
                     harness.MockTcpSocketClient.Verify(x => x.Dispose(), Times.Once);
                 }
             }
@@ -286,9 +285,8 @@ namespace Neo4j.Driver.Tests
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream("00 00 00 01");
-                    await harness.Client.Start();
+                    await harness.Client.StartAsync();
                     harness.Client.Dispose();
-                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
                     harness.MockTcpSocketClient.Verify(s => s.Dispose(), Times.Once);
                     harness.Client.IsOpen.Should().BeFalse();
                 }

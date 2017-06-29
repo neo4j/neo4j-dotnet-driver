@@ -16,13 +16,14 @@
 // limitations under the License.
 using System;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class ConnectionPool : LoggerBase, IConnectionPool, IConnectionProvider
+    internal class ConnectionPool : LoggerBase, IConnectionReleaseManager, IConnectionProvider
     {
         private readonly Uri _uri;
 
@@ -47,7 +48,7 @@ namespace Neo4j.Driver.Internal
 
         internal bool DisposeCalled
         {
-            set { _disposeCalled = value; }
+            set => _disposeCalled = value;
         }
 
         public ConnectionPool(
@@ -94,8 +95,8 @@ namespace Neo4j.Driver.Internal
                 _statistics?.IncrementConnectionToCreate();
 
                 conn = _fakeConnection != null
-                    ? new PooledConnection(_fakeConnection, Release)
-                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), Release);
+                    ? new PooledConnection(_fakeConnection, this)
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), this);
                 conn.Init();
 
                 _statistics?.IncrementConnectionCreated();
@@ -108,17 +109,45 @@ namespace Neo4j.Driver.Internal
                 // shut down and clean all the resources of the conneciton if failed to establish
                 if (conn != null)
                 {
-                    CloseConnection(conn);
+                    DestoryConnection(conn);
                 }
                 throw;
             }
         }
 
-        private void CloseConnection(IPooledConnection conn)
+        private async Task<IPooledConnection> CreateNewPooledConnectionAsync()
+        {
+            PooledConnection conn = null;
+            try
+            {
+                _statistics?.IncrementConnectionToCreate();
+
+                conn = _fakeConnection != null
+                    ? new PooledConnection(_fakeConnection, this)
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), this);
+                await conn.InitAsync().ConfigureAwait(false);
+
+                _statistics?.IncrementConnectionCreated();
+                return conn;
+            }
+            catch
+            {
+                _statistics?.IncrementConnectionFailedToCreate();
+
+                // shut down and clean all the resources of the conneciton if failed to establish
+                if (conn != null)
+                {
+                    DestoryConnection(conn);
+                }
+                throw;
+            }
+        }
+
+        private void DestoryConnection(IPooledConnection conn)
         {
             _statistics?.IncrementConnectionToClose();
 
-            conn.Close();
+            conn.Destroy();
 
             _statistics?.IncrementConnectionClosed();
         }
@@ -126,6 +155,11 @@ namespace Neo4j.Driver.Internal
         public IConnection Acquire(AccessMode mode)
         {
             return Acquire();
+        }
+
+        public Task<IConnection> AcquireAsync(AccessMode mode)
+        {
+            return AcquireAsync();
         }
 
         public IPooledConnection Acquire()
@@ -144,7 +178,7 @@ namespace Neo4j.Driver.Internal
                 }
                 else if (!connection.IsOpen || HasBeenIdleForTooLong(connection))
                 {
-                    CloseConnection(connection);
+                    DestoryConnection(connection);
                     return Acquire();
                 }
 
@@ -153,7 +187,41 @@ namespace Neo4j.Driver.Internal
                 {
                     if (_inUseConnections.TryRemove(connection))
                     {
-                        CloseConnection(connection);
+                        DestoryConnection(connection);
+                    }
+                    ThrowObjectDisposedException();
+                }
+
+                return connection;
+            });
+        }
+
+        private Task<IConnection> AcquireAsync()
+        {
+            return TryExecuteAsync(async () =>
+            {
+                if (_disposeCalled)
+                {
+                    ThrowObjectDisposedException();
+                }
+                IPooledConnection connection;
+
+                if (!_availableConnections.TryDequeue(out connection))
+                {
+                    connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                }
+                else if (!connection.IsOpen || HasBeenIdleForTooLong(connection))
+                {
+                    DestoryConnection(connection);
+                    return await AcquireAsync().ConfigureAwait(false);
+                }
+
+                _inUseConnections.TryAdd(connection);
+                if (_disposeCalled)
+                {
+                    if (_inUseConnections.TryRemove(connection))
+                    {
+                        DestoryConnection(connection);
                     }
                     ThrowObjectDisposedException();
                 }
@@ -199,6 +267,24 @@ namespace Neo4j.Driver.Internal
             return true;
         }
 
+        private async Task<bool> IsConnectionReusableAsync(IPooledConnection connection)
+        {
+            if (!connection.IsOpen)
+            {
+                return false;
+            }
+
+            try
+            {
+                await connection.ClearConnectionAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+
         private bool IsPoolFull()
         {
             return _availableConnections.Count >= _idlePoolSize && _idlePoolSize != Config.InfiniteMaxIdleSessionPoolSize;
@@ -223,7 +309,7 @@ namespace Neo4j.Driver.Internal
                 {
                     if (IsPoolFull())
                     {
-                        CloseConnection(connection);
+                        DestoryConnection(connection);
                     }
                     else
                     {
@@ -237,13 +323,57 @@ namespace Neo4j.Driver.Internal
                     // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
                     if (_disposeCalled && _availableConnections.TryDequeue(out connection))
                     {
-                        CloseConnection(connection);
+                        DestoryConnection(connection);
                     }
                 }
                 else
                 {
                     //release resources by connection
-                    CloseConnection(connection);
+                    DestoryConnection(connection);
+                }
+            });
+        }
+
+        public Task ReleaseAsync(IPooledConnection connection)
+        {
+            return TryExecuteAsync(async () =>
+            {
+                if (_disposeCalled)
+                {
+                    // pool already disposed
+                    return;
+                }
+                if (!_inUseConnections.TryRemove(connection))
+                {
+                    // pool already disposed
+                    return;
+                }
+
+                if (await IsConnectionReusableAsync(connection).ConfigureAwait(false))
+                {
+                    if (IsPoolFull())
+                    {
+                        DestoryConnection(connection);
+                    }
+                    else
+                    {
+                        if (IsConnectionIdleDetectionEnabled())
+                        {
+                            connection.IdleTimer.Start();
+                        }
+                        _availableConnections.Enqueue(connection);
+                    }
+
+                    // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
+                    if (_disposeCalled && _availableConnections.TryDequeue(out connection))
+                    {
+                        DestoryConnection(connection);
+                    }
+                }
+                else
+                {
+                    //release resources by connection
+                    DestoryConnection(connection);
                 }
             });
         }
@@ -265,7 +395,7 @@ namespace Neo4j.Driver.Internal
                     Logger?.Info($"Disposing In Use Connection {inUseConnection.Id}");
                     if (_inUseConnections.TryRemove(inUseConnection))
                     {
-                        CloseConnection(inUseConnection);
+                        DestoryConnection(inUseConnection);
                     }
                 }
 
@@ -273,7 +403,7 @@ namespace Neo4j.Driver.Internal
                 while (_availableConnections.TryDequeue(out connection))
                 {
                     Logger?.Debug($"Disposing Available Connection {connection.Id}");
-                    CloseConnection(connection);
+                    DestoryConnection(connection);
                 }
             });
             _statistics?.Dispose();
@@ -292,9 +422,9 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    internal interface IConnectionPool : IDisposable
+    internal interface IConnectionReleaseManager : IDisposable
     {
-        IPooledConnection Acquire();
         void Release(IPooledConnection connection);
+        Task ReleaseAsync(IPooledConnection connection);
     }
 }

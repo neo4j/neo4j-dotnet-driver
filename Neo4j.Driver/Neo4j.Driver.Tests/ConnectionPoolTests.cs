@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Tests
 
                 foreach (var conn in conns)
                 {
-                    conn.Dispose();
+                    conn.Close();
                     pool.NumberOfAvailableConnections.Should().BeLessOrEqualTo(2);
                 }
 
@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var conn = pool.Acquire();
                     pool.NumberOfAvailableConnections.Should().Be(0);
-                    conn.Dispose();
+                    conn.Close();
                     pool.NumberOfAvailableConnections.Should().Be(1);
                 }
 
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(mockedConnection.Object);
 
                 Record.Exception(()=>pool.Acquire());
-                mockedConnection.Verify(x=>x.Close(), Times.Once);
+                mockedConnection.Verify(x=>x.Destroy(), Times.Once);
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
                 closedMock.Verify(x => x.IsOpen, Times.Once);
-                closedMock.Verify(x => x.Close(), Times.Once);
+                closedMock.Verify(x => x.Destroy(), Times.Once);
 
                 conn.Should().NotBeNull();
                 conn.Id.Should().NotBe(closedId);
@@ -206,8 +206,8 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
-                unhealthyMock.Verify(x => x.Close(), Times.Once);
-                healthyMock.Verify(x => x.Close(), Times.Never);
+                unhealthyMock.Verify(x => x.Destroy(), Times.Once);
+                healthyMock.Verify(x => x.Destroy(), Times.Never);
                 conn.Should().Be(healthyMock.Object);
             }
 
@@ -238,7 +238,7 @@ namespace Neo4j.Driver.Tests
                 // Then
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
-                mock.Verify(x => x.Close(), Times.Once);
+                mock.Verify(x => x.Destroy(), Times.Once);
 
                 conn.Should().NotBeNull();
                 conn.Id.Should().NotBe(idleTooLongId);
@@ -383,7 +383,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
                 healthyMock.Verify(x => x.IsOpen, Times.Once);
-                healthyMock.Verify(x => x.Close(), Times.Once);
+                healthyMock.Verify(x => x.Destroy(), Times.Once);
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().StartWith("Failed to acquire a new connection");
             }
@@ -427,7 +427,7 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Close(), Times.Once);
+                mock.Verify(x => x.Destroy(), Times.Once);
             }
 
             [Fact]
@@ -448,7 +448,7 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Close(), Times.Once);
+                mock.Verify(x => x.Destroy(), Times.Once);
             }
 
             [Fact]
@@ -476,7 +476,7 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfAvailableConnections.Should().Be(10);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Close(), Times.Once);
+                mock.Verify(x => x.Destroy(), Times.Once);
             }
 
             [Fact]
@@ -561,7 +561,7 @@ namespace Neo4j.Driver.Tests
                 // Then
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Close(), Times.Once);
+                mock.Verify(x => x.Destroy(), Times.Once);
             }
         }
 
@@ -630,7 +630,7 @@ namespace Neo4j.Driver.Tests
                 pool.Release(mock.Object);
 
                 // Then
-                mock.Verify(x => x.Close(), Times.Once);
+                mock.Verify(x => x.Destroy(), Times.Once);
             }
 
             [Fact]
@@ -647,7 +647,7 @@ namespace Neo4j.Driver.Tests
                 pool.Dispose();
 
                 // Then
-                mock.Verify(x => x.Close(), Times.Once);
+                mock.Verify(x => x.Destroy(), Times.Once);
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
             }

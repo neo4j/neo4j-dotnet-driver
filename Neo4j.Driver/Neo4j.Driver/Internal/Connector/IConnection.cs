@@ -22,7 +22,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal interface IConnection : IDisposable
+    internal interface IConnection
     {
         void Init();
 
@@ -55,7 +55,14 @@ namespace Neo4j.Driver.Internal.Connector
         /// <summary>
         /// Close and release related resources
         /// </summary>
+        void Destroy();
+
+        /// <summary>
+        /// Close connection
+        /// </summary>
         void Close();
+
+        Task CloseAsync();
 
         /// <summary>
         /// Return true if the underlying socket connection is till open, otherwise false.

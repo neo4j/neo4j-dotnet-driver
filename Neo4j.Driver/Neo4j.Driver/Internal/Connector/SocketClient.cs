@@ -56,12 +56,12 @@ namespace Neo4j.Driver.Internal.Connector
             GC.SuppressFinalize(this);
         }
 
-        public Task Start()
+        internal Task StartAsync()
         {
-            return Start(Timeout.InfiniteTimeSpan);
+            return StartAsync(Timeout.InfiniteTimeSpan);
         }
 
-        public async Task Start(TimeSpan timeOut)
+        public async Task StartAsync(TimeSpan timeOut)
         {
             await _tcpSocketClient.ConnectAsync(_uri, timeOut).ConfigureAwait(false);
             IsOpen = true;
@@ -93,13 +93,11 @@ namespace Neo4j.Driver.Internal.Connector
             _reader = formatV1.Reader;
         }
 
-
-        private async Task Stop()
+        private void Stop()
         {
-            if (IsOpen && _tcpSocketClient != null)
+            if (IsOpen)
             {
-                _tcpSocketClient.Disconnect();
-                _tcpSocketClient.Dispose();
+                _tcpSocketClient?.Dispose();
             }
             IsOpen = false;
         }
@@ -118,7 +116,7 @@ namespace Neo4j.Driver.Internal.Connector
             catch (Exception ex)
             {
                 _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
-                Task.Run(() => Stop()).Wait();
+                Stop();
                 throw;
             }
         }
@@ -138,7 +136,7 @@ namespace Neo4j.Driver.Internal.Connector
             catch (Exception ex)
             {
                 _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
-                Task.Run(() => Stop()).Wait();
+                Stop();
                 throw;
             }
         }
@@ -171,13 +169,13 @@ namespace Neo4j.Driver.Internal.Connector
             catch (Exception ex)
             {
                 _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", ex);
-                Task.Run(() => Stop()).Wait();
+                Stop();
                 throw;
             }
             if (responseHandler.HasProtocolViolationError)
             {
                 _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
-                Task.Run(() => Stop()).Wait();
+                Stop();
                 throw responseHandler.Error;
             }
         }
@@ -191,13 +189,13 @@ namespace Neo4j.Driver.Internal.Connector
             catch (Exception ex)
             {
                 _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", ex);
-                Task.Run(() => Stop()).Wait();
+                Stop();
                 throw;
             }
             if (responseHandler.HasProtocolViolationError)
             {
                 _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
-                Task.Run(() => Stop()).Wait();
+                Stop();
                 throw responseHandler.Error;
             }
         }
@@ -243,7 +241,7 @@ namespace Neo4j.Driver.Internal.Connector
             if (!isDisposing)
                 return;
 
-            Task.Run(() => Stop()).Wait();
+            Stop();
         }
 
         public void UpdatePackStream(string serverVersion)

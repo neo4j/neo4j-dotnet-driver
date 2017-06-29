@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Internal
             }
             finally
             {
-                _connection.Dispose();
+                _connection.Close();
                 _resourceHandler?.OnTransactionDispose();
                 base.Dispose(true);
             }
@@ -221,11 +221,17 @@ namespace Neo4j.Driver.Internal
                 _transaction = transaction;
             }
 
-            public override void Dispose()
+            public override void Close()
             {
                 // no resouce will be closed as the resources passed in this class are managed outside this class
                 Delegate = null;
                 _transaction = null;
+            }
+
+            public override Task CloseAsync()
+            {
+                Close();
+                return Task.CompletedTask;
             }
 
             public override void OnError(Exception error)

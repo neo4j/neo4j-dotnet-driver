@@ -16,13 +16,14 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IClusterConnectionPool : IDisposable
     {
         // Try to acquire a connection with the server specified by the uri
-        bool TryAcquire(Uri uri, out IPooledConnection conn);
+        bool TryAcquire(Uri uri, out IConnection conn);
         // Add a set of uri to this pool
         void Add(IEnumerable<Uri> uris);
         // Update the pool keys with the new server uris

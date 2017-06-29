@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Init()
         {
-            var connected = Task.Run(() => _client.Start(_connectionTimeout)).Wait(_connectionTimeout);
+            var connected = Task.Run(() => _client.StartAsync(_connectionTimeout)).Wait(_connectionTimeout);
             if (!connected)
             {
                 throw new IOException(
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task InitAsync()
         {
-            return _client.Start(_connectionTimeout).ContinueWith(t => InitAsync(_authToken));
+            return _client.StartAsync(_connectionTimeout).ContinueWith(t => InitAsync(_authToken));
         }
 
         private void Init(IAuthToken authToken)
@@ -198,22 +198,13 @@ namespace Neo4j.Driver.Internal.Connector
         public bool IsOpen => _client.IsOpen;
         public IServerInfo Server { get; }
 
+        public void Destroy()
+        {
+            Close();
+        }
+
         public void Close()
         {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
             try
             {
                 _client.Dispose();
@@ -223,6 +214,12 @@ namespace Neo4j.Driver.Internal.Connector
                 // only log the exception if failed to close connection
                 _logger.Error($"Failed to close connection properly due to error: {e.Message}", e);
             }
+        }
+
+        public Task CloseAsync()
+        {
+            Close();
+            return Task.CompletedTask; // TODO verify this is the correct way to do it
         }
 
         private void AssertNoServerFailure()

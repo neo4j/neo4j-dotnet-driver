@@ -18,18 +18,19 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterConnectionPool : LoggerBase, IClusterConnectionPool
     {
-        private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools = new ConcurrentDictionary<Uri, IConnectionPool>();
+        private readonly ConcurrentDictionary<Uri, IConnectionProvider> _pools = new ConcurrentDictionary<Uri, IConnectionProvider>();
         private readonly ConnectionSettings _connectionSettings;
         private readonly ConnectionPoolSettings _poolSettings;
 
         // for test only
-        private readonly IConnectionPool _fakePool;
+        private readonly IConnectionProvider _fakePool;
 
         private volatile bool _disposeCalled;
 
@@ -46,8 +47,8 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         internal ClusterConnectionPool(
-            IConnectionPool connectionPool,
-            ConcurrentDictionary<Uri, IConnectionPool> clusterPool=null,
+            IConnectionProvider connectionPool,
+            ConcurrentDictionary<Uri, IConnectionProvider> clusterPool=null,
             ConnectionSettings connSettings=null,
             ConnectionPoolSettings poolSettings=null,
             ILogger logger=null
@@ -58,21 +59,22 @@ namespace Neo4j.Driver.Internal.Routing
             _pools = clusterPool;
         }
 
-        private IConnectionPool CreateNewConnectionPool(Uri uri)
+        private IConnectionProvider CreateNewConnectionPool(Uri uri)
         {
             return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger);
         }
 
-        public bool TryAcquire(Uri uri, out IPooledConnection conn)
+        public bool TryAcquire(Uri uri, out IConnection conn)
         {
-            IConnectionPool pool;
+            IConnectionProvider pool;
             if (!_pools.TryGetValue(uri, out pool))
             {
                 conn = null;
                 return false;
             }
 
-            conn = pool.Acquire();
+            AccessMode ignored = AccessMode.Write;
+            conn = pool.Acquire(ignored);
             return true;
         }
 
@@ -113,7 +115,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public void Purge(Uri uri)
         {
-            IConnectionPool toRemvoe;
+            IConnectionProvider toRemvoe;
             var removed = _pools.TryRemove(uri, out toRemvoe);
             if (removed)
             {
