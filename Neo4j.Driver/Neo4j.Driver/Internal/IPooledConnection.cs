@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal
@@ -30,6 +31,8 @@ namespace Neo4j.Driver.Internal
         /// Try to reset the connection to a clean state to prepare it for a new session.
         /// </summary>
         void ClearConnection();
+
+        Task ClearConnectionAsync();
 
         ITimer IdleTimer { get; }
     }

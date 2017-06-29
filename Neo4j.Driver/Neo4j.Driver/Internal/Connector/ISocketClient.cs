@@ -24,10 +24,13 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface ISocketClient : IDisposable
     {
-        Task Start();
+        Task Start(TimeSpan timeOut);
         void Send(IEnumerable<IRequestMessage> messages);
+        Task SendAsync(IEnumerable<IRequestMessage> messages);
         void Receive(IMessageResponseHandler responseHandler);
+        Task ReceiveAsync(IMessageResponseHandler responseHandler);
         void ReceiveOne(IMessageResponseHandler responseHandler);
+        Task ReceiveOneAsync(IMessageResponseHandler responseHandler);
         bool IsOpen { get; }
         void UpdatePackStream(string serverVersion);
     }

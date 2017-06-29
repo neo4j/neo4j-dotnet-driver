@@ -66,8 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Init()
         {
-
-            var connected = Task.Run(() => _client.Start()).Wait(_connectionTimeout);
+            var connected = Task.Run(() => _client.Start(_connectionTimeout)).Wait(_connectionTimeout);
             if (!connected)
             {
                 throw new IOException(
@@ -75,6 +74,11 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             Init(_authToken);
+        }
+
+        public Task InitAsync()
+        {
+            return _client.Start(_connectionTimeout).ContinueWith(t => InitAsync(_authToken));
         }
 
         private void Init(IAuthToken authToken)
@@ -86,10 +90,24 @@ namespace Neo4j.Driver.Internal.Connector
             _client.UpdatePackStream(initCollector.Server);
         }
 
+        private async Task InitAsync(IAuthToken authToken)
+        {
+            var initCollector = new InitCollector();
+            Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
+            await SyncAsync();
+            ((ServerInfo)Server).Version = initCollector.Server;
+            _client.UpdatePackStream(initCollector.Server);
+        }
+
         public void Sync()
         {
             Send();
             Receive();
+        }
+
+        public Task SyncAsync()
+        {
+            return SendAsync().ContinueWith(t => ReceiveAsync());
         }
 
         public void Send()
@@ -105,6 +123,18 @@ namespace Neo4j.Driver.Internal.Connector
             _messages.Clear();
         }
 
+        public Task SendAsync()
+        {
+            if (_messages.Count == 0)
+            {
+                // nothing to send
+                return Task.CompletedTask;
+            }
+
+            // send
+            return _client.SendAsync(_messages).ContinueWith(t => _messages.Clear());
+        }
+
         private void Receive()
         {
             if (_responseHandler.UnhandledMessageSize == 0)
@@ -118,10 +148,28 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
+        private Task ReceiveAsync()
+        {
+            if (_responseHandler.UnhandledMessageSize == 0)
+            {
+                // nothing to receive
+                return Task.CompletedTask;
+            }
+
+            // receive
+            return _client.ReceiveAsync(_responseHandler).ContinueWith(t => AssertNoServerFailure());
+        }
+
+
         public void ReceiveOne()
         {
             _client.ReceiveOne(_responseHandler);
             AssertNoServerFailure();
+        }
+
+        public Task ReceiveOneAsync()
+        {
+            return _client.ReceiveOneAsync(_responseHandler).ContinueWith(t => AssertNoServerFailure());
         }
 
         public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)

@@ -123,6 +123,26 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
+        public async Task SendAsync(IEnumerable<IRequestMessage> messages)
+        {
+            try
+            {
+                foreach (var message in messages)
+                {
+                    _writer.Write(message);
+                    _logger?.Debug("C: ", message);
+                }
+
+                await _writer.FlushAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
+                Task.Run(() => Stop()).Wait();
+                throw;
+            }
+        }
+
         public bool IsOpen { get; private set; }
 
         public void Receive(IMessageResponseHandler responseHandler)
@@ -133,11 +153,40 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
+        public async Task ReceiveAsync(IMessageResponseHandler responseHandler)
+        {
+            while (responseHandler.UnhandledMessageSize > 0)
+            {
+                await ReceiveOneAsync(responseHandler);
+            }
+        }
+
+
         public void ReceiveOne(IMessageResponseHandler responseHandler)
         {
             try
             {
                 _reader.Read(responseHandler);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", ex);
+                Task.Run(() => Stop()).Wait();
+                throw;
+            }
+            if (responseHandler.HasProtocolViolationError)
+            {
+                _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
+                Task.Run(() => Stop()).Wait();
+                throw responseHandler.Error;
+            }
+        }
+
+        public async Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
+        {
+            try
+            {
+                await _reader.ReadAsync(responseHandler);
             }
             catch (Exception ex)
             {

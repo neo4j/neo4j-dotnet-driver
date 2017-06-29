@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -36,6 +37,13 @@ namespace Neo4j.Driver.Internal.Connector
         {
             Reset();
             Sync();
+        }
+
+        public Task ClearConnectionAsync()
+        {
+            Reset();
+
+            return SyncAsync();
         }
 
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;
