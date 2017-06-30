@@ -65,7 +65,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var session = driver.Session())
                 {
                     // When & Then
-                    IStatementResultAsync result = await session.RunAsync("RETURN 1");
+                    IStatementResultReader result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
@@ -98,7 +98,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var session = driver.Session())
                 {
                     // When & Then
-                    IStatementResultAsync result = await session.RunAsync("RETURN 1");
+                    IStatementResultReader result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
@@ -131,7 +131,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var session = driver.Session())
                 {
                     // When & Then
-                    IStatementResultAsync result = await session.RunAsync("RETURN 1");
+                    IStatementResultReader result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
@@ -164,7 +164,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var session = driver.Session())
                 {
                     // When & Then
-                    IStatementResultAsync result = await session.RunAsync("RETURN 1");
+                    IStatementResultReader result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
@@ -197,7 +197,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var session = driver.Session())
                 {
                     // When & Then
-                    IStatementResultAsync result = await session.RunAsync("RETURN 1");
+                    IStatementResultReader result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
@@ -231,7 +231,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var session = driver.Session())
                 {
                     // When & Then
-                    IStatementResultAsync result = await session.RunAsync("RETURN 1");
+                    IStatementResultReader result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var session = driver.Session())
                 {
                     // When & Then
-                    IStatementResultAsync result = await session.RunAsync("RETURN 1");
+                    IStatementResultReader result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
@@ -491,7 +491,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 {
                     var persons = await session.ReadTransactionAsync(async tx => 
                     {
-                        IStatementResultAsync result = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
+                        IStatementResultReader result = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
 
                         List<IRecord> names = new List<IRecord>();
 
@@ -660,16 +660,16 @@ namespace Neo4j.Driver.ExamplesAsync
             Driver = fixture.StandAlone.Driver;
         }
 
-        protected async virtual void Dispose(bool isDisposing)
+        protected virtual void Dispose(bool isDisposing)
         {
             if (!isDisposing)
                 return;
 
             using (var session = Driver.Session())
             {
-                IStatementResultAsync result = await session.RunAsync("MATCH (n) DETACH DELETE n");
+                var result = session.Run("MATCH (n) DETACH DELETE n");
+                result.Consume();
 
-                await result.ConsumeAsync();
             }
         }
 
@@ -683,7 +683,7 @@ namespace Neo4j.Driver.ExamplesAsync
             using (var session = Driver.Session())
             {
                 return await session.ReadTransactionAsync(async (tx) => {
-                    IStatementResultAsync result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new { name });
+                    IStatementResultReader result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new { name });
 
                     if (await result.ReadAsync())
                     {
@@ -699,19 +699,15 @@ namespace Neo4j.Driver.ExamplesAsync
         {
             using (var session = Driver.Session())
             {
-                await session.WriteTransactionAsync(async (tx) => {
-                    await tx.RunAsync(statement, parameters);
-                });
+                await session.WriteTransactionAsync(tx => tx.RunAsync(statement, parameters));
             }
         }
 
-        protected async Task<IStatementResultAsync> Read(string statement, IDictionary<string, object> parameters = null)
+        protected async Task<IStatementResultReader> Read(string statement, IDictionary<string, object> parameters = null)
         {
             using (var session = Driver.Session())
             {
-                return await session.ReadTransactionAsync(async (tx) => {
-                    return await tx.RunAsync(statement, parameters);
-                });
+                return await session.ReadTransactionAsync(tx => tx.RunAsync(statement, parameters));
             }
         }
     }

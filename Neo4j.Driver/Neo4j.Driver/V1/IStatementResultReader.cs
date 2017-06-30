@@ -11,7 +11,7 @@ namespace Neo4j.Driver.V1
     /// The records in the result is lazily retrived and could only be visited once in a sequential order.
     /// </summary>
     /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
-    public interface IStatementResultAsync
+    public interface IStatementResultReader
     {
         /// <summary>
         /// Gets the keys in the result.
@@ -41,7 +41,7 @@ namespace Neo4j.Driver.V1
         /// Upon completion of the returned task, the result will be exhausted.
         /// </summary>
         /// <returns>A task returning the summary for running the statement.</returns>
-        /// <remarks>This method could be called multiple times. If no more record could be consumed then calling this method has the same effect of calling <see cref="IStatementResultAsync.SummaryAsync()"/>.</remarks>
+        /// <remarks>This method could be called multiple times. If no more record could be consumed then calling this method has the same effect of calling <see cref="IStatementResultReader.SummaryAsync()"/>.</remarks>
         Task<IResultSummary> ConsumeAsync();
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Neo4j.Driver.V1
         Task<bool> ReadAsync();
 
         /// <summary>
-        /// Returns the current record that has already been read via <see cref="IStatementResultAsync.ReadAsync()"/>.
+        /// Returns the current record that has already been read via <see cref="IStatementResultReader.ReadAsync()"/>.
         /// </summary>
         /// <returns>A <see cref="IRecord"/> holding the data sent by the server.</returns>
         IRecord Current();
