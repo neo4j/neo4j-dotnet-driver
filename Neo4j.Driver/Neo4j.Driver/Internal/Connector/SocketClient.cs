@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 foreach (var message in messages)
                 {
-                    _writer.Write(message);
+                    await _writer.WriteAsync(message).ConfigureAwait(false);
                     _logger?.Debug("C: ", message);
                 }
 
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             while (responseHandler.UnhandledMessageSize > 0)
             {
-                await ReceiveOneAsync(responseHandler);
+                await ReceiveOneAsync(responseHandler).ConfigureAwait(false);
             }
         }
 
@@ -184,7 +184,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await _reader.ReadAsync(responseHandler);
+                await _reader.ReadAsync(responseHandler).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

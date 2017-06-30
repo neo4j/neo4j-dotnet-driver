@@ -22,7 +22,9 @@ namespace Neo4j.Driver.Internal.Connector
     internal interface IOutputStream
     {
         IOutputStream Write(byte b, params byte[] bytes);
+        Task<IOutputStream> WriteAsync(byte b, params byte[] bytes);
         IOutputStream Write(byte[] bytes);
+        Task<IOutputStream> WriteAsync(byte[] bytes);
         IOutputStream Flush();
         Task<IOutputStream> FlushAsync();
     }

@@ -392,25 +392,14 @@ namespace Neo4j.Driver.Internal
             }
         }
  
-        private Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
+        private async Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
         {
-            EnsureCanRunMoreStatements();
+            await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
-            TaskCompletionSource<ITransactionAsync> completionSource = new TaskCompletionSource<ITransactionAsync>();
+            _connection = await _connectionProvider.AcquireAsync(mode);
+            _transaction = new Transaction(_connection, this, _logger, _bookmark);
 
-            try
-            {
-                _connection = _connectionProvider.Acquire(mode);
-                _transaction = new Transaction(_connection, this, _logger, _bookmark);
-
-                completionSource.SetResult(_transaction);
-            }
-            catch (Exception exc)
-            {
-                completionSource.SetException(exc);
-            }
-
-            return completionSource.Task;
+            return _transaction;
         }
 
         public Task<ITransactionAsync> BeginTransactionAsync()

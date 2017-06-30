@@ -215,7 +215,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 return;
             }
-            var numberOfbytesRead = await _tcpSocketClient.ReadStream.ReadAsync(buffer, 0, buffer.Length);
+            var numberOfbytesRead = await _tcpSocketClient.ReadStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
             if (numberOfbytesRead != buffer.Length)
             {
                 throw new ProtocolException($"Expect {buffer.Length}, but got {numberOfbytesRead}");

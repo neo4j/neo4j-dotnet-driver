@@ -76,9 +76,10 @@ namespace Neo4j.Driver.Internal.Connector
             Init(_authToken);
         }
 
-        public Task InitAsync()
+        public async Task InitAsync()
         {
-            return _client.StartAsync(_connectionTimeout).ContinueWith(t => InitAsync(_authToken));
+            await _client.StartAsync(_connectionTimeout).ConfigureAwait(false);
+            await InitAsync(_authToken).ConfigureAwait(false);
         }
 
         private void Init(IAuthToken authToken)
@@ -94,7 +95,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             var initCollector = new InitCollector();
             Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
-            await SyncAsync();
+            await SyncAsync().ConfigureAwait(false);
             ((ServerInfo)Server).Version = initCollector.Server;
             _client.UpdatePackStream(initCollector.Server);
         }
@@ -105,9 +106,10 @@ namespace Neo4j.Driver.Internal.Connector
             Receive();
         }
 
-        public Task SyncAsync()
+        public async Task SyncAsync()
         {
-            return SendAsync().ContinueWith(t => ReceiveAsync());
+            await SendAsync().ConfigureAwait(false);
+            await ReceiveAsync().ConfigureAwait(false);
         }
 
         public void Send()
@@ -123,16 +125,18 @@ namespace Neo4j.Driver.Internal.Connector
             _messages.Clear();
         }
 
-        public Task SendAsync()
+        public async Task SendAsync()
         {
             if (_messages.Count == 0)
             {
                 // nothing to send
-                return Task.CompletedTask;
+                return;
             }
 
             // send
-            return _client.SendAsync(_messages).ContinueWith(t => _messages.Clear());
+            await _client.SendAsync(_messages).ConfigureAwait(false);
+            
+            _messages.Clear();
         }
 
         private void Receive()
@@ -148,16 +152,18 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        private Task ReceiveAsync()
+        private async Task ReceiveAsync()
         {
             if (_responseHandler.UnhandledMessageSize == 0)
             {
                 // nothing to receive
-                return Task.CompletedTask;
+                return;
             }
 
             // receive
-            return _client.ReceiveAsync(_responseHandler).ContinueWith(t => AssertNoServerFailure());
+            await _client.ReceiveAsync(_responseHandler).ConfigureAwait(false);
+            
+            AssertNoServerFailure();
         }
 
 
@@ -167,9 +173,11 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public Task ReceiveOneAsync()
+        public async Task ReceiveOneAsync()
         {
-            return _client.ReceiveOneAsync(_responseHandler).ContinueWith(t => AssertNoServerFailure());
+            await _client.ReceiveOneAsync(_responseHandler).ConfigureAwait(false);
+
+            AssertNoServerFailure();
         }
 
         public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)

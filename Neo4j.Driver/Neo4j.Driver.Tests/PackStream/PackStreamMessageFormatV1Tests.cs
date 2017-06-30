@@ -341,7 +341,7 @@ namespace Neo4j.Driver.Tests
 
                 var writer =
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
-                writer.Write(new InitMessage("a", new Dictionary<string, object>()));
+                await writer.WriteAsync(new InitMessage("a", new Dictionary<string, object>()));
                 await writer.FlushAsync();
 
                 mocks.VerifyWrite(new byte[] { 0x00, 0x05, 0xB1, 0x01, 0x81, 0x61, 0xA0, 0x00, 0x00 });
@@ -354,7 +354,7 @@ namespace Neo4j.Driver.Tests
 
                 var writer =
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
-                writer.Write(new RunMessage("RETURN 1 AS num"));
+                await writer.WriteAsync(new RunMessage("RETURN 1 AS num"));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(
                     "00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53 20 6e 75 6d  a0 00 00".ToByteArray());
@@ -388,7 +388,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "integer", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -404,7 +404,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -421,7 +421,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -438,7 +438,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -458,7 +458,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -474,7 +474,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -490,7 +490,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -506,7 +506,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -523,7 +523,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }
@@ -540,7 +540,7 @@ namespace Neo4j.Driver.Tests
                     new PackStreamMessageFormatV1(mocks.TcpSocketClient, null).Writer;
                 var values = new Dictionary<string, object> { { "value", value } };
 
-                writer.Write(new RunMessage("", values));
+                await writer.WriteAsync(new RunMessage("", values));
                 await writer.FlushAsync();
                 mocks.VerifyWrite(expectedBytes.ToByteArray());
             }

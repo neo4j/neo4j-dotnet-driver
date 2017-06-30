@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.SyncAsync();
+                await Delegate.SyncAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.SendAsync();
+                await Delegate.SendAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.ReceiveOneAsync();
+                await Delegate.ReceiveOneAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -138,7 +138,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.InitAsync();
+                await Delegate.InitAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {

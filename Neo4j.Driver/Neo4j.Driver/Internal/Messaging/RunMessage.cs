@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
@@ -32,6 +33,11 @@ namespace Neo4j.Driver.Internal.Messaging
         public void Dispatch(IMessageRequestHandler messageRequestHandler)
         {
             messageRequestHandler.HandleRunMessage( _statement, _statementParameters );
+        }
+
+        public Task DispatchAsync(IMessageRequestHandler messageRequestHandler)
+        {
+            return messageRequestHandler.HandleRunMessageAsync(_statement, _statementParameters);
         }
 
         public override string ToString()
