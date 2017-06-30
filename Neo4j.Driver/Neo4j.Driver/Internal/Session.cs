@@ -226,6 +226,17 @@ namespace Neo4j.Driver.Internal
             DisposeConnection();
         }
 
+        public Task OnTransactionDisposeAsync()
+        {
+            Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
+            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+
+            UpdateBookmark(_transaction.Bookmark);
+            _transaction = null;
+
+            return DisposeConnectionAsync();
+        }
+
         /// <summary>
         /// Only set the bookmark to a new value if the new value is not null
         /// </summary>
@@ -392,19 +403,18 @@ namespace Neo4j.Driver.Internal
             }
         }
  
-        private async Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
+        private async Task<ITransactionAsync> BeginTransactionWithoutLoggingAsync(AccessMode mode)
         {
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
-            _connection = await _connectionProvider.AcquireAsync(mode);
+            _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
             _transaction = new Transaction(_connection, this, _logger, _bookmark);
-
             return _transaction;
         }
 
         public Task<ITransactionAsync> BeginTransactionAsync()
         {
-            return BeginTransactionAsyncWithoutLogging(_defaultMode);
+            return TryExecuteAsync(async()=> await BeginTransactionWithoutLoggingAsync(_defaultMode));
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<ITransactionAsync, Task> work)
@@ -421,7 +431,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecuteAsync(async() => await _retryLogic.RetryAsync(async() =>
             {
-                ITransactionAsync tx = await BeginTransactionAsyncWithoutLogging(mode).ConfigureAwait(false);
+                ITransactionAsync tx = await BeginTransactionWithoutLoggingAsync(mode).ConfigureAwait(false);
                 {
                     try
                     {

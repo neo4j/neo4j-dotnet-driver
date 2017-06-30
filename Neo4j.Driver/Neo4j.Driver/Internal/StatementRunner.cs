@@ -63,5 +63,6 @@ namespace Neo4j.Driver.Internal
     internal interface ITransactionResourceHandler
     {
         void OnTransactionDispose();
+        Task OnTransactionDisposeAsync();
     }
 }
