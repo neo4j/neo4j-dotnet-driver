@@ -66,6 +66,13 @@ namespace Neo4j.Driver.V1
         /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
         Task WriteTransactionAsync(Func<ITransactionAsync, Task> work);
 
+        /// <summary>
+        /// Close all resources used in this Session. If any transaction is left open in this session without commit or rollback,
+        /// then this method will rollback the transaction.
+        /// </summary>
+        /// <returns>A task representing the completion of successfully closed the session.</returns>
+        Task CloseAsync();
+
     }
 
     /// <summary>

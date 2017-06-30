@@ -24,9 +24,14 @@ namespace Neo4j.Driver.ExamplesAsync
             // tag::autocommit-transaction[]
             public async Task AddPerson(string name)
             {
-                using (var session = Driver.Session())
+                var session = Driver.Session();
+                try
                 {
-                    await session.RunAsync("CREATE (a:Person {name: $name})", new { name });
+                    await session.RunAsync("CREATE (a:Person {name: $name})", new {name});
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
             // end::autocommit-transaction[]
@@ -37,7 +42,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 // Given & When
                 await AddPerson("Alice");
                 // Then
-                int count = await CountPerson("Alice");
+                int count = CountPerson("Alice");
                 
                 count.Should().Be(1);
             }
@@ -609,7 +614,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 // Given & When
                 await AddPerson("Alice");
                 // Then
-                int count = await CountPerson("Alice");
+                int count = await CountPersonAsync("Alice");
                 count.Should().Be(1);
             }
         }
@@ -638,7 +643,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 // Given & When
                 await AddPerson("Alice");
                 // Then
-                int count = await CountPerson("Alice");
+                int count = await CountPersonAsync("Alice");
 
                 count.Should().Be(1);
             }
@@ -678,12 +683,14 @@ namespace Neo4j.Driver.ExamplesAsync
             Dispose(true);
         }
 
-        protected async Task<int> CountPerson(string name)
+        protected async Task<int> CountPersonAsync(string name)
         {
             using (var session = Driver.Session())
             {
-                return await session.ReadTransactionAsync(async (tx) => {
-                    IStatementResultReader result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new { name });
+                return await session.ReadTransactionAsync(async tx =>
+                {
+                    IStatementResultReader result =
+                        await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new {name});
 
                     if (await result.ReadAsync())
                     {
@@ -691,6 +698,18 @@ namespace Neo4j.Driver.ExamplesAsync
                     }
 
                     return -1;
+                });
+            }
+        }
+
+        protected int CountPerson(string name)
+        {
+            using (var session = Driver.Session())
+            {
+                return session.ReadTransaction( tx =>
+                {
+                    var result = tx.Run("MATCH (a:Person {name: $name}) RETURN count(a)", new {name});
+                    return result.Single()[0].As<int>();
                 });
             }
         }
