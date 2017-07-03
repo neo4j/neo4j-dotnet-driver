@@ -427,6 +427,13 @@ namespace Neo4j.Driver.Internal
             return TryExecuteAsync(async()=> await BeginTransactionWithoutLoggingAsync(_defaultMode));
         }
 
+        public Task<ITransactionAsync> BeginTransactionAsync(string bookmark)
+        {
+            UpdateBookmark(Bookmark.From(bookmark, _logger));
+
+            return BeginTransactionAsync();
+        }
+
         private Task RunTransactionAsync(AccessMode mode, Func<ITransactionAsync, Task> work)
         {
             return RunTransactionAsync(mode, async tx =>
