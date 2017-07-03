@@ -103,8 +103,9 @@ namespace Neo4j.Driver.Internal
             EnsureCanRunMoreStatements();
 
             _connection = _connectionProvider.Acquire(mode);
-            _transaction = new Transaction(_connection, this, _logger, _bookmark);
-            _transaction.SyncBookmark(_bookmark);
+            var tx = new Transaction(_connection, this, _logger, _bookmark);
+            tx.SyncBookmark(_bookmark);
+            _transaction = tx;
             return _transaction;
         }
 
@@ -207,13 +208,13 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         ///  This method will be called back by <see cref="ResultBuilder"/> after it consumed result
         /// </summary>
-        public void OnResultComsumed()
+        public void OnResultConsumed()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
             DisposeConnection();
         }
 
-        public Task OnResultComsumedAsync()
+        public Task OnResultConsumedAsync()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
             return DisposeConnectionAsync();
@@ -415,8 +416,9 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            _transaction = new Transaction(_connection, this, _logger, _bookmark);
-            await _transaction.SyncBookmarkAsync(_bookmark).ConfigureAwait(false);
+            var tx = new Transaction(_connection, this, _logger, _bookmark);
+            await tx.SyncBookmarkAsync(_bookmark).ConfigureAwait(false);
+            _transaction = tx;
             return _transaction;
         }
 

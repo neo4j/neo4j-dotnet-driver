@@ -164,7 +164,7 @@ namespace Neo4j.Driver.Internal
         private async Task CommitTxAsync()
         {
             _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
-            await _connection.SyncAsync();
+            await _connection.SyncAsync().ConfigureAwait(false);
             _state = State.Succeeded;
         }
 
