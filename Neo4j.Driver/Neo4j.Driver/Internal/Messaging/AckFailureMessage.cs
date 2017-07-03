@@ -29,6 +29,11 @@ namespace Neo4j.Driver.Internal.Messaging
             messageRequestHandler.HandleAckFailureMessage();
         }
 
+        public Task DispatchAsync(IMessageRequestHandler messageRequestHandler)
+        {
+            return messageRequestHandler.HandleAckFailureMessageAsync();
+        }
+
         public override string ToString()
         {
             return "ACK_FAILURE";

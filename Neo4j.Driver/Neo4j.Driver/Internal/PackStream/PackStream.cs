@@ -118,9 +118,19 @@ namespace Neo4j.Driver.Internal.Packstream
                 _out.Write(NULL);
             }
 
+            public Task PackNullAsync()
+            {
+                return _out.WriteAsync(NULL);
+            }
+
             private void PackRaw(byte[] data)
             {
                 _out.Write(data);
+            }
+
+            private Task PackRawAsync(byte[] data)
+            {
+                return _out.WriteAsync(data);
             }
 
             public void Pack(long value)
@@ -147,14 +157,53 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public async Task PackAsync(long value)
+            {
+                if (value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
+                {
+                    await _out.WriteAsync((byte)value).ConfigureAwait(false);
+                }
+                else if (value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4)
+                {
+                    await _out.WriteAsync(INT_8).ConfigureAwait(false);
+                    await _out.WriteAsync(BitConverter.GetBytes((byte)value)).ConfigureAwait(false);// (byte) value;
+                }
+                else if (value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15)
+                {
+                    await _out.WriteAsync(INT_16).ConfigureAwait(false);
+                    await _out.WriteAsync(BitConverter.GetBytes((short)value)).ConfigureAwait(false);
+                }
+                else if (value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31)
+                {
+                    await _out.WriteAsync(INT_32).ConfigureAwait(false);
+                    await _out.WriteAsync(BitConverter.GetBytes((int)value)).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _out.WriteAsync(INT_64).ConfigureAwait(false);
+                    await _out.WriteAsync(BitConverter.GetBytes(value)).ConfigureAwait(false);
+                }
+            }
+
             public void Pack(double value)
             {
                 _out.Write(FLOAT_64).Write(BitConverter.GetBytes(value));
             }
 
+            public async Task PackAsync(double value)
+            {
+                await _out.WriteAsync(FLOAT_64).ConfigureAwait(false);
+                await _out.WriteAsync(BitConverter.GetBytes(value)).ConfigureAwait(false);
+            }
+
             public void Pack(bool value)
             {
                 _out.Write(value ? TRUE : FALSE);
+            }
+
+            public Task PackAsync(bool value)
+            {
+                return _out.WriteAsync(value ? TRUE : FALSE);
             }
 
             public void Pack(string value)
@@ -170,6 +219,21 @@ namespace Neo4j.Driver.Internal.Packstream
                 _out.Write(bytes);
             }
 
+            public async Task PackAsync(string value)
+            {
+                if (value == null)
+                {
+                    await PackNullAsync().ConfigureAwait(false);
+
+                    return;
+                }
+
+                var bytes = BitConverter.GetBytes(value);
+
+                await PackStringHeaderAsync(bytes.Length).ConfigureAwait(false);
+                await _out.WriteAsync(bytes).ConfigureAwait(false);
+            }
+
             public void Pack(byte[] values)
             {
                 if (values == null)
@@ -180,6 +244,19 @@ namespace Neo4j.Driver.Internal.Packstream
                 {
                     PackBytesHeader(values.Length);
                     PackRaw(values);
+                }
+            }
+
+            public async Task PackAsync(byte[] values)
+            {
+                if (values == null)
+                {
+                    await PackNullAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    await PackBytesHeaderAsync(values.Length).ConfigureAwait(false);
+                    await PackRawAsync(values).ConfigureAwait(false);
                 }
             }
 
@@ -225,6 +302,48 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public Task PackAsync(object value)
+            {
+                if (value == null)
+                {
+                    return PackNullAsync();
+                }
+                else if (value is bool)
+                {
+                    return PackAsync((bool)value);
+                }
+
+                else if (value is sbyte || value is byte || value is short || value is int || value is long)
+                {
+                    return PackAsync(Convert.ToInt64(value));
+                }
+                else if (value is byte[])
+                {
+                    return PackAsync((byte[])value);
+                }
+                else if (value is float || value is double || value is decimal)
+                {
+                    return PackAsync(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+                }
+                else if (value is char || value is string)
+                {
+                    return PackAsync(value.ToString());
+                }
+                else if (value is IList)
+                {
+                    return PackAsync((IList)value);
+                }
+                else if (value is IDictionary)
+                {
+                    return PackAsync((IDictionary)value);
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
+                }
+            }
+
             public void Pack(IList value)
             {
                 if (value == null)
@@ -236,6 +355,21 @@ namespace Neo4j.Driver.Internal.Packstream
                 foreach (var item in value)
                 {
                     Pack(item);
+                }
+            }
+
+            public async Task PackAsync(IList value)
+            {
+                if (value == null)
+                {
+                    await PackNullAsync().ConfigureAwait(false);
+
+                    return;
+                }
+                await PackListHeaderAsync(value.Count).ConfigureAwait(false);
+                foreach (var item in value)
+                {
+                    await PackAsync(item).ConfigureAwait(false);
                 }
             }
 
@@ -256,6 +390,23 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public async Task PackAsync(IDictionary values)
+            {
+                if (values == null)
+                {
+                    await PackNullAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    await PackMapHeaderAsync(values.Count).ConfigureAwait(false);
+                    foreach (var key in values.Keys)
+                    {
+                        await PackAsync(key).ConfigureAwait(false);
+                        await PackAsync(values[key]).ConfigureAwait(false);
+                    }
+                }
+            }
+
             public void PackBytesHeader(int size)
             {
                 if (size <= byte.MaxValue)
@@ -269,6 +420,22 @@ namespace Neo4j.Driver.Internal.Packstream
                 else
                 {
                     _out.Write(BYTES_32, BitConverter.GetBytes(size));
+                }
+            }
+
+            public Task PackBytesHeaderAsync(int size)
+            {
+                if (size <= byte.MaxValue)
+                {
+                    return _out.WriteAsync(BYTES_8, (byte)size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    return _out.WriteAsync(BYTES_16, BitConverter.GetBytes((short)size));
+                }
+                else
+                {
+                    return _out.WriteAsync(BYTES_32, BitConverter.GetBytes(size));
                 }
             }
 
@@ -292,6 +459,26 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public Task PackListHeaderAsync(int size)
+            {
+                if (size < 0x10)
+                {
+                    return _out.WriteAsync((byte)(TINY_LIST | size));
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    return _out.WriteAsync(LIST_8, (byte)size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    return _out.WriteAsync(LIST_16, BitConverter.GetBytes((short)size));
+                }
+                else
+                {
+                    return _out.WriteAsync(LIST_32, BitConverter.GetBytes(size));
+                }
+            }
+
             public void PackMapHeader(int size)
             {
                 if (size < 0x10)
@@ -309,6 +496,26 @@ namespace Neo4j.Driver.Internal.Packstream
                 else
                 {
                     _out.Write(MAP_32, BitConverter.GetBytes(size));
+                }
+            }
+
+            public Task PackMapHeaderAsync(int size)
+            {
+                if (size < 0x10)
+                {
+                    return _out.WriteAsync((byte)(TINY_MAP | size));
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    return _out.WriteAsync(MAP_8, (byte)size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    return _out.WriteAsync(MAP_16, BitConverter.GetBytes((short)size));
+                }
+                else
+                {
+                    return _out.WriteAsync(MAP_32, BitConverter.GetBytes(size));
                 }
             }
 
@@ -332,6 +539,26 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            public Task PackStringHeaderAsync(int size)
+            {
+                if (size < 0x10)
+                {
+                    return _out.WriteAsync((byte)(TINY_STRING | size));
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    return _out.WriteAsync(STRING_8, (byte)size);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    return _out.WriteAsync(STRING_16, BitConverter.GetBytes((short)size));
+                }
+                else
+                {
+                    return _out.WriteAsync(STRING_32, BitConverter.GetBytes(size));
+                }
+            }
+
             public void PackStructHeader(int size, byte signature)
             {
                 if (size < 0x10)
@@ -345,6 +572,26 @@ namespace Neo4j.Driver.Internal.Packstream
                 else if (size <= short.MaxValue)
                 {
                     _out.Write(STRUCT_16, BitConverter.GetBytes((short) size)).Write(signature);
+                }
+                else
+                    throw new ProtocolException(
+                        $"Structures cannot have more than {short.MaxValue} fields");
+            }
+
+            public async Task PackStructHeaderAsync(int size, byte signature)
+            {
+                if (size < 0x10)
+                {
+                    await _out.WriteAsync((byte)(TINY_STRUCT | size), signature).ConfigureAwait(false);
+                }
+                else if (size <= byte.MaxValue)
+                {
+                    await _out.WriteAsync(STRUCT_8, (byte)size, signature).ConfigureAwait(false);
+                }
+                else if (size <= short.MaxValue)
+                {
+                    await _out.WriteAsync(STRUCT_16, BitConverter.GetBytes((short)size)).ConfigureAwait(false);
+                    await _out.WriteAsync(signature).ConfigureAwait(false);
                 }
                 else
                     throw new ProtocolException(
@@ -942,6 +1189,7 @@ namespace Neo4j.Driver.Internal.Packstream
     internal interface IWriter
     {
         void Write(IRequestMessage requestMessage);
+        Task WriteAsync(IRequestMessage requestMessage);
         void Flush();
         Task FlushAsync();
     }

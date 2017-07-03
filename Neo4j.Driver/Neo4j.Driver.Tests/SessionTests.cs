@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -154,7 +155,7 @@ namespace Neo4j.Driver.Tests
                 session.Run("lalal");
 
                 session.Run("bibib");
-                mockConn.Verify(c=>c.Dispose(), Times.Once);
+                mockConn.Verify(c=>c.Close(), Times.Once);
             }
 
             [Fact]
@@ -166,7 +167,7 @@ namespace Neo4j.Driver.Tests
                 session.Run("lala");
 
                 session.BeginTransaction();
-                mockConn.Verify(c=>c.Dispose(), Times.Once);
+                mockConn.Verify(c=>c.Close(), Times.Once);
             }
 
             [Fact]
@@ -184,7 +185,7 @@ namespace Neo4j.Driver.Tests
                 session.Run("lala");
 
                 // Then
-                mockConn.Verify(x => x.Dispose(), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
@@ -211,7 +212,7 @@ namespace Neo4j.Driver.Tests
                 session.BeginTransaction();
 
                 // Then
-                mockConn.Verify(x => x.Dispose(), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Once);
             }
         }
 
@@ -228,7 +229,7 @@ namespace Neo4j.Driver.Tests
                 Record.Exception(()=>session.BeginTransaction()).Should().BeOfType<IOException>();
                 session.Dispose();
 
-                mockConn.Verify(x => x.Dispose(), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
@@ -241,7 +242,7 @@ namespace Neo4j.Driver.Tests
                 session.Dispose();
 
                 mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
-                mockConn.Verify(x => x.Dispose(), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
@@ -254,7 +255,7 @@ namespace Neo4j.Driver.Tests
                 session.Dispose();
 
                 mockConn.Verify(x => x.Sync(), Times.Once);
-                mockConn.Verify(x => x.Dispose(), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
@@ -292,6 +293,11 @@ namespace Neo4j.Driver.Tests
             {
                 Mode = mode;
                 return Connection;
+            }
+
+            public Task<IConnection> AcquireAsync(AccessMode mode)
+            {
+                throw new NotSupportedException();
             }
         }
     }

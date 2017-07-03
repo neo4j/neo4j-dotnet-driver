@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal
         {
             try
             {
-                await func();
+                await func().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal
         {
             try
             {
-                return await func();
+                return await func().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

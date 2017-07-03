@@ -74,9 +74,9 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecuteAsync(async () =>
             {
-                EnsureCanRunMoreStatements();
+                await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
-                _connection = _connectionProvider.Acquire(_defaultMode);
+                _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var resultBuilder = new ResultReaderBuilder(statement.Text, statement.Parameters,
                     () => _connection.ReceiveOneAsync(), _connection.Server, this);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
@@ -183,13 +183,33 @@ namespace Neo4j.Driver.Internal
             base.Dispose(true);
         }
 
+        public Task CloseAsync()
+        {
+            return TryExecuteAsync(async() =>
+            {
+                if (_isOpen)
+                {
+                    // This will not protect the session being disposed concurrently
+                    // a.k.a. Session is not thread-safe!
+                    _isOpen = false;
+                }
+                else
+                {
+                    throw new ObjectDisposedException(GetType().Name, "Failed to dispose this seesion as it has already been disposed.");
+                }
+
+                await DisposeTransactionAsync().ConfigureAwait(false);
+                await DisposeSessionResultAsync().ConfigureAwait(false);
+            });
+        }
+
         /// <summary>
         ///  This method will be called back by <see cref="ResultBuilder"/> after it consumed result
         /// </summary>
         public void OnResultComsumed()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-            CleanRunResultResources();
+            DisposeConnection();
         }
 
         /// <summary>
@@ -203,9 +223,7 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(_transaction.Bookmark);
             _transaction = null;
 
-            // always dispose connection used by the transaction too
-            _connection.Dispose();
-            _connection = null;
+            DisposeConnection();
         }
 
         /// <summary>
@@ -241,6 +259,22 @@ namespace Neo4j.Driver.Internal
             }
         }
 
+        private async Task DisposeTransactionAsync()
+        {
+            // When there is a open transation, this method will aslo try to close the tx
+            if (_transaction != null)
+            {
+                try
+                {
+                    await _transaction.RollbackAsync().ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    throw new ClientException($"Error when disposing unclosed transaction in session: {e.Message}", e);
+                }
+            }
+        }
+
         /// <summary>
         /// Clean any session.run result reference.
         /// If session.run result is not fully consumed, then pull full result into memory.
@@ -268,19 +302,60 @@ namespace Neo4j.Driver.Internal
                 finally
                 {
                     // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
-                    CleanRunResultResources();
+                    DisposeConnection();
                 }
             }
             else
             {
-                CleanRunResultResources();
+                DisposeConnection();
             }
         }
 
-        private void CleanRunResultResources()
+        private async Task DisposeSessionResultAsync()
+        {
+            if (_connection == null)
+            {
+                // there is no session result resources to dispose
+                return;
+            }
+
+            if (_connection.IsOpen)
+            {
+                try
+                {
+                    // this will enfore to buffer all unconsumed result
+                    await _connection.SyncAsync().ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    throw new ClientException($"Error when pulling unconsumed session.run records into memory in session: {e.Message}", e);
+                }
+                finally
+                {
+                    // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
+                    await DisposeConnectionAsync().ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                await DisposeConnectionAsync().ConfigureAwait(false);
+            }
+        }
+
+        private void DisposeConnection()
         {
             // always try to close connection used by the result too
-            _connection?.Dispose();
+            _connection?.Close();
+            _connection = null;
+        }
+
+        private async Task DisposeConnectionAsync()
+        {
+            // always try to close connection used by the result too
+            if (_connection != null)
+            {
+                await _connection.CloseAsync().ConfigureAwait(false);
+            }
             _connection = null;
         }
 
@@ -289,6 +364,13 @@ namespace Neo4j.Driver.Internal
             EnsureSessionIsOpen();
             EnsureNoOpenTransaction();
             DisposeSessionResult();
+        }
+
+        private Task EnsureCanRunMoreStatementsAsync()
+        {
+            EnsureSessionIsOpen();
+            EnsureNoOpenTransaction();
+            return DisposeSessionResultAsync();
         }
 
         private void EnsureNoOpenTransaction()
@@ -310,25 +392,14 @@ namespace Neo4j.Driver.Internal
             }
         }
  
-        private Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
+        private async Task<ITransactionAsync> BeginTransactionAsyncWithoutLogging(AccessMode mode)
         {
-            EnsureCanRunMoreStatements();
+            await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
-            TaskCompletionSource<ITransactionAsync> completionSource = new TaskCompletionSource<ITransactionAsync>();
+            _connection = await _connectionProvider.AcquireAsync(mode);
+            _transaction = new Transaction(_connection, this, _logger, _bookmark);
 
-            try
-            {
-                _connection = _connectionProvider.Acquire(mode);
-                _transaction = new Transaction(_connection, this, _logger, _bookmark);
-
-                completionSource.SetResult(_transaction);
-            }
-            catch (Exception exc)
-            {
-                completionSource.SetException(exc);
-            }
-
-            return completionSource.Task;
+            return _transaction;
         }
 
         public Task<ITransactionAsync> BeginTransactionAsync()
@@ -386,7 +457,5 @@ namespace Neo4j.Driver.Internal
         {
             return RunTransactionAsync(AccessMode.Write, work);
         }
-
-
     }
 }

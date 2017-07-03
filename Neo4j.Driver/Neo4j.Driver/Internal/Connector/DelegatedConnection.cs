@@ -33,11 +33,6 @@ namespace Neo4j.Driver.Internal.Connector
 
         public abstract void OnError(Exception error);
 
-        public virtual void Dispose()
-        {
-            Delegate.Dispose();
-        }
-
         public void Sync()
         {
             try
@@ -54,7 +49,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.SyncAsync();
+                await Delegate.SyncAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -78,7 +73,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.SendAsync();
+                await Delegate.SendAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -102,7 +97,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.ReceiveOneAsync();
+                await Delegate.ReceiveOneAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -122,7 +117,7 @@ namespace Neo4j.Driver.Internal.Connector
                 OnError(e);
             }
         }
-        
+
         public virtual bool IsOpen => Delegate.IsOpen;
 
         public IServerInfo Server => Delegate.Server;
@@ -143,7 +138,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Delegate.InitAsync();
+                await Delegate.InitAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -175,10 +170,19 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
         
-        public void Close()
+        public void Destroy()
+        {
+            Delegate.Destroy();
+        }
+
+        public virtual void Close()
         {
             Delegate.Close();
         }
-        
+
+        public virtual Task CloseAsync()
+        {
+            return Delegate.CloseAsync();
+        }
     }
 }

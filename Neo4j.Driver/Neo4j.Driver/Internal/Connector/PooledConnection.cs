@@ -23,12 +23,12 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class PooledConnection : DelegatedConnection, IPooledConnection
     {
-        private readonly Action<IPooledConnection> _releaseAction;
+        private readonly IConnectionReleaseManager _releaseManager;
 
-        public PooledConnection(IConnection conn, Action<IPooledConnection> releaseAction = null)
+        public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null)
             :base (conn)
         {
-            _releaseAction = releaseAction ?? (x => { });
+            _releaseManager = releaseManager;
             IdleTimer = new StopwatchBasedTimer();
         }
         public Guid Id { get; } = Guid.NewGuid();
@@ -42,18 +42,19 @@ namespace Neo4j.Driver.Internal.Connector
         public Task ClearConnectionAsync()
         {
             Reset();
-
             return SyncAsync();
         }
 
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;
 
-        /// <summary>
-        /// Disposing a pooled connection will try to release the connection resource back to pool
-        /// </summary>
-        public override void Dispose()
+        public override void Close()
         {
-            _releaseAction(this);
+            _releaseManager?.Release(this);
+        }
+
+        public override Task CloseAsync()
+        {
+            return _releaseManager?.ReleaseAsync(this);
         }
 
         /// <summary>

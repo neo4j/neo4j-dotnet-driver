@@ -29,6 +29,11 @@ namespace Neo4j.Driver.Internal.Messaging
             messageRequestHandler.HandlePullAllMessage();
         }
 
+        public Task DispatchAsync(IMessageRequestHandler messageRequestHandler)
+        {
+            return messageRequestHandler.HandlePullAllMessageAsync();
+        }
+
         public override string ToString()
         {
             return "PULLALL";

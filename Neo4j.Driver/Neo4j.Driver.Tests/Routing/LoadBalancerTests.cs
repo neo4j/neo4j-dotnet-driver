@@ -370,7 +370,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var mockedClusterPool = new Mock<IClusterConnectionPool>();
                     var balancer = new LoadBalancer(mockedClusterPool.Object, routingTable);
 
-                    var mockedConn = new Mock<IPooledConnection>();
+                    var mockedConn = new Mock<IConnection>();
                     var conn = mockedConn.Object;
                     mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Callback(() =>
                     {
@@ -451,7 +451,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var routingTableMock = CreateRoutingTable(mode, uri);
 
                     var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                    IPooledConnection conn = null;
+                    IConnection conn = null;
                     clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn))
                         .Callback(() =>
                         {
@@ -482,7 +482,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var routingTableMock = CreateRoutingTable(mode, uri);
 
                     var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                    IPooledConnection conn = null;
+                    IConnection conn = null;
                     clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn))
                         .Callback(() =>
                         {
@@ -513,7 +513,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var routingTableMock = CreateRoutingTable(mode, uri);
 
                     var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                    IPooledConnection conn = null;
+                    IConnection conn = null;
                     clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
                         .Callback(() =>
                         {
@@ -688,7 +688,7 @@ namespace Neo4j.Driver.Tests.Routing
 
             foreach (var uri in uris)
             {
-                var mockedConn = new Mock<IPooledConnection>();
+                var mockedConn = new Mock<IConnection>();
                 mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
                 var conn = mockedConn.Object;
                 mockedClusterPool.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);

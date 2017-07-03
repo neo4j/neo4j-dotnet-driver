@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
@@ -92,6 +93,11 @@ namespace Neo4j.Driver.Internal.Routing
                 ThrowObjectDisposedException();
             }
             return conn;
+        }
+
+        public Task<IConnection> AcquireAsync(AccessMode mode)
+        {
+            throw new NotImplementedException();
         }
 
         public void OnConnectionError(Uri uri, Exception e)
@@ -302,7 +308,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 try
                 {
-                    IPooledConnection conn;
+                    IConnection conn;
                     if (_clusterConnectionPool.TryAcquire(uri, out conn))
                     {
                         return new ClusterConnection(conn, uri, mode, this);

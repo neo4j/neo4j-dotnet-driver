@@ -564,6 +564,14 @@ namespace Neo4j.Driver.Internal.Packstream
                 PackMessageTail();
             }
 
+            public async Task HandleInitMessageAsync(string clientNameAndVersion, IDictionary<string, object> authToken)
+            {
+                await _packer.PackStructHeaderAsync(1, MSG_INIT).ConfigureAwait(false);
+                await _packer.PackAsync(clientNameAndVersion).ConfigureAwait(false);
+                await PackRawMapAsync(authToken).ConfigureAwait(false);
+                await PackMessageTailAsync().ConfigureAwait(false);
+            }
+
             public void HandleRunMessage(string statement, IDictionary<string, object> parameters)
             {
                 _packer.PackStructHeader(2, MSG_RUN);
@@ -572,10 +580,24 @@ namespace Neo4j.Driver.Internal.Packstream
                 PackMessageTail();
             }
 
+            public async Task HandleRunMessageAsync(string statement, IDictionary<string, object> parameters)
+            {
+                await _packer.PackStructHeaderAsync(2, MSG_RUN).ConfigureAwait(false);
+                await _packer.PackAsync(statement).ConfigureAwait(false);
+                await PackRawMapAsync(parameters).ConfigureAwait(false);
+                await PackMessageTailAsync().ConfigureAwait(false);
+            }
+
             public void HandlePullAllMessage()
             {
                 _packer.PackStructHeader(0, MSG_PULL_ALL);
                 PackMessageTail();
+            }
+
+            public async Task HandlePullAllMessageAsync()
+            {
+                await _packer.PackStructHeaderAsync(0, MSG_PULL_ALL).ConfigureAwait(false);
+                await PackMessageTailAsync().ConfigureAwait(false);
             }
 
             public void HandleDiscardAllMessage()
@@ -584,10 +606,22 @@ namespace Neo4j.Driver.Internal.Packstream
                 PackMessageTail();
             }
 
+            public async Task HandleDiscardAllMessageAsync()
+            {
+                await _packer.PackStructHeaderAsync(0, MSG_DISCARD_ALL).ConfigureAwait(false);
+                await PackMessageTailAsync().ConfigureAwait(false);
+            }
+
             public void HandleResetMessage()
             {
                 _packer.PackStructHeader(0, MSG_RESET);
                 PackMessageTail();
+            }
+
+            public async Task HandleResetMessageAsync()
+            {
+                await _packer.PackStructHeaderAsync(0, MSG_RESET).ConfigureAwait(false);
+                await PackMessageTailAsync().ConfigureAwait(false);
             }
 
             public void HandleAckFailureMessage()
@@ -596,9 +630,20 @@ namespace Neo4j.Driver.Internal.Packstream
                 PackMessageTail();
             }
 
+            public async Task HandleAckFailureMessageAsync()
+            {
+                await _packer.PackStructHeaderAsync(0, MSG_ACK_FAILURE).ConfigureAwait(false);
+                await PackMessageTailAsync().ConfigureAwait(false);
+            }
+
             public void Write(IRequestMessage requestMessage)
             {
                 requestMessage.Dispatch(this);
+            }
+
+            public Task WriteAsync(IRequestMessage requestMessage)
+            {
+                return requestMessage.DispatchAsync(this);
             }
 
             public void Flush()
@@ -614,6 +659,11 @@ namespace Neo4j.Driver.Internal.Packstream
             private void PackMessageTail()
             {
                 _outputStream.WriteMessageTail();
+            }
+
+            private Task PackMessageTailAsync()
+            {
+                return _outputStream.WriteMessageTailAsync();
             }
 
             private void PackRawMap(IDictionary<string, object> dictionary)
@@ -632,12 +682,34 @@ namespace Neo4j.Driver.Internal.Packstream
                 }
             }
 
+            private async Task PackRawMapAsync(IDictionary<string, object> dictionary)
+            {
+                if (dictionary == null || dictionary.Count == 0)
+                {
+                    await _packer.PackMapHeaderAsync(0).ConfigureAwait(false);
+                    return;
+                }
+
+                await _packer.PackMapHeaderAsync(dictionary.Count).ConfigureAwait(false);
+                foreach (var item in dictionary)
+                {
+                    await _packer.PackAsync(item.Key).ConfigureAwait(false);
+                    await PackValueAsync(item.Value).ConfigureAwait(false);
+                }
+            }
 
             public virtual void PackValue(object value)
             {
                 _packer.Pack(value);
                 // the driver should never pack node, relationship or path
             }
+
+            public virtual Task PackValueAsync(object value)
+            {
+                return _packer.PackAsync(value);
+                // the driver should never pack node, relationship or path
+            }
+
         }
 
         #region Consts

@@ -55,6 +55,15 @@ namespace Neo4j.Driver.Internal.Connector
             return this;
         }
 
+        public async Task<IOutputStream> WriteAsync(byte b, params byte[] bytes)
+        {
+            // Ensure there is an open chunk, and the space is enough for a byte to write
+            await EnsureAsync(1).ConfigureAwait(false);
+            WriteBytesInChunk(new[] { b });
+            await WriteAsync(bytes).ConfigureAwait(false);
+            return this;
+        }
+
         public IOutputStream Write(byte[] bytes)
         {
             if (bytes == null || bytes.Length == 0)
@@ -67,6 +76,24 @@ namespace Neo4j.Driver.Internal.Connector
                 // Ensure there is an open chunk, and that it has at least one byte of space left
                 Ensure(1);
                 var sizeToSend = Math.Min(_chunkSize - _pos, bytesLength-sentSize);
+                WriteBytesInChunk(bytes, sentSize, sizeToSend);
+                sentSize += sizeToSend;
+            }
+            return this;
+        }
+
+        public async Task<IOutputStream> WriteAsync(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+                return this;
+
+            var bytesLength = bytes.Length;
+            var sentSize = 0;
+            while (sentSize < bytes.Length)
+            {
+                // Ensure there is an open chunk, and that it has at least one byte of space left
+                await EnsureAsync(1).ConfigureAwait(false);
+                var sizeToSend = Math.Min(_chunkSize - _pos, bytesLength - sentSize);
                 WriteBytesInChunk(bytes, sentSize, sizeToSend);
                 sentSize += sizeToSend;
             }
@@ -127,6 +154,24 @@ namespace Neo4j.Driver.Internal.Connector
             return this;
         }
 
+        public async Task<IOutputStream> WriteMessageTailAsync()
+        {
+            // finish the previous open chunk
+            if (_isInChunk)
+            {
+                WriteUShortInChunkHeader((ushort)_chunkLength);
+                CloseChunk();
+            }
+            // else means that the previous chunk has been flushed
+
+            // write 00 00, which is basically is a chunk that has 0 size
+            await EnsureAsync(0).ConfigureAwait(false); // Ensure there is an open chunk with guarantee that there is space to write 00 00
+            WriteUShortInChunkHeader(0); // pending 00 00
+            CloseChunk();
+
+            return this;
+        }
+
         private void Ensure(int size)
         {
             var maxChunkSize = _chunkSize - ChunkHeaderBufferSize;
@@ -138,6 +183,31 @@ namespace Neo4j.Driver.Internal.Connector
             if (toWriteSize > bufferRemaining)
             {
                 Flush();
+            }
+
+            if (_buffer == null)
+            {
+                /*New buffer and mark the start of a new chunk*/
+                NewBuffer();
+                OpenChunk();
+            }
+            else if (!_isInChunk) // just finish a message but still could write more in this chunk
+            {
+                OpenChunk();
+            }
+        }
+
+        private async Task EnsureAsync(int size)
+        {
+            var maxChunkSize = _chunkSize - ChunkHeaderBufferSize;
+            if (size > maxChunkSize)
+                Throw.ArgumentOutOfRangeException.IfValueGreaterThan(size, maxChunkSize, nameof(size));
+
+            var toWriteSize = _isInChunk ? size : size + ChunkHeaderBufferSize;
+            var bufferRemaining = _chunkSize - _pos;
+            if (toWriteSize > bufferRemaining)
+            {
+                await FlushAsync().ConfigureAwait(false);
             }
 
             if (_buffer == null)

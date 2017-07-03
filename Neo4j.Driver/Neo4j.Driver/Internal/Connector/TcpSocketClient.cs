@@ -52,14 +52,9 @@ namespace Neo4j.Driver.Internal.Connector
         public Stream ReadStream => _stream;
         public Stream WriteStream => _stream;
 
-        public void Disconnect()
-        {
-            Close();
-        }
-
         public async Task ConnectAsync(Uri uri, TimeSpan timeOut)
         {
-            await Connect(uri, timeOut);
+            await Connect(uri, timeOut).ConfigureAwait(false);
             if (!_encryptionManager.UseTls)
             {
                 _stream = _client.GetStream();
@@ -86,7 +81,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource(timeOut))
             {
-                var addresses = await uri.ResolveAsync(_ipv6Enabled);
+                var addresses = await uri.ResolveAsync(_ipv6Enabled).ConfigureAwait(false);
                 AggregateException innerErrors = null;
                 for (var i = 0; i < addresses.Length; i++)
                 {
