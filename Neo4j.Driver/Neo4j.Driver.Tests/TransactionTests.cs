@@ -40,18 +40,18 @@ namespace Neo4j.Driver.Tests
                 mockConn.Verify(x=>x.Sync(), Times.Never);
             }
 
-            [Fact]
-            public void ShouldSyncIfBookmarkPresents()
-            {
-                var mockConn = new Mock<IConnection>();
-                var bookmark = Bookmark.From(FakeABookmark(234));
-                var tx = new Transaction(mockConn.Object, null, null, bookmark);
-
-                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
-
-                mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Once);
-            }
+//            [Fact]
+//            public void ShouldSyncIfBookmarkPresents()
+//            {
+//                var mockConn = new Mock<IConnection>();
+//                var bookmark = Bookmark.From(FakeABookmark(234));
+//                var tx = new Transaction(mockConn.Object, null, null, bookmark);
+//
+//                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
+//
+//                mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
+//                mockConn.Verify(x => x.Sync(), Times.Once);
+//            }
 
             [Fact]
             public void ShouldNotKeepInitialBookmark()

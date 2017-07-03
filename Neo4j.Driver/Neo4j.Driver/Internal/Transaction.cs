@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal
     internal class Transaction : StatementRunner, ITransaction
     {
         private readonly TransactionConnection _connection;
-        private readonly ITransactionResourceHandler _resourceHandler;
+        private ITransactionResourceHandler _resourceHandler;
 
         internal Bookmark Bookmark { get; private set; }
 
@@ -110,7 +110,11 @@ namespace Neo4j.Driver.Internal
             finally
             {
                 _connection.Close();
-                _resourceHandler?.OnTransactionDispose();
+                if (_resourceHandler != null)
+                {
+                    _resourceHandler.OnTransactionDispose();
+                    _resourceHandler = null;
+                }
                 base.Dispose(true);
             }
         }
@@ -150,6 +154,7 @@ namespace Neo4j.Driver.Internal
                 if (_resourceHandler != null)
                 {
                     await _resourceHandler.OnTransactionDisposeAsync().ConfigureAwait(false);
+                    _resourceHandler = null;
                 }
             }
         }

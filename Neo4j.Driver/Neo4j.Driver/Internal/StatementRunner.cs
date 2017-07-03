@@ -58,6 +58,7 @@ namespace Neo4j.Driver.Internal
     internal interface IResultResourceHandler
     {
         void OnResultComsumed();
+        Task OnResultComsumedAsync();
     }
 
     internal interface ITransactionResourceHandler

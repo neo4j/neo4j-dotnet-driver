@@ -53,9 +53,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private void NewBoltDriver()
         {
             var config = Config.DefaultConfig;
-//#if DEBUG
+#if DEBUG
             config = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
-//#endif
+#endif
             Driver = GraphDatabase.Driver(BoltUri, AuthToken, config);
         }
 

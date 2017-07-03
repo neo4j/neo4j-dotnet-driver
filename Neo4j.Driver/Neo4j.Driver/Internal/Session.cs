@@ -212,6 +212,12 @@ namespace Neo4j.Driver.Internal
             DisposeConnection();
         }
 
+        public Task OnResultComsumedAsync()
+        {
+            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+            return DisposeConnectionAsync();
+        }
+
         /// <summary>
         /// Called back in <see cref="Transaction.Dispose"/>
         /// </summary>

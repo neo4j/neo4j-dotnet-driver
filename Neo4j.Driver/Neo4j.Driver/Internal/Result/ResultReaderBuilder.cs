@@ -28,27 +28,23 @@ namespace Neo4j.Driver.Internal.Result
         private readonly List<string> _keys = new List<string>();
         private readonly SummaryBuilder _summaryBuilder;
 
-        private Func<Task> _receiveOneAction;
+        private Func<Task> _receiveOneFunc;
 
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
         private readonly IResultResourceHandler _resourceHandler;
 
-        public ResultReaderBuilder() : this(null, null, null, null, null)
-        {
-        }
-
-        public ResultReaderBuilder(Statement statement, Func<Task> receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler = null)
+        public ResultReaderBuilder(Statement statement, Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler = null)
         {
             _summaryBuilder = new SummaryBuilder(statement, server);
             _resourceHandler = resourceHandler;
-            SetReceiveOneAction(receiveOneAction);
+            SetReceiveOneFunc(receiveOneFunc);
         }
 
         public ResultReaderBuilder(string statement, IDictionary<string, object> parameters,
-            Func<Task> receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler= null)
-            : this(new Statement(statement, parameters), receiveOneAction, server, resourceHandler)
+            Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler= null)
+            : this(new Statement(statement, parameters), receiveOneFunc, server, resourceHandler)
         {
         }
 
@@ -66,7 +62,7 @@ namespace Neo4j.Driver.Internal.Result
             // read all records into memory
             while (_hasMoreRecords)
             {
-                await _receiveOneAction().ConfigureAwait(false);
+                await _receiveOneFunc().ConfigureAwait(false);
             }
             // return the summary
             return _summaryBuilder.Build();
@@ -84,21 +80,21 @@ namespace Neo4j.Driver.Internal.Result
             }
             while (_hasMoreRecords && _records.Count <= 0)
             {
-                await _receiveOneAction().ConfigureAwait(false);
+                await _receiveOneFunc().ConfigureAwait(false);
             }
             return _records.Count > 0 ? _records.Dequeue() : null;
         }
 
-        private void SetReceiveOneAction(Func<Task> receiveOneAction)
+        private void SetReceiveOneFunc(Func<Task> receiveOneAction)
         {
-            _receiveOneAction = async () =>
+            _receiveOneFunc = async () =>
             {
                 await receiveOneAction().ConfigureAwait(false);
-                if (!_hasMoreRecords)
+                if (!_hasMoreRecords && _resourceHandler != null)
                 {
                     // The last message received is a reply to pull_all,
                     // we are good to do a reset and return the connection to pool
-                    _resourceHandler?.OnResultComsumed();
+                    await _resourceHandler.OnResultComsumedAsync().ConfigureAwait(false);
                 }
             };
         }
