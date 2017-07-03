@@ -22,7 +22,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             // tag::autocommit-transaction[]
-            public async Task AddPerson(string name)
+            public async Task AddPersonAsync(string name)
             {
                 var session = Driver.Session();
                 try
@@ -40,9 +40,9 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestAutocommitTransactionExample()
             {
                 // Given & When
-                await AddPerson("Alice");
+                await AddPersonAsync("Alice");
                 // Then
-                int count = CountPerson("Alice");
+                int count = await CountPersonAsync("Alice");
                 
                 count.Should().Be(1);
             }
@@ -66,8 +66,9 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestBasicAuthExample()
             {
                 // Given
-                using (var driver = CreateDriverWithBasicAuth(Uri, User, Password))
-                using (var session = driver.Session())
+                var driver = CreateDriverWithBasicAuth(Uri, User, Password);
+                var session = driver.Session();
+                try
                 {
                     // When & Then
                     IStatementResultReader result = await session.RunAsync("RETURN 1");
@@ -75,7 +76,11 @@ namespace Neo4j.Driver.ExamplesAsync
                     bool read = await result.ReadAsync();
                     read.Should().BeTrue();
 
-                    result.Current()[0].As<int>().Should().Be(1);                    
+                    result.Current()[0].As<int>().Should().Be(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -99,8 +104,9 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestConfigConnectionTimeoutExample()
             {
                 // Given
-                using (var driver = CreateDriverWithCustomizedConnectionTimeout(Uri, User, Password))
-                using (var session = driver.Session())
+                var driver = CreateDriverWithCustomizedConnectionTimeout(Uri, User, Password);
+                var session = driver.Session();
+                try
                 {
                     // When & Then
                     IStatementResultReader result = await session.RunAsync("RETURN 1");
@@ -109,6 +115,10 @@ namespace Neo4j.Driver.ExamplesAsync
                     read.Should().BeTrue();
 
                     result.Current()[0].As<int>().Should().Be(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -132,8 +142,9 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestConfigMaxRetryTimeExample()
             {
                 // Given
-                using (var driver = CreateDriverWithCustomizedMaxRetryTime(Uri, User, Password))
-                using (var session = driver.Session())
+                var driver = CreateDriverWithCustomizedMaxRetryTime(Uri, User, Password);
+                var session = driver.Session();
+                try
                 {
                     // When & Then
                     IStatementResultReader result = await session.RunAsync("RETURN 1");
@@ -142,6 +153,10 @@ namespace Neo4j.Driver.ExamplesAsync
                     read.Should().BeTrue();
 
                     result.Current()[0].As<int>().Should().Be(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -165,8 +180,9 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestConfigTrustExample()
             {
                 // Given
-                using (var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password))
-                using (var session = driver.Session())
+                var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password);
+                var session = driver.Session();
+                try
                 {
                     // When & Then
                     IStatementResultReader result = await session.RunAsync("RETURN 1");
@@ -175,6 +191,10 @@ namespace Neo4j.Driver.ExamplesAsync
                     read.Should().BeTrue();
 
                     result.Current()[0].As<int>().Should().Be(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -198,8 +218,9 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestConfigUnencryptedExample()
             {
                 // Given
-                using (var driver = CreateDriverWithCustomizedSecurityStrategy(Uri, User, Password))
-                using (var session = driver.Session())
+                var driver = CreateDriverWithCustomizedSecurityStrategy(Uri, User, Password);
+                var session = driver.Session();
+                try
                 {
                     // When & Then
                     IStatementResultReader result = await session.RunAsync("RETURN 1");
@@ -208,6 +229,10 @@ namespace Neo4j.Driver.ExamplesAsync
                     read.Should().BeTrue();
 
                     result.Current()[0].As<int>().Should().Be(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -232,8 +257,9 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestCustomAuthExample()
             {
                 // Given
-                using (var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", "basic", null))
-                using (var session = driver.Session())
+                var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", "basic", null);
+                var session = driver.Session();
+                try
                 {
                     // When & Then
                     IStatementResultReader result = await session.RunAsync("RETURN 1");
@@ -242,6 +268,10 @@ namespace Neo4j.Driver.ExamplesAsync
                     read.Should().BeTrue();
 
                     result.Current()[0].As<int>().Should().Be(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -254,11 +284,16 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             // tag::cypher-error[]
-            public async Task<int> GetEmployeeNumber(string name)
+            public async Task<int> GetEmployeeNumberAsync(string name)
             {
-                using (var session = Driver.Session())
+                var session = Driver.Session();
+                try
                 {
                     return await session.ReadTransactionAsync(async tx => await SelectEmployee(tx, name));
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
 
@@ -285,7 +320,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestCypherErrorExample()
             {
                 // When & Then
-                int result = await GetEmployeeNumber("Alice");
+                int result = await GetEmployeeNumberAsync("Alice");
                 
                 result.Should().Be(-1);
             }
@@ -320,7 +355,8 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 // Given
                 var driver = new DriverLifecycleExample(Uri, User, Password).Driver;
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
                     // When & Then
                     IStatementResultReader result = await session.RunAsync("RETURN 1");
@@ -329,6 +365,10 @@ namespace Neo4j.Driver.ExamplesAsync
                     read.Should().BeTrue();
 
                     result.Current()[0].As<int>().Should().Be(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -347,7 +387,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var example = new HelloWorldExample(Uri, User, Password))
                 {
                     // When & Then
-                    await example.PrintGreeting("Hello, world");
+                    await example.PrintGreetingAsync("Hello, world");
                 }
             }
 
@@ -361,16 +401,17 @@ namespace Neo4j.Driver.ExamplesAsync
                     _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
                 }
 
-                public async Task PrintGreeting(string message)
+                public async Task PrintGreetingAsync(string message)
                 {
-                    using (var session = _driver.Session())
+                    var session = _driver.Session();
+                    try
                     {
                         var greeting = await session.WriteTransactionAsync(async tx =>
                         {
                             var result = await tx.RunAsync("CREATE (a:Greeting) " +
-                                                "SET a.message = $message " +
-                                                "RETURN a.message + ', from node ' + id(a)",
-                                new { message });
+                                                           "SET a.message = $message " +
+                                                           "RETURN a.message + ', from node ' + id(a)",
+                                new {message});
 
                             if (await result.ReadAsync())
                                 return result.Current()[0].As<string>();
@@ -379,6 +420,10 @@ namespace Neo4j.Driver.ExamplesAsync
                         });
 
                         Console.WriteLine(greeting);
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
                     }
                 }
 
@@ -391,7 +436,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 {
                     using (var greeter = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password"))
                     {
-                        greeter.PrintGreeting("hello, world").Wait();
+                        greeter.PrintGreetingAsync("hello, world").Wait();
                     }
                 }
             }
@@ -409,28 +454,33 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestReadWriteTransactionExample()
             {
                 // When & Then
-                long id = await AddPerson("Alice");
+                long id = await AddPersonAsync("Alice");
                 
                 id.Should().BeGreaterOrEqualTo(0L);
             }
 
             // tag::read-write-transaction[]
-            public async Task<long> AddPerson(string name)
+            public async Task<long> AddPersonAsync(string name)
             {
-                using (var session = Driver.Session())
+                var session = Driver.Session();
+                try
                 {
-                    await session.WriteTransactionAsync(async tx => await CreatePersonNode(tx, name));
+                    await session.WriteTransactionAsync(async tx => await CreatePersonNodeAsync(tx, name));
 
-                    return await session.ReadTransactionAsync(tx => MatchPersonNode(tx, name));
+                    return await session.ReadTransactionAsync(tx => MatchPersonNodeAsync(tx, name));
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
 
-            private static Task CreatePersonNode(ITransactionAsync tx, string name)
+            private static Task CreatePersonNodeAsync(ITransactionAsync tx, string name)
             {
                 return tx.RunAsync("CREATE (a:Person {name: $name})", new { name });
             }
 
-            private static async Task<long> MatchPersonNode(ITransactionAsync tx, string name)
+            private static async Task<long> MatchPersonNodeAsync(ITransactionAsync tx, string name)
             {
                 var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN id(a)", new { name });
 
@@ -450,9 +500,10 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             // tag::result-consume[]
-            public async Task<List<string>> GetPeople()
+            public async Task<List<string>> GetPeopleAsync()
             {
-                using (var session = Driver.Session())
+                var session = Driver.Session();
+                try
                 {
                     return await session.ReadTransactionAsync(async tx =>
                     {
@@ -466,6 +517,10 @@ namespace Neo4j.Driver.ExamplesAsync
                         return list;
                     });
                 }
+                finally
+                {
+                    await session.CloseAsync();
+                }
             }
             // end::result-consume[]
 
@@ -473,10 +528,10 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestResultConsumeExample()
             {
                 // Given
-                await Write("CREATE (a:Person {name: 'Alice'})");
-                await Write("CREATE (a:Person {name: 'Bob'})");
+                await WriteAsync("CREATE (a:Person {name: 'Alice'})");
+                await WriteAsync("CREATE (a:Person {name: 'Bob'})");
                 // When & Then
-                List<string> people = await GetPeople();
+                List<string> people = await GetPeopleAsync();
 
                 people.Should().Contain(new[] { "Alice", "Bob" });
             }
@@ -490,11 +545,12 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             // tag::result-retain[]
-            public async Task<int> AddEmployees(string companyName)
+            public async Task<int> AddEmployeesAsync(string companyName)
             {
-                using (var session = Driver.Session())
+                var session = Driver.Session();
+                try
                 {
-                    var persons = await session.ReadTransactionAsync(async tx => 
+                    var persons = await session.ReadTransactionAsync(async tx =>
                     {
                         IStatementResultReader result = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
 
@@ -509,12 +565,16 @@ namespace Neo4j.Driver.ExamplesAsync
                     return persons.Sum(person => session.WriteTransactionAsync(async tx =>
                     {
                         await tx.RunAsync("MATCH (emp:Person {name: $person_name}) " +
-                            "MERGE (com:Company {name: $company_name}) " +
-                            "MERGE (emp)-[:WORKS_FOR]->(com)",
-                            new { person_name = person["name"].As<string>(), company_name = companyName });
+                                          "MERGE (com:Company {name: $company_name}) " +
+                                          "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new {person_name = person["name"].As<string>(), company_name = companyName});
 
                         return 1;
                     }).Result);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
             // end::result-retain[]
@@ -523,13 +583,13 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestResultConsumeExample()
             {
                 // Given
-                await Write("CREATE (a:Person {name: 'Alice'})");
-                await Write("CREATE (a:Person {name: 'Bob'})");
+                await WriteAsync("CREATE (a:Person {name: 'Alice'})");
+                await WriteAsync("CREATE (a:Person {name: 'Bob'})");
                 // When & Then
-                int count = await AddEmployees("Acme");
+                int count = await AddEmployeesAsync("Acme");
                 count.Should().Be(2);
 
-                var result = await Read("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
+                var result = await ReadAsync("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
 
                 bool next = await result.ReadAsync();
                 next.Should().BeTrue();
@@ -560,24 +620,26 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             // tag::service-unavailable[]
-            public async Task<bool> AddItem()
+            public async Task<bool> AddItemAsync()
             {
+                var session = Driver.Session();
                 try
                 {
-                    using (var session = Driver.Session())
-                    {
-                        return await session.WriteTransactionAsync(
-                            async tx =>
-                            {
-                                await tx.RunAsync("CREATE (a:Item)");
-                                return true;
-                            }
-                        );
-                    }
+                    return await session.WriteTransactionAsync(
+                        async tx =>
+                        {
+                            await tx.RunAsync("CREATE (a:Item)");
+                            return true;
+                        }
+                    );
                 }
                 catch (AggregateException)
                 {
                     return false;
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
             // end::service-unavailable[]
@@ -585,7 +647,7 @@ namespace Neo4j.Driver.ExamplesAsync
             [RequireServerFact]
             public async Task TestServiceUnavailableExample()
             {
-                bool result = await AddItem();
+                bool result = await AddItemAsync();
                 
                 result.Should().BeFalse();
             }
@@ -599,11 +661,16 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             // tag::session[]
-            public async Task AddPerson(string name)
+            public async Task AddPersonAsync(string name)
             {
-                using (var session = Driver.Session())
+                var session = Driver.Session();
+                try
                 {
-                    await session.RunAsync("CREATE (a:Person {name: $name})", new { name });
+                    await session.RunAsync("CREATE (a:Person {name: $name})", new {name});
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
             // end::session[]
@@ -612,7 +679,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestSessionExample()
             {
                 // Given & When
-                await AddPerson("Alice");
+                await AddPersonAsync("Alice");
                 // Then
                 int count = await CountPersonAsync("Alice");
                 count.Should().Be(1);
@@ -628,11 +695,17 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             // tag::transaction-function[]
-            public async Task AddPerson(string name)
+            public async Task AddPersonAsync(string name)
             {
-                using (var session = Driver.Session())
+                var session = Driver.Session();
+                try
                 {
-                    await session.WriteTransactionAsync(tx => tx.RunAsync("CREATE (a:Person {name: $name})", new { name }));
+                    await session.WriteTransactionAsync(
+                        tx => tx.RunAsync("CREATE (a:Person {name: $name})", new {name}));
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
             // end::transaction-function[]
@@ -641,7 +714,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public async void TestTransactionFunctionExample()
             {
                 // Given & When
-                await AddPerson("Alice");
+                await AddPersonAsync("Alice");
                 // Then
                 int count = await CountPersonAsync("Alice");
 
@@ -685,7 +758,8 @@ namespace Neo4j.Driver.ExamplesAsync
 
         protected async Task<int> CountPersonAsync(string name)
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
                 return await session.ReadTransactionAsync(async tx =>
                 {
@@ -700,33 +774,35 @@ namespace Neo4j.Driver.ExamplesAsync
                     return -1;
                 });
             }
-        }
-
-        protected int CountPerson(string name)
-        {
-            using (var session = Driver.Session())
+            finally
             {
-                return session.ReadTransaction( tx =>
-                {
-                    var result = tx.Run("MATCH (a:Person {name: $name}) RETURN count(a)", new {name});
-                    return result.Single()[0].As<int>();
-                });
+                await session.CloseAsync();
             }
         }
 
-        protected async Task Write(string statement, IDictionary<string, object> parameters = null)
+        protected async Task WriteAsync(string statement, IDictionary<string, object> parameters = null)
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
                 await session.WriteTransactionAsync(tx => tx.RunAsync(statement, parameters));
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
-        protected async Task<IStatementResultReader> Read(string statement, IDictionary<string, object> parameters = null)
+        protected async Task<IStatementResultReader> ReadAsync(string statement, IDictionary<string, object> parameters = null)
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
                 return await session.ReadTransactionAsync(tx => tx.RunAsync(statement, parameters));
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
     }

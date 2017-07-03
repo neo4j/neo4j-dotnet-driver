@@ -31,26 +31,35 @@ namespace Neo4j.Driver.Tests
         public class Constructor
         {
             [Fact]
-            public void ShouldNotSyncWhenNoBookmarkGiven()
+            public void ShouldRunWithoutBookmarkIfNoBookmarkGiven()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Verify(x=>x.Run("BEGIN", null, null, true), Times.Once);
-                mockConn.Verify(x=>x.Sync(), Times.Never);
+                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            public void ShouldRunWithoutBookmarkIfInvalidBookmarkGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From((string)null);
+                var tx = new Transaction(mockConn.Object, null, null, bookmark);
+
+                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
             [Fact]
-            public void ShouldSyncIfBookmarkPresents()
+            public void ShouldRunWithBookmarkIfValidBookmarkGiven()
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From(FakeABookmark(234));
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
                 IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
-
                 mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
             [Fact]
@@ -61,6 +70,46 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
                 tx.Bookmark.Should().BeNull();
+            }
+        }
+
+        public class SyncBoomarkMethod
+        {
+            [Fact]
+            public void ShouldNotSyncIfBookmakIsNull()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+                tx.SyncBookmark(null);
+
+                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldNotSyncIfInvalidBookmarkGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From((string)null);
+                var tx = new Transaction(mockConn.Object, null, null, bookmark);
+                tx.SyncBookmark(bookmark);
+
+                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldSyncIfValidBookmarkGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From(FakeABookmark(234));
+                var tx = new Transaction(mockConn.Object, null, null, bookmark);
+                tx.SyncBookmark(bookmark);
+
+                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
+
+                mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }
 
@@ -166,10 +215,22 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.ResetCalls();
-                // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Dispose();
                 mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDispose(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldNotReturnConnectionToPoolTwice()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+
+                mockConn.ResetCalls();
+                tx.Dispose();
+                tx.Dispose();
                 mockHandler.Verify(x => x.OnTransactionDispose(), Times.Once);
             }
         }

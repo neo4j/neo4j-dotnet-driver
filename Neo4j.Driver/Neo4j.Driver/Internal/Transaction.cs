@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal
     internal class Transaction : StatementRunner, ITransaction
     {
         private readonly TransactionConnection _connection;
-        private readonly ITransactionResourceHandler _resourceHandler;
+        private ITransactionResourceHandler _resourceHandler;
 
         internal Bookmark Bookmark { get; private set; }
 
@@ -35,19 +35,6 @@ namespace Neo4j.Driver.Internal
         private const string Rollback = "ROLLBACK";
 
         private State _state = State.Active;
-
-        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
-        {
-            _connection = new TransactionConnection(this, connection);
-            _resourceHandler = resourceHandler;
-
-            IDictionary<string, object> paramters = bookmark?.AsBeginTransactionParameters();
-            _connection.Run(Begin, paramters);
-            if (paramters != null)
-            {
-                _connection.Sync();
-            }
-        }
 
         private enum State
         {
@@ -73,6 +60,14 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
+        {
+            _connection = new TransactionConnection(this, connection);
+            _resourceHandler = resourceHandler;
+            IDictionary<string, object> paramters = bookmark?.AsBeginTransactionParameters();
+            _connection.Run(Begin, paramters);
+        }
+
         protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
@@ -85,16 +80,14 @@ namespace Neo4j.Driver.Internal
                 {
                     try
                     {
-                        _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
-                        _connection.Sync();
-                        _state = State.Succeeded;
+                        CommitTx();
                     }
                     catch (Exception)
                     {
                         // if we ever failed to commit, then we rollback the tx
                         try
                         {
-                            RollBackTx();
+                            RollbackTx();
                         }
                         catch (Exception)
                         {
@@ -106,22 +99,103 @@ namespace Neo4j.Driver.Internal
                 }
                 else if (_state == State.MarkedFailed || _state == State.Active)
                 {
-                    RollBackTx();
+                    RollbackTx();
                 }
             }
             finally
             {
                 _connection.Close();
-                _resourceHandler?.OnTransactionDispose();
+                if (_resourceHandler != null)
+                {
+                    _resourceHandler.OnTransactionDispose();
+                    _resourceHandler = null;
+                }
                 base.Dispose(true);
             }
         }
 
-        private void RollBackTx()
+        private async Task CloseAsync()
+        {
+            try
+            {
+                if (_state == State.MarkedSuccess)
+                {
+                    try
+                    {
+                        await CommitTxAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception)
+                    {
+                        // if we ever failed to commit, then we rollback the tx
+                        try
+                        {
+                            await RollbackTxAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception)
+                        {
+                            // ignored
+                        }
+                        throw;
+                    }
+                }
+                else if (_state == State.MarkedFailed || _state == State.Active)
+                {
+                    await RollbackTxAsync().ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                await _connection.CloseAsync().ConfigureAwait(false);
+                if (_resourceHandler != null)
+                {
+                    await _resourceHandler.OnTransactionDisposeAsync().ConfigureAwait(false);
+                    _resourceHandler = null;
+                }
+            }
+        }
+
+        private void CommitTx()
+        {
+            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
+            _connection.Sync();
+            _state = State.Succeeded;
+        }
+
+        private async Task CommitTxAsync()
+        {
+            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
+            await _connection.SyncAsync().ConfigureAwait(false);
+            _state = State.Succeeded;
+        }
+
+        private void RollbackTx()
         {
             _connection.Run(Rollback, null, null, false/*DiscardAll*/);
             _connection.Sync();
             _state = State.RolledBack;
+        }
+
+        private async Task RollbackTxAsync()
+        {
+            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
+            await _connection.SyncAsync().ConfigureAwait(false);
+            _state = State.RolledBack;
+        }
+
+        public void SyncBookmark(Bookmark bookmark)
+        {
+            if (bookmark != null && !bookmark.IsEmpty())
+            {
+                _connection.Sync();
+            }
+        }
+
+        public async Task SyncBookmarkAsync(Bookmark bookmark)
+        {
+            if (bookmark!=null && !bookmark.IsEmpty())
+            {
+                await _connection.SyncAsync().ConfigureAwait(false);
+            }
         }
 
         public override IStatementResult Run(Statement statement)
@@ -134,6 +208,20 @@ namespace Neo4j.Driver.Internal
                     _connection.Server);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
+                return resultBuilder.PreBuild();
+            });
+        }
+
+        public override Task<IStatementResultReader> RunAsync(Statement statement)
+        {
+            return TryExecuteAsync(async () =>
+            {
+                EnsureNotFailed();
+
+                var resultBuilder = new ResultReaderBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(),
+                    _connection.Server);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
+                await _connection.SendAsync().ConfigureAwait(false);
                 return resultBuilder.PreBuild();
             });
         }
@@ -173,42 +261,14 @@ namespace Neo4j.Driver.Internal
 
         public Task CommitAsync()
         {
-            try
-            {
-                Success();
-                return Task.FromResult(true);
-            }
-            finally
-            {
-                Dispose();
-            }
+            Success();
+            return CloseAsync();
         }
 
         public Task RollbackAsync()
         {
-            try
-            {
-                Failure();
-                return Task.FromResult(true);
-            }
-            finally
-            {
-                Dispose();
-            }
-        }
-
-        public override Task<IStatementResultReader> RunAsync(Statement statement)
-        {
-            return TryExecuteAsync(async () =>
-            {
-                EnsureNotFailed();
-
-                var resultBuilder = new ResultReaderBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(),
-                    _connection.Server);
-                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
-                await _connection.SendAsync().ConfigureAwait(false);
-                return resultBuilder.PreBuild();
-            });
+            Failure();
+            return CloseAsync();
         }
 
         private class TransactionConnection : DelegatedConnection

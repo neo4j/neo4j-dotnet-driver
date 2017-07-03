@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal
 
                     var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
                     _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
-                    Task.Delay(delay).Wait(); // blocking for this delay
+                    await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
                     delayMs = delayMs * _multiplier;
                 }
             } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);

@@ -57,11 +57,13 @@ namespace Neo4j.Driver.Internal
 
     internal interface IResultResourceHandler
     {
-        void OnResultComsumed();
+        void OnResultConsumed();
+        Task OnResultConsumedAsync();
     }
 
     internal interface ITransactionResourceHandler
     {
         void OnTransactionDispose();
+        Task OnTransactionDisposeAsync();
     }
 }
