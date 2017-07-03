@@ -36,19 +36,6 @@ namespace Neo4j.Driver.Internal
 
         private State _state = State.Active;
 
-        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
-        {
-            _connection = new TransactionConnection(this, connection);
-            _resourceHandler = resourceHandler;
-
-            IDictionary<string, object> paramters = bookmark?.AsBeginTransactionParameters();
-            _connection.Run(Begin, paramters);
-//            if (paramters != null)
-//            {
-//                _connection.Sync();
-//            } bookmark will be sync at tx.run
-        }
-
         private enum State
         {
             /** The transaction is running with no explicit success or failure marked */
@@ -71,6 +58,14 @@ namespace Neo4j.Driver.Internal
 
             /** This transaction has been rolled back */
             RolledBack
+        }
+
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
+        {
+            _connection = new TransactionConnection(this, connection);
+            _resourceHandler = resourceHandler;
+            IDictionary<string, object> paramters = bookmark?.AsBeginTransactionParameters();
+            _connection.Run(Begin, paramters);
         }
 
         protected override void Dispose(bool isDisposing)
@@ -185,6 +180,22 @@ namespace Neo4j.Driver.Internal
             _connection.Run(Rollback, null, null, false/*DiscardAll*/);
             await _connection.SyncAsync().ConfigureAwait(false);
             _state = State.RolledBack;
+        }
+
+        public void SyncBookmark(Bookmark bookmark)
+        {
+            if (bookmark != null && !bookmark.IsEmpty())
+            {
+                _connection.Sync();
+            }
+        }
+
+        public async Task SyncBookmarkAsync(Bookmark bookmark)
+        {
+            if (bookmark!=null && !bookmark.IsEmpty())
+            {
+                await _connection.SyncAsync().ConfigureAwait(false);
+            }
         }
 
         public override IStatementResult Run(Statement statement)

@@ -104,6 +104,7 @@ namespace Neo4j.Driver.Internal
 
             _connection = _connectionProvider.Acquire(mode);
             _transaction = new Transaction(_connection, this, _logger, _bookmark);
+            _transaction.SyncBookmark(_bookmark);
             return _transaction;
         }
 
@@ -415,6 +416,7 @@ namespace Neo4j.Driver.Internal
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
             _transaction = new Transaction(_connection, this, _logger, _bookmark);
+            await _transaction.SyncBookmarkAsync(_bookmark).ConfigureAwait(false);
             return _transaction;
         }
 
