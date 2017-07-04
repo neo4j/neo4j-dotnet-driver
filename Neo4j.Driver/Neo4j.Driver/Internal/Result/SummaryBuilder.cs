@@ -168,7 +168,6 @@ namespace Neo4j.Driver.Internal.Result
 
     internal class Counters : ICounters
     {
-
         public bool ContainsUpdates => (
             IsPositive(NodesCreated)
             || IsPositive(NodesDeleted)

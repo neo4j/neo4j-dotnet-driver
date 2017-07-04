@@ -15,17 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections.Generic;
-using System.Linq;
-using static Neo4j.Driver.V1.StatementType;
 using System;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultBuilder : BuilderBase
+    internal class ResultBuilder : ResultBuilderBase
     {
         private Action _receiveOneAction;
 
+        private readonly IResultResourceHandler _resourceHandler;
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
@@ -34,9 +33,10 @@ namespace Neo4j.Driver.Internal.Result
         }
 
         public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler = null)
-            : base(statement, server, resourceHandler)
+            : base(statement, server)
         {
             SetReceiveOneAction(receiveOneAction);
+            _resourceHandler = resourceHandler;
         }
 
         public ResultBuilder(string statement, IDictionary<string, object> parameters, 
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public StatementResult PreBuild()
         {
-            return new StatementResult(_keys, new RecordSet(NextRecord), Summary);
+            return new StatementResult(Keys, new RecordSet(NextRecord), Summary);
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal.Result
                 _receiveOneAction.Invoke();
             }
             // return the summary
-            return _summaryBuilder.Build();
+            return SummaryCollector.Build();
         }
 
         /// <summary>
@@ -96,38 +96,14 @@ namespace Neo4j.Driver.Internal.Result
             };
         }
 
-        public override void CollectRecord(object[] fields)
+        protected override void EnqueueRecord(Record record)
         {
-            var record = new Record(_keys, fields);
             _records.Enqueue(record);
         }
-        
-        public override void CollectSummary(IDictionary<string, object> meta)
-        {
-            NoMoreRecords();
 
-            base.CollectSummary(meta);
-        }
-
-        public override void DoneSuccess()
-        {
-            // do nothing
-        }
-
-        public override void DoneFailure()
-        {
-            NoMoreRecords();// an error received, so the result is broken
-        }
-
-        public override void DoneIgnored()
-        {
-            NoMoreRecords();// the result is ignored
-        }
-
-        private void NoMoreRecords()
+        protected override void NoMoreRecords()
         {
             _hasMoreRecords = false;
         }
-        
     }
 }
