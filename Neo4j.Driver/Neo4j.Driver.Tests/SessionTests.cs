@@ -67,6 +67,32 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class RunAsyncMethod
+        {
+            [Fact]
+            public async void ShouldSendOnRun()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.RunAsync("lalalal");
+
+                mockConn.Verify(x => x.Run("lalalal", new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true), Times.Once);
+                mockConn.Verify(x => x.SendAsync());
+            }
+
+            [Fact]
+            public async void ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.RunAsync("lalalal");
+
+                mockConn.Verify(x => x.Server, Times.Once);
+            }
+        }
+
         public class BeginTransactionMethod
         {
             [Fact]
@@ -216,6 +242,126 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class BeginTransactionAsyncMethod
+        {
+            [Fact]
+            public async void ShouldNotAllowNewTxWhileOneIsRunning()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.BeginTransactionAsync();
+                var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+                error.Should().BeOfType<ClientException>();
+            }
+
+            [Fact]
+            public async void ShouldBeAbleToOpenTxAfterPreviousIsClosed()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                var tx = await session.BeginTransactionAsync();
+                await tx.RollbackAsync();
+                tx = await session.BeginTransactionAsync();
+            }
+
+            [Fact]
+            public async void ShouldNotBeAbleToUseSessionWhileOngoingTransaction()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                var tx = await session.BeginTransactionAsync();
+
+                var error = await Record.ExceptionAsync(() => session.RunAsync("lalal"));
+                error.Should().BeOfType<ClientException>();
+            }
+
+            [Fact]
+            public async void ShouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                var tx = await session.BeginTransactionAsync();
+                await tx.RollbackAsync();
+
+                await session.RunAsync("lalal");
+            }
+
+            [Fact]
+            public async void ShouldClosePreviousRunConnectionWhenRunMoreStatements()
+            {
+                var mockConn = new Mock<IConnection>();
+                var session = NewSession(mockConn.Object);
+                await session.RunAsync("lalal");
+
+                await session.RunAsync("bibib");
+                mockConn.Verify(c => c.CloseAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldClosePreviousRunConnectionWhenRunMoreTransactions()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(false);
+                var session = NewSession(mockConn.Object);
+                await session.RunAsync("lala");
+
+                await session.BeginTransactionAsync();
+                mockConn.Verify(c => c.CloseAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldDisposeConnectionOnRunIfBeginTxFailed()
+            {
+                // Given
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
+                    .Throws(new IOException("Triggered an error when beginTx"));
+                var session = NewSession(mockConn.Object);
+                var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+                exc.Should().BeOfType<IOException>();
+
+                // When
+                await session.RunAsync("lala");
+
+                // Then
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldDisposeConnectionOnNewBeginTxIfBeginTxFailed()
+            {
+                // Given
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var calls = 0;
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
+                    .Callback(() =>
+                    {
+                        // only throw exception on the first beginTx call
+                        calls++;
+                        if (calls == 1)
+                        {
+                            throw new IOException("Triggered an error when beginTx");
+                        }
+                    });
+                var session = NewSession(mockConn.Object);
+                var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+                exc.Should().BeOfType<IOException>();
+
+                // When
+                await session.BeginTransactionAsync();
+
+                // Then
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
+            }
+        }
+
+
         public class DisposeMethod
         {
             [Fact]
@@ -275,6 +421,51 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class DisposeMethodOnAsync
+        {
+            [Fact]
+            public async void ShouldDisposeConnectionIfBeginTxFailed()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run("BEGIN", null, null, true))
+                    .Throws(new IOException("Triggered an error when beginTx"));
+                var session = NewSession(mockConn.Object);
+                var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+                error.Should().BeOfType<IOException>();
+                session.Dispose();
+
+                mockConn.Verify(x => x.Close(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldDisposeTxOnDispose()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                var tx = await session.BeginTransactionAsync();
+                session.Dispose();
+
+                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldDisposeConnectinOnDispose()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.RunAsync("lalal");
+                session.Dispose();
+
+                mockConn.Verify(x => x.Sync(), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Once);
+            }
+
+        }
+
         private class TestConnectionProvider : IConnectionProvider
         {
             private IConnection Connection { get; set; }
@@ -297,7 +488,7 @@ namespace Neo4j.Driver.Tests
 
             public Task<IConnection> AcquireAsync(AccessMode mode)
             {
-                throw new NotSupportedException();
+                return Task.FromResult(Connection);
             }
         }
     }

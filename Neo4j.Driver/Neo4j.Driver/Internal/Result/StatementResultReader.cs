@@ -32,9 +32,16 @@ namespace Neo4j.Driver.Internal.Result
 
         public Task<IResultSummary> SummaryAsync()
         {
-            if (_summary == null && _summaryFunc != null)
+            if (_summary == null)
             {
-                _summary = _summaryFunc();
+                if (_summaryFunc != null)
+                {
+                    _summary = _summaryFunc();
+                }
+                else
+                {
+                    _summary = Task.FromResult((IResultSummary)null);
+                }
             }
 
             return _summary;

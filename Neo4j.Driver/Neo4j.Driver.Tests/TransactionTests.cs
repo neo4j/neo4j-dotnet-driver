@@ -173,6 +173,66 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class RunAsyncMethod
+        {
+            [Fact]
+            public async void ShouldRunPullAllSyncRun()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+
+                await tx.RunAsync("lalala");
+
+                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true), Times.Once);
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldThrowExceptionIfPreviousTxFailed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+
+                try
+                {
+                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
+                        .Throws<Neo4jException>();
+                    await tx.RunAsync("lalala");
+                }
+                catch (Neo4jException)
+                {
+                    // Fine, the state is set to failed now.
+                }
+
+                var error = await Xunit.Record.ExceptionAsync(() => tx.RunAsync("ttt"));
+                error.Should().BeOfType<ClientException>();
+            }
+
+            [Fact]
+            public async void ShouldThrowExceptionIfFailedToRunAndFetchResult()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
+                    .Throws<Neo4jException>();
+
+                var error = await Xunit.Record.ExceptionAsync(() => tx.RunAsync("ttt"));
+                error.Should().BeOfType<Neo4jException>();
+            }
+
+            [Fact]
+            public async void ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+
+                await tx.RunAsync("lalala");
+
+                mockConn.Verify(x => x.Server, Times.Once);
+            }
+        }
+
         public class DisposeMethod
         {
             [Fact]
