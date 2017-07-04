@@ -244,30 +244,6 @@ namespace Neo4j.Driver.Tests
 
         public class BeginTransactionAsyncMethod
         {
-
-            [Fact]
-            public async void ShouldIgnoreNullBookmark()
-            {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object, bookmark: FakeABookmark(123));
-                session.LastBookmark.Should().EndWith("123");
-                await session.BeginTransactionAsync(null);
-                session.LastBookmark.Should().EndWith("123");
-            }
-
-            [Fact]
-            public async void ShouldSetNewBookmark()
-            {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object, bookmark: FakeABookmark(123));
-                session.LastBookmark.Should().EndWith("123");
-                // begin tx will directly override the bookmark that was originally set before
-                await session.BeginTransactionAsync(FakeABookmark(12));
-                session.LastBookmark.Should().EndWith("12");
-            }
-
             [Fact]
             public async void ShouldNotAllowNewTxWhileOneIsRunning()
             {

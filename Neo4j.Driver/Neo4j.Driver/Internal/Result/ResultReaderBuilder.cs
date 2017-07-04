@@ -33,10 +33,10 @@ namespace Neo4j.Driver.Internal.Result
         {
         }
 
-        public ResultReaderBuilder(Statement statement, Func<Task> receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler = null)
+        public ResultReaderBuilder(Statement statement, Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler = null)
             : base(statement, server, resourceHandler)
         {
-            SetReceiveOneAction(receiveOneAction);
+            SetReceiveOneFunc(receiveOneFunc);
         }
 
         public ResultReaderBuilder(string statement, IDictionary<string, object> parameters,
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IStatementResultReader PreBuild()
         {
-            return new StatementResultReader(_keys, NextRecord, SummaryAsync);
+            return new StatementResultReader(_keys, NextRecordAsync, SummaryAsync);
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Internal.Result
         /// Return next record in the record stream if any, otherwise return null
         /// </summary>
         /// <returns>Next record in the record stream if any, otherwise return null</returns>
-        private async Task<IRecord> NextRecord()
+        private async Task<IRecord> NextRecordAsync()
         {
             if (_records.Count > 0)
             {
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.Result
             return _records.Count > 0 ? _records.Dequeue() : null;
         }
 
-        internal void SetReceiveOneAction(Func<Task> receiveOneAction)
+        internal void SetReceiveOneFunc(Func<Task> receiveOneAction)
         {
             _receiveOneFunc = async () =>
             {
