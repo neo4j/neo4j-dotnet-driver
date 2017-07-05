@@ -41,24 +41,6 @@ namespace Neo4j.Driver.Tests
           return x => x.Run("BEGIN", parameters, null, true);
         }
 
-        private static Expression<Action<IConnection>> RunCypher(string statement=null)
-        {
-            if (statement == null)
-            {
-                statement = It.IsAny<string>();
-            }
-            return x => x.Run(statement, new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true);
-        }
-
-        private static Expression<Action<IConnection>> RunCypherAsync(string statement = null)
-        {
-            if (statement == null)
-            {
-                statement = It.IsAny<string>();
-            }
-            return x => x.Run(statement, new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true);
-        }
-
         public class Constructor
         {
             [Fact]
@@ -139,7 +121,7 @@ namespace Neo4j.Driver.Tests
 
                 IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
 
-                mockConn.Verify(x => RunBegin(paramters), Times.Once);
+                mockConn.Verify(RunBegin(paramters), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }
@@ -154,7 +136,7 @@ namespace Neo4j.Driver.Tests
 
                 tx.Run("lalala");
 
-                mockConn.Verify(RunCypher("lalala"), Times.Once);
+                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true), Times.Once);
                 mockConn.Verify(x => x.Send(), Times.Once);
             }
 
@@ -166,7 +148,7 @@ namespace Neo4j.Driver.Tests
 
                 try
                 {
-                    mockConn.Setup(RunCypher())
+                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
                     tx.Run("lalala");
                 }
@@ -185,7 +167,8 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
                    
-                mockConn.Setup(RunCypher())
+
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
 
                 var error = Xunit.Record.Exception(() => tx.Run("ttt"));
@@ -214,7 +197,7 @@ namespace Neo4j.Driver.Tests
 
                 await tx.RunAsync("lalala");
 
-                mockConn.Verify(RunCypherAsync("lalala"), Times.Once);
+                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true), Times.Once);
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
 
@@ -226,7 +209,7 @@ namespace Neo4j.Driver.Tests
 
                 try
                 {
-                    mockConn.Setup(RunCypherAsync())
+                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
                         .Throws<Neo4jException>();
                     await tx.RunAsync("lalala");
                 }
@@ -245,7 +228,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Setup(RunCypherAsync())
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
                     .Throws<Neo4jException>();
 
                 var error = await Xunit.Record.ExceptionAsync(() => tx.RunAsync("ttt"));

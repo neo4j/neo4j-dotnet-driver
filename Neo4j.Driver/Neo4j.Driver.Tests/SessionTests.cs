@@ -484,6 +484,26 @@ namespace Neo4j.Driver.Tests
                 mockConn.Verify(x => x.CloseAsync(), Times.Once);
                 mockConn.Verify(x => x.Close(), Times.Never);
             }
+
+            [Fact]
+            public async void ShouldAllowCloseAsyncAfterDispose()
+            {
+                // Given
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.RunAsync("lalal");
+
+                // When
+                session.Dispose();
+                await session.CloseAsync();
+
+                // Then
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+                mockConn.Verify(x => x.Sync(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Never);
+                mockConn.Verify(x => x.Close(), Times.Once);
+            }
         }
 
         private class TestConnectionProvider : IConnectionProvider
