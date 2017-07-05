@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal abstract class ResultBuilderBase : IMessageResponseCollector
     {
-        protected List<string> Keys { get; private set; }
+        protected List<string> Keys { get; } = new List<string>();
         protected SummaryCollector SummaryCollector { get; }
 
         protected ResultBuilderBase(Statement statement, IServerInfo server)
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.Result
             {
                 return;
             }
-            Keys = CollectKeys(meta, "fields");
+            CollectKeys(meta, "fields", Keys);
             SummaryCollector.CollectWithFields(meta);
         }
 
@@ -80,14 +80,12 @@ namespace Neo4j.Driver.Internal.Result
         protected abstract void NoMoreRecords();
         protected abstract void EnqueueRecord(Record record);
 
-        private static List<string> CollectKeys(IDictionary<string, object> meta, string name)
+        private static void CollectKeys(IDictionary<string, object> meta, string name, List<string> keys)
         {
-            var keys = new List<string>();
             if (meta.ContainsKey(name))
             {
                 keys.AddRange(meta[name].As<List<string>>());
             }
-            return keys;
         }
     }
 }
