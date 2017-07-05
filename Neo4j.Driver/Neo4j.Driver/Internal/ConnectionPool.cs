@@ -16,6 +16,8 @@
 // limitations under the License.
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
@@ -45,6 +47,9 @@ namespace Neo4j.Driver.Internal
 
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
+
+        private readonly int _maxPoolSize = 20;
+        private int _poolSize = 0;
 
         internal bool DisposeCalled
         {
@@ -121,6 +126,7 @@ namespace Neo4j.Driver.Internal
             try
             {
                 _statistics?.IncrementConnectionToCreate();
+                Interlocked.Increment(ref _poolSize);
 
                 conn = _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, this)
@@ -139,12 +145,18 @@ namespace Neo4j.Driver.Internal
                 {
                     DestoryConnection(conn);
                 }
+                else
+                {
+                    Interlocked.Decrement(ref _poolSize);
+                }
                 throw;
             }
         }
 
         private void DestoryConnection(IPooledConnection conn)
         {
+            Interlocked.Decrement(ref _poolSize);
+
             _statistics?.IncrementConnectionToClose();
 
             conn.Destroy();
@@ -204,17 +216,31 @@ namespace Neo4j.Driver.Internal
                 {
                     ThrowObjectDisposedException();
                 }
-                IPooledConnection connection;
 
-                if (!_availableConnections.TryDequeue(out connection))
+
+                var retryLogic = new ExponentialBackoffRetryLogicV2(TimeSpan.FromMinutes(2), TimeSpan.FromMilliseconds(50));
+                IPooledConnection connection = await retryLogic.RetryAsync(async () =>
                 {
-                    connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                }
-                else if (!connection.IsOpen || HasBeenIdleForTooLong(connection))
-                {
-                    DestoryConnection(connection);
-                    return await AcquireAsync().ConfigureAwait(false);
-                }
+                    if (_availableConnections.TryDequeue(out connection))
+                    {
+                        return new Tuple<IPooledConnection, bool>(connection, true);
+                    }
+                    else if (_poolSize < _maxPoolSize)
+                    {
+                        connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                        return new Tuple<IPooledConnection, bool>(connection, true);
+                    }
+                    else
+                    {
+                        return new Tuple<IPooledConnection, bool>(null, false);
+                    }
+                }).ConfigureAwait(false);
+
+                if (!connection.IsOpen || HasBeenIdleForTooLong(connection))
+                    {
+                        DestoryConnection(connection);
+                        return await AcquireAsync().ConfigureAwait(false);
+                    }
 
                 _inUseConnections.TryAdd(connection);
                 if (_disposeCalled)
