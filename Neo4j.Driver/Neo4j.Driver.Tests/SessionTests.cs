@@ -361,7 +361,6 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-
         public class DisposeMethod
         {
             [Fact]
@@ -405,19 +404,21 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldThrowExceptionWhenDisposingSessionMoreThanOnce()
+            public void ShouldAllowDisposeMultipleTimes()
             {
                 // Given
                 var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = NewSession(mockConn.Object);
+                session.Run("lalal");
 
                 // When
                 session.Dispose();
-                var exception = Record.Exception(()=>session.Dispose());
+                session.Dispose();
 
                 // Then
-                exception.Should().BeOfType<ObjectDisposedException>();
-                exception.Message.Should().Contain("Failed to dispose this seesion as it has already been disposed.");
+                mockConn.Verify(x => x.Sync(), Times.Once);
+                mockConn.Verify(x=>x.Close(), Times.Once);
             }
         }
 
@@ -433,9 +434,9 @@ namespace Neo4j.Driver.Tests
                 var session = NewSession(mockConn.Object);
                 var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
                 error.Should().BeOfType<IOException>();
-                session.Dispose();
+                await session.CloseAsync();
 
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -445,10 +446,10 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = NewSession(mockConn.Object);
                 var tx = await session.BeginTransactionAsync();
-                session.Dispose();
+                await session.CloseAsync();
 
                 mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -458,12 +459,31 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.IsOpen).Returns(true);
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
-                session.Dispose();
+                await session.CloseAsync();
 
-                mockConn.Verify(x => x.Sync(), Times.Once);
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
+            [Fact]
+            public async void ShouldAllowDisposeAfterCloseAsync()
+            {
+                // Given
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.RunAsync("lalal");
+
+                // When
+                await session.CloseAsync();
+                session.Dispose();
+
+                // Then
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
+                mockConn.Verify(x => x.Close(), Times.Never);
+            }
         }
 
         private class TestConnectionProvider : IConnectionProvider

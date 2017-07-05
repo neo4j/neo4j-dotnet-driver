@@ -14,7 +14,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -28,6 +31,34 @@ namespace Neo4j.Driver.Tests
 {
     public class TransactionTests
     {
+        private static Expression<Action<IConnection>> RunRollback => x => x.Run("ROLLBACK", null, null, false);
+
+        private static Expression<Action<IConnection>> RunCommit => x => x.Run("COMMIT", null,
+            It.IsAny<IMessageResponseCollector>(), true);
+
+        private static Expression<Action<IConnection>> RunBegin(IDictionary<string, object> parameters = null)
+        {
+          return x => x.Run("BEGIN", parameters, null, true);
+        }
+
+        private static Expression<Action<IConnection>> RunCypher(string statement=null)
+        {
+            if (statement == null)
+            {
+                statement = It.IsAny<string>();
+            }
+            return x => x.Run(statement, new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true);
+        }
+
+        private static Expression<Action<IConnection>> RunCypherAsync(string statement = null)
+        {
+            if (statement == null)
+            {
+                statement = It.IsAny<string>();
+            }
+            return x => x.Run(statement, new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true);
+        }
+
         public class Constructor
         {
             [Fact]
@@ -35,8 +66,8 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
-
-                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                
+                mockConn.Verify(RunBegin(), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -46,7 +77,7 @@ namespace Neo4j.Driver.Tests
                 var bookmark = Bookmark.From((string)null);
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
-                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(RunBegin(), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -58,7 +89,7 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
                 IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
-                mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
+                mockConn.Verify(RunBegin(paramters), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -82,7 +113,7 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object);
                 tx.SyncBookmark(null);
 
-                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(RunBegin(), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -94,7 +125,7 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
                 tx.SyncBookmark(bookmark);
 
-                mockConn.Verify(x => x.Run("BEGIN", null, null, true), Times.Once);
+                mockConn.Verify(RunBegin(), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -108,7 +139,7 @@ namespace Neo4j.Driver.Tests
 
                 IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
 
-                mockConn.Verify(x => x.Run("BEGIN", paramters, null, true), Times.Once);
+                mockConn.Verify(x => RunBegin(paramters), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }
@@ -123,7 +154,7 @@ namespace Neo4j.Driver.Tests
 
                 tx.Run("lalala");
 
-                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true), Times.Once);
+                mockConn.Verify(RunCypher("lalala"), Times.Once);
                 mockConn.Verify(x => x.Send(), Times.Once);
             }
 
@@ -135,7 +166,7 @@ namespace Neo4j.Driver.Tests
 
                 try
                 {
-                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
+                    mockConn.Setup(RunCypher())
                         .Throws<Neo4jException>();
                     tx.Run("lalala");
                 }
@@ -154,7 +185,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
                    
-                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
+                mockConn.Setup(RunCypher())
                         .Throws<Neo4jException>();
 
                 var error = Xunit.Record.Exception(() => tx.Run("ttt"));
@@ -183,7 +214,7 @@ namespace Neo4j.Driver.Tests
 
                 await tx.RunAsync("lalala");
 
-                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true), Times.Once);
+                mockConn.Verify(RunCypherAsync("lalala"), Times.Once);
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
 
@@ -195,7 +226,7 @@ namespace Neo4j.Driver.Tests
 
                 try
                 {
-                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
+                    mockConn.Setup(RunCypherAsync())
                         .Throws<Neo4jException>();
                     await tx.RunAsync("lalala");
                 }
@@ -214,7 +245,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
+                mockConn.Setup(RunCypherAsync())
                     .Throws<Neo4jException>();
 
                 var error = await Xunit.Record.ExceptionAsync(() => tx.RunAsync("ttt"));
@@ -245,7 +276,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.ResetCalls();
                 tx.Success();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("COMMIT", null, It.IsAny<IMessageResponseCollector>(), true), Times.Once);
+                mockConn.Verify(RunCommit, Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
                 mockHandler.Verify(x=>x.OnTransactionDispose(), Times.Once);
             }
@@ -262,7 +293,8 @@ namespace Neo4j.Driver.Tests
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Failure();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                
+                mockConn.Verify(RunRollback, Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
                 mockHandler.Verify(x => x.OnTransactionDispose(), Times.Once);
             }
@@ -276,7 +308,7 @@ namespace Neo4j.Driver.Tests
 
                 mockConn.ResetCalls();
                 tx.Dispose();
-                mockConn.Verify(x => x.Run("ROLLBACK", null, null, false), Times.Once);
+                mockConn.Verify(RunRollback, Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
                 mockHandler.Verify(x => x.OnTransactionDispose(), Times.Once);
             }
@@ -295,6 +327,67 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class CloseAsyncMethod
+        {
+            [Fact]
+            public async void ShouldCommitOnSuccess()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+
+                mockConn.ResetCalls();
+                await tx.CommitAsync();
+                mockConn.Verify(RunCommit, Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldRollbackOnFailure()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+
+                mockConn.ResetCalls();
+                await tx.RollbackAsync();
+                mockConn.Verify(RunRollback, Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldNotReturnConnectionToPoolTwice()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+
+                mockConn.ResetCalls();
+                await tx.CommitAsync();
+                await tx.RollbackAsync();
+                mockConn.Verify(RunCommit, Times.Once);
+                mockConn.Verify(RunRollback, Times.Never);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldNotDisposeIfAlreadyClosed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+
+                mockConn.ResetCalls();
+                await tx.CommitAsync();
+                tx.Dispose();
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDispose(), Times.Never);
+            }
+        }
+
         public class MarkToClosedMethod
         {
             [Fact]
@@ -306,7 +399,7 @@ namespace Neo4j.Driver.Tests
 
                 tx.MarkToClose();
 
-                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>()), Times.Never);
+                mockConn.Verify(RunRollback, Times.Never);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -323,7 +416,7 @@ namespace Neo4j.Driver.Tests
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Cannot run more statements in this transaction");
 
-                mockConn.Verify(x => x.Run("ROLLBACK", null, It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>()), Times.Never);
+                mockConn.Verify(RunRollback, Times.Never);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
         }
