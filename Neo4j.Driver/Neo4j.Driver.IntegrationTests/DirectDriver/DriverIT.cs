@@ -224,7 +224,7 @@ namespace Neo4j.Driver.IntegrationTests
                 DriverStatisticsCollector = statisticsCollector,
                 ConnectionTimeout = Config.Infinite,
                 EncryptionLevel = EncryptionLevel.Encrypted,
-                MaxIdleConnectionPoolSize = 50,
+                MaxIdleConnectionPoolSize = 20,
                 MaxConnectionPoolSize = 50,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
             });
@@ -266,6 +266,7 @@ namespace Neo4j.Driver.IntegrationTests
             driver.Dispose();
 
             var st = ConnectionPoolStatistics.Read(statisticsCollector.CollectStatistics());
+            Output.WriteLine(st.ReportStatistics().ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");

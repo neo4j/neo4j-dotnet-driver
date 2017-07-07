@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Internal
         public long ConnToCreate => _connToCreate;
         public long ConnFailedToCreate => _connFailedToCreate;
         public long ConnToClose => _connToClose;
-//        public string PoolContent => _pool?.ToString() ?? _poolContent;
+        public string PoolContent => _pool?.ToString() ?? _poolContent;
 
         private long _connCreated;
         private long _connClosed;
@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly int _inUseConns = 0;
         private readonly int _availableConns = 0;
-//        private readonly string _poolContent = "The connection pool has been disposed";
+        private readonly string _poolContent = "The connection pool has been disposed";
 
         private ConnectionPool _pool;
 
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal
 
             _inUseConns = statistics[nameof(InUseConns)].As<int>();
             _availableConns = statistics[nameof(AvailableConns)].As<int>();
-//            _poolContent = statistics[nameof(PoolContent)].ToString();
+            _poolContent = statistics[nameof(PoolContent)].ToString();
         }
 
         public void IncrementConnectionCreated()

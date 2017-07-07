@@ -76,7 +76,7 @@ namespace Neo4j.Driver.V1
         /// <br></br>
         /// <item><see cref="MaxIdleConnectionPoolSize"/> : <c>10</c> </item>
         /// <item><see cref="MaxConnectionPoolSize"/> : <c>20</c> </item>
-        /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>2mins</c> </item>
+        /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
         /// <item><see cref="ConnectionIdleTimeout"/>: <c>Infinite(-1ms)</c></item>
         /// <br></br>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
@@ -140,7 +140,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets or sets the maximum waiting time to acquire an idle connection from the pool when no new connection is allowed to create.
         /// </summary>
-        public TimeSpan ConnectionAcquisitionTimeout { get; set; } = TimeSpan.FromMinutes(2);
+        public TimeSpan ConnectionAcquisitionTimeout { get; set; } = TimeSpan.FromMinutes(1);
 
         /// <summary>
         /// Gets or sets the connection timeout when establishing a connection with a server.

@@ -112,7 +112,7 @@ namespace Neo4j.Driver.V1
             var connectionPoolSettings = new ConnectionPoolSettings(config);
 
             var logger = config.Logger;
-            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, InitialTxRetryDelayMs);
+            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 
             IConnectionProvider connectionProvider = null;
             switch (parsedUri.Scheme.ToLower())

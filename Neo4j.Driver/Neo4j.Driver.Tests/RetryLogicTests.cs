@@ -43,18 +43,22 @@ namespace Neo4j.Driver.Tests
         [InlineData(20)]
         public void ShouldRetry(int index)
         {
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5));
-            Parallel.For(0, index, i=>Retry(i, retryLogic));
+            var mockLogger = new Mock<ILogger>();
+            mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
+            Parallel.For(0, index, i => Retry(i, retryLogic));
+
+            mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.AtLeast(2 * index));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
         {
             var timer = new Stopwatch();
             timer.Start();
-            var e = Record.Exception(() => retryLogic.Retry(() =>
+            var e = Record.Exception(() => retryLogic.Retry<int>(() =>
             {
                 var errorMessage = $"Thread {index} Failed at {timer.Elapsed}";
-                return RetryResult<int>.FromError(new SessionExpiredException(errorMessage));
+                throw new SessionExpiredException(errorMessage);
             }));
             timer.Stop();
 
@@ -72,17 +76,12 @@ namespace Neo4j.Driver.Tests
         {
             var mockLogger = new Mock<ILogger>();
             mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30));
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
             var timer = new Stopwatch();
             timer.Start();
             var e = Record.Exception(() => retryLogic.Retry<int>(() =>
             {
-                var error = ParseServerException(errorCode, "an error");
-                if (error.IsRetriableError())
-                {
-                    return RetryResult<int>.FromError(error);
-                }
-                throw error;
+                throw ParseServerException(errorCode, "an error");
             }));
             timer.Stop();
             e.Should().BeOfType<TransientException>();

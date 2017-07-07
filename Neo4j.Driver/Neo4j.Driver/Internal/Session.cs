@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null) :base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null) : base(logger)
         {
             _connectionProvider = provider;
             _retryLogic = retryLogic;
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal
 
                 _connection = _connectionProvider.Acquire(_defaultMode);
                 var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
-                    ()=>_connection.ReceiveOne(), _connection.Server, this);
+                    () => _connection.ReceiveOne(), _connection.Server, this);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
 
@@ -139,29 +139,21 @@ namespace Neo4j.Driver.Internal
 
         private T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work)
         {
-            return TryExecute(()=>_retryLogic.Retry(() =>
+            return TryExecute(() => _retryLogic.Retry(() =>
             {
-                try
+                using (var tx = BeginTransactionWithoutLogging(mode))
                 {
-                    using (var tx = BeginTransactionWithoutLogging(mode))
+                    try
                     {
-                        try
-                        {
-                            var result = work(tx);
-                            tx.Success();
-                            return RetryResult<T>.FromResult(result);
-                        }
-                        catch
-                        {
-                            tx.Failure();
-                            throw;
-                        }
+                        var result = work(tx);
+                        tx.Success();
+                        return result;
                     }
-                }
-                catch (Exception e) when (e.IsRetriableError())
-                {
-                    _logger.Info("Transaction failed and will be retried.", e);
-                    return RetryResult<T>.FromError(e);
+                    catch
+                    {
+                        tx.Failure();
+                        throw;
+                    }
                 }
             }));
         }
@@ -183,7 +175,7 @@ namespace Neo4j.Driver.Internal
                 }
                 else
                 {
-                    throw new ObjectDisposedException(GetType().Name,"Failed to dispose this seesion as it has already been disposed.");
+                    throw new ObjectDisposedException(GetType().Name, "Failed to dispose this seesion as it has already been disposed.");
                 }
 
                 DisposeTransaction();
@@ -194,7 +186,7 @@ namespace Neo4j.Driver.Internal
 
         public Task CloseAsync()
         {
-            return TryExecuteAsync(async() =>
+            return TryExecuteAsync(async () =>
             {
                 if (_isOpen)
                 {
@@ -417,7 +409,7 @@ namespace Neo4j.Driver.Internal
                                           "and retry your statement in another new session.");
             }
         }
- 
+
         private async Task<ITransactionAsync> BeginTransactionWithoutLoggingAsync(AccessMode mode)
         {
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
@@ -431,7 +423,7 @@ namespace Neo4j.Driver.Internal
 
         public Task<ITransactionAsync> BeginTransactionAsync()
         {
-            return TryExecuteAsync(async()=> await BeginTransactionWithoutLoggingAsync(_defaultMode));
+            return TryExecuteAsync(async () => await BeginTransactionWithoutLoggingAsync(_defaultMode));
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<ITransactionAsync, Task> work)
@@ -446,27 +438,21 @@ namespace Neo4j.Driver.Internal
 
         private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransactionAsync, Task<T>> work)
         {
-            return TryExecuteAsync(async() => await _retryLogic.RetryAsync(async() =>
+            return TryExecuteAsync(async () => await _retryLogic.RetryAsync(async () =>
             {
                 ITransactionAsync tx = await BeginTransactionWithoutLoggingAsync(mode).ConfigureAwait(false);
-                try
                 {
                     try
                     {
                         var result = await work(tx).ConfigureAwait(false);
                         await tx.CommitAsync().ConfigureAwait(false);
-                        return RetryResult<T>.FromResult(result);
+                        return result;
                     }
                     catch
                     {
                         await tx.RollbackAsync().ConfigureAwait(false);
                         throw;
                     }
-                }
-                catch (Exception e) when (e.IsRetriableError())
-                {
-                    _logger.Info("Transaction failed and will be retried.", e);
-                    return RetryResult<T>.FromError(e);
                 }
             }).ConfigureAwait(false));
         }

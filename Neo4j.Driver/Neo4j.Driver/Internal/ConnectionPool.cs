@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -40,7 +41,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly ILogger _logger;
 
-        private readonly ConcurrentQueue<IPooledConnection> _availableConnections = new ConcurrentQueue<IPooledConnection>();
+        private readonly BlockingCollection<IPooledConnection> _availableConnections = new BlockingCollection<IPooledConnection>();
         private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
 
         private volatile bool _disposeCalled;
@@ -84,7 +85,7 @@ namespace Neo4j.Driver.Internal
 
         internal ConnectionPool(
             IConnection connection,
-            ConcurrentQueue<IPooledConnection> availableConnections = null,
+            BlockingCollection<IPooledConnection> availableConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ILogger logger = null,
             ConnectionPoolSettings settings = null)
@@ -92,7 +93,7 @@ namespace Neo4j.Driver.Internal
                   logger)
         {
             _fakeConnection = connection;
-            _availableConnections = availableConnections ?? new ConcurrentQueue<IPooledConnection>();
+            _availableConnections = availableConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
         }
 
@@ -192,7 +193,7 @@ namespace Neo4j.Driver.Internal
                 }
                 IPooledConnection connection;
 
-                if (!_availableConnections.TryDequeue(out connection))
+                if (!_availableConnections.TryTake(out connection))
                 {
                     connection = CreateNewPooledConnection();
                 }
@@ -225,30 +226,32 @@ namespace Neo4j.Driver.Internal
                     ThrowObjectDisposedException();
                 }
 
-                var retry = new ExponentialBackoffRetryLogic(
-                    _connAcquisitionTimeout, InitialConnAcquisitionDelayMs, true);
-                IPooledConnection connection = await retry.RetryAsync(async () =>
+                IPooledConnection connection = null;
+                if (!_availableConnections.TryTake(out connection))
                 {
-                    if (_availableConnections.TryDequeue(out connection))
+                    Stopwatch connAcquisitionTimer = new Stopwatch();
+                    connAcquisitionTimer.Start();
+                    do
                     {
-                        return RetryResult<IPooledConnection>.FromResult(connection);
-                    }
-                    else if (_poolSize < _maxPoolSize)
-                    {
-                        connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                        return RetryResult<IPooledConnection>.FromResult(connection);
-                    }
-                    else
-                    {
-                        return RetryResult<IPooledConnection>.FromError();
-                    }
-                }).ConfigureAwait(false);
+                        if (_poolSize < _maxPoolSize)
+                        {
+                            connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                            break;
+                        }
+                        // The pool is full at this moment
+                        if (_availableConnections.TryTake(out connection, TimeSpan.FromSeconds(5)))
+                        {
+                            break;
+                        }
+                    } while (connAcquisitionTimer.ElapsedMilliseconds < _connAcquisitionTimeout.TotalMilliseconds);
+                    connAcquisitionTimer.Stop();
+                }
 
                 if (!connection.IsOpen || HasBeenIdleForTooLong(connection))
-                    {
-                        DestoryConnection(connection);
-                        return await AcquireAsync().ConfigureAwait(false);
-                    }
+                {
+                    DestoryConnection(connection);
+                    return await AcquireAsync().ConfigureAwait(false);
+                }
 
                 _inUseConnections.TryAdd(connection);
                 if (_disposeCalled)
@@ -351,11 +354,11 @@ namespace Neo4j.Driver.Internal
                         {
                             connection.IdleTimer.Start();
                         }
-                        _availableConnections.Enqueue(connection);
+                        _availableConnections.Add(connection);
                     }
 
                     // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                    if (_disposeCalled && _availableConnections.TryDequeue(out connection))
+                    if (_disposeCalled && _availableConnections.TryTake(out connection))
                     {
                         DestoryConnection(connection);
                     }
@@ -395,11 +398,11 @@ namespace Neo4j.Driver.Internal
                         {
                             connection.IdleTimer.Start();
                         }
-                        _availableConnections.Enqueue(connection);
+                        _availableConnections.Add(connection);
                     }
 
                     // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                    if (_disposeCalled && _availableConnections.TryDequeue(out connection))
+                    if (_disposeCalled && _availableConnections.TryTake(out connection))
                     {
                         DestoryConnection(connection);
                     }
@@ -434,7 +437,7 @@ namespace Neo4j.Driver.Internal
                 }
 
                 IPooledConnection connection;
-                while (_availableConnections.TryDequeue(out connection))
+                while (_availableConnections.TryTake(out connection))
                 {
                     Logger?.Debug($"Disposing Available Connection {connection.Id}");
                     DestoryConnection(connection);
