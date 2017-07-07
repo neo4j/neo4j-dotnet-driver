@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotThrowExceptionWhenIdlePoolSizeReached()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(2, Config.Infinite);
+                var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxIdleConnectionPoolSize = 2});
                 var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
                 pool.Acquire();
                 pool.Acquire();
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotExceedIdleLimit()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(2, Config.Infinite);
+                var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxIdleConnectionPoolSize = 2});
                 var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
 
                 var conns = new List<IConnection>();
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAcquireFromPoolIfAvailable()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(2, Config.Infinite);
+                var connectionPoolSettings = new ConnectionPoolSettings(new Config { MaxIdleConnectionPoolSize = 2 });
                 var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
 
                 for (var i = 0; i < 4; i++)
@@ -226,7 +226,8 @@ namespace Neo4j.Driver.Tests
                 var conns = new ConcurrentQueue<IPooledConnection>();
                 conns.Enqueue(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
-                var poolSettings = new ConnectionPoolSettings(2, enableIdleTooLongTest);
+                var poolSettings = new ConnectionPoolSettings(
+                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest});
                 var pool = new ConnectionPool(MockedConnection, conns, settings:poolSettings);
 
                 pool.NumberOfAvailableConnections.Should().Be(1);
@@ -259,7 +260,8 @@ namespace Neo4j.Driver.Tests
                 var conns = new ConcurrentQueue<IPooledConnection>();
                 conns.Enqueue(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
-                var poolSettings = new ConnectionPoolSettings(2, enableIdleTooLongTest);
+                var poolSettings = new ConnectionPoolSettings(
+                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest });
                 var pool = new ConnectionPool(MockedConnection, conns, settings: poolSettings);
 
                 pool.NumberOfAvailableConnections.Should().Be(1);
@@ -491,7 +493,8 @@ namespace Neo4j.Driver.Tests
                 var inUseConns = new ConcurrentSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
-                var poolSettings = new ConnectionPoolSettings(2, enableIdleTooLongTest);
+                var poolSettings = new ConnectionPoolSettings(
+                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest }); ;
                 var pool = new ConnectionPool(null, null, inUseConns, settings:poolSettings);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);

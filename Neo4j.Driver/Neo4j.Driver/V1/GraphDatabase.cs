@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
+using static Neo4j.Driver.Internal.ExponentialBackoffRetryLogic;
 
 namespace Neo4j.Driver.V1
 {
@@ -111,7 +112,7 @@ namespace Neo4j.Driver.V1
             var connectionPoolSettings = new ConnectionPoolSettings(config);
 
             var logger = config.Logger;
-            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
+            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, InitialTxRetryDelayMs);
 
             IConnectionProvider connectionProvider = null;
             switch (parsedUri.Scheme.ToLower())

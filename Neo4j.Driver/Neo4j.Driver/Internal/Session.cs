@@ -141,19 +141,27 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(()=>_retryLogic.Retry(() =>
             {
-                using (var tx = BeginTransactionWithoutLogging(mode))
+                try
                 {
-                    try
+                    using (var tx = BeginTransactionWithoutLogging(mode))
                     {
-                        var result = work(tx);
-                        tx.Success();
-                        return result;
+                        try
+                        {
+                            var result = work(tx);
+                            tx.Success();
+                            return RetryResult<T>.FromResult(result);
+                        }
+                        catch
+                        {
+                            tx.Failure();
+                            throw;
+                        }
                     }
-                    catch
-                    {
-                        tx.Failure();
-                        throw;
-                    }
+                }
+                catch (Exception e) when (e.IsRetriableError())
+                {
+                    _logger.Info("Transaction failed and will be retried.", e);
+                    return RetryResult<T>.FromError(e);
                 }
             }));
         }
@@ -441,18 +449,24 @@ namespace Neo4j.Driver.Internal
             return TryExecuteAsync(async() => await _retryLogic.RetryAsync(async() =>
             {
                 ITransactionAsync tx = await BeginTransactionWithoutLoggingAsync(mode).ConfigureAwait(false);
+                try
                 {
                     try
                     {
                         var result = await work(tx).ConfigureAwait(false);
                         await tx.CommitAsync().ConfigureAwait(false);
-                        return result;
+                        return RetryResult<T>.FromResult(result);
                     }
                     catch
                     {
                         await tx.RollbackAsync().ConfigureAwait(false);
                         throw;
                     }
+                }
+                catch (Exception e) when (e.IsRetriableError())
+                {
+                    _logger.Info("Transaction failed and will be retried.", e);
+                    return RetryResult<T>.FromError(e);
                 }
             }).ConfigureAwait(false));
         }

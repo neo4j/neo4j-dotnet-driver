@@ -55,6 +55,12 @@ namespace Neo4j.Driver.Internal
             return error;
         }
 
+        public static bool IsRetriableError(this Exception error)
+        {
+            return error is SessionExpiredException || error.IsRetriableTransientError() ||
+                   error is ServiceUnavailableException;
+        }
+
         public static bool IsRetriableTransientError(this Exception error)
         {
             return error is TransientException &&

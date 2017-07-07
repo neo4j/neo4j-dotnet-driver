@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.ExponentialBackoffRetryLogic;
 using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal
@@ -29,8 +30,12 @@ namespace Neo4j.Driver.Internal
     {
         private readonly Uri _uri;
 
+        private int _poolSize = 0;
+        private readonly int _maxPoolSize;
         private readonly int _idlePoolSize;
-        private readonly TimeSpan _connectionIdleTimeout;
+        private readonly TimeSpan _conneIdleTimeout;
+        private readonly TimeSpan _connAcquisitionTimeout;
+
         private readonly ConnectionSettings _connectionSettings;
 
         private readonly ILogger _logger;
@@ -48,9 +53,6 @@ namespace Neo4j.Driver.Internal
         internal int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
 
-        private readonly int _maxPoolSize = 20;
-        private int _poolSize = 0;
-
         internal bool DisposeCalled
         {
             set => _disposeCalled = value;
@@ -65,8 +67,10 @@ namespace Neo4j.Driver.Internal
         {
             _uri = uri;
             _connectionSettings = connectionSettings;
-            _connectionIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
+            _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
+            _conneIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
+            _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
 
             _logger = logger;
 
@@ -98,6 +102,7 @@ namespace Neo4j.Driver.Internal
             try
             {
                 _statistics?.IncrementConnectionToCreate();
+                Interlocked.Increment(ref _poolSize);
 
                 conn = _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, this)
@@ -115,6 +120,10 @@ namespace Neo4j.Driver.Internal
                 if (conn != null)
                 {
                     DestoryConnection(conn);
+                }
+                else
+                {
+                    Interlocked.Decrement(ref _poolSize);
                 }
                 throw;
             }
@@ -156,7 +165,6 @@ namespace Neo4j.Driver.Internal
         private void DestoryConnection(IPooledConnection conn)
         {
             Interlocked.Decrement(ref _poolSize);
-
             _statistics?.IncrementConnectionToClose();
 
             conn.Destroy();
@@ -217,22 +225,22 @@ namespace Neo4j.Driver.Internal
                     ThrowObjectDisposedException();
                 }
 
-
-                var retryLogic = new ExponentialBackoffRetryLogicV2(TimeSpan.FromMinutes(2), TimeSpan.FromMilliseconds(50));
-                IPooledConnection connection = await retryLogic.RetryAsync(async () =>
+                var retry = new ExponentialBackoffRetryLogic(
+                    _connAcquisitionTimeout, InitialConnAcquisitionDelayMs, true);
+                IPooledConnection connection = await retry.RetryAsync(async () =>
                 {
                     if (_availableConnections.TryDequeue(out connection))
                     {
-                        return new Tuple<IPooledConnection, bool>(connection, true);
+                        return RetryResult<IPooledConnection>.FromResult(connection);
                     }
                     else if (_poolSize < _maxPoolSize)
                     {
                         connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                        return new Tuple<IPooledConnection, bool>(connection, true);
+                        return RetryResult<IPooledConnection>.FromResult(connection);
                     }
                     else
                     {
-                        return new Tuple<IPooledConnection, bool>(null, false);
+                        return RetryResult<IPooledConnection>.FromError();
                     }
                 }).ConfigureAwait(false);
 
@@ -258,7 +266,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsConnectionIdleDetectionEnabled()
         {
-            return _connectionIdleTimeout.TotalMilliseconds >= 0;
+            return _conneIdleTimeout.TotalMilliseconds >= 0;
         }
 
         private bool HasBeenIdleForTooLong(IPooledConnection connection)
@@ -267,7 +275,7 @@ namespace Neo4j.Driver.Internal
             {
                 return false;
             }
-            if (connection.IdleTimer.ElapsedMilliseconds > _connectionIdleTimeout.TotalMilliseconds)
+            if (connection.IdleTimer.ElapsedMilliseconds > _conneIdleTimeout.TotalMilliseconds)
             {
                 return true;
             }
@@ -313,7 +321,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsPoolFull()
         {
-            return _availableConnections.Count >= _idlePoolSize && _idlePoolSize != Config.InfiniteMaxIdleSessionPoolSize;
+            return _availableConnections.Count >= _idlePoolSize;
         }
 
         public void Release(IPooledConnection connection)

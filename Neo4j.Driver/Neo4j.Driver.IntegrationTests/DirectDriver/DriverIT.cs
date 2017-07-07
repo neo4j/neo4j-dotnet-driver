@@ -159,7 +159,7 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerTheory]
-        [InlineData(10)]
+        [InlineData(50)]
         [InlineData(5000)]
         //        [InlineData(50000)] leave this to a long dedicated build
         public void SoakRun(int threadCount)
@@ -214,7 +214,7 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerTheory]
-        [InlineData(10)]
+        [InlineData(50)]
         [InlineData(5000)]
         public void SoakRunAsync(int threadCount)
         {
@@ -224,7 +224,9 @@ namespace Neo4j.Driver.IntegrationTests
                 DriverStatisticsCollector = statisticsCollector,
                 ConnectionTimeout = Config.Infinite,
                 EncryptionLevel = EncryptionLevel.Encrypted,
-                MaxIdleSessionPoolSize = 20
+                MaxIdleConnectionPoolSize = 50,
+                MaxConnectionPoolSize = 50,
+                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
             });
 
             string[] queries =

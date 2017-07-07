@@ -23,20 +23,30 @@ namespace Neo4j.Driver.Internal
     internal class ConnectionPoolSettings
     {
         public int MaxIdleConnectionPoolSize { get; }
-        public IStatisticsCollector StatisticsCollector { get; }
+        public int MaxConnectionPoolSize { get; }
+        public TimeSpan ConnectionAcquisitionTimeout { get; }
         public TimeSpan ConnectionIdleTimeout { get; }
-        
+
+        public IStatisticsCollector StatisticsCollector { get; }
 
         public ConnectionPoolSettings(Config config)
-            :this(config.MaxIdleSessionPoolSize, config.ConnectionIdleTimeout, config.DriverStatisticsCollector)
+            :this(config.MaxIdleConnectionPoolSize, config.MaxConnectionPoolSize,
+                 config.ConnectionAcquisitionTimeout, config.ConnectionIdleTimeout, 
+                 config.DriverStatisticsCollector)
         {
         }
 
-        internal ConnectionPoolSettings(int maxIdleConnectionPoolSize, TimeSpan connectionIdleTimeout, IStatisticsCollector statisticsCollector=null)
+        internal ConnectionPoolSettings(int maxIdleConnectionPoolSize, int maxConnectionPoolSize,
+            TimeSpan connectionAcquisitionTimeout, TimeSpan connectionIdleTimeout, 
+            IStatisticsCollector statisticsCollector=null)
         {
             Throw.ArgumentNullException.IfNull(maxIdleConnectionPoolSize, nameof(maxIdleConnectionPoolSize));
+            Throw.ArgumentNullException.IfNull(maxConnectionPoolSize, nameof(maxConnectionPoolSize));
+            Throw.ArgumentNullException.IfNull(connectionAcquisitionTimeout, nameof(connectionAcquisitionTimeout));
             Throw.ArgumentNullException.IfNull(connectionIdleTimeout, nameof(connectionIdleTimeout));
             MaxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
+            MaxConnectionPoolSize = maxConnectionPoolSize;
+            ConnectionAcquisitionTimeout = connectionAcquisitionTimeout;
             ConnectionIdleTimeout = connectionIdleTimeout;
             StatisticsCollector = statisticsCollector;
         }

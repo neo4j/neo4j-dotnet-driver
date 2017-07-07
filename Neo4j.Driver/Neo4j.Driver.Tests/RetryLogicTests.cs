@@ -43,30 +43,26 @@ namespace Neo4j.Driver.Tests
         [InlineData(20)]
         public void ShouldRetry(int index)
         {
-            var mockLogger = new Mock<ILogger>();
-            mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5));
             Parallel.For(0, index, i=>Retry(i, retryLogic));
-
-            mockLogger.Verify(l=>l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.AtLeast(5*index));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
         {
             var timer = new Stopwatch();
             timer.Start();
-            var e = Record.Exception(() => retryLogic.Retry<int>(() =>
+            var e = Record.Exception(() => retryLogic.Retry(() =>
             {
                 var errorMessage = $"Thread {index} Failed at {timer.Elapsed}";
-                throw new SessionExpiredException(errorMessage);
+                return RetryResult<int>.FromError(new SessionExpiredException(errorMessage));
             }));
             timer.Stop();
 
             var error = e as AggregateException;
             var innerErrors = error.Flatten().InnerExceptions;
 
-            innerErrors.Count.Should().BeGreaterOrEqualTo(5);
-            timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(30);
+            innerErrors.Count.Should().BeGreaterOrEqualTo(2);
+            timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(5);
         }
 
         [Theory]
@@ -76,12 +72,17 @@ namespace Neo4j.Driver.Tests
         {
             var mockLogger = new Mock<ILogger>();
             mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30));
             var timer = new Stopwatch();
             timer.Start();
             var e = Record.Exception(() => retryLogic.Retry<int>(() =>
             {
-                throw ParseServerException(errorCode, "an error");
+                var error = ParseServerException(errorCode, "an error");
+                if (error.IsRetriableError())
+                {
+                    return RetryResult<int>.FromError(error);
+                }
+                throw error;
             }));
             timer.Stop();
             e.Should().BeOfType<TransientException>();
