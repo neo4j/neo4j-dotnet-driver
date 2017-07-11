@@ -114,6 +114,7 @@
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="BookmarkTests.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
+    <Compile Include="Result\SummaryCollectorTests.cs" />
     <Compile Include="Result\ResultReaderBuilderTests.cs" />
     <Compile Include="Result\StatementResultReaderTests.cs" />
     <Compile Include="TestUtil\NetworkExtensionsTests.cs" />

@@ -169,17 +169,11 @@ namespace Neo4j.Driver.Internal
             {
                 if (_isOpen)
                 {
-                    // This will not protect the session being disposed concurrently
-                    // a.k.a. Session is not thread-safe!
+                    // This will protect the session being disposed twice
                     _isOpen = false;
+                    DisposeTransaction();
+                    DisposeSessionResult();
                 }
-                else
-                {
-                    throw new ObjectDisposedException(GetType().Name, "Failed to dispose this seesion as it has already been disposed.");
-                }
-
-                DisposeTransaction();
-                DisposeSessionResult();
             });
             base.Dispose(true);
         }
@@ -190,17 +184,11 @@ namespace Neo4j.Driver.Internal
             {
                 if (_isOpen)
                 {
-                    // This will not protect the session being disposed concurrently
-                    // a.k.a. Session is not thread-safe!
+                    // This will protect the session being disposed twice
                     _isOpen = false;
+                    await DisposeTransactionAsync().ConfigureAwait(false);
+                    await DisposeSessionResultAsync().ConfigureAwait(false);
                 }
-                else
-                {
-                    throw new ObjectDisposedException(GetType().Name, "Failed to dispose this seesion as it has already been disposed.");
-                }
-
-                await DisposeTransactionAsync().ConfigureAwait(false);
-                await DisposeSessionResultAsync().ConfigureAwait(false);
             });
         }
 
