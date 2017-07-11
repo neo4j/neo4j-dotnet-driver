@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
         private readonly int _idlePoolSize;
-        private readonly TimeSpan _conneIdleTimeout;
+        private readonly TimeSpan _connIdleTimeout;
         private readonly TimeSpan _connAcquisitionTimeout;
 
         private readonly ConnectionSettings _connectionSettings;
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal
             _connectionSettings = connectionSettings;
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
-            _conneIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
+            _connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
 
             _logger = logger;
@@ -269,7 +269,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsConnectionIdleDetectionEnabled()
         {
-            return _conneIdleTimeout.TotalMilliseconds >= 0;
+            return _connIdleTimeout.TotalMilliseconds >= 0;
         }
 
         private bool HasBeenIdleForTooLong(IPooledConnection connection)
@@ -278,7 +278,7 @@ namespace Neo4j.Driver.Internal
             {
                 return false;
             }
-            if (connection.IdleTimer.ElapsedMilliseconds > _conneIdleTimeout.TotalMilliseconds)
+            if (connection.IdleTimer.ElapsedMilliseconds > _connIdleTimeout.TotalMilliseconds)
             {
                 return true;
             }
