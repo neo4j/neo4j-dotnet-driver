@@ -121,10 +121,7 @@ namespace Neo4j.Driver.Tests
                 var task = AssertGetExpectResults(result, recordValues.Count, recordValues);
                 task.Wait();
             }
-        }
-        
-        public class InvalidateResultMethod
-        {
+
             [Fact]
             public void ShouldStopStreamingWhenResultIsInvalid()
             {
@@ -138,7 +135,7 @@ namespace Neo4j.Driver.Tests
                     }
                     else
                     {
-                        builder.CollectRecord(new object[] {123 + i});
+                        builder.CollectRecord(new object[] { 123 + i });
                     }
 
                     return Task.CompletedTask;

@@ -17,47 +17,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using static Neo4j.Driver.V1.StatementType;
-using System;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal abstract class BuilderBase : IMessageResponseCollector
+    internal class SummaryCollector
     {
-        protected readonly List<string> _keys = new List<string>();
-        protected readonly SummaryBuilder _summaryBuilder;
-        protected readonly IResultResourceHandler _resourceHandler;
+        private readonly SummaryBuilder _summaryBuilder;
 
-        protected BuilderBase(Statement statement, IServerInfo server, IResultResourceHandler resourceHandler = null)
+        public SummaryCollector(Statement statement, IServerInfo server)
         {
             _summaryBuilder = new SummaryBuilder(statement, server);
-            _resourceHandler = resourceHandler;
         }
-        
-        public abstract void CollectRecord(object[] fields);
 
-        public void CollectFields(IDictionary<string, object> meta)
+        public void CollectWithFields(IDictionary<string, object> meta)
         {
-            if (meta == null)
-            {
-                return;
-            }
-            CollectKeys(meta, "fields");
             CollectResultAvailableAfter(meta, "result_available_after");
         }
 
-        public void CollectBookmark(IDictionary<string, object> meta)
+        public void Collect(IDictionary<string, object> meta)
         {
-            throw new NotSupportedException(
-                $"Should not get a bookmark on a result. bookmark = {meta[Bookmark.BookmarkKey].As<string>()}");
-        }
-
-        public virtual void CollectSummary(IDictionary<string, object> meta)
-        {
-            if (meta == null)
-            {
-                return;
-            }
             CollectType(meta, "type");
             CollectCounters(meta, "stats");
             CollectPlan(meta, "plan");
@@ -66,26 +45,9 @@ namespace Neo4j.Driver.Internal.Result
             CollectResultConsumedAfter(meta, "result_consumed_after");
         }
 
-        public abstract void DoneSuccess();
-
-        public abstract void DoneFailure();
-
-        public abstract void DoneIgnored();
-
-        private void CollectKeys(IDictionary<string, object> meta, string name)
+        public IResultSummary Build()
         {
-            if (!meta.ContainsKey(name))
-            {
-                return;
-            }
-
-            if (meta.ContainsKey(name))
-            {
-                foreach (var key in meta[name].As<List<string>>())
-                {
-                    _keys.Add(key);
-                }
-            }
+            return _summaryBuilder.Build();
         }
 
         private void CollectType(IDictionary<string, object> meta, string name)
@@ -130,7 +92,6 @@ namespace Neo4j.Driver.Internal.Result
             _summaryBuilder.Plan = CollectPlan(planDictionary);
         }
 
-
         private static IPlan CollectPlan(IDictionary<string, object> planDictionary)
         {
             if (planDictionary == null || planDictionary.Count == 0)
@@ -171,7 +132,6 @@ namespace Neo4j.Driver.Internal.Result
                 .ToList();
             return new ProfiledPlan(operationType, args, identifiers.ToList(), childPlans, dbHits, rows);
         }
-
 
         private void CollectProfile(IDictionary<string, object> meta, string name)
         {
@@ -248,6 +208,5 @@ namespace Neo4j.Driver.Internal.Result
                     throw new ClientException("Unknown statement type: `" + type + "`.");
             }
         }
-
     }
 }
