@@ -40,10 +40,6 @@ namespace Neo4j.Driver.Internal
             TimeSpan connectionAcquisitionTimeout, TimeSpan connectionIdleTimeout, 
             IStatisticsCollector statisticsCollector=null)
         {
-            Throw.ArgumentNullException.IfNull(maxIdleConnectionPoolSize, nameof(maxIdleConnectionPoolSize));
-            Throw.ArgumentNullException.IfNull(maxConnectionPoolSize, nameof(maxConnectionPoolSize));
-            Throw.ArgumentNullException.IfNull(connectionAcquisitionTimeout, nameof(connectionAcquisitionTimeout));
-            Throw.ArgumentNullException.IfNull(connectionIdleTimeout, nameof(connectionIdleTimeout));
             MaxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
             MaxConnectionPoolSize = maxConnectionPoolSize;
             ConnectionAcquisitionTimeout = connectionAcquisitionTimeout;

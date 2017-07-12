@@ -15,10 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
-using static Neo4j.Driver.Internal.ExponentialBackoffRetryLogic;
 
 namespace Neo4j.Driver.V1
 {

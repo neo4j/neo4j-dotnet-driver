@@ -45,9 +45,6 @@ namespace Neo4j.Driver.Internal
             IfNull(initialServerUri, nameof(initialServerUri));
             IfNull(authToken, nameof(authToken));
             IfNull(encryptionManager, nameof(encryptionManager));
-            IfNull(connectionTimeout, nameof(connectionTimeout));
-            IfNull(socketKeepAlive, nameof(socketKeepAlive));
-            IfNull(ipv6Enabled, nameof(ipv6Enabled));
 
             InitialServerUri = initialServerUri;
             AuthToken = authToken;

@@ -229,6 +229,7 @@ namespace Neo4j.Driver.Internal
                 IPooledConnection connection = null;
                 if (!_availableConnections.TryTake(out connection))
                 {
+                    // TODO: make this timer a cancellationToken instead
                     Stopwatch connAcquisitionTimer = new Stopwatch();
                     connAcquisitionTimer.Start();
                     do
@@ -245,6 +246,11 @@ namespace Neo4j.Driver.Internal
                         }
                     } while (connAcquisitionTimer.ElapsedMilliseconds < _connAcquisitionTimeout.TotalMilliseconds);
                     connAcquisitionTimer.Stop();
+
+                    if (connection == null)
+                    {
+                        throw new ClientException($"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
+                    }
                 }
 
                 if (!connection.IsOpen || HasBeenIdleForTooLong(connection))
