@@ -55,9 +55,7 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public class Config
     {
-        /// <summary>
-        /// When the <see cref="MaxIdleSessionPoolSize"/> is set to <see cref="InfiniteMaxIdleSessionPoolSize" />, the idle session pool will pool all sessions created by the driver.
-        /// </summary>
+        [System.Obsolete("Do not set idle connection size to infinite.")]
         public const int InfiniteMaxIdleSessionPoolSize = -1;
         static Config()
         {
@@ -72,12 +70,17 @@ namespace Neo4j.Driver.V1
         /// <list type="bullet">
         /// <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> Encrypted</c> </item>
         /// <item><see cref="TrustStrategy"/> : <c><see cref="TrustStrategy"/>TrustAllCertificates</c> </item>
-        /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
-        /// <item><see cref="MaxIdleSessionPoolSize"/> : <c>10</c> </item>
         /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
         /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
-        /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
+        /// <item><see cref="Ipv6Enabled"/>: <c>true</c></item>
+        /// <br></br>
+        /// <item><see cref="MaxIdleConnectionPoolSize"/> : <c>10</c> </item>
+        /// <item><see cref="MaxConnectionPoolSize"/> : <c>20</c> </item>
+        /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
         /// <item><see cref="ConnectionIdleTimeout"/>: <c>Infinite(-1ms)</c></item>
+        /// <br></br>
+        /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
+        /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }
@@ -103,18 +106,41 @@ namespace Neo4j.Driver.V1
         public ILogger Logger { get; set; } = new DebugLogger {Level = LogLevel.Info};
 
         /// <summary>
-        /// Gets or sets the maximum transaction rety time.
+        /// Gets or sets the maximum transaction rety timeout.
         /// </summary>
         public TimeSpan MaxTransactionRetryTime { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
-        /// Gets or sets the max idle session pool size.
+        /// Gets or sets the max idle connection pool size.
         /// </summary>
         /// <remarks> 
-        /// The max idle session pool size represents the maximum number of sessions buffered by the driver. 
-        /// A buffered <see cref="ISession"/> is a session that has already been connected to the database instance and doesn't need to re-initialize.
+        /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver. 
+        /// An idle connection is a connection that has already been connected to the database instance and doesn't need to re-initialize.
         /// </remarks>
-        public int MaxIdleSessionPoolSize { get; set; } = 10;
+        public int MaxIdleConnectionPoolSize { get; set; } = 10;
+
+        [System.Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
+        public int MaxIdleSessionPoolSize {
+            get => MaxIdleConnectionPoolSize;
+            set => MaxIdleConnectionPoolSize = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the max connection pool size.
+        /// </summary>
+        /// <remarks>
+        /// The max connection pool size specifies the allowed maximum number of idle and current in-use connections by the driver.
+        /// a.k.a. ConnectionPoolSize = IdleConnectionPoolSize + InUseConnectionSize.
+        /// When a driver reaches its allowed maximum connection pool size, no new connections can be established.
+        /// Instead all threads that require a new connection have to wait and retry until an idle connection is available to reclaim from the pool
+        /// See <see cref="ConnectionAcquisitionTimeout"/>for the maximum waiting time to acquire an idle connection from the pool.
+        /// </remarks>
+        public int MaxConnectionPoolSize { get; set; } = 20;
+
+        /// <summary>
+        /// Gets or sets the maximum waiting time to acquire an idle connection from the pool when no new connection is allowed to create.
+        /// </summary>
+        public TimeSpan ConnectionAcquisitionTimeout { get; set; } = TimeSpan.FromMinutes(1);
 
         /// <summary>
         /// Gets or sets the connection timeout when establishing a connection with a server.
@@ -175,7 +201,24 @@ namespace Neo4j.Driver.V1
 
             public IConfigBuilder WithMaxIdleSessionPoolSize(int size)
             {
-                _config.MaxIdleSessionPoolSize = size;
+                return WithMaxIdleConnectionPoolSize(size);
+            }
+
+            public IConfigBuilder WithMaxIdleConnectionPoolSize(int size)
+            {
+                _config.MaxIdleConnectionPoolSize = size;
+                return this;
+            }
+
+            public IConfigBuilder WithMaxConnectionPoolSize(int size)
+            {
+                _config.MaxConnectionPoolSize = size;
+                return this;
+            }
+
+            public IConfigBuilder WithConnectionAcquisitionTimeout(TimeSpan timeSpan)
+            {
+                _config.ConnectionAcquisitionTimeout = timeSpan;
                 return this;
             }
 
@@ -253,14 +296,35 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithLogger(ILogger logger);
-        
+
+        [System.Obsolete("Please use WithMaxIdleConnectionPoolSize instead.")]
+        IConfigBuilder WithMaxIdleSessionPoolSize(int size);
+
         /// <summary>
-        /// Sets the size of the idle session pool.
+        /// Sets the size of the idle connection pool.
         /// </summary>
-        /// <param name="size">The size of the <see cref="Config.MaxIdleSessionPoolSize"/>, set to <see cref="Config.InfiniteMaxIdleSessionPoolSize"/> to pool all sessions.</param>
+        /// <param name="size">The size of the <see cref="Config.MaxIdleConnectionPoolSize"/>,
+        /// set to 0 will disable connection pooling.</param>.
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
-        IConfigBuilder WithMaxIdleSessionPoolSize(int size);
+        IConfigBuilder WithMaxIdleConnectionPoolSize(int size);
+
+        /// <summary>
+        /// Sets the size of the connection pool.
+        /// </summary>
+        /// <param name="size">The size of the <see cref="Config.MaxConnectionPoolSize"/></param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithMaxConnectionPoolSize(int size);
+
+        /// <summary>
+        /// Sets the maximum connection acquisition timeout for waiting for a connection to become available in idle connection pool
+        /// when <see cref="Config.MaxConnectionPoolSize"/> is reached.
+        /// </summary>
+        /// <param name="timeSpan">The connection acquisition timeout.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithConnectionAcquisitionTimeout(TimeSpan timeSpan);
 
         /// <summary>
         /// Specify socket connection timeout.

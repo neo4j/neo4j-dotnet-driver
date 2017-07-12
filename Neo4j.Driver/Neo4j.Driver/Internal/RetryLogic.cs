@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2017 "Neo Technology,"
+// Copyright (c) 2002-2017 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal
         private readonly ILogger _logger;
 
         public ExponentialBackoffRetryLogic(Config config)
-            :this(config.MaxTransactionRetryTime, config.Logger)
+            : this(config.MaxTransactionRetryTime, config.Logger)
         {
         }
 
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal
                 {
                     return runTxFunc();
                 }
-                catch (Exception e) when (e is SessionExpiredException || e.IsRetriableTransientError() || e is ServiceUnavailableException)
+                catch (Exception e) when (e.IsRetriableError())
                 {
                     exception = exception == null ? new AggregateException(e) : new AggregateException(exception, e);
 
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Internal
                 {
                     return await runTxAsyncFunc().ConfigureAwait(false);
                 }
-                catch (Exception e) when (e is SessionExpiredException || e.IsRetriableTransientError() || e is ServiceUnavailableException)
+                catch (Exception e) when (e.IsRetriableError())
                 {
                     exception = exception == null ? new AggregateException(e) : new AggregateException(exception, e);
 

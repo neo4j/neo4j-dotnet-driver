@@ -159,8 +159,9 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerTheory]
+        [InlineData(50)]
         [InlineData(5000)]
-//        [InlineData(50000)] leave this to a long dedicated build
+        //        [InlineData(50000)] leave this to a long dedicated build
         public void SoakRun(int threadCount)
         {
             var statisticsCollector = new StatisticsCollector();
@@ -171,7 +172,13 @@ namespace Neo4j.Driver.IntegrationTests
                 EncryptionLevel = EncryptionLevel.Encrypted
             });
 
-            Output.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Started");
+            string[] queries =
+            {
+                "RETURN 1295 + 42",
+                "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
+            };
+            var startTime = DateTime.Now;
+            Output.WriteLine($"[{startTime.ToString("HH:mm:ss.ffffff")}] Started");
 
             Parallel.For(0, threadCount, i =>
             {
@@ -179,12 +186,6 @@ namespace Neo4j.Driver.IntegrationTests
                 {
                     Output.WriteLine(statisticsCollector.CollectStatistics().ToContentString());
                 }
-
-                string[] queries =
-                {
-                    "RETURN 1295 + 42",
-                    "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
-                };
                 try
                 {
                     using (var session = driver.Session())
@@ -199,16 +200,80 @@ namespace Neo4j.Driver.IntegrationTests
                 }
             });
 
+            driver.Dispose();
+
             var st = ConnectionPoolStatistics.Read(statisticsCollector.CollectStatistics());
             Output.WriteLine(st.ReportStatistics().ToContentString());
-            Output.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Finished");
+            var endTime = DateTime.Now;
+            Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
+            Output.WriteLine($"Total time spent: {endTime - startTime}");
 
             st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
             st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
-            st.ConnClosed.Should().Be(st.ConnClosed);
-            st.ConnToCreate.Should().Be(st.ConnCreated);
+            st.ConnToClose.Should().Be(st.ConnClosed);
+        }
+
+        [RequireServerTheory]
+        [InlineData(50)]
+        [InlineData(5000)]
+        public void SoakRunAsync(int threadCount)
+        {
+            var statisticsCollector = new StatisticsCollector();
+            var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
+            {
+                DriverStatisticsCollector = statisticsCollector,
+                ConnectionTimeout = Config.Infinite,
+                EncryptionLevel = EncryptionLevel.Encrypted,
+                MaxIdleConnectionPoolSize = 20,
+                MaxConnectionPoolSize = 50,
+                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
+            });
+
+            string[] queries =
+            {
+                "RETURN 1295 + 42",
+                "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
+            };
+            var startTime = DateTime.Now;
+            Output.WriteLine($"[{startTime.ToString("HH:mm:ss.ffffff")}] Started");
+
+            var tasks = Enumerable.Range(0, threadCount)
+                .Select(async i =>
+                {
+                    var session = driver.Session();
+                    try
+                    {
+                        var result = await session.RunAsync(queries[i % 2]);
+                        if (i % 1000 == 0)
+                        {
+                            Output.WriteLine(statisticsCollector.CollectStatistics().ToContentString());
+                        }
+                        await result.SummaryAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        Output.WriteLine(
+                            $"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Thread {i} failed to run query {queries[i % 2]} due to {e.Message}");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
+                }).ToArray();
+
+            Task.WhenAll(tasks).Wait();
 
             driver.Dispose();
+
+            var st = ConnectionPoolStatistics.Read(statisticsCollector.CollectStatistics());
+            Output.WriteLine(st.ReportStatistics().ToContentString());
+            var endTime = DateTime.Now;
+            Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
+            Output.WriteLine($"Total time spent: {endTime - startTime}");
+
+            st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
+            st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
+            st.ConnToClose.Should().Be(st.ConnClosed);
         }
     }
 }

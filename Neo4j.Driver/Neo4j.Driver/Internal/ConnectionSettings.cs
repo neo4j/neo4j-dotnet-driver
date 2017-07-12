@@ -26,9 +26,9 @@ namespace Neo4j.Driver.Internal
 
         public Uri InitialServerUri { get; }
         public IAuthToken AuthToken { get; }
-        public TimeSpan ConnectionTimeout { get; }
         public string UserAgent { get; }
         public EncryptionManager EncryptionManager { get; }
+        public TimeSpan ConnectionTimeout { get; }
         public bool SocketKeepAliveEnabled { get; }
         public bool Ipv6Enabled { get; }
 

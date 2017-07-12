@@ -45,10 +45,10 @@ namespace Neo4j.Driver.Tests
         {
             var mockLogger = new Mock<ILogger>();
             mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
-            Parallel.For(0, index, i=>Retry(i, retryLogic));
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
+            Parallel.For(0, index, i => Retry(i, retryLogic));
 
-            mockLogger.Verify(l=>l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.AtLeast(5*index));
+            mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.AtLeast(2 * index));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
@@ -65,8 +65,8 @@ namespace Neo4j.Driver.Tests
             var error = e as AggregateException;
             var innerErrors = error.Flatten().InnerExceptions;
 
-            innerErrors.Count.Should().BeGreaterOrEqualTo(5);
-            timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(30);
+            innerErrors.Count.Should().BeGreaterOrEqualTo(2);
+            timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(5);
         }
 
         [Theory]

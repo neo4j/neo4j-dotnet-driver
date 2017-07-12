@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null) :base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null) : base(logger)
         {
             _connectionProvider = provider;
             _retryLogic = retryLogic;
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal
 
                 _connection = _connectionProvider.Acquire(_defaultMode);
                 var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
-                    ()=>_connection.ReceiveOne(), _connection.Server, this);
+                    () => _connection.ReceiveOne(), _connection.Server, this);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
 
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Internal
 
         private T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work)
         {
-            return TryExecute(()=>_retryLogic.Retry(() =>
+            return TryExecute(() => _retryLogic.Retry(() =>
             {
                 using (var tx = BeginTransactionWithoutLogging(mode))
                 {
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.Internal
 
         public Task CloseAsync()
         {
-            return TryExecuteAsync(async() =>
+            return TryExecuteAsync(async () =>
             {
                 if (_isOpen)
                 {
@@ -397,7 +397,7 @@ namespace Neo4j.Driver.Internal
                                           "and retry your statement in another new session.");
             }
         }
- 
+
         private async Task<ITransactionAsync> BeginTransactionWithoutLoggingAsync(AccessMode mode)
         {
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
@@ -411,7 +411,7 @@ namespace Neo4j.Driver.Internal
 
         public Task<ITransactionAsync> BeginTransactionAsync()
         {
-            return TryExecuteAsync(async()=> await BeginTransactionWithoutLoggingAsync(_defaultMode));
+            return TryExecuteAsync(async () => await BeginTransactionWithoutLoggingAsync(_defaultMode));
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<ITransactionAsync, Task> work)
@@ -426,7 +426,7 @@ namespace Neo4j.Driver.Internal
 
         private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransactionAsync, Task<T>> work)
         {
-            return TryExecuteAsync(async() => await _retryLogic.RetryAsync(async() =>
+            return TryExecuteAsync(async () => await _retryLogic.RetryAsync(async () =>
             {
                 ITransactionAsync tx = await BeginTransactionWithoutLoggingAsync(mode).ConfigureAwait(false);
                 {
