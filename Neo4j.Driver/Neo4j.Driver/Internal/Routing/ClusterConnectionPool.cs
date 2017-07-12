@@ -37,13 +37,13 @@ namespace Neo4j.Driver.Internal.Routing
         public ClusterConnectionPool(
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
-            ILogger logger
+            IEnumerable<Uri> initUris, ILogger logger
             )
             : base(logger)
         {
             _connectionSettings = connectionSettings;
             _poolSettings = poolSettings;
-
+            Add(initUris);
         }
 
         internal ClusterConnectionPool(
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionPoolSettings poolSettings=null,
             ILogger logger=null
             ) :
-            this(connSettings, poolSettings, logger)
+            this(connSettings, poolSettings, new HashSet<Uri>(), logger)
         {
             _fakePool = connectionPool;
             _pools = clusterPool;

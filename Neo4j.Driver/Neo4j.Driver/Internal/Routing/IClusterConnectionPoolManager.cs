@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -16,19 +16,14 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.V1;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal interface IRoutingTable
+    internal interface IClusterConnectionPoolManager
     {
-        bool IsStale(AccessMode mode);
-        bool TryNextRouter(out Uri uri);
-        bool TryNext(AccessMode mode, out Uri uri);
-        void Remove(Uri uri);
-        void RemoveWriter(Uri uri);
-        ISet<Uri> All();
-        void Clear();
-        void PrependRouters(IEnumerable<Uri> uris);
+        void AddConnectionPool(IEnumerable<Uri> uris);
+        void UpdateConnectionPool(IEnumerable<Uri> uris);
+        IConnection CreateClusterConnection(Uri uri);
     }
 }

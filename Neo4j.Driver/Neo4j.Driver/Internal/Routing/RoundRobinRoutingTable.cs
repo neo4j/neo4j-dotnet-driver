@@ -32,22 +32,23 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly Stopwatch _stopwatch;
         private readonly long _expireAfterSeconds;
 
-        public RoundRobinRoutingTable(Stopwatch stopwatch, long expireAfterSeconds = 0)
+        public RoundRobinRoutingTable(IEnumerable<Uri> routers, long expireAfterSeconds = 0)
         {
             _expireAfterSeconds = expireAfterSeconds;
-            _stopwatch = stopwatch;
+            _stopwatch = new Stopwatch();
             _stopwatch.Restart();
+            _routers.Add(routers);// init
         }
 
         public RoundRobinRoutingTable(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
-            Stopwatch stopwatch, long expireAfterSeconds)
+            long expireAfterSeconds)
         {
             _routers.Add(routers);
             _readers.Add(readers);
             _writers.Add(writers);
 
             _expireAfterSeconds = expireAfterSeconds;
-            _stopwatch = stopwatch;
+            _stopwatch = new Stopwatch();
             _stopwatch.Restart();
         }
 
@@ -72,6 +73,19 @@ namespace Neo4j.Driver.Internal.Routing
         public bool TryNextWriter(out Uri uri)
         {
             return _writers.TryNext(out uri);
+        }
+
+        public bool TryNext(AccessMode mode, out Uri uri)
+        {
+            switch (mode)
+            {
+                case AccessMode.Read:
+                    return TryNextReader(out uri);
+                case AccessMode.Write:
+                    return TryNextWriter(out uri);
+                default:
+                    throw new InvalidOperationException($"Unknown access mode {mode}");
+            }
         }
 
         public void Remove(Uri uri)

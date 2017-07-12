@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Moq;
@@ -31,6 +32,23 @@ namespace Neo4j.Driver.Tests.Routing
     public class ClusterConnectionPoolTests
     {
         private static Uri ServerUri { get; } = new Uri("bolt+routing://1234:5678");
+
+        public class Constructor
+        {
+            [Fact]
+            public void ShouldEnsureInitialRouter()
+            {
+                var uris = new HashSet<Uri>{new Uri("bolt://123:456")};
+                var config = Config.DefaultConfig;
+                var connSettings = new ConnectionSettings(ServerUri, new Mock<IAuthToken>().Object, config);
+                var poolSettings = new ConnectionPoolSettings(config);
+
+                var pool = new ClusterConnectionPool(connSettings, poolSettings, uris, null);
+
+                pool.ToString().Should().Be(
+                    "[{bolt://123:456/ : _availableConnections: {[]}, _inUseConnections: {[]}}]");
+            }
+        }
 
         public class TryAcquireMethod
         {

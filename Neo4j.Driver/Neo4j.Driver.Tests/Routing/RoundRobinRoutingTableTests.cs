@@ -17,7 +17,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using FluentAssertions;
+using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -36,6 +39,23 @@ namespace Neo4j.Driver.Tests.Routing
             return uris;
         }
 
+        public class Constructor
+        {
+            [Fact]
+            public void ShouldEnsureInitialRouter()
+            {
+                var initUri = new Uri("bolt://123:456");
+                var routers = new HashSet<Uri>{initUri};
+                var table = new RoundRobinRoutingTable(routers);
+
+                Uri uri;
+                table.TryNextRouter(out uri).Should().BeTrue();
+                uri.Should().Be(initUri);
+
+                table.All().Single().Should().Be(initUri);
+            }
+        }
+
         public class IsStatleMethod
         {
             [Theory] [InlineData(1, 2, 1, 5 * 60, false)] // 1 router, 2 reader, 1 writer
@@ -49,7 +69,6 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateUriArray(routerCount),
                     CreateUriArray(readerCount),
                     CreateUriArray(writerCount),
-                    new Stopwatch(),
                     expireAfterSeconds);
                 table.IsStale(AccessMode.Read).Should().Be(isStale);
             }
@@ -66,7 +85,6 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateUriArray(routerCount),
                     CreateUriArray(readerCount),
                     CreateUriArray(writerCount),
-                    new Stopwatch(),
                     expireAfterSeconds);
                 table.IsStale(AccessMode.Write).Should().Be(isStale);
             }
@@ -82,7 +100,7 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateUriArray(3),
                     CreateUriArray(0),
                     CreateUriArray(0),
-                    new Stopwatch(), 5 * 60);
+                    5 * 60);
                 Uri router;
                 table.TryNextRouter(out router);
                 var head = new Uri("http://neo4j:10");
@@ -102,6 +120,5 @@ namespace Neo4j.Driver.Tests.Routing
                 router.Should().Be(head);
             }
         }
-
     }
 }
