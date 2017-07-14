@@ -339,15 +339,14 @@ namespace Neo4j.Driver.Internal
             {
                 if (_disposeCalled)
                 {
-                    // pool already disposed
+                    // pool already disposed.
                     return;
                 }
                 if (!_inUseConnections.TryRemove(connection))
                 {
-                    // pool already disposed
+                    // pool already disposed.
                     return;
                 }
-
                 if (IsConnectionReusable(connection))
                 {
                     if (IsPoolFull())
