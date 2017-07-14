@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionPoolSettings poolSettings=null,
             ILogger logger=null
             ) :
-            this(connSettings, poolSettings, new HashSet<Uri>(), logger)
+            this(connSettings, poolSettings, Enumerable.Empty<Uri>(), logger)
         {
             _fakePool = connectionPool;
             _pools = clusterPool;

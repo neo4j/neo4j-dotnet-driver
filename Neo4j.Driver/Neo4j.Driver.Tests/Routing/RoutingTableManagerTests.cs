@@ -363,16 +363,10 @@ namespace Neo4j.Driver.Tests.Routing
             }
         }
 
-        public class TryAcquireConnectionMethod
-        {
-            
-
-        }
-
         internal class ListBasedRoutingTable : IRoutingTable
         {
             private readonly List<Uri> _routers;
-            private List<Uri> _removed;
+            private readonly List<Uri> _removed;
             private int _count = 0;
 
             public ListBasedRoutingTable(List<Uri> routers)

@@ -137,8 +137,7 @@ namespace Neo4j.Driver.Internal.Routing
                 }
                 //else  connection already removed by clusterConnection onError method
             }
-            var name = mode == AccessMode.Read ? "read" : "wrtie";
-            throw new SessionExpiredException($"Failed to connect to any {name} server.");
+            throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
         }
 
         private IConnection CreateClusterConnection(Uri uri, AccessMode mode)

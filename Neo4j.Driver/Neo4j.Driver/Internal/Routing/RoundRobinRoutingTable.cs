@@ -33,11 +33,8 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly long _expireAfterSeconds;
 
         public RoundRobinRoutingTable(IEnumerable<Uri> routers, long expireAfterSeconds = 0)
+        :this(routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)
         {
-            _expireAfterSeconds = expireAfterSeconds;
-            _stopwatch = new Stopwatch();
-            _stopwatch.Restart();
-            _routers.Add(routers);// init
         }
 
         public RoundRobinRoutingTable(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
