@@ -162,8 +162,8 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                IConnection conn;
-                if (_clusterConnectionPool.TryAcquire(uri, out conn))
+                IConnection conn = _clusterConnectionPool.Acquire(uri);
+                if (conn != null)
                 {
                     return new ClusterConnection(conn, uri, mode, this);
                 }

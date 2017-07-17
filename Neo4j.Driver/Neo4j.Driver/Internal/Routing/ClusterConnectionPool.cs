@@ -64,18 +64,16 @@ namespace Neo4j.Driver.Internal.Routing
             return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger);
         }
 
-        public bool TryAcquire(Uri uri, out IConnection conn)
+        public IConnection Acquire(Uri uri)
         {
             IConnectionProvider pool;
             if (!_pools.TryGetValue(uri, out pool))
             {
-                conn = null;
-                return false;
+                return null;
             }
 
             AccessMode ignored = AccessMode.Write;
-            conn = pool.Acquire(ignored);
-            return true;
+            return pool.Acquire(ignored);
         }
 
         // This is the ultimate method to add a pool

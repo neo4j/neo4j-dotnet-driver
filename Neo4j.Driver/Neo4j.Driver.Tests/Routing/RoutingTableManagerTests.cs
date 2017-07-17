@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests.Routing
             return mock;
         }
 
-        private static IRoutingTable NewRoutingTable(
+        internal static IRoutingTable NewRoutingTable(
             IEnumerable<Uri> routers = null,
             IEnumerable<Uri> readers = null,
             IEnumerable<Uri> writers = null)

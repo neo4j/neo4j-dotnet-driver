@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldEnsureInitialRouter()
             {
-                var uris = new HashSet<Uri>{new Uri("bolt://123:456")};
+                var uris = new HashSet<Uri> {new Uri("bolt://123:456")};
                 var config = Config.DefaultConfig;
                 var connSettings = new ConnectionSettings(ServerUri, new Mock<IAuthToken>().Object, config);
                 var poolSettings = new ConnectionPoolSettings(config);
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
         }
 
-        public class TryAcquireMethod
+        public class AcquireMethod
         {
             [Fact]
             public void ShouldNotCreateNewConnectionPoolIfUriDoseNotExist()
@@ -63,11 +63,10 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict.Count.Should().Be(0);
 
                 // When
-                IConnection connection;
-                var acquired = pool.TryAcquire(ServerUri, out connection);
+                IConnection connection = pool.Acquire(ServerUri);
 
                 // Then
-                acquired.Should().BeFalse();
+                connection.Should().BeNull();
                 connectionPoolDict.Count.Should().Be(0);
             }
 
@@ -90,13 +89,12 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
 
                 // When
-                IConnection connection;
-                var acquired = pool.TryAcquire(ServerUri, out connection);
+                IConnection connection = pool.Acquire(ServerUri);
 
                 // Then
-                acquired.Should().BeTrue();
-                var exception = Record.Exception(()=>connection.Init());
-                mockedConnection.Verify(c=>c.Init(), Times.Once);
+                connection.Should().NotBeNull();
+                var exception = Record.Exception(() => connection.Init());
+                mockedConnection.Verify(c => c.Init(), Times.Once);
                 exception.Should().BeOfType<InvalidOperationException>();
                 exception.Message.Should().Be("An exception");
             }
@@ -110,12 +108,22 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionProvider>();
+                var mockedConnection = new Mock<IConnection>();
+                mockedConnectionPool.Setup(x => x.Acquire(It.IsAny<AccessMode>())).Returns(mockedConnection.Object);
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
-                IConnection ignored;
-                pool.TryAcquire(new Uri(second), out ignored).Should().Be(expectedResult);
+                IConnection connection = pool.Acquire(new Uri(second));
+
+                if (expectedResult)
+                {
+                    connection.Should().NotBeNull();
+                }
+                else
+                {
+                    connection.Should().BeNull();
+                }
             }
         }
 
@@ -130,7 +138,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(mockedConnectionPool.Object, connectionPoolDict);
 
                 // When
-                pool.Update(new[] { ServerUri });
+                pool.Update(new[] {ServerUri});
 
                 // Then
                 connectionPoolDict.Count.Should().Be(1);
@@ -188,9 +196,9 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 pool.Purge(ServerUri);
-                
+
                 // Then
-                mockedConnectionPool.Verify(x=>x.Dispose(), Times.Once);
+                mockedConnectionPool.Verify(x => x.Dispose(), Times.Once);
                 connectionPoolDict.Count.Should().Be(0);
                 connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
             }
@@ -231,7 +239,6 @@ namespace Neo4j.Driver.Tests.Routing
                 mockedConnectionPool.Verify(x => x.Dispose(), Times.Once);
                 connectionPoolDict.Count.Should().Be(0);
                 connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
-
             }
         }
     }
