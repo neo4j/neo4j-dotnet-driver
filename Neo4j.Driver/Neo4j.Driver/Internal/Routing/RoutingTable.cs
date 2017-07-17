@@ -22,24 +22,28 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class RoundRobinRoutingTable : IRoutingTable
+    internal class RoutingTable : IRoutingTable
     {
         private const int MinRouterCount = 1;
-        private readonly ConcurrentRoundRobinSet<Uri> _routers = new ConcurrentRoundRobinSet<Uri>();
-        private readonly ConcurrentRoundRobinSet<Uri> _detachedRouters = new ConcurrentRoundRobinSet<Uri>();
-        private readonly ConcurrentRoundRobinSet<Uri> _readers = new ConcurrentRoundRobinSet<Uri>();
-        private readonly ConcurrentRoundRobinSet<Uri> _writers = new ConcurrentRoundRobinSet<Uri>();
+        private readonly AddressSet<Uri> _routers = new AddressSet<Uri>();
+        private readonly AddressSet<Uri> _readers = new AddressSet<Uri>();
+        private readonly AddressSet<Uri> _writers = new AddressSet<Uri>();
+
+        public IList<Uri> Routers => _routers.Snaphost;
+        public IList<Uri> Readers => _readers.Snaphost;
+        public IList<Uri> Writers => _writers.Snaphost;
+
         private readonly Stopwatch _stopwatch;
         private readonly long _expireAfterSeconds;
 
-        public RoundRobinRoutingTable(IEnumerable<Uri> routers, long expireAfterSeconds = 0)
+        public RoutingTable(IEnumerable<Uri> routers, long expireAfterSeconds = 0)
         :this(routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)
         {
         }
 
-        public RoundRobinRoutingTable(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
+        public RoutingTable(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
             long expireAfterSeconds)
-        {
+        { 
             _routers.Add(routers);
             _readers.Add(readers);
             _writers.Add(writers);
@@ -57,38 +61,9 @@ namespace Neo4j.Driver.Internal.Routing
                 || _expireAfterSeconds < _stopwatch.Elapsed.TotalSeconds;
         }
 
-        public bool TryNextRouter(out Uri uri)
-        {
-            return _routers.TryNext(out uri);
-        }
-
-        public bool TryNextReader(out Uri uri)
-        {
-            return _readers.TryNext(out uri);
-        }
-
-        public bool TryNextWriter(out Uri uri)
-        {
-            return _writers.TryNext(out uri);
-        }
-
-        public bool TryNext(AccessMode mode, out Uri uri)
-        {
-            switch (mode)
-            {
-                case AccessMode.Read:
-                    return TryNextReader(out uri);
-                case AccessMode.Write:
-                    return TryNextWriter(out uri);
-                default:
-                    throw new InvalidOperationException($"Unknown access mode {mode}");
-            }
-        }
-
         public void Remove(Uri uri)
         {
             _routers.Remove(uri);
-            _detachedRouters.Add(uri);
             _readers.Remove(uri);
             _writers.Remove(uri);
         }
@@ -110,7 +85,6 @@ namespace Neo4j.Driver.Internal.Routing
         public void Clear()
         {
             _routers.Clear();
-            _detachedRouters.Clear();
             _readers.Clear();
             _writers.Clear();
         }
@@ -118,7 +92,6 @@ namespace Neo4j.Driver.Internal.Routing
         public override string ToString()
         {
             return $"[{nameof(_routers)}: {_routers}], " +
-                   $"[{nameof(_detachedRouters)}: {_detachedRouters}], " +
                    $"[{nameof(_readers)}: {_readers}], " +
                    $"[{nameof(_writers)}: {_writers}]";
         }

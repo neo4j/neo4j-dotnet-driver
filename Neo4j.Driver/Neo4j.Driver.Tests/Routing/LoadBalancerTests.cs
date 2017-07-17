@@ -43,9 +43,9 @@ namespace Neo4j.Driver.Tests.Routing
                     var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
 
                     loadBalancer.OnConnectionError(uri, new ClientException());
-                    clusterPoolMock.Verify(x=>x.Purge(uri),Times.Once);
-                    routingTableMock.Verify(x=>x.Remove(uri),Times.Once);
-                    routingTableMock.Verify(x=>x.RemoveWriter(uri),Times.Never);
+                    clusterPoolMock.Verify(x => x.Purge(uri), Times.Once);
+                    routingTableMock.Verify(x => x.Remove(uri), Times.Once);
+                    routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Never);
                 }
             }
 
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var mock = new Mock<IRoutingTableManager>();
-                mock.Setup(x => x.RoutingTable).Returns(NewMockedRoutingTable(mode, null, false).Object);
+                mock.Setup(x => x.RoutingTable).Returns(NewMockedRoutingTable(mode, null).Object);
                 var balancer = new LoadBalancer(null, mock.Object);
 
                 // When
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var conn = mockedConn.Object;
                 clusterPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
                 var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
-                
+
                 // When
                 var acquiredConn = balancer.Acquire(mode);
 
@@ -203,6 +203,5 @@ namespace Neo4j.Driver.Tests.Routing
                 routingTableMock.Verify(m => m.Remove(uri), Times.Never);
                 clusterConnPoolMock.Verify(m => m.Purge(uri), Times.Never);
             }
-        }
     }
 }

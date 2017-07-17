@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +30,6 @@ namespace Neo4j.Driver.Tests.Routing
 {
     public class RoutingTableManagerTests
     {
-
         internal static RoutingTableManager NewRoutingTableManager(
             IRoutingTable routingTable,
             IClusterConnectionPoolManager poolManager,
@@ -41,11 +41,27 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManager, seedUri, null);
         }
 
-        internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri, bool hasNext = true)
+        internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri)
         {
             var mock = new Mock<IRoutingTable>();
             mock.Setup(m => m.IsStale(It.IsAny<AccessMode>())).Returns(false);
-            mock.SetupSequence(m => m.TryNext(mode, out uri)).Returns(hasNext).Returns(false);
+            var list = new List<Uri>();
+            if (uri != null)
+            {
+                list.Add(uri);
+            }
+            switch (mode)
+            {
+                case AccessMode.Read:
+                    mock.Setup(m => m.Readers).Returns(list);
+                    break;
+                case AccessMode.Write:
+                    mock.Setup(m => m.Writers).Returns(list);
+                    break;
+                default:
+                    throw new InvalidOperationException($"unknown access mode {mode}");
+            }
+            mock.Setup(m => m.Remove(It.IsAny<Uri>())).Callback<Uri>(u => list.Remove(u));
             return mock;
         }
 
@@ -67,7 +83,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 writers = new Uri[0];
             }
-            return new RoundRobinRoutingTable(routers, readers, writers, 1000);
+            return new RoutingTable(routers, readers, writers, 1000);
         }
 
         public class UpdateRoutingTableWithInitialUriFallbackMethod
@@ -184,7 +200,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var uriB = new Uri("bolt+routing://123:789");
 
                 // This ensures that uri and uri2 will return in order
-                var routingTable = new ListBasedRoutingTable(new List<Uri> {uriA, uriB});
+                var routingTable = new RoutingTable(new List<Uri> {uriA, uriB});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns((ClusterConnection) null);
@@ -209,7 +225,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var connB = new Mock<IConnection>().Object;
 
                 // This ensures that uri and uri2 will return in order
-                var routingTable = new ListBasedRoutingTable(new List<Uri> {uriA, uriB});
+                var routingTable = new RoutingTable(new List<Uri> {uriA, uriB});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.SetupSequence(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns(connA).Returns(connB);
@@ -241,7 +257,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldPropagateServiceUnavailable()
             {
                 var uri = new Uri("bolt+routing://123:456");
-                var routingTable = new ListBasedRoutingTable(new List<Uri> { uri });
+                var routingTable = new RoutingTable(new List<Uri> {uri});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(uri))
                     .Returns(new Mock<IConnection>().Object);
@@ -260,7 +276,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldPropagateProtocolError()
             {
                 var uri = new Uri("bolt+routing://123:456");
-                var routingTable = new ListBasedRoutingTable(new List<Uri> {uri});
+                var routingTable = new RoutingTable(new List<Uri> {uri});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(uri))
                     .Returns(new Mock<IConnection>().Object);
@@ -278,7 +294,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var uri = new Uri("bolt+routing://123:456");
-                var routingTable = new ListBasedRoutingTable(new List<Uri> {uri});
+                var routingTable = new RoutingTable(new List<Uri> {uri});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(uri))
                     .Callback(() => throw new AuthenticationException("Failed to auth the client to the server."));
@@ -307,7 +323,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var uriX = new Uri("bolt+routing://456:1");
                 var uriY = new Uri("bolt+routing://789:2");
 
-                var routingTable = new ListBasedRoutingTable(new List<Uri> {uriA, uriB});
+                var routingTable = new RoutingTable(new List<Uri> {uriA, uriB});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.SetupSequence(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns(connA).Returns(connB);
@@ -341,7 +357,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var connA = new Mock<IConnection>().Object;
                 var uriX = new Uri("bolt+routing://456:1");
 
-                var routingTable = new ListBasedRoutingTable(new List<Uri> {uriA});
+                var routingTable = new RoutingTable(new List<Uri> {uriA});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns(connA);
@@ -362,78 +378,5 @@ namespace Neo4j.Driver.Tests.Routing
                 manager.IsReadingInAbsenceOfWriter.Should().BeTrue();
             }
         }
-
-        internal class ListBasedRoutingTable : IRoutingTable
-        {
-            private readonly List<Uri> _routers;
-            private readonly List<Uri> _removed;
-            private int _count = 0;
-
-            public ListBasedRoutingTable(List<Uri> routers)
-            {
-                _routers = routers;
-                _removed = new List<Uri>();
-            }
-
-            public bool IsStale(AccessMode mode)
-            {
-                return false;
-            }
-
-            public bool TryNextRouter(out Uri uri)
-            {
-                if (_count >= _routers.Count)
-                {
-                    uri = null;
-                    return false;
-                }
-                else
-                {
-                    uri = _routers[_count++];
-                    return true;
-                }
-            }
-
-            public bool TryNextReader(out Uri uri)
-            {
-                throw new NotSupportedException();
-            }
-
-            public bool TryNextWriter(out Uri uri)
-            {
-                throw new NotSupportedException();
-            }
-
-            public bool TryNext(AccessMode mode, out Uri uri)
-            {
-                throw new NotSupportedException();
-            }
-
-            public void Remove(Uri uri)
-            {
-                _removed.Add(uri);
-            }
-
-            public void RemoveWriter(Uri uri)
-            {
-                throw new NotSupportedException();
-            }
-
-            public ISet<Uri> All()
-            {
-                return new HashSet<Uri>(_routers.Distinct().Except(_removed.Distinct()));
-            }
-
-            public void Clear()
-            {
-                throw new NotSupportedException();
-            }
-
-            public void PrependRouters(IEnumerable<Uri> uris)
-            {
-                throw new NotSupportedException();
-            }
-        }
     }
 }
-

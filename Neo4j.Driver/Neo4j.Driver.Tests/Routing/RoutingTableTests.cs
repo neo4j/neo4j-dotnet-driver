@@ -27,7 +27,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
 {
-    public class RoundRobinRoutingTableTests
+    public class RoutingTableTests
     {
         private static IEnumerable<Uri> CreateUriArray(int count)
         {
@@ -46,10 +46,9 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 var initUri = new Uri("bolt://123:456");
                 var routers = new HashSet<Uri>{initUri};
-                var table = new RoundRobinRoutingTable(routers);
+                var table = new RoutingTable(routers);
 
-                Uri uri;
-                table.TryNextRouter(out uri).Should().BeTrue();
+                Uri uri = table.Routers.Single();
                 uri.Should().Be(initUri);
 
                 table.All().Single().Should().Be(initUri);
@@ -65,7 +64,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(1, 2, 1, -1, true)] // expire immediately
             public void ShouldBeStaleInReadModeIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount, long expireAfterSeconds, bool isStale)
             {
-                var table = new RoundRobinRoutingTable(
+                var table = new RoutingTable(
                     CreateUriArray(routerCount),
                     CreateUriArray(readerCount),
                     CreateUriArray(writerCount),
@@ -81,7 +80,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(1, 2, 1, -1, true)] // expire immediately
             public void ShouldBeStaleInWriteModeIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount, long expireAfterSeconds, bool isStale)
             {
-                var table = new RoundRobinRoutingTable(
+                var table = new RoutingTable(
                     CreateUriArray(routerCount),
                     CreateUriArray(readerCount),
                     CreateUriArray(writerCount),
@@ -96,13 +95,12 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldInjectInFront()
             {
                 // Given
-                var table = new RoundRobinRoutingTable(
+                var table = new RoutingTable(
                     CreateUriArray(3),
                     CreateUriArray(0),
                     CreateUriArray(0),
                     5 * 60);
-                Uri router;
-                table.TryNextRouter(out router);
+                Uri router = table.Routers[0];
                 var head = new Uri("http://neo4j:10");
                 router.Should().Be(head);
 
@@ -112,11 +110,11 @@ namespace Neo4j.Driver.Tests.Routing
                 table.PrependRouters(new List<Uri> {first, second});
 
                 // Then
-                table.TryNextRouter(out router);
+                router = table.Routers[0];
                 router.Should().Be(first);
-                table.TryNextRouter(out router);
+                router = table.Routers[1];
                 router.Should().Be(second);
-                table.TryNextRouter(out router);
+                router = table.Routers[2];
                 router.Should().Be(head);
             }
         }

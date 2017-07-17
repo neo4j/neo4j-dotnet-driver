@@ -14,136 +14,105 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
+
 using System.Collections;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    // The current impl uses lock to protect from concurrent access to the elements in this set.
-    // Make this class lock free if it is possible.
-    internal class ConcurrentRoundRobinSet<T> : IEnumerable<T>
+    internal class AddressSet<T> : IEnumerable<T>, IAddressSet<T>
     {
-        private readonly IList<T> _items = new List<T>();
-        private int _index = 0;
-
-        internal int Index => _index;
+        private readonly object _itemsLock = new object();
+        private volatile IList<T> _items = new List<T>();
 
         /// <summary>
-        /// Add one item into this set.
+        ///     Add one item into this set.
         /// </summary>
         /// <param name="item">The item to add</param>
         public void Add(T item)
         {
-            lock (_items)
+            lock (_itemsLock)
             {
                 if (!_items.Contains(item))
                 {
-                    _items.Add(item);
+                    var newItems = new List<T>(_items) {item};
+                    _items = newItems;
                 }
             }
         }
 
         /// <summary>
-        /// Adds several _items into this set.
+        ///     Adds several _items into this set.
         /// </summary>
         /// <param name="items">The _items to add</param>
         public void Add(IEnumerable<T> items)
         {
-            lock (_items)
+            lock (_itemsLock)
             {
+                var newItems = new List<T>(_items);
                 foreach (var item in items)
                 {
-                    Add(item);
+                    if (!newItems.Contains(item))
+                    {
+                        newItems.Add(item);
+                    }
                 }
+                _items = newItems;
             }
         }
 
         /// <summary>
-        /// Remove one item from this set
+        ///     Remove one item from this set
         /// </summary>
         /// <param name="item"></param>
         public void Remove(T item)
         {
-            lock (_items)
+            lock (_itemsLock)
             {
-                var pos = _items.IndexOf(item);
-                _items.Remove(item);
-                if (_index > pos)
-                {
-                    _index--;
-                }
+                var newItems = new List<T>(_items);
+                newItems.Remove(item);
+                _items = newItems;
             }
         }
 
         /// <summary>
-        /// Round robin to get the next item in the set
-        /// </summary>
-        /// <param name="value">The next item in the set</param>
-        /// <returns>true if succesfully find an item, otherwise false if the set is empty</returns>
-        public bool TryNext(out T value)
-        {
-            lock (_items)
-            {
-                if (_items.Count == 0)
-                {
-                    value = default(T);
-                    return false;
-                }
-                // ensure the index is in range
-                _index = _index % _items.Count;
-                value = _items[_index++];
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// Clean all the item inside this set
+        ///     Clean all the item inside this set
         /// </summary>
         public void Clear()
         {
-            lock (_items)
-            {
-                _items.Clear();
-                _index = 0;
-            }
+            _items = new List<T>();
         }
 
         /// <summary>
-        /// Not thread safe
+        ///     Get a snapshot of this set as list
+        /// </summary>
+        public IList<T> Snaphost => _items;
+
+        /// <summary>
+        ///     Number of items in this set
         /// </summary>
         public int Count => _items.Count;
 
         /// <summary>
-        /// Not thread safe
+        ///     Check if this set is empty
         /// </summary>
         public bool IsEmpty => _items.Count == 0;
 
-        /// <summary>
-        /// Not thread safe.
-        /// </summary>
+        public override string ToString()
+        {
+            return string.Join(", ", _items);
+        }
+
         /// <returns>The enumerator of the current snapshot of the set</returns>
         public IEnumerator<T> GetEnumerator()
         {
             return _items.GetEnumerator();
         }
 
-        /// <summary>
-        /// Not thread safe
-        /// </summary>
         /// <returns>The eumerator of the current snapshot of the set</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-
-        /// <summary>
-        /// Not thread safe
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return string.Join(", ", _items);
         }
     }
 }
