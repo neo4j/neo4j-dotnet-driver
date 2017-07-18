@@ -192,14 +192,15 @@ namespace Neo4j.Driver.Internal.Routing
 
         private static ILoadBalancingStrategy CreateLoadBalancingStrategy(Config config, IClusterConnectionPool pool)
         {
+            var logger = config.Logger;
             var configuredStrategy = config.LoadBalancingStrategy;
             if (configuredStrategy == LoadBalancingStrategy.LeastConnected)
             {
-                return new LeastConnectedLoadBalancingStrategy(pool);
+                return new LeastConnectedLoadBalancingStrategy(pool, logger);
             }
             else if (configuredStrategy == LoadBalancingStrategy.RoundRobin)
             {
-                return new RoundRobinLoadBalancingStrategy();
+                return new RoundRobinLoadBalancingStrategy(logger);
             }
             else
             {

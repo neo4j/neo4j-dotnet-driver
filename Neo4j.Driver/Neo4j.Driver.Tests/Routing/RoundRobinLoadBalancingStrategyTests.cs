@@ -18,7 +18,9 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
@@ -28,7 +30,7 @@ namespace Neo4j.Driver.Tests.Routing
         [Fact]
         public void ShouldHandleEmptyReadersList()
         {
-            var strategy = new RoundRobinLoadBalancingStrategy();
+            var strategy = NewRoundRobinStrategy();
 
             var reader = strategy.SelectReader(new List<Uri>());
 
@@ -38,7 +40,7 @@ namespace Neo4j.Driver.Tests.Routing
         [Fact]
         public void ShouldHandleEmptyWritersList()
         {
-            var strategy = new RoundRobinLoadBalancingStrategy();
+            var strategy = NewRoundRobinStrategy();
 
             var writer = strategy.SelectWriter(new List<Uri>());
 
@@ -49,7 +51,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldHandleSingleReader()
         {
             var address = new Uri("localhost:1");
-            var strategy = new RoundRobinLoadBalancingStrategy();
+            var strategy = NewRoundRobinStrategy();
 
             var reader = strategy.SelectReader(new List<Uri>() {address});
 
@@ -60,7 +62,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldHandleSingleWriter()
         {
             var address = new Uri("localhost:2");
-            var strategy = new RoundRobinLoadBalancingStrategy();
+            var strategy = NewRoundRobinStrategy();
 
             var writer = strategy.SelectWriter(new List<Uri>() {address});
 
@@ -76,7 +78,7 @@ namespace Neo4j.Driver.Tests.Routing
             var address4 = new Uri("localhost:4");
 
             var readers = new List<Uri> {address1, address2, address3, address4};
-            var strategy = new RoundRobinLoadBalancingStrategy();
+            var strategy = NewRoundRobinStrategy();
 
             strategy.SelectReader(readers).Should().Be(address1);
             strategy.SelectReader(readers).Should().Be(address2);
@@ -97,7 +99,7 @@ namespace Neo4j.Driver.Tests.Routing
             var address3 = new Uri("localhost:3");
 
             var writers = new List<Uri> {address1, address2, address3};
-            var strategy = new RoundRobinLoadBalancingStrategy();
+            var strategy = NewRoundRobinStrategy();
 
             strategy.SelectWriter(writers).Should().Be(address1);
             strategy.SelectWriter(writers).Should().Be(address2);
@@ -106,6 +108,11 @@ namespace Neo4j.Driver.Tests.Routing
             strategy.SelectWriter(writers).Should().Be(address1);
             strategy.SelectWriter(writers).Should().Be(address2);
             strategy.SelectWriter(writers).Should().Be(address3);
+        }
+
+        private static RoundRobinLoadBalancingStrategy NewRoundRobinStrategy()
+        {
+            return new RoundRobinLoadBalancingStrategy(new Mock<ILogger>().Object);
         }
     }
 }

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -26,27 +27,30 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly RoundRobinArrayIndex _writersIndex = new RoundRobinArrayIndex();
 
         private readonly IClusterConnectionPool _connectionPool;
+        private readonly ILogger _logger;
 
-        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool)
+        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, ILogger logger)
         {
             _connectionPool = connectionPool;
+            _logger = logger;
         }
 
         public Uri SelectReader(IList<Uri> knownReaders)
         {
-            return Select(knownReaders, _readersIndex);
+            return Select(knownReaders, _readersIndex, "reader");
         }
 
         public Uri SelectWriter(IList<Uri> knownWriters)
         {
-            return Select(knownWriters, _writersIndex);
+            return Select(knownWriters, _writersIndex, "writer");
         }
 
-        private Uri Select(IList<Uri> addresses, RoundRobinArrayIndex roundRobinIndex)
+        private Uri Select(IList<Uri> addresses, RoundRobinArrayIndex roundRobinIndex, string addressType)
         {
             var count = addresses.Count;
             if (count == 0)
             {
+                _logger.Trace($"Unable to select {addressType}, no known addresses given");
                 return null;
             }
 
@@ -79,6 +83,9 @@ namespace Neo4j.Driver.Internal.Routing
                     index++;
                 }
             } while (index != startIndex);
+
+            _logger.Trace(
+                $"Selected {addressType} with address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
 
             return leastConnectedAddress;
         }

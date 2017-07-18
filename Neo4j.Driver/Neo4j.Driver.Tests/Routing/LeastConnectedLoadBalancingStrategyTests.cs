@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldHandleEmptyReadersList()
         {
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var reader = strategy.SelectReader(new List<Uri>());
 
@@ -41,7 +42,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldHandleEmptyWritersList()
         {
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var writer = strategy.SelectWriter(new List<Uri>());
 
@@ -54,7 +55,7 @@ namespace Neo4j.Driver.Tests.Routing
             var address = new Uri("reader:7687");
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(0);
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var reader = strategy.SelectReader(new List<Uri> {address});
 
@@ -67,7 +68,7 @@ namespace Neo4j.Driver.Tests.Routing
             var address = new Uri("writer:7687");
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(0);
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var writer = strategy.SelectWriter(new List<Uri> {address});
 
@@ -80,7 +81,7 @@ namespace Neo4j.Driver.Tests.Routing
             var address = new Uri("reader:7687");
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(42);
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var reader = strategy.SelectReader(new List<Uri> {address});
 
@@ -93,7 +94,7 @@ namespace Neo4j.Driver.Tests.Routing
             var address = new Uri("writer:7687");
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(42);
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var writer = strategy.SelectWriter(new List<Uri> {address});
 
@@ -112,7 +113,7 @@ namespace Neo4j.Driver.Tests.Routing
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address2)).Returns(4);
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address3)).Returns(1);
 
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var reader = strategy.SelectReader(new List<Uri> {address1, address2, address3});
 
@@ -133,7 +134,7 @@ namespace Neo4j.Driver.Tests.Routing
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address3)).Returns(0);
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address4)).Returns(1);
 
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             var writer = strategy.SelectWriter(new List<Uri> {address1, address2, address3, address4});
 
@@ -151,7 +152,7 @@ namespace Neo4j.Driver.Tests.Routing
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(It.IsAny<Uri>())).Returns(0);
 
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             strategy.SelectReader(addresses).Should().Be(address1);
             strategy.SelectReader(addresses).Should().Be(address2);
@@ -172,13 +173,19 @@ namespace Neo4j.Driver.Tests.Routing
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(It.IsAny<Uri>())).Returns(0);
 
-            var strategy = new LeastConnectedLoadBalancingStrategy(connectionPoolMock.Object);
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
             strategy.SelectWriter(addresses).Should().Be(address1);
             strategy.SelectWriter(addresses).Should().Be(address2);
 
             strategy.SelectWriter(addresses).Should().Be(address1);
             strategy.SelectWriter(addresses).Should().Be(address2);
+        }
+
+        private static LeastConnectedLoadBalancingStrategy NewLeastConnectedStrategy(
+            IClusterConnectionPool connectionPool)
+        {
+            return new LeastConnectedLoadBalancingStrategy(connectionPool, new Mock<ILogger>().Object);
         }
     }
 }
