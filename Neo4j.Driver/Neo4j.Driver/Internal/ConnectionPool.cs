@@ -17,17 +17,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
-using static Neo4j.Driver.Internal.ExponentialBackoffRetryLogic;
 using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class ConnectionPool : LoggerBase, IConnectionReleaseManager, IConnectionProvider
+    internal class ConnectionPool : LoggerBase, IConnectionPool
     {
         private readonly Uri _uri;
 
@@ -51,7 +49,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly ConnectionPoolStatistics _statistics;
 
-        internal int NumberOfInUseConnections => _inUseConnections.Count;
+        public int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
 
         internal bool DisposeCalled
@@ -462,11 +460,5 @@ namespace Neo4j.Driver.Internal
             return $"{nameof(_availableConnections)}: {{{_availableConnections.ValueToString()}}}, " +
                    $"{nameof(_inUseConnections)}: {{{_inUseConnections}}}";
         }
-    }
-
-    internal interface IConnectionReleaseManager : IDisposable
-    {
-        void Release(IPooledConnection connection);
-        Task ReleaseAsync(IPooledConnection connection);
     }
 }
