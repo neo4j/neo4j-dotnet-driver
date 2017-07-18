@@ -55,11 +55,5 @@ namespace Neo4j.Driver.Internal.Routing
         /// Not thread safe
         /// </summary>
         bool IsEmpty { get; }
-
-        /// <summary>
-        /// Not thread safe
-        /// </summary>
-        /// <returns></returns>
-        string ToString();
     }
 }
