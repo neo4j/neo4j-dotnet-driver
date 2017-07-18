@@ -106,6 +106,7 @@
     <Compile Include="Result\SummaryCollectorTests.cs" />
     <Compile Include="Result\ResultReaderBuilderTests.cs" />
     <Compile Include="Result\StatementResultReaderTests.cs" />
+    <Compile Include="Routing\LeastConnectedLoadBalancingStrategyTests.cs" />
     <Compile Include="Routing\RoundRobinLoadBalancingStrategyTests.cs" />
     <Compile Include="Routing\RoundRobinArrayIndexTests.cs" />
     <Compile Include="Routing\RoutingTableManagerTests.cs" />
