@@ -80,7 +80,10 @@ namespace Neo4j.Driver.Internal.Routing
         /// </summary>
         public void Clear()
         {
-            _items = new List<T>();
+            lock (_itemsLock)
+            {
+                _items = new List<T>();
+            }
         }
 
         /// <summary>
