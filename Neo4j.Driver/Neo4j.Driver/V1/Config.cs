@@ -51,6 +51,22 @@ namespace Neo4j.Driver.V1
     }
 
     /// <summary>
+    /// Control load balancing strategy used by the driver.
+    /// </summary>
+    public enum LoadBalancingStrategy
+    {
+        /// <summary>
+        /// For each next query or transaction driver select servers in round-robin fashion.
+        /// </summary>
+        RoundRobin,
+
+        /// <summary>
+        /// For each next query or transaction driver selects the least connected server.
+        /// </summary>
+        LeastConnected
+    }
+
+    /// <summary>
     /// Use this class to config the <see cref="IDriver"/>.
     /// </summary>
     public class Config
@@ -168,6 +184,11 @@ namespace Neo4j.Driver.V1
         public bool Ipv6Enabled { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets the load balancing strategy for the routing driver. Direct driver will ignore this setting.
+        /// </summary>
+        public LoadBalancingStrategy LoadBalancingStrategy { get; set; } = LoadBalancingStrategy.LeastConnected;
+
+        /// <summary>
         /// Gets or sets the statistics collector to which the statistics inside the driver could be published.
         /// </summary>
         internal IStatisticsCollector DriverStatisticsCollector { get; set; }
@@ -254,6 +275,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithIpv6Enabled(bool enable)
             {
                 _config.Ipv6Enabled = enable;
+                return this;
+            }
+
+            public IConfigBuilder WithLoadBalancingStrategy(LoadBalancingStrategy loadBalancingStrategy)
+            {
+                _config.LoadBalancingStrategy = loadBalancingStrategy;
                 return this;
             }
         }
@@ -370,5 +397,14 @@ namespace Neo4j.Driver.V1
         /// <param name="enable">true to enable ipv6, false to only support ipv4 addresses.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         IConfigBuilder WithIpv6Enabled(bool enable);
+
+        /// <summary>
+        /// Provide an alternative load balancing strategy for the routing driver to use. By default routing
+        /// driver uses <see cref="LoadBalancingStrategy.LeastConnected"/>. Direct driver will ignore this setting.
+        /// </summary>
+        /// <param name="loadBalancingStrategy">The strategy to use.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>We are experimenting with different strategies. This could be removed in the next minor version.</remarks>
+        IConfigBuilder WithLoadBalancingStrategy(LoadBalancingStrategy loadBalancingStrategy);
     }
 }
