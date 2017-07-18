@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace Neo4j.Driver.Internal.Routing
     {
         private readonly IRoutingTableManager _routingTableManager;
         private readonly IClusterConnectionPool _clusterConnectionPool;
+        private readonly ILoadBalancingStrategy _loadBalancingStrategy;
         private readonly ILogger _logger;
 
         private volatile bool _disposeCalled = false;
@@ -40,7 +42,9 @@ namespace Neo4j.Driver.Internal.Routing
             var uris = connectionSettings.InitialServerUri.Resolve();
             _clusterConnectionPool = new ClusterConnectionPool(
                 connectionSettings, poolSettings, uris, logger);
-            _routingTableManager = new RoutingTableManager(routingSettings, this, connectionSettings.InitialServerUri, uris, logger);
+            _routingTableManager = new RoutingTableManager(routingSettings, this, connectionSettings.InitialServerUri,
+                uris, logger);
+            _loadBalancingStrategy = new RoundRobinLoadBalancingStrategy();
             _logger = logger;
         }
 
@@ -51,6 +55,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _clusterConnectionPool = clusterConnPool;
             _routingTableManager = routingTableManager;
+            _loadBalancingStrategy = new RoundRobinLoadBalancingStrategy();
         }
 
         public IConnection Acquire(AccessMode mode)
@@ -125,7 +130,20 @@ namespace Neo4j.Driver.Internal.Routing
             while (true)
             {
                 Uri uri;
-                if (!_routingTableManager.RoutingTable.TryNext(mode, out uri))
+
+                switch (mode)
+                {
+                    case AccessMode.Read:
+                        uri = _loadBalancingStrategy.SelectReader(_routingTableManager.RoutingTable.Readers);
+                        break;
+                    case AccessMode.Write:
+                        uri = _loadBalancingStrategy.SelectWriter(_routingTableManager.RoutingTable.Writers);
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Unknown access mode {mode}");
+                }
+
+                if (uri == null)
                 {
                     // no server known to routingTable
                     break;
@@ -144,8 +162,8 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                IConnection conn;
-                if (_clusterConnectionPool.TryAcquire(uri, out conn))
+                IConnection conn = _clusterConnectionPool.Acquire(uri);
+                if (conn != null)
                 {
                     return new ClusterConnection(conn, uri, mode, this);
                 }

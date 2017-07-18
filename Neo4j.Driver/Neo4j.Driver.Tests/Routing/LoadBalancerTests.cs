@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
@@ -43,9 +44,9 @@ namespace Neo4j.Driver.Tests.Routing
                     var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
 
                     loadBalancer.OnConnectionError(uri, new ClientException());
-                    clusterPoolMock.Verify(x=>x.Purge(uri),Times.Once);
-                    routingTableMock.Verify(x=>x.Remove(uri),Times.Once);
-                    routingTableMock.Verify(x=>x.RemoveWriter(uri),Times.Never);
+                    clusterPoolMock.Verify(x => x.Purge(uri), Times.Once);
+                    routingTableMock.Verify(x => x.Remove(uri), Times.Once);
+                    routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Never);
                 }
             }
 
@@ -78,7 +79,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var mock = new Mock<IRoutingTableManager>();
-                mock.Setup(x => x.RoutingTable).Returns(NewMockedRoutingTable(mode, null, false).Object);
+                mock.Setup(x => x.RoutingTable).Returns(NewMockedRoutingTable(mode, null).Object);
                 var balancer = new LoadBalancer(null, mock.Object);
 
                 // When
@@ -104,9 +105,9 @@ namespace Neo4j.Driver.Tests.Routing
                 var mockedConn = new Mock<IConnection>();
                 mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
                 var conn = mockedConn.Object;
-                clusterPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(true);
+                clusterPoolMock.Setup(x => x.Acquire(uri)).Returns(conn);
                 var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
-                
+
                 // When
                 var acquiredConn = balancer.Acquire(mode);
 
@@ -126,8 +127,7 @@ namespace Neo4j.Driver.Tests.Routing
                 mock.Setup(x => x.RoutingTable).Returns(routingTableMock.Object);
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                IConnection conn = null;
-                clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn))
+                clusterConnPoolMock.Setup(x => x.Acquire(uri))
                     .Callback(() => throw new ServiceUnavailableException("failed init"));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
@@ -156,8 +156,7 @@ namespace Neo4j.Driver.Tests.Routing
                 mock.Setup(x => x.RoutingTable).Returns(routingTableMock.Object);
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                IConnection conn = null;
-                clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn))
+                clusterConnPoolMock.Setup(x => x.Acquire(uri))
                     .Callback(() => throw new SecurityException("Failed to establish ssl connection with the server"));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
@@ -186,8 +185,7 @@ namespace Neo4j.Driver.Tests.Routing
                 mock.Setup(x => x.RoutingTable).Returns(routingTableMock.Object);
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                IConnection conn = null;
-                clusterConnPoolMock.Setup(x => x.TryAcquire(uri, out conn)).Returns(false)
+                clusterConnPoolMock.Setup(x => x.Acquire(uri)).Returns(() => null)
                     .Callback(() => throw new ProtocolException("do not understand struct 0x01"));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
@@ -202,6 +200,56 @@ namespace Neo4j.Driver.Tests.Routing
                 // while the server is not removed
                 routingTableMock.Verify(m => m.Remove(uri), Times.Never);
                 clusterConnPoolMock.Verify(m => m.Purge(uri), Times.Never);
+            }
+
+            [Theory]
+            [InlineData(AccessMode.Read)]
+            [InlineData(AccessMode.Write)]
+            public void ShouldReturnConnectionAccordingToLoadBalancingStrategy(AccessMode mode)
+            {
+                var routingTable = NewRoutingTable(
+                    new List<Uri> {new Uri("router:1"), new Uri("router:2")},
+                    new List<Uri> {new Uri("reader:1"), new Uri("reader:2"), new Uri("reader:3")},
+                    new List<Uri> {new Uri("writer:1"), new Uri("writer:2")});
+
+                var routingTableManager = new Mock<IRoutingTableManager>();
+                routingTableManager.Setup(x => x.RoutingTable).Returns(routingTable);
+
+                var clusterPoolMock = new Mock<IClusterConnectionPool>();
+                clusterPoolMock.Setup(x => x.Acquire(It.IsAny<Uri>()))
+                    .Returns((Uri uri) => NewConnectionMock(uri));
+
+                var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
+
+                if (mode == AccessMode.Read)
+                {
+                    balancer.Acquire(mode).Server.Address.Should().Be("reader:1");
+                    balancer.Acquire(mode).Server.Address.Should().Be("reader:2");
+                    balancer.Acquire(mode).Server.Address.Should().Be("reader:3");
+
+                    balancer.Acquire(mode).Server.Address.Should().Be("reader:1");
+                    balancer.Acquire(mode).Server.Address.Should().Be("reader:2");
+                    balancer.Acquire(mode).Server.Address.Should().Be("reader:3");
+                }
+                else if (mode == AccessMode.Write)
+                {
+                    balancer.Acquire(mode).Server.Address.Should().Be("writer:1");
+                    balancer.Acquire(mode).Server.Address.Should().Be("writer:2");
+
+                    balancer.Acquire(mode).Server.Address.Should().Be("writer:1");
+                    balancer.Acquire(mode).Server.Address.Should().Be("writer:2");
+                }
+                else
+                {
+                    throw new ArgumentException();
+                }
+            }
+
+            private static IConnection NewConnectionMock(Uri uri)
+            {
+                var mockedConn = new Mock<IConnection>();
+                mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
+                return mockedConn.Object;
             }
         }
     }

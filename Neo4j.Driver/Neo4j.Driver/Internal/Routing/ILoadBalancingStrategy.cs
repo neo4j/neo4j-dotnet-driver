@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -14,22 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.V1;
+using System.Text;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal interface IRoutingTable
+    internal interface ILoadBalancingStrategy
     {
-        bool IsStale(AccessMode mode);
-        IList<Uri> Readers { get; }
-        IList<Uri> Writers { get; }
-        IList<Uri> Routers { get; }
-        void Remove(Uri uri);
-        void RemoveWriter(Uri uri);
-        ISet<Uri> All();
-        void Clear();
-        void PrependRouters(IEnumerable<Uri> uris);
+        Uri SelectReader(IList<Uri> knownReaders);
+        Uri SelectWriter(IList<Uri> knownWriters);
     }
 }

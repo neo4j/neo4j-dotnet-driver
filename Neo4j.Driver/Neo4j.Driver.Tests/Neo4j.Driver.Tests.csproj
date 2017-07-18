@@ -106,6 +106,8 @@
     <Compile Include="Result\SummaryCollectorTests.cs" />
     <Compile Include="Result\ResultReaderBuilderTests.cs" />
     <Compile Include="Result\StatementResultReaderTests.cs" />
+    <Compile Include="Routing\RoundRobinLoadBalancingStrategyTests.cs" />
+    <Compile Include="Routing\RoundRobinArrayIndexTests.cs" />
     <Compile Include="Routing\RoutingTableManagerTests.cs" />
     <Compile Include="TestUtil\NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
@@ -113,7 +115,7 @@
     <Compile Include="Routing\ClusterConnectionPoolTests.cs" />
     <Compile Include="Routing\ClusterConnectionTests.cs" />
     <Compile Include="Routing\ClusterDiscoveryManagerTests.cs" />
-    <Compile Include="Routing\ConcurrentRoundRobinSetTests.cs" />
+    <Compile Include="Routing\AddressSetTests.cs" />
     <Compile Include="ConfigTests.cs" />
     <Compile Include="Connector\ChunkedOutputTest.cs" />
     <Compile Include="Connector\MessageResponseHandlerTests.cs" />
@@ -126,7 +128,7 @@
     <Compile Include="Result\ResultBuilderTests.cs" />
     <Compile Include="ConnectionPoolTests.cs" />
     <Compile Include="Routing\LoadBalancerTests.cs" />
-    <Compile Include="Routing\RoundRobinRoutingTableTests.cs" />
+    <Compile Include="Routing\RoutingTableTests.cs" />
     <Compile Include="SessionTests.cs" />
     <Compile Include="PackStream\UnpackerTests.cs" />
     <Compile Include="PackStream\PackerTests.cs" />

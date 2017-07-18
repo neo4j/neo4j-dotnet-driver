@@ -22,50 +22,25 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
 {
-    public class ConcurrentRoundRobinSetTests
+    public class AddressSetTests
     {
-        public class TryNextMethod
-        {
-            [Fact]
-            public void ShouldReturnFalseIfNoElementInSet()
-            {
-                var set = new ConcurrentRoundRobinSet<int>();
-                int value;
-                set.TryNext(out value).Should().BeFalse();
-                value.Should().Be(default(int));
-            }
-
-            [Fact]
-            public void ShouldRoundRobin()
-            {
-                var set = new ConcurrentRoundRobinSet<int> {0, 1, 2, 3};
-
-                for (var i = 0; i < 10; i++)
-                {
-                    int real;
-                    set.TryNext(out real).Should().BeTrue();
-                    var expect = i % set.Count;
-                    real.Should().Be(expect);
-                }
-            }
-        }
-
         public class AddMethod
         {
             [Fact]
             public void ShouldAddNew()
             {
                 // ReSharper disable once UseObjectOrCollectionInitializer
-                var set = new ConcurrentRoundRobinSet<int>();
+                var set = new AddressSet<int>();
                 set.Add(1);
                 set.Count.Should().Be(1);
                 set.ToList().Should().ContainInOrder(1);
             }
+
             [Fact]
             public void ShouldNotAddIfAlreadyExists()
             {
                 // ReSharper disable once UseObjectOrCollectionInitializer
-                var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
+                var set = new AddressSet<int> {0, 1, 2, 3};
                 set.Add(0);
                 set.Add(1);
                 set.Add(2);
@@ -80,7 +55,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldRemove()
             {
-                var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
+                var set = new AddressSet<int> {0, 1, 2, 3};
                 set.Remove(0);
                 set.Remove(2);
                 set.ToList().Should().ContainInOrder(1, 3);
@@ -89,7 +64,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldNotMoveIfNotExists()
             {
-                var set = new ConcurrentRoundRobinSet<int> { 0, 1 };
+                var set = new AddressSet<int> {0, 1};
                 set.Remove(3);
                 set.Count.Should().Be(2);
                 set.ToList().Should().ContainInOrder(0, 1);
@@ -102,17 +77,61 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldClear()
             {
                 // Given
-                var set = new ConcurrentRoundRobinSet<int> { 0, 1, 2, 3 };
-                int ignored;
-                set.TryNext(out ignored);
-                set.Index.Should().Be(1);
+                var set = new AddressSet<int> {0, 1, 2, 3};
+
+                set.Should().NotBeEmpty();
 
                 // When
                 set.Clear();
 
                 // Then
                 set.Should().BeEmpty();
-                set.Index.Should().Be(0);
+            }
+        }
+
+        public class SnapshotMethod
+        {
+            [Fact]
+            public void ShouldProvideSnapshotWhenEmpty()
+            {
+                // Given
+                var set = new AddressSet<int>();
+
+                // When
+                var snaphost = set.Snaphost;
+
+                // Then
+                snaphost.Should().BeEmpty();
+            }
+
+            [Fact]
+            public void ShouldProvideSnapshot()
+            {
+                // Given
+                var set = new AddressSet<int> {0, 1, 2};
+
+                // When
+                var snaphost = set.Snaphost;
+
+                // Then
+                snaphost.Should().HaveCount(3);
+                snaphost.Should().ContainInOrder(0, 1, 2);
+            }
+
+            [Fact]
+            public void ShouldProvideSnapshotAfterUpdate()
+            {
+                // Given
+                var set = new AddressSet<int> {0, 1, 2};
+
+                // When
+                set.Remove(1);
+                set.Add(42);
+                var snaphost = set.Snaphost;
+
+                // Then
+                snaphost.Should().HaveCount(3);
+                snaphost.Should().ContainInOrder(0, 2, 42);
             }
         }
 
@@ -123,15 +142,14 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(30)]
             public void ShouldBeAbleToAccessNewlyAddedItem(int times)
             {
-                var set = new ConcurrentRoundRobinSet<int> {0, 1, 2, 3};
+                var set = new AddressSet<int> {0, 1, 2, 3};
 
                 // we loop serveral turns on the full set
                 for (var j = 0; j < times; j++)
                 {
                     for (var i = 0; i < set.Count; i++)
                     {
-                        int real;
-                        set.TryNext(out real).Should().BeTrue();
+                        var real = set.ToList()[i];
                         real.Should().Be(i);
                     }
                 }
@@ -142,19 +160,15 @@ namespace Neo4j.Driver.Tests.Routing
                 // we loop again and everything is in set
                 for (var j = 0; j < times; j++)
                 {
-                    int real;
-
                     // first we got the newly added out
-                    set.TryNext(out real).Should().BeTrue();
-                    real.Should().Be(4);
+                    set.Contains(4).Should().BeTrue();
 
-                    for (var i = 0; i < set.Count - 1; i++)
+                    for (var i = 0; i < set.Count; i++)
                     {
-                        set.TryNext(out real).Should().BeTrue();
+                        var real = set.ToList()[i];
                         real.Should().Be(i);
                     }
                 }
-
             }
 
             [Theory]
@@ -162,13 +176,12 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(40)]
             public void ShouldBeAbleToRemoveItem(int times)
             {
-                var set = new ConcurrentRoundRobinSet<int> {0, 1, 2, 3};
+                var set = new AddressSet<int> {0, 1, 2, 3};
                 for (var j = 0; j < times; j++)
                 {
                     for (var i = 0; i < set.Count; i++)
                     {
-                        int real;
-                        set.TryNext(out real).Should().BeTrue();
+                        var real = set.ToList()[i];
                         real.Should().Be(i);
                     }
                 }
@@ -177,13 +190,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 for (var j = 0; j < times; j++)
                 {
+                    set.Contains(3).Should().BeFalse();
+
                     for (var i = 0; i < set.Count; i++)
                     {
-                        int real;
-                        set.TryNext(out real).Should().BeTrue();
+                        var real = set.ToList()[i];
                         real.Should().Be(i);
                     }
-
                 }
             }
         }

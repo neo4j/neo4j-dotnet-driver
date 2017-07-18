@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal interface IClusterConnectionPool : IDisposable
     {
         // Try to acquire a connection with the server specified by the uri
-        bool TryAcquire(Uri uri, out IConnection conn);
+        IConnection Acquire(Uri uri);
         // Add a set of uri to this pool
         void Add(IEnumerable<Uri> uris);
         // Update the pool keys with the new server uris

@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
@@ -29,6 +30,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IDictionary<string, string> _routingContext;
 
         private IRoutingTable _routingTable;
+
         public IRoutingTable RoutingTable
         {
             get => _routingTable;
@@ -40,6 +42,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly object _syncLock = new object();
 
         private bool _isReadingInAbsenceOfWriter = false;
+
         public bool IsReadingInAbsenceOfWriter
         {
             get => _isReadingInAbsenceOfWriter;
@@ -52,13 +55,13 @@ namespace Neo4j.Driver.Internal.Routing
             Uri seedUri,
             ISet<Uri> initUris,
             ILogger logger) :
-            this(new RoundRobinRoutingTable(initUris),
+            this(new RoutingTable(initUris),
                 routingSettings, poolManager, seedUri, logger)
         {
         }
 
         public RoutingTableManager(
-            IRoutingTable routingTable, 
+            IRoutingTable routingTable,
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
             Uri seedUri,
@@ -70,11 +73,6 @@ namespace Neo4j.Driver.Internal.Routing
             _seedUri = seedUri;
 
             _logger = logger;
-        }
-
-        public bool TryAcquireConnection(AccessMode mode, out Uri uri)
-        {
-            return _routingTable.TryNext(mode, out uri);
         }
 
         public void EnsureRoutingTableForMode(AccessMode mode)
@@ -172,19 +170,15 @@ namespace Neo4j.Driver.Internal.Routing
             lock (_syncLock)
             {
                 rediscoveryFunc = rediscoveryFunc ?? Rediscovery;
-                while (true)
+
+                var knownRouters = _routingTable.Routers;
+                foreach (var router in knownRouters)
                 {
-                    Uri uri;
-                    if (!_routingTable.TryNextRouter(out uri))
-                    {
-                        // no alive server
-                        return null;
-                    }
-                    triedUris?.Add(uri);
-                    IConnection conn = _poolManager.CreateClusterConnection(uri);
+                    triedUris?.Add(router);
+                    IConnection conn = _poolManager.CreateClusterConnection(router);
                     if (conn == null)
                     {
-                        _routingTable.Remove(uri);
+                        _routingTable.Remove(router);
                     }
                     else
                     {
@@ -199,7 +193,7 @@ namespace Neo4j.Driver.Internal.Routing
                         catch (Exception e)
                         {
                             _logger?.Info(
-                                $"Failed to update routing table with server uri={uri} due to error {e.Message}");
+                                $"Failed to update routing table with server uri={router} due to error {e.Message}");
                             if (e is SessionExpiredException)
                             {
                                 // ignored
@@ -212,6 +206,7 @@ namespace Neo4j.Driver.Internal.Routing
                         }
                     }
                 }
+                return null;
             }
         }
 
@@ -221,7 +216,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 var discoveryManager = new ClusterDiscoveryManager(conn, _routingContext, _logger);
                 discoveryManager.Rediscovery();
-                return new RoundRobinRoutingTable(discoveryManager.Routers, discoveryManager.Readers,
+                return new RoutingTable(discoveryManager.Routers, discoveryManager.Readers,
                     discoveryManager.Writers, discoveryManager.ExpireAfterSeconds);
             }
         }
