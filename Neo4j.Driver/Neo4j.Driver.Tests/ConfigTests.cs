@@ -33,6 +33,7 @@ namespace Neo4j.Driver.Tests
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
                 config.Logger.Should().BeOfType<DebugLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(10);
+                config.LoadBalancingStrategy.Should().Be(LoadBalancingStrategy.LeastConnected);
             }
         }
 

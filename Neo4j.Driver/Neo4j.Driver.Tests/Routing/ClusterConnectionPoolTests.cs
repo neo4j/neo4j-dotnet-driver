@@ -56,8 +56,8 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldNotCreateNewConnectionPoolIfUriDoseNotExist()
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 var pool = new ClusterConnectionPool(mockedConnectionPool.Object, connectionPoolDict);
 
                 connectionPoolDict.Count.Should().Be(0);
@@ -74,12 +74,12 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldReturnExisitingConnectionPoolIfUriAlreadyExist()
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
                 mockedConnection.Setup(c => c.Init()).Throws(new InvalidOperationException("An exception"));
                 mockedConnectionPool.Setup(x => x.Acquire(It.IsAny<AccessMode>())).Returns(mockedConnection.Object);
 
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
@@ -107,10 +107,10 @@ namespace Neo4j.Driver.Tests.Routing
             public void AddressMatchTest(string first, string second, bool expectedResult)
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IConnection>();
                 mockedConnectionPool.Setup(x => x.Acquire(It.IsAny<AccessMode>())).Returns(mockedConnection.Object);
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
@@ -133,8 +133,8 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldAddNewConnectionPoolIfDoesNotExist()
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 var pool = new ClusterConnectionPool(mockedConnectionPool.Object, connectionPoolDict);
 
                 // When
@@ -150,8 +150,8 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldRemoveNewlyCreatedPoolnIfDisposeAlreadyCalled()
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
-                var mockedConnectionPoolDict = new Mock<ConcurrentDictionary<Uri, IConnectionProvider>>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var mockedConnectionPoolDict = new Mock<ConcurrentDictionary<Uri, IConnectionPool>>();
                 var pool = new ClusterConnectionPool(mockedConnectionPool.Object, mockedConnectionPoolDict.Object);
 
                 // When
@@ -169,8 +169,8 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldRemoveServerPoolIfNotPresentInNewServers()
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
                 var pool = new ClusterConnectionPool(mockedConnectionPool.Object, connectionPoolDict);
 
@@ -188,8 +188,8 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldRemovedIfExist()
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
@@ -207,7 +207,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldRemoveNothingIfNotFound()
             {
                 // Given
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
@@ -226,8 +226,8 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldRemoveAllAfterDispose()
             {
                 // Given
-                var mockedConnectionPool = new Mock<IConnectionProvider>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionProvider>();
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
@@ -239,6 +239,36 @@ namespace Neo4j.Driver.Tests.Routing
                 mockedConnectionPool.Verify(x => x.Dispose(), Times.Once);
                 connectionPoolDict.Count.Should().Be(0);
                 connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
+            }
+        }
+
+        public class NumberOfInUseConnectionsMethod
+        {
+            [Fact]
+            public void ShouldReturnZeroForMissingAddress()
+            {
+                var missingAddress = new Uri("localhost:1");
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+                var numberOfInUseConnections = pool.NumberOfInUseConnections(missingAddress);
+
+                numberOfInUseConnections.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReturnCorrectCountForPresentAddress()
+            {
+                var presentAddress = new Uri("localhost:1");
+                var mockedConnectionPool = new Mock<IConnectionPool>();
+                mockedConnectionPool.Setup(x => x.NumberOfInUseConnections).Returns(42);
+                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+                connectionPoolDict.TryAdd(presentAddress, mockedConnectionPool.Object);
+                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+                var numberOfInUseConnections = pool.NumberOfInUseConnections(presentAddress);
+
+                numberOfInUseConnections.Should().Be(42);
             }
         }
     }

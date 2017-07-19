@@ -21,15 +21,17 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class RoundRobinLoadBalancingStrategy : ILoadBalancingStrategy
+    internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
     {
         private readonly RoundRobinArrayIndex _readersIndex = new RoundRobinArrayIndex();
         private readonly RoundRobinArrayIndex _writersIndex = new RoundRobinArrayIndex();
 
+        private readonly IClusterConnectionPool _connectionPool;
         private readonly ILogger _logger;
 
-        public RoundRobinLoadBalancingStrategy(ILogger logger)
+        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, ILogger logger)
         {
+            _connectionPool = connectionPool;
             _logger = logger;
         }
 
@@ -52,10 +54,40 @@ namespace Neo4j.Driver.Internal.Routing
                 return null;
             }
 
-            var index = roundRobinIndex.Next(count);
-            var address = addresses[index];
-            _logger.Trace($"Unable to select {addressType}, no known addresses given");
-            return address;
+            // choose start index for iteration in round-rodin fashion
+            var startIndex = roundRobinIndex.Next(count);
+            var index = startIndex;
+
+            Uri leastConnectedAddress = null;
+            var leastActiveConnections = Int32.MaxValue;
+
+            // iterate over the array to find least connected address
+            do
+            {
+                Uri address = addresses[index];
+                int inUseConnections = _connectionPool.NumberOfInUseConnections(address);
+
+                if (inUseConnections < leastActiveConnections)
+                {
+                    leastConnectedAddress = address;
+                    leastActiveConnections = inUseConnections;
+                }
+
+                // loop over to the start of the array when end is reached
+                if (index == count - 1)
+                {
+                    index = 0;
+                }
+                else
+                {
+                    index++;
+                }
+            } while (index != startIndex);
+
+            _logger.Trace(
+                $"Selected {addressType} with address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
+
+            return leastConnectedAddress;
         }
     }
 }

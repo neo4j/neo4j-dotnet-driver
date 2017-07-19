@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -25,12 +26,14 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterConnectionPool : LoggerBase, IClusterConnectionPool
     {
-        private readonly ConcurrentDictionary<Uri, IConnectionProvider> _pools = new ConcurrentDictionary<Uri, IConnectionProvider>();
+        private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools =
+            new ConcurrentDictionary<Uri, IConnectionPool>();
+
         private readonly ConnectionSettings _connectionSettings;
         private readonly ConnectionPoolSettings _poolSettings;
 
         // for test only
-        private readonly IConnectionProvider _fakePool;
+        private readonly IConnectionPool _fakePool;
 
         private volatile bool _disposeCalled;
 
@@ -38,7 +41,7 @@ namespace Neo4j.Driver.Internal.Routing
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
             IEnumerable<Uri> initUris, ILogger logger
-            )
+        )
             : base(logger)
         {
             _connectionSettings = connectionSettings;
@@ -47,26 +50,26 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         internal ClusterConnectionPool(
-            IConnectionProvider connectionPool,
-            ConcurrentDictionary<Uri, IConnectionProvider> clusterPool=null,
-            ConnectionSettings connSettings=null,
-            ConnectionPoolSettings poolSettings=null,
-            ILogger logger=null
-            ) :
+            IConnectionPool connectionPool,
+            ConcurrentDictionary<Uri, IConnectionPool> clusterPool = null,
+            ConnectionSettings connSettings = null,
+            ConnectionPoolSettings poolSettings = null,
+            ILogger logger = null
+        ) :
             this(connSettings, poolSettings, Enumerable.Empty<Uri>(), logger)
         {
             _fakePool = connectionPool;
             _pools = clusterPool;
         }
 
-        private IConnectionProvider CreateNewConnectionPool(Uri uri)
+        private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
             return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger);
         }
 
         public IConnection Acquire(Uri uri)
         {
-            IConnectionProvider pool;
+            IConnectionPool pool;
             if (!_pools.TryGetValue(uri, out pool))
             {
                 return null;
@@ -84,7 +87,8 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 // Anything added after dispose should be directly cleaned.
                 Clear();
-                throw new ObjectDisposedException(GetType().Name, $"Failed to create connections with server {uri} as the driver has already started to dispose.");
+                throw new ObjectDisposedException(GetType().Name,
+                    $"Failed to create connections with server {uri} as the driver has already started to dispose.");
             }
         }
 
@@ -113,12 +117,22 @@ namespace Neo4j.Driver.Internal.Routing
 
         public void Purge(Uri uri)
         {
-            IConnectionProvider toRemvoe;
+            IConnectionPool toRemvoe;
             var removed = _pools.TryRemove(uri, out toRemvoe);
             if (removed)
             {
                 toRemvoe.Dispose();
             }
+        }
+
+        public int NumberOfInUseConnections(Uri uri)
+        {
+            IConnectionPool pool;
+            if (_pools.TryGetValue(uri, out pool))
+            {
+                return pool.NumberOfInUseConnections;
+            }
+            return 0;
         }
 
         private void Clear()

@@ -123,7 +123,7 @@ namespace Neo4j.Driver.V1
                     connectionProvider = new ConnectionPool(parsedUri, connectionSettings, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(routingSettings, connectionSettings, connectionPoolSettings, logger);
+                    connectionProvider = new LoadBalancer(routingSettings, connectionSettings, connectionPoolSettings, config);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");

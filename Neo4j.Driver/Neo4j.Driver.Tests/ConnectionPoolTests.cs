@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -33,6 +34,7 @@ namespace Neo4j.Driver.Tests
         public class AcquireMethod
         {
             private readonly ITestOutputHelper _output;
+
             private IConnection MockedConnection
             {
                 get
@@ -66,7 +68,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotThrowExceptionWhenIdlePoolSizeReached()
             {
                 var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxIdleConnectionPoolSize = 2});
-                var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
+                var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
                 pool.Acquire();
                 pool.Acquire();
                 pool.NumberOfAvailableConnections.Should().Be(0);
@@ -101,8 +103,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAcquireFromPoolIfAvailable()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(new Config { MaxIdleConnectionPoolSize = 2 });
-                var pool = new ConnectionPool(MockedConnection, settings:connectionPoolSettings);
+                var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxIdleConnectionPoolSize = 2});
+                var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
 
                 for (var i = 0; i < 4; i++)
                 {
@@ -133,8 +135,8 @@ namespace Neo4j.Driver.Tests
 
                 var pool = new ConnectionPool(mockedConnection.Object);
 
-                Record.Exception(()=>pool.Acquire());
-                mockedConnection.Verify(x=>x.Destroy(), Times.Once);
+                Record.Exception(() => pool.Acquire());
+                mockedConnection.Verify(x => x.Destroy(), Times.Once);
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
@@ -227,8 +229,8 @@ namespace Neo4j.Driver.Tests
                 conns.Add(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
                 var poolSettings = new ConnectionPoolSettings(
-                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest});
-                var pool = new ConnectionPool(MockedConnection, conns, settings:poolSettings);
+                    new Config {MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest});
+                var pool = new ConnectionPool(MockedConnection, conns, settings: poolSettings);
 
                 pool.NumberOfAvailableConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -261,7 +263,7 @@ namespace Neo4j.Driver.Tests
                 conns.Add(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
                 var poolSettings = new ConnectionPoolSettings(
-                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest });
+                    new Config {MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest});
                 var pool = new ConnectionPool(MockedConnection, conns, settings: poolSettings);
 
                 pool.NumberOfAvailableConnections.Should().Be(1);
@@ -322,7 +324,7 @@ namespace Neo4j.Driver.Tests
                                 Task.Delay(500);
                                 var conn = pool.Acquire();
                                 lock (receivedIds)
-                                    receivedIds.Add(((IPooledConnection)conn).Id);
+                                    receivedIds.Add(((IPooledConnection) conn).Id);
                             }
                             catch (Exception ex)
                             {
@@ -494,8 +496,9 @@ namespace Neo4j.Driver.Tests
                 inUseConns.TryAdd(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
                 var poolSettings = new ConnectionPoolSettings(
-                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest }); ;
-                var pool = new ConnectionPool(null, null, inUseConns, settings:poolSettings);
+                    new Config {MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest});
+                ;
+                var pool = new ConnectionPool(null, null, inUseConns, settings: poolSettings);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
@@ -507,7 +510,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                timerMock.Verify(x=>x.Start(), Times.Once);
+                timerMock.Verify(x => x.Start(), Times.Once);
             }
 
             [Fact]
@@ -653,6 +656,84 @@ namespace Neo4j.Driver.Tests
                 mock.Verify(x => x.Destroy(), Times.Once);
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
+            }
+        }
+
+        public class NumberOfInUseConnections
+        {
+            [Fact]
+            public void ShouldReturnZeroAfterCreation()
+            {
+                var uri = new Uri("localhost:7687");
+                var connectionSettings = new ConnectionSettings(uri, AuthTokens.None, Config.DefaultConfig);
+                var poolSettings = new ConnectionPoolSettings(1, 1, TimeSpan.MaxValue, TimeSpan.MaxValue);
+                var logger = new Mock<ILogger>().Object;
+
+                var pool = new ConnectionPool(uri, connectionSettings, poolSettings, logger);
+
+                pool.NumberOfInUseConnections.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReturnCorrectCountWhenOnlyInUseConnectionsPresent()
+            {
+                var connectionMock = new Mock<IConnection>();
+                // pool has no idle connections
+                var availableConnections = new BlockingCollection<IPooledConnection>();
+
+                // pool has 3 in-use connections
+                var inUseConnections = new ConcurrentSet<IPooledConnection>();
+                inUseConnections.TryAdd(new Mock<IPooledConnection>().Object);
+                inUseConnections.TryAdd(new Mock<IPooledConnection>().Object);
+                inUseConnections.TryAdd(new Mock<IPooledConnection>().Object);
+
+                var logger = new Mock<ILogger>().Object;
+
+                var pool = new ConnectionPool(connectionMock.Object, availableConnections, inUseConnections, logger);
+
+                pool.NumberOfInUseConnections.Should().Be(3);
+            }
+
+            [Fact]
+            public void ShouldReturnZeroWhenOnlyIdleConnectionsPresent()
+            {
+                var connectionMock = new Mock<IConnection>();
+
+                // pool has 2 idle connections
+                var availableConnections = new BlockingCollection<IPooledConnection>();
+                availableConnections.TryAdd(new Mock<IPooledConnection>().Object);
+                availableConnections.TryAdd(new Mock<IPooledConnection>().Object);
+
+                // pool has no in-use connections
+                var inUseConnections = new ConcurrentSet<IPooledConnection>();
+                var logger = new Mock<ILogger>().Object;
+
+                var pool = new ConnectionPool(connectionMock.Object, availableConnections, inUseConnections, logger);
+
+                pool.NumberOfInUseConnections.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReturnCorrectCountWhenBothIdleAndInUseConnectionsPresent()
+            {
+                var connectionMock = new Mock<IConnection>();
+
+                // pool has 3 idle connections
+                var availableConnections = new BlockingCollection<IPooledConnection>();
+                availableConnections.TryAdd(new Mock<IPooledConnection>().Object);
+                availableConnections.TryAdd(new Mock<IPooledConnection>().Object);
+                availableConnections.TryAdd(new Mock<IPooledConnection>().Object);
+
+                // pool has 2 in-use connections
+                var inUseConnections = new ConcurrentSet<IPooledConnection>();
+                inUseConnections.TryAdd(new Mock<IPooledConnection>().Object);
+                inUseConnections.TryAdd(new Mock<IPooledConnection>().Object);
+
+                var logger = new Mock<ILogger>().Object;
+
+                var pool = new ConnectionPool(connectionMock.Object, availableConnections, inUseConnections, logger);
+
+                pool.NumberOfInUseConnections.Should().Be(2);
             }
         }
     }
