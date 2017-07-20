@@ -81,6 +81,11 @@ namespace Neo4j.Driver.Internal
                 error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
         }
 
+        public static bool IsDatabaseUnavailableError(this Exception error)
+        {
+            return error.HasErrorCode("Neo.TransientError.General.DatabaseUnavailable");
+        }
+
         public static bool IsClusterError(this Exception error)
         {
             return IsClusterNotALeaderError(error)
