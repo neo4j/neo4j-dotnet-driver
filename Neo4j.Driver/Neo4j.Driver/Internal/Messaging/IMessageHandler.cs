@@ -24,17 +24,11 @@ namespace Neo4j.Driver.Internal.Messaging
     internal interface IMessageRequestHandler
     {
         void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken);
-        Task HandleInitMessageAsync(string clientNameAndVersion, IDictionary<string, object> authToken);
         void HandleRunMessage(string statement, IDictionary<string, object> parameters);
-        Task HandleRunMessageAsync(string statement, IDictionary<string, object> parameters);
         void HandlePullAllMessage();
-        Task HandlePullAllMessageAsync();
         void HandleDiscardAllMessage();
-        Task HandleDiscardAllMessageAsync();
         void HandleResetMessage();
-        Task HandleResetMessageAsync();
         void HandleAckFailureMessage();
-        Task HandleAckFailureMessageAsync();
     }
 
     internal interface IMessageResponseHandler

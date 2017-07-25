@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.IO;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
 using Record = Xunit.Record;
@@ -43,6 +44,7 @@ namespace Neo4j.Driver.Tests
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream(new byte[] {0, 0, 0, 1});
+                    harness.SetupWriteStream();
                     await harness.Client.StartAsync();
                     harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri, Timeout.InfiniteTimeSpan),
                         Times.Once);
@@ -58,6 +60,7 @@ namespace Neo4j.Driver.Tests
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream(response);
+                    harness.SetupWriteStream();
                     await harness.ExpectException<NotSupportedException>(() => harness.Client.StartAsync(), errorMessage);
                 }
             }
@@ -78,7 +81,7 @@ namespace Neo4j.Driver.Tests
                     0x61, 0x67, 0x65, 0x20, 0x31, 0xA0, 0x00, 0x00
                 };
                 var expectedLength = expectedBytes.Length;
-                expectedBytes = expectedBytes.PadRight(ChunkedOutputStream.BufferSize);
+                expectedBytes = expectedBytes.PadRight(Constants.BufferSize);
 
                 var messageHandler = new MessageResponseHandler();
                 messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
@@ -102,8 +105,6 @@ namespace Neo4j.Driver.Tests
                     harness.Client.Receive(messageHandler);
 
                     // Then
-                    harness.VerifyWriteStreamUsages(2 /*write + flush*/);
-
                     harness.VerifyWriteStreamContent(expectedBytes, expectedLength);
                 }
             }
@@ -132,8 +133,6 @@ namespace Neo4j.Driver.Tests
                     Record.Exception(() => harness.Client.Receive(messageHandler));
 
                     // Then
-                    harness.VerifyWriteStreamUsages(2 /*write + flush*/);
-
                     messageHandler.HasError.Should().BeTrue();
                     messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
                     messageHandler.Error.Message.Should().Be(
@@ -173,8 +172,6 @@ namespace Neo4j.Driver.Tests
                     Record.Exception(() => harness.Client.Receive(messageHandler));
 
                     // Then
-                    harness.VerifyWriteStreamUsages(2 /*write + flush*/);
-
                     messageHandler.HasError.Should().BeTrue();
                     messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
                     messageHandler.Error.Message.Should().Be(
@@ -285,6 +282,7 @@ namespace Neo4j.Driver.Tests
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
                     harness.SetupReadStream("00 00 00 01");
+                    harness.SetupWriteStream();
                     await harness.Client.StartAsync();
                     harness.Client.Dispose();
                     harness.MockTcpSocketClient.Verify(s => s.Dispose(), Times.Once);

@@ -16,11 +16,13 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Packstream;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -28,6 +30,31 @@ namespace Neo4j.Driver.Tests
 {
     public partial class PackStreamTests
     {
+
+        private static Mock<MemoryStream> CreateMockStream(byte b)
+        {
+            return CreateMockStream(new byte[] {b});
+        }
+
+        private static Mock<MemoryStream> CreateMockStream(params byte[][] bytes)
+        {
+            MemoryStream tmpStream = new MemoryStream();
+            foreach (var b in bytes)
+            {
+                tmpStream.Write(b, 0, b.Length);
+            }
+
+            var mockInput = new Mock<MemoryStream>(tmpStream.ToArray());
+
+            mockInput.Setup(x => x.Length).CallBase();
+            mockInput.Setup(x => x.Position).CallBase();
+            mockInput.Setup(x => x.CanRead).CallBase();
+            mockInput.Setup(x => x.ReadByte()).CallBase();
+            mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>())).CallBase();
+
+            return mockInput;
+        }
+
         public class UnpackerTests
         {
             public class UnpackNullMethod
@@ -35,140 +62,76 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldUnpackNullSuccessfully()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.NULL);
+                    var mockInput = CreateMockStream(PackStream.NULL);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackNull().Should().BeNull();
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotNull()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
+                    var mockInput = CreateMockStream(PackStream.BYTES_16);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
+                    var unpacker = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackNull());
                     ex.Should().BeOfType<ProtocolException>();
                 }
             }
-
-            public class UnpackNullMethodAsync
-            {
-                [Fact]
-                public async void ShouldUnpackNullSuccessfully()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.NULL));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var unpackNull = await u.UnpackNullAsync();
-                    unpackNull.Should().BeNull();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotNull()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.BYTES_16));
-
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => unpacker.UnpackNullAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                }
-            }
-
+            
             public class UnpackBooleanMethod
             {
                 [Fact]
                 public void ShouldUnpackBooleanTrueSuccessfully()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.TRUE);
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
+                        .Callback((byte[] b, int o, int c) => b[0] = PackStream.TRUE)
+                        .Returns(1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackBoolean().Should().BeTrue();
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackBooleanFalseSuccessfully()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
+                        .Callback((byte[] b, int o, int c) => b[0] = PackStream.FALSE)
+                        .Returns(1);
+                        
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackBoolean().Should().BeFalse();
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotTrueOrFalse()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
+                        .Callback((byte[] b, int o, int c) => b[0] = PackStream.BYTES_16)
+                        .Returns(1);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
+                    var unpacker = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackBoolean());
                     ex.Should().BeOfType<ProtocolException>();
                 }
             }
-
-            public class UnpackBooleanMethodAsync
-            {
-                [Fact]
-                public async void ShouldUnpackBooleanTrueSuccessfully()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.TRUE));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var b = await u.UnpackBooleanAsync();
-                    b.Should().BeTrue();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackBooleanFalseSuccessfully()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.FALSE));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var b = await u.UnpackBooleanAsync();
-                    b.Should().BeFalse();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotTrueOrFalse()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.BYTES_16));
-
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => unpacker.UnpackBooleanAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                }
-            }
-
+            
             public class UnpackLongMethod
             {
                 [Theory]
@@ -177,485 +140,197 @@ namespace Neo4j.Driver.Tests
                 [InlineData(0x7F, 127)] // 7F to FF
                 public void ShouldUnpackLongAsTinyByte(byte data, sbyte expected)
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(data);
+                    var mockInput = CreateMockStream(data);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     sbyte real = (sbyte)u.UnpackLong();
                     real.Should().Be(expected);
 
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadSByte(), Times.Never);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackLongAsSignedByte()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.INT_8);
                     sbyte expected = 1;
-                    mockInput.Setup(x => x.ReadSByte()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.INT_8, (byte)expected });
+
+                    var u = new PackStreamReader(mockInput.Object);
 
                     sbyte real = (sbyte) u.UnpackLong();
                     Assert.Equal(expected, real);
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadSByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldUnpackLongAsShort()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.INT_16);
                     short expected = 124;
-                    mockInput.Setup(x => x.ReadShort()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.INT_16 },
+                        PackStreamBitConverter.GetBytes(expected));
+
+                    var u = new PackStreamReader(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackLong());
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadShort(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldUnpackLongAsInt()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.INT_32);
                     int expected = 1024;
-                    mockInput.Setup(x => x.ReadInt()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.INT_32 },
+                        PackStreamBitConverter.GetBytes(expected));
+
+                    var u = new PackStreamReader(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackLong());
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadInt(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldUnpackLongAsLong()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.INT_64);
                     long expected = 1024;
-                    mockInput.Setup(x => x.ReadLong()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.INT_64 },
+                        PackStreamBitConverter.GetBytes(expected));
+
+                    var u = new PackStreamReader(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackLong());
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadLong(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotLong()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
+                    var mockInput = CreateMockStream(PackStream.BYTES_16);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
+                    var unpacker = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackLong());
                     ex.Should().BeOfType<ProtocolException>();
                 }
             }
-
-            public class UnpackLongMethodAsync
-            {
-                [Theory]
-                [InlineData(0xF0, -16)]
-                [InlineData(0xFF, -1)]
-                [InlineData(0x7F, 127)] // 7F to FF
-                public async void ShouldUnpackLongAsTinyByte(byte data, sbyte expected)
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(data));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    sbyte real = (sbyte)await u.UnpackLongAsync();
-                    real.Should().Be(expected);
-
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadSByteAsync(), Times.Never);
-                }
-
-                [Fact]
-                public async void ShouldUnpackLongAsSignedByte()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.INT_8));
-                    sbyte expected = 1;
-                    mockInput.Setup(x => x.ReadSByteAsync()).Returns(Task.FromResult(expected));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    sbyte real = (sbyte)await u.UnpackLongAsync();
-                    Assert.Equal(expected, real);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadSByteAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackLongAsShort()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.INT_16));
-                    short expected = 124;
-                    mockInput.Setup(x => x.ReadShortAsync()).Returns(Task.FromResult(expected));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    Assert.Equal(expected, await u.UnpackLongAsync());
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadShortAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackLongAsInt()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.INT_32));
-                    int expected = 1024;
-                    mockInput.Setup(x => x.ReadIntAsync()).Returns(Task.FromResult(expected));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    Assert.Equal(expected, await u.UnpackLongAsync());
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadIntAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackLongAsLong()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.INT_64));
-                    long expected = 1024;
-                    mockInput.Setup(x => x.ReadLongAsync()).Returns(Task.FromResult(expected));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    Assert.Equal(expected, await u.UnpackLongAsync());
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadLongAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotLong()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.BYTES_16));
-
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => unpacker.UnpackLongAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                }
-            }
-
+            
             public class UnpackDoubleMethod
             {
                 [Fact]
                 public void ShouldUnpackDoubleCorrectly()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FLOAT_64);
                     double expected = 1.12;
-                    mockInput.Setup(x => x.ReadDouble()).Returns(expected);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var mockInput = CreateMockStream(new byte[] {PackStream.FLOAT_64},
+                        PackStreamBitConverter.GetBytes(expected));
+
+                    var u = new PackStreamReader(mockInput.Object);
 
                     Assert.Equal(expected, u.UnpackDouble());
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadDouble(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotDouble()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
+                    var mockInput = CreateMockStream(PackStream.BYTES_16);
 
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
+                    var unpacker = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => unpacker.UnpackDouble());
                     ex.Should().BeOfType<ProtocolException>();
                 }
             }
-
-            public class UnpackDoubleMethodAsync
-            {
-                [Fact]
-                public async void ShouldUnpackDoubleCorrectly()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.FLOAT_64));
-                    double expected = 1.12;
-                    mockInput.Setup(x => x.ReadDoubleAsync()).Returns(Task.FromResult(expected));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    Assert.Equal(expected, await u.UnpackDoubleAsync());
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadDoubleAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotDouble()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.BYTES_16));
-
-                    var unpacker = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => unpacker.UnpackDoubleAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                }
-            }
-
+            
             public class UnpackStringMethod
             {
                 [Fact]
                 public void ShouldUnpackTinyStringAsEmptyString()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.TINY_STRING);
+                    var mockInput = CreateMockStream(new byte[] {PackStream.TINY_STRING});
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackString().Should().BeEmpty(); //.Equals(String.Empty);
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackStringLessThan16Chars()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(0x81);
-                    mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
+                    var mockInput = CreateMockStream(new byte[] { 0x81 }, new byte[] { 0x61 });
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldUnpackString8()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte())
-                        .Returns(new Queue<byte>(new[] {PackStream.STRING_8, (byte) 1}).Dequeue);
-                    mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
+                    var mockInput = CreateMockStream(new byte[] { PackStream.STRING_8, (byte) 1 },
+                        new byte[] { 0x61 });
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
-                    mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
-                    mockInput.Verify(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(3));
                 }
 
                 [Fact]
                 public void ShouldUnpackString16()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.STRING_16);
-                    mockInput.Setup(x => x.ReadShort()).Returns(1);
-                    mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
+                    var mockInput = CreateMockStream(new byte[] {PackStream.STRING_16},
+                        PackStreamBitConverter.GetBytes((short) 1), new byte[] {0x61});
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadShort(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(3));
                 }
 
                 [Fact]
                 public void ShouldUnpackString32()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.STRING_32);
-                    mockInput.Setup(x => x.ReadInt()).Returns(1);
-                    mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
+                    var mockInput = CreateMockStream(new byte[] {PackStream.STRING_32},
+                        PackStreamBitConverter.GetBytes((int) 1), new byte[] {0x61});
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackString().Should().Be("a");
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadInt(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(3));
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionWhenUnpackString32ReturnsStringSizeLonggerThanIntMax()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.STRING_32);
-                    mockInput.Setup(x => x.ReadInt()).Returns(-1);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.STRING_32 },
+                        PackStreamBitConverter.GetBytes((int)-1));
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackString());
                     ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadInt(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotString()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.FALSE });
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackString());
                     ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
             }
-
-            public class UnpackStringMethodAsync
-            {
-                [Fact]
-                public async void ShouldUnpackTinyStringAsEmptyString()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.TINY_STRING));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    string s = await u.UnpackStringAsync();
-                    s.Should().BeEmpty(); //.Equals(String.Empty);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackStringLessThan16Chars()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult<byte>(0x81));
-                    mockInput.Setup(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>())).Returns(Task.FromResult(true))
-                        .Callback<byte[], int, int?>((buffer, offset, size) =>
-                        {
-                            buffer[0] = 0x61;
-                        });
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-
-                    string s = await u.UnpackStringAsync();
-                    s.Should().Be("a");
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()),
-                        Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackString8()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync())
-                        .Returns(new Queue<Task<byte>>(new[] {Task.FromResult(PackStream.STRING_8), Task.FromResult((byte) 1)})
-                            .Dequeue);
-                    mockInput.Setup(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>())).Returns(Task.FromResult(true))
-                        .Callback<byte[], int, int?>((buffer, offset, size) =>
-                        {
-                            buffer[0] = 0x61;
-                        });
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    string s = await u.UnpackStringAsync();
-                    s.Should().Be("a");
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Exactly(2));
-                    mockInput.Verify(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()),
-                        Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackString16()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.STRING_16));
-                    mockInput.Setup(x => x.ReadShortAsync()).Returns(Task.FromResult<short>(1));
-                    mockInput.Setup(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>())).Returns(Task.FromResult(true))
-                        .Callback<byte[], int, int?>((buffer, offset, size) =>
-                        {
-                            buffer[0] = 0x61;
-                        });
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var s = await u.UnpackStringAsync();
-                    s.Should().Be("a");
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadShortAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()),
-                        Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackString32()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.STRING_32));
-                    mockInput.Setup(x => x.ReadIntAsync()).Returns(Task.FromResult(1));
-                    mockInput.Setup(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>())).Returns(Task.FromResult(true))
-                        .Callback<byte[], int, int?>((buffer, offset, size) =>
-                        {
-                            buffer[0] = 0x61;
-                        });
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    string s = await u.UnpackStringAsync();
-                    s.Should().Be("a");
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadIntAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()),
-                        Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionWhenUnpackString32ReturnsStringSizeLonggerThanIntMax()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.STRING_32));
-                    mockInput.Setup(x => x.ReadIntAsync()).Returns(Task.FromResult(-1));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => u.UnpackStringAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadIntAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotString()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.FALSE));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => u.UnpackStringAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-            }
-
 
             public class UnpackByteMethod
             {
@@ -663,185 +338,84 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldUnpackBytes8()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte())
-                        .Returns(new Queue<byte>(new[] {PackStream.BYTES_8, (byte) 1}).Dequeue);
-                    mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
+                    var mockInput = CreateMockStream(new byte[] { PackStream.BYTES_8, 1 }, new byte[] { 0x61 });
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var actual = u.UnpackBytes();
                     actual.Length.Should().Be(1);
                     actual.Should().Contain(0x61);
-                    mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
-                    mockInput.Verify(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(3));
                 }
 
                 [Fact]
                 public void ShouldUnpackBytes16()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_16);
-                    mockInput.Setup(x => x.ReadShort()).Returns(1);
-                    mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
+                    var mockInput = CreateMockStream(new byte[] {PackStream.BYTES_16},
+                        PackStreamBitConverter.GetBytes((short) 1), new byte[] {0x61});
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var actual = u.UnpackBytes();
                     actual.Length.Should().Be(1);
                     actual.Should().Contain(0x61);
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadShort(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(3));
                 }
 
                 [Fact]
                 public void ShouldUnpackBytes32()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_32);
-                    mockInput.Setup(x => x.ReadInt()).Returns(1);
-                    mockInput.Setup(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
+                    var mockInput = CreateMockStream(new byte[] { PackStream.BYTES_32 },
+                        PackStreamBitConverter.GetBytes((int)1), new byte[] { 0x61 });
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var actual = u.UnpackBytes();
                     actual.Length.Should().Be(1);
                     actual.Should().Contain(0x61);
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadInt(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytes(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(3));
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionWhenUnpackBytes32ReturnsBytesSizeLonggerThanIntMax()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.BYTES_32);
-                    mockInput.Setup(x => x.ReadInt()).Returns(-1);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.BYTES_32 },
+                        PackStreamBitConverter.GetBytes((int)-1));
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackBytes());
                     ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadInt(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotBytes()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
+                        .Callback((byte[] b, int o, int c) => b[0] = PackStream.FALSE)
+                        .Returns(1);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackBytes());
                     ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
             }
-
-            public class UnpackByteMethodAsync
-            {
-
-                [Fact]
-                public async void ShouldUnpackBytes8()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync())
-                        .Returns(new Queue<Task<byte>>(new[] { Task.FromResult(PackStream.BYTES_8), Task.FromResult((byte)1) }).Dequeue);
-                    mockInput.Setup(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>())).Returns(Task.FromResult(true))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var actual = await u.UnpackBytesAsync();
-                    actual.Length.Should().Be(1);
-                    actual.Should().Contain(0x61);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Exactly(2));
-                    mockInput.Verify(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackBytes16()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.BYTES_16));
-                    mockInput.Setup(x => x.ReadShortAsync()).Returns(Task.FromResult((short)1));
-                    mockInput.Setup(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>())).Returns(Task.FromResult(true))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var actual = await u.UnpackBytesAsync();
-                    actual.Length.Should().Be(1);
-                    actual.Should().Contain(0x61);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadShortAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackBytes32()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.BYTES_32));
-                    mockInput.Setup(x => x.ReadIntAsync()).Returns(Task.FromResult(1));
-                    mockInput.Setup(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>())).Returns(Task.FromResult(true))
-                        .Callback<byte[], int, int?>((buffer, offset, size) => { buffer[0] = 0x61; });
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var actual = await u.UnpackBytesAsync();
-                    actual.Length.Should().Be(1);
-                    actual.Should().Contain(0x61);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadIntAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadBytesAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int?>()), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionWhenUnpackBytes32ReturnsBytesSizeLonggerThanIntMax()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.BYTES_32));
-                    mockInput.Setup(x => x.ReadIntAsync()).Returns(Task.FromResult(-1));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => u.UnpackBytesAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadIntAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotBytes()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.FALSE));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => u.UnpackBytesAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-            }
-
+            
             public class UnpackMapHeaderMethod
             {
                 [Fact]
                 public void ShouldUnpackTinyMap()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(0xA2);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(2);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -850,140 +424,74 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldUnpackMap8()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte())
-                        .Returns(new Queue<byte>(new[] {PackStream.MAP_8, (byte) 1}).Dequeue);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.MAP_8, (byte)1 });
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(1);
-                    mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
+                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackMap16()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.MAP_16);
-                    mockInput.Setup(x => x.ReadShort()).Returns(1);
-                   
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), 2))
+                        .Callback((byte[] b, int o, int c) => PackStreamBitConverter.GetBytes((short)1).CopyTo(b, o))
+                        .Returns((byte[] b, int o, int c) => c);
+
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadShort(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackMap32()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.MAP_32);
-                    mockInput.Setup(x => x.ReadInt()).Returns(-1);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), 4))
+                        .Callback((byte[] b, int o, int c) => PackStreamBitConverter.GetBytes((int)-1).CopyTo(b, o))
+                        .Returns((byte[] b, int o, int c) => c);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackMapHeader().Should().Be(uint.MaxValue);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadInt(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotMap()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackMapHeader());
                     ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
-
-            public class UnpackMapHeaderMethodAsync
-            {
-                [Fact]
-                public async void ShouldUnpackTinyMap()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult((byte)0xA2));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackMapHeaderAsync();
-                    header.Should().Be(2);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackMap8()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync())
-                        .Returns(new Queue<Task<byte>>(new[] { Task.FromResult(PackStream.MAP_8), Task.FromResult((byte)1) }).Dequeue);
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackMapHeaderAsync();
-                    header.Should().Be(1);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Exactly(2));
-                }
-
-                [Fact]
-                public async void ShouldUnpackMap16()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.MAP_16));
-                    mockInput.Setup(x => x.ReadShortAsync()).Returns(Task.FromResult((short)1));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackMapHeaderAsync();
-                    header.Should().Be(1);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadShortAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackMap32()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.MAP_32));
-                    mockInput.Setup(x => x.ReadIntAsync()).Returns(Task.FromResult(-1));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackMapHeaderAsync();
-                    header.Should().Be(uint.MaxValue);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadIntAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotMap()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.FALSE));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => u.UnpackMapHeaderAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-            }
-
+            
             public class UnpackListHeaderMethod
             {
                 [Fact]
                 public void ShouldUnpackTinyList()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(0x92);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(2);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -992,143 +500,78 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldUnpackList8()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte())
-                        .Returns(new Queue<byte>(new[] { PackStream.LIST_8, (byte)1 }).Dequeue);
+                    var mockInput = CreateMockStream(new byte[] {PackStream.LIST_8, (byte) 1});
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(1);
-                    mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
+                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackList16()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.LIST_16);
-                    mockInput.Setup(x => x.ReadShort()).Returns(1);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), 2))
+                        .Callback((byte[] b, int o, int c) => PackStreamBitConverter.GetBytes((short)1).CopyTo(b, o))
+                        .Returns((byte[] b, int o, int c) => c);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadShort(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackList32()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.LIST_32);
-                    mockInput.Setup(x => x.ReadInt()).Returns(-1);
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), 4))
+                        .Callback((byte[] b, int o, int c) => PackStreamBitConverter.GetBytes((int)-1).CopyTo(b, o))
+                        .Returns((byte[] b, int o, int c) => c);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackListHeader().Should().Be(uint.MaxValue);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadInt(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotList()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackListHeader());
                     ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
-
-            public class UnpackListHeaderMethodAsync
-            {
-                [Fact]
-                public async void ShouldUnpackTinyList()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult<byte>(0x92));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackListHeaderAsync();
-                    header.Should().Be(2);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackList8()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync())
-                        .Returns(new Queue<Task<byte>>(new[] { Task.FromResult(PackStream.LIST_8), Task.FromResult((byte)1) }).Dequeue);
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackListHeaderAsync();
-                    header.Should().Be(1);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Exactly(2));
-                }
-
-                [Fact]
-                public async void ShouldUnpackList16()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.LIST_16));
-                    mockInput.Setup(x => x.ReadShortAsync()).Returns(Task.FromResult((short)1));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackListHeaderAsync();
-                    header.Should().Be(1);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadShortAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackList32()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.LIST_32));
-                    mockInput.Setup(x => x.ReadIntAsync()).Returns(Task.FromResult(-1));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackListHeaderAsync();
-                    header.Should().Be(uint.MaxValue);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadIntAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotList()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.FALSE));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => u.UnpackListHeaderAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-            }
-
+            
             public class UnpackStructSignature
             {
                 [Fact]
                 public void ShouldCallReadByteOnce()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(0xFF);
+                    var mockInput = new Mock<MemoryStream>(new byte[] {0xFF});
+                    mockInput.Setup(x => x.CanRead).CallBase();
+                    mockInput.Setup(x => x.ReadByte()).CallBase();
+                    mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>())).CallBase();
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackStructSignature().Should().Be(0xFF);
-                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
             }
 
@@ -1138,10 +581,11 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldUnpackTinyStruct()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(0xB2);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackStructHeader().Should().Be(2);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
@@ -1150,103 +594,42 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldUnpackStruct8()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte())
-                        .Returns(new Queue<byte>(new[] { PackStream.STRUCT_8, (byte)1 }).Dequeue);
+                    var mockInput = CreateMockStream(new byte[] {PackStream.STRUCT_8, (byte) 1});
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackStructHeader().Should().Be(1);
-                    mockInput.Verify(x => x.ReadByte(), Times.Exactly(2));
+                    mockInput.Verify(x => x.ReadByte(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldUnpackStruct16()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.STRUCT_16);
-                    mockInput.Setup(x => x.ReadShort()).Returns(1);
+                    var mockInput = CreateMockStream(new byte[] { PackStream.STRUCT_16 }, PackStreamBitConverter.GetBytes((short)1));
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.UnpackStructHeader().Should().Be(1);
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
-                    mockInput.Verify(x => x.ReadShort(), Times.Once);
+                    mockInput.Verify(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteNotStruct()
                 {
-                    var mockInput = new Mock<IInputStream>();
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
                     mockInput.Setup(x => x.ReadByte()).Returns(PackStream.FALSE);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.UnpackStructHeader());
                     ex.Should().BeOfType<ProtocolException>();
                     mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
-
-
-            public class UnpackStructHeaderMethodAsync
-            {
-                [Fact]
-                public async void ShouldUnpackTinyStruct()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult<byte>(0xB2));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackStructHeaderAsync();
-                    header.Should().Be(2);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldUnpackStruct8()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync())
-                        .Returns(new Queue<Task<byte>>(new[] { Task.FromResult(PackStream.STRUCT_8), Task.FromResult((byte)1) }).Dequeue);
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackStructHeaderAsync();
-                    header.Should().Be(1);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Exactly(2));
-                }
-
-                [Fact]
-                public async void ShouldUnpackStruct16()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.STRUCT_16));
-                    mockInput.Setup(x => x.ReadShortAsync()).Returns(Task.FromResult<short>(1));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var header = await u.UnpackStructHeaderAsync();
-                    header.Should().Be(1);
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                    mockInput.Verify(x => x.ReadShortAsync(), Times.Once);
-                }
-
-                [Fact]
-                public async void ShouldThrowExceptionIfMarkerByteNotStruct()
-                {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.ReadByteAsync()).Returns(Task.FromResult(PackStream.FALSE));
-
-                    var u = new PackStream.Unpacker(mockInput.Object);
-
-                    var ex = await Xunit.Record.ExceptionAsync(() => u.UnpackStructHeaderAsync());
-                    ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.ReadByteAsync(), Times.Once);
-                }
-            }
-
+            
             public class PeekNextTypeMethod
             {
                 [Theory]
@@ -1278,26 +661,28 @@ namespace Neo4j.Driver.Tests
                 [InlineData(PackStream.INT_64, PackStream.PackType.Integer)]
                 internal void ShouldPeekTypeCorrectly(byte marker, PackStream.PackType expected)
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.PeekByte()).Returns(marker);
+                    var mockInput = CreateMockStream(marker);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     u.PeekNextType().Should().Be(expected);
-                    mockInput.Verify(x => x.PeekByte(), Times.Once);
+                    mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfMarkerByteUnDefined()
                 {
-                    var mockInput = new Mock<IInputStream>();
-                    mockInput.Setup(x => x.PeekByte()).Returns(PackStream.RESERVED_C4);
+                    var mockInput = new Mock<Stream>();
+                    mockInput.Setup(x => x.CanRead).Returns(true);
+                    mockInput.Setup(x => x.Length).Returns(1);
+                    mockInput.Setup(x => x.Position).Returns(0);
+                    mockInput.Setup(x => x.ReadByte()).Returns(PackStream.RESERVED_C4);
 
-                    var u = new PackStream.Unpacker(mockInput.Object);
+                    var u = new PackStreamReader(mockInput.Object);
 
                     var ex = Xunit.Record.Exception(() => u.PeekNextType());
                     ex.Should().BeOfType<ProtocolException>();
-                    mockInput.Verify(x => x.PeekByte(), Times.Once);
+                    mockInput.Verify(x => x.ReadByte(), Times.Once);
                 }
             }
         }

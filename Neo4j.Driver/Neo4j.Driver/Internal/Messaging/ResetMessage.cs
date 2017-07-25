@@ -29,11 +29,6 @@ namespace Neo4j.Driver.Internal.Messaging
             messageRequestHandler.HandleResetMessage();
         }
 
-        public Task DispatchAsync(IMessageRequestHandler messageRequestHandler)
-        {
-            return messageRequestHandler.HandleResetMessageAsync();
-        }
-
         public override string ToString()
         {
             return "RESET";

@@ -45,16 +45,46 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task SyncAsync()
+        public Task SyncAsync()
         {
+            var tcs = new TaskCompletionSource<bool>();
+
             try
             {
-                await Delegate.SyncAsync().ConfigureAwait(false);
+                // TODO: Create a helper for this pattern
+                Delegate.SyncAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        try
+                        {
+                            OnError(t.Exception);
+                        }
+                        catch (AggregateException exc)
+                        {
+                            tcs.SetException(exc.GetBaseException());
+                        }
+                        catch (Exception exc)
+                        {
+                            tcs.SetException(exc);
+                        }
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        tcs.SetCanceled();
+                    }
+                    else
+                    {
+                        tcs.SetResult(true);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception e)
             {
                 OnError(e);
             }
+
+            return tcs.Task;
         }
 
         public void Send()
@@ -69,16 +99,46 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task SendAsync()
+        public Task SendAsync()
         {
+            var tcs = new TaskCompletionSource<bool>();
+
             try
             {
-                await Delegate.SendAsync().ConfigureAwait(false);
+                // TODO: Create a helper for this pattern
+                Delegate.SendAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        try
+                        {
+                            OnError(t.Exception);
+                        }
+                        catch (AggregateException exc)
+                        {
+                            tcs.SetException(exc.GetBaseException());
+                        }
+                        catch (Exception exc)
+                        {
+                            tcs.SetException(exc);
+                        }
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        tcs.SetCanceled();
+                    }
+                    else
+                    {
+                        tcs.SetResult(true);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception e)
             {
                 OnError(e);
             }
+
+            return tcs.Task;
         }
 
         public void ReceiveOne()
@@ -93,16 +153,45 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task ReceiveOneAsync()
+        public Task ReceiveOneAsync()
         {
+            var tcs = new TaskCompletionSource<bool>();
+
             try
             {
-                await Delegate.ReceiveOneAsync().ConfigureAwait(false);
+                Delegate.ReceiveOneAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        try
+                        {
+                            OnError(t.Exception);
+                        }
+                        catch (AggregateException exc)
+                        {
+                            tcs.SetException(exc.GetBaseException());
+                        }
+                        catch (Exception exc)
+                        {
+                            tcs.SetException(exc);
+                        }
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        tcs.SetCanceled();
+                    }
+                    else
+                    {
+                        tcs.SetResult(true);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception e)
             {
                 OnError(e);
             }
+
+            return tcs.Task;
         }
 
         public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
@@ -134,16 +223,45 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task InitAsync()
+        public Task InitAsync()
         {
+            var tcs = new TaskCompletionSource<bool>();
+
             try
             {
-                await Delegate.InitAsync().ConfigureAwait(false);
+                Delegate.InitAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        try
+                        {
+                            OnError(t.Exception);
+                        }
+                        catch (AggregateException exc)
+                        {
+                            tcs.SetException(exc.GetBaseException());
+                        }
+                        catch (Exception exc)
+                        {
+                            tcs.SetException(exc);
+                        }
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        tcs.SetCanceled();
+                    }
+                    else
+                    {
+                        tcs.SetResult(true);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception e)
             {
                 OnError(e);
             }
+
+            return tcs.Task;
         }
 
         public void Reset()

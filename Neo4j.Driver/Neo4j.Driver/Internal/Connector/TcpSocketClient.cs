@@ -46,6 +46,8 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 _client = new TcpClient();
             }
+            _client.NoDelay = true;
+            _client.Client.NoDelay = true;
             _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, keepAlive);
         }
 

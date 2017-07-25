@@ -36,11 +36,6 @@ namespace Neo4j.Driver.Internal.Messaging
             messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
         }
 
-        public Task DispatchAsync(IMessageRequestHandler messageRequestHandler)
-        {
-            return messageRequestHandler.HandleInitMessageAsync(ClientNameAndVersion, _authToken);
-        }
-
         public override string ToString()
         {
             return $"INIT `{ClientNameAndVersion}`";

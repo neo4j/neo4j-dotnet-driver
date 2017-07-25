@@ -44,4 +44,4 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.5.*")]
 [assembly: AssemblyVersion("1.5.0.0")]
 [assembly: AssemblyFileVersion("1.5.0.0")]
-[assembly: InternalsVisibleTo("Neo4j.Driver.Tests"), InternalsVisibleTo("Neo4j.Driver.IntegrationTests"), InternalsVisibleTo("Neo4j.Driver.Tck.Tests"), InternalsVisibleTo("DynamicProxyGenAssembly2"), InternalsVisibleTo("Neo4j.Driver.Benchmark.NBench.Akka")]
+[assembly: InternalsVisibleTo("Neo4j.Driver.Tests"), InternalsVisibleTo("Neo4j.Driver.IntegrationTests"), InternalsVisibleTo("Neo4j.Driver.Tck.Tests"), InternalsVisibleTo("DynamicProxyGenAssembly2"), InternalsVisibleTo("Neo4j.Driver.Benchmark.NBench.Akka"), InternalsVisibleTo("Neo4j.Driver.Simple.Test")]

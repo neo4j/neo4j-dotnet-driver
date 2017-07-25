@@ -35,11 +35,6 @@ namespace Neo4j.Driver.Internal.Messaging
             messageRequestHandler.HandleRunMessage( _statement, _statementParameters );
         }
 
-        public Task DispatchAsync(IMessageRequestHandler messageRequestHandler)
-        {
-            return messageRequestHandler.HandleRunMessageAsync(_statement, _statementParameters);
-        }
-
         public override string ToString()
         {
             return $"RUN `{_statement}` {_statementParameters.ValueToString()}";

@@ -17,11 +17,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -34,39 +35,37 @@ namespace Neo4j.Driver.Tests
         {
             private class Mocks
             {
-                public Mock<IOutputStream> MockOutputStream { get; }
-                public IOutputStream OutputStream => MockOutputStream.Object;
+                public Mock<Stream> MockOutputStream { get; }
+                public Stream OutputStream => MockOutputStream.Object;
 
-                public string Received { get; set; }
-                public string ReceivedByteArray { get; set; }
-
+                public Queue<string> ReceviedBytes = new Queue<string>();
+                public Queue<string> ReceivedByteArrays = new Queue<string>();
+ 
                 public Mocks()
                 {
-                    MockOutputStream = new Mock<IOutputStream>();
+                    MockOutputStream = new Mock<Stream>();
+                    MockOutputStream.Setup(s => s.CanWrite).Returns(true);
 
                     MockOutputStream
-                        .Setup(s => s.Write(It.IsAny<byte>(), It.IsAny<byte[]>()))
-                        .Callback<byte, byte[]>((b, bArray) => Received = $"{b.ToString("X2")} {bArray.ToHexString(0)}")
-                        .Returns(OutputStream);
+                        .Setup(s => s.WriteByte(It.IsAny<byte>()))
+                        .Callback<byte>(b => ReceviedBytes.Enqueue( $"{b:X2}"));
 
                     MockOutputStream
-                        .Setup(s => s.Write(It.IsAny<byte[]>()))
-                        .Callback<byte[]>((bArray) => ReceivedByteArray = $"{bArray.ToHexString(0)}")
-                        .Returns(OutputStream);
+                        .Setup(s => s.Write(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
+                        .Callback<byte[], int, int>((bArray, offset, count) => ReceivedByteArrays.Enqueue($"{bArray.ToHexString(offset, count)}"));
                 }
 
-                public void VerifyWrite(byte b, params byte[] bytes)
+                public void VerifyWrite(byte b)
                 {
-                    byte[] expectedBytes = bytes;
-                    MockOutputStream.Verify(c => c.Write(b, bytes ?? It.IsAny<byte[]>()), Times.Once,
-                        $"Received {Received}{Environment.NewLine}Expected {b.ToString("X2")} {expectedBytes.ToHexString(0)}");
+                    MockOutputStream.Verify(c => c.WriteByte(b), Times.Once,
+                        $"Received {ReceviedBytes.Dequeue()}{Environment.NewLine}Expected {b:X2}");
                 }
 
                 public void VerifyWrite(byte[] bytes)
                 {
                     byte[] expectedBytes = bytes;
-                    MockOutputStream.Verify(c => c.Write(bytes ?? It.IsAny<byte[]>()), Times.Once,
-                        $"Received {ReceivedByteArray}{Environment.NewLine}Expected {expectedBytes.ToHexString(0)}");
+                    MockOutputStream.Verify(c => c.Write(bytes, It.IsAny<int>(), It.IsAny<int>()), Times.Once,
+                        $"Received {ReceivedByteArrays.Dequeue()}{Environment.NewLine}Expected {expectedBytes.ToHexString(0)}");
                 }
             }
 
@@ -76,7 +75,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.PackNull();
                     mocks.VerifyWrite(PackStream.NULL);
@@ -101,7 +100,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackLongSuccessfully(long input, byte marker, string expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.Pack(input);
                     mocks.VerifyWrite(marker);
@@ -119,7 +118,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackDoubleSuccessfully(double input, string expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.Pack(input);
                     mocks.VerifyWrite(PackStream.FLOAT_64);
@@ -135,7 +134,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackBoolSuccessfully(bool input)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.Pack(input);
                     if (input)
@@ -156,7 +155,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullStringSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.Pack((string) null);
                     mocks.VerifyWrite(PackStream.NULL);
@@ -167,7 +166,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackEmptyStringSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.Pack(string.Empty);
                     mocks.VerifyWrite(PackStream.TINY_STRING | 0);
@@ -181,7 +180,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackStringSuccessfully(int size, byte marker, byte[] sizeByte)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     var input = new string('a', size);
                     var expected = new byte[size];
@@ -192,7 +191,8 @@ namespace Neo4j.Driver.Tests
 
                     u.Pack(input);
 
-                    mocks.VerifyWrite(marker, sizeByte);
+                    mocks.VerifyWrite(marker);
+                    mocks.VerifyWrite(sizeByte);
                     mocks.VerifyWrite(expected);
                 }
 
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackUnicodeStringSuccessfully(int size, byte marker, byte[] sizeByte)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     var input = new string('å', size);
                     var expected = new byte[size*2];
@@ -214,7 +214,8 @@ namespace Neo4j.Driver.Tests
 
                     u.Pack(input);
 
-                    mocks.VerifyWrite(marker, sizeByte);
+                    mocks.VerifyWrite(marker);
+                    mocks.VerifyWrite(sizeByte);
                     mocks.VerifyWrite(expected);
                 }
             }
@@ -225,7 +226,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullBytesSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.Pack((byte[]) null);
                     mocks.VerifyWrite(PackStream.NULL);
@@ -236,10 +237,11 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackEmptyByteSuccessfully()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     u.Pack(new byte[] {});
-                    mocks.VerifyWrite(PackStream.BYTES_8, new byte[] {0});
+                    mocks.VerifyWrite(PackStream.BYTES_8);
+                    mocks.VerifyWrite(new byte[] {0});
 
                 }
 
@@ -250,7 +252,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackStringSuccessfully(int size, byte marker, byte[] sizeByte)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     var expected = new byte[size];
                     for (int i = 0; i < size; i++)
@@ -260,7 +262,8 @@ namespace Neo4j.Driver.Tests
 
                     u.Pack(expected);
 
-                    mocks.VerifyWrite(marker, sizeByte);
+                    mocks.VerifyWrite(marker);
+                    mocks.VerifyWrite(sizeByte);
                     mocks.VerifyWrite(expected);
                 }
             }
@@ -271,8 +274,8 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsNull()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
-                    u.Pack((object) null);
+                    var u = new PackStreamWriter(mocks.OutputStream);
+                    u.Write((object) null);
 
                     mocks.VerifyWrite(PackStream.NULL);
                 }
@@ -283,8 +286,8 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullableBool(bool? input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
-                    u.Pack(input);
+                    var u = new PackStreamWriter(mocks.OutputStream);
+                    u.Write(input);
                     mocks.VerifyWrite(expected);
                 }
 
@@ -294,8 +297,8 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNullableAsNull(sbyte? input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
-                    u.Pack(input);
+                    var u = new PackStreamWriter(mocks.OutputStream);
+                    u.Write(input);
                     mocks.VerifyWrite(expected);
                 }
 
@@ -311,8 +314,8 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackNumbersAsLong(object input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
-                    u.Pack(input);
+                    var u = new PackStreamWriter(mocks.OutputStream);
+                    u.Write(input);
                     mocks.VerifyWrite(expected);
                 }
 
@@ -323,8 +326,8 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackFloatNumbersAsDouble(object input, byte expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
-                    u.Pack(input);
+                    var u = new PackStreamWriter(mocks.OutputStream);
+                    u.Write(input);
                     mocks.VerifyWrite(expected);
                 }
 
@@ -332,9 +335,9 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackDecimalNumbersAsDouble()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     decimal input = 1.34m;
-                    u.Pack((object) input);
+                    u.Write((object) input);
                     mocks.VerifyWrite(PackStream.FLOAT_64);
                 }
 
@@ -343,19 +346,20 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsByteArray()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     var input = new byte[] {1, 2, 3};
-                    u.Pack((object) input);
-                    mocks.VerifyWrite(PackStream.BYTES_8, 3);
+                    u.Write((object) input);
+                    mocks.VerifyWrite(PackStream.BYTES_8);
+                    mocks.VerifyWrite(new byte[] {3});
                 }
 
                 [Fact]
                 public void ShouldPackCharAsString()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     char input = 'a';
-                    u.Pack((object) input);
+                    u.Write((object) input);
                     mocks.VerifyWrite(PackStream.TINY_STRING | 1);
                 }
 
@@ -363,9 +367,9 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsString()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     string input = "abc";
-                    u.Pack((object) input);
+                    u.Write((object) input);
                     mocks.VerifyWrite(PackStream.TINY_STRING | 3);
                 }
 
@@ -373,13 +377,13 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsList()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     IList<object> list = new List<object>();
                     list.Add(1);
                     list.Add(true);
                     list.Add("a");
-                    u.Pack((object) list);
+                    u.Write((object) list);
 
                     mocks.VerifyWrite((byte) (PackStream.TINY_LIST | list.Count));
                     mocks.VerifyWrite((byte) 1);
@@ -392,12 +396,12 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackArrayAsList()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     int[] list = new int[2];
                     list[0]=1;
                     list[1]=2;
-                    u.Pack((object)list);
+                    u.Write((object)list);
 
                     mocks.VerifyWrite((byte)(PackStream.TINY_LIST | list.Length));
                     mocks.VerifyWrite((byte)1);
@@ -409,11 +413,11 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsDictionary()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     IDictionary<object, object> dic = new Dictionary<object, object>();
                     dic.Add(true, "a");
-                    u.Pack(dic);
+                    u.Write(dic);
 
                     mocks.VerifyWrite((byte) (PackStream.TINY_MAP | dic.Count));
                     mocks.VerifyWrite(PackStream.TRUE);
@@ -425,8 +429,8 @@ namespace Neo4j.Driver.Tests
                 [Fact]
                 public void ShouldThrowExceptionIfTypeUnknown()
                 {
-                    var packer = new PackStream.Packer(null);
-                    var ex = Xunit.Record.Exception(() => packer.Pack(new {Name = "Test"}));
+                    var packer = new PackStreamWriter(new MemoryStream());
+                    var ex = Xunit.Record.Exception(() => packer.Write(new {Name = "Test"}));
                     ex.Should().BeOfType<ProtocolException>();
                 }
             }
@@ -437,7 +441,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsNullIfListIsNull()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     u.Pack((IList) null);
 
                     mocks.VerifyWrite(PackStream.NULL);
@@ -451,17 +455,18 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackListHeaderCorrectly(int size, byte marker, byte[] expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     u.PackListHeader(size);
 
-                    mocks.VerifyWrite(marker, expected);
+                    mocks.VerifyWrite(marker);
+                    mocks.VerifyWrite(expected);
                 }
 
                 [Fact]
                 public void ShouldPackListOfDifferentTypeCorrectly()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     var list = new List<object>();
                     list.Add(1);
@@ -483,7 +488,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackAsNullIfDictionaryIsNull()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     u.Pack((IDictionary) null);
 
                     mocks.VerifyWrite(PackStream.NULL);
@@ -497,17 +502,18 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackListHeaderCorrectly(int size, byte marker, byte[] expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     u.PackMapHeader(size);
 
-                    mocks.VerifyWrite(marker, expected);
+                    mocks.VerifyWrite(marker);
+                    mocks.VerifyWrite(expected);
                 }
 
                 [Fact]
                 public void ShouldPackMapOfDifferentTypeCorrectly()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
 
                     IDictionary<object, object> dic = new Dictionary<object, object>();
                     dic.Add(true, "a");
@@ -529,27 +535,29 @@ namespace Neo4j.Driver.Tests
                 public void ShouldPackStructHeaderCorrectly(int size, byte marker, byte[] expected)
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     u.PackStructHeader(size, 0x77);
 
-                    mocks.VerifyWrite(marker, expected);
+                    mocks.VerifyWrite(marker);
+                    mocks.VerifyWrite(expected);
                 }
 
                 [Fact]
                 public void ShouldPackStructHeaderStruct16Correctly()
                 {
                     var mocks = new Mocks();
-                    var u = new PackStream.Packer(mocks.OutputStream);
+                    var u = new PackStreamWriter(mocks.OutputStream);
                     u.PackStructHeader(short.MaxValue, 0x77);
 
-                    mocks.VerifyWrite(PackStream.STRUCT_16, new byte[] { 0x7F, 0xFF });
+                    mocks.VerifyWrite(PackStream.STRUCT_16);
+                    mocks.VerifyWrite(new byte[] { 0x7F, 0xFF });
                     mocks.VerifyWrite(0x77);
                 }
 
                 [Fact]
                 public void ShouldThrowExceptionIfSizeIsGreaterThanShortMax()
                 {
-                    var packer = new PackStream.Packer(null);
+                    var packer = new PackStreamWriter(new MemoryStream());
                     var ex = Xunit.Record.Exception(() => packer.PackStructHeader(short.MaxValue +1, 0x1));
                     ex.Should().BeOfType<ProtocolException>();
                 }
