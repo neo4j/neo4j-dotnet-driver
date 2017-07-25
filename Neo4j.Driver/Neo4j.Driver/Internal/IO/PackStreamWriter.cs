@@ -56,6 +56,10 @@ namespace Neo4j.Driver.Internal.IO
             {
                 Pack((IDictionary)value);
             }
+            else if (value is Structure)
+            {
+                Pack((Structure)value);    
+            }
             else
             {
                 throw new ProtocolException(
@@ -155,6 +159,22 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     Write(key);
                     Write(values[key]);
+                }
+            }
+        }
+
+        public void Pack(Structure value)
+        {
+            if (value == null)
+            {
+                PackNull();
+            }
+            else
+            {
+                PackStructHeader(value.Fields.Count, value.Type);
+                foreach (var obj in value.Fields)
+                {
+                    Write(obj);
                 }
             }
         }

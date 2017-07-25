@@ -394,396 +394,352 @@ namespace Neo4j.Driver.Tests
 
                 public class StructUnpacker
                 {
-                    //[Fact]
-                    //public void ShouldUnpackRelationshipCorrectly()
-                    //{
-                    //    var bytes = "00 07 B5 52 01 02 03 80 a0 00 00".ToByteArray();
-                    //    var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //    SetupClientWithReadStream(mockTcpSocketClient, bytes);
 
-                    //    IPackStreamReader reader = new PackStreamReader(new MemoryStream(bytes));
-                    //    PackStream.Structure structure = reader.Read() as PackStream.Structure;
-                    //    structure.Should().NotBeNull();
+                    private static object ReadFromByteArrayChunked(byte[] bytes)
+                    {
+                        var chunkBuffer = new MemoryStream();
 
-                    //    IRelationship rel = BoltReader.UnpackStructure(structure) as IRelationship;
-                    //    rel.Should().NotBeNull();
+                        var chunkReader = new ChunkReader(new MemoryStream(bytes));
+                        chunkReader.ReadNextChunk(chunkBuffer);
 
-                    //    rel.Id.Should().Be(1);
-                    //    rel.StartNodeId.Should().Be(2);
-                    //    rel.EndNodeId.Should().Be(3);
-                    //    rel.Type.Should().BeEmpty();
-                    //    rel.Properties.Should().BeEmpty();
-                    //}
+                        chunkBuffer.Position = 0;
+                        var packStreamReader = new PackStreamReader(chunkBuffer);
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackNodeCorrectly()
-                    //                    {
-                    //                        var bytes = "00 06 B3 4E 01 90 A0 00 00".ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        return packStreamReader.Read();
+                    }
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
-                    //                        var node = reader.UnpackValue();
-                    //                        INode n = node as INode;
-                    //                        n.Should().NotBeNull();
+                    [Fact]
+                    public void ShouldUnpackRelationshipCorrectly()
+                    {
+                        var bytes = "00 07 B5 52 01 02 03 80 a0 00 00".ToByteArray();
 
-                    //                        n.Id.Should().Be(1);
-                    //                        n.Properties.Should().BeEmpty();
-                    //                        n.Labels.Should().BeEmpty();
-                    //                    }
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackPathCorrectly()
-                    //                    {
-                    //                        var bytes = "00 0A B3 50 91 B3 4E 01 90 A0 90 90 A0 00 00".ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        var rel = BoltReader.UnpackStructure(structure) as IRelationship;
+                        rel.Should().NotBeNull();
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
+                        rel.Id.Should().Be(1);
+                        rel.StartNodeId.Should().Be(2);
+                        rel.EndNodeId.Should().Be(3);
+                        rel.Type.Should().BeEmpty();
+                        rel.Properties.Should().BeEmpty();
+                    }
 
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                    [Fact]
+                    public void ShouldUnpackNodeCorrectly()
+                    {
+                        var bytes = "00 06 B3 4E 01 90 A0 00 00 00".ToByteArray();
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Id.Should().Be(1);
-                    //                        p.Start.Properties.Should().BeEmpty();
-                    //                        p.Start.Labels.Should().BeEmpty();
-                    //                        p.Nodes.Should().HaveCount(1);
-                    //                        p.Relationships.Should().HaveCount(0);
-                    //                    }
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackZeroLenghPathCorrectly()
-                    //                    {
-                    //                        // A
-                    //                        var bytes =
-                    //                            "00 2C B3 50 91 B3 4E C9 03 E9    92 86 50 65 72 73 6F 6E    88 45 6D 70 6C 6F 79 65    65 A2 84 6E 61 6D 65 85 41 6C 69 63 65 83 61 67    65 21 90 90 00 00"
-                    //                                .ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        var n = BoltReader.UnpackStructure(structure) as INode;
+                        n.Should().NotBeNull();
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                        n.Id.Should().Be(1);
+                        n.Properties.Should().BeEmpty();
+                        n.Labels.Should().BeEmpty();
+                    }
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                    //                        p.End.Equals(TestNodes.Alice).Should().BeTrue();
+                    [Fact]
+                    public void ShouldUnpackPathCorrectly()
+                    {
+                        var bytes = "00 0A B3 50 91 B3 4E 01 90 A0 90 90 00 00".ToByteArray();
 
-                    //                        p.Nodes.Should().HaveCount(1);
-                    //                        p.Relationships.Should().HaveCount(0);
-                    //                    }
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackPathWithLenghOneCorrectly()
-                    //                    {
-                    //                        // A->B
-                    //                        var bytes =
-                    //                            "00 66 B3 50 92 B3 4E C9 03 E9    92 86 50 65 72 73 6F 6E    88 45 6D 70 6C 6F 79 65    65 A2 84 6E 61 6D 65 85 41 6C 69 63 65 83 61 67    65 21 B3 4E C9 03 EA 92    86 50 65 72 73 6F 6E 88    45 6D 70 6C 6F 79 65 65 A2 84 6E 61 6D 65 83 42    6F 62 83 61 67 65 2C 91    B3 72 0C 85 4B 4E 4F 57    53 A1 85 73 69 6E 63 65 C9 07 CF 92 01 01 00 00"
-                    //                                .ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        var p = BoltReader.UnpackStructure(structure) as IPath;
+                        p.Should().NotBeNull();
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                        p.Start.Should().NotBeNull();
+                        p.End.Should().NotBeNull();
+                        p.Start.Id.Should().Be(1);
+                        p.Start.Properties.Should().BeEmpty();
+                        p.Start.Labels.Should().BeEmpty();
+                        p.Nodes.Should().HaveCount(1);
+                        p.Relationships.Should().HaveCount(0);
+                    }
 
-                    //                        p.Nodes.Should().HaveCount(2);
-                    //                        p.Relationships.Should().HaveCount(1);
+                    [Fact]
+                    public void ShouldUnpackZeroLenghPathCorrectly()
+                    {
+                        // A
+                        var bytes =
+                            "00 2C B3 50 91 B3 4E C9 03 E9    92 86 50 65 72 73 6F 6E    88 45 6D 70 6C 6F 79 65    65 A2 84 6E 61 6D 65 85 41 6C 69 63 65 83 61 67    65 21 90 90 00 00"
+                                .ToByteArray();
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                    //                        p.End.Equals(TestNodes.Bob).Should().BeTrue();
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                        p.Relationships[0].Equals(TestRelationships.AliceKnowsBob).Should().BeTrue();
-                    //                    }
+                        var p = BoltReader.UnpackStructure(structure) as IPath;
+                        p.Should().NotBeNull();
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackPathWithLenghTwoCorrectly()
-                    //                    {
-                    //                        // A->C->D
-                    //                        var bytes =
-                    //                            "00 73 B35093B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766592B3720D854C494B4553A0B372228A4D4152524945445F544FA09401010202 00 00"
-                    //                                .ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        p.Start.Should().NotBeNull();
+                        p.End.Should().NotBeNull();
+                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
+                        p.End.Equals(TestNodes.Alice).Should().BeTrue();
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null)
-                    //.Reader;
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                        p.Nodes.Should().HaveCount(1);
+                        p.Relationships.Should().HaveCount(0);
+                    }
 
-                    //                        p.Nodes.Should().HaveCount(3);
-                    //                        p.Relationships.Should().HaveCount(2);
+                    [Fact]
+                    public void ShouldUnpackPathWithLenghOneCorrectly()
+                    {
+                        // A->B
+                        var bytes =
+                            "00 66 B3 50 92 B3 4E C9 03 E9    92 86 50 65 72 73 6F 6E    88 45 6D 70 6C 6F 79 65    65 A2 84 6E 61 6D 65 85 41 6C 69 63 65 83 61 67    65 21 B3 4E C9 03 EA 92    86 50 65 72 73 6F 6E 88    45 6D 70 6C 6F 79 65 65 A2 84 6E 61 6D 65 83 42    6F 62 83 61 67 65 2C 91    B3 72 0C 85 4B 4E 4F 57    53 A1 85 73 69 6E 63 65 C9 07 CF 92 01 01 00 00"
+                                .ToByteArray();
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                    //                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                        List<INode> correctOrder = new List<INode> { TestNodes.Alice, TestNodes.Carol, TestNodes.Dave };
-                    //                        p.Nodes.Should().ContainInOrder(correctOrder);
+                        var p = BoltReader.UnpackStructure(structure) as IPath;
+                        p.Should().NotBeNull();
 
-                    //                        p.Relationships[0].Equals(TestRelationships.AliceLikesCarol).Should().BeTrue();
-                    //                        List<IRelationship> expectedRelOrder = new List<IRelationship>
-                    //                        {
-                    //                            TestRelationships.AliceLikesCarol,
-                    //                            TestRelationships.CarolMarriedToDave
-                    //                        };
-                    //                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
-                    //                    }
+                        p.Nodes.Should().HaveCount(2);
+                        p.Relationships.Should().HaveCount(1);
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackPathWithRelationshipTraversedAgainstItsDirectionCorrectly()
-                    //                    {
-                    //                        // A->B<-C->D
-                    //                        var bytes =
-                    //                            "00 b0 B35094B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766593B3720C854B4E4F5753A18573696E6365C907CFB37220884449534C494B4553A0B372228A4D4152524945445F544FA0960101FE020303 00 00"
-                    //                                .ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        p.Start.Should().NotBeNull();
+                        p.End.Should().NotBeNull();
+                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
+                        p.End.Equals(TestNodes.Bob).Should().BeTrue();
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                        p.Relationships[0].Equals(TestRelationships.AliceKnowsBob).Should().BeTrue();
+                    }
 
-                    //                        p.Nodes.Should().HaveCount(4);
-                    //                        p.Relationships.Should().HaveCount(3);
+                    [Fact]
+                    public void ShouldUnpackPathWithRelationshipTraversedAgainstItsDirectionCorrectly()
+                    {
+                        // A->B<-C->D
+                        var bytes =
+                            "00 b0 B35094B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766593B3720C854B4E4F5753A18573696E6365C907CFB37220884449534C494B4553A0B372228A4D4152524945445F544FA0960101FE020303 00 00"
+                                .ToByteArray();
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                    //                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                        List<INode> correctOrder = new List<INode>
-                    //                        {
-                    //                            TestNodes.Alice,
-                    //                            TestNodes.Bob,
-                    //                            TestNodes.Carol,
-                    //                            TestNodes.Dave
-                    //                        };
-                    //                        p.Nodes.Should().ContainInOrder(correctOrder);
+                        var p = BoltReader.UnpackStructure(structure) as IPath;
+                        p.Should().NotBeNull();
 
-                    //                        p.Relationships[0].Equals(TestRelationships.AliceKnowsBob).Should().BeTrue();
-                    //                        List<IRelationship> expectedRelOrder = new List<IRelationship>
-                    //                        {
-                    //                            TestRelationships.AliceKnowsBob,
-                    //                            TestRelationships.CarolDislikesBob,
-                    //                            TestRelationships.CarolMarriedToDave
-                    //                        };
-                    //                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
-                    //                    }
+                        p.Nodes.Should().HaveCount(4);
+                        p.Relationships.Should().HaveCount(3);
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackPathWithNodeVisitedMulTimesCorrectly()
-                    //                    {
-                    //                        // A->B<-A->C->B<-C
-                    //                        var bytes =
-                    //                            "00 9E B35093B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EB9186506572736F6EA1846E616D65854361726F6C93B3720C854B4E4F5753A18573696E6365C907CFB3720D854C494B4553A0B37220884449534C494B4553A09A0101FF0002020301FD02 00 00"
-                    //                                .ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        p.Start.Should().NotBeNull();
+                        p.End.Should().NotBeNull();
+                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
+                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                        List<INode> correctOrder = new List<INode>
+                                            {
+                                                TestNodes.Alice,
+                                                TestNodes.Bob,
+                                                TestNodes.Carol,
+                                                TestNodes.Dave
+                                            };
+                        p.Nodes.Should().ContainInOrder(correctOrder);
 
-                    //                        p.Nodes.Should().HaveCount(6);
-                    //                        p.Relationships.Should().HaveCount(5);
+                        p.Relationships[0].Equals(TestRelationships.AliceKnowsBob).Should().BeTrue();
+                        List<IRelationship> expectedRelOrder = new List<IRelationship>
+                                            {
+                                                TestRelationships.AliceKnowsBob,
+                                                TestRelationships.CarolDislikesBob,
+                                                TestRelationships.CarolMarriedToDave
+                                            };
+                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
+                    }
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                    //                        p.End.Equals(TestNodes.Carol).Should().BeTrue($"Got {p.End.Id}");
+                    [Fact]
+                    public void ShouldUnpackPathWithNodeVisitedMulTimesCorrectly()
+                    {
+                        // A->B<-A->C->B<-C
+                        var bytes =
+                            "00 9E B35093B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EB9186506572736F6EA1846E616D65854361726F6C93B3720C854B4E4F5753A18573696E6365C907CFB3720D854C494B4553A0B37220884449534C494B4553A09A0101FF0002020301FD02 00 00"
+                                .ToByteArray();
 
-                    //                        List<INode> correctOrder = new List<INode>
-                    //                        {
-                    //                            TestNodes.Alice,
-                    //                            TestNodes.Bob,
-                    //                            TestNodes.Alice,
-                    //                            TestNodes.Carol,
-                    //                            TestNodes.Bob,
-                    //                            TestNodes.Carol
-                    //                        };
-                    //                        p.Nodes.Should().ContainInOrder(correctOrder);
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                        List<IRelationship> expectedRelOrder = new List<IRelationship>
-                    //                        {
-                    //                            TestRelationships.AliceKnowsBob,
-                    //                            TestRelationships.AliceKnowsBob,
-                    //                            TestRelationships.AliceLikesCarol,
-                    //                            TestRelationships.CarolDislikesBob,
-                    //                            TestRelationships.CarolDislikesBob
-                    //                        };
-                    //                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
-                    //                        p.Relationships[0].Equals(TestRelationships.AliceKnowsBob).Should().BeTrue();
-                    //                    }
+                        var p = BoltReader.UnpackStructure(structure) as IPath;
+                        p.Should().NotBeNull();
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackPathWithRelTraversedMulTimesInSameDirectionCorrectly()
-                    //                    {
-                    //                        // A->C->B<-A->C->D
-                    //                        var bytes =
-                    //                            "00 BE B35094B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EC90A1846E616D65844461766594B3720D854C494B4553A0B37220884449534C494B4553A0B3720C854B4E4F5753A18573696E6365C907CFB372228A4D4152524945445F544FA09A01010202FD0001010403 00 00"
-                    //                                .ToByteArray();
+                        p.Nodes.Should().HaveCount(6);
+                        p.Relationships.Should().HaveCount(5);
 
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        p.Start.Should().NotBeNull();
+                        p.End.Should().NotBeNull();
+                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
+                        p.End.Equals(TestNodes.Carol).Should().BeTrue($"Got {p.End.Id}");
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                        List<INode> correctOrder = new List<INode>
+                                            {
+                                                TestNodes.Alice,
+                                                TestNodes.Bob,
+                                                TestNodes.Alice,
+                                                TestNodes.Carol,
+                                                TestNodes.Bob,
+                                                TestNodes.Carol
+                                            };
+                        p.Nodes.Should().ContainInOrder(correctOrder);
 
-                    //                        p.Nodes.Should().HaveCount(6);
-                    //                        p.Relationships.Should().HaveCount(5);
+                        List<IRelationship> expectedRelOrder = new List<IRelationship>
+                                            {
+                                                TestRelationships.AliceKnowsBob,
+                                                TestRelationships.AliceKnowsBob,
+                                                TestRelationships.AliceLikesCarol,
+                                                TestRelationships.CarolDislikesBob,
+                                                TestRelationships.CarolDislikesBob
+                                            };
+                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
+                        p.Relationships[0].Equals(TestRelationships.AliceKnowsBob).Should().BeTrue();
+                    }
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
-                    //                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
+                    [Fact]
+                    public void ShouldUnpackPathWithRelTraversedMulTimesInSameDirectionCorrectly()
+                    {
+                        // A->C->B<-A->C->D
+                        var bytes =
+                            "00 BE B35094B34EC903E99286506572736F6E88456D706C6F796565A2846E616D6585416C6963658361676521B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EA9286506572736F6E88456D706C6F796565A2846E616D6583426F62836167652CB34EC903EC90A1846E616D65844461766594B3720D854C494B4553A0B37220884449534C494B4553A0B3720C854B4E4F5753A18573696E6365C907CFB372228A4D4152524945445F544FA09A01010202FD0001010403 00 00"
+                                .ToByteArray();
 
-                    //                        List<INode> correctOrder = new List<INode>
-                    //                        {
-                    //                            TestNodes.Alice,
-                    //                            TestNodes.Carol,
-                    //                            TestNodes.Bob,
-                    //                            TestNodes.Alice,
-                    //                            TestNodes.Carol,
-                    //                            TestNodes.Dave
-                    //                        };
-                    //                        p.Nodes.Should().ContainInOrder(correctOrder);
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                        List<IRelationship> expectedRelOrder = new List<IRelationship>
-                    //                        {
-                    //                            TestRelationships.AliceLikesCarol,
-                    //                            TestRelationships.CarolDislikesBob,
-                    //                            TestRelationships.AliceKnowsBob,
-                    //                            TestRelationships.AliceLikesCarol,
-                    //                            TestRelationships.CarolMarriedToDave
-                    //                        };
-                    //                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
-                    //                        p.Relationships[0].Equals(TestRelationships.AliceLikesCarol).Should().BeTrue();
-                    //                    }
+                        var p = BoltReader.UnpackStructure(structure) as IPath;
+                        p.Should().NotBeNull();
 
-                    //                    [Fact]
-                    //                    public void ShouldUnpackPathWithLoopCorrectly()
-                    //                    {
-                    //                        // C->D->D
-                    //                        var bytes =
-                    //                            "00 50 B35092B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766592B372228A4D4152524945445F544FA0B3722C89574F524B535F464F52A09401010201 00 00"
-                    //                                .ToByteArray();
-                    //                        var mockTcpSocketClient = new Mock<ITcpSocketClient>();
-                    //                        SetupClientWithReadStream(mockTcpSocketClient, bytes);
+                        p.Nodes.Should().HaveCount(6);
+                        p.Relationships.Should().HaveCount(5);
 
-                    //                        PackStreamMessageFormatV1.ReaderV1 reader = (PackStreamMessageFormatV1.ReaderV1)
-                    //                            new PackStreamMessageFormatV1(mockTcpSocketClient.Object, null).Reader;
-                    //                        var path = reader.UnpackValue();
-                    //                        IPath p = path as IPath;
-                    //                        p.Should().NotBeNull();
+                        p.Start.Should().NotBeNull();
+                        p.End.Should().NotBeNull();
+                        p.Start.Equals(TestNodes.Alice).Should().BeTrue();
+                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
 
-                    //                        p.Nodes.Should().HaveCount(3);
-                    //                        p.Relationships.Should().HaveCount(2);
+                        List<INode> correctOrder = new List<INode>
+                                            {
+                                                TestNodes.Alice,
+                                                TestNodes.Carol,
+                                                TestNodes.Bob,
+                                                TestNodes.Alice,
+                                                TestNodes.Carol,
+                                                TestNodes.Dave
+                                            };
+                        p.Nodes.Should().ContainInOrder(correctOrder);
 
-                    //                        p.Start.Should().NotBeNull();
-                    //                        p.End.Should().NotBeNull();
-                    //                        p.Start.Equals(TestNodes.Carol).Should().BeTrue();
-                    //                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
+                        List<IRelationship> expectedRelOrder = new List<IRelationship>
+                                            {
+                                                TestRelationships.AliceLikesCarol,
+                                                TestRelationships.CarolDislikesBob,
+                                                TestRelationships.AliceKnowsBob,
+                                                TestRelationships.AliceLikesCarol,
+                                                TestRelationships.CarolMarriedToDave
+                                            };
+                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
+                        p.Relationships[0].Equals(TestRelationships.AliceLikesCarol).Should().BeTrue();
+                    }
 
-                    //                        List<INode> correctOrder = new List<INode>
-                    //                        {
-                    //                            TestNodes.Carol,
-                    //                            TestNodes.Dave,
-                    //                            TestNodes.Dave
-                    //                        };
-                    //                        p.Nodes.Should().ContainInOrder(correctOrder);
+                    [Fact]
+                    public void ShouldUnpackPathWithLoopCorrectly()
+                    {
+                        // C->D->D
+                        var bytes =
+                            "00 50 B35092B34EC903EB9186506572736F6EA1846E616D65854361726F6CB34EC903EC90A1846E616D65844461766592B372228A4D4152524945445F544FA0B3722C89574F524B535F464F52A09401010201 00 00"
+                                .ToByteArray();
 
-                    //                        List<IRelationship> expectedRelOrder = new List<IRelationship>
-                    //                        {
-                    //                            TestRelationships.CarolMarriedToDave,
-                    //                            TestRelationships.DaveWorksForDave,
-                    //                        };
-                    //                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
-                    //                        p.Relationships[0].Equals(TestRelationships.CarolMarriedToDave).Should().BeTrue();
-                    //                    }
+                        var structure = ReadFromByteArrayChunked(bytes) as PackStream.Structure;
+                        structure.Should().NotBeNull();
 
-                    //                    private static class TestNodes
-                    //                    {
-                    //                        public static INode Alice = new Node(1001L,
-                    //                            new List<string> { "Person", "Employee" },
-                    //                            new Dictionary<string, object> { { "name", "Alice" }, { "age", 33L } });
+                        var p = BoltReader.UnpackStructure(structure) as IPath;
+                        p.Should().NotBeNull();
 
-                    //                        public static INode Bob = new Node(1002L,
-                    //                            new List<string> { "Person", "Employee" },
-                    //                            new Dictionary<string, object> { { "name", "Bob" }, { "age", 44L } });
+                        p.Nodes.Should().HaveCount(3);
+                        p.Relationships.Should().HaveCount(2);
 
-                    //                        public static INode Carol = new Node(
-                    //                            1003L,
-                    //                            new List<string> { "Person" },
-                    //                            new Dictionary<string, object> { { "name", "Carol" } });
+                        p.Start.Should().NotBeNull();
+                        p.End.Should().NotBeNull();
+                        p.Start.Equals(TestNodes.Carol).Should().BeTrue();
+                        p.End.Equals(TestNodes.Dave).Should().BeTrue($"Got {p.End.Id}");
 
-                    //                        public static INode Dave = new Node(
-                    //                            1004L,
-                    //                            new List<string>(),
-                    //                            new Dictionary<string, object> { { "name", "Dave" } });
-                    //                    }
+                        List<INode> correctOrder = new List<INode>
+                                            {
+                                                TestNodes.Carol,
+                                                TestNodes.Dave,
+                                                TestNodes.Dave
+                                            };
+                        p.Nodes.Should().ContainInOrder(correctOrder);
 
-                    //                    private static class TestRelationships
-                    //                    {
-                    //                        // IRelationship types
-                    //                        private static string KNOWS = "KNOWS";
-                    //                        private static string LIKES = "LIKES";
-                    //                        private static string DISLIKES = "DISLIKES";
+                        List<IRelationship> expectedRelOrder = new List<IRelationship>
+                                            {
+                                                TestRelationships.CarolMarriedToDave,
+                                                TestRelationships.DaveWorksForDave,
+                                            };
+                        p.Relationships.Should().ContainInOrder(expectedRelOrder);
+                        p.Relationships[0].Equals(TestRelationships.CarolMarriedToDave).Should().BeTrue();
+                    }
 
-                    //                        private static string MARRIED_TO =
-                    //                            "MARRIED_TO";
+                    private static class TestNodes
+                    {
+                        public static INode Alice = new Node(1001L,
+                            new List<string> { "Person", "Employee" },
+                            new Dictionary<string, object> { { "name", "Alice" }, { "age", 33L } });
 
-                    //                        private static string WORKS_FOR =
-                    //                            "WORKS_FOR";
+                        public static INode Bob = new Node(1002L,
+                            new List<string> { "Person", "Employee" },
+                            new Dictionary<string, object> { { "name", "Bob" }, { "age", 44L } });
 
-                    //                        // IRelationships
-                    //                        public static IRelationship AliceKnowsBob =
-                    //                            new Relationship(12L, TestNodes.Alice.Id,
-                    //                                TestNodes.Bob.Id, KNOWS,
-                    //                                new Dictionary<string, object> { { "since", 1999L } });
+                        public static INode Carol = new Node(
+                            1003L,
+                            new List<string> { "Person" },
+                            new Dictionary<string, object> { { "name", "Carol" } });
 
-                    //                        public static IRelationship AliceLikesCarol =
-                    //                            new Relationship(13L, TestNodes.Alice.Id,
-                    //                                TestNodes.Carol.Id, LIKES,
-                    //                                new Dictionary<string, object>());
+                        public static INode Dave = new Node(
+                            1004L,
+                            new List<string>(),
+                            new Dictionary<string, object> { { "name", "Dave" } });
+                    }
 
-                    //                        public static IRelationship CarolDislikesBob =
-                    //                            new Relationship(32L, TestNodes.Carol.Id,
-                    //                                TestNodes.Bob.Id, DISLIKES,
-                    //                                new Dictionary<string, object>());
+                    private static class TestRelationships
+                    {
+                        // IRelationship types
+                        private static string KNOWS = "KNOWS";
+                        private static string LIKES = "LIKES";
+                        private static string DISLIKES = "DISLIKES";
 
-                    //                        public static IRelationship CarolMarriedToDave =
-                    //                            new Relationship(34L, TestNodes.Carol.Id,
-                    //                                TestNodes.Dave.Id, MARRIED_TO,
-                    //                                new Dictionary<string, object>());
+                        private static string MARRIED_TO =
+                            "MARRIED_TO";
 
-                    //                        public static IRelationship DaveWorksForDave =
-                    //                            new Relationship(44L, TestNodes.Dave.Id,
-                    //                                TestNodes.Dave.Id, WORKS_FOR,
-                    //                                new Dictionary<string, object>());
-                    //                    }
+                        private static string WORKS_FOR =
+                            "WORKS_FOR";
+
+                        // IRelationships
+                        public static IRelationship AliceKnowsBob =
+                            new Relationship(12L, TestNodes.Alice.Id,
+                                TestNodes.Bob.Id, KNOWS,
+                                new Dictionary<string, object> { { "since", 1999L } });
+
+                        public static IRelationship AliceLikesCarol =
+                            new Relationship(13L, TestNodes.Alice.Id,
+                                TestNodes.Carol.Id, LIKES,
+                                new Dictionary<string, object>());
+
+                        public static IRelationship CarolDislikesBob =
+                            new Relationship(32L, TestNodes.Carol.Id,
+                                TestNodes.Bob.Id, DISLIKES,
+                                new Dictionary<string, object>());
+
+                        public static IRelationship CarolMarriedToDave =
+                            new Relationship(34L, TestNodes.Carol.Id,
+                                TestNodes.Dave.Id, MARRIED_TO,
+                                new Dictionary<string, object>());
+
+                        public static IRelationship DaveWorksForDave =
+                            new Relationship(44L, TestNodes.Dave.Id,
+                                TestNodes.Dave.Id, WORKS_FOR,
+                                new Dictionary<string, object>());
+                    }
                 }
 
             }
