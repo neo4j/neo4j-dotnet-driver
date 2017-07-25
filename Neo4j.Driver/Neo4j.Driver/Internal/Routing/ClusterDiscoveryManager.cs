@@ -61,38 +61,12 @@ namespace Neo4j.Driver.Internal.Routing
                 {
                     var result = session.Run(DiscoveryProcedure);
                     var record = result.Single();
-
-                    foreach (var servers in record["servers"].As<List<Dictionary<string, object>>>())
-                    {
-                        var addresses = servers["addresses"].As<List<string>>();
-                        var role = servers["role"].As<string>();
-                        switch (role)
-                        {
-                            case "READ":
-                                Readers = addresses.Select(BoltRoutingUri).ToArray();
-                                break;
-                            case "WRITE":
-                                Writers = addresses.Select(BoltRoutingUri).ToArray();
-                                break;
-                            case "ROUTE":
-                                Routers = addresses.Select(BoltRoutingUri).ToArray();
-                                break;
-                        }
-                    }
-                    ExpireAfterSeconds = record["ttl"].As<long>();
+                    ParseDiscoveryResult(record);
                 }
-            }
-            catch (ClientException e)
-            {
-                throw new ServiceUnavailableException(
-                    $"Error when calling `getServers` procedure: {e.Message}. " +
-                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.", e);
             }
             catch (Exception e)
             {
-                // for any reason we failed to do a discovery
-                throw new ProtocolException(
-                    $"Error when parsing `getServers` result: {e.Message}.");
+                HandleDiscoveryException(e);
             }
 
             if (!Readers.Any() || !Routers.Any())
@@ -101,6 +75,81 @@ namespace Neo4j.Driver.Internal.Routing
                     $"Invalid discovery result: discovered {Routers.Count()} routers, " +
                     $"{Writers.Count()} writers and {Readers.Count()} readers.");
             }
+        }
+
+        public async Task RediscoveryAsync()
+        {
+            var provider = new SingleConnectionBasedConnectionProvider(_conn);
+            var session = new Session(provider, _logger);
+            try
+            {
+                var result = await session.RunAsync(DiscoveryProcedure).ConfigureAwait(false);
+                await result.ReadAsync().ConfigureAwait(false);
+                var record = result.Current();
+
+                ParseDiscoveryResult(record);
+            }
+            catch (Exception e)
+            {
+                HandleDiscoveryException(e);
+            }
+            finally
+            {
+                try
+                {
+                    await session.CloseAsync().ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // ignore any exception
+                }
+                await provider.CloseAsync().ConfigureAwait(false);
+            }
+
+            if (!Readers.Any() || !Routers.Any())
+            {
+                throw new ProtocolException(
+                    $"Invalid discovery result: discovered {Routers.Count()} routers, " +
+                    $"{Writers.Count()} writers and {Readers.Count()} readers.");
+            }
+        }
+
+        private void HandleDiscoveryException(Exception e)
+        {
+            if (e is ClientException)
+            {
+                throw new ServiceUnavailableException(
+                    $"Error when calling `getServers` procedure: {e.Message}. " +
+                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.", e);
+            }
+            else
+            {
+                // for any reason we failed to do a discovery
+                throw new ProtocolException(
+                    $"Error when parsing `getServers` result: {e.Message}.");
+            }
+        }
+
+        private void ParseDiscoveryResult(IRecord record)
+        {
+            foreach (var servers in record["servers"].As<List<Dictionary<string, object>>>())
+            {
+                var addresses = servers["addresses"].As<List<string>>();
+                var role = servers["role"].As<string>();
+                switch (role)
+                {
+                    case "READ":
+                        Readers = addresses.Select(BoltRoutingUri).ToArray();
+                        break;
+                    case "WRITE":
+                        Writers = addresses.Select(BoltRoutingUri).ToArray();
+                        break;
+                    case "ROUTE":
+                        Routers = addresses.Select(BoltRoutingUri).ToArray();
+                        break;
+                }
+            }
+            ExpireAfterSeconds = record["ttl"].As<long>();
         }
 
         private Uri BoltRoutingUri(string address)
@@ -130,7 +179,17 @@ namespace Neo4j.Driver.Internal.Routing
 
             public Task<IConnection> AcquireAsync(AccessMode mode)
             {
-                throw new NotImplementedException();
+                var task = new TaskCompletionSource<IConnection>();
+                task.SetResult(Acquire(mode));
+                return task.Task;
+            }
+
+            public async Task CloseAsync()
+            {
+                if (_connection != null)
+                {
+                    await _connection.CloseAsync().ConfigureAwait(false);
+                }
             }
         }
     }

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -77,6 +78,18 @@ namespace Neo4j.Driver.Internal.Routing
 
             AccessMode ignored = AccessMode.Write;
             return pool.Acquire(ignored);
+        }
+
+        public async Task<IConnection> AcquireAsync(Uri uri)
+        {
+            IConnectionPool pool;
+            if (!_pools.TryGetValue(uri, out pool))
+            {
+                return null;
+            }
+
+            AccessMode ignored = AccessMode.Write;
+            return await pool.AcquireAsync(ignored).ConfigureAwait(false);
         }
 
         // This is the ultimate method to add a pool

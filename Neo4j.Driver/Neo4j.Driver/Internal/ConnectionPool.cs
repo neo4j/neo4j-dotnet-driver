@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal
             var statisticsCollector = connectionPoolSettings.StatisticsCollector;
             if (statisticsCollector != null)
             {
-                _statistics = new ConnectionPoolStatistics(this);
+                _statistics = new ConnectionPoolStatistics(uri, this);
                 statisticsCollector.Register(_statistics);
             }
         }

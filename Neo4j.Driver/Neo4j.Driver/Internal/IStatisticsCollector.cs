@@ -20,6 +20,7 @@ namespace Neo4j.Driver
 
     internal interface IStatisticsProvider
     {
+        String GetUniqueName();
         IDictionary<string, object> ReportStatistics();
     }
 
@@ -34,15 +35,17 @@ namespace Neo4j.Driver
 
         public IDictionary<string, object> CollectStatistics()
         {
-            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> statDict = new Dictionary<string, object>();
             foreach (var provider in _providers)
             {
+                IDictionary<string, object> dict = new Dictionary<string, object>();
+                statDict.Add(provider.GetUniqueName(), dict);
                 foreach (var statistic in provider.ReportStatistics())
                 {
                     dict.Add(statistic);
                 }
             }
-            return dict;
+            return statDict;
         }
 
         public void Clear()
