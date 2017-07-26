@@ -88,24 +88,24 @@ namespace Neo4j.Driver.Internal.IO
                 case PackStream.PackType.List:
                     return ReadList();
                 case PackStream.PackType.Struct:
-                    return ReadStructure();
+                    return ReadStruct();
             }
             throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
         }
 
 
-        private Structure ReadStructure()
+        private PackStreamStruct ReadStruct()
         {
-            long size = ReadStructHeader();
-            byte type = ReadStructSignature();
+            var size = ReadStructHeader();
+            var signature = ReadStructSignature();
 
-            List<object> fields = new List<object>();
-            for (int i = 0; i < size; i++)
+            var fields = new List<object>();
+            for (var i = 0; i < size; i++)
             {
                 fields.Add(ReadValue());
             }
 
-            return new Structure(type, fields);
+            return new PackStreamStruct(signature, fields);
         }
 
         public object ReadNull()

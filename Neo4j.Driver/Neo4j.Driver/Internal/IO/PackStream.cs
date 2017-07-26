@@ -7,7 +7,7 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal static class PackStream
+    internal static partial class PackStream
     {
         public enum PackType
         {
@@ -112,21 +112,5 @@ namespace Neo4j.Driver.Internal.IO
         public const int PathFields = 3;
 
         #endregion Consts
-
-        public class Structure
-        {
-
-            public Structure(byte type, IEnumerable<object> fields)
-            {
-                Type = type;
-                Fields = new List<object>(fields);
-            }
-
-            public byte Type { get; }
-
-            public IList Fields { get; }
-
-        }
-
     }
 }

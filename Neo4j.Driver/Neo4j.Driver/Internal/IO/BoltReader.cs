@@ -56,9 +56,9 @@ namespace Neo4j.Driver.Internal.IO
 
             _bufferStream.Position = 0;
 
-            var structure = (Structure)_packStreamReader.Read();
+            var structure = (PackStreamStruct)_packStreamReader.Read();
 
-            switch (structure.Type)
+            switch (structure.Signature)
             {
                 case MSG_RECORD:
                     UnpackRecordMessage(responseHandler, structure);
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal.IO
                     UnpackIgnoredMessage(responseHandler, structure);
                     break;
                 default:
-                    throw new ProtocolException("Unknown requestMessage type: " + structure.Type);
+                    throw new ProtocolException("Unknown requestMessage type: " + structure.Signature);
             }
         }
 
@@ -87,9 +87,9 @@ namespace Neo4j.Driver.Internal.IO
                     {
                         _bufferStream.Position = 0;
 
-                        var structure = (Structure)_packStreamReader.Read();
+                        var structure = (PackStreamStruct)_packStreamReader.Read();
 
-                        switch (structure.Type)
+                        switch (structure.Signature)
                         {
                             case MSG_RECORD:
                                 UnpackRecordMessage(responseHandler, structure);
@@ -104,17 +104,17 @@ namespace Neo4j.Driver.Internal.IO
                                 UnpackIgnoredMessage(responseHandler, structure);
                                 break;
                             default:
-                                throw new ProtocolException("Unknown requestMessage type: " + structure.Type);
+                                throw new ProtocolException("Unknown requestMessage type: " + structure.Signature);
                         }
                     });
         }
 
-        private void UnpackIgnoredMessage(IMessageResponseHandler responseHandler, Structure structure)
+        private void UnpackIgnoredMessage(IMessageResponseHandler responseHandler, PackStreamStruct structure)
         {
             responseHandler.HandleIgnoredMessage();
         }
 
-        private void UnpackFailureMessage(IMessageResponseHandler responseHandler, Structure structure)
+        private void UnpackFailureMessage(IMessageResponseHandler responseHandler, PackStreamStruct structure)
         {
             var values = (IDictionary) structure.Fields[0];
             var code = values["code"]?.ToString();
@@ -122,13 +122,13 @@ namespace Neo4j.Driver.Internal.IO
             responseHandler.HandleFailureMessage(code, message);
         }
 
-        private void UnpackSuccessMessage(IMessageResponseHandler responseHandler, Structure structure)
+        private void UnpackSuccessMessage(IMessageResponseHandler responseHandler, PackStreamStruct structure)
         {
             var map = (IDictionary<string, object>)structure.Fields[0];
             responseHandler.HandleSuccessMessage(map);
         }
 
-        private void UnpackRecordMessage(IMessageResponseHandler responseHandler, Structure structure)
+        private void UnpackRecordMessage(IMessageResponseHandler responseHandler, PackStreamStruct structure)
         {
             var fieldsList = (IList)structure.Fields[0];
 
@@ -144,16 +144,16 @@ namespace Neo4j.Driver.Internal.IO
 
                     for (int j = 0; j < list.Count; j++)
                     {
-                        if (list[j] is Structure)
+                        if (list[j] is PackStreamStruct)
                         {
-                            list[j] = UnpackStructure((Structure) list[j]);
+                            list[j] = UnpackStructure((PackStreamStruct) list[j]);
                         }
                     }
                 }
 
-                if (field is Structure)
+                if (field is PackStreamStruct)
                 {
-                    field = UnpackStructure((Structure) field);
+                    field = UnpackStructure((PackStreamStruct) field);
                 }
 
                 fields[i] = field;
@@ -162,10 +162,10 @@ namespace Neo4j.Driver.Internal.IO
             responseHandler.HandleRecordMessage(fields);
         }
 
-        internal static object UnpackStructure(Structure structure)
+        internal static object UnpackStructure(PackStreamStruct structure)
         {
             var size = structure.Fields.Count;
-            switch (structure.Type)
+            switch (structure.Signature)
             {
                 case NODE:
                     Throw.ProtocolException.IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
@@ -178,21 +178,21 @@ namespace Neo4j.Driver.Internal.IO
                     Throw.ProtocolException.IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
                     return UnpackPath(structure);
             }
-            throw new ProtocolException($"Unsupported struct type {structure.Type}");
+            throw new ProtocolException($"Unsupported struct type {structure.Signature}");
         }
 
-        private static IPath UnpackPath(Structure structure)
+        private static IPath UnpackPath(PackStreamStruct structure)
         {
             // List of unique nodes
             var uniqNodesUnchecked = (IList<object>) structure.Fields[0];
             var uniqNodes = new INode[uniqNodesUnchecked.Count];
             for (int i = 0; i < uniqNodes.Length; i++)
             {
-                var nodeStruct = (Structure) uniqNodesUnchecked[i];
+                var nodeStruct = (PackStreamStruct) uniqNodesUnchecked[i];
 
                 Throw.ProtocolException.IfNotEqual(NodeFields, nodeStruct.Fields.Count, nameof(NodeFields),
                     $"received{nameof(NodeFields)}");
-                Throw.ProtocolException.IfNotEqual(NODE, nodeStruct.Type, nameof(NODE),
+                Throw.ProtocolException.IfNotEqual(NODE, nodeStruct.Signature, nameof(NODE),
                     $"received{nameof(NODE)}");
 
                 uniqNodes[i] = UnpackNode(nodeStruct);
@@ -203,11 +203,11 @@ namespace Neo4j.Driver.Internal.IO
             var uniqRels = new Relationship[uniqRelsUnchecked.Count];
             for (int i = 0; i < uniqRels.Length; i++)
             {
-                var relStruct = (Structure)uniqRelsUnchecked[i];
+                var relStruct = (PackStreamStruct)uniqRelsUnchecked[i];
 
                 Throw.ProtocolException.IfNotEqual(UnboundRelationshipFields, relStruct.Fields.Count,
                     nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
-                Throw.ProtocolException.IfNotEqual(UNBOUND_RELATIONSHIP, relStruct.Type,
+                Throw.ProtocolException.IfNotEqual(UNBOUND_RELATIONSHIP, relStruct.Signature,
                     nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
 
                 var urn = Convert.ToInt64(relStruct.Fields[0]);
@@ -254,7 +254,7 @@ namespace Neo4j.Driver.Internal.IO
             return new Path(segments.ToList(), nodes.ToList(), rels.ToList());
         }
 
-        private static IRelationship UnpackRelationship(Structure structure)
+        private static IRelationship UnpackRelationship(PackStreamStruct structure)
         {
             var urn = Convert.ToInt64(structure.Fields[0]);
             var startUrn = Convert.ToInt64(structure.Fields[1]);
@@ -265,7 +265,7 @@ namespace Neo4j.Driver.Internal.IO
             return new Relationship(urn, startUrn, endUrn, relType, new Dictionary<string, object>(props));
         }
 
-        private static INode UnpackNode(Structure structure)
+        private static INode UnpackNode(PackStreamStruct structure)
         {
             var urn = Convert.ToInt64(structure.Fields[0]);
 

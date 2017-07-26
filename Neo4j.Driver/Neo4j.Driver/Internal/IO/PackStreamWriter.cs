@@ -56,9 +56,9 @@ namespace Neo4j.Driver.Internal.IO
             {
                 Write((IDictionary)value);
             }
-            else if (value is Structure)
+            else if (value is PackStreamStruct)
             {
-                Write((Structure)value);    
+                Write((PackStreamStruct)value);    
             }
             else
             {
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void Write(Structure value)
+        public void Write(PackStreamStruct value)
         {
             if (value == null)
             {
@@ -171,7 +171,7 @@ namespace Neo4j.Driver.Internal.IO
             }
             else
             {
-                WriteStructHeader(value.Fields.Count, value.Type);
+                WriteStructHeader(value.Fields.Count, value.Signature);
                 foreach (var obj in value.Fields)
                 {
                     Write(obj);

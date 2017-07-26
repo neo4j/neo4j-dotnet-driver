@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -242,6 +243,123 @@ namespace Neo4j.Driver.Tests.IO
                 mocks.VerifyWrite(sizeByte);
                 mocks.VerifyWrite(expected);
             }
+        }
+
+        public class WriteStructMethod
+        {
+
+            [Theory]
+            [InlineData(0x50, 0, 0xB0)]
+            [InlineData(0x50, 1, 0xB1)]
+            [InlineData(0x50, 10, 0xBA)]
+            [InlineData(0x50, 15, 0xBF)]
+            public void ShouldWriteTinyStructSuccessfully(byte signature, int fieldCount, byte expectedHeader)
+            {
+                var mocks = new Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                var fields = new List<object>();
+                for (var i = 0; i < fieldCount; i++)
+                {
+                    fields.Add(null);
+                }
+
+                var value = new PackStreamStruct(signature, fields);
+
+                writer.Write(value);
+
+                mocks.VerifyWrite(expectedHeader);
+                mocks.VerifyWrite(new byte[] {signature});
+            }
+
+            [Theory]
+            [InlineData(0x50, 16, PackStream.STRUCT_8)]
+            [InlineData(0x50, 40, PackStream.STRUCT_8)]
+            [InlineData(0x50, 255, PackStream.STRUCT_8)]
+            public void ShouldWriteStruct8Successfully(byte signature, int fieldCount, byte expectedHeader)
+            {
+                var mocks = new Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                var fields = new List<object>();
+                for (var i = 0; i < fieldCount; i++)
+                {
+                    fields.Add(null);
+                }
+                var value = new PackStreamStruct(signature, fields);
+
+                writer.Write(value);
+
+                mocks.VerifyWrite(expectedHeader);
+                mocks.VerifyWrite(new byte[] { (byte)fieldCount, signature });
+            }
+
+            [Theory]
+            [InlineData(0x50, 256, PackStream.STRUCT_16)]
+            [InlineData(0x50, 1000, PackStream.STRUCT_16)]
+            [InlineData(0x50, 32700, PackStream.STRUCT_16)]
+            public void ShouldWriteStruct16Successfully(byte signature, int fieldCount, byte expectedHeader)
+            {
+                var mocks = new Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                var fields = new List<object>();
+                for (var i = 0; i < fieldCount; i++)
+                {
+                    fields.Add(null);
+                }
+                var value = new PackStreamStruct(signature, fields);
+
+                writer.Write(value);
+
+                mocks.VerifyWrite(expectedHeader);
+                mocks.VerifyWrite(PackStreamBitConverter.GetBytes((short)fieldCount));
+                mocks.VerifyWrite(signature);
+            }
+
+            [Fact]
+            public void ShouldWriteStructThroughWriteObject()
+            {
+                var mocks = new Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                var value = new PackStreamStruct(0x50, Enumerable.Empty<object>());
+
+                writer.Write((object)value);
+
+                mocks.VerifyWrite(0xB0);
+                mocks.VerifyWrite(new byte[] { 0x50});
+            }
+
+            [Fact]
+            public void ShouldWriteNullStructAsNull()
+            {
+                var mocks = new Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                writer.Write((PackStreamStruct)null);
+
+                mocks.VerifyWrite(0xC0);
+            }
+
+            [Fact]
+            public void ShouldThrowExceptionWhenFieldCountExceedsMaximum()
+            {
+                var mocks = new Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                var fields = new List<object>();
+                for (var i = 0; i < 35000; i++)
+                {
+                    fields.Add(0.0);
+                }
+                var value = new PackStreamStruct(0x50, fields);
+
+                var ex = Record.Exception(() => writer.Write(value));
+
+                ex.Should().BeOfType<ProtocolException>();
+            }
+
         }
 
         public class WriteObjectMethod
