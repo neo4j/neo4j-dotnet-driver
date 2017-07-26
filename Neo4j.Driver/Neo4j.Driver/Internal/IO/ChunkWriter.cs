@@ -33,21 +33,32 @@ namespace Neo4j.Driver.Internal.IO
 
         public void WriteChunk(byte[] buffer, int offset, int count)
         {
-            var leftToChunk = count;
-            var thisChunkIndex = offset;
-
-            while (leftToChunk > 0)
+            if (buffer.Length == 0 || count == 0)
             {
-                var thisChunkSize = (int) Math.Min(leftToChunk, _chunkSize);
-
                 byte[] chunkSize =
-                    PackStreamBitConverter.GetBytes((ushort)thisChunkSize);
+                    PackStreamBitConverter.GetBytes((ushort)count);
 
                 _chunkStream.Write(chunkSize, 0, chunkSize.Length);
-                _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
+                _chunkStream.Write(buffer, offset, count);
+            }
+            else
+            {
+                var leftToChunk = count;
+                var thisChunkIndex = offset;
 
-                thisChunkIndex += thisChunkSize;
-                leftToChunk -= thisChunkSize;
+                while (leftToChunk > 0)
+                {
+                    var thisChunkSize = (int)Math.Min(leftToChunk, _chunkSize);
+
+                    byte[] chunkSize =
+                        PackStreamBitConverter.GetBytes((ushort)thisChunkSize);
+
+                    _chunkStream.Write(chunkSize, 0, chunkSize.Length);
+                    _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
+
+                    thisChunkIndex += thisChunkSize;
+                    leftToChunk -= thisChunkSize;
+                }
             }
         }
 
