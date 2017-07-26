@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO
@@ -16,6 +17,7 @@ namespace Neo4j.Driver.Internal.IO
         private readonly IChunkWriter _chunkWriter;
         private readonly PackStreamWriter _packStreamWriter;
         private readonly MemoryStream _bufferStream;
+        private readonly ILogger _logger;
 
         public BoltWriter(Stream stream)
             : this(stream, true)
@@ -24,15 +26,22 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         public BoltWriter(Stream stream, bool supportBytes)
-            : this(new ChunkWriter(stream), supportBytes)
+            : this(new ChunkWriter(stream), null, supportBytes)
         {
 
         }
 
-        public BoltWriter(IChunkWriter chunkWriter, bool supportBytes)
+        public BoltWriter(Stream stream, ILogger logger, bool supportBytes)
+            : this(new ChunkWriter(stream, logger), logger, supportBytes)
+        {
+
+        }
+
+        public BoltWriter(IChunkWriter chunkWriter, ILogger logger, bool supportBytes)
         {
             Throw.ArgumentNullException.IfNull(chunkWriter, nameof(chunkWriter));
 
+            _logger = logger;
             _chunkWriter = chunkWriter;
             _bufferStream = new MemoryStream();
             _packStreamWriter = supportBytes ? new PackStreamWriter(_bufferStream) : new PackStreamWriterBytesIncompatible(_bufferStream);

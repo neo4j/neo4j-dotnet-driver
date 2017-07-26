@@ -11,6 +11,7 @@ namespace Neo4j.Driver.Internal.IO
     {
         private readonly Stream _downStream;
         private readonly MemoryStream _chunkStream;
+        private readonly ILogger _logger;
         private long _lastWritePosition = 0;
         private long _lastReadPosition = 0;
 
@@ -19,11 +20,18 @@ namespace Neo4j.Driver.Internal.IO
         private int _currentChunkSize = -1;
 
         public ChunkReader(Stream downStream)
+            : this(downStream, null)
+        {
+            
+        }
+
+        public ChunkReader(Stream downStream, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
 
             _downStream = downStream;
             _chunkStream = new MemoryStream();
+            _logger = logger;
         }
 
         public void ReadNextChunk(Stream targetStream)
@@ -168,6 +176,8 @@ namespace Neo4j.Driver.Internal.IO
             {
                 _lastWritePosition = _chunkStream.Position;
             }
+
+            _logger?.Trace("S: ", buffer, offset, count);
         }
 
         private void CopyToFromChunkStream(Stream target, int count)

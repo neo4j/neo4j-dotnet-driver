@@ -129,8 +129,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         private void SetupPackStreamFormatWriterAndReader(bool supportBytes = true)
         {
-            _writer = new BoltWriter(_tcpSocketClient.WriteStream, supportBytes); 
-            _reader = new BoltReader(_tcpSocketClient.ReadStream, supportBytes);
+            _writer = new BoltWriter(_tcpSocketClient.WriteStream, _logger, supportBytes); 
+            _reader = new BoltReader(_tcpSocketClient.ReadStream, _logger, supportBytes);
         }
 
         private void Stop()

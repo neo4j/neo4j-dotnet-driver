@@ -64,23 +64,21 @@ namespace Neo4j.Driver.Tests
                 actual.Should().Equal(correctValue);
             }
 
-            //[Theory]
+            [Theory]
             //-----------------------|---head1--|----|---head2---|-----------|--msg end--|
-            //[InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 })]
-            //public void ShouldLogBytes(byte[] input, byte[] correctValue)
-            //{
-            //    var clientMock = new Mock<ITcpSocketClient>();
-            //    var loggerMock = new Mock<ILogger>();
-            //    loggerMock.Setup(x => x.Trace(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<int>(), It.IsAny<int>()))
-            //        .Callback<string, object[]>((s, o) => _output.WriteLine(s + ((byte[])o[0]).ToHexString(showX: true)));
-            //    SetupClientReadStream(clientMock, input);
+            [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 })]
+            public void ShouldLogBytes(byte[] input, byte[] correctValue)
+            {
+                var loggerMock = new Mock<ILogger>();
+                loggerMock.Setup(x => x.Trace(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<int>(), It.IsAny<int>()))
+                    .Callback<string, object[]>((s, o) => _output.WriteLine(s + ((byte[])o[0]).ToHexString(showX: true)));
 
-            //    var chunkedInput = new ChunkedInputStream(clientMock.Object, loggerMock.Object);
-            //    byte[] actual = new byte[3];
-            //    chunkedInput.ReadBytes(actual);
-            //    actual.Should().Equal(correctValue);
-            //    loggerMock.Verify(x => x.Trace("S: ", It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(4));
-            //}
+                var chunkedInput = IOExtensions.CreateChunkedPackStreamReaderFromBytes(input, loggerMock.Object);
+
+                byte[] actual = chunkedInput.UnpackBytes(3);
+                actual.Should().Equal(correctValue);
+                loggerMock.Verify(x => x.Trace("S: ", It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.AtLeastOnce);
+            }
 
             [Theory]
             //-----------------------|---head1--|----|---head2---|-----------|--msg end--|

@@ -15,6 +15,7 @@ namespace Neo4j.Driver.Internal.IO
     {
         private readonly IChunkReader _chunkReader;
         private readonly IPackStreamReader _packStreamReader;
+        private readonly ILogger _logger;
         private readonly MemoryStream _bufferStream;
 
         public BoltReader(Stream stream)
@@ -24,15 +25,22 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         public BoltReader(Stream stream, bool supportBytes)
-            : this(new ChunkReader(stream), supportBytes)
+            : this(new ChunkReader(stream), null, supportBytes)
         {
 
         }
 
-        public BoltReader(IChunkReader chunkReader, bool supportBytes)
+        public BoltReader(Stream stream, ILogger logger, bool supportBytes)
+            : this(new ChunkReader(stream, logger), logger, supportBytes)
+        {
+
+        }
+
+        public BoltReader(IChunkReader chunkReader, ILogger logger, bool supportBytes)
         {
             Throw.ArgumentNullException.IfNull(chunkReader, nameof(chunkReader));
 
+            _logger = logger;
             _chunkReader = chunkReader;
             _bufferStream = new MemoryStream();
             _packStreamReader = supportBytes ? new PackStreamReader(_bufferStream) : new PackStreamReaderBytesIncompatible(_bufferStream);

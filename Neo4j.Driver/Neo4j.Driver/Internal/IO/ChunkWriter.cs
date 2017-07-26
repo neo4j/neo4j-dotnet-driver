@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -11,21 +12,35 @@ namespace Neo4j.Driver.Internal.IO
         private readonly int _chunkSize;
         private readonly Stream _downStream;
         private readonly MemoryStream _chunkStream;
+        private readonly ILogger _logger;
 
         private readonly byte[] _buffer = new byte[8 * 1024];
 
         public ChunkWriter(Stream downStream)
-            : this(downStream, Constants.MaxChunkSize)
+            : this(downStream, null)
         {
             
         }
 
         public ChunkWriter(Stream downStream, int chunkSize)
+            : this(downStream, null, chunkSize)
+        {
+
+        }
+
+        public ChunkWriter(Stream downStream, ILogger logger)
+            : this(downStream, logger, Constants.MaxChunkSize)
+        {
+
+        }
+
+        public ChunkWriter(Stream downStream, ILogger logger, int chunkSize)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize, Constants.MinChunkSize, nameof(chunkSize));
             Throw.ArgumentOutOfRangeException.IfValueGreaterThan(chunkSize, Constants.MaxChunkSize, nameof(chunkSize));
 
+            _logger = logger;
             _chunkSize = chunkSize;
             _downStream = downStream;
             _chunkStream = new MemoryStream();
@@ -64,6 +79,13 @@ namespace Neo4j.Driver.Internal.IO
 
         public void Flush()
         {
+            if (_logger != null)
+            {
+                byte[] buffer = _chunkStream.ToArray();
+
+                _logger?.Trace("C: ", buffer, 0, buffer.Length);
+            }
+
             _chunkStream.Position = 0;
             _chunkStream.CopyTo(_downStream);
 
