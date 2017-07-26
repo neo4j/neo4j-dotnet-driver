@@ -8,26 +8,47 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal class ChunkWriter: IChunkWriter
     {
+        private readonly int _chunkSize;
         private readonly Stream _downStream;
         private readonly MemoryStream _chunkStream;
 
         private readonly byte[] _buffer = new byte[8 * 1024];
 
         public ChunkWriter(Stream downStream)
+            : this(downStream, Constants.MaxChunkSize)
+        {
+            
+        }
+
+        public ChunkWriter(Stream downStream, int chunkSize)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
+            Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize, Constants.MinChunkSize, nameof(chunkSize));
+            Throw.ArgumentOutOfRangeException.IfValueGreaterThan(chunkSize, Constants.MaxChunkSize, nameof(chunkSize));
 
+            _chunkSize = chunkSize;
             _downStream = downStream;
             _chunkStream = new MemoryStream();
         }
 
         public void WriteChunk(byte[] buffer, int offset, int count)
         {
-            byte[] chunkSize = 
-                PackStreamBitConverter.GetBytes((ushort)count);
+            var leftToChunk = count;
+            var thisChunkIndex = offset;
 
-            _chunkStream.Write(chunkSize, 0, chunkSize.Length);
-            _chunkStream.Write(buffer, offset, count);
+            while (leftToChunk > 0)
+            {
+                var thisChunkSize = (int) Math.Min(leftToChunk, _chunkSize);
+
+                byte[] chunkSize =
+                    PackStreamBitConverter.GetBytes((ushort)thisChunkSize);
+
+                _chunkStream.Write(chunkSize, 0, chunkSize.Length);
+                _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
+
+                thisChunkIndex += thisChunkSize;
+                leftToChunk -= thisChunkSize;
+            }
         }
 
         public void Flush()

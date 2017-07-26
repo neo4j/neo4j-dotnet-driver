@@ -102,11 +102,14 @@
   <ItemGroup>
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="BookmarkTests.cs" />
+    <Compile Include="Connector\ChunkedInputTests.cs" />
+    <Compile Include="Connector\ChunkedOutputTest.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
     <Compile Include="Result\SummaryCollectorTests.cs" />
     <Compile Include="Result\ResultReaderBuilderTests.cs" />
     <Compile Include="Result\StatementResultReaderTests.cs" />
     <Compile Include="Routing\RoutingTableManagerTests.cs" />
+    <Compile Include="TestUtil\IOExtensions.cs" />
     <Compile Include="TestUtil\NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
     <Compile Include="RetryLogicTests.cs" />

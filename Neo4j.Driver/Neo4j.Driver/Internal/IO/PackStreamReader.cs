@@ -208,7 +208,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        private byte[] UnpackBytes(int size)
+        internal byte[] UnpackBytes(int size)
         {
             var heapBuffer = new byte[size];
             _stream.Read(heapBuffer);
@@ -395,7 +395,7 @@ namespace Neo4j.Driver.Internal.IO
             return ReadInt() & 0xFFFFFFFFL;
         }
 
-        private sbyte ReadSByte()
+        internal sbyte ReadSByte()
         {
             _stream.Read(_byteBuffer);
 
