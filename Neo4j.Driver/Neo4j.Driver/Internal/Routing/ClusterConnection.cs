@@ -43,6 +43,10 @@ namespace Neo4j.Driver.Internal.Routing
                 throw new SessionExpiredException(
                     $"Server at {_uri} is no longer available due to error: {error.Message}.", error);
             }
+            else if (error.IsDatabaseUnavailableError())
+            {
+                _errorHandler.OnConnectionError(_uri, error);
+            }
             else if (error.IsClusterError())
             {
                 switch (_mode)
