@@ -47,7 +47,8 @@ namespace Neo4j.Driver.Internal
         // for test only
         private readonly IConnection _fakeConnection;
 
-        private readonly ConnectionPoolStatistics _statistics;
+        private IStatisticsCollector _statisticsCollector;
+        private ConnectionPoolStatistics _statistics;
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
@@ -73,12 +74,7 @@ namespace Neo4j.Driver.Internal
 
             _logger = logger;
 
-            var statisticsCollector = connectionPoolSettings.StatisticsCollector;
-            if (statisticsCollector != null)
-            {
-                _statistics = new ConnectionPoolStatistics(uri, this);
-                statisticsCollector.Register(_statistics);
-            }
+            SetupStatisticsProvider(connectionPoolSettings.StatisticsCollector);
         }
 
         internal ConnectionPool(
@@ -446,13 +442,32 @@ namespace Neo4j.Driver.Internal
                     DestoryConnection(connection);
                 }
             });
-            _statistics?.Dispose();
+            DisposeStatisticsProvider();
             base.Dispose(true);
         }
 
         private void ThrowObjectDisposedException()
         {
             FailedToCreateConnection(this);
+        }
+
+        private void SetupStatisticsProvider(IStatisticsCollector collector)
+        {
+            _statisticsCollector = collector;
+            if (_statisticsCollector != null)
+            {
+                _statistics = new ConnectionPoolStatistics(_uri, this);
+                _statisticsCollector.Register(_statistics);
+            }
+        }
+
+        private void DisposeStatisticsProvider()
+        {
+            if (_statistics != null)
+            {
+                _statistics.Dispose();
+                _statisticsCollector?.Unregister(_statistics);
+            }
         }
 
         public override string ToString()

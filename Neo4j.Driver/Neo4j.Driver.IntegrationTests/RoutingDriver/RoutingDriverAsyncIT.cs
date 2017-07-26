@@ -152,13 +152,18 @@ namespace Neo4j.Driver.IntegrationTests
                 "RETURN 1295 + 42",
                 "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
             };
+            AccessMode[] mode =
+            {
+                AccessMode.Read,
+                AccessMode.Write
+            };
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime.ToString("HH:mm:ss.ffffff")}] Started");
 
             var tasks = Enumerable.Range(0, threadCount)
                 .Select(async i =>
                 {
-                    var session = driver.Session();
+                    var session = driver.Session(mode[i % 2]);
                     try
                     {
                         var result = await session.RunAsync(queries[i % 2]);
@@ -184,7 +189,7 @@ namespace Neo4j.Driver.IntegrationTests
             driver.Dispose();
 
             var statistics = statisticsCollector.CollectStatistics();
-            Output.WriteLine(statisticsCollector.CollectStatistics().ToContentString());
+            Output.WriteLine(statistics.ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
