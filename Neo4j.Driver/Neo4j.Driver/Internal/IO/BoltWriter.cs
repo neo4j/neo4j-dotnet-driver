@@ -73,36 +73,36 @@ namespace Neo4j.Driver.Internal.IO
 
         public void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
         {
-            _packStreamWriter.PackStructHeader(1, MSG_INIT);
-            _packStreamWriter.Pack(clientNameAndVersion);
+            _packStreamWriter.WriteStructHeader(1, MSG_INIT);
+            _packStreamWriter.Write(clientNameAndVersion);
             _packStreamWriter.Write(authToken ?? EmptyDictionary);
         }
 
         public void HandleRunMessage(string statement, IDictionary<string, object> parameters)
         {
-            _packStreamWriter.PackStructHeader(2, MSG_RUN);
-            _packStreamWriter.Pack(statement);
+            _packStreamWriter.WriteStructHeader(2, MSG_RUN);
+            _packStreamWriter.Write(statement);
             _packStreamWriter.Write(parameters ?? EmptyDictionary);
         }
 
         public void HandlePullAllMessage()
         {
-            _packStreamWriter.PackStructHeader(0, MSG_PULL_ALL);
+            _packStreamWriter.WriteStructHeader(0, MSG_PULL_ALL);
         }
 
         public void HandleDiscardAllMessage()
         {
-            _packStreamWriter.PackStructHeader(0, MSG_DISCARD_ALL);
+            _packStreamWriter.WriteStructHeader(0, MSG_DISCARD_ALL);
         }
 
         public void HandleResetMessage()
         {
-            _packStreamWriter.PackStructHeader(0, MSG_RESET);
+            _packStreamWriter.WriteStructHeader(0, MSG_RESET);
         }
 
         public void HandleAckFailureMessage()
         {
-            _packStreamWriter.PackStructHeader(0, MSG_ACK_FAILURE);
+            _packStreamWriter.WriteStructHeader(0, MSG_ACK_FAILURE);
         }
         
     }

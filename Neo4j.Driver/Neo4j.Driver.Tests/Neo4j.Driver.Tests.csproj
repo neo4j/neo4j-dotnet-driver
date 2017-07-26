@@ -105,6 +105,8 @@
     <Compile Include="Connector\ChunkedInputTests.cs" />
     <Compile Include="Connector\ChunkedOutputTest.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
+    <Compile Include="IO\PackStreamReaderTests.cs" />
+    <Compile Include="IO\PackStreamWriterTests.cs" />
     <Compile Include="Result\SummaryCollectorTests.cs" />
     <Compile Include="Result\ResultReaderBuilderTests.cs" />
     <Compile Include="Result\StatementResultReaderTests.cs" />
@@ -130,8 +132,6 @@
     <Compile Include="Routing\LoadBalancerTests.cs" />
     <Compile Include="Routing\RoundRobinRoutingTableTests.cs" />
     <Compile Include="SessionTests.cs" />
-    <Compile Include="PackStream\UnpackerTests.cs" />
-    <Compile Include="PackStream\PackerTests.cs" />
     <Compile Include="Result\StatementResultTests.cs" />
     <Compile Include="PackStream\PackStreamMessageFormatV1Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -153,6 +153,7 @@
       <Name>Neo4j.Driver</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

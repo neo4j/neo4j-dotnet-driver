@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Tests
             //mockedStream.Setup(x => x.CanWrite).CallBase();
             //mockedStream.Setup(x => x.Length).CallBase();
             //mockedStream.Setup(x => x.Position).CallBase();
-            //mockedStream.Setup(x => x.ReadByte()).CallBase();
+            //mockedStream.Setup(x => x.NextByte()).CallBase();
             //mockedStream.Setup(x => x.ToArray()).CallBase();
             //mockedStream.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>())).CallBase();
 

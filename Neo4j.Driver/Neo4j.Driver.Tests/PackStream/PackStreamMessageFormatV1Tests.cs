@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
                     var writer = new PackStreamWriter(outputStreamMock.Object);
 
                     var byteArray = PackStreamBitConverter.GetBytes("hello, world");
-                    writer.Pack(byteArray);
+                    writer.Write(byteArray);
 
                     PackStreamBitConverter.ToString(value).Should().Be("hello, world");
                 }
@@ -306,7 +306,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldThrowExceptionForUnpackingBytes()
                 {
                     var reader = new PackStreamReaderBytesIncompatible(new MemoryStream());
-                    var ex = Record.Exception(()=> reader.UnpackBytes());
+                    var ex = Record.Exception(()=> reader.ReadBytes());
                     ex.Should().BeOfType<ProtocolException>();
                 }
             }
@@ -320,7 +320,7 @@ namespace Neo4j.Driver.Tests
                 public void ShouldThrowExceptionForPackingBytes()
                 {
                     var writer = new PackStreamWriterBytesIncompatible(new MemoryStream());
-                    var ex = Record.Exception(() => writer.Pack(new byte[] {0xCB}));
+                    var ex = Record.Exception(() => writer.Write(new byte[] {0xCB}));
                     ex.Should().BeOfType<ProtocolException>();
                 }
             }

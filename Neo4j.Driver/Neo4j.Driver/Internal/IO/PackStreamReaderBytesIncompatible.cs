@@ -15,7 +15,7 @@ namespace Neo4j.Driver.Internal.IO
             
         }
 
-        public override byte[] UnpackBytes()
+        public override byte[] ReadBytes()
         {
             throw new ProtocolException($"Unsupported type {PackStream.PackType.Bytes}.");
         }

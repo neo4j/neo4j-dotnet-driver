@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnTheCorrectValue(byte[] response, sbyte correctValue)
             {
                 var chunkedInput = IOExtensions.CreateChunkedPackStreamReaderFromBytes(response);
-                var actual = chunkedInput.ReadSByte();
+                var actual = chunkedInput.NextSByte();
                 actual.Should().Be(correctValue); //, $"Got: {actual}, expected: {correctValue}");
             }
         }
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests
             {
                 var chunkedInput = IOExtensions.CreateChunkedPackStreamReaderFromBytes(input);
 
-                byte[] actual = chunkedInput.UnpackBytes(3);
+                byte[] actual = chunkedInput.ReadBytes(3);
 
                 actual.Should().Equal(correctValue);
             }
@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Tests
 
                 var chunkedInput = IOExtensions.CreateChunkedPackStreamReaderFromBytes(input, loggerMock.Object);
 
-                byte[] actual = chunkedInput.UnpackBytes(3);
+                byte[] actual = chunkedInput.ReadBytes(3);
                 actual.Should().Equal(correctValue);
                 loggerMock.Verify(x => x.Trace("S: ", It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.AtLeastOnce);
             }
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Tests
             {
                 var chunkedInput = IOExtensions.CreateChunkedPackStreamReaderFromBytes(input);
 
-                byte[] actual = chunkedInput.UnpackBytes(3);
+                byte[] actual = chunkedInput.ReadBytes(3);
                 actual.Should().Equal(correctValue);
             }
         }
@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Tests
                     }
 
                     var chunkedInput = IOExtensions.CreateChunkedPackStreamReaderFromBytes(input);
-                    byte[] actual = chunkedInput.UnpackBytes(chunkHeaderSize);
+                    byte[] actual = chunkedInput.ReadBytes(chunkHeaderSize);
                     for (int j = 0; j < actual.Length; j++)
                     {
                         actual[j].Should().Be(input[2 + j]);

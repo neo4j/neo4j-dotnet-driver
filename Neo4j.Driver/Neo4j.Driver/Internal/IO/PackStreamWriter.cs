@@ -25,40 +25,40 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (value == null)
             {
-                PackNull();
+                WriteNull();
             }
             else if (value is bool)
             {
-                Pack((bool)value);
+                Write((bool)value);
             }
 
             else if (value is sbyte || value is byte || value is short || value is int || value is long)
             {
-                Pack(Convert.ToInt64(value));
+                Write(Convert.ToInt64(value));
             }
             else if (value is byte[])
             {
-                Pack((byte[])value);
+                Write((byte[])value);
             }
             else if (value is float || value is double || value is decimal)
             {
-                Pack(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+                Write(Convert.ToDouble(value, CultureInfo.InvariantCulture));
             }
             else if (value is char || value is string)
             {
-                Pack(value.ToString());
+                Write(value.ToString());
             }
             else if (value is IList)
             {
-                Pack((IList)value);
+                Write((IList)value);
             }
             else if (value is IDictionary)
             {
-                Pack((IDictionary)value);
+                Write((IDictionary)value);
             }
             else if (value is Structure)
             {
-                Pack((Structure)value);    
+                Write((Structure)value);    
             }
             else
             {
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void Pack(long value)
+        public void Write(long value)
         {
             if (value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
             {
@@ -95,66 +95,66 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void Pack(double value)
+        public void Write(double value)
         {
             _stream.WriteByte(FLOAT_64);
             _stream.Write(PackStreamBitConverter.GetBytes(value));
         }
 
-        public void Pack(bool value)
+        public void Write(bool value)
         {
             _stream.WriteByte(value ? TRUE : FALSE);
         }
 
-        public void Pack(string value)
+        public void Write(string value)
         {
             if (value == null)
             {
-                PackNull();
+                WriteNull();
                 return;
             }
 
             var bytes = PackStreamBitConverter.GetBytes(value);
-            PackStringHeader(bytes.Length);
+            WriteStringHeader(bytes.Length);
             _stream.Write(bytes);
         }
 
-        public virtual void Pack(byte[] values)
+        public virtual void Write(byte[] values)
         {
             if (values == null)
             {
-                PackNull();
+                WriteNull();
             }
             else
             {
-                PackBytesHeader(values.Length);
-                PackRaw(values);
+                WriteBytesHeader(values.Length);
+                WriteRaw(values);
             }
         }
 
-        public void Pack(IList value)
+        public void Write(IList value)
         {
             if (value == null)
             {
-                PackNull();
+                WriteNull();
                 return;
             }
-            PackListHeader(value.Count);
+            WriteListHeader(value.Count);
             foreach (var item in value)
             {
                 Write(item);
             }
         }
 
-        public void Pack(IDictionary values)
+        public void Write(IDictionary values)
         {
             if (values == null)
             {
-                PackNull();
+                WriteNull();
             }
             else
             {
-                PackMapHeader(values.Count);
+                WriteMapHeader(values.Count);
                 foreach (var key in values.Keys)
                 {
                     Write(key);
@@ -163,15 +163,15 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void Pack(Structure value)
+        public void Write(Structure value)
         {
             if (value == null)
             {
-                PackNull();
+                WriteNull();
             }
             else
             {
-                PackStructHeader(value.Fields.Count, value.Type);
+                WriteStructHeader(value.Fields.Count, value.Type);
                 foreach (var obj in value.Fields)
                 {
                     Write(obj);
@@ -179,17 +179,17 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void PackNull()
+        public void WriteNull()
         {
             _stream.WriteByte(NULL);
         }
 
-        private void PackRaw(byte[] data)
+        private void WriteRaw(byte[] data)
         {
             _stream.Write(data);
         }
 
-        public void PackBytesHeader(int size)
+        private void WriteBytesHeader(int size)
         {
             if (size <= byte.MaxValue)
             {
@@ -208,7 +208,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void PackListHeader(int size)
+        internal void WriteListHeader(int size)
         {
             if (size < 0x10)
             {
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void PackMapHeader(int size)
+        internal void WriteMapHeader(int size)
         {
             if (size < 0x10)
             {
@@ -256,7 +256,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void PackStringHeader(int size)
+        private void WriteStringHeader(int size)
         {
             if (size < 0x10)
             {
@@ -279,7 +279,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public void PackStructHeader(int size, byte signature)
+        internal void WriteStructHeader(int size, byte signature)
         {
             if (size < 0x10)
             {

@@ -29,14 +29,14 @@ namespace Neo4j.Driver.Internal.IO
 
         public object Read()
         {
-            var result = UnpackValue();
+            var result = ReadValue();
 
             return result;
         }
 
-        private Dictionary<string, object> UnpackMap()
+        private Dictionary<string, object> ReadMap()
         {
-            var size = (int)UnpackMapHeader();
+            var size = (int)ReadMapHeader();
             if (size == 0)
             {
                 return EmptyStringValueMap;
@@ -44,73 +44,73 @@ namespace Neo4j.Driver.Internal.IO
             var map = new Dictionary<string, object>(size);
             for (var i = 0; i < size; i++)
             {
-                var key = UnpackString();
-                map.Add(key, UnpackValue());
+                var key = ReadString();
+                map.Add(key, ReadValue());
             }
             return map;
         }
 
-        private IList<object> UnpackList()
+        private IList<object> ReadList()
         {
-            var size = (int)UnpackListHeader();
+            var size = (int)ReadListHeader();
             var vals = new object[size];
             for (var j = 0; j < size; j++)
             {
-                vals[j] = UnpackValue();
+                vals[j] = ReadValue();
             }
             return new List<object>(vals);
         }
 
-        private object UnpackValue()
+        private object ReadValue()
         {
             var type = PeekNextType();
-            return UnpackValue(type);
+            return ReadValue(type);
         }
 
-        protected virtual object UnpackValue(PackStream.PackType type)
+        protected virtual object ReadValue(PackStream.PackType type)
         {
             switch (type)
             {
                 case PackStream.PackType.Bytes:
-                    return UnpackBytes();
+                    return ReadBytes();
                 case PackStream.PackType.Null:
-                    return UnpackNull();
+                    return ReadNull();
                 case PackStream.PackType.Boolean:
-                    return UnpackBoolean();
+                    return ReadBoolean();
                 case PackStream.PackType.Integer:
-                    return UnpackLong();
+                    return ReadLong();
                 case PackStream.PackType.Float:
-                    return UnpackDouble();
+                    return ReadDouble();
                 case PackStream.PackType.String:
-                    return UnpackString();
+                    return ReadString();
                 case PackStream.PackType.Map:
-                    return UnpackMap();
+                    return ReadMap();
                 case PackStream.PackType.List:
-                    return UnpackList();
+                    return ReadList();
                 case PackStream.PackType.Struct:
-                    return UnpackStructure();
+                    return ReadStructure();
             }
             throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
         }
 
 
-        private Structure UnpackStructure()
+        private Structure ReadStructure()
         {
-            long size = UnpackStructHeader();
-            byte type = UnpackStructSignature();
+            long size = ReadStructHeader();
+            byte type = ReadStructSignature();
 
             List<object> fields = new List<object>();
             for (int i = 0; i < size; i++)
             {
-                fields.Add(UnpackValue());
+                fields.Add(ReadValue());
             }
 
             return new Structure(type, fields);
         }
 
-        public object UnpackNull()
+        public object ReadNull()
         {
-            byte markerByte = ReadByte();
+            byte markerByte = NextByte();
             if (markerByte != NULL)
             {
                 throw new ProtocolException(
@@ -119,9 +119,9 @@ namespace Neo4j.Driver.Internal.IO
             return null;
         }
 
-        public bool UnpackBoolean()
+        public bool ReadBoolean()
         {
-            byte markerByte = ReadByte();
+            byte markerByte = NextByte();
             switch (markerByte)
             {
                 case TRUE:
@@ -134,9 +134,9 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public long UnpackLong()
+        public long ReadLong()
         {
-            byte markerByte = ReadByte();
+            byte markerByte = NextByte();
             if ((sbyte)markerByte >= MINUS_2_TO_THE_4)
             {
                 return (sbyte)markerByte;
@@ -144,57 +144,57 @@ namespace Neo4j.Driver.Internal.IO
             switch (markerByte)
             {
                 case INT_8:
-                    return ReadSByte();
+                    return NextSByte();
                 case INT_16:
-                    return ReadShort();
+                    return NextShort();
                 case INT_32:
-                    return ReadInt();
+                    return NextInt();
                 case INT_64:
-                    return ReadLong();
+                    return NextLong();
                 default:
                     throw new ProtocolException(
                         $"Expected an integer, but got: 0x{markerByte:X2}");
             }
         }
 
-        public double UnpackDouble()
+        public double ReadDouble()
         {
-            byte markerByte = ReadByte();
+            byte markerByte = NextByte();
             if (markerByte == FLOAT_64)
             {
-                return ReadDouble();
+                return NextDouble();
             }
             throw new ProtocolException(
                 $"Expected a double, but got: 0x{markerByte:X2}");
         }
 
-        public string UnpackString()
+        public string ReadString()
         {
-            var markerByte = ReadByte();
+            var markerByte = NextByte();
             if (markerByte == TINY_STRING) // Note no mask, so we compare to 0x80.
             {
                 return string.Empty;
             }
 
-            return PackStreamBitConverter.ToString(UnpackUtf8(markerByte));
+            return PackStreamBitConverter.ToString(ReadUtf8(markerByte));
         }
 
-        public virtual byte[] UnpackBytes()
+        public virtual byte[] ReadBytes()
         {
-            byte markerByte = ReadByte();
+            byte markerByte = NextByte();
 
             switch (markerByte)
             {
                 case BYTES_8:
-                    return UnpackBytes(UnpackUint8());
+                    return ReadBytes(ReadUint8());
                 case BYTES_16:
-                    return UnpackBytes(UnpackUint16());
+                    return ReadBytes(ReadUint16());
                 case BYTES_32:
                 {
-                    long size = UnpackUint32();
+                    long size = ReadUint32();
                     if (size <= int.MaxValue)
                     {
-                        return UnpackBytes((int)size);
+                        return ReadBytes((int)size);
                     }
                     else
                     {
@@ -208,34 +208,34 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        internal byte[] UnpackBytes(int size)
+        internal byte[] ReadBytes(int size)
         {
             var heapBuffer = new byte[size];
             _stream.Read(heapBuffer);
             return heapBuffer;
         }
 
-        private byte[] UnpackUtf8(byte markerByte)
+        private byte[] ReadUtf8(byte markerByte)
         {
             var markerHighNibble = (byte)(markerByte & 0xF0);
             var markerLowNibble = (byte)(markerByte & 0x0F);
 
             if (markerHighNibble == TINY_STRING)
             {
-                return UnpackBytes(markerLowNibble);
+                return ReadBytes(markerLowNibble);
             }
             switch (markerByte)
             {
                 case STRING_8:
-                    return UnpackBytes(UnpackUint8());
+                    return ReadBytes(ReadUint8());
                 case STRING_16:
-                    return UnpackBytes(UnpackUint16());
+                    return ReadBytes(ReadUint16());
                 case STRING_32:
                 {
-                    var size = UnpackUint32();
+                    var size = ReadUint32();
                     if (size <= int.MaxValue)
                     {
-                        return UnpackBytes((int)size);
+                        return ReadBytes((int)size);
                     }
                     throw new ProtocolException(
                         $"STRING_32 {size} too long for PackStream");
@@ -246,7 +246,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public long UnpackMapHeader()
+        public long ReadMapHeader()
         {
             var markerByte = _stream.ReadByte();
             var markerHighNibble = (byte)(markerByte & 0xF0);
@@ -259,18 +259,18 @@ namespace Neo4j.Driver.Internal.IO
             switch (markerByte)
             {
                 case MAP_8:
-                    return UnpackUint8();
+                    return ReadUint8();
                 case MAP_16:
-                    return UnpackUint16();
+                    return ReadUint16();
                 case MAP_32:
-                    return UnpackUint32();
+                    return ReadUint32();
                 default:
                     throw new ProtocolException(
                         $"Expected a map, but got: 0x{markerByte:X2}");
             }
         }
 
-        public long UnpackListHeader()
+        public long ReadListHeader()
         {
             var markerByte = _stream.ReadByte();
             var markerHighNibble = (byte)(markerByte & 0xF0);
@@ -283,23 +283,23 @@ namespace Neo4j.Driver.Internal.IO
             switch (markerByte)
             {
                 case LIST_8:
-                    return UnpackUint8();
+                    return ReadUint8();
                 case LIST_16:
-                    return UnpackUint16();
+                    return ReadUint16();
                 case LIST_32:
-                    return UnpackUint32();
+                    return ReadUint32();
                 default:
                     throw new ProtocolException(
                         $"Expected a list, but got: 0x{(markerByte & 0xFF):X2}");
             }
         }
 
-        public byte UnpackStructSignature()
+        public byte ReadStructSignature()
         {
-            return ReadByte();
+            return NextByte();
         }
 
-        public long UnpackStructHeader()
+        public long ReadStructHeader()
         {
             var markerByte = _stream.ReadByte();
             var markerHighNibble = (byte)(markerByte & 0xF0);
@@ -312,9 +312,9 @@ namespace Neo4j.Driver.Internal.IO
             switch (markerByte)
             {
                 case STRUCT_8:
-                    return UnpackUint8();
+                    return ReadUint8();
                 case STRUCT_16:
-                    return UnpackUint16();
+                    return ReadUint16();
                 default:
                     throw new ProtocolException(
                         $"Expected a struct, but got: 0x{markerByte:X2}");
@@ -380,57 +380,57 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        private int UnpackUint8()
+        private int ReadUint8()
         {
-            return ReadByte() & 0xFF;
+            return NextByte() & 0xFF;
         }
 
-        private int UnpackUint16()
+        private int ReadUint16()
         {
-            return ReadShort() & 0xFFFF;
+            return NextShort() & 0xFFFF;
         }
 
-        private long UnpackUint32()
+        private long ReadUint32()
         {
-            return ReadInt() & 0xFFFFFFFFL;
+            return NextInt() & 0xFFFFFFFFL;
         }
 
-        internal sbyte ReadSByte()
+        internal sbyte NextSByte()
         {
             _stream.Read(_byteBuffer);
 
             return (sbyte)_byteBuffer[0];
         }
 
-        public byte ReadByte()
+        public byte NextByte()
         {
             _stream.Read(_byteBuffer);
 
             return (byte)_byteBuffer[0];
         }
 
-        public short ReadShort()
+        public short NextShort()
         {
             _stream.Read(_shortBuffer);
 
             return PackStreamBitConverter.ToInt16(_shortBuffer);
         }
 
-        public int ReadInt()
+        public int NextInt()
         {
             _stream.Read(_intBuffer);
 
             return PackStreamBitConverter.ToInt32(_intBuffer);
         }
 
-        public long ReadLong()
+        public long NextLong()
         {
             _stream.Read(_longBuffer);
 
             return PackStreamBitConverter.ToInt64(_longBuffer);
         }
 
-        public double ReadDouble()
+        public double NextDouble()
         {
             _stream.Read(_longBuffer);
 

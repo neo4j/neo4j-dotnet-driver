@@ -15,7 +15,7 @@ namespace Neo4j.Driver.Internal.IO
             
         }
 
-        public override void Pack(byte[] values)
+        public override void Write(byte[] values)
         {
             throw new ProtocolException($"Cannot understand { nameof(values) } with type { values.GetType().FullName}");
         }
