@@ -110,7 +110,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
                 ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input 'I'");
+                ex.Message.Should().StartWith("Invalid input");
             }
             using (var session = Driver.Session())
             {
@@ -126,7 +126,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
                 ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input 'I'");
+                ex.Message.Should().StartWith("Invalid input");
                 var result = session.Run("RETURN 1");
                 result.Single()[0].ValueAs<int>().Should().Be(1);
             }
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.IntegrationTests
                 {
                     var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
                     ex.Should().BeOfType<ClientException>();
-                    ex.Message.Should().StartWith("Invalid input 'I'");
+                    ex.Message.Should().StartWith("Invalid input");
                 }
 
                 // Then can run more afterwards
@@ -168,7 +168,7 @@ namespace Neo4j.Driver.IntegrationTests
                 tx.Success();
                 var ex = Record.Exception(() => tx.Dispose());
                 ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input 'I'");
+                ex.Message.Should().StartWith("Invalid input");
 
                 // Then can still run more afterwards
                 using (var anotherTx = session.BeginTransaction())
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
                 ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input 'I'");
+                ex.Message.Should().StartWith("Invalid input");
             }
 
             var result = session.Run("RETURN 1");
