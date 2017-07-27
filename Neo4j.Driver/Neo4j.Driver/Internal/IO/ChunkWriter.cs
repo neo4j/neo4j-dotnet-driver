@@ -95,6 +95,13 @@ namespace Neo4j.Driver.Internal.IO
 
         public Task FlushAsync()
         {
+            if (_logger != null)
+            {
+                byte[] buffer = _chunkStream.ToArray();
+
+                _logger?.Trace("C: ", buffer, 0, buffer.Length);
+            }
+
             _chunkStream.Position = 0;
 
             return

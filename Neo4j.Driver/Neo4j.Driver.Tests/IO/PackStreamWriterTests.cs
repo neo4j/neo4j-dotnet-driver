@@ -14,47 +14,13 @@ namespace Neo4j.Driver.Tests.IO
 {
     public class PackStreamWriterTests
     {
-
-        protected class Mocks
-        {
-            private readonly Mock<Stream> _mockOutputStream;
-            private readonly Queue<string> _receviedBytes = new Queue<string>();
-            private readonly Queue<string> _receivedByteArrays = new Queue<string>();
-
-            public Mocks()
-            {
-                _mockOutputStream = new Mock<Stream>();
-                _mockOutputStream.Setup(s => s.CanWrite).Returns(true);
-                _mockOutputStream
-                    .Setup(s => s.WriteByte(It.IsAny<byte>()))
-                    .Callback<byte>(b => _receviedBytes.Enqueue($"{b:X2}"));
-                _mockOutputStream
-                    .Setup(s => s.Write(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
-                    .Callback<byte[], int, int>((bArray, offset, count) => _receivedByteArrays.Enqueue($"{bArray.ToHexString(offset, count)}"));
-            }
-
-            public Stream OutputStream => _mockOutputStream.Object;
-
-            public void VerifyWrite(byte expectedByte)
-            {
-                _mockOutputStream.Verify(c => c.WriteByte(expectedByte), Times.Once,
-                    $"Received {_receviedBytes.Dequeue()}{Environment.NewLine}Expected {expectedByte:X2}");
-            }
-
-            public void VerifyWrite(byte[] expectedBytes)
-            {
-                _mockOutputStream.Verify(c => c.Write(expectedBytes, It.IsAny<int>(), It.IsAny<int>()), Times.Once,
-                    $"Received {_receivedByteArrays.Dequeue()}{Environment.NewLine}Expected {expectedBytes.ToHexString()}");
-            }
-        }
-
-
+        
         public class WriteNullMethod
         {
             [Fact]
             public void ShouldWriteNullSuccessfully()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.WriteNull();
@@ -80,7 +46,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(long.MaxValue, PackStream.INT_64, "7F FF FF FF FF FF FF FF")]
             public void ShouldWriteLongSuccessfully(long input, byte marker, string expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -99,7 +65,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(1.2, "3F F3 33 33 33 33 33 33")]
             public void ShouldWriteDoubleSuccessfully(double input, string expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -116,7 +82,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(false)]
             public void ShouldWriteBoolSuccessfully(bool input)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -130,7 +96,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteNullStringSuccessfully()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((string)null);
@@ -141,7 +107,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteEmptyStringSuccessfully()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(string.Empty);
@@ -155,7 +121,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(short.MaxValue + 1, PackStream.STRING_32, new byte[] { 0x00, 0x00, 0x80, 0x00 })]
             public void ShouldWriteStringSuccessfully(int size, byte marker, byte[] sizeByte)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var input = new string('a', size);
@@ -177,7 +143,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(20, PackStream.STRING_8, new byte[] { 0x28 })]
             public void ShouldWriteUnicodeStringSuccessfully(int size, byte marker, byte[] sizeByte)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var input = new string('å', size);
@@ -201,7 +167,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteNullBytesSuccessfully()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((byte[])null);
@@ -212,7 +178,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteEmptyByteSuccessfully()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(new byte[] { });
@@ -228,7 +194,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(short.MaxValue + 1, PackStream.BYTES_32, new byte[] { 0x00, 0x00, 0x80, 0x00 })]
             public void ShouldWriteStringSuccessfully(int size, byte marker, byte[] sizeByte)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var expected = new byte[size];
@@ -255,7 +221,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(0x50, 15, 0xBF)]
             public void ShouldWriteTinyStructSuccessfully(byte signature, int fieldCount, byte expectedHeader)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var fields = new List<object>();
@@ -278,7 +244,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(0x50, 255, PackStream.STRUCT_8)]
             public void ShouldWriteStruct8Successfully(byte signature, int fieldCount, byte expectedHeader)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var fields = new List<object>();
@@ -300,7 +266,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(0x50, 32700, PackStream.STRUCT_16)]
             public void ShouldWriteStruct16Successfully(byte signature, int fieldCount, byte expectedHeader)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var fields = new List<object>();
@@ -320,7 +286,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteStructThroughWriteObject()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var value = new PackStreamStruct(0x50, Enumerable.Empty<object>());
@@ -334,7 +300,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteNullStructAsNull()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((PackStreamStruct)null);
@@ -345,7 +311,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldThrowExceptionWhenFieldCountExceedsMaximum()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 var fields = new List<object>();
@@ -367,7 +333,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteAsNull()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((object)null);
@@ -380,7 +346,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(null, PackStream.NULL)]
             public void ShouldWriteNullableBool(bool? input, byte expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -393,7 +359,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(null, PackStream.NULL)]
             public void ShouldWriteNullableAsNull(sbyte? input, byte expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -412,7 +378,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(long.MinValue, PackStream.INT_64)]
             public void ShouldWriteNumbersAsLong(object input, byte expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -426,7 +392,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(123.0, PackStream.FLOAT_64)]
             public void ShouldWriteFloatNumbersAsDouble(object input, byte expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -439,7 +405,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 object input = (double)1.34m;
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(input);
@@ -451,7 +417,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteAsByteArray()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
                 var input = new byte[] { 1, 2, 3 };
 
@@ -466,7 +432,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const char input = 'a';
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((object)input);
@@ -479,7 +445,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const string input = "abc";
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
                 
                 writer.Write((object)input);
@@ -492,7 +458,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var list = new List<object>(new object[] {1, true, "a"});
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((object)list);
@@ -509,7 +475,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var list = new[] {1, 2};
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((object)list);
@@ -525,7 +491,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var dict = new Dictionary<object, object>() {{true, "a"}};
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((object) dict);
@@ -553,7 +519,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteAsNullIfListIsNull()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((IList)null);
@@ -568,7 +534,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(int.MaxValue, PackStream.LIST_32, new byte[] { 0x7F, 0xFF, 0xFF, 0xFF })]
             public void ShouldWriteListHeaderCorrectly(int size, byte marker, byte[] expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.WriteListHeader(size);
@@ -582,7 +548,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var list = new List<object>(new object[] {1, true, "a"});
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(list);
@@ -600,7 +566,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteAsNullIfDictionaryIsNull()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write((IDictionary)null);
@@ -615,7 +581,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(int.MaxValue, PackStream.MAP_32, new byte[] { 0x7F, 0xFF, 0xFF, 0xFF })]
             public void ShouldWriteListHeaderCorrectly(int size, byte marker, byte[] expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.WriteMapHeader(size);
@@ -629,7 +595,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var dict = new Dictionary<object, object>() { { true, "a" } };
 
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.Write(dict);
@@ -649,7 +615,7 @@ namespace Neo4j.Driver.Tests.IO
             [InlineData(byte.MaxValue, PackStream.STRUCT_8, new byte[] { byte.MaxValue, 0x77 })]
             public void ShouldWriteStructHeaderCorrectly(int size, byte marker, byte[] expected)
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.WriteStructHeader(size, 0x77);
@@ -661,7 +627,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldWriteStructHeaderStruct16Correctly()
             {
-                var mocks = new Mocks();
+                var mocks = new WriterTests.Mocks();
                 var writer = new PackStreamWriter(mocks.OutputStream);
 
                 writer.WriteStructHeader(short.MaxValue, 0x77);

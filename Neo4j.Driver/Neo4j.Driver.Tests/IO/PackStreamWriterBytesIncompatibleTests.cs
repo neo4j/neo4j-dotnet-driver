@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.IO
         [Fact]
         public void ShouldThrowWhenBytesIsSent()
         {
-            var mocks = new Mocks();
+            var mocks = new WriterTests.Mocks();
             var writer = new PackStreamWriterBytesIncompatible(mocks.OutputStream);
 
             var ex = Record.Exception(() => writer.Write(new byte[10]));
