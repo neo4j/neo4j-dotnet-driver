@@ -29,8 +29,8 @@ namespace Neo4j.Driver.Internal.IO
 
         public object Read()
         {
-            var result = ReadValue();
-
+            var type = PeekNextType();
+            var result = ReadValue(type);
             return result;
         }
 
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.IO
             for (var i = 0; i < size; i++)
             {
                 var key = ReadString();
-                map.Add(key, ReadValue());
+                map.Add(key, Read());
             }
             return map;
         }
@@ -56,18 +56,12 @@ namespace Neo4j.Driver.Internal.IO
             var vals = new object[size];
             for (var j = 0; j < size; j++)
             {
-                vals[j] = ReadValue();
+                vals[j] = Read();
             }
             return new List<object>(vals);
         }
 
-        private object ReadValue()
-        {
-            var type = PeekNextType();
-            return ReadValue(type);
-        }
-
-        protected virtual object ReadValue(PackStream.PackType type)
+        protected internal virtual object ReadValue(PackStream.PackType type)
         {
             switch (type)
             {
@@ -102,7 +96,7 @@ namespace Neo4j.Driver.Internal.IO
             var fields = new List<object>();
             for (var i = 0; i < size; i++)
             {
-                fields.Add(ReadValue());
+                fields.Add(Read());
             }
 
             return new PackStreamStruct(signature, fields);
@@ -439,19 +433,18 @@ namespace Neo4j.Driver.Internal.IO
 
         public byte PeekByte()
         {
-            var pos = _stream.Position;
+            if (_stream.Length - _stream.Position < 1)
+            {
+                throw new ProtocolException("Unable to peek 1 byte from buffer.");
+            }
+
             try
             {
-                if (_stream.Length - _stream.Position < 1)
-                {
-                    throw new ProtocolException("Unable to peek 1 byte from buffer.");
-                }
-
                 return (byte)_stream.ReadByte();
             }
             finally
             {
-                _stream.Position = pos;
+                _stream.Seek(-1, SeekOrigin.Current);
             }
         }
 

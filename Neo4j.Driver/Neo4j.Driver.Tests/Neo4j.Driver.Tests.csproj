@@ -105,6 +105,8 @@
     <Compile Include="Connector\ChunkedInputTests.cs" />
     <Compile Include="Connector\ChunkedOutputTest.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
+    <Compile Include="IO\PackStreamWriterBytesIncompatibleTests.cs" />
+    <Compile Include="IO\PackStreamReaderBytesIncompatibleTests.cs" />
     <Compile Include="IO\PackStreamReaderTests.cs" />
     <Compile Include="IO\PackStreamWriterTests.cs" />
     <Compile Include="Result\SummaryCollectorTests.cs" />

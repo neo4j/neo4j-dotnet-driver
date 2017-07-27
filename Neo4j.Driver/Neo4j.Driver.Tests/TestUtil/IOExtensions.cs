@@ -46,9 +46,11 @@ namespace Neo4j.Driver.Tests
 
             var mockInput = new Mock<MemoryStream>(tmpStream.ToArray());
 
+            mockInput.Setup(x => x.Position).CallBase();
             mockInput.Setup(x => x.Length).CallBase();
             mockInput.Setup(x => x.Position).CallBase();
             mockInput.Setup(x => x.CanRead).CallBase();
+            mockInput.Setup(x => x.Seek(It.IsAny<long>(), It.IsAny<SeekOrigin>())).CallBase();
             mockInput.Setup(x => x.ReadByte()).CallBase();
             mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>())).CallBase();
 

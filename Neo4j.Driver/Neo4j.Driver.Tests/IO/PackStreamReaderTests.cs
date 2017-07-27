@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -477,7 +479,7 @@ namespace Neo4j.Driver.Tests.IO
             }
         }
 
-        public class ReadStructSignature
+        public class ReadStructSignatureMethod
         {
             [Fact]
             public void ShouldCallReadByteOnce()
@@ -599,6 +601,529 @@ namespace Neo4j.Driver.Tests.IO
             }
         }
 
+        public class PeekByteMethod
+        {
+
+            [Fact]
+            public void ShouldPeekCorrectly()
+            {
+                const byte expected = 1;
+                var mockInput = IOExtensions.CreateMockStream(1, 2, 3);
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.PeekByte();
+
+                real.Should().Be(expected);
+                mockInput.Verify(x => x.ReadByte(), Times.Once);
+                mockInput.Verify(x => x.Length, Times.Once);
+                mockInput.Verify(x => x.Position, Times.Once);
+                mockInput.Verify(x => x.Seek(-1, SeekOrigin.Current), Times.Once);
+            }
+
+
+            [Fact]
+            public void ShouldThrowExceptionWhenTheresNoBytesToPeek()
+            {
+                var mockInput = IOExtensions.CreateMockStream(new byte[0]);
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var ex = Record.Exception(() => reader.PeekByte());
+
+                ex.Should().BeOfType<ProtocolException>();
+                mockInput.Verify(x => x.Length, Times.Once);
+                mockInput.Verify(x => x.Position, Times.Once);
+                mockInput.Verify(x => x.Seek(-1, SeekOrigin.Current), Times.Never);
+            }
+
+        }
+
+        public class ReadMapMethod
+        {
+
+            [Fact]
+            public void ShouldReadEmptyTinyMapCorrectly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("A0".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyMap8Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D8 00".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyMap16Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D9 00 00 ".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyMap32Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("DA 00 00 00 00".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadTinyMapCorrectly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream(
+                        "AF 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05"
+                            .ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(15);
+                map.Should().ContainKeys("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o");
+                map.Should().ContainValues(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 0L);
+            }
+
+            [Fact]
+            public void ShouldReadMap8Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream(
+                        "D8 10 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05 81 70 06"
+                            .ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(16);
+                map.Should().ContainKeys("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
+                    "p");
+                map.Should().ContainValues(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 0L);
+            }
+
+            [Fact]
+            public void ShouldReadMap16Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream(
+                        "D9 00 10 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05 81 70 06"
+                            .ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(16);
+                map.Should().ContainKeys("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
+                    "p");
+                map.Should().ContainValues(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 0L);
+            }
+
+            [Fact]
+            public void ShouldReadMap32Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream(
+                        "DA 00 00 00 10 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05 81 70 06"
+                            .ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var map = real as IDictionary<string, object>;
+                map.Should().NotBeNull();
+                map.Count.Should().Be(16);
+                map.Should().ContainKeys("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
+                    "p");
+                map.Should().ContainValues(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 0L);
+            }
+
+        }
+
+        public class ReadStructMethod
+        {
+
+            [Fact]
+            public void ShouldReadEmptyTinyStructCorrectly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("B0 01".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<PackStreamStruct>();
+
+                var structure = real as PackStreamStruct;
+                structure.Should().NotBeNull();
+                structure.Signature.Should().Be(0x01);
+                structure.Fields.Should().NotBeNull();
+                structure.Fields.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyStruct8Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("DC 00 01".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<PackStreamStruct>();
+
+                var structure = real as PackStreamStruct;
+                structure.Should().NotBeNull();
+                structure.Signature.Should().Be(0x01);
+                structure.Fields.Should().NotBeNull();
+                structure.Fields.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyStruct16Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("DD 00 00 01".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<PackStreamStruct>();
+
+                var structure = real as PackStreamStruct;
+                structure.Should().NotBeNull();
+                structure.Signature.Should().Be(0x01);
+                structure.Fields.Should().NotBeNull();
+                structure.Fields.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadTinyStructCorrectly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("B3 01 01 02 03".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<PackStreamStruct>();
+
+                var structure = real as PackStreamStruct;
+                structure.Should().NotBeNull();
+                structure.Signature.Should().Be(0x01);
+                structure.Fields.Should().NotBeNull();
+                structure.Fields.Count.Should().Be(3);
+                structure.Fields.Should().Contain(1L);
+                structure.Fields.Should().Contain(2L);
+                structure.Fields.Should().Contain(3L);
+            }
+
+            [Fact]
+            public void ShouldReadStruct8Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("DC 03 01 01 02 03".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<PackStreamStruct>();
+
+                var structure = real as PackStreamStruct;
+                structure.Should().NotBeNull();
+                structure.Signature.Should().Be(0x01);
+                structure.Fields.Should().NotBeNull();
+                structure.Fields.Count.Should().Be(3);
+                structure.Fields.Should().Contain(1L);
+                structure.Fields.Should().Contain(2L);
+                structure.Fields.Should().Contain(3L);
+            }
+
+            [Fact]
+            public void ShouldReadStruct16Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("DD 00 03 01 01 02 03".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<PackStreamStruct>();
+
+                var structure = real as PackStreamStruct;
+                structure.Should().NotBeNull();
+                structure.Signature.Should().Be(0x01);
+                structure.Fields.Should().NotBeNull();
+                structure.Fields.Count.Should().Be(3);
+                structure.Fields.Should().Contain(1L);
+                structure.Fields.Should().Contain(2L);
+                structure.Fields.Should().Contain(3L);
+            }
+            
+        }
+
+        public class ReadListMethod
+        {
+
+            [Fact]
+            public void ShouldReadEmptyTinyListCorrectly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("90".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyList8Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D4 00".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyMap16Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D5 00 00 ".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadEmptyMap32Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D6 00 00 00 00".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(0);
+            }
+
+            [Fact]
+            public void ShouldReadTinyListCorrectly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("93 01 02 03".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(3);
+                list.Should().Contain(1L);
+                list.Should().Contain(2L);
+                list.Should().Contain(3L);
+            }
+
+            [Fact]
+            public void ShouldReadMap8Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D4 03 01 02 03".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(3);
+                list.Should().Contain(1L);
+                list.Should().Contain(2L);
+                list.Should().Contain(3L);
+            }
+
+            [Fact]
+            public void ShouldReadMap16Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D5 00 03 01 02 03".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(3);
+                list.Should().Contain(1L);
+                list.Should().Contain(2L);
+                list.Should().Contain(3L);
+            }
+
+            [Fact]
+            public void ShouldReadMap32Correctly()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D6 00 00 00 03 01 02 03".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeAssignableTo<IList<object>>();
+
+                var list = real as IList<object>;
+                list.Should().NotBeNull();
+                list.Count.Should().Be(3);
+                list.Should().Contain(1L);
+                list.Should().Contain(2L);
+                list.Should().Contain(3L);
+            }
+
+        }
+
+        public class ReadMethod
+        {
+
+            [Theory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void ShouldReadBooleanThroughRead(bool value)
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream(value ? PackStream.TRUE : PackStream.FALSE);
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<bool>();
+
+                var boolean = (bool)real;
+                boolean.Should().Be(value);
+            }
+
+            [Fact]
+            public void ShouldReadNullThroughRead()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream(PackStream.NULL);
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldReadBytesThroughRead()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("CC 01 01".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<byte[]>();
+
+                var bytes = real as byte[];
+                bytes.Should().NotBeNull();
+                bytes.Length.Should().Be(1);
+            }
+
+            [Fact]
+            public void ShouldReadFloatThroughRead()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("C1 3F F1 99 99 99 99 99 9A".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<double>();
+
+                var number = (double)real;
+                number.Should().Be(1.1);
+            }
+
+            [Fact]
+            public void ShouldReadStringThroughRead()
+            {
+                var mockInput =
+                    IOExtensions.CreateMockStream("D0 1A 61 62  63 64 65 66 67 68 69 6A 6B 6C 6D 6E 6F 70 71 72 73 74 75 76 77 78 79 7A".ToByteArray());
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+                real.Should().BeOfType<string>();
+
+                var text = (string)real;
+                text.Should().Be("abcdefghijklmnopqrstuvwxyz");
+            }
+
+        }
+
+        public class ReadValueMethod
+        {
+
+            [Fact]
+            public void ShouldThrowWhenPackTypeIsNotSupported()
+            {
+                var reader = new PackStreamReader(new MemoryStream());
+
+                var ex = Record.Exception(() => reader.ReadValue((PackStream.PackType)100));
+
+                ex.Should().NotBeNull();
+                ex.Should().BeOfType<ArgumentOutOfRangeException>();
+            }
+
+        }
 
     }
 }

@@ -15,7 +15,7 @@ namespace Neo4j.Driver.Tests.IO
     public class PackStreamWriterTests
     {
 
-        private class Mocks
+        protected class Mocks
         {
             private readonly Mock<Stream> _mockOutputStream;
             private readonly Queue<string> _receviedBytes = new Queue<string>();
