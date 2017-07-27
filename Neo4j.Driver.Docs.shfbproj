@@ -18,9 +18,8 @@
     <HtmlHelpName>Neo4j.Driver.Documentation</HtmlHelpName>
     <Language>en-US</Language>
     <DocumentationSources>
-      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\Neo4j.Driver.xml" />
-      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\Neo4j.Driver.dll" />
-    </DocumentationSources>
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\netstandard1.3\Neo4j.Driver.dll" />
+<DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\netstandard1.3\Neo4j.Driver.xml" /></DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <HelpFileFormat>Website</HelpFileFormat>
     <IndentHtml>False</IndentHtml>
@@ -31,7 +30,7 @@
     <ApiFilter>
     </ApiFilter>
     <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected, ProtectedInternalAsProtected</VisibleItems>
-    <HelpFileVersion>1.0.0.0</HelpFileVersion>
+    <HelpFileVersion>1.5.0.0</HelpFileVersion>
     <MaximumGroupParts>2</MaximumGroupParts>
     <NamespaceGrouping>False</NamespaceGrouping>
     <SyntaxFilters>Standard</SyntaxFilters>
@@ -41,8 +40,8 @@
     <Preliminary>False</Preliminary>
     <NamingMethod>Guid</NamingMethod>
     <HelpTitle>Neo4j .NET Driver</HelpTitle>
-    <CopyrightText>Copyright %28c%29 2002-2016 &amp;quot%3bNeo Technology,&amp;quot%3b Network Engine for Objects in Lund AB.</CopyrightText>
-    <CopyrightHref>http://neotechnology.com</CopyrightHref>
+    <CopyrightText>Copyright %28c%29 2002-2017 Neo4j</CopyrightText>
+    <CopyrightHref>http://neo4j.com</CopyrightHref>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
     <NamespaceSummaries>
       <NamespaceSummaryItem name="Neo4j.Driver.V1" isDocumented="True">The base namespace for interaction with the Neo4j .NET Driver.</NamespaceSummaryItem>
@@ -52,14 +51,26 @@
       <PlugInConfig id="Assembly Binding Redirection" enabled="True">
         <configuration useGAC="false">
           <assemblyBinding />
-          <ignoreIfUnresolved>
-            <assemblyIdentity name="BusinessObjects.Licensing.KeycodeDecoder" />
-            <assemblyIdentity name="Microsoft.VisualStudio.TestTools.UITest.Playback" />
-            <assemblyIdentity name="System.Net.Sockets" />
-            <assemblyIdentity name="System.Runtime.Serialization.Primitives" />
-            <assemblyIdentity name="System.Security.Cryptography.X509Certificates" />
-          </ignoreIfUnresolved>
+          <ignoreIfUnresolved />
         </configuration>
+      </PlugInConfig>
+      <PlugInConfig id="Additional Content Only" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Additional Reference Links" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="AjaxDoc Builder" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Bibliography Support" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Output Deployment" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Table of Contents Exclusion" enabled="True">
+        <configuration />
       </PlugInConfig>
     </PlugInConfigurations>
   </PropertyGroup>
