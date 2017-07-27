@@ -102,7 +102,7 @@
   <ItemGroup>
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="BookmarkTests.cs" />
-    <Compile Include="Connector\ChunkedInputTests.cs" />
+    <Compile Include="IO\ChunkReaderTests.cs" />
     <Compile Include="IO\ChunkWriterTests.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
     <Compile Include="IO\PackStreamWriterBytesIncompatibleTests.cs" />

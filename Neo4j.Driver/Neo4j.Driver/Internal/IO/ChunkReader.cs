@@ -26,11 +26,20 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         public ChunkReader(Stream downStream, ILogger logger)
+            : this(downStream, new MemoryStream(), logger)
+        {
+            
+        }
+
+        internal ChunkReader(Stream downStream, MemoryStream chunkStream, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
+            Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream));
+
+            Throw.ArgumentNullException.IfNull(chunkStream, nameof(chunkStream));
 
             _downStream = downStream;
-            _chunkStream = new MemoryStream();
+            _chunkStream = chunkStream;
             _logger = logger;
         }
 
@@ -43,11 +52,7 @@ namespace Neo4j.Driver.Internal.IO
                 // We have not received the chunk size yet, but it can be read from the buffered data.
                 if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
                 {
-                    read = ReadFromChunkStream(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
-                    if (read != _chunkSizeBuffer.Length)
-                    {
-                        throw new ProtocolException($"Expected {_chunkSizeBuffer.Length}, but got {read}.");
-                    }
+                    ReadFromChunkStream(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
 
                     _currentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
                     if (_currentChunkSize == 0)
@@ -82,7 +87,7 @@ namespace Neo4j.Driver.Internal.IO
             ReadNextChunkLoopAsync(
                 targetStream, 
                 taskCompletionSource, 
-                CreateNewCompletedTask());
+                Task.CompletedTask);
 
             return taskCompletionSource.Task;
         }
@@ -98,11 +103,7 @@ namespace Neo4j.Driver.Internal.IO
                         // We have not received the chunk size yet, but it can be read from the buffered data.
                         if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
                         {
-                            var read = ReadFromChunkStream(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
-                            if (read != _chunkSizeBuffer.Length)
-                            {
-                                throw new ProtocolException($"Expected {_chunkSizeBuffer.Length}, but got {read}.");
-                            }
+                            ReadFromChunkStream(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
 
                             _currentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
                             if (_currentChunkSize == 0)
@@ -154,7 +155,16 @@ namespace Neo4j.Driver.Internal.IO
             try
             {
                 _chunkStream.Position = _lastReadPosition;
-                result = _chunkStream.Read(buffer, offset, count);
+
+                int hasRead = 0, from = offset, toRead = count;
+                do
+                {
+                    hasRead = _chunkStream.Read(buffer, from, toRead);
+                    from += hasRead;
+                    toRead -= hasRead;
+                } while (toRead > 0 && hasRead > 0);
+
+                result = count;
             }
             finally
             {
@@ -214,11 +224,7 @@ namespace Neo4j.Driver.Internal.IO
                 _chunkStream.Position = shrinkFrom;
 
                 var leftOverData = new byte[_chunkStream.Length - shrinkFrom];
-                var read = _chunkStream.Read(leftOverData, 0, leftOverData.Length);
-                if (read != leftOverData.Length)
-                {
-                    throw new ProtocolException($"Expected {leftOverData.Length}, but got {read}.");
-                }
+                _chunkStream.Read(leftOverData);
 
                 _chunkStream.SetLength(0);
                 _chunkStream.Write(leftOverData, 0, leftOverData.Length);
@@ -226,15 +232,6 @@ namespace Neo4j.Driver.Internal.IO
                 _lastReadPosition -= shrinkFrom;
                 _lastWritePosition -= shrinkFrom;
             }
-        }
-
-        private static Task CreateNewCompletedTask()
-        {
-            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
-
-            tcs.SetResult(null);
-
-            return tcs.Task;
         }
 
     }
