@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (System.BitConverter.IsLittleEndian)
             {
-                return bytes.Reverse().ToArray();
+                Array.Reverse(bytes);
             }
             return bytes;
         }
@@ -188,7 +188,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (System.BitConverter.IsLittleEndian)
             {
-                return bytes.Reverse().ToArray();
+                Array.Reverse(bytes);
             }
             return bytes;
         }

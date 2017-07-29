@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -1105,6 +1106,55 @@ namespace Neo4j.Driver.Tests.IO
 
                 var text = (string)real;
                 text.Should().Be("abcdefghijklmnopqrstuvwxyz");
+            }
+            
+            [Theory]
+            [InlineData(2147483648, new byte[] { 0xCB, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00 })]
+            [InlineData(9223372036854775807, new byte[] { 0xCB, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF })]
+            public void ReadLongCorrectly(long expected, byte[] data)
+            {
+                ShouldReadNumCorrectly(expected, data);
+            }
+
+            [Theory]
+            [InlineData(32768, new byte[] { 0xCA, 0x00, 0x00, 0x80, 0x00 })]
+            public void ReadIntCorrectly(int expected, byte[] data)
+            {
+                ShouldReadNumCorrectly(expected, data);
+            }
+
+            [Theory]
+            [InlineData(-16, new byte[] { 0xF0 })]
+            [InlineData(42, new byte[] { 0x2A })]
+            [InlineData(127, new byte[] { 0x7F })]
+            public void ReadTinyIntCorrectly(sbyte value, byte[] expected)
+            {
+                ShouldReadNumCorrectly(value, expected);
+            }
+
+            [Theory]
+            [InlineData(-128, new byte[] { 0xC8, 0x80 })]
+            [InlineData(-17, new byte[] { 0xC8, 0xEF })]
+            public void ReadInt8Correctly(sbyte value, byte[] expected)
+            {
+                ShouldReadNumCorrectly(value, expected);
+            }
+
+            [Theory]
+            [InlineData(128, new byte[] { 0xC9, 0x00, 0x80 })]
+            public void ReadShortCorrectly(short value, byte[] expected)
+            {
+                ShouldReadNumCorrectly(value, expected);
+            }
+
+            private void ShouldReadNumCorrectly(long expected, byte[] data)
+            {
+                var mockInput = IOExtensions.CreateMockStream(data);
+                var reader = new PackStreamReader(mockInput.Object);
+
+                var real = reader.Read();
+
+                real.Should().Be(expected);
             }
 
         }

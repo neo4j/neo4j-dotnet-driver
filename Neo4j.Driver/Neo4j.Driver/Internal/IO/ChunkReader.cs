@@ -47,8 +47,6 @@ namespace Neo4j.Driver.Internal.IO
         {
             while (true)
             {
-                var read = 0;
-
                 // We have not received the chunk size yet, but it can be read from the buffered data.
                 if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
                 {
@@ -71,7 +69,7 @@ namespace Neo4j.Driver.Internal.IO
                 else
                 {
                     // Read next available bytes from the down stream and write it to our chunk stream.
-                    read = _downStream.Read(_buffer, 0, _buffer.Length);
+                    var read = _downStream.Read(_buffer, 0, _buffer.Length);
                     WriteToChunkStream(_buffer, 0, read);
                 }
             }
@@ -82,7 +80,7 @@ namespace Neo4j.Driver.Internal.IO
         
         public Task ReadNextChunkAsync(Stream targetStream)
         {
-            TaskCompletionSource<object> taskCompletionSource = new TaskCompletionSource<object>();
+            var taskCompletionSource = new TaskCompletionSource<object>();
 
             ReadNextChunkLoopAsync(
                 targetStream, 

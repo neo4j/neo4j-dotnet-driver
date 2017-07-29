@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         public BoltWriter(Stream stream, bool supportBytes)
-            : this(new ChunkWriter(stream), null, supportBytes)
+            : this(stream, null, supportBytes)
         {
 
         }

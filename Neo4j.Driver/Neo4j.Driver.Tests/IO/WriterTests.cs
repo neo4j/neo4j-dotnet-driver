@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 
@@ -16,6 +18,7 @@ namespace Neo4j.Driver.Tests.IO
             private readonly Mock<Stream> _mockOutputStream;
             private readonly Queue<string> _receviedBytes = new Queue<string>();
             private readonly Queue<string> _receivedByteArrays = new Queue<string>();
+            private readonly StringBuilder _receivedBytesAccumulated = new StringBuilder(); 
 
             public Mocks()
             {
@@ -23,10 +26,29 @@ namespace Neo4j.Driver.Tests.IO
                 _mockOutputStream.Setup(s => s.CanWrite).Returns(true);
                 _mockOutputStream
                     .Setup(s => s.WriteByte(It.IsAny<byte>()))
-                    .Callback<byte>(b => _receviedBytes.Enqueue($"{b:X2}"));
+                    .Callback<byte>(b =>
+                    {
+                        var hex = $"{b:X2}";
+                        _receviedBytes.Enqueue(hex);
+                        _receivedBytesAccumulated.Append(hex);
+                    });
                 _mockOutputStream
                     .Setup(s => s.Write(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
-                    .Callback<byte[], int, int>((bArray, offset, count) => _receivedByteArrays.Enqueue($"{bArray.ToHexString(offset, count)}"));
+                    .Callback<byte[], int, int>((bArray, offset, count) =>
+                    {
+                        var hex = bArray.ToHexString(offset, count);
+                        _receivedByteArrays.Enqueue(hex);
+                        _receivedBytesAccumulated.Append(hex);
+                    });
+                _mockOutputStream
+                    .Setup(s => s.WriteAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                    .Callback<byte[], int, int, CancellationToken>((bArray, offset, count, token) =>
+                    {
+                        var hex = bArray.ToHexString(offset, count);
+                        _receivedByteArrays.Enqueue(hex);
+                        _receivedBytesAccumulated.Append(hex);
+                    })
+                    .Returns(Task.CompletedTask);
             }
 
             public Stream OutputStream => _mockOutputStream.Object;
@@ -41,6 +63,19 @@ namespace Neo4j.Driver.Tests.IO
             {
                 _mockOutputStream.Verify(c => c.Write(expectedBytes, It.IsAny<int>(), It.IsAny<int>()), Times.Once,
                     $"Received {_receivedByteArrays.Dequeue()}{Environment.NewLine}Expected {expectedBytes.ToHexString()}");
+            }
+
+            public void VerifyResult(string expectedBytesAsHexString)
+            {
+                string actual = _receivedBytesAccumulated.ToString().Replace(" ", "").ToLowerInvariant();
+                string expected = expectedBytesAsHexString.Replace(" ", "").ToLowerInvariant();
+
+                actual.Should().Be(expected);
+            }
+
+            public void VerifyResult(params byte[] expectedBytes)
+            {
+                VerifyResult(expectedBytes.ToHexString());
             }
         }
 

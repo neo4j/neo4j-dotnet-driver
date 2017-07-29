@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         public BoltReader(Stream stream, bool supportBytes)
-            : this(new ChunkReader(stream), null, supportBytes)
+            : this(stream, null, supportBytes)
         {
 
         }
@@ -137,20 +137,7 @@ namespace Neo4j.Driver.Internal.IO
             for (var i = 0; i < fieldCount; i++)
             {
                 var field = fieldsList[i];
-
-                if (field is IList)
-                {
-                    IList list = (IList) field;
-
-                    for (int j = 0; j < list.Count; j++)
-                    {
-                        if (list[j] is PackStreamStruct)
-                        {
-                            list[j] = UnpackStructure((PackStreamStruct) list[j]);
-                        }
-                    }
-                }
-
+                
                 if (field is PackStreamStruct)
                 {
                     field = UnpackStructure((PackStreamStruct) field);

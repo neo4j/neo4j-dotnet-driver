@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 
@@ -24,6 +26,11 @@ namespace Neo4j.Driver.Tests
             mStream.Position = 0;
 
             return new PackStreamReader(mStream);
+        }
+
+        public static Mock<MemoryStream> CreateMockStream(string bytesAsHexString)
+        {
+            return CreateMockStream(bytesAsHexString.ToByteArray());
         }
 
         public static Mock<MemoryStream> CreateMockStream(params byte[] bytes)
@@ -53,6 +60,8 @@ namespace Neo4j.Driver.Tests
             mockInput.Setup(x => x.Seek(It.IsAny<long>(), It.IsAny<SeekOrigin>())).CallBase();
             mockInput.Setup(x => x.ReadByte()).CallBase();
             mockInput.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>())).CallBase();
+            mockInput.Setup(x => x.ReadAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).CallBase();
+
 
             return mockInput;
         }
