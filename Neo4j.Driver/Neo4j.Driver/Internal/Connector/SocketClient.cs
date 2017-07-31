@@ -163,6 +163,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task SendAsync(IEnumerable<IRequestMessage> messages)
         {
+            var taskCompletionSource = new TaskCompletionSource<object>();
+
             try
             {
                 foreach (var message in messages)
@@ -170,6 +172,24 @@ namespace Neo4j.Driver.Internal.Connector
                     _writer.Write(message);
                     _logger?.Debug("C: ", message);
                 }
+
+                _writer.FlushAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted && t.Exception != null)
+                    {
+                        _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", t.Exception);
+                        Stop();
+                        taskCompletionSource.SetException(t.Exception.GetBaseException());
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        taskCompletionSource.SetCanceled();
+                    }
+                    else
+                    {
+                        taskCompletionSource.SetResult(null);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception ex)
             {
@@ -178,7 +198,7 @@ namespace Neo4j.Driver.Internal.Connector
                 throw;
             }
 
-            return _writer.FlushAsync();
+            return taskCompletionSource.Task;
         }
 
         public bool IsOpen { get; private set; }
