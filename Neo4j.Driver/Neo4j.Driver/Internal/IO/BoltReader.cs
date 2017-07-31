@@ -60,16 +60,16 @@ namespace Neo4j.Driver.Internal.IO
 
             switch (structure.Signature)
             {
-                case MSG_RECORD:
+                case MsgRecord:
                     UnpackRecordMessage(responseHandler, structure);
                     break;
-                case MSG_SUCCESS:
+                case MsgSuccess:
                     UnpackSuccessMessage(responseHandler, structure);
                     break;
-                case MSG_FAILURE:
+                case MsgFailure:
                     UnpackFailureMessage(responseHandler, structure);
                     break;
-                case MSG_IGNORED:
+                case MsgIgnored:
                     UnpackIgnoredMessage(responseHandler, structure);
                     break;
                 default:
@@ -91,16 +91,16 @@ namespace Neo4j.Driver.Internal.IO
 
                         switch (structure.Signature)
                         {
-                            case MSG_RECORD:
+                            case MsgRecord:
                                 UnpackRecordMessage(responseHandler, structure);
                                 break;
-                            case MSG_SUCCESS:
+                            case MsgSuccess:
                                 UnpackSuccessMessage(responseHandler, structure);
                                 break;
-                            case MSG_FAILURE:
+                            case MsgFailure:
                                 UnpackFailureMessage(responseHandler, structure);
                                 break;
-                            case MSG_IGNORED:
+                            case MsgIgnored:
                                 UnpackIgnoredMessage(responseHandler, structure);
                                 break;
                             default:
@@ -166,14 +166,14 @@ namespace Neo4j.Driver.Internal.IO
             var size = structure.Fields.Count;
             switch (structure.Signature)
             {
-                case NODE:
+                case PackStream.Node:
                     Throw.ProtocolException.IfNotEqual(NodeFields, size, nameof(NodeFields), nameof(size));
                     return UnpackNode(structure);
-                case RELATIONSHIP:
+                case PackStream.Relationship:
                     Throw.ProtocolException.IfNotEqual(RelationshipFields, size, nameof(RelationshipFields),
                         nameof(size));
                     return UnpackRelationship(structure);
-                case PATH:
+                case PackStream.Path:
                     Throw.ProtocolException.IfNotEqual(PathFields, size, nameof(PathFields), nameof(size));
                     return UnpackPath(structure);
             }
@@ -191,8 +191,8 @@ namespace Neo4j.Driver.Internal.IO
 
                 Throw.ProtocolException.IfNotEqual(NodeFields, nodeStruct.Fields.Count, nameof(NodeFields),
                     $"received{nameof(NodeFields)}");
-                Throw.ProtocolException.IfNotEqual(NODE, nodeStruct.Signature, nameof(NODE),
-                    $"received{nameof(NODE)}");
+                Throw.ProtocolException.IfNotEqual(PackStream.Node, nodeStruct.Signature, nameof(PackStream.Node),
+                    $"received{nameof(PackStream.Node)}");
 
                 uniqNodes[i] = UnpackNode(nodeStruct);
             }
@@ -206,8 +206,8 @@ namespace Neo4j.Driver.Internal.IO
 
                 Throw.ProtocolException.IfNotEqual(UnboundRelationshipFields, relStruct.Fields.Count,
                     nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
-                Throw.ProtocolException.IfNotEqual(UNBOUND_RELATIONSHIP, relStruct.Signature,
-                    nameof(UNBOUND_RELATIONSHIP), $"received{nameof(UNBOUND_RELATIONSHIP)}");
+                Throw.ProtocolException.IfNotEqual(UnboundRelationship, relStruct.Signature,
+                    nameof(UnboundRelationship), $"received{nameof(UnboundRelationship)}");
 
                 var urn = Convert.ToInt64(relStruct.Fields[0]);
                 var relType = Convert.ToString(relStruct.Fields[1]);

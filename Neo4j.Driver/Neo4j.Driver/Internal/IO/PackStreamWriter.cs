@@ -69,41 +69,41 @@ namespace Neo4j.Driver.Internal.IO
 
         public void Write(long value)
         {
-            if (value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
+            if (value >= Minus2ToThe4 && value < Plus2ToThe7)
             {
                 _stream.WriteByte((byte)value);
             }
-            else if (value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4)
+            else if (value >= Minus2ToThe7 && value < Minus2ToThe4)
             {
-                _stream.WriteByte(INT_8);
+                _stream.WriteByte(Int8);
                 _stream.Write(PackStreamBitConverter.GetBytes((byte)value));
             }
-            else if (value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15)
+            else if (value >= Minus2ToThe15 && value < Plus2ToThe15)
             {
-                _stream.WriteByte(INT_16);
+                _stream.WriteByte(PackStream.Int16);
                 _stream.Write(PackStreamBitConverter.GetBytes((short)value));
             }
-            else if (value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31)
+            else if (value >= Minus2ToThe31 && value < Plus2ToThe31)
             {
-                _stream.WriteByte(INT_32);
+                _stream.WriteByte(PackStream.Int32);
                 _stream.Write(PackStreamBitConverter.GetBytes((int)value));
             }
             else
             {
-                _stream.WriteByte(INT_64);
+                _stream.WriteByte(PackStream.Int64);
                 _stream.Write(PackStreamBitConverter.GetBytes(value));
             }
         }
 
         public void Write(double value)
         {
-            _stream.WriteByte(FLOAT_64);
+            _stream.WriteByte(Float64);
             _stream.Write(PackStreamBitConverter.GetBytes(value));
         }
 
         public void Write(bool value)
         {
-            _stream.WriteByte(value ? TRUE : FALSE);
+            _stream.WriteByte(value ? True : False);
         }
 
         public void Write(string value)
@@ -181,7 +181,7 @@ namespace Neo4j.Driver.Internal.IO
 
         public void WriteNull()
         {
-            _stream.WriteByte(NULL);
+            _stream.WriteByte(Null);
         }
 
         private void WriteRaw(byte[] data)
@@ -193,17 +193,17 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (size <= byte.MaxValue)
             {
-                _stream.WriteByte(BYTES_8);
+                _stream.WriteByte(Bytes8);
                 _stream.Write(new byte[] {(byte) size});
             }
             else if (size <= short.MaxValue)
             {
-                _stream.WriteByte(BYTES_16);
+                _stream.WriteByte(Bytes16);
                 _stream.Write(PackStreamBitConverter.GetBytes((short)size));
             }
             else
             {
-                _stream.WriteByte(BYTES_32);
+                _stream.WriteByte(Bytes32);
                 _stream.Write(PackStreamBitConverter.GetBytes(size));
             }
         }
@@ -212,22 +212,22 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (size < 0x10)
             {
-                _stream.WriteByte((byte)(TINY_LIST | size));
+                _stream.WriteByte((byte)(TinyList | size));
                 _stream.Write(new byte[0]);
             }
             else if (size <= byte.MaxValue)
             {
-                _stream.WriteByte(LIST_8);
+                _stream.WriteByte(List8);
                 _stream.Write(new byte[] {(byte) size});
             }
             else if (size <= short.MaxValue)
             {
-                _stream.WriteByte(LIST_16);
+                _stream.WriteByte(List16);
                 _stream.Write(PackStreamBitConverter.GetBytes((short)size));
             }
             else
             {
-                _stream.WriteByte(LIST_32);
+                _stream.WriteByte(List32);
                 _stream.Write(PackStreamBitConverter.GetBytes(size));
             }
         }
@@ -236,22 +236,22 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (size < 0x10)
             {
-                _stream.WriteByte((byte)(TINY_MAP | size));
+                _stream.WriteByte((byte)(TinyMap | size));
                 _stream.Write(new byte[0]);
             }
             else if (size <= byte.MaxValue)
             {
-                _stream.WriteByte(MAP_8);
+                _stream.WriteByte(Map8);
                 _stream.Write(new byte[] {(byte) size});
             }
             else if (size <= short.MaxValue)
             {
-                _stream.WriteByte(MAP_16);
+                _stream.WriteByte(Map16);
                 _stream.Write(PackStreamBitConverter.GetBytes((short)size));
             }
             else
             {
-                _stream.WriteByte(MAP_32);
+                _stream.WriteByte(Map32);
                 _stream.Write(PackStreamBitConverter.GetBytes(size));
             }
         }
@@ -260,21 +260,21 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (size < 0x10)
             {
-                _stream.WriteByte((byte)(TINY_STRING | size));
+                _stream.WriteByte((byte)(TinyString | size));
             }
             else if (size <= byte.MaxValue)
             {
-                _stream.WriteByte(STRING_8);
+                _stream.WriteByte(String8);
                 _stream.Write(new byte[] {(byte) size});
             }
             else if (size <= short.MaxValue)
             {
-                _stream.WriteByte(STRING_16);
+                _stream.WriteByte(String16);
                 _stream.Write(PackStreamBitConverter.GetBytes((short)size));
             }
             else
             {
-                _stream.WriteByte(STRING_32);
+                _stream.WriteByte(String32);
                 _stream.Write(PackStreamBitConverter.GetBytes(size));
             }
         }
@@ -283,17 +283,17 @@ namespace Neo4j.Driver.Internal.IO
         {
             if (size < 0x10)
             {
-                _stream.WriteByte((byte)(TINY_STRUCT | size));
+                _stream.WriteByte((byte)(TinyStruct | size));
                 _stream.Write(new byte[] { signature });
             }
             else if (size <= byte.MaxValue)
             {
-                _stream.WriteByte(STRUCT_8);
+                _stream.WriteByte(Struct8);
                 _stream.Write(new byte[] {(byte) size, signature});
             }
             else if (size <= short.MaxValue)
             {
-                _stream.WriteByte(STRUCT_16);
+                _stream.WriteByte(Struct16);
                 _stream.Write(PackStreamBitConverter.GetBytes((short)size));
                 _stream.WriteByte(signature);
             }

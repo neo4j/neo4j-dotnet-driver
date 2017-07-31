@@ -73,36 +73,36 @@ namespace Neo4j.Driver.Internal.IO
 
         public void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
         {
-            _packStreamWriter.WriteStructHeader(1, MSG_INIT);
+            _packStreamWriter.WriteStructHeader(1, MsgInit);
             _packStreamWriter.Write(clientNameAndVersion);
             _packStreamWriter.Write(authToken ?? EmptyDictionary);
         }
 
         public void HandleRunMessage(string statement, IDictionary<string, object> parameters)
         {
-            _packStreamWriter.WriteStructHeader(2, MSG_RUN);
+            _packStreamWriter.WriteStructHeader(2, MsgRun);
             _packStreamWriter.Write(statement);
             _packStreamWriter.Write(parameters ?? EmptyDictionary);
         }
 
         public void HandlePullAllMessage()
         {
-            _packStreamWriter.WriteStructHeader(0, MSG_PULL_ALL);
+            _packStreamWriter.WriteStructHeader(0, MsgPullAll);
         }
 
         public void HandleDiscardAllMessage()
         {
-            _packStreamWriter.WriteStructHeader(0, MSG_DISCARD_ALL);
+            _packStreamWriter.WriteStructHeader(0, MsgDiscardAll);
         }
 
         public void HandleResetMessage()
         {
-            _packStreamWriter.WriteStructHeader(0, MSG_RESET);
+            _packStreamWriter.WriteStructHeader(0, MsgReset);
         }
 
         public void HandleAckFailureMessage()
         {
-            _packStreamWriter.WriteStructHeader(0, MSG_ACK_FAILURE);
+            _packStreamWriter.WriteStructHeader(0, MsgAckFailure);
         }
         
     }

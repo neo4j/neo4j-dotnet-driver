@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.WriteNull();
 
-                mocks.VerifyWrite(PackStream.NULL);
+                mocks.VerifyWrite(PackStream.Null);
             }
 
 
@@ -34,16 +34,16 @@ namespace Neo4j.Driver.Tests.IO
         public class WriteLongMethod
         {
             [Theory]
-            [InlineData(PackStream.MINUS_2_TO_THE_4, 0xF0, null)]
-            [InlineData(PackStream.PLUS_2_TO_THE_7 - 1, 0x7F, null)]
-            [InlineData(PackStream.MINUS_2_TO_THE_7, PackStream.INT_8, "80")]
-            [InlineData(PackStream.MINUS_2_TO_THE_4 - 1, PackStream.INT_8, "EF")]
-            [InlineData(PackStream.MINUS_2_TO_THE_15, PackStream.INT_16, "80 00")]
-            [InlineData(PackStream.PLUS_2_TO_THE_15 - 1, PackStream.INT_16, "7F FF")]
-            [InlineData(PackStream.MINUS_2_TO_THE_31, PackStream.INT_32, "80 00 00 00")]
-            [InlineData(PackStream.PLUS_2_TO_THE_31 - 1, PackStream.INT_32, "7F FF FF FF")]
-            [InlineData(long.MinValue, PackStream.INT_64, "80 00 00 00 00 00 00 00")]
-            [InlineData(long.MaxValue, PackStream.INT_64, "7F FF FF FF FF FF FF FF")]
+            [InlineData(PackStream.Minus2ToThe4, 0xF0, null)]
+            [InlineData(PackStream.Plus2ToThe7 - 1, 0x7F, null)]
+            [InlineData(PackStream.Minus2ToThe7, PackStream.Int8, "80")]
+            [InlineData(PackStream.Minus2ToThe4 - 1, PackStream.Int8, "EF")]
+            [InlineData(PackStream.Minus2ToThe15, PackStream.Int16, "80 00")]
+            [InlineData(PackStream.Plus2ToThe15 - 1, PackStream.Int16, "7F FF")]
+            [InlineData(PackStream.Minus2ToThe31, PackStream.Int32, "80 00 00 00")]
+            [InlineData(PackStream.Plus2ToThe31 - 1, PackStream.Int32, "7F FF FF FF")]
+            [InlineData(long.MinValue, PackStream.Int64, "80 00 00 00 00 00 00 00")]
+            [InlineData(long.MaxValue, PackStream.Int64, "7F FF FF FF FF FF FF FF")]
             public void ShouldWriteLongSuccessfully(long input, byte marker, string expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write(input);
 
-                mocks.VerifyWrite(PackStream.FLOAT_64);
+                mocks.VerifyWrite(PackStream.Float64);
                 mocks.VerifyWrite(expected.ToByteArray());
             }
         }
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write(input);
 
-                mocks.VerifyWrite(input ? PackStream.TRUE : PackStream.FALSE);
+                mocks.VerifyWrite(input ? PackStream.True : PackStream.False);
             }
         }
 
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((string)null);
 
-                mocks.VerifyWrite(PackStream.NULL);
+                mocks.VerifyWrite(PackStream.Null);
             }
 
             [Fact]
@@ -112,13 +112,13 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write(string.Empty);
 
-                mocks.VerifyWrite(PackStream.TINY_STRING | 0);
+                mocks.VerifyWrite(PackStream.TinyString | 0);
             }
 
             [Theory]
-            [InlineData(20, PackStream.STRING_8, new byte[] { 20 })]
-            [InlineData(byte.MaxValue + 1, PackStream.STRING_16, new byte[] { 0x01, 0x00 })]
-            [InlineData(short.MaxValue + 1, PackStream.STRING_32, new byte[] { 0x00, 0x00, 0x80, 0x00 })]
+            [InlineData(20, PackStream.String8, new byte[] { 20 })]
+            [InlineData(byte.MaxValue + 1, PackStream.String16, new byte[] { 0x01, 0x00 })]
+            [InlineData(short.MaxValue + 1, PackStream.String32, new byte[] { 0x00, 0x00, 0x80, 0x00 })]
             public void ShouldWriteStringSuccessfully(int size, byte marker, byte[] sizeByte)
             {
                 var mocks = new WriterTests.Mocks();
@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Tests.IO
 
             //packStringUniCodeCorrectly
             [Theory]
-            [InlineData(20, PackStream.STRING_8, new byte[] { 0x28 })]
+            [InlineData(20, PackStream.String8, new byte[] { 0x28 })]
             public void ShouldWriteUnicodeStringSuccessfully(int size, byte marker, byte[] sizeByte)
             {
                 var mocks = new WriterTests.Mocks();
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((byte[])null);
 
-                mocks.VerifyWrite(PackStream.NULL);
+                mocks.VerifyWrite(PackStream.Null);
             }
 
             [Fact]
@@ -183,15 +183,15 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write(new byte[] { });
 
-                mocks.VerifyWrite(PackStream.BYTES_8);
+                mocks.VerifyWrite(PackStream.Bytes8);
                 mocks.VerifyWrite(new byte[] { 0 });
 
             }
 
             [Theory]
-            [InlineData(20, PackStream.BYTES_8, new byte[] { 20 })]
-            [InlineData(byte.MaxValue + 1, PackStream.BYTES_16, new byte[] { 0x01, 0x00 })]
-            [InlineData(short.MaxValue + 1, PackStream.BYTES_32, new byte[] { 0x00, 0x00, 0x80, 0x00 })]
+            [InlineData(20, PackStream.Bytes8, new byte[] { 20 })]
+            [InlineData(byte.MaxValue + 1, PackStream.Bytes16, new byte[] { 0x01, 0x00 })]
+            [InlineData(short.MaxValue + 1, PackStream.Bytes32, new byte[] { 0x00, 0x00, 0x80, 0x00 })]
             public void ShouldWriteStringSuccessfully(int size, byte marker, byte[] sizeByte)
             {
                 var mocks = new WriterTests.Mocks();
@@ -239,9 +239,9 @@ namespace Neo4j.Driver.Tests.IO
             }
 
             [Theory]
-            [InlineData(0x50, 16, PackStream.STRUCT_8)]
-            [InlineData(0x50, 40, PackStream.STRUCT_8)]
-            [InlineData(0x50, 255, PackStream.STRUCT_8)]
+            [InlineData(0x50, 16, PackStream.Struct8)]
+            [InlineData(0x50, 40, PackStream.Struct8)]
+            [InlineData(0x50, 255, PackStream.Struct8)]
             public void ShouldWriteStruct8Successfully(byte signature, int fieldCount, byte expectedHeader)
             {
                 var mocks = new WriterTests.Mocks();
@@ -261,9 +261,9 @@ namespace Neo4j.Driver.Tests.IO
             }
 
             [Theory]
-            [InlineData(0x50, 256, PackStream.STRUCT_16)]
-            [InlineData(0x50, 1000, PackStream.STRUCT_16)]
-            [InlineData(0x50, 32700, PackStream.STRUCT_16)]
+            [InlineData(0x50, 256, PackStream.Struct16)]
+            [InlineData(0x50, 1000, PackStream.Struct16)]
+            [InlineData(0x50, 32700, PackStream.Struct16)]
             public void ShouldWriteStruct16Successfully(byte signature, int fieldCount, byte expectedHeader)
             {
                 var mocks = new WriterTests.Mocks();
@@ -338,12 +338,12 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((object)null);
 
-                mocks.VerifyWrite(PackStream.NULL);
+                mocks.VerifyWrite(PackStream.Null);
             }
 
             [Theory]
-            [InlineData(true, PackStream.TRUE)]
-            [InlineData(null, PackStream.NULL)]
+            [InlineData(true, PackStream.True)]
+            [InlineData(null, PackStream.Null)]
             public void ShouldWriteNullableBool(bool? input, byte expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -355,8 +355,8 @@ namespace Neo4j.Driver.Tests.IO
             }
 
             [Theory]
-            [InlineData((sbyte)-128, PackStream.INT_8)]
-            [InlineData(null, PackStream.NULL)]
+            [InlineData((sbyte)-128, PackStream.Int8)]
+            [InlineData(null, PackStream.Null)]
             public void ShouldWriteNullableAsNull(sbyte? input, byte expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -369,13 +369,13 @@ namespace Neo4j.Driver.Tests.IO
 
             [Theory]
             [InlineData((byte)123, (byte)123)]
-            [InlineData(-128, PackStream.INT_8)]
-            [InlineData(short.MaxValue, PackStream.INT_16)]
-            [InlineData(short.MinValue, PackStream.INT_16)]
-            [InlineData(int.MaxValue, PackStream.INT_32)]
-            [InlineData(int.MinValue, PackStream.INT_32)]
-            [InlineData(long.MaxValue, PackStream.INT_64)]
-            [InlineData(long.MinValue, PackStream.INT_64)]
+            [InlineData(-128, PackStream.Int8)]
+            [InlineData(short.MaxValue, PackStream.Int16)]
+            [InlineData(short.MinValue, PackStream.Int16)]
+            [InlineData(int.MaxValue, PackStream.Int32)]
+            [InlineData(int.MinValue, PackStream.Int32)]
+            [InlineData(long.MaxValue, PackStream.Int64)]
+            [InlineData(long.MinValue, PackStream.Int64)]
             public void ShouldWriteNumbersAsLong(object input, byte expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -388,8 +388,8 @@ namespace Neo4j.Driver.Tests.IO
 
 
             [Theory]
-            [InlineData((float)123.0, PackStream.FLOAT_64)]
-            [InlineData(123.0, PackStream.FLOAT_64)]
+            [InlineData((float)123.0, PackStream.Float64)]
+            [InlineData(123.0, PackStream.Float64)]
             public void ShouldWriteFloatNumbersAsDouble(object input, byte expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -410,7 +410,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write(input);
 
-                mocks.VerifyWrite(PackStream.FLOAT_64);
+                mocks.VerifyWrite(PackStream.Float64);
             }
 
 
@@ -423,7 +423,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((object)input);
 
-                mocks.VerifyWrite(PackStream.BYTES_8);
+                mocks.VerifyWrite(PackStream.Bytes8);
                 mocks.VerifyWrite(new byte[] { 3 });
             }
 
@@ -437,7 +437,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((object)input);
 
-                mocks.VerifyWrite(PackStream.TINY_STRING | 1);
+                mocks.VerifyWrite(PackStream.TinyString | 1);
             }
 
             [Fact]
@@ -450,7 +450,7 @@ namespace Neo4j.Driver.Tests.IO
                 
                 writer.Write((object)input);
 
-                mocks.VerifyWrite(PackStream.TINY_STRING | 3);
+                mocks.VerifyWrite(PackStream.TinyString | 3);
             }
 
             [Fact]
@@ -463,10 +463,10 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((object)list);
 
-                mocks.VerifyWrite((byte)(PackStream.TINY_LIST | list.Count));
+                mocks.VerifyWrite((byte)(PackStream.TinyList | list.Count));
                 mocks.VerifyWrite(1);
-                mocks.VerifyWrite(PackStream.TRUE);
-                mocks.VerifyWrite(PackStream.TINY_STRING | 1);
+                mocks.VerifyWrite(PackStream.True);
+                mocks.VerifyWrite(PackStream.TinyString | 1);
                 mocks.VerifyWrite(new byte[] { 97 });
             }
 
@@ -480,7 +480,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((object)list);
 
-                mocks.VerifyWrite((byte)(PackStream.TINY_LIST | list.Length));
+                mocks.VerifyWrite((byte)(PackStream.TinyList | list.Length));
                 mocks.VerifyWrite(1);
                 mocks.VerifyWrite(2);
             }
@@ -496,9 +496,9 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((object) dict);
 
-                mocks.VerifyWrite((byte)(PackStream.TINY_MAP | dict.Count));
-                mocks.VerifyWrite(PackStream.TRUE);
-                mocks.VerifyWrite(PackStream.TINY_STRING | 1);
+                mocks.VerifyWrite((byte)(PackStream.TinyMap | dict.Count));
+                mocks.VerifyWrite(PackStream.True);
+                mocks.VerifyWrite(PackStream.TinyString | 1);
                 mocks.VerifyWrite(new byte[] { 97 });
             }
 
@@ -524,14 +524,14 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((IList)null);
 
-                mocks.VerifyWrite(PackStream.NULL);
+                mocks.VerifyWrite(PackStream.Null);
             }
 
             [Theory]
-            [InlineData(0x0F, PackStream.TINY_LIST | 0x0F, new byte[0])]
-            [InlineData(byte.MaxValue, PackStream.LIST_8, new[] { byte.MaxValue })]
-            [InlineData(short.MaxValue, PackStream.LIST_16, new byte[] { 0x7F, 0xFF })]
-            [InlineData(int.MaxValue, PackStream.LIST_32, new byte[] { 0x7F, 0xFF, 0xFF, 0xFF })]
+            [InlineData(0x0F, PackStream.TinyList | 0x0F, new byte[0])]
+            [InlineData(byte.MaxValue, PackStream.List8, new[] { byte.MaxValue })]
+            [InlineData(short.MaxValue, PackStream.List16, new byte[] { 0x7F, 0xFF })]
+            [InlineData(int.MaxValue, PackStream.List32, new byte[] { 0x7F, 0xFF, 0xFF, 0xFF })]
             public void ShouldWriteListHeaderCorrectly(int size, byte marker, byte[] expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -553,10 +553,10 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write(list);
 
-                mocks.VerifyWrite((byte)(PackStream.TINY_LIST | list.Count));
+                mocks.VerifyWrite((byte)(PackStream.TinyList | list.Count));
                 mocks.VerifyWrite(1);
-                mocks.VerifyWrite(PackStream.TRUE);
-                mocks.VerifyWrite(PackStream.TINY_STRING | 1);
+                mocks.VerifyWrite(PackStream.True);
+                mocks.VerifyWrite(PackStream.TinyString | 1);
                 mocks.VerifyWrite(new byte[] { 97 });
             }
         }
@@ -571,14 +571,14 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write((IDictionary)null);
 
-                mocks.VerifyWrite(PackStream.NULL);
+                mocks.VerifyWrite(PackStream.Null);
             }
 
             [Theory]
-            [InlineData(0x0F, PackStream.TINY_MAP | 0x0F, new byte[0])]
-            [InlineData(byte.MaxValue, PackStream.MAP_8, new[] { byte.MaxValue })]
-            [InlineData(short.MaxValue, PackStream.MAP_16, new byte[] { 0x7F, 0xFF })]
-            [InlineData(int.MaxValue, PackStream.MAP_32, new byte[] { 0x7F, 0xFF, 0xFF, 0xFF })]
+            [InlineData(0x0F, PackStream.TinyMap | 0x0F, new byte[0])]
+            [InlineData(byte.MaxValue, PackStream.Map8, new[] { byte.MaxValue })]
+            [InlineData(short.MaxValue, PackStream.Map16, new byte[] { 0x7F, 0xFF })]
+            [InlineData(int.MaxValue, PackStream.Map32, new byte[] { 0x7F, 0xFF, 0xFF, 0xFF })]
             public void ShouldWriteListHeaderCorrectly(int size, byte marker, byte[] expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -600,9 +600,9 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.Write(dict);
 
-                mocks.VerifyWrite((byte)(PackStream.TINY_MAP | dict.Count));
-                mocks.VerifyWrite(PackStream.TRUE);
-                mocks.VerifyWrite(PackStream.TINY_STRING | 1);
+                mocks.VerifyWrite((byte)(PackStream.TinyMap | dict.Count));
+                mocks.VerifyWrite(PackStream.True);
+                mocks.VerifyWrite(PackStream.TinyString | 1);
                 mocks.VerifyWrite(new byte[] { 97 });
             }
         }
@@ -611,8 +611,8 @@ namespace Neo4j.Driver.Tests.IO
         {
 
             [Theory]
-            [InlineData(0x0F, PackStream.TINY_STRUCT | 0x0F, new byte[] { 0x77 })]
-            [InlineData(byte.MaxValue, PackStream.STRUCT_8, new byte[] { byte.MaxValue, 0x77 })]
+            [InlineData(0x0F, PackStream.TinyStruct | 0x0F, new byte[] { 0x77 })]
+            [InlineData(byte.MaxValue, PackStream.Struct8, new byte[] { byte.MaxValue, 0x77 })]
             public void ShouldWriteStructHeaderCorrectly(int size, byte marker, byte[] expected)
             {
                 var mocks = new WriterTests.Mocks();
@@ -632,7 +632,7 @@ namespace Neo4j.Driver.Tests.IO
 
                 writer.WriteStructHeader(short.MaxValue, 0x77);
 
-                mocks.VerifyWrite(PackStream.STRUCT_16);
+                mocks.VerifyWrite(PackStream.Struct16);
                 mocks.VerifyWrite(new byte[] { 0x7F, 0xFF });
                 mocks.VerifyWrite(0x77);
             }
