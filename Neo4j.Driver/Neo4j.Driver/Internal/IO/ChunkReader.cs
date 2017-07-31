@@ -222,7 +222,10 @@ namespace Neo4j.Driver.Internal.IO
                 _chunkStream.Position = shrinkFrom;
 
                 var leftOverData = new byte[_chunkStream.Length - shrinkFrom];
-                _chunkStream.Read(leftOverData);
+                if (leftOverData.Length > 0)
+                {
+                    _chunkStream.Read(leftOverData);
+                }
 
                 _chunkStream.SetLength(0);
                 _chunkStream.Write(leftOverData, 0, leftOverData.Length);
