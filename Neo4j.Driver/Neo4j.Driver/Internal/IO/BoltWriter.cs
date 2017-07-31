@@ -52,9 +52,8 @@ namespace Neo4j.Driver.Internal.IO
             message.Dispatch(this);
 
             // write buffered message into chunk writer
-            // TODO: find a way where new array is not allocated.
-            byte[] buffer = _bufferStream.ToArray();
-            _chunkWriter.WriteChunk(buffer, 0, buffer.Length);
+            byte[] buffer = _bufferStream.GetBuffer();
+            _chunkWriter.WriteChunk(buffer, 0, (int)_bufferStream.Length);
             _bufferStream.SetLength(0);
 
             // add message boundary
