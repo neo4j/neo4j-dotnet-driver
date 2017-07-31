@@ -52,8 +52,12 @@ namespace Neo4j.Driver.Internal.IO
             message.Dispatch(this);
 
             // write buffered message into chunk writer
-            byte[] buffer = _bufferStream.GetBuffer();
-            _chunkWriter.WriteChunk(buffer, 0, (int)_bufferStream.Length);
+            ArraySegment<byte> buffer;
+            if (_bufferStream.TryGetBuffer(out buffer) == false)
+            {
+                buffer = new ArraySegment<byte>(_bufferStream.ToArray());
+            }
+            _chunkWriter.WriteChunk(buffer.Array, buffer.Offset, buffer.Count);
             _bufferStream.SetLength(0);
 
             // add message boundary
