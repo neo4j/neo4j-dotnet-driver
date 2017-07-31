@@ -54,6 +54,23 @@ namespace Neo4j.Driver.Internal.IO
 
             _chunkReader.ReadNextChunk(_bufferStream);
 
+            ProcessMessage(responseHandler);
+        }
+
+        public Task ReadAsync(IMessageResponseHandler responseHandler)
+        {
+            _bufferStream.SetLength(0);
+
+            return
+                _chunkReader.ReadNextChunkAsync(_bufferStream)
+                    .ContinueWith(t =>
+                    {
+                        ProcessMessage(responseHandler);
+                    }, TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        private void ProcessMessage(IMessageResponseHandler responseHandler)
+        {
             _bufferStream.Position = 0;
 
             var structure = (PackStreamStruct)_packStreamReader.Read();
@@ -75,38 +92,6 @@ namespace Neo4j.Driver.Internal.IO
                 default:
                     throw new ProtocolException("Unknown requestMessage type: " + structure.Signature);
             }
-        }
-
-        public Task ReadAsync(IMessageResponseHandler responseHandler)
-        {
-            _bufferStream.SetLength(0);
-
-            return
-                _chunkReader.ReadNextChunkAsync(_bufferStream)
-                    .ContinueWith(t =>
-                    {
-                        _bufferStream.Position = 0;
-
-                        var structure = (PackStreamStruct)_packStreamReader.Read();
-
-                        switch (structure.Signature)
-                        {
-                            case MsgRecord:
-                                UnpackRecordMessage(responseHandler, structure);
-                                break;
-                            case MsgSuccess:
-                                UnpackSuccessMessage(responseHandler, structure);
-                                break;
-                            case MsgFailure:
-                                UnpackFailureMessage(responseHandler, structure);
-                                break;
-                            case MsgIgnored:
-                                UnpackIgnoredMessage(responseHandler, structure);
-                                break;
-                            default:
-                                throw new ProtocolException("Unknown requestMessage type: " + structure.Signature);
-                        }
-                    });
         }
 
         private void UnpackIgnoredMessage(IMessageResponseHandler responseHandler, PackStreamStruct structure)
