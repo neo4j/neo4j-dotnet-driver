@@ -227,7 +227,13 @@ namespace Neo4j.Driver.Internal.Connector
         public Task CloseAsync()
         {
             Close();
-            return Task.CompletedTask; // TODO verify this is the correct way to do it
+
+// TODO verify this is the correct way to do it
+#if NET45
+            return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
 
         private void AssertNoServerFailure()
