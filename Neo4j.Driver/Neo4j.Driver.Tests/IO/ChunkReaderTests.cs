@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests.IO
                 var reader = new ChunkReader(new MemoryStream(input));
                 var targetStream = new MemoryStream();
 
-                reader.ReadNextChunk(targetStream);
+                reader.ReadNextMessage(targetStream);
 
                 var real = targetStream.ToArray();
 
@@ -121,7 +121,7 @@ namespace Neo4j.Driver.Tests.IO
                 var reader = new ChunkReader(new MemoryStream(input));
                 var targetStream = new MemoryStream();
 
-                await reader.ReadNextChunkAsync(targetStream);
+                await reader.ReadNextMessageAsync(targetStream);
 
                 var real = targetStream.ToArray();
 
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Tests.IO
                     .Throws<InvalidOperationException>();
                 var reader = new ChunkReader(mockStream.Object);
 
-                var ex = await Record.ExceptionAsync(() => reader.ReadNextChunkAsync(new MemoryStream()));
+                var ex = await Record.ExceptionAsync(() => reader.ReadNextMessageAsync(new MemoryStream()));
 
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<InvalidOperationException>();
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Tests.IO
                 var targetStream = new MemoryStream();
                 var reader = new ChunkReader(new MemoryStream(maxSizeChunkBuffer), chunkBuffer, null);
 
-                reader.ReadNextChunk(targetStream);
+                reader.ReadNextMessage(targetStream);
 
                 var real = targetStream.ToArray();
 
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.Tests.IO
                 var targetStream = new MemoryStream();
                 var reader = new ChunkReader(new MemoryStream(maxSizeChunkBuffer), chunkBuffer, null);
 
-                await reader.ReadNextChunkAsync(targetStream);
+                await reader.ReadNextMessageAsync(targetStream);
 
                 var real = targetStream.ToArray();
 

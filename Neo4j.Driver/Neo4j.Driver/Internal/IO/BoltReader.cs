@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             _bufferStream.SetLength(0);
 
-            _chunkReader.ReadNextChunk(_bufferStream);
+            _chunkReader.ReadNextMessage(_bufferStream);
 
             ProcessMessage(responseHandler);
         }
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Internal.IO
             _bufferStream.SetLength(0);
 
             return
-                _chunkReader.ReadNextChunkAsync(_bufferStream)
+                _chunkReader.ReadNextMessageAsync(_bufferStream)
                     .ContinueWith(t =>
                     {
                         ProcessMessage(responseHandler);

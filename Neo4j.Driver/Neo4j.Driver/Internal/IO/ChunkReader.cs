@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.IO
             _logger = logger;
         }
 
-        public void ReadNextChunk(Stream targetStream)
+        public void ReadNextMessage(Stream targetStream)
         {
             while (true)
             {
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         
-        public Task ReadNextChunkAsync(Stream targetStream)
+        public Task ReadNextMessageAsync(Stream targetStream)
         {
             var taskCompletionSource = new TaskCompletionSource<object>();
 
