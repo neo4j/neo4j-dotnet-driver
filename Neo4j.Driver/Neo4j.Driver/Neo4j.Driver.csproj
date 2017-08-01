@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.3;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3;net45</TargetFrameworks>
     <AssemblyName>Neo4j.Driver</AssemblyName>
     <PackageId>Neo4j.Driver</PackageId>
     <Authors>Neo4j</Authors>
@@ -32,14 +32,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard1.3|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard1.3\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
-    <PackageReference Include="System.Net.Security" Version="4.3.1" />
-    <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
+    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
+    <PackageReference Include="System.Net.Security" Version="4.3.1" />
+    <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
   </ItemGroup>
 
 </Project>
