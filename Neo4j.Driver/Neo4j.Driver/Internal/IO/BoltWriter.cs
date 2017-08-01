@@ -69,10 +69,14 @@ namespace Neo4j.Driver.Internal.IO
 
             // write buffered message into chunk writer
             ArraySegment<byte> buffer;
+#if NET45
+            buffer = new ArraySegment<byte>(_bufferStream.GetBuffer(), 0, (int)_bufferStream.Length);
+#else
             if (_bufferStream.TryGetBuffer(out buffer) == false)
             {
                 buffer = new ArraySegment<byte>(_bufferStream.ToArray());
             }
+#endif
             _chunkWriter.WriteChunk(buffer.Array, buffer.Offset, buffer.Count);
             _bufferStream.SetLength(0);
 
