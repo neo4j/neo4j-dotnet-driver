@@ -18,8 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Packstream;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
@@ -36,12 +36,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         private readonly ITcpSocketClient _tcpSocketClient;
         private readonly Uri _uri;
-        private IReader _reader;
-        private IWriter _writer;
+        private IBoltReader _reader;
+        private IBoltWriter _writer;
 
         private readonly ILogger _logger;
-
-        public static readonly BigEndianTargetBitConverter BitConverter = new BigEndianTargetBitConverter();
 
         public SocketClient(Uri uri, EncryptionManager encryptionManager, bool socketKeepAlive, bool ipv6Enabled, ILogger logger, ITcpSocketClient socketClient = null)
         {
@@ -61,36 +59,78 @@ namespace Neo4j.Driver.Internal.Connector
             return StartAsync(Timeout.InfiniteTimeSpan);
         }
 
-        public async Task StartAsync(TimeSpan timeOut)
+        public Task StartAsync(TimeSpan timeOut)
         {
-            await _tcpSocketClient.ConnectAsync(_uri, timeOut).ConfigureAwait(false);
-            IsOpen = true;
-            _logger?.Debug($"~~ [CONNECT] {_uri}");
+            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
 
-            var version = await DoHandshake().ConfigureAwait(false);
+            _tcpSocketClient.ConnectAsync(_uri, timeOut)
+                .ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            tcs.SetException(t.Exception.GetBaseException());
+                        }
+                        else if (t.IsCanceled)
+                        {
+                            tcs.SetCanceled();
+                        }
+                        else
+                        {
+                            IsOpen = true;
+                            _logger?.Debug($"~~ [CONNECT] {_uri}");
 
-            switch (version)
-            {
-                case ProtocolVersion.Version1:
-                    SetupPackStreamFormatWriterAndReader();
-                    break;
-                case ProtocolVersion.NoVersion:
-                    throw new NotSupportedException("The Neo4j server does not support any of the protocol versions supported by this client. " +
-                                                    "Ensure that you are using driver and server versions that are compatible with one another.");
-                case ProtocolVersion.Http:
-                    throw new NotSupportedException("Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                                                    $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})");
-                default:
-                    throw new NotSupportedException("Protocol error, server suggested unexpected protocol version: " + version);
+                            return DoHandshake();
+                        }
 
-            }
+                        return Task.FromResult(-1);
+                    }, TaskContinuationOptions.ExecuteSynchronously).Unwrap()
+                .ContinueWith(t =>
+                {
+                    int version = t.Result;
+
+                    if (version != -1)
+                    {
+                        try
+                        {
+                            switch (version)
+                            {
+                                case ProtocolVersion.Version1:
+                                    SetupPackStreamFormatWriterAndReader();
+                                    break;
+                                case ProtocolVersion.NoVersion:
+                                    throw new NotSupportedException(
+                                        "The Neo4j server does not support any of the protocol versions supported by this client. " +
+                                        "Ensure that you are using driver and server versions that are compatible with one another.");
+                                case ProtocolVersion.Http:
+                                    throw new NotSupportedException(
+                                        "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                                        $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})");
+                                default:
+                                    throw new NotSupportedException(
+                                        "Protocol error, server suggested unexpected protocol version: " + version);
+
+                            }
+
+                            tcs.SetResult(null);
+                        }
+                        catch (AggregateException exc)
+                        {
+                            tcs.SetException(exc.GetBaseException());
+                        }
+                        catch (Exception exc)
+                        {
+                            tcs.SetException(exc);
+                        }
+                    }   
+                }, TaskContinuationOptions.ExecuteSynchronously);
+
+            return tcs.Task;
         }
 
         private void SetupPackStreamFormatWriterAndReader(bool supportBytes = true)
         {
-            var formatV1 = new PackStreamMessageFormatV1(_tcpSocketClient, _logger, supportBytes);
-            _writer = formatV1.Writer;
-            _reader = formatV1.Reader;
+            _writer = new BoltWriter(_tcpSocketClient.WriteStream, _logger, supportBytes); 
+            _reader = new BoltReader(_tcpSocketClient.ReadStream, _logger, supportBytes);
         }
 
         private void Stop()
@@ -121,17 +161,35 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task SendAsync(IEnumerable<IRequestMessage> messages)
+        public Task SendAsync(IEnumerable<IRequestMessage> messages)
         {
+            var taskCompletionSource = new TaskCompletionSource<object>();
+
             try
             {
                 foreach (var message in messages)
                 {
-                    await _writer.WriteAsync(message).ConfigureAwait(false);
+                    _writer.Write(message);
                     _logger?.Debug("C: ", message);
                 }
 
-                await _writer.FlushAsync().ConfigureAwait(false);
+                _writer.FlushAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted && t.Exception != null)
+                    {
+                        _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", t.Exception);
+                        Stop();
+                        taskCompletionSource.SetException(t.Exception.GetBaseException());
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        taskCompletionSource.SetCanceled();
+                    }
+                    else
+                    {
+                        taskCompletionSource.SetResult(null);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception ex)
             {
@@ -139,6 +197,8 @@ namespace Neo4j.Driver.Internal.Connector
                 Stop();
                 throw;
             }
+
+            return taskCompletionSource.Task;
         }
 
         public bool IsOpen { get; private set; }
@@ -180,24 +240,41 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
+        public Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
         {
-            try
+            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
+
+            _reader.ReadAsync(responseHandler).ContinueWith(t =>
             {
-                await _reader.ReadAsync(responseHandler).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", ex);
-                Stop();
-                throw;
-            }
-            if (responseHandler.HasProtocolViolationError)
-            {
-                _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
-                Stop();
-                throw responseHandler.Error;
-            }
+                if (t.IsFaulted)
+                {
+                    _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", t.Exception);
+                    Stop();
+
+                    tcs.SetException(t.Exception.GetBaseException());
+                }
+                else if (t.IsCanceled)
+                {
+                    tcs.SetCanceled();
+                }
+                else
+                {
+                    if (responseHandler.HasProtocolViolationError)
+                    {
+                        _logger?.Info(
+                            $"Received bolt protocol error from server {_uri}, connection will be terminated.",
+                            responseHandler.Error);
+                        Stop();
+                        tcs.SetException(responseHandler.Error);
+                    }
+                    else
+                    {
+                        tcs.SetResult(null);
+                    }
+                }
+            });
+
+            return tcs.Task;
         }
 
         private async Task<int> DoHandshake()
@@ -220,12 +297,12 @@ namespace Neo4j.Driver.Internal.Connector
         private static byte[] PackVersions(IEnumerable<int> versions)
         {
             //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
-            var aLittleBitOfMagic = BitConverter.GetBytes(0x6060B017);
+            var aLittleBitOfMagic = PackStreamBitConverter.GetBytes(0x6060B017);
 
             var bytes = new List<byte>(aLittleBitOfMagic);
             foreach (var version in versions)
             {
-                bytes.AddRange(BitConverter.GetBytes(version));
+                bytes.AddRange(PackStreamBitConverter.GetBytes(version));
             }
             return bytes.ToArray();
         }
@@ -233,7 +310,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private static int GetAgreedVersion(byte[] data)
         {
-            return BitConverter.ToInt32(data);
+            return PackStreamBitConverter.ToInt32(data);
         }
 
         protected virtual void Dispose(bool isDisposing)

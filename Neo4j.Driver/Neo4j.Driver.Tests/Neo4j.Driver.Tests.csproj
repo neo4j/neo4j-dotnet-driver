@@ -102,7 +102,16 @@
   <ItemGroup>
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="BookmarkTests.cs" />
+    <Compile Include="IO\BoltReaderTests.cs" />
+    <Compile Include="IO\BoltWriterTests.cs" />
+    <Compile Include="IO\ChunkReaderTests.cs" />
+    <Compile Include="IO\ChunkWriterTests.cs" />
     <Compile Include="Connector\PooledConnectionTests.cs" />
+    <Compile Include="IO\PackStreamWriterBytesIncompatibleTests.cs" />
+    <Compile Include="IO\PackStreamReaderBytesIncompatibleTests.cs" />
+    <Compile Include="IO\PackStreamReaderTests.cs" />
+    <Compile Include="IO\PackStreamWriterTests.cs" />
+    <Compile Include="IO\WriterTests.cs" />
     <Compile Include="Result\SummaryCollectorTests.cs" />
     <Compile Include="Result\ResultReaderBuilderTests.cs" />
     <Compile Include="Result\StatementResultReaderTests.cs" />
@@ -110,6 +119,7 @@
     <Compile Include="Routing\RoundRobinLoadBalancingStrategyTests.cs" />
     <Compile Include="Routing\RoundRobinArrayIndexTests.cs" />
     <Compile Include="Routing\RoutingTableManagerTests.cs" />
+    <Compile Include="TestUtil\IOExtensions.cs" />
     <Compile Include="TestUtil\NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
     <Compile Include="RetryLogicTests.cs" />
@@ -118,7 +128,6 @@
     <Compile Include="Routing\ClusterDiscoveryManagerTests.cs" />
     <Compile Include="Routing\AddressSetTests.cs" />
     <Compile Include="ConfigTests.cs" />
-    <Compile Include="Connector\ChunkedOutputTest.cs" />
     <Compile Include="Connector\MessageResponseHandlerTests.cs" />
     <Compile Include="Connector\SocketExtensionTests.cs" />
     <Compile Include="DebugLoggerTests.cs" />
@@ -131,11 +140,7 @@
     <Compile Include="Routing\LoadBalancerTests.cs" />
     <Compile Include="Routing\RoutingTableTests.cs" />
     <Compile Include="SessionTests.cs" />
-    <Compile Include="PackStream\UnpackerTests.cs" />
-    <Compile Include="PackStream\PackerTests.cs" />
     <Compile Include="Result\StatementResultTests.cs" />
-    <Compile Include="Connector\ChunkedInputTests.cs" />
-    <Compile Include="PackStream\PackStreamMessageFormatV1Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StatementRunnerTests.cs" />
     <Compile Include="TestUtil\CollectionExtensionsTests.cs" />
@@ -155,6 +160,7 @@
       <Name>Neo4j.Driver</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

@@ -14,31 +14,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.IO
 {
-    internal class InitMessage : IRequestMessage
+    internal interface IChunkReader
     {
-        private readonly IDictionary<string, object> _authToken;
 
-        public InitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
-        {
-            ClientNameAndVersion = clientNameAndVersion;
-            _authToken = authToken;
-        }
+        void ReadNextMessage(Stream target);
 
-        public string ClientNameAndVersion { get; }
+        Task ReadNextMessageAsync(Stream target);
 
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
-        }
-
-        public override string ToString()
-        {
-            return $"INIT `{ClientNameAndVersion}`";
-        }
     }
 }

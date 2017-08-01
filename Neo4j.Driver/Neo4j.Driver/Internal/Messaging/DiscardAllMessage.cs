@@ -29,11 +29,6 @@ namespace Neo4j.Driver.Internal.Messaging
             messageRequestHandler.HandleDiscardAllMessage();
         }
 
-        public Task DispatchAsync(IMessageRequestHandler messageRequestHandler)
-        {
-            return messageRequestHandler.HandleDiscardAllMessageAsync();
-        }
-
         public override string ToString()
         {
             return "DISCARDALL";

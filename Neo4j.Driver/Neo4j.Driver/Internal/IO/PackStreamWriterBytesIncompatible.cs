@@ -14,32 +14,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.IO
 {
-    internal static class SocketExtensions
+    internal class PackStreamWriterBytesIncompatible: PackStreamWriter
     {
-        public static void Write(this Stream stream, byte[] bytes)
+
+        public PackStreamWriterBytesIncompatible(Stream stream)
+            : base(stream)
         {
-            stream.Write(bytes, 0, bytes.Length);
+            
         }
 
-        public static int Read(this Stream stream, byte[] bytes)
+        public override void Write(byte[] values)
         {
-            int hasRead = 0, offset = 0, toRead = bytes.Length;
-            do
-            {
-                hasRead = stream.Read(bytes, offset, toRead);
-                offset += hasRead;
-                toRead -= hasRead;
-            } while(toRead > 0 && hasRead > 0);
-
-            if (hasRead <= 0)
-            {
-                throw new IOException($"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
-            }
-            return offset;
+            throw new ProtocolException($"Cannot understand { nameof(values) } with type { values.GetType().FullName}");
         }
     }
 }

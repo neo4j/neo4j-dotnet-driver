@@ -14,31 +14,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using FluentAssertions;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.V1;
+using Xunit;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Tests.IO
 {
-    internal class InitMessage : IRequestMessage
+    public class PackStreamReaderBytesIncompatibleTests
     {
-        private readonly IDictionary<string, object> _authToken;
 
-        public InitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
+        [Fact]
+        public void ShouldThrowWhenBytesIsSent()
         {
-            ClientNameAndVersion = clientNameAndVersion;
-            _authToken = authToken;
+            var mockInput =
+                IOExtensions.CreateMockStream("CC 01 01".ToByteArray());
+            var reader = new PackStreamReaderBytesIncompatible(mockInput.Object);
+
+            var ex = Record.Exception(() => reader.Read());
+
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ProtocolException>();
         }
 
-        public string ClientNameAndVersion { get; }
-
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
-        }
-
-        public override string ToString()
-        {
-            return $"INIT `{ClientNameAndVersion}`";
-        }
     }
 }

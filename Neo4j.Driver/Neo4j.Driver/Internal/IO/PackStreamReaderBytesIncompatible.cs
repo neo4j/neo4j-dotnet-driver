@@ -14,31 +14,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.IO;
+using System.Text;
+using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.IO
 {
-    internal class InitMessage : IRequestMessage
+    internal class PackStreamReaderBytesIncompatible: PackStreamReader
     {
-        private readonly IDictionary<string, object> _authToken;
 
-        public InitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
+        public PackStreamReaderBytesIncompatible(Stream stream)
+            : base(stream)
         {
-            ClientNameAndVersion = clientNameAndVersion;
-            _authToken = authToken;
+            
         }
 
-        public string ClientNameAndVersion { get; }
-
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
+        public override byte[] ReadBytes()
         {
-            messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
-        }
-
-        public override string ToString()
-        {
-            return $"INIT `{ClientNameAndVersion}`";
+            throw new ProtocolException($"Unsupported type {PackStream.PackType.Bytes}.");
         }
     }
 }

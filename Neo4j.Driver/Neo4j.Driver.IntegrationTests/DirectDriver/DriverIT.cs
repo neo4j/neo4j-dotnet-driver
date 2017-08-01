@@ -23,7 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Packstream;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -40,8 +40,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldPackAndUnpackBytes()
         {
             // Given
-            var converter = new BigEndianTargetBitConverter();
-            byte[] byteArray = converter.GetBytes("hello, world");
+            byte[] byteArray = PackStreamBitConverter.GetBytes("hello, world");
 
             // When
             using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
@@ -62,8 +61,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldNotPackBytes()
         {
             // Given
-            var converter = new BigEndianTargetBitConverter();
-            byte[] byteArray = converter.GetBytes("hello, world");
+            byte[] byteArray = PackStreamBitConverter.GetBytes("hello, world");
 
             // When
             using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))

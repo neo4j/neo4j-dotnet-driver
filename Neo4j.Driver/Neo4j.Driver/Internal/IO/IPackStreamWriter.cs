@@ -14,14 +14,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
-using System.Threading.Tasks;
-
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.IO
 {
-    internal interface IChunkedOutputStream : IOutputStream
+    internal interface IPackStreamWriter
     {
-        IOutputStream WriteMessageTail();
-        Task<IOutputStream> WriteMessageTailAsync();
+
+        void Write(object value);
+
     }
 }

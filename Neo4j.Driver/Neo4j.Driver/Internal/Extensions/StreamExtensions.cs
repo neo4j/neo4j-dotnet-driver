@@ -14,31 +14,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.IO;
+using System.Text;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal
 {
-    internal class InitMessage : IRequestMessage
+    internal static class StreamExtensions
     {
-        private readonly IDictionary<string, object> _authToken;
-
-        public InitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
+        public static void Write(this Stream stream, byte[] bytes)
         {
-            ClientNameAndVersion = clientNameAndVersion;
-            _authToken = authToken;
+            stream.Write(bytes, 0, bytes.Length);
         }
 
-        public string ClientNameAndVersion { get; }
-
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
+        public static int Read(this Stream stream, byte[] bytes)
         {
-            messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
+            int hasRead = 0, offset = 0, toRead = bytes.Length;
+            do
+            {
+                hasRead = stream.Read(bytes, offset, toRead);
+                offset += hasRead;
+                toRead -= hasRead;
+            } while (toRead > 0 && hasRead > 0);
+
+            if (hasRead <= 0)
+            {
+                throw new IOException($"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
+            }
+            return offset;
         }
 
-        public override string ToString()
-        {
-            return $"INIT `{ClientNameAndVersion}`";
-        }
     }
 }

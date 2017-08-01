@@ -14,31 +14,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.IO
 {
-    internal class InitMessage : IRequestMessage
+    internal interface IBoltWriter
     {
-        private readonly IDictionary<string, object> _authToken;
 
-        public InitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
-        {
-            ClientNameAndVersion = clientNameAndVersion;
-            _authToken = authToken;
-        }
+        void Write(IRequestMessage message);
 
-        public string ClientNameAndVersion { get; }
+        void Flush();
 
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
-        }
+        Task FlushAsync();
 
-        public override string ToString()
-        {
-            return $"INIT `{ClientNameAndVersion}`";
-        }
     }
 }

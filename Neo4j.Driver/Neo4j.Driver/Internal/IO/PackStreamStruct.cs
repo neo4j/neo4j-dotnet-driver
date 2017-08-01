@@ -14,14 +14,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System.Collections;
+using System.Collections.Generic;
 
-using System.Threading.Tasks;
-
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.IO
 {
-    internal interface IChunkedInputStream : IInputStream
+    public class PackStreamStruct
     {
-        void ReadMessageTail();
-        Task ReadMessageTailAsync();
+        public PackStreamStruct(byte signature, IEnumerable<object> fields)
+        {
+            Signature = signature;
+            Fields = new List<object>(fields);
+        }
+
+        public byte Signature { get; }
+
+        public IList Fields { get; }
+
     }
 }

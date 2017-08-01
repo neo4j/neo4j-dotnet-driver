@@ -14,31 +14,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Text;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.IO
 {
-    internal class InitMessage : IRequestMessage
+    internal static class Constants
     {
-        private readonly IDictionary<string, object> _authToken;
-
-        public InitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
-        {
-            ClientNameAndVersion = clientNameAndVersion;
-            _authToken = authToken;
-        }
-
-        public string ClientNameAndVersion { get; }
-
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
-        }
-
-        public override string ToString()
-        {
-            return $"INIT `{ClientNameAndVersion}`";
-        }
+        public const int BufferSize = 8 * 1024;
+        public const int MaxChunkSize = ushort.MaxValue;
+        public const int MinChunkSize = 6;
+        public const int MaxChunkBufferSize = MaxChunkSize;
     }
 }
