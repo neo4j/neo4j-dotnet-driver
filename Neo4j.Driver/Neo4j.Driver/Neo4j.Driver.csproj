@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.3;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3;net45</TargetFrameworks>
     <AssemblyName>Neo4j.Driver</AssemblyName>
     <PackageId>Neo4j.Driver</PackageId>
     <Authors>Neo4j</Authors>

@@ -118,7 +118,12 @@ namespace Neo4j.Driver.Internal.Connector
         private void Close()
         {
             _stream?.Dispose();
+
+#if NET45
+            _client?.Close();
+#else
             _client?.Dispose();
+#endif
         }
 
         /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
