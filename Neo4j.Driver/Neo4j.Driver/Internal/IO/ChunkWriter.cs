@@ -127,7 +127,11 @@ namespace Neo4j.Driver.Internal.IO
                         _chunkStream.Position = 0;
                         _chunkStream.SetLength(0);
 
+#if NET45
+                        return Task.FromResult(0);
+#else
                         return Task.CompletedTask;
+#endif
                     }).Unwrap();
         }
 

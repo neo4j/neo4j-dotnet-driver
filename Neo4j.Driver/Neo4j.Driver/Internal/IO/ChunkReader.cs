@@ -100,8 +100,13 @@ namespace Neo4j.Driver.Internal.IO
 
             ReadNextChunkLoopAsync(
                 targetStream, 
-                taskCompletionSource, 
+                taskCompletionSource,
+#if NET45
+                Task.FromResult(0));
+#else
                 Task.CompletedTask);
+
+#endif
 
             return taskCompletionSource.Task;
         }
@@ -126,7 +131,11 @@ namespace Neo4j.Driver.Internal.IO
 
                                 taskCompletionSource.SetResult(null);
 
+#if NET45
+                                return Task.FromResult(0);
+#else
                                 return Task.CompletedTask;
+#endif
                             }
                         }
 
@@ -153,7 +162,11 @@ namespace Neo4j.Driver.Internal.IO
                         taskCompletionSource.SetException(exc);
                     }
 
+#if NET45
+                    return Task.FromResult(0);
+#else
                     return Task.CompletedTask;
+#endif
                 }).Unwrap();
         }
 
