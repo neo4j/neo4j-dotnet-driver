@@ -45,6 +45,20 @@ namespace Neo4j.Driver.Tests.Routing
                 handlerMock.Verify(x=>x.OnWriteError(Uri), Times.Never);
             }
 
+            [Fact]
+            public void TreatsDatabaseUnavailableAsConnectionError()
+            {
+                var connMock = new Mock<IConnection>();
+                var handlerMock = new Mock<IClusterErrorHandler>();
+                var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
+
+                var inError = new TransientException("Neo.TransientError.General.DatabaseUnavailable", "Store copying");
+                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                outError.ShouldBeEquivalentTo(inError);
+
+                handlerMock.Verify(x => x.OnConnectionError(Uri, inError));
+            }
+
             [Theory]
             [InlineData("Neo.ClientError.Cluster.NotALeader")]
             [InlineData("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase")]
