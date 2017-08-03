@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal
 
         public static string ToContentString<K, V>(this IDictionary<K, V> dict)
         {
-            var output = dict.Select(item => $"{{{item.Key}, {item.Value}}}");
+            var output = dict.Select(item => $"{{{item.Key}, {item.Value.ValueToString()}}}");
             return $"[{string.Join(", ", output)}]";
         }
 

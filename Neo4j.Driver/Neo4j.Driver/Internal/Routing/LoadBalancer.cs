@@ -75,9 +75,20 @@ namespace Neo4j.Driver.Internal.Routing
             return conn;
         }
 
-        public Task<IConnection> AcquireAsync(AccessMode mode)
+        public async Task<IConnection> AcquireAsync(AccessMode mode)
         {
-            throw new NotImplementedException();
+            if (_disposeCalled)
+            {
+                ThrowObjectDisposedException();
+            }
+
+            IConnection conn = await AcquireConnectionAsync(mode).ConfigureAwait(false);
+
+            if (_disposeCalled)
+            {
+                ThrowObjectDisposedException();
+            }
+            return conn;
         }
 
         public void OnConnectionError(Uri uri, Exception e)
@@ -107,6 +118,11 @@ namespace Neo4j.Driver.Internal.Routing
             return CreateClusterConnection(uri, AccessMode.Write);
         }
 
+        public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
+        {
+            return CreateClusterConnectionAsync(uri, AccessMode.Write);
+;        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -125,7 +141,7 @@ namespace Neo4j.Driver.Internal.Routing
             // cannot set logger to null here otherwise we might concurrent call log and set log to null.
         }
 
-        private IConnection AcquireConnection(AccessMode mode)
+        public IConnection AcquireConnection(AccessMode mode)
         {
             _routingTableManager.EnsureRoutingTableForMode(mode);
             while (true)
@@ -159,11 +175,65 @@ namespace Neo4j.Driver.Internal.Routing
             throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
         }
 
+        public async Task<IConnection> AcquireConnectionAsync(AccessMode mode)
+        {
+            await _routingTableManager.EnsureRoutingTableForModeAsync(mode).ConfigureAwait(false);
+            while (true)
+            {
+                Uri uri;
+
+                switch (mode)
+                {
+                    case AccessMode.Read:
+                        uri = _loadBalancingStrategy.SelectReader(_routingTableManager.RoutingTable.Readers);
+                        break;
+                    case AccessMode.Write:
+                        uri = _loadBalancingStrategy.SelectWriter(_routingTableManager.RoutingTable.Writers);
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Unknown access mode {mode}");
+                }
+
+                if (uri == null)
+                {
+                    // no server known to routingTable
+                    break;
+                }
+                IConnection conn = await CreateClusterConnectionAsync(uri, mode).ConfigureAwait(false);
+                if (conn != null)
+                {
+                    return conn;
+                }
+                //else  connection already removed by clusterConnection onError method
+            }
+            throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
+        }
+
         private IConnection CreateClusterConnection(Uri uri, AccessMode mode)
         {
             try
             {
                 IConnection conn = _clusterConnectionPool.Acquire(uri);
+                if (conn != null)
+                {
+                    return new ClusterConnection(conn, uri, mode, this);
+                }
+                OnConnectionError(uri, new ArgumentException(
+                    $"Routing table {_routingTableManager.RoutingTable} contains a server {uri} " +
+                    $"that is not known to cluster connection pool {_clusterConnectionPool}."));
+            }
+            catch (ServiceUnavailableException e)
+            {
+                OnConnectionError(uri, e);
+            }
+            return null;
+        }
+
+        private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode)
+        {
+            try
+            {
+                IConnection conn = await _clusterConnectionPool.AcquireAsync(uri).ConfigureAwait(false);
                 if (conn != null)
                 {
                     return new ClusterConnection(conn, uri, mode, this);

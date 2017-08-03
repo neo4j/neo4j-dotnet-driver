@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Routing
@@ -24,6 +25,7 @@ namespace Neo4j.Driver.Internal.Routing
     {
         // Try to acquire a connection with the server specified by the uri
         IConnection Acquire(Uri uri);
+        Task<IConnection> AcquireAsync(Uri uri);
         // Add a set of uri to this pool
         void Add(IEnumerable<Uri> uris);
         // Update the pool keys with the new server uris

@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Routing
@@ -25,5 +26,6 @@ namespace Neo4j.Driver.Internal.Routing
         void AddConnectionPool(IEnumerable<Uri> uris);
         void UpdateConnectionPool(IEnumerable<Uri> uris);
         IConnection CreateClusterConnection(Uri uri);
+        Task<IConnection> CreateClusterConnectionAsync(Uri uri);
     }
 }

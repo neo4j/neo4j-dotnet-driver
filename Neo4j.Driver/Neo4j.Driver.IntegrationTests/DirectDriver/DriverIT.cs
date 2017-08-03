@@ -149,7 +149,8 @@ namespace Neo4j.Driver.IntegrationTests
                 }
 
                 // Then
-                var st = ConnectionPoolStatistics.Read(statisticsCollector.CollectStatistics());
+                var statistics = statisticsCollector.CollectStatistics().Single();
+                var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value.ValueAs<IDictionary<string, object>>());
                 Output.WriteLine(st.ReportStatistics().ToContentString());
                 st.ConnCreated.Should().Be(sessionCount);
                 st.ConnCreated.Should().Be(st.ConnClosed + 1);
@@ -200,7 +201,8 @@ namespace Neo4j.Driver.IntegrationTests
 
             driver.Dispose();
 
-            var st = ConnectionPoolStatistics.Read(statisticsCollector.CollectStatistics());
+            var statistics = statisticsCollector.CollectStatistics().Single();
+            var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value as IDictionary<string, object>);
             Output.WriteLine(st.ReportStatistics().ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
@@ -263,7 +265,8 @@ namespace Neo4j.Driver.IntegrationTests
 
             driver.Dispose();
 
-            var st = ConnectionPoolStatistics.Read(statisticsCollector.CollectStatistics());
+            var statistics = statisticsCollector.CollectStatistics().Single();
+            var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value as IDictionary<string, object>);
             Output.WriteLine(st.ReportStatistics().ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");

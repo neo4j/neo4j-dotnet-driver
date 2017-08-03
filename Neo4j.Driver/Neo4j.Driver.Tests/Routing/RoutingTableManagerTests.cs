@@ -207,7 +207,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
 
                 // When
-                var newRoutingTable = manager.UpdateRoutingTable(connection =>
+                var newRoutingTable = manager.UpdateRoutingTable(null, connection =>
                     throw new NotSupportedException($"Unknown uri: {connection.Server.Address}"));
 
                 // Then
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
 
                 // When
-                var newRoutingTable = manager.UpdateRoutingTable(connection =>
+                var newRoutingTable = manager.UpdateRoutingTable(null, connection =>
                 {
                     // the second connectin will give a new routingTable
                     if (connection.Equals(connA)) // uriA
@@ -264,7 +264,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
 
-                var exception = Record.Exception(() => manager.UpdateRoutingTable(
+                var exception = Record.Exception(() => manager.UpdateRoutingTable(null,
                     conn => throw new ServiceUnavailableException("Procedure not found")));
 
                 exception.Should().BeOfType<ServiceUnavailableException>();
@@ -282,7 +282,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .Returns(new Mock<IConnection>().Object);
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
 
-                var exception = Record.Exception(() => manager.UpdateRoutingTable(
+                var exception = Record.Exception(() => manager.UpdateRoutingTable(null,
                     conn => throw new ProtocolException("Cannot parse procedure result")));
 
                 exception.Should().BeOfType<ProtocolException>();
@@ -331,7 +331,7 @@ namespace Neo4j.Driver.Tests.Routing
 
 
                 // When
-                var updateRoutingTable = manager.UpdateRoutingTable(conn =>
+                var updateRoutingTable = manager.UpdateRoutingTable(null, conn =>
                 {
                     if (conn.Equals(connA))
                     {
@@ -364,7 +364,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
 
                 // When
-                var updateRoutingTable = manager.UpdateRoutingTable(conn =>
+                var updateRoutingTable = manager.UpdateRoutingTable(null, conn =>
                 {
                     if (conn.Equals(connA))
                     {
