@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _stream?.Dispose();
 
-#if NET45
+#if NET452
             _client?.Close();
 #else
             _client?.Dispose();
