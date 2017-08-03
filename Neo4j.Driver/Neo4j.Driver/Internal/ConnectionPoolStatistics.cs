@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Internal
             _pool = null;
         }
 
-        public static ConnectionPoolStatistics Read(string name, IDictionary<string, object> dict) 
+        public static ConnectionPoolStatistics FromDictionary(string name, IDictionary<string, object> dict) 
             => new ConnectionPoolStatistics(name, dict);
     }
 }

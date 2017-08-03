@@ -465,8 +465,8 @@ namespace Neo4j.Driver.Internal
         {
             if (_statistics != null)
             {
-                _statistics.Dispose();
                 _statisticsCollector?.Unregister(_statistics);
+                _statistics.Dispose();
             }
         }
 

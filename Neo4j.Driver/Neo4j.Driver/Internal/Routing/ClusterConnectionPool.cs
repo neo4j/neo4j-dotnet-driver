@@ -80,16 +80,16 @@ namespace Neo4j.Driver.Internal.Routing
             return pool.Acquire(ignored);
         }
 
-        public async Task<IConnection> AcquireAsync(Uri uri)
+        public Task<IConnection> AcquireAsync(Uri uri)
         {
             IConnectionPool pool;
             if (!_pools.TryGetValue(uri, out pool))
             {
-                return null;
+                return Task.FromResult((IConnection)null);
             }
 
             AccessMode ignored = AccessMode.Write;
-            return await pool.AcquireAsync(ignored).ConfigureAwait(false);
+            return pool.AcquireAsync(ignored);
         }
 
         // This is the ultimate method to add a pool

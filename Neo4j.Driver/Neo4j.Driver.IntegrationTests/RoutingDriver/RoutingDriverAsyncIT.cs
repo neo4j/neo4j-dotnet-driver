@@ -196,7 +196,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             foreach (var statistic in statistics)
             {
-                var st = ConnectionPoolStatistics.Read(statistic.Key, statistic.Value.ValueAs<IDictionary<string, object>>());
+                var st = ConnectionPoolStatistics.FromDictionary(statistic.Key, statistic.Value.ValueAs<IDictionary<string, object>>());
 
                 st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
                 st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);

@@ -84,8 +84,7 @@ namespace Neo4j.Driver.Internal.Routing
             try
             {
                 var result = await session.RunAsync(DiscoveryProcedure).ConfigureAwait(false);
-                await result.ReadAsync().ConfigureAwait(false);
-                var record = result.Current();
+                var record = await result.SingleAsync().ConfigureAwait(false);
 
                 ParseDiscoveryResult(record);
             }
@@ -179,17 +178,16 @@ namespace Neo4j.Driver.Internal.Routing
 
             public Task<IConnection> AcquireAsync(AccessMode mode)
             {
-                var task = new TaskCompletionSource<IConnection>();
-                task.SetResult(Acquire(mode));
-                return task.Task;
+                return Task.FromResult(Acquire(mode));
             }
 
-            public async Task CloseAsync()
+            public Task CloseAsync()
             {
                 if (_connection != null)
                 {
-                    await _connection.CloseAsync().ConfigureAwait(false);
+                    return _connection.CloseAsync();
                 }
+                return Task.CompletedTask;
             }
         }
     }
