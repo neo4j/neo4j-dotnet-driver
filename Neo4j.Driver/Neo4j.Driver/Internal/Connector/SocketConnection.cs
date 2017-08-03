@@ -229,11 +229,7 @@ namespace Neo4j.Driver.Internal.Connector
             Close();
 
 // TODO verify this is the correct way to do it
-#if NET45
-            return Task.FromResult(0);
-#else
-            return Task.CompletedTask;
-#endif
+            return TaskExtensions.GetCompletedTask();
         }
 
         private void AssertNoServerFailure()
