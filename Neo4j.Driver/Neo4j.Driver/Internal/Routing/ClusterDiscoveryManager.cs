@@ -187,11 +187,8 @@ namespace Neo4j.Driver.Internal.Routing
                 {
                     return _connection.CloseAsync();
                 }
-#if NET45
-                return Task.FromResult(0);
-#else
-                return Task.CompletedTask;
-#endif
+
+                return TaskExtensions.GetCompletedTask();
             }
         }
     }
