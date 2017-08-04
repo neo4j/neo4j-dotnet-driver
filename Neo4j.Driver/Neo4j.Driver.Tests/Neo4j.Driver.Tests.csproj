@@ -119,6 +119,7 @@
     <Compile Include="Routing\RoundRobinLoadBalancingStrategyTests.cs" />
     <Compile Include="Routing\RoundRobinArrayIndexTests.cs" />
     <Compile Include="Routing\RoutingTableManagerTests.cs" />
+    <Compile Include="StatementResultReaderExtensionsTests.cs" />
     <Compile Include="TestUtil\IOExtensions.cs" />
     <Compile Include="TestUtil\NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
