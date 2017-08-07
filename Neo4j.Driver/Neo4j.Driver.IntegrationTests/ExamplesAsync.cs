@@ -303,10 +303,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 {
                     var result = await tx.RunAsync("SELECT * FROM Employees WHERE name = $name", new { name });
 
-                    if (await result.ReadAsync())
-                        return result.Current()["employee_number"].As<int>();
-                    else
-                        return 0;
+                    return (await result.SingleAsync())["employee_number"].As<int>();
                 }
                 catch (ClientException ex)
                 {
@@ -413,10 +410,7 @@ namespace Neo4j.Driver.ExamplesAsync
                                                            "RETURN a.message + ', from node ' + id(a)",
                                 new {message});
 
-                            if (await result.ReadAsync())
-                                return result.Current()[0].As<string>();
-                            else
-                                return null;
+                            return (await result.SingleAsync())[0].As<string>();
                         });
 
                         Console.WriteLine(greeting);
@@ -484,10 +478,8 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN id(a)", new { name });
 
-                if (await result.ReadAsync())
-                    return result.Current()[0].As<long>();
-                else
-                    return -1;
+                
+                return (await result.SingleAsync())[0].As<long>();
             }
             // end::read-write-transaction[]
         }
@@ -509,12 +501,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     {
                         var result = await tx.RunAsync("MATCH (a:Person) RETURN a.name ORDER BY a.name");
 
-                        List<string> list = new List<string>();
-
-                        while (await result.ReadAsync())
-                            list.Add(result.Current()[0].As<string>());
-
-                        return list;
+                        return await result.ToListAsync(r => r[0].As<string>());
                     });
                 }
                 finally
@@ -553,13 +540,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     var persons = await session.ReadTransactionAsync(async tx =>
                     {
                         IStatementResultReader result = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
-
-                        List<IRecord> names = new List<IRecord>();
-
-                        while (await result.ReadAsync())
-                            names.Add(result.Current());
-
-                        return names;
+                        return await result.ToListAsync();
                     });
 
                     return persons.Sum(person => session.WriteTransactionAsync(async tx =>
@@ -766,12 +747,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     IStatementResultReader result =
                         await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new {name});
 
-                    if (await result.ReadAsync())
-                    {
-                        return result.Current()[0].As<int>();
-                    }
-
-                    return -1;
+                    return (await result.SingleAsync())[0].As<int>();
                 });
             }
             finally

@@ -22,6 +22,9 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.V1
 {
+    /// <summary>
+    /// Extension methods for <see cref="IStatementResultReader"/>
+    /// </summary>
     public static class StatementResultReaderExtensions
     {
         /// <summary>
@@ -57,13 +60,32 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="result"> The result stream.</param>
         /// <returns>A list with all records in the result stream.</returns>
-        public static async Task<IList<IRecord>> ToListAsync(this IStatementResultReader result)
+        public static async Task<List<IRecord>> ToListAsync(this IStatementResultReader result)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));
-            IList<IRecord> list = new List<IRecord>();
+            List<IRecord> list = new List<IRecord>();
             while (await result.ReadAsync().ConfigureAwait(false))
             {
                 list.Add(result.Current());
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// Apply the operation on each record in the result stream and return the operation results in a list.
+        /// </summary>
+        /// <typeparam name="T">The return type of the list</typeparam>
+        /// <param name="result">The result stream.</param>
+        /// <param name="operation">The operation to carry out on each record.</param>
+        /// <returns>A list of collected operation result.</returns>
+        public static async Task<List<T>> ToListAsync<T>(this IStatementResultReader result, Func<IRecord, T> operation)
+        {
+            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            var list = new List<T>();
+            while (await result.ReadAsync().ConfigureAwait(false))
+            {
+                var record = result.Current();
+                list.Add(operation(record));
             }
             return list;
         }
@@ -81,22 +103,6 @@ namespace Neo4j.Driver.V1
             {
                 var record = result.Current();
                 operation(record);
-            }
-        }
-
-        /// <summary>
-        /// Read each record in the result stream and aplly operations on each record
-        /// </summary>
-        /// <param name="result">The result stream.</param>
-        /// <param name="operation">The operation is carried out on each record.</param>
-        /// <returns>A Task that completes whe nall records have been processed.</returns>
-        public static async Task ForEachAsync(this IStatementResultReader result, Func<IRecord, Task> operation)
-        {
-            Throw.ArgumentNullException.IfNull(result, nameof(result));
-            while (await result.ReadAsync().ConfigureAwait(false))
-            {
-                var record = result.Current();
-                await operation(record).ConfigureAwait(false);
             }
         }
     }
