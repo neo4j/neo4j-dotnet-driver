@@ -28,24 +28,25 @@ namespace Neo4j.Driver.V1
     public static class GraphDatabase
     {
         internal const int DefaultBoltPort = 7687;
+
         /// <summary>
         ///     Returns a driver for a Neo4j instance with default configuration settings.
         /// </summary>
         /// <param name="uri">
-        ///     The <see cref="Uri" /> to the Neo4j instance. Should be in the form
-        ///     <c>bolt://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     The URI to the Neo4j instance. Should be in the form
+        ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
+        ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        /// </param>
-        /// <param name="config">
-        ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
-        ///     is used.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
+        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
-        public static IDriver Driver(Uri uri, Config config = null)
+        public static IDriver Driver(string uri)
         {
-            return Driver(uri, AuthTokens.None, config ?? Config.DefaultConfig);
+            return Driver(new Uri(uri));
         }
 
         /// <summary>
@@ -53,8 +54,32 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="uri">
         ///     The URI to the Neo4j instance. Should be in the form
-        ///     <c>bolt://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
+        ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
+        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        /// </param>
+        /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+        public static IDriver Driver(Uri uri)
+        {
+            return Driver(uri, (Config)null);
+        }
+
+        /// <summary>
+        ///     Returns a driver for a Neo4j instance with custom configuration.
+        /// </summary>
+        /// <param name="uri">
+        ///     The URI to the Neo4j instance. Should be in the form
+        ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
+        ///     If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     be used.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
+        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <param name="config">
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
@@ -63,27 +88,98 @@ namespace Neo4j.Driver.V1
         /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
-        public static IDriver Driver(string uri, Config config = null)
+        public static IDriver Driver(string uri, Config config)
         {
-            return Driver(new Uri(uri), AuthTokens.None, config ?? Config.DefaultConfig);
+            return Driver(new Uri(uri), config);
         }
 
         /// <summary>
         ///     Returns a driver for a Neo4j instance with custom configuration.
         /// </summary>
         /// <param name="uri">
-        ///     The <see cref="Uri" /> to the Neo4j instance. Should be in the form
-        ///     <c>bolt://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
-        ///     be used.</param>
+        ///     The URI to the Neo4j instance. Should be in the form
+        ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
+        ///     If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     be used.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
+        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        /// </param>
+        /// <param name="config">
+        ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
+        ///     is used.
+        /// </param>
+        /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+        public static IDriver Driver(Uri uri, Config config)
+        {
+            return Driver(uri, AuthTokens.None, config);
+        }
+
+        /// <summary>
+        ///     Returns a driver for a Neo4j instance with default configuration settings.
+        /// </summary>
+        /// <param name="uri">
+        ///     The URI to the Neo4j instance. Should be in the form
+        ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
+        ///     If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     be used.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
+        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        /// </param>
+        /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
+        /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+        public static IDriver Driver(string uri, IAuthToken authToken)
+        {
+            return Driver(new Uri(uri), authToken);
+        }
+
+        /// <summary>
+        ///     Returns a driver for a Neo4j instance with default configuration settings.
+        /// </summary>
+        /// <param name="uri">
+        ///     The URI to the Neo4j instance. Should be in the form
+        ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
+        ///     If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     be used.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
+        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        /// </param>
+        /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
+        /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
+        /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+        public static IDriver Driver(Uri uri, IAuthToken authToken)
+        {
+            return Driver(uri, authToken, null);
+        }
+
+        /// <summary>
+        ///     Returns a driver for a Neo4j instance with custom configuration.
+        /// </summary>
+        /// <param name="uri">
+        ///     The URI to the Neo4j instance. Should be in the form
+        ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
+        ///     If <c>port</c> is not supplied the default of <c>7687</c> will
+        ///     be used.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
+        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        /// </param>
         /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
         /// <param name="config">
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
         ///     is used.
         /// </param>
         /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
-        public static IDriver Driver(string uri, IAuthToken authToken, Config config = null)
+        public static IDriver Driver(string uri, IAuthToken authToken, Config config)
         {
-            return Driver(new Uri(uri), authToken, config ?? Config.DefaultConfig);
+            return Driver(new Uri(uri), authToken, config);
         }
 
         /// <summary>
@@ -99,8 +195,10 @@ namespace Neo4j.Driver.V1
         ///     is used.
         /// </param>
         /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
-        public static IDriver Driver(Uri uri, IAuthToken authToken, Config config = null)
+        public static IDriver Driver(Uri uri, IAuthToken authToken, Config config)
         {
+            Throw.ArgumentNullException.IfNull(uri, nameof(uri));
+            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
             config = config ?? Config.DefaultConfig;
 
             var parsedUri = uri.ParseUri(DefaultBoltPort);

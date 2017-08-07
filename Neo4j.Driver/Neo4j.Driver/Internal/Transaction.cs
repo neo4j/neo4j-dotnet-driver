@@ -123,15 +123,15 @@ namespace Neo4j.Driver.Internal
             _state = State.RolledBack;
         }
 
-        public override IStatementResult Run(string statement, IDictionary<string, object> parameters=null)
+        public override IStatementResult Run(Statement statement)
         {
             return TryExecute(() =>
             {
                 EnsureNotFailed();
 
-                var resultBuilder = new ResultBuilder(statement, parameters, () => _connection.ReceiveOne(),
+                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOne(),
                     _connection.Server);
-                _connection.Run(statement, parameters, resultBuilder);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
                 return resultBuilder.PreBuild();
             });

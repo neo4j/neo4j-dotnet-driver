@@ -36,6 +36,30 @@ namespace Neo4j.Driver.V1
         Uri Uri { get; }
 
         /// <summary>
+        /// Obtain a session with the default access mode <see cref="AccessMode.Write"/>.
+        /// </summary>
+        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
+        ISession Session();
+
+        /// <summary>
+        /// Obtain a session with the default <see cref="AccessMode"/>.
+        /// </summary>
+        /// <param name="defaultMode">The default access mode of the session. 
+        /// If no access mode is specified when using the statement running methods inside this session,
+        /// the statement will be executed in connections satisfying the default access mode.</param>
+        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
+        ISession Session(AccessMode defaultMode);
+
+        /// <summary>
+        /// Obtain a session with the default <see cref="AccessMode.Write"/> and start bookmark.
+        /// </summary>
+        /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
+        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
+        /// Specify a bookmark if the statement excuted inside this session need to be chained after statements from other sessions.</param>
+        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
+        ISession Session(string bookmark);
+
+        /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/> and start bookmark.
         /// </summary>
         /// <param name="defaultMode">The default access mode of the session. 
@@ -45,7 +69,7 @@ namespace Neo4j.Driver.V1
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
         /// Specify a bookmark if the statement excuted inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
-        ISession Session(AccessMode defaultMode = AccessMode.Write, string bookmark = null);
+        ISession Session(AccessMode defaultMode, string bookmark);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/> and a series of start bookmars.

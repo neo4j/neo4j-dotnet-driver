@@ -30,10 +30,10 @@ namespace Neo4j.Driver.Tests
             public string Statement { private set; get; }
             public IDictionary<string, object> Parameters { private set; get; } 
 
-            public override IStatementResult Run(string statement, IDictionary<string,object> parameters = null)
+            public override IStatementResult Run(Statement statement)
             {
-                Statement = statement;
-                Parameters = parameters;
+                Statement = statement.Text;
+                Parameters = statement.Parameters;
                 return null; // nah, I do not care
             }
 

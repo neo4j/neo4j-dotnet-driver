@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Tests
 
                 tx.Run("lalala");
 
-                mockConn.Verify(x => x.Run("lalala", null, It.IsAny<ResultBuilder>(), true), Times.Once);
+                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true), Times.Once);
                 mockConn.Verify(x => x.Send(), Times.Once);
             }
 
@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Tests
 
                 try
                 {
-                    mockConn.Setup(x => x.Run(It.IsAny<string>(), null, It.IsAny<ResultBuilder>(), true))
+                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
                     tx.Run("lalala");
                 }
@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
                    
-                mockConn.Setup(x => x.Run(It.IsAny<string>(), null, It.IsAny<ResultBuilder>(), true))
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
 
                 var error = Xunit.Record.Exception(() => tx.Run("ttt"));
