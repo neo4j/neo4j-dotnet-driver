@@ -132,6 +132,56 @@ namespace Neo4j.Driver.Tests.Extensions
                 });
             }
 
+            [Fact]
+            public void ShouldHandleDictionary()
+            {
+                var dict = CollectionExtensions.ToDictionary(new
+                {
+                    DateOfBirth = new Dictionary<string, object>()
+                    {
+                        {"Day", 31},
+                        {"Month", 12},
+                        {"Year", 2000}
+                    }
+                });
+
+                dict.Should().NotBeNull();
+                dict.Should().HaveCount(1);
+                dict.Should().ContainKey("DateOfBirth");
+
+                var dateOfBirthObject = dict["DateOfBirth"];
+                dateOfBirthObject.Should().NotBeNull();
+                dateOfBirthObject.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var dateOfBirth = (IDictionary<string, object>)dateOfBirthObject;
+                dateOfBirth.Should().Contain(new[]
+                {
+                    new KeyValuePair<string, object>("Day", 31),
+                    new KeyValuePair<string, object>("Month", 12),
+                    new KeyValuePair<string, object>("Year", 2000)
+                });
+            }
+
+            [Fact]
+            public void ShouldHandleCollections()
+            {
+                var dict = CollectionExtensions.ToDictionary(new
+                {
+                    EmployeeIds = new List<int>() {1, 2, 3}
+                });
+
+                dict.Should().NotBeNull();
+                dict.Should().HaveCount(1);
+                dict.Should().ContainKey("EmployeeIds");
+
+                var employeeIdsObject = dict["EmployeeIds"];
+                employeeIdsObject.Should().NotBeNull();
+                employeeIdsObject.Should().BeAssignableTo<IList<int>>();
+
+                var employeeIds = (IList<int>)employeeIdsObject;
+                employeeIds.Should().Contain(new[] {1, 2, 3});
+            }
+
             private class MyPOCO
             {
                 public string Name { get; set; }

@@ -105,19 +105,30 @@ namespace Neo4j.Driver.Internal
 
                 if (value != null)
                 {
-                    var convertible = value as IConvertible;
-                    if (convertible != null)
+                    if (value is Array)
                     {
-                        if (convertible.GetTypeCode() == TypeCode.Object)
-                        {
-                            value = FillDictionary(value, new Dictionary<string, object>());
-                        }
+                        // do not process elements of array       
+                    }
+                    else if (value is IList)
+                    {
+                        //do not process elements of list
+                    }
+                    else if (value is IDictionary)
+                    {
+                        //do not process elements of dictionary
                     }
                     else
                     {
-                        var valueType = value.GetType();
-
-                        if (!valueType.IsArray)
+                        // way of checking for a simple type 
+                        var convertible = value as IConvertible;
+                        if (convertible != null)
+                        {
+                            if (convertible.GetTypeCode() == TypeCode.Object)
+                            {
+                                value = FillDictionary(value, new Dictionary<string, object>());
+                            }
+                        }
+                        else
                         {
                             value = FillDictionary(value, new Dictionary<string, object>());
                         }
@@ -129,5 +140,6 @@ namespace Neo4j.Driver.Internal
 
             return dict;
         }
+        
     }
 }
