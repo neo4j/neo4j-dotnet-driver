@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -86,8 +88,46 @@ namespace Neo4j.Driver.Internal
 
         public static IDictionary<string, object> ToDictionary(this object o)
         {
-            return o.GetType().GetRuntimeProperties()
-                .ToDictionary(prop => prop.Name, prop => prop.GetValue(o, null));
+            if (o == null)
+            {
+                return null;
+            }
+
+            return FillDictionary(o, new Dictionary<string, object>());
+        }
+
+        private static IDictionary<string, object> FillDictionary(object o, IDictionary<string, object> dict)
+        {
+            foreach (var propInfo in o.GetType().GetRuntimeProperties())
+            {
+                var name = propInfo.Name;
+                var value = propInfo.GetValue(o);
+
+                if (value != null)
+                {
+                    var convertible = value as IConvertible;
+                    if (convertible != null)
+                    {
+                        if (convertible.GetTypeCode() == TypeCode.Object)
+                        {
+                            value = FillDictionary(value, new Dictionary<string, object>());
+                        }
+                    }
+                    else
+                    {
+                        var valueType = value.GetType();
+
+                        if (!valueType.IsArray)
+                        {
+                            value = FillDictionary(value, new Dictionary<string, object>());
+                        }
+                    }
+                }
+
+                dict.Add(name, value);
+            }
+
+            return dict;
         }
     }
 }
