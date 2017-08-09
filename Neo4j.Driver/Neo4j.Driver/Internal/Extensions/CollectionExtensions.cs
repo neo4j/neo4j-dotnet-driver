@@ -102,44 +102,110 @@ namespace Neo4j.Driver.Internal
             {
                 var name = propInfo.Name;
                 var value = propInfo.GetValue(o);
+                var valueTransformed = Transform(value);
 
-                if (value != null)
-                {
-                    if (value is Array)
-                    {
-                        // do not process elements of array       
-                    }
-                    else if (value is IList)
-                    {
-                        //do not process elements of list
-                    }
-                    else if (value is IDictionary)
-                    {
-                        //do not process elements of dictionary
-                    }
-                    else
-                    {
-                        // way of checking for a simple type 
-                        var convertible = value as IConvertible;
-                        if (convertible != null)
-                        {
-                            if (convertible.GetTypeCode() == TypeCode.Object)
-                            {
-                                value = FillDictionary(value, new Dictionary<string, object>());
-                            }
-                        }
-                        else
-                        {
-                            value = FillDictionary(value, new Dictionary<string, object>());
-                        }
-                    }
-                }
-
-                dict.Add(name, value);
+                dict.Add(name, valueTransformed);
             }
 
             return dict;
         }
-        
+
+        private static object Transform(object value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            var valueType = value.GetType();
+
+            if (value is Array)
+            {
+                var elementType = valueType.GetElementType();
+
+                if (elementType.NeedsConversion())
+                {
+                    var convertedList = new List<object>(((IList)value).Count);
+                    foreach (var element in (IEnumerable) value)
+                    {
+                        convertedList.Add(Transform(element));
+                    }
+                    value = convertedList;
+                }
+            }
+            else if (value is IList)
+            {
+                var valueTypeInfo = valueType.GetTypeInfo();
+                var elementType = (Type)null;
+
+                if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
+                {
+                    elementType = valueTypeInfo.GenericTypeArguments[0];
+                }
+
+                if (elementType == null || elementType.NeedsConversion())
+                {
+                    var convertedList = new List<object>(((IList)value).Count);
+                    foreach (var element in (IEnumerable)value)
+                    {
+                        convertedList.Add(Transform(element));
+                    }
+                    value = convertedList;
+                }
+            }
+            else if (value is IDictionary)
+            {
+                var valueTypeInfo = valueType.GetTypeInfo();
+                var elementType = (Type)null;
+
+                if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                {
+                    elementType = valueTypeInfo.GenericTypeArguments[1];
+                }
+
+                if (elementType == null || elementType.NeedsConversion())
+                {
+                    var dict = (IDictionary) value;
+
+                    var convertedDict = new Dictionary<string, object>(dict.Count);
+                    foreach (object key in dict.Keys)
+                    {
+                        if (!(key is string))
+                        {
+                            throw new InvalidOperationException(
+                                "dictionaries passed as part of a parameter to cypher statements should have string keys!");
+                        }
+
+                        convertedDict.Add((string)key, Transform(dict[key]));
+                    }
+                    value = convertedDict;
+                }
+            }
+            else
+            {
+                if (valueType.NeedsConversion())
+                {
+                    value = FillDictionary(value, new Dictionary<string, object>());
+                }
+            }
+
+            return value;
+        }
+
+        private static bool NeedsConversion(this Type type)
+        {
+            if (type == typeof(string))
+            {
+                return false;
+            }
+
+            if (type.GetTypeInfo().IsValueType)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
     }
 }

@@ -82,28 +82,28 @@ namespace Neo4j.Driver.Tests.Extensions
             [Fact]
             public void ShouldHandleAnonymousObjects()
             {
-                var dict = CollectionExtensions.ToDictionary(new { Name = "name", Surname = "surname" });
+                var dict = CollectionExtensions.ToDictionary(new { key1 = "value1", key2 = "value2" });
 
                 dict.Should().NotBeNull();
                 dict.Should().HaveCount(2);
                 dict.Should().Contain(new[]
                 {
-                    new KeyValuePair<string, object>("Name", "name"),
-                    new KeyValuePair<string, object>("Surname", "surname")
+                    new KeyValuePair<string, object>("key1", "value1"),
+                    new KeyValuePair<string, object>("key2", "value2")
                 });
             }
 
             [Fact]
             public void ShouldHandlePoco()
             {
-                var dict = CollectionExtensions.ToDictionary(new MyPOCO() {Name = "name", Surname = "surname"});
+                var dict = CollectionExtensions.ToDictionary(new MyPOCO() {Key1 = "value1", Key2 = "value2"});
 
                 dict.Should().NotBeNull();
                 dict.Should().HaveCount(2);
                 dict.Should().Contain(new[]
                 {
-                    new KeyValuePair<string, object>("Name", "name"),
-                    new KeyValuePair<string, object>("Surname", "surname")
+                    new KeyValuePair<string, object>("Key1", "value1"),
+                    new KeyValuePair<string, object>("Key2", "value2")
                 });
             }
 
@@ -112,23 +112,23 @@ namespace Neo4j.Driver.Tests.Extensions
             {
                 var dict = CollectionExtensions.ToDictionary(new
                 {
-                    DateOfBirth = new {Day = 31, Month = 12, Year = 2000}
+                    InnerObject = new {Key1 = 1, Key2 = "a", Key3 = 0L}
                 });
 
                 dict.Should().NotBeNull();
                 dict.Should().HaveCount(1);
-                dict.Should().ContainKey("DateOfBirth");
+                dict.Should().ContainKey("InnerObject");
 
-                var dateOfBirthObject = dict["DateOfBirth"];
-                dateOfBirthObject.Should().NotBeNull();
-                dateOfBirthObject.Should().BeAssignableTo<IDictionary<string, object>>();
+                var innerObjectObject = dict["InnerObject"];
+                innerObjectObject.Should().NotBeNull();
+                innerObjectObject.Should().BeAssignableTo<IDictionary<string, object>>();
 
-                var dateOfBirth = (IDictionary<string, object>) dateOfBirthObject;
-                dateOfBirth.Should().Contain(new[]
+                var innerObject = (IDictionary<string, object>) innerObjectObject;
+                innerObject.Should().Contain(new[]
                 {
-                    new KeyValuePair<string, object>("Day", 31),
-                    new KeyValuePair<string, object>("Month", 12),
-                    new KeyValuePair<string, object>("Year", 2000)
+                    new KeyValuePair<string, object>("Key1", 1),
+                    new KeyValuePair<string, object>("Key2", "a"),
+                    new KeyValuePair<string, object>("Key3", 0L)
                 });
             }
 
@@ -137,28 +137,28 @@ namespace Neo4j.Driver.Tests.Extensions
             {
                 var dict = CollectionExtensions.ToDictionary(new
                 {
-                    DateOfBirth = new Dictionary<string, object>()
+                    InnerDictionary = new Dictionary<string, object>()
                     {
-                        {"Day", 31},
-                        {"Month", 12},
-                        {"Year", 2000}
+                        {"Key1", 1},
+                        {"Key2", "a"},
+                        {"Key3", 0L}
                     }
                 });
 
                 dict.Should().NotBeNull();
                 dict.Should().HaveCount(1);
-                dict.Should().ContainKey("DateOfBirth");
+                dict.Should().ContainKey("InnerDictionary");
 
-                var dateOfBirthObject = dict["DateOfBirth"];
-                dateOfBirthObject.Should().NotBeNull();
-                dateOfBirthObject.Should().BeAssignableTo<IDictionary<string, object>>();
+                var innerDictionaryObject = dict["InnerDictionary"];
+                innerDictionaryObject.Should().NotBeNull();
+                innerDictionaryObject.Should().BeAssignableTo<IDictionary<string, object>>();
 
-                var dateOfBirth = (IDictionary<string, object>)dateOfBirthObject;
-                dateOfBirth.Should().Contain(new[]
+                var innerDictionary = (IDictionary<string, object>)innerDictionaryObject;
+                innerDictionary.Should().Contain(new[]
                 {
-                    new KeyValuePair<string, object>("Day", 31),
-                    new KeyValuePair<string, object>("Month", 12),
-                    new KeyValuePair<string, object>("Year", 2000)
+                    new KeyValuePair<string, object>("Key1", 1),
+                    new KeyValuePair<string, object>("Key2", "a"),
+                    new KeyValuePair<string, object>("Key3", 0L)
                 });
             }
 
@@ -167,26 +167,106 @@ namespace Neo4j.Driver.Tests.Extensions
             {
                 var dict = CollectionExtensions.ToDictionary(new
                 {
-                    EmployeeIds = new List<int>() {1, 2, 3}
+                    InnerCollection = new List<int>() {1, 2, 3}
                 });
 
                 dict.Should().NotBeNull();
                 dict.Should().HaveCount(1);
-                dict.Should().ContainKey("EmployeeIds");
+                dict.Should().ContainKey("InnerCollection");
 
-                var employeeIdsObject = dict["EmployeeIds"];
-                employeeIdsObject.Should().NotBeNull();
-                employeeIdsObject.Should().BeAssignableTo<IList<int>>();
+                var innerCollectionObject = dict["InnerCollection"];
+                innerCollectionObject.Should().NotBeNull();
+                innerCollectionObject.Should().BeAssignableTo<IList<int>>();
 
-                var employeeIds = (IList<int>)employeeIdsObject;
-                employeeIds.Should().Contain(new[] {1, 2, 3});
+                var innerCollection = (IList<int>)innerCollectionObject;
+                innerCollection.Should().Contain(new[] {1, 2, 3});
+            }
+
+            [Fact]
+            public void ShouldHandleCollectionsOfArbitraryObjects()
+            {
+                var dict = CollectionExtensions.ToDictionary(new
+                {
+                    InnerCollection = new List<object>()
+                    {
+                        new {a = "a"},
+                        3,
+                        new MyPOCO() {Key1 = "value1" }
+                    }
+                });
+
+                dict.Should().NotBeNull();
+                dict.Should().HaveCount(1);
+                dict.Should().ContainKey("InnerCollection");
+
+                var innerCollectionObject = dict["InnerCollection"];
+                innerCollectionObject.Should().NotBeNull();
+                innerCollectionObject.Should().BeAssignableTo<IList<object>>();
+
+                var innerCollection = (IList<object>)innerCollectionObject;
+                innerCollection.Should().HaveCount(3);
+                innerCollection.Should().Contain(o => o is IDictionary<string, object> &&
+                                                      ((IDictionary<string, object>) o).Contains(
+                                                          new KeyValuePair<string, object>("a", "a")));
+                innerCollection.Should().Contain(3);
+                innerCollection.Should().Contain(o => o is IDictionary<string, object> &&
+                                                      ((IDictionary<string, object>)o).Contains(
+                                                          new KeyValuePair<string, object>("Key1", "value1")));
+            }
+
+            [Fact]
+            public void ShouldHandleDictionaryOfArbitraryObjects()
+            {
+                var dict = CollectionExtensions.ToDictionary(new
+                {
+                    InnerDictionary = new Dictionary<string, object>()
+                    {
+                        {"a", new {a = "a"}},
+                        {"b", "b"},
+                        {"c", 3}
+                    }
+                });
+
+                dict.Should().NotBeNull();
+                dict.Should().HaveCount(1);
+                dict.Should().ContainKey("InnerDictionary");
+
+                var innerDictionaryObject = dict["InnerDictionary"];
+                innerDictionaryObject.Should().NotBeNull();
+                innerDictionaryObject.Should().BeAssignableTo<IDictionary<string, object>>();
+
+                var innerDictionary = (IDictionary<string, object>)innerDictionaryObject;
+                innerDictionary.Should().HaveCount(3);
+                innerDictionary.Should().ContainKey("a");
+                innerDictionary["a"].Should().BeAssignableTo<IDictionary<string, object>>();
+                innerDictionary["a"].As<IDictionary<string, object>>().Should().Contain(new KeyValuePair<string, object>("a", "a"));
+                innerDictionary.Should().Contain(new KeyValuePair<string, object>("b", "b"));
+                innerDictionary.Should().Contain(new KeyValuePair<string, object>("c", 3));
+            }
+
+            [Fact]
+            public void ShouldRaiseExceptionWhenDictionaryKeysAreNotStrings()
+            {
+                var ex = Record.Exception(() => CollectionExtensions.ToDictionary(new
+                {
+                    InnerDictionary = new Dictionary<int, object>()
+                    {
+                        {1, new {a = "a"}},
+                        {2, "b"},
+                        {3, 3}
+                    }
+                }));
+
+                ex.Should().NotBeNull();
+                ex.Should().BeOfType<InvalidOperationException>();
+                ex.Message.Should().Contain("string keys");
             }
 
             private class MyPOCO
             {
-                public string Name { get; set; }
+                public string Key1 { get; set; }
 
-                public string Surname { get; set; }
+                public string Key2 { get; set; }
             }
         }
 
