@@ -121,6 +121,7 @@
     <Compile Include="Routing\RoutingTableManagerTests.cs" />
     <Compile Include="StatementResultReaderExtensionsTests.cs" />
     <Compile Include="TestUtil\IOExtensions.cs" />
+    <Compile Include="Extensions\CollectionExtensionsTests.cs" />
     <Compile Include="TestUtil\NetworkExtensionsTests.cs" />
     <Compile Include="Result\SummaryBuilderTests.cs" />
     <Compile Include="RetryLogicTests.cs" />
