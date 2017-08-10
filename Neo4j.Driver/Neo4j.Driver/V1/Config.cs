@@ -71,8 +71,12 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public class Config
     {
+        /// <summary>
+        /// This const is deprecated.
+        /// </summary>
         [System.Obsolete("Do not set idle connection size to infinite.")]
         public const int InfiniteMaxIdleSessionPoolSize = -1;
+
         static Config()
         {
             DefaultConfig = new Config();
@@ -135,6 +139,9 @@ namespace Neo4j.Driver.V1
         /// </remarks>
         public int MaxIdleConnectionPoolSize { get; set; } = 10;
 
+        /// <summary>
+        /// This property is deprecated. Use <see cref="MaxIdleConnectionPoolSize"/> instead.
+        /// </summary>
         [System.Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
         public int MaxIdleSessionPoolSize {
             get => MaxIdleConnectionPoolSize;
@@ -324,6 +331,11 @@ namespace Neo4j.Driver.V1
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithLogger(ILogger logger);
 
+        /// <summary>
+        /// This method is deprecated. Use <see cref="WithMaxIdleConnectionPoolSize"/> instead.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
         [System.Obsolete("Please use WithMaxIdleConnectionPoolSize instead.")]
         IConfigBuilder WithMaxIdleSessionPoolSize(int size);
 

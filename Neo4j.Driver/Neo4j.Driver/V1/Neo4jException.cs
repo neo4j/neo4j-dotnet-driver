@@ -16,34 +16,58 @@
 // limitations under the License.
 using System;
 using System.Runtime.Serialization;
-using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.V1
 {
+
     /// <summary>
     /// The base class for all Neo4j exceptions.
     /// </summary>
     [DataContract]
     public class Neo4jException : Exception
     {
+        /// <summary>
+        /// Create a new <see cref="Neo4jException"/>
+        /// </summary>
         public Neo4jException()
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="Neo4jException"/> with an error message
+        /// </summary>
+        /// <param name="message">The error message.</param>
         public Neo4jException(string message) : this(null, message)
         {
         }
+
+        /// <summary>
+        /// Create a new <see cref="Neo4jException"/> with an error code and an error message
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message</param>
         public Neo4jException(string code, string message)
             : base(message)
         {
             Code = code;
         }
 
+        /// <summary>
+        /// Create a new <see cref="Neo4jException"/> with an error message and an exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception</param>
         public Neo4jException(string message, Exception innerException)
             : this(null, message, innerException)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="Neo4jException"/> with an error code, an error message and an excpetion.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
         public Neo4jException(string code, string message, Exception innerException)
             : base(message, innerException)
         {
@@ -63,23 +87,46 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class ClientException : Neo4jException
     {
+        /// <summary>
+        /// Create a new <see cref="ClientException"/>.
+        /// </summary>
         public ClientException()
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="ClientException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
         public ClientException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="ClientException"/> with an error code and an error message.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
         public ClientException(string code, string message) : base(code, message)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="ClientException"/> with an error message and an exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
         public ClientException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="ClientException"/> with an error code, an error message and an exception.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
         public ClientException(string code, string message, Exception innerException)
             : base(code, message, innerException)
         {
@@ -94,14 +141,28 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class TransientException : Neo4jException
     {
+        /// <summary>
+        /// Create a new <see cref="TransientException"/>.
+        /// </summary>
         public TransientException()
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="TransientException"/> with an error code and an error message.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
         public TransientException(string code, string message) : base(code, message)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="TransientException"/> with an error code, an error message and an exception.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception which caused this error.</param>
         public TransientException(string code, string message, Exception innerException)
             : base(code, message, innerException)
         {
@@ -115,14 +176,28 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class DatabaseException : Neo4jException
     {
+        /// <summary>
+        /// Create a new <see cref="DatabaseException"/>.
+        /// </summary>
         public DatabaseException()
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="DatabaseException"/> with an error code and an error message.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
         public DatabaseException(string code, string message) : base(code, message)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="DatabaseException"/> with an error code, an error message and an exception.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception which caused this error.</param>
         public DatabaseException(string code, string message, Exception innerException)
             : base(code, message, innerException)
         {
@@ -135,10 +210,19 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class ServiceUnavailableException : Neo4jException
     {
+        /// <summary>
+        /// Create a new <see cref="ServiceUnavailableException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
         public ServiceUnavailableException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="ServiceUnavailableException"/> with an error message and an exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
         public ServiceUnavailableException(string message, Exception innerException) : base(message, innerException)
         {
         }
@@ -153,10 +237,19 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class SessionExpiredException : Neo4jException
     {
+        /// <summary>
+        /// Create a new <see cref="SessionExpiredException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
         public SessionExpiredException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="SessionExpiredException"/> with an error message and an exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
         public SessionExpiredException(string message, Exception innerException) : base(message, innerException)
         {
         }
@@ -177,15 +270,31 @@ namespace Neo4j.Driver.V1
             return code.Equals(ErrorCodeInvalid) || code.Equals(ErrorCodeInvalidFormat);
         }
 
+        /// <summary>
+        /// Create a new <see cref="ProtocolException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+
         public ProtocolException(string message) : base(message)
         {
         }
 
+
+        /// <summary>
+        /// Create a new <see cref="ProtocolException"/> with an error code and an error message.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
         public ProtocolException(string code, string message) : base(code, message)
         {
         }
 
-        public ProtocolException(string message, Exception internaException) : base(message, internaException)
+        /// <summary>
+        /// Create a new <see cref="SessionExpiredException"/> with an error message and an exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
+        public ProtocolException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
@@ -197,15 +306,30 @@ namespace Neo4j.Driver.V1
     [DataContract]
     public class SecurityException : Neo4jException
     {
+        /// <summary>
+        /// Create a new <see cref="SecurityException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+
         public SecurityException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Create a new <see cref="SecurityException"/> with an error code and an error message.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
         public SecurityException(string code, string message) : base(code, message)
         {
         }
 
-        public SecurityException(string message, Exception internaException) : base(message, internaException)
+        /// <summary>
+        /// Create a new <see cref="SecurityException"/> with an error message and an exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
+        public SecurityException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
@@ -223,6 +347,11 @@ namespace Neo4j.Driver.V1
         {
             return code.Equals(ErrorCode);
         }
+
+        /// <summary>
+        /// Create a new <see cref="AuthenticationException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
 
         public AuthenticationException(string message) : base(ErrorCode, message)
         {

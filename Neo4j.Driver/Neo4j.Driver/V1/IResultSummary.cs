@@ -24,10 +24,25 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public enum StatementType
     {
+        /// <summary>
+        /// The statement type is unknown
+        /// </summary>
         Unknown,
+        /// <summary>
+        /// The statement is a readonly statement
+        /// </summary>
         ReadOnly,
+        /// <summary>
+        /// The statement is a readwrite statement
+        /// </summary>
         ReadWrite,
+        /// <summary>
+        /// The statement is a writeonly statement
+        /// </summary>
         WriteOnly,
+        /// <summary>
+        /// The statement is a schemawrite statement
+        /// </summary>
         SchemaWrite
     }
 
