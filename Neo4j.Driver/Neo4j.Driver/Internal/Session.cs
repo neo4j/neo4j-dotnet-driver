@@ -53,16 +53,16 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(bookmark);
         }
 
-        public override IStatementResult Run(string statement, IDictionary<string, object> statementParameters = null)
+        public override IStatementResult Run(Statement statement)
         {
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
 
                 _connection = _connectionProvider.Acquire(_defaultMode);
-                var resultBuilder = new ResultBuilder(statement, statementParameters,
+                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
                     ()=>_connection.ReceiveOne(), _connection.Server, this);
-                _connection.Run(statement, statementParameters, resultBuilder);
+                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
 
                 return resultBuilder.PreBuild();

@@ -15,8 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
@@ -27,17 +25,22 @@ namespace Neo4j.Driver.Internal
         {
         }
 
-        public abstract IStatementResult Run(string statement, IDictionary<string, object> parameters = null);
+        public abstract IStatementResult Run(Statement statement);
 
-        public IStatementResult Run(Statement statement)
+        public IStatementResult Run(string statement)
         {
-            return Run(statement.Text, statement.Parameters);
+            return Run(new Statement(statement));
+        }
+
+        public IStatementResult Run(string statement, IDictionary<string, object> parameters)
+        {
+            return Run(new Statement(statement, parameters));
         }
 
         public IStatementResult Run(string statement, object parameters)
         {
-            var paramDictionary = parameters.ToDictionary();
-            return Run(statement, paramDictionary);
+            var cypherStatement = new Statement(statement, parameters.ToDictionary());
+            return Run(cypherStatement);
         }
     }
 
