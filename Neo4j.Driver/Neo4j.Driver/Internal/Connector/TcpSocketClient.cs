@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -84,7 +85,7 @@ namespace Neo4j.Driver.Internal.Connector
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource(timeOut))
             {
                 var addresses = await uri.ResolveAsync(_ipv6Enabled).ConfigureAwait(false);
-                AggregateException innerErrors = null;
+                var innerErrors = new List<Exception>();
                 for (var i = 0; i < addresses.Length; i++)
                 {
                     try
@@ -101,13 +102,14 @@ namespace Neo4j.Driver.Internal.Connector
                     catch (Exception e)
                     {
                         var error = new IOException($"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);
-                        innerErrors = innerErrors == null ? new AggregateException(error) : new AggregateException(innerErrors, error);
+                        innerErrors.Add(error);
 
                         if (i == addresses.Length - 1)
                         {
                             // if all failed
                             throw new IOException(
-                                $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.", innerErrors);
+                                $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.", 
+                                new AggregateException(innerErrors));
                         }
                     }
                 }

@@ -66,14 +66,22 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Init()
         {
-            var connected = Task.Run(() => _client.StartAsync(_connectionTimeout)).Wait(_connectionTimeout);
-            if (!connected)
+            try
             {
-                throw new IOException(
-                    $"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
-            }
+                var connected = Task.Run(() => _client.StartAsync(_connectionTimeout)).Wait(_connectionTimeout);
+                if (!connected)
+                {
+                    throw new IOException(
+                        $"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
+                }
 
-            Init(_authToken);
+                Init(_authToken);
+            }
+            catch (AggregateException e)
+            {
+                // To remove the wrapper around the inner exception because of Task.Wait()
+                throw e.InnerException;
+            }
         }
 
         public async Task InitAsync()

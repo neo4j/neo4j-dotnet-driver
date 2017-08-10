@@ -60,19 +60,21 @@ namespace Neo4j.Driver.Internal
 
         public T Retry<T>(Func<T> runTxFunc)
         {
-            AggregateException exception = null;
+            var exceptions = new List<Exception>();
             var timer = new Stopwatch();
             timer.Start();
             var delayMs = _initialRetryDelayMs;
+            var counter = 0;
             do
             {
+                counter++;
                 try
                 {
                     return runTxFunc();
                 }
                 catch (Exception e) when (e.IsRetriableError())
                 {
-                    exception = exception == null ? new AggregateException(e) : new AggregateException(exception, e);
+                    exceptions.Add(e);
 
                     var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
                     _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
@@ -82,24 +84,28 @@ namespace Neo4j.Driver.Internal
             } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
 
             timer.Stop();
-            throw exception;
+            throw new ServiceUnavailableException(
+                $"Failed after retried for {counter} times in {_maxRetryTimeMs} ms. " +
+                "Make sure that your database is online and retry again.", new AggregateException(exceptions));
         }
 
         public async Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc)
         {
-            AggregateException exception = null;
+            var exceptions = new List<Exception>();
             var timer = new Stopwatch();
             timer.Start();
             var delayMs = _initialRetryDelayMs;
+            var counter = 0;
             do
             {
+                counter++;
                 try
                 {
                     return await runTxAsyncFunc().ConfigureAwait(false);
                 }
                 catch (Exception e) when (e.IsRetriableError())
                 {
-                    exception = exception == null ? new AggregateException(e) : new AggregateException(exception, e);
+                    exceptions.Add(e);
 
                     var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
                     _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
@@ -109,7 +115,10 @@ namespace Neo4j.Driver.Internal
             } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
 
             timer.Stop();
-            throw exception;
+            throw new ServiceUnavailableException(
+                $"Failed after retried for {counter} times in {_maxRetryTimeMs} ms. " +
+                "Make sure that your database is online and retry again.", new AggregateException(exceptions));
+
         }
 
         private double ComputeDelayWithJitter(double delayMs)
