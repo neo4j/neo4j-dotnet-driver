@@ -23,10 +23,27 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public enum LogLevel
     {
+        /// <summary>
+        /// Set the log level to <see cref="None"/> to avoid any logging from the driver.
+        /// </summary>
         None,
+        /// <summary>
+        /// Set the log level to <see cref="Error"/> to only see errors logged by the driver.
+        /// </summary>
         Error,
+        /// <summary>
+        /// Set the log level to <see cref="Info"/> to see all errors and information logged by the driver.
+        /// </summary>
         Info,
+        /// <summary>
+        /// When setting log level to <see cref="Debug"/>, besides all logging recorded by <see cref="Error"/> and <see cref="Info"/>,
+        /// all bolt messages sent between driver and server are also logged in plain text.
+        /// </summary>
         Debug,
+        /// <summary>
+        /// When setting log level to <see cref="Trace"/>, besides all logging recorded by <see cref="Error"/>, <see cref="Info"/> and <see cref="Debug"/>,
+        /// all bolt messages in hex sent between driver and server are also logged in plain text.
+        /// </summary>
         Trace
     }
 

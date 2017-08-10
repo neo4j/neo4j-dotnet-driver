@@ -19,7 +19,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    public class PackStreamStruct
+    internal class PackStreamStruct
     {
         public PackStreamStruct(byte signature, IEnumerable<object> fields)
         {

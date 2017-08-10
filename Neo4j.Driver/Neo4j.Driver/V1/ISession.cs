@@ -49,6 +49,11 @@ namespace Neo4j.Driver.V1
         /// <returns>A new transaction.</returns>
         ITransaction BeginTransaction();
 
+        /// <summary>
+        /// This method is deprecated.
+        /// </summary>
+        /// <param name="bookmark"></param>
+        /// <returns></returns>
         [Obsolete("Pass in bookmark at session instead.")]
         ITransaction BeginTransaction(string bookmark);
 
@@ -101,6 +106,18 @@ namespace Neo4j.Driver.V1
         ///
         /// This method accepts a String representing a Cypher statement which will be 
         /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. 
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <returns>A stream of result values and associated metadata.</returns>
+        IStatementResult Run(string statement);
+
+        /// <summary>
+        /// 
+        /// Run a statement and return a result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
         /// statement multiple times. This method optionally accepts a set of parameters
         /// which will be injected into the query object statement by Neo4j. 
         ///
@@ -108,7 +125,7 @@ namespace Neo4j.Driver.V1
         /// <param name="statement">A Cypher statement.</param>
         /// <param name="parameters">Input parameters for the statement.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(string statement, IDictionary<string, object> parameters = null);
+        IStatementResult Run(string statement, IDictionary<string, object> parameters);
 
         /// <summary>
         ///
