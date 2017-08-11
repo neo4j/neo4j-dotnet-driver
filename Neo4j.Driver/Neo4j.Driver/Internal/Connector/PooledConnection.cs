@@ -47,6 +47,13 @@ namespace Neo4j.Driver.Internal.Connector
 
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;
 
+        public override void Destroy()
+        {
+            // stops the timmer
+            IdleTimer.Reset();
+            base.Destroy();
+        }
+
         public override void Close()
         {
             _releaseManager?.Release(this);

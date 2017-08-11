@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
 
@@ -200,11 +201,11 @@ namespace Neo4j.Driver.V1
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
             config = config ?? Config.DefaultConfig;
 
-            var parsedUri = uri.ParseUri(DefaultBoltPort);
+            var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
             var routingContext = uri.ParseRoutingContext();
 
-            var routingSettings = new RoutingSettings(routingContext);
-            var connectionSettings = new ConnectionSettings(parsedUri, authToken, config);
+            var routingSettings = new RoutingSettings(parsedUri, routingContext);
+            var connectionSettings = new ConnectionSettings(authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config);
             var bufferSettings = new BufferSettings(config);
 
@@ -215,10 +216,7 @@ namespace Neo4j.Driver.V1
             switch (parsedUri.Scheme.ToLower())
             {
                 case "bolt":
-                    if (routingContext.Count != 0)
-                    {
-                        throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
-                    }
+                    EnsureNoRoutingContext(uri, routingContext);
                     connectionProvider = new ConnectionPool(parsedUri, connectionSettings, connectionPoolSettings, bufferSettings, logger);
                     break;
                 case "bolt+routing":
@@ -229,6 +227,14 @@ namespace Neo4j.Driver.V1
             }
 
             return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger);
+        }
+
+        private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)
+        {
+            if (routingContext.Count != 0)
+            {
+                throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
+            }
         }
     }
 }

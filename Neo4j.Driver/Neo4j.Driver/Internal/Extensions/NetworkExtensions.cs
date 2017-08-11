@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public static Uri ParseUri(this Uri uri, int defaultPort)
+        public static Uri ParseBoltUri(this Uri uri, int defaultPort)
         {
             var port = defaultPort;
             if (uri.Port != -1)

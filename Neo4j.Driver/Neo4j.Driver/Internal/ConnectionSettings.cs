@@ -24,7 +24,6 @@ namespace Neo4j.Driver.Internal
     {
         internal const string DefaultUserAgent = "neo4j-dotnet/1.5";
 
-        public Uri InitialServerUri { get; }
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
         public EncryptionManager EncryptionManager { get; }
@@ -32,21 +31,19 @@ namespace Neo4j.Driver.Internal
         public bool SocketKeepAliveEnabled { get; }
         public bool Ipv6Enabled { get; }
 
-        public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
-        : this(uri, auth, new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger),
+        public ConnectionSettings(IAuthToken auth, Config config)
+        : this(auth, new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger),
               config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled)
         {
         }
 
-        private ConnectionSettings(Uri initialServerUri, IAuthToken authToken, 
+        private ConnectionSettings(IAuthToken authToken, 
             EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
             bool socketKeepAlive, bool ipv6Enabled, string userAgent = null)
         {
-            IfNull(initialServerUri, nameof(initialServerUri));
             IfNull(authToken, nameof(authToken));
             IfNull(encryptionManager, nameof(encryptionManager));
 
-            InitialServerUri = initialServerUri;
             AuthToken = authToken;
             EncryptionManager = encryptionManager;
             ConnectionTimeout = connectionTimeout;

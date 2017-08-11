@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal
         public int MaxConnectionPoolSize { get; }
         public TimeSpan ConnectionAcquisitionTimeout { get; }
         public TimeSpan ConnectionIdleTimeout { get; }
+        public TimeSpan MaxConnectionLifeTime { get; }
 
         public IStatisticsCollector StatisticsCollector { get; }
 
