@@ -21,33 +21,33 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultReaderBuilder : ResultBuilderBase
+    internal class ResultCursorBuilder : ResultBuilderBase
     {
         private Func<Task> _receiveOneFunc;
 
         private readonly IResultResourceHandler _resourceHandler;
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
-        public ResultReaderBuilder() : this(null, null, null, null, null)
+        public ResultCursorBuilder() : this(null, null, null, null, null)
         {
         }
 
-        public ResultReaderBuilder(Statement statement, Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler = null)
+        public ResultCursorBuilder(Statement statement, Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler = null)
             : base(statement, server)
         {
             SetReceiveOneFunc(receiveOneFunc);
             _resourceHandler = resourceHandler;
         }
 
-        public ResultReaderBuilder(string statement, IDictionary<string, object> parameters,
+        public ResultCursorBuilder(string statement, IDictionary<string, object> parameters,
             Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler= null)
             : this(new Statement(statement, parameters), receiveOneFunc, server, resourceHandler)
         {
         }
 
-        public IStatementResultReader PreBuild()
+        public IStatementResultCursor PreBuild()
         {
-            return new StatementResultReader(Keys, NextRecordAsync, SummaryAsync);
+            return new StatementResultCursor(Keys, NextRecordAsync, SummaryAsync);
         }
 
         /// <summary>

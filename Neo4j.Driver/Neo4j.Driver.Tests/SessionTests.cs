@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tests
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalalal");
 
-                mockConn.Verify(x => x.Run("lalalal", new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true), Times.Once);
+                mockConn.Verify(x => x.Run("lalalal", new Dictionary<string, object>(), It.IsAny<ResultCursorBuilder>(), true), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
             }
 

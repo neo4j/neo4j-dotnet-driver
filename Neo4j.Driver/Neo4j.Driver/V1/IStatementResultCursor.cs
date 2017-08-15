@@ -11,7 +11,7 @@ namespace Neo4j.Driver.V1
     /// The records in the result is lazily retrived and could only be visited once in a sequential order.
     /// </summary>
     /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
-    public interface IStatementResultReader
+    public interface IStatementResultCursor
     {
         /// <summary>
         /// Gets the keys in the result.
@@ -41,20 +41,21 @@ namespace Neo4j.Driver.V1
         /// Upon completion of the returned task, the result will be exhausted.
         /// </summary>
         /// <returns>A task returning the summary for running the statement.</returns>
-        /// <remarks>This method could be called multiple times. If no more record could be consumed then calling this method has the same effect of calling <see cref="IStatementResultReader.SummaryAsync()"/>.</remarks>
+        /// <remarks>This method could be called multiple times. If no more record could be consumed then calling this method has the same effect of calling <see cref="IStatementResultCursor.SummaryAsync()"/>.</remarks>
         Task<IResultSummary> ConsumeAsync();
 
         /// <summary>
         /// Asynchronously tries to advance to the next record.
         /// </summary>
         /// <returns>A task returning a <see cref="bool"/>. Task's result is true if there is any result to be consumed, false otherwise.</returns>
-        Task<bool> ReadAsync();
+        Task<bool> FetchAsync();
 
         /// <summary>
-        /// Returns the current record that has already been read via <see cref="IStatementResultReader.ReadAsync()"/>.
+        /// Returns the current record that has already been read via <see cref="FetchAsync"/>.
         /// </summary>
-        /// <returns>A <see cref="IRecord"/> holding the data sent by the server.</returns>
-        IRecord Current();
-
+        /// <value>A <see cref="IRecord"/> holding the data sent by the server.</value>
+        /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
+        /// if accessed without calling <see cref="FetchAsync"/> or <see cref="PeekAsync"/>.</remarks>
+        IRecord Current { get; }
     }
 }

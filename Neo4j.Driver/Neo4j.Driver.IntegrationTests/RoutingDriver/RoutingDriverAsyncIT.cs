@@ -66,10 +66,10 @@ namespace Neo4j.Driver.IntegrationTests
                 try
                 {
                     var result = await session.RunAsync("UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)");
-                    var read = await result.ReadAsync();
+                    var read = await result.FetchAsync();
                     read.Should().BeTrue();
-                    result.Current()[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
-                    read = await result.ReadAsync();
+                    result.Current[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
+                    read = await result.FetchAsync();
                     read.Should().BeFalse();
                 }
                 finally
@@ -105,8 +105,8 @@ namespace Neo4j.Driver.IntegrationTests
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var session = driver.Session();
             var result = await session.RunAsync("RETURN 1");
-            await result.ReadAsync();
-            result.Current()[0].ValueAs<int>().Should().Be(1);
+            await result.FetchAsync();
+            result.Current[0].ValueAs<int>().Should().Be(1);
 
             driver.Dispose();
             var error = await ExceptionAsync(() => session.RunAsync("RETURN 1"));
@@ -120,8 +120,8 @@ namespace Neo4j.Driver.IntegrationTests
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var session = driver.Session();
             var result = await session.RunAsync("RETURN 1");
-            await result.ReadAsync();
-            result.Current()[0].ValueAs<int>().Should().Be(1);
+            await result.FetchAsync();
+            result.Current[0].ValueAs<int>().Should().Be(1);
 
             driver.Dispose();
             await session.CloseAsync();
