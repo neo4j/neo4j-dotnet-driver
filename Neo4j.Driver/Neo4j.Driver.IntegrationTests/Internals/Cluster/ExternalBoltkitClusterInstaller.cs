@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using static Neo4j.Driver.IntegrationTests.Internals.WindowsPowershellRunner;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
@@ -29,30 +30,36 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         //private const int ReadReplicas = 2;
 
         private const string Password = "cluster";
+        private readonly IShellCommandRunner _commandRunner;
+
+        public ExternalBoltkitClusterInstaller()
+        {
+          _commandRunner = ShellCommandRunnerFactory.Create();
+        }
 
         public void Install()
         {
             if (Directory.Exists(ClusterDir))
             {
-                Debug($"Found and using cluster intalled at `{ClusterDir}`.");
+                _commandRunner.Debug($"Found and using cluster intalled at `{ClusterDir}`.");
                 // no need to redownload and change the password if already downloaded locally
                 return;
             }
 
-            RunCommand("neoctrl-cluster", new[] {
+            _commandRunner.RunCommand("neoctrl-cluster", new[] {
                 "install",
                 "--cores", $"{Cores}", //"--read-replicas", $"{ReadReplicas}", TODO
                 "--password", Password,
                 BoltkitHelper.ServerVersion(), ClusterDir});
-            Debug($"Installed cluster at `{ClusterDir}`.");
+            _commandRunner.Debug($"Installed cluster at `{ClusterDir}`.");
         }
 
         public ISet<ISingleInstance> Start()
         {
-            Debug("Starting cluster...");
+            _commandRunner.Debug("Starting cluster...");
             var ret = ParseClusterMember(
-                RunCommand("neoctrl-cluster", new[] { "start", ClusterDir }));
-            Debug("Cluster started.");
+                _commandRunner.RunCommand("neoctrl-cluster", new[] { "start", ClusterDir }));
+            _commandRunner.Debug("Cluster started.");
             return ret;
         }
 
@@ -82,16 +89,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Stop()
         {
-            Debug("Stopping cluster...");
-            RunCommand("neoctrl-cluster", new []{ "stop", ClusterDir });
-            Debug("Cluster stopped.");
+            _commandRunner.Debug("Stopping cluster...");
+            _commandRunner.RunCommand("neoctrl-cluster", new []{ "stop", ClusterDir });
+            _commandRunner.Debug("Cluster stopped.");
         }
 
         public void Kill()
         {
-            Debug("Killing cluster...");
-            RunCommand("neoctrl-cluster", new []{ "stop", "--kill", ClusterDir });
-            Debug("Cluster killed.");
+            _commandRunner.Debug("Killing cluster...");
+            _commandRunner.RunCommand("neoctrl-cluster", new []{ "stop", "--kill", ClusterDir });
+            _commandRunner.Debug("Cluster killed.");
         }
     }
 }

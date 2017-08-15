@@ -22,18 +22,13 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class WindowsPowershellRunner
+    public class WindowsPowershellRunner : ShellCommandRunner
     {
-        public static void Debug(string message)
-        {
-            Console.WriteLine(message);
-        }
+        private string _commandArgument;
+        private PowerShell _ps;
+        private IAsyncResult _beginResult;
 
-        /// <summary>
-        /// Run the given commands with the multiple command arguments in powershell
-        /// Return the powershell output back
-        /// </summary>
-        public static string[] RunCommand(string command, params string[] arguments)
+        public override string[] RunCommand(string command, params string[] arguments)
         {
             using (var powershell = PowerShell.Create())
             {
@@ -43,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     powershell.AddArgument(argument);
                 }
                 var results = powershell.Invoke();
-                
+
                 foreach (var result in results)
                 {
                     Debug(result.ToString());
@@ -57,12 +52,65 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
         }
 
-        public static string[] CollectionAsStringArray<T>(IEnumerable<T> lines)
+        public override void BeginRunCommand(string command, params string[] arguments)
+        {
+            try
+            {
+                _commandArgument = ShellCommandArgument(command, arguments);
+                _ps = PowerShell.Create();
+                _ps.AddCommand(command);
+                foreach (var argument in arguments)
+                {
+                    _ps.AddArgument(argument);
+                }
+                _beginResult = _ps.BeginInvoke();
+            }
+            catch(Exception)
+            {
+                CleanResources();
+                throw;
+            }
+        }
+
+        public override string[] EndRunCommand()
+        {
+            try
+            {
+                var endResult = _ps.EndInvoke(_beginResult);
+
+                foreach (var result in endResult)
+                {
+                    Debug(result.ToString());
+                }
+                if (_ps.HadErrors)
+                {
+                    var errorMessage = CollectAsString(_ps.Streams.Error);
+                    throw new InvalidOperationException(
+                        $"Failed to execute `{_commandArgument}` due to error:{Environment.NewLine}{errorMessage}");
+                }
+                return CollectionAsStringArray(endResult);
+            }
+            finally
+            {
+                CleanResources();
+            }
+        }
+
+        private void CleanResources()
+        {
+            _ps?.Dispose();
+            _ps = null;
+            _commandArgument = null;
+            _beginResult = null;
+
+        }
+
+        private static string[] CollectionAsStringArray<T>(IEnumerable<T> lines)
         {
             return lines.Select(error => error.ToString()).ToArray();
         }
 
-        public static string CollectAsString<T>(IEnumerable<T> lines)
+        private static string CollectAsString<T>(IEnumerable<T> lines)
         {
             return string.Join(Environment.NewLine, CollectionAsStringArray(lines));
         }

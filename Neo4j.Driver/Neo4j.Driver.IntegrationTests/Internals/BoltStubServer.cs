@@ -17,23 +17,31 @@
 
 using System;
 using System.IO;
-using System.Management.Automation;
+using System.Net.Sockets;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
-using static Neo4j.Driver.IntegrationTests.Internals.WindowsPowershellRunner;
+using Path = System.IO.Path;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
     internal class BoltStubServer : IDisposable
     {
-        public static readonly Config Config = new Config {EncryptionLevel = EncryptionLevel.None};
+        public static readonly Config Config = new Config
+        {
+            EncryptionLevel = EncryptionLevel.None,
+        };
         private static readonly string ScriptSourcePath = new DirectoryInfo("../../Resources").FullName;
 
-        private PowerShell _ps;
-        private IAsyncResult _result;
+        private readonly IShellCommandRunner _commandRunner;
+        private readonly int _port;
 
         private BoltStubServer(string script, int port)
         {
-            RunCommandAsyc("boltstub", port.ToString(), script);
+            _commandRunner = ShellCommandRunnerFactory.Create();
+            _commandRunner.BeginRunCommand("boltstub", port.ToString(), script);
+            _port = port;
+            WaitForServer(_port);
         }
 
         public static BoltStubServer Start(string script, int port)
@@ -43,34 +51,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Dispose()
         {
-            try
-            {
-                var results = _ps.EndInvoke(_result);
-                if (!_ps.HadErrors)
-                {
-                    return;
-                }
-                foreach (var result in results)
-                {
-                    Debug(result.ToString());
-                }
-                throw new InvalidOperationException(CollectAsString(results));
-            }
-            finally
-            {
-                _ps?.Dispose();
-            }
-        }
-
-        private void RunCommandAsyc(string command, params string[] arguments)
-        {
-            _ps = PowerShell.Create();
-            _ps.AddCommand(command);
-            foreach (var argument in arguments)
-            {
-                _ps.AddArgument(argument);
-            }
-            _result = _ps.BeginInvoke();
+            _commandRunner.EndRunCommand();
+            WaitForServer(_port, ServerStatus.Offline);
         }
 
         private static string Source(string script)
@@ -81,6 +63,44 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 throw new ArgumentException($"Cannot locate script file `{scriptFilePath}`", scriptFilePath);
             }
             return scriptFilePath;
+        }
+
+        private enum ServerStatus
+        {
+            Online, Offline
+        }
+
+        private static void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
+        {
+            var retryAttempts = 20;
+            for (var i = 0; i < retryAttempts; i++)
+            {
+                ServerStatus currentStatus;
+                try
+                {
+                    var tcpClient = new TcpClient();
+                    tcpClient.Connect("127.0.0.1", port);
+                    if (tcpClient.Connected)
+                    {
+                        currentStatus = ServerStatus.Online;
+                    }
+                    else
+                    {
+                        currentStatus = ServerStatus.Offline;
+                    }
+                }
+                catch (Exception)
+                {
+                    currentStatus = ServerStatus.Offline;
+                }
+
+                if (currentStatus == status)
+                {
+                    return;
+                }
+                // otherwise wait and retry
+                Task.Delay(300).Wait();
+            }
         }
     }
 }

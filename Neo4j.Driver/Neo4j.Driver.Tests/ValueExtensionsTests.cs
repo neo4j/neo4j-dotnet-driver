@@ -205,7 +205,6 @@ namespace Neo4j.Driver.Tests
                 object value = new List<object> { "string", 2, true, "lala" };
                 var ex = Record.Exception(() => value.ValueAs<int>());
                 ex.Should().BeOfType<InvalidCastException>();
-                ex.Message.Should().Be("Unable to cast object of type 'System.Collections.Generic.List`1[System.Object]' to type 'System.IConvertible'.");
             }
         }
 

@@ -34,48 +34,55 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private const string HttpUri = "http://localhost:7474";
         private const string BoltUri = "bolt://localhost:7687";
 
+        private readonly IShellCommandRunner _commandRunner;
+
+        public ExternalBoltkitInstaller()
+        {
+            _commandRunner = ShellCommandRunnerFactory.Create();
+        }
+
         public void Install()
         {
             if (Directory.Exists(HomeDir))
             {
-                Debug($"Found and using server intalled at `{HomeDir}`.");
+                _commandRunner.Debug($"Found and using server intalled at `{HomeDir}`.");
             }
             else
             {
                 var args = new List<string>();
                 args.AddRange(BoltkitHelper.BoltkitArgs.Split(null));
                 args.Add(BoltkitHelper.TargetDir);
-                var tempHomeDir = RunCommand("neoctrl-install", args.ToArray()).Single();
-                Debug($"Downloaded server at `{tempHomeDir}`, now renaming to `{HomeDir}`.");
+                var tempHomeDir = _commandRunner.RunCommand("neoctrl-install", args.ToArray()).Single();
+                _commandRunner.Debug($"Downloaded server at `{tempHomeDir}`, now renaming to `{HomeDir}`.");
 
                 Directory.Move(tempHomeDir, HomeDir);
-                Debug($"Installed server at `{HomeDir}`.");
+                _commandRunner.Debug($"Installed server at `{HomeDir}`.");
             }
 
-            RunCommand("neoctrl-create-user", HomeDir, "neo4j", Password);
+            _commandRunner.RunCommand("neoctrl-create-user", HomeDir, "neo4j", Password);
             UpdateSettings(new Dictionary<string, string> { {ListenAddr, Ipv6EnabledAddr} });
         }
 
         public ISet<ISingleInstance> Start()
         {
-            Debug("Starting server...");
-            RunCommand("neoctrl-start", HomeDir);
-            Debug("Server started.");
+            _commandRunner.Debug("Starting server...");
+            _commandRunner.RunCommand("neoctrl-start", HomeDir);
+            _commandRunner.Debug("Server started.");
             return new HashSet<ISingleInstance> { new SingleInstance(HttpUri, BoltUri, HomeDir, Password) };
         }
 
         public void Stop()
         {
-            Debug("Stopping server...");
-            RunCommand("neoctrl-stop", HomeDir);
-            Debug("Server stopped.");
+            _commandRunner.Debug("Stopping server...");
+            _commandRunner.RunCommand("neoctrl-stop", HomeDir);
+            _commandRunner.Debug("Server stopped.");
         }
 
         public void Kill()
         {
-            Debug("Killing server...");
-            RunCommand("neoctrl-stop", "-k", HomeDir);
-            Debug("Server killed.");
+            _commandRunner.Debug("Killing server...");
+            _commandRunner.RunCommand("neoctrl-stop", "-k", HomeDir);
+            _commandRunner.Debug("Server killed.");
         }
 
         public void EnsureRunningWithSettings(IDictionary<string, string> keyValuePair)
@@ -87,7 +94,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void UpdateSettings(IDictionary<string, string> keyValuePair)
         {
-            Debug($"Updating server config to {keyValuePair.ValueToString()}");
+            _commandRunner.Debug($"Updating server config to {keyValuePair.ValueToString()}");
             Neo4jSettingsHelper.UpdateSettings(HomeDir, keyValuePair);
         }
 
@@ -101,7 +108,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             if (!File.Exists(destProcedureJarPath))
             {
                 Stop();
-                Debug($"Adding procedure {jarName}");
+                _commandRunner.Debug($"Adding procedure {jarName}");
                 File.Copy(sourceProcedureJarPath, destProcedureJarPath);
                 Start();
             }
