@@ -196,7 +196,7 @@ namespace Neo4j.Driver.Tests
 
                 await tx.RunAsync("lalala");
 
-                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true), Times.Once);
+                mockConn.Verify(x => x.Run("lalala", new Dictionary<string, object>(), It.IsAny<ResultCursorBuilder>(), true), Times.Once);
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
 
@@ -208,7 +208,7 @@ namespace Neo4j.Driver.Tests
 
                 try
                 {
-                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
+                    mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultCursorBuilder>(), true))
                         .Throws<Neo4jException>();
                     await tx.RunAsync("lalala");
                 }
@@ -227,7 +227,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
 
-                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultReaderBuilder>(), true))
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultCursorBuilder>(), true))
                     .Throws<Neo4jException>();
 
                 var error = await Xunit.Record.ExceptionAsync(() => tx.RunAsync("ttt"));

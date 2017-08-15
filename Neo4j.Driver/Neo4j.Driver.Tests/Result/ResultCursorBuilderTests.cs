@@ -25,26 +25,26 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class ResultReaderBuilderTests
+    public class ResultCursorBuilderTests
     {
-        private static ResultReaderBuilder GenerateBuilder(IDictionary<string, object> meta = null)
+        private static ResultCursorBuilder GenerateBuilder(IDictionary<string, object> meta = null)
         {
-            var builder = new ResultReaderBuilder();
+            var builder = new ResultCursorBuilder();
             builder.CollectFields(meta ?? new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
             return builder;
         }
 
-        private static Task AssertGetExpectResults(IStatementResultReader reader, int numberExpected, List<object> exspectedRecordsValues = null)
+        private static Task AssertGetExpectResults(IStatementResultCursor cursor, int numberExpected, List<object> exspectedRecordsValues = null)
         {
             int count = 0;
             var t = Task.Factory.StartNew(async () =>
             {
                 // ReSharper disable once LoopCanBeConvertedToQuery
-                while (await reader.ReadAsync())
+                while (await cursor.FetchAsync())
                 {
                     if (exspectedRecordsValues != null)
                     {
-                        reader.Current().Values.First().Value.Should().Be(exspectedRecordsValues[count]);
+                        cursor.Current.Values.First().Value.Should().Be(exspectedRecordsValues[count]);
                     }
 
                     count++;
