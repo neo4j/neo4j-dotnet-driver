@@ -131,7 +131,7 @@
     <Compile Include="Internals\StandAlone\StandAlone.cs" />
     <Compile Include="Internals\IntegrationTestFixture.cs" />
     <Compile Include="Internals\StandAlone\Neo4jSettingsHelper.cs" />
-    <Compile Include="Internals\UnixShellCommandRunner.cs" />
+    <Compile Include="Internals\ProcessBasedShellCommandRunner.cs" />
     <Compile Include="Internals\WindowsPowershellRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RoutingDriver\RoutingDriverAsyncIT.cs" />

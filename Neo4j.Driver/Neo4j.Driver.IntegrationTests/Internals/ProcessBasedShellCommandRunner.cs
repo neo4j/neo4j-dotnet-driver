@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class UnixShellCommandRunner : ShellCommandRunner
+    public class ProcessBasedShellCommandRunner : ShellCommandRunner
     {
         private string _commandArgument;
         private List<string> _output;

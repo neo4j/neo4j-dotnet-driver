@@ -22,8 +22,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
         void Debug(string message);
         /// <summary>
-        /// Run the given commands with the multiple command arguments in powershell
-        /// Return the powershell output back
+        /// Run the given commands with the multiple command arguments in shell
+        /// Return the shell output back
         /// </summary>
         string[] RunCommand(string command, params string[] arguments);
         void BeginRunCommand(string command, params string[] arguments);
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
             else
             {
-                return new UnixShellCommandRunner();
+                return new ProcessBasedShellCommandRunner();
             }
         }
     }
