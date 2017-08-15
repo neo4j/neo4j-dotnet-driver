@@ -29,6 +29,9 @@ namespace Neo4j.Driver.Internal
         private ILogger _logger;
         public Uri Uri { get; }
 
+        private const AccessMode DefaultAccessMode = AccessMode.Write;
+        private const string NullBookmark = null;
+
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
@@ -39,7 +42,23 @@ namespace Neo4j.Driver.Internal
             _retryLogic = retryLogic;
         }
 
-        public ISession Session(AccessMode defaultMode=AccessMode.Write, string bookmark = null)
+        public ISession Session()
+        {
+            return Session(DefaultAccessMode);
+        }
+
+        public ISession Session(AccessMode defaultMode)
+        {
+            return Session(defaultMode, NullBookmark);
+        }
+
+        public ISession Session(string bookmark)
+        {
+            return Session(DefaultAccessMode, bookmark);
+        }
+
+
+        public ISession Session(AccessMode defaultMode, string bookmark)
         {
             return Session(defaultMode, Bookmark.From(bookmark, _logger));
         }

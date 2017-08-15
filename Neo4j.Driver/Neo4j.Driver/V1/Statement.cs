@@ -41,16 +41,28 @@ namespace Neo4j.Driver.V1
         public IDictionary<string, object> Parameters { get; }
 
         /// <summary>
+        /// Create a statemete with no statement parameters.
+        /// </summary>
+        /// <param name="text">The statement's text</param>
+        public Statement(string text): this(text, null)
+        {
+        }
+
+        /// <summary>
         /// Create a statemete
         /// </summary>
         /// <param name="text">The statement's text</param>
         /// <param name="parameters">The statement's parameters, whoes values should not be changed while the statement is used in a session/transaction.</param>
-        public Statement(string text, IDictionary<string, object> parameters = null)
+        public Statement(string text, IDictionary<string, object> parameters)
         {
             Text = text;
             Parameters = parameters ?? NoParameter;
         }
 
+        /// <summary>
+        /// Print the statement.
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"`{Text}`, {Parameters.ToContentString()}";

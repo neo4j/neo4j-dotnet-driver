@@ -94,9 +94,23 @@ namespace Neo4j.Driver.V1
         ///
         /// </summary>
         /// <param name="statement">A Cypher statement.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IStatementResultReader> RunAsync(string statement);
+
+        /// <summary>
+        /// 
+        /// Asynchronously run a statement and return a task of result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
         /// <param name="parameters">Input parameters for the statement.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters = null);
+        Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters);
 
         /// <summary>
         ///

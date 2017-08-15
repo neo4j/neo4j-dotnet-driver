@@ -15,10 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
@@ -33,20 +30,30 @@ namespace Neo4j.Driver.Internal
         public abstract IStatementResult Run(Statement statement);
         public abstract Task<IStatementResultCursor> RunAsync(Statement statement);
 
-        public IStatementResult Run(string statement, IDictionary<string, object> parameters = null)
+        public IStatementResult Run(string statement)
+        {
+            return Run(new Statement(statement));
+        }
+
+        public Task<IStatementResultReader> RunAsync(string statement)
+        {
+            return RunAsync(new Statement(statement));
+        }
+
+        public IStatementResult Run(string statement, IDictionary<string, object> parameters)
         {
             return Run(new Statement(statement, parameters));
+        }
+
+        public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters)
+        {
+            return RunAsync(new Statement(statement, parameters));
         }
 
         public IStatementResult Run(string statement, object parameters)
         {
             var cypherStatement = new Statement(statement, parameters.ToDictionary());
             return Run(cypherStatement);
-        }
-
-        public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters = null)
-        {
-            return RunAsync(new Statement(statement, parameters));
         }
 
         public Task<IStatementResultCursor> RunAsync(string statement, object parameters)

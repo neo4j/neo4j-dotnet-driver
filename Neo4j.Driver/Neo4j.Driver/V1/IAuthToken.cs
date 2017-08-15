@@ -54,12 +54,26 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="username">This is the "principal", identifying who this token represents.</param>
         /// <param name="password">This is the "credential", proving the identity of the user.</param>
+        /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
+        /// <remarks>
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        /// </remarks>
+        public static IAuthToken Basic(string username, string password)
+        {
+            return Basic(username, password, null);
+        }
+
+        /// <summary>
+        ///     The basic authentication scheme, using a username and a password.
+        /// </summary>
+        /// <param name="username">This is the "principal", identifying who this token represents.</param>
+        /// <param name="password">This is the "credential", proving the identity of the user.</param>
         /// <param name="realm">This is the "realm", specifies the authentication provider. If none is given, default to be decided by the server. </param>
         /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
         /// <remarks>
         ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
         /// </remarks>
-        public static IAuthToken Basic(string username, string password, string realm = null)
+        public static IAuthToken Basic(string username, string password, string realm)
         {
             var token = new Dictionary<string, object>
             {
@@ -87,7 +101,7 @@ namespace Neo4j.Driver.V1
             var token = new Dictionary<string, object>
             {
                 {"scheme", "kerberos"},
-                {"principal", ""},//This empty string is required for backwards compatibility.
+                {"principal", ""}, //This empty string is required for backwards compatibility.
                 {"credentials", base64EncodedTicket}
             };
             return new AuthToken(token);
@@ -104,9 +118,28 @@ namespace Neo4j.Driver.V1
         /// <param name="credentials">This is credentials authenticating the principal.</param>
         /// <param name="realm">This is the "realm", specifies the authentication provider.</param>
         /// <param name="scheme">This is the authentication scheme, specifying what kind of authentication that should be used.</param>
+        /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
+        public static IAuthToken Custom(string principal, string credentials, string realm, string scheme)
+        {
+            return Custom(principal, credentials, realm, scheme, null);
+        }
+
+
+        /// <summary>
+        ///     Gets an authentication token that can be used to connect to Neo4j instances with auth disabled.
+        ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
+        /// </summary>
+        /// <remarks>
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        /// </remarks>
+        /// <param name="principal">This is used to identify who this token represents.</param>
+        /// <param name="credentials">This is credentials authenticating the principal.</param>
+        /// <param name="realm">This is the "realm", specifies the authentication provider.</param>
+        /// <param name="scheme">This is the authentication scheme, specifying what kind of authentication that should be used.</param>
         /// <param name="parameters">Extra parameters to be sent along the authentication provider. If none is given, then no parameter will be added extral.</param>
         /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
-        public static IAuthToken Custom(string principal, string credentials, string realm, string scheme, Dictionary<string, object> parameters = null)
+        public static IAuthToken Custom(string principal, string credentials, string realm, string scheme,
+            Dictionary<string, object> parameters)
         {
             var token = new Dictionary<string, object>
             {

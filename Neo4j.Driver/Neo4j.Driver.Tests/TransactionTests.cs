@@ -166,8 +166,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
-                   
-
+           
                 mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
 
