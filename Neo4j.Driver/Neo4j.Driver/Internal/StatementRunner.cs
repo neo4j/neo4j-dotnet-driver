@@ -28,8 +28,7 @@ namespace Neo4j.Driver.Internal
         }
 
         public abstract IStatementResult Run(Statement statement);
-
-        public abstract Task<IStatementResultReader> RunAsync(Statement statement);
+        public abstract Task<IStatementResultCursor> RunAsync(Statement statement);
 
         public IStatementResult Run(string statement)
         {
@@ -46,7 +45,7 @@ namespace Neo4j.Driver.Internal
             return Run(new Statement(statement, parameters));
         }
 
-        public Task<IStatementResultReader> RunAsync(string statement, IDictionary<string, object> parameters)
+        public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters)
         {
             return RunAsync(new Statement(statement, parameters));
         }
@@ -57,7 +56,7 @@ namespace Neo4j.Driver.Internal
             return Run(cypherStatement);
         }
 
-        public Task<IStatementResultReader> RunAsync(string statement, object parameters)
+        public Task<IStatementResultCursor> RunAsync(string statement, object parameters)
         {
             return RunAsync(new Statement(statement, parameters.ToDictionary()));
         }
