@@ -69,14 +69,14 @@ namespace Neo4j.Driver.Internal
             });
         }
 
-        public override Task<IStatementResultReader> RunAsync(Statement statement)
+        public override Task<IStatementResultCursor> RunAsync(Statement statement)
         {
             return TryExecuteAsync(async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
-                var resultBuilder = new ResultReaderBuilder(statement.Text, statement.Parameters,
+                var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
                     () => _connection.ReceiveOneAsync(), _connection.Server, this);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
 
