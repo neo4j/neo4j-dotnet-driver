@@ -6,7 +6,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class StatementResultReader: IStatementResultReader
+    internal class StatementResultCursor: IStatementResultCursor
     {
         private readonly List<string> _keys;
         private readonly Func<Task<IRecord>> _nextRecordFunc;
@@ -18,7 +18,7 @@ namespace Neo4j.Driver.Internal.Result
 
         private Task<IResultSummary> _summary;
 
-        public StatementResultReader(List<string> keys, Func<Task<IRecord>> nextRecordFunc, Func<Task<IResultSummary>> summaryFunc = null)
+        public StatementResultCursor(List<string> keys, Func<Task<IRecord>> nextRecordFunc, Func<Task<IResultSummary>> summaryFunc = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
             Throw.ArgumentNullException.IfNull(nextRecordFunc, nameof(nextRecordFunc));
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Internal.Result
             return await SummaryAsync().ConfigureAwait(false);
         }
 
-        public async Task<bool> ReadAsync()
+        public async Task<bool> FetchAsync()
         {
             if (_peeked != null)
             {
@@ -106,9 +106,17 @@ namespace Neo4j.Driver.Internal.Result
             return _current != null;
         }
 
-        public IRecord Current()
+        public IRecord Current
         {
-            return _current;
+            get
+            {
+                if (!_atEnd && (_current == null && _peeked == null))
+                {
+                    throw new InvalidOperationException("Tried to access Current without calling FetchAsync or PeekAsync.");
+                }
+
+                return _current;
+            }
         }
     }
 }

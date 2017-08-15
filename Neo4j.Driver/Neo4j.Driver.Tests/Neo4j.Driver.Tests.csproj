@@ -113,8 +113,8 @@
     <Compile Include="IO\PackStreamWriterTests.cs" />
     <Compile Include="IO\WriterTests.cs" />
     <Compile Include="Result\SummaryCollectorTests.cs" />
-    <Compile Include="Result\ResultReaderBuilderTests.cs" />
-    <Compile Include="Result\StatementResultReaderTests.cs" />
+    <Compile Include="Result\ResultCursorBuilderTests.cs" />
+    <Compile Include="Result\StatementResultCursorTests.cs" />
     <Compile Include="Routing\LeastConnectedLoadBalancingStrategyTests.cs" />
     <Compile Include="Routing\RoundRobinLoadBalancingStrategyTests.cs" />
     <Compile Include="Routing\RoundRobinArrayIndexTests.cs" />

@@ -96,7 +96,7 @@ namespace Neo4j.Driver.V1
         /// <param name="statement">A Cypher statement.</param>
         /// <param name="parameters">Input parameters for the statement.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultReader> RunAsync(string statement, IDictionary<string, object> parameters = null);
+        Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters = null);
 
         /// <summary>
         ///
@@ -105,7 +105,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultReader> RunAsync(Statement statement);
+        Task<IStatementResultCursor> RunAsync(Statement statement);
 
         /// <summary>
         /// Asynchronously execute a statement and return a task of result stream.
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.V1
         /// <param name="statement">A Cypher statement.</param>
         /// <param name="parameters">A parameter dictonary which is made of prop.Name=prop.Value pairs would be created.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultReader> RunAsync(string statement, object parameters);
+        Task<IStatementResultCursor> RunAsync(string statement, object parameters);
 
     }
 
