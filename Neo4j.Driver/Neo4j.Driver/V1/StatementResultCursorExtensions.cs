@@ -25,7 +25,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Extension methods for <see cref="IStatementResultCursor"/>
     /// </summary>
-    public static class StatementResultReaderExtensions
+    public static class StatementResultCursorExtensions
     {
         /// <summary>
         /// Return the only record in the result stream.

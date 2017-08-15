@@ -24,7 +24,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class StatementResultReaderExtensionsTests
+    public class StatementResultCursorExtensionsTests
     {
         public class SingleAsyncMethod
         {
