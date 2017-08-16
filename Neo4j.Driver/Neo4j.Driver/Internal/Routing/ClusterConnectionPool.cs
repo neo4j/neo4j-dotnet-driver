@@ -32,6 +32,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private readonly ConnectionSettings _connectionSettings;
         private readonly ConnectionPoolSettings _poolSettings;
+        private readonly BufferSettings _bufferSettings;
 
         // for test only
         private readonly IConnectionPool _fakePool;
@@ -41,12 +42,14 @@ namespace Neo4j.Driver.Internal.Routing
         public ClusterConnectionPool(
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
+            BufferSettings bufferSettings,
             IEnumerable<Uri> initUris, ILogger logger
         )
             : base(logger)
         {
             _connectionSettings = connectionSettings;
             _poolSettings = poolSettings;
+            _bufferSettings = bufferSettings;
             Add(initUris);
         }
 
@@ -55,9 +58,10 @@ namespace Neo4j.Driver.Internal.Routing
             ConcurrentDictionary<Uri, IConnectionPool> clusterPool = null,
             ConnectionSettings connSettings = null,
             ConnectionPoolSettings poolSettings = null,
+            BufferSettings bufferSettings = null,
             ILogger logger = null
         ) :
-            this(connSettings, poolSettings, Enumerable.Empty<Uri>(), logger)
+            this(connSettings, poolSettings, bufferSettings, Enumerable.Empty<Uri>(), logger)
         {
             _fakePool = connectionPool;
             _pools = clusterPool;
@@ -65,7 +69,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
-            return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, Logger);
+            return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, _bufferSettings, Logger);
         }
 
         public IConnection Acquire(Uri uri)

@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver.V1
 {
@@ -101,6 +102,11 @@ namespace Neo4j.Driver.V1
         /// <br></br>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
+        /// <br></br>
+        /// <item><see cref="DefaultReadBufferSize"/> : <c>32K</c> </item>
+        /// <item><see cref="MaxReadBufferSize"/> : <c>128K</c> </item>
+        /// <item><see cref="DefaultWriteBufferSize"/> : <c>16K</c> </item>
+        /// <item><see cref="MaxWriteBufferSize"/> : <c>64K</c> </item>
         /// </list>
         /// </remarks>
         public static Config DefaultConfig { get; }
@@ -200,6 +206,30 @@ namespace Neo4j.Driver.V1
         /// </summary>
         internal IStatisticsCollector DriverStatisticsCollector { get; set; }
 
+        /// <summary>
+        /// Gets or sets the default read buffer size which the driver allocates for its internal buffers.
+        /// </summary>
+        public int DefaultReadBufferSize { get; set; } = Constants.DefaultReadBufferSize;
+
+        /// <summary>
+        /// Gets or sets the size when internal read buffers reach, will be released for garbage collection. 
+        /// If reading large records (nodes, relationships or paths) and experiencing too much garbage collection consider increasing this size
+        /// to a reasonable amount depending on your data.
+        /// </summary>
+        public int MaxReadBufferSize { get; set; } = Constants.MaxReadBufferSize;
+
+        /// <summary>
+        /// Gets or sets the default write buffer size which the driver allocates for its internal buffers.
+        /// </summary>
+        public int DefaultWriteBufferSize { get; set; } = Constants.DefaultWriteBufferSize;
+
+        /// <summary>
+        /// Gets or sets the size when internal write buffers reach, will be released for garbage collection. 
+        /// If writing large values and experiencing too much garbage collection consider increasing this size
+        /// to a reasonable amount depending on your data.
+        /// </summary>
+        public int MaxWriteBufferSize { get; set; } = Constants.MaxWriteBufferSize;
+
         private class ConfigBuilder : IConfigBuilder
         {
             private readonly Config _config;
@@ -288,6 +318,30 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithLoadBalancingStrategy(LoadBalancingStrategy loadBalancingStrategy)
             {
                 _config.LoadBalancingStrategy = loadBalancingStrategy;
+                return this;
+            }
+
+            public IConfigBuilder WithDefaultReadBufferSize(int defaultReadBufferSize)
+            {
+                _config.DefaultReadBufferSize = defaultReadBufferSize;
+                return this;
+            }
+
+            public IConfigBuilder WithMaxReadBufferSize(int maxReadBufferSize)
+            {
+                _config.MaxReadBufferSize = maxReadBufferSize;
+                return this;
+            }
+
+            public IConfigBuilder WithDefaultWriteBufferSize(int defaultWriteBufferSize)
+            {
+                _config.DefaultWriteBufferSize = defaultWriteBufferSize;
+                return this;
+            }
+
+            public IConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize)
+            {
+                _config.MaxWriteBufferSize = maxWriteBufferSize;
                 return this;
             }
         }
@@ -418,5 +472,37 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>We are experimenting with different strategies. This could be removed in the next minor version.</remarks>
         IConfigBuilder WithLoadBalancingStrategy(LoadBalancingStrategy loadBalancingStrategy);
+
+        /// <summary>
+        /// Specify the default read buffer size which the driver allocates for its internal buffers.
+        /// </summary>
+        /// <param name="defaultReadBufferSize">the buffer size</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        IConfigBuilder WithDefaultReadBufferSize(int defaultReadBufferSize);
+
+        /// <summary>
+        /// Specify the size when internal read buffers reach, will be released for garbage collection. 
+        /// </summary>
+        /// <param name="maxReadBufferSize">the buffer size</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>If reading large records (nodes, relationships or paths) and experiencing too much garbage collection 
+        /// consider increasing this size to a reasonable amount depending on your data.</remarks>
+        IConfigBuilder WithMaxReadBufferSize(int maxReadBufferSize);
+
+        /// <summary>
+        /// Specify the default write buffer size which the driver allocates for its internal buffers.
+        /// </summary>
+        /// <param name="defaultWriteBufferSize">the buffer size</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        IConfigBuilder WithDefaultWriteBufferSize(int defaultWriteBufferSize);
+
+        /// <summary>
+        /// Specify the size when internal write buffers reach, will be released for garbage collection. 
+        /// </summary>
+        /// <param name="maxWriteBufferSize">the buffer size</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>If writing large values and experiencing too much garbage collection 
+        /// consider increasing this size to a reasonable amount depending on your data.</remarks>
+        IConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize);
     }
 }

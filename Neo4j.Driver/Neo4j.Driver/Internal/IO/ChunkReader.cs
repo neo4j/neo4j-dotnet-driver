@@ -26,13 +26,12 @@ namespace Neo4j.Driver.Internal.IO
     internal class ChunkReader: IChunkReader
     {
         private readonly Stream _downStream;
-        private readonly MemoryStream _chunkStream;
         private readonly ILogger _logger;
-        private long _lastWritePosition = 0;
-        private long _lastReadPosition = 0;
 
         private readonly byte[] _chunkSizeBuffer = new byte[2];
-        private readonly byte[] _buffer = new byte[8 * 1024];
+        private readonly byte[] _buffer = new byte[Constants.ChunkBufferSize];
+        private int _lastWritePosition = 0;
+        private int _lastReadPosition = 0;
         private int _currentChunkSize = -1;
 
         public ChunkReader(Stream downStream)
@@ -41,21 +40,12 @@ namespace Neo4j.Driver.Internal.IO
             
         }
 
-        public ChunkReader(Stream downStream, ILogger logger)
-            : this(downStream, new MemoryStream(), logger)
-        {
-            
-        }
-
-        internal ChunkReader(Stream downStream, MemoryStream chunkStream, ILogger logger)
+        internal ChunkReader(Stream downStream, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream));
 
-            Throw.ArgumentNullException.IfNull(chunkStream, nameof(chunkStream));
-
             _downStream = downStream;
-            _chunkStream = chunkStream;
             _logger = logger;
         }
 
@@ -63,11 +53,13 @@ namespace Neo4j.Driver.Internal.IO
         {
             while (true)
             {
+                // First try to retrieve the chunk size.
                 if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
                 {
-                    ReadFromChunkStream(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
+                    ReadFromBuffer(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
 
                     _currentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
+                    // If this is the zero-length message boundary chunk, cleanup and return true.
                     if (_currentChunkSize == 0)
                     {
                         Cleanup();
@@ -76,11 +68,26 @@ namespace Neo4j.Driver.Internal.IO
                     }
                 }
 
-                if (_currentChunkSize != -1 && HasBytesAvailable(_currentChunkSize + _chunkSizeBuffer.Length))
+                // As long as we know the chunk size and some bytes available in the buffers, write those
+                // to the target stream.
+                if (_currentChunkSize != -1 && HasBytesAvailable())
                 {
-                    CopyToFromChunkStream(targetStream, _currentChunkSize);
+                    var count = Math.Min(_currentChunkSize, _lastWritePosition - _lastReadPosition);
 
-                    _currentChunkSize = -1;
+                    CopyFromBuffer(targetStream, count);
+
+                    _currentChunkSize -= count;
+
+                    if (_currentChunkSize == 0)
+                    {
+                        Cleanup();
+                    }
+
+                    // Just reset the position trackers to not to run over our fixed size buffer.
+                    if (_lastReadPosition == _lastWritePosition)
+                    {
+                        ResetPositions();
+                    }
                 }
                 else
                 {
@@ -88,35 +95,66 @@ namespace Neo4j.Driver.Internal.IO
                 }
             }
 
+            // Otherwise we need some more data.
             return false;
         } 
 
-        public void ReadNextMessage(Stream targetStream)
+        public int ReadNextMessages(Stream targetStream)
         {
-            while (true)
-            {
-                // Read next available bytes from the down stream and write it to our chunk stream.
-                var read = _downStream.Read(_buffer, 0, _buffer.Length);
-                WriteToChunkStream(_buffer, 0, read);
+            var messages = 0;
 
-                if (TryReadFromBuffer(targetStream))
+            var previousPosition = targetStream.Position;
+            try
+            {
+                targetStream.Position = targetStream.Length;
+
+                while (true)
                 {
-                    break;
+                    // Read next available bytes from the down stream and process it.
+                    var read = _downStream.Read(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition);
+
+                    _logger?.Trace("S: ", _buffer, _lastWritePosition, read);
+
+                    _lastWritePosition += read;
+
+                    // Can we read a whole message from what we have?
+                    if (TryReadFromBuffer(targetStream))
+                    {
+                        messages += 1;
+
+                        break;
+                    }
+                }
+
+                // Try to consume more messages from the left-over data in the buffer
+                var readFromBuffer = TryReadFromBuffer(targetStream);
+                while (readFromBuffer)
+                {
+                    messages += 1;
+
+                    readFromBuffer = TryReadFromBuffer(targetStream);
                 }
             }
-
-            // Try to consume left-over data in the buffer
-            var readFromBuffer = TryReadFromBuffer(targetStream);
-            while (readFromBuffer)
+            finally
             {
-                readFromBuffer = TryReadFromBuffer(targetStream);
+                targetStream.Position = previousPosition;
             }
+
+            return messages;
         }
 
         
-        public Task ReadNextMessageAsync(Stream targetStream)
+        public Task<int> ReadNextMessagesAsync(Stream targetStream)
         {
-            var taskCompletionSource = new TaskCompletionSource<object>();
+            var taskCompletionSource = new TaskCompletionSource<int>();
+
+            // Track and manage target stream's positions.
+            var previousPosition = targetStream.Position;
+            taskCompletionSource.Task.ContinueWith(t =>
+            {
+                targetStream.Position = previousPosition;
+            }, TaskContinuationOptions.ExecuteSynchronously);
+            targetStream.Position = targetStream.Length;
 
             ReadNextChunkLoopAsync(
                 targetStream,
@@ -126,7 +164,7 @@ namespace Neo4j.Driver.Internal.IO
             return taskCompletionSource.Task;
         }
 
-        private Task ReadNextChunkLoopAsync(Stream targetStream, TaskCompletionSource<object> taskCompletionSource,
+        private Task ReadNextChunkLoopAsync(Stream targetStream, TaskCompletionSource<int> taskCompletionSource,
             Task previousTask)
         {
             return previousTask.ContinueWith(pt =>
@@ -134,9 +172,11 @@ namespace Neo4j.Driver.Internal.IO
                 try
                 {
                     return
-                        _downStream.ReadAsync(_buffer, 0, _buffer.Length)
+                        // Read next available bytes from the down stream asynchronously.
+                        _downStream.ReadAsync(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition)
                             .ContinueWith(t =>
                             {
+                                // Is Read operation canceled?
                                 if (t.IsCanceled)
                                 {
                                     taskCompletionSource.SetCanceled();
@@ -144,6 +184,7 @@ namespace Neo4j.Driver.Internal.IO
                                     throw new OperationCanceledException();
                                 }
 
+                                // Is it faulted?
                                 if (t.IsFaulted)
                                 {
                                     taskCompletionSource.SetException(t.Exception.GetBaseException());
@@ -151,12 +192,24 @@ namespace Neo4j.Driver.Internal.IO
                                     throw new OperationCanceledException();
                                 }
 
-                                WriteToChunkStream(_buffer, 0, t.Result);
+                                // Otherwise process it.
+                                _logger?.Trace("S: ", _buffer, _lastWritePosition, t.Result);
+
+                                _lastWritePosition += t.Result;
 
                                 return TryReadFromBuffer(targetStream);
                             }, TaskContinuationOptions.ExecuteSynchronously)
                             .ContinueWith(t =>
                             {
+                                // Is buffer processing canceled?
+                                if (t.IsCanceled)
+                                {
+                                    taskCompletionSource.SetCanceled();
+
+                                    return TaskExtensions.GetCompletedTask();
+                                }
+
+                                // Is buffer processing faulted?
                                 if (t.IsFaulted)
                                 {
                                     if (t.Exception.GetBaseException() is OperationCanceledException)
@@ -165,27 +218,27 @@ namespace Neo4j.Driver.Internal.IO
                                     }
                                 }
 
-                                if (t.IsCanceled)
-                                {
-                                    taskCompletionSource.SetCanceled();
-
-                                    return TaskExtensions.GetCompletedTask();
-                                }
-
+                                // Could we read a whole message from what we have?
                                 if (t.Result)
                                 {
-                                    // Try to consume left-over data in the buffer
+                                    var messages = 1;
+
+                                    // Try to consume more messages from the left-over data in the buffer
                                     var readFromBuffer = TryReadFromBuffer(targetStream);
                                     while (readFromBuffer)
                                     {
+                                        messages += 1;
+
                                         readFromBuffer = TryReadFromBuffer(targetStream);
                                     }
 
-                                    taskCompletionSource.SetResult(null);
+                                    // Mark the asynchronous task as completed.
+                                    taskCompletionSource.SetResult(messages);
 
                                     return TaskExtensions.GetCompletedTask();
                                 }
 
+                                // We need some more data.
                                 return ReadNextChunkLoopAsync(targetStream, taskCompletionSource, t);
                             }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
                 }
@@ -194,103 +247,48 @@ namespace Neo4j.Driver.Internal.IO
                     taskCompletionSource.SetException(exc);
                 }
 
-                return TaskExtensions.GetCompletedTask(); ;
+                return TaskExtensions.GetCompletedTask();
             });
+        }
+
+        private bool HasBytesAvailable()
+        {
+            return _lastWritePosition > _lastReadPosition;
         }
 
         private bool HasBytesAvailable(int count)
         {
-            return count <= (_chunkStream.Length - _lastReadPosition);
+            return count <= (_lastWritePosition - _lastReadPosition);
         }
 
-        private int ReadFromChunkStream(byte[] buffer, int offset, int count)
+        private void ReadFromBuffer(byte[] buffer, int offset, int count)
         {
-            int result = 0;
+            Array.ConstrainedCopy(_buffer, _lastReadPosition, buffer, offset, count);
 
-            try
-            {
-                _chunkStream.Position = _lastReadPosition;
-
-                int hasRead = 0, from = offset, toRead = count;
-                do
-                {
-                    hasRead = _chunkStream.Read(buffer, from, toRead);
-                    from += hasRead;
-                    toRead -= hasRead;
-                } while (toRead > 0 && hasRead > 0);
-
-                result = count;
-            }
-            finally
-            {
-                _lastReadPosition = _chunkStream.Position;
-            }
-
-            return result;
+            _lastReadPosition += count;
         }
-
-        private void WriteToChunkStream(byte[] buffer, int offset, int count)
+        
+        private void CopyFromBuffer(Stream target, int count)
         {
-            try
-            {
-                _chunkStream.Position = _lastWritePosition;
+            target.Write(_buffer, _lastReadPosition, count);
 
-                _chunkStream.Write(buffer, offset, count);
-            }
-            finally
-            {
-                _lastWritePosition = _chunkStream.Position;
-            }
-
-            _logger?.Trace("S: ", buffer, offset, count);
-        }
-
-        private void CopyToFromChunkStream(Stream target, int count)
-        {
-            try
-            {
-                _chunkStream.Position = _lastReadPosition;
-
-                var toRead = count;
-                while (toRead > 0)
-                {
-                    var read = _chunkStream.Read(_buffer, 0, Math.Min(toRead, _buffer.Length));
-                    if (read > 0)
-                    {
-                        target.Write(_buffer, 0, read);
-                        toRead -= read;
-                    }
-                }
-            }
-            finally
-            {
-                _lastReadPosition = _chunkStream.Position;
-            }
+            _lastReadPosition += count;
         }
 
         private void Cleanup()
         {
             _currentChunkSize = -1;
 
-            if (_chunkStream.Length > Constants.MaxChunkBufferSize)
+            if (_lastReadPosition == _lastWritePosition)
             {
-                // Shrink our chunk stream
-                var shrinkFrom = Math.Min(_lastReadPosition, _lastWritePosition);
-                _chunkStream.Position = shrinkFrom;
-
-                var leftOverData = new byte[_chunkStream.Length - shrinkFrom];
-                if (leftOverData.Length > 0)
-                {
-                    _chunkStream.Read(leftOverData);
-                }
-
-                _chunkStream.SetLength(0);
-                _chunkStream.Write(leftOverData, 0, leftOverData.Length);
-
-                _lastReadPosition -= shrinkFrom;
-                _lastWritePosition -= shrinkFrom;
+                ResetPositions();
             }
         }
 
+        private void ResetPositions()
+        {
+            _lastWritePosition = 0;
+            _lastReadPosition = 0;
+        }
     }
 }

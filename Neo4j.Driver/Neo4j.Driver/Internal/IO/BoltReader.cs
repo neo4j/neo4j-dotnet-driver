@@ -33,6 +33,10 @@ namespace Neo4j.Driver.Internal.IO
         private readonly IPackStreamReader _packStreamReader;
         private readonly ILogger _logger;
         private readonly MemoryStream _bufferStream;
+        private readonly int _defaultBufferSize;
+        private readonly int _maxBufferSize;
+
+        private int _shrinkCounter = 0;
 
         public BoltReader(Stream stream)
             : this(stream, true)
@@ -41,24 +45,26 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         public BoltReader(Stream stream, bool supportBytes)
-            : this(stream, null, supportBytes)
+            : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, supportBytes)
         {
 
         }
 
-        public BoltReader(Stream stream, ILogger logger, bool supportBytes)
-            : this(new ChunkReader(stream, logger), logger, supportBytes)
+        public BoltReader(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, bool supportBytes)
+            : this(new ChunkReader(stream, logger), defaultBufferSize, maxBufferSize, logger, supportBytes)
         {
 
         }
 
-        public BoltReader(IChunkReader chunkReader, ILogger logger, bool supportBytes)
+        public BoltReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, ILogger logger, bool supportBytes)
         {
             Throw.ArgumentNullException.IfNull(chunkReader, nameof(chunkReader));
 
             _logger = logger;
             _chunkReader = chunkReader;
-            _bufferStream = new MemoryStream();
+            _defaultBufferSize = defaultBufferSize;
+            _maxBufferSize = maxBufferSize;
+            _bufferStream = new MemoryStream(_defaultBufferSize);
             _packStreamReader = supportBytes ? new PackStreamReader(_bufferStream) : new PackStreamReaderBytesIncompatible(_bufferStream);
         }
 
@@ -66,32 +72,52 @@ namespace Neo4j.Driver.Internal.IO
 
         public void Read(IMessageResponseHandler responseHandler)
         {
-            _bufferStream.SetLength(0);
+            var messages = _chunkReader.ReadNextMessages(_bufferStream);
 
-            _chunkReader.ReadNextMessage(_bufferStream);
-
-            ConsumeMessages(responseHandler);
+            ConsumeMessages(responseHandler, messages);
         }
 
         public Task ReadAsync(IMessageResponseHandler responseHandler)
         {
-            _bufferStream.SetLength(0);
-
             return
-                _chunkReader.ReadNextMessageAsync(_bufferStream)
+                _chunkReader.ReadNextMessagesAsync(_bufferStream)
                     .ContinueWith(t =>
                     {
-                        ConsumeMessages(responseHandler);
+                        ConsumeMessages(responseHandler, t.Result);
                     }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        private void ConsumeMessages(IMessageResponseHandler responseHandler)
+        private void ConsumeMessages(IMessageResponseHandler responseHandler, int messages)
         {
-            _bufferStream.Position = 0;
+            int leftMessages = messages;
 
-            while (_bufferStream.Length > _bufferStream.Position)
+            while (_bufferStream.Length > _bufferStream.Position && leftMessages > 0)
             {
                 ProcessMessage(responseHandler);
+
+                leftMessages -= 1;
+            }
+
+            // Check whether we have incomplete message in the buffers
+            if (_bufferStream.Length == _bufferStream.Position)
+            {
+                _bufferStream.SetLength(0);
+
+                if (_bufferStream.Capacity > _maxBufferSize)
+                {
+                    _logger?.Info(
+                        $@"Shrinking read buffers to the default read buffer size {
+                                _defaultBufferSize
+                            } since its size reached {
+                                _bufferStream.Capacity
+                            } which is larger than the maximum read buffer size {
+                                _maxBufferSize
+                            }. This has already occurred {_shrinkCounter} times for this connection.");
+
+                    _shrinkCounter += 1;
+
+                    _bufferStream.Capacity = _defaultBufferSize;
+                }
             }
         }
 

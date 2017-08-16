@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tests.IO
 
         }
 
-        public class ReadNextChunkMethod
+        public class ReadNextMessagesMethod
         {
 
             [Theory]
@@ -101,7 +101,8 @@ namespace Neo4j.Driver.Tests.IO
                 var reader = new ChunkReader(new MemoryStream(input));
                 var targetStream = new MemoryStream();
 
-                reader.ReadNextMessage(targetStream);
+                var count = reader.ReadNextMessages(targetStream);
+                count.Should().Be(1);
 
                 var real = targetStream.ToArray();
 
@@ -110,7 +111,7 @@ namespace Neo4j.Driver.Tests.IO
 
         }
 
-        public class ReadNextChunkAsyncMethod
+        public class ReadNextMessagesAsyncMethod
         {
 
             [Theory]
@@ -121,7 +122,8 @@ namespace Neo4j.Driver.Tests.IO
                 var reader = new ChunkReader(new MemoryStream(input));
                 var targetStream = new MemoryStream();
 
-                await reader.ReadNextMessageAsync(targetStream);
+                var count = await reader.ReadNextMessagesAsync(targetStream);
+                count.Should().Be(1);
 
                 var real = targetStream.ToArray();
 
@@ -137,60 +139,10 @@ namespace Neo4j.Driver.Tests.IO
                     .Throws<InvalidOperationException>();
                 var reader = new ChunkReader(mockStream.Object);
 
-                var ex = await Record.ExceptionAsync(() => reader.ReadNextMessageAsync(new MemoryStream()));
+                var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
 
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<InvalidOperationException>();
-            }
-
-        }
-
-        public class Cleanup
-        {
-
-
-            [Fact]
-            public void ShouldCleanupChunkBufferIfItExceedsMaxChunkBufferSize()
-            {
-                byte[] maxSizeChunkBuffer = new byte[ushort.MaxValue + 2 + 2];
-                byte[] chunkSizeBuffer = PackStreamBitConverter.GetBytes(ushort.MaxValue);
-                for (var i = 0; i < chunkSizeBuffer.Length; i++) maxSizeChunkBuffer[i] = chunkSizeBuffer[i];
-                var chunkBuffer = new MemoryStream();
-                var targetStream = new MemoryStream();
-                var reader = new ChunkReader(new MemoryStream(maxSizeChunkBuffer), chunkBuffer, null);
-
-                reader.ReadNextMessage(targetStream);
-
-                var real = targetStream.ToArray();
-
-                real.Should().NotBeNull();
-                real.Should().HaveCount(ushort.MaxValue);
-                real.Should().Contain(0);
-
-                chunkBuffer.Length.Should().Be(0);
-                chunkBuffer.Position.Should().Be(0);
-            }
-
-            [Fact]
-            public async void ShouldCleanupChunkBufferIfItExceedsMaxChunkBufferSizeAsync()
-            {
-                byte[] maxSizeChunkBuffer = new byte[ushort.MaxValue + 2 + 2];
-                byte[] chunkSizeBuffer = PackStreamBitConverter.GetBytes(ushort.MaxValue);
-                for (var i = 0; i < chunkSizeBuffer.Length; i++) maxSizeChunkBuffer[i] = chunkSizeBuffer[i];
-                var chunkBuffer = new MemoryStream();
-                var targetStream = new MemoryStream();
-                var reader = new ChunkReader(new MemoryStream(maxSizeChunkBuffer), chunkBuffer, null);
-
-                await reader.ReadNextMessageAsync(targetStream);
-
-                var real = targetStream.ToArray();
-
-                real.Should().NotBeNull();
-                real.Should().HaveCount(ushort.MaxValue);
-                real.Should().Contain(0);
-
-                chunkBuffer.Length.Should().Be(0);
-                chunkBuffer.Position.Should().Be(0);
             }
 
         }

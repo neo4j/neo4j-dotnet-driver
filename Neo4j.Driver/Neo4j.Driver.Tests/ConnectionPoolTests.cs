@@ -667,9 +667,10 @@ namespace Neo4j.Driver.Tests
                 var uri = new Uri("localhost:7687");
                 var connectionSettings = new ConnectionSettings(uri, AuthTokens.None, Config.DefaultConfig);
                 var poolSettings = new ConnectionPoolSettings(1, 1, TimeSpan.MaxValue, TimeSpan.MaxValue);
+                var bufferSettings = new BufferSettings(Config.DefaultConfig);
                 var logger = new Mock<ILogger>().Object;
 
-                var pool = new ConnectionPool(uri, connectionSettings, poolSettings, logger);
+                var pool = new ConnectionPool(uri, connectionSettings, poolSettings, bufferSettings, logger);
 
                 pool.NumberOfInUseConnections.Should().Be(0);
             }

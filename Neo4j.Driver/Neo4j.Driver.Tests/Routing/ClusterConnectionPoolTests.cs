@@ -42,8 +42,9 @@ namespace Neo4j.Driver.Tests.Routing
                 var config = Config.DefaultConfig;
                 var connSettings = new ConnectionSettings(ServerUri, new Mock<IAuthToken>().Object, config);
                 var poolSettings = new ConnectionPoolSettings(config);
+                var bufferSettings = new BufferSettings(config);
 
-                var pool = new ClusterConnectionPool(connSettings, poolSettings, uris, null);
+                var pool = new ClusterConnectionPool(connSettings, poolSettings, bufferSettings, uris, null);
 
                 pool.ToString().Should().Be(
                     "[{bolt://123:456/ : _availableConnections: {[]}, _inUseConnections: {[]}}]");

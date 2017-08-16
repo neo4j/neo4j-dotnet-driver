@@ -38,13 +38,15 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Uri _uri;
         private IBoltReader _reader;
         private IBoltWriter _writer;
+        private readonly BufferSettings _bufferSettings;
 
         private readonly ILogger _logger;
 
-        public SocketClient(Uri uri, EncryptionManager encryptionManager, bool socketKeepAlive, bool ipv6Enabled, ILogger logger, ITcpSocketClient socketClient = null)
+        public SocketClient(Uri uri, EncryptionManager encryptionManager, bool socketKeepAlive, bool ipv6Enabled, ILogger logger, BufferSettings bufferSettings, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
+            _bufferSettings = bufferSettings ?? new BufferSettings(Config.DefaultConfig);
             _tcpSocketClient = socketClient ?? new TcpSocketClient(encryptionManager, socketKeepAlive, ipv6Enabled, _logger);
         }
 
@@ -129,8 +131,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         private void SetupPackStreamFormatWriterAndReader(bool supportBytes = true)
         {
-            _writer = new BoltWriter(_tcpSocketClient.WriteStream, _logger, supportBytes); 
-            _reader = new BoltReader(_tcpSocketClient.ReadStream, _logger, supportBytes);
+            _writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize, _bufferSettings.MaxWriteBufferSize, _logger, supportBytes); 
+            _reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize, _bufferSettings.MaxReadBufferSize, _logger, supportBytes);
         }
 
         private void Stop()

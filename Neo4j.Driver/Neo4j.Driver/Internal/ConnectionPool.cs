@@ -49,6 +49,7 @@ namespace Neo4j.Driver.Internal
 
         private IStatisticsCollector _statisticsCollector;
         private ConnectionPoolStatistics _statistics;
+        private BufferSettings _bufferSettings;
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
@@ -62,6 +63,7 @@ namespace Neo4j.Driver.Internal
             Uri uri,
             ConnectionSettings connectionSettings,
             ConnectionPoolSettings connectionPoolSettings,
+            BufferSettings bufferSettings,
             ILogger logger)
             : base(logger)
         {
@@ -71,6 +73,7 @@ namespace Neo4j.Driver.Internal
             _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
             _connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+            _bufferSettings = bufferSettings;
 
             _logger = logger;
 
@@ -82,9 +85,10 @@ namespace Neo4j.Driver.Internal
             BlockingCollection<IPooledConnection> availableConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ILogger logger = null,
-            ConnectionPoolSettings settings = null)
+            ConnectionPoolSettings settings = null,
+            BufferSettings bufferSettings = null)
             : this(null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig), 
-                  logger)
+                  bufferSettings ?? new BufferSettings(Config.DefaultConfig), logger)
         {
             _fakeConnection = connection;
             _availableConnections = availableConnections ?? new BlockingCollection<IPooledConnection>();
@@ -101,7 +105,7 @@ namespace Neo4j.Driver.Internal
 
                 conn = _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, this)
-                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), this);
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, _logger), this);
                 conn.Init();
 
                 _statistics?.IncrementConnectionCreated();
@@ -134,7 +138,7 @@ namespace Neo4j.Driver.Internal
 
                 conn = _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, this)
-                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _logger), this);
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, _logger), this);
                 await conn.InitAsync().ConfigureAwait(false);
 
                 _statistics?.IncrementConnectionCreated();
