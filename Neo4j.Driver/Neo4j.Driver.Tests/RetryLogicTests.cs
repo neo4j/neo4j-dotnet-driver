@@ -62,7 +62,8 @@ namespace Neo4j.Driver.Tests
             }));
             timer.Stop();
 
-            var error = e as AggregateException;
+            e.Should().BeOfType<ServiceUnavailableException>();
+            var error = e.InnerException as AggregateException;
             var innerErrors = error.Flatten().InnerExceptions;
 
             innerErrors.Count.Should().BeGreaterOrEqualTo(2);

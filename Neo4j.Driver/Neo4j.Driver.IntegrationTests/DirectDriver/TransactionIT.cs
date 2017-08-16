@@ -46,11 +46,13 @@ namespace Neo4j.Driver.IntegrationTests
                 }));
                 timer.Stop();
 
-                var error = e as AggregateException;
+                e.Should().BeOfType<ServiceUnavailableException>();
+                var error = e.InnerException as AggregateException;
                 var innerErrors = error.Flatten().InnerExceptions;
                 foreach (var innerError in innerErrors)
                 {
                     Output.WriteLine(innerError.Message);
+                    innerError.Should().BeOfType<SessionExpiredException>();
                 }
                 innerErrors.Count.Should().BeGreaterOrEqualTo(5);
                 timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(30);
