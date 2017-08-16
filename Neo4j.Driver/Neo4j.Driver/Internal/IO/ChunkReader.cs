@@ -59,11 +59,10 @@ namespace Neo4j.Driver.Internal.IO
             _logger = logger;
         }
 
-        public void ReadNextMessage(Stream targetStream)
+        private bool TryReadFromBuffer(Stream targetStream)
         {
             while (true)
             {
-                // We have not received the chunk size yet, but it can be read from the buffered data.
                 if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
                 {
                     ReadFromChunkStream(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
@@ -71,26 +70,47 @@ namespace Neo4j.Driver.Internal.IO
                     _currentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
                     if (_currentChunkSize == 0)
                     {
-                        break;
+                        Cleanup();
+
+                        return true;
                     }
                 }
 
-                // We have the chunk size, and all of the chunk data can be read from the buffered data.
-                if (_currentChunkSize != -1 && HasBytesAvailable(_currentChunkSize))
+                if (_currentChunkSize != -1 && HasBytesAvailable(_currentChunkSize + _chunkSizeBuffer.Length))
                 {
                     CopyToFromChunkStream(targetStream, _currentChunkSize);
 
-                    Cleanup();
+                    _currentChunkSize = -1;
                 }
                 else
                 {
-                    // Read next available bytes from the down stream and write it to our chunk stream.
-                    var read = _downStream.Read(_buffer, 0, _buffer.Length);
-                    WriteToChunkStream(_buffer, 0, read);
+                    break;
                 }
             }
 
-            Cleanup();
+            return false;
+        } 
+
+        public void ReadNextMessage(Stream targetStream)
+        {
+            while (true)
+            {
+                // Read next available bytes from the down stream and write it to our chunk stream.
+                var read = _downStream.Read(_buffer, 0, _buffer.Length);
+                WriteToChunkStream(_buffer, 0, read);
+
+                if (TryReadFromBuffer(targetStream))
+                {
+                    break;
+                }
+            }
+
+            // Try to consume left-over data in the buffer
+            var readFromBuffer = TryReadFromBuffer(targetStream);
+            while (readFromBuffer)
+            {
+                readFromBuffer = TryReadFromBuffer(targetStream);
+            }
         }
 
         
@@ -106,55 +126,76 @@ namespace Neo4j.Driver.Internal.IO
             return taskCompletionSource.Task;
         }
 
-        // TODO: Try to complete this step in synchronous mode
-        private Task ReadNextChunkLoopAsync(Stream targetStream, TaskCompletionSource<object> taskCompletionSource, Task previousTask)
+        private Task ReadNextChunkLoopAsync(Stream targetStream, TaskCompletionSource<object> taskCompletionSource,
+            Task previousTask)
         {
-            return 
-                previousTask.ContinueWith(pt =>
+            return previousTask.ContinueWith(pt =>
+            {
+                try
                 {
-                    try
-                    {
-                        // We have not received the chunk size yet, but it can be read from the buffered data.
-                        if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
-                        {
-                            ReadFromChunkStream(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
-
-                            _currentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
-                            if (_currentChunkSize == 0)
+                    return
+                        _downStream.ReadAsync(_buffer, 0, _buffer.Length)
+                            .ContinueWith(t =>
                             {
-                                Cleanup();
+                                if (t.IsCanceled)
+                                {
+                                    taskCompletionSource.SetCanceled();
 
-                                taskCompletionSource.SetResult(null);
+                                    throw new OperationCanceledException();
+                                }
 
-                                return TaskExtensions.GetCompletedTask();
-                            }
-                        }
+                                if (t.IsFaulted)
+                                {
+                                    taskCompletionSource.SetException(t.Exception.GetBaseException());
 
-                        // We have the chunk size, and all of the chunk data can be read from the buffered data.
-                        if (_currentChunkSize != -1 && HasBytesAvailable(_currentChunkSize))
-                        {
-                            CopyToFromChunkStream(targetStream, _currentChunkSize);
+                                    throw new OperationCanceledException();
+                                }
 
-                            Cleanup();
+                                WriteToChunkStream(_buffer, 0, t.Result);
 
-                            return ReadNextChunkLoopAsync(targetStream, taskCompletionSource, pt);
-                        }
-                        else
-                        {
-                            // Read next available bytes from the down stream and write it to our chunk stream.
-                            return
-                                _downStream.ReadAsync(_buffer, 0, _buffer.Length)
-                                    .ContinueWith(t => WriteToChunkStream(_buffer, 0, t.Result))
-                                    .ContinueWith(t => ReadNextChunkLoopAsync(targetStream, taskCompletionSource, t)).Unwrap();
-                        }
-                    }
-                    catch (Exception exc)
-                    {
-                        taskCompletionSource.SetException(exc);
-                    }
+                                return TryReadFromBuffer(targetStream);
+                            }, TaskContinuationOptions.ExecuteSynchronously)
+                            .ContinueWith(t =>
+                            {
+                                if (t.IsFaulted)
+                                {
+                                    if (t.Exception.GetBaseException() is OperationCanceledException)
+                                    {
+                                        return TaskExtensions.GetCompletedTask();
+                                    }
+                                }
 
-                    return TaskExtensions.GetCompletedTask();
-                }).Unwrap();
+                                if (t.IsCanceled)
+                                {
+                                    taskCompletionSource.SetCanceled();
+
+                                    return TaskExtensions.GetCompletedTask();
+                                }
+
+                                if (t.Result)
+                                {
+                                    // Try to consume left-over data in the buffer
+                                    var readFromBuffer = TryReadFromBuffer(targetStream);
+                                    while (readFromBuffer)
+                                    {
+                                        readFromBuffer = TryReadFromBuffer(targetStream);
+                                    }
+
+                                    taskCompletionSource.SetResult(null);
+
+                                    return TaskExtensions.GetCompletedTask();
+                                }
+
+                                return ReadNextChunkLoopAsync(targetStream, taskCompletionSource, t);
+                            }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
+                }
+                catch (Exception exc)
+                {
+                    taskCompletionSource.SetException(exc);
+                }
+
+                return TaskExtensions.GetCompletedTask(); ;
+            });
         }
 
         private bool HasBytesAvailable(int count)

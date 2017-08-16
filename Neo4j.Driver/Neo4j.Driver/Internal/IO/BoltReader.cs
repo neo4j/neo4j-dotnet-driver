@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.IO
 
             _chunkReader.ReadNextMessage(_bufferStream);
 
-            ProcessMessage(responseHandler);
+            ConsumeMessages(responseHandler);
         }
 
         public Task ReadAsync(IMessageResponseHandler responseHandler)
@@ -81,14 +81,22 @@ namespace Neo4j.Driver.Internal.IO
                 _chunkReader.ReadNextMessageAsync(_bufferStream)
                     .ContinueWith(t =>
                     {
-                        ProcessMessage(responseHandler);
+                        ConsumeMessages(responseHandler);
                     }, TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        private void ConsumeMessages(IMessageResponseHandler responseHandler)
+        {
+            _bufferStream.Position = 0;
+
+            while (_bufferStream.Length > _bufferStream.Position)
+            {
+                ProcessMessage(responseHandler);
+            }
         }
 
         private void ProcessMessage(IMessageResponseHandler responseHandler)
         {
-            _bufferStream.Position = 0;
-
             var structure = (PackStreamStruct)_packStreamReader.Read();
 
             switch (structure.Signature)
