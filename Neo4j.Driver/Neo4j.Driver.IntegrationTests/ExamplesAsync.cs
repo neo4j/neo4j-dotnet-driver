@@ -614,7 +614,7 @@ namespace Neo4j.Driver.ExamplesAsync
                         }
                     );
                 }
-                catch (AggregateException)
+                catch (ServiceUnavailableException)
                 {
                     return false;
                 }

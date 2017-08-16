@@ -42,7 +42,7 @@ namespace Neo4j.Driver.IntegrationTests
                 exception = Record.Exception(() => session.Run("RETURN 1"));
             }
             exception.Should().BeOfType<ServiceUnavailableException>();
-            exception.Message.Should().Be("Connection with the server breaks due to AggregateException: One or more errors occurred.");
+            exception.Message.Should().Contain("Connection with the server breaks due to IOException");
             exception.GetBaseException().Should().BeOfType<SocketException>();
             exception.GetBaseException().Message.Should().Contain("No connection could be made because the target machine actively refused it");
         }
