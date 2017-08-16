@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
                 return null; // nah, I do not care
             }
 
-            public override Task<IStatementResultReader> RunAsync(Statement statement)
+            public override Task<IStatementResultCursor> RunAsync(Statement statement)
             {
                 throw new System.NotImplementedException();
             }
