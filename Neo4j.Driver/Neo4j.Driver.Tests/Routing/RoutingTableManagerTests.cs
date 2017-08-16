@@ -37,8 +37,8 @@ namespace Neo4j.Driver.Tests.Routing
         {
             return new RoutingTableManager(
                 routingTable,
-                new RoutingSettings(new Dictionary<string, string>()),
-                poolManager, seedUri, null);
+                new RoutingSettings(seedUri, new Dictionary<string, string>()),
+                poolManager, null);
         }
 
         internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri)

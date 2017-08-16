@@ -31,20 +31,20 @@ namespace Neo4j.Driver.Internal
         public IStatisticsCollector StatisticsCollector { get; }
 
         public ConnectionPoolSettings(Config config)
-            :this(config.MaxIdleConnectionPoolSize, config.MaxConnectionPoolSize,
-                 config.ConnectionAcquisitionTimeout, config.ConnectionIdleTimeout, 
-                 config.DriverStatisticsCollector)
+            :this(config.MaxIdleConnectionPoolSize, config.MaxConnectionPoolSize, config.ConnectionAcquisitionTimeout,
+                 config.ConnectionIdleTimeout, config.MaxConnectionLifeTime, config.DriverStatisticsCollector)
         {
         }
 
         internal ConnectionPoolSettings(int maxIdleConnectionPoolSize, int maxConnectionPoolSize,
-            TimeSpan connectionAcquisitionTimeout, TimeSpan connectionIdleTimeout, 
+            TimeSpan connectionAcquisitionTimeout, TimeSpan connectionIdleTimeout, TimeSpan maxConnectionLifeTime,
             IStatisticsCollector statisticsCollector=null)
         {
             MaxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
             MaxConnectionPoolSize = maxConnectionPoolSize;
             ConnectionAcquisitionTimeout = connectionAcquisitionTimeout;
             ConnectionIdleTimeout = connectionIdleTimeout;
+            MaxConnectionLifeTime = maxConnectionLifeTime;
             StatisticsCollector = statisticsCollector;
         }
     }

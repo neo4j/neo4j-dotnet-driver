@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 var uris = new HashSet<Uri> {new Uri("bolt://123:456")};
                 var config = Config.DefaultConfig;
-                var connSettings = new ConnectionSettings(ServerUri, new Mock<IAuthToken>().Object, config);
+                var connSettings = new ConnectionSettings(new Mock<IAuthToken>().Object, config);
                 var poolSettings = new ConnectionPoolSettings(config);
                 var bufferSettings = new BufferSettings(config);
 

@@ -71,7 +71,29 @@ namespace Neo4j.Driver.Internal
 
         public bool IsValid(IPooledConnection connection)
         {
-            return connection.IsOpen && !HasBeenIdleForTooLong(connection);
+            return connection.IsOpen 
+                && !HasBeenIdleForTooLong(connection) 
+                && !HasBeenAliveForTooLong(connection);
+        }
+
+        // I like this method name :P
+        private bool HasBeenAliveForTooLong(IPooledConnection connection)
+        {
+            if (!IsConnectionLifeTimeDetectionEnabled())
+            {
+                return false;
+            }
+            if (connection.LifeTimeTimer.ElapsedMilliseconds > _maxConnLifeTime.TotalMilliseconds)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool IsConnectionLifeTimeDetectionEnabled()
+        {
+            return _maxConnLifeTime.TotalMilliseconds >= 0;
         }
 
         private bool HasBeenIdleForTooLong(IPooledConnection connection)
@@ -84,6 +106,9 @@ namespace Neo4j.Driver.Internal
             {
                 return true;
             }
+
+            // if it has not been idle for too long, then it is good to be claimed.
+            // And we will stop the timmer to prepare it to be claimed now
             connection.IdleTimer.Reset();
             return false;
         }
