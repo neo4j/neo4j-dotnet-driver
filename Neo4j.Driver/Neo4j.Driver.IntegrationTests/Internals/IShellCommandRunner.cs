@@ -49,30 +49,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
     public class ShellCommandRunnerFactory
     {
-        private static bool IsPowershellInstalled()
-        {
-            try
-            {
-                var regval = Microsoft.Win32.Registry
-                    .GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1", "Install", null).ToString();
-                return regval.Equals("1");
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        
         public static IShellCommandRunner Create()
         {
-            if (IsPowershellInstalled())
-            {
-                return new WindowsPowershellRunner();
-            }
-            else
-            {
-                return new ProcessBasedShellCommandRunner();
-            }
+            return new ProcessBasedCommandRunner();
         }
     }
 }

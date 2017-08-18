@@ -20,7 +20,6 @@ using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;
-using static Neo4j.Driver.IntegrationTests.Internals.WindowsPowershellRunner;
 using Path = System.IO.Path;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
