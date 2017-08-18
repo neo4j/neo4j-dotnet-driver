@@ -32,9 +32,9 @@ namespace Neo4j.Driver.Tests.Routing
     {
         internal static RoutingTableManager NewRoutingTableManager(
             IRoutingTable routingTable,
-            IClusterConnectionPoolManager poolManager,
-            Uri seedUri)
+            IClusterConnectionPoolManager poolManager)
         {
+            var seedUri = new Uri("bolt+routing://neo4j.com:6060");
             return new RoutingTableManager(
                 routingTable,
                 new RoutingSettings(seedUri, new Dictionary<string, string>()),
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManagerMock.Setup(x => x.AddConnectionPool(It.IsAny<IEnumerable<Uri>>()))
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
 
-                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
                 manager.IsReadingInAbsenceOfWriter = true;
                 var routingTableReturnMock = new Mock<IRoutingTable>();
 
@@ -133,7 +133,7 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManagerMock.Setup(x => x.AddConnectionPool(It.IsAny<IEnumerable<Uri>>()))
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
 
-                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
                 var routingTableReturnMock = new Mock<IRoutingTable>();
 
                 // When
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManagerMock.Setup(x => x.AddConnectionPool(It.IsAny<IEnumerable<Uri>>()))
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(t));
 
-                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
 
                 IRoutingTable UpdateRoutingTableFunc(ISet<Uri> set)
                 {
@@ -204,7 +204,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns((ClusterConnection) null);
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
 
                 // When
                 var newRoutingTable = manager.UpdateRoutingTable(null, connection =>
@@ -229,7 +229,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.SetupSequence(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns(connA).Returns(connB);
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
 
                 // When
                 var newRoutingTable = manager.UpdateRoutingTable(null, connection =>
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManagerMock.Setup(x => x.CreateClusterConnection(uri))
                     .Returns(new Mock<IConnection>().Object);
 
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
 
                 var exception = Record.Exception(() => manager.UpdateRoutingTable(null,
                     conn => throw new ServiceUnavailableException("Procedure not found")));
@@ -280,7 +280,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(uri))
                     .Returns(new Mock<IConnection>().Object);
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
 
                 var exception = Record.Exception(() => manager.UpdateRoutingTable(null,
                     conn => throw new ProtocolException("Cannot parse procedure result")));
@@ -298,7 +298,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(uri))
                     .Callback(() => throw new AuthenticationException("Failed to auth the client to the server."));
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
 
                 // When
                 var error = Record.Exception(() => manager.UpdateRoutingTable());
@@ -327,7 +327,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.SetupSequence(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns(connA).Returns(connB);
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
 
 
                 // When
@@ -361,7 +361,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnection(It.IsAny<Uri>()))
                     .Returns(connA);
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, null);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
 
                 // When
                 var updateRoutingTable = manager.UpdateRoutingTable(null, conn =>
