@@ -14,6 +14,166 @@ namespace Neo4j.Driver.ExamplesAsync
     public class ExamplesAsync
     {
 
+        public class AsyncSectionExamples : BaseAsyncExample
+        {
+
+            public AsyncSectionExamples(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+                
+            }
+
+            public async Task<List<string>> AutocommitTransactionExample()
+            {
+                // tag::async-autocommit-transaction[]
+                var records = new List<string>();
+                var session = Driver.Session();
+
+                try
+                {
+                    // Send cypher statement to the database.
+                    // The existing IStatementResult interface implements IEnumerable
+                    // and does not play well with asynchronous use cases. The replacement
+                    // IStatementResultCursor interface is returned from the RunAsync
+                    // family of methods instead and provides async capable methods. 
+                    var reader = await session.RunAsync(
+                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
+                        new { id = 0 } // Parameters in the statement, if any
+                    );
+
+                    // Loop through the records asynchronously
+                    while (await reader.FetchAsync())
+                    {
+                        // Each current read in buffer can be reached via Current
+                        records.Add(reader.Current[0].ToString());
+                    }
+                }
+                finally
+                {
+                    // asynchronously close session
+                    await session.CloseAsync();
+                }
+                // end::async-autocommit-transaction[]
+                return records;
+            }
+
+            public async Task<List<string>> TransactionFunctionExample()
+            {
+                List<string> result = null;
+                // tag::async-transaction-function[]
+                var session = Driver.Session();
+
+                try
+                {
+                    // Wrap whole operation into an implicit transaction and
+                    // get the results back.
+                    result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var records = new List<string>();
+
+                        // Send cypher statement to the database
+                        var reader = await tx.RunAsync(
+                            "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
+                            new { id = 0 } // Parameters in the statement, if any
+                        );
+
+                        // Loop through the records asynchronously
+                        while (await reader.FetchAsync())
+                        {
+                            // Each current read in buffer can be reached via Current
+                            records.Add(reader.Current[0].ToString());
+                        }
+
+                        return records;
+                    });
+                }
+                finally
+                {
+                    // asynchronously close session
+                    await session.CloseAsync();
+                }
+                // end::async-transaction-function[]
+                return result;
+            }
+
+            public async Task<List<string>> ExplicitTransactionExample()
+            {
+                // tag::async-explicit-transaction[]
+                var records = new List<string>();
+                var session = Driver.Session();
+
+                try
+                {
+                    // Start an explicit transaction
+                    var tx = await session.BeginTransactionAsync();
+
+                    // Send cypher statement to the database through the explicit
+                    // transaction acquired
+                    var reader = await tx.RunAsync(
+                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
+                        new { id = 0 } // Parameters in the statement, if any
+                    );
+
+                    // Loop through the records asynchronously
+                    while (await reader.FetchAsync())
+                    {
+                        // Each current read in buffer can be reached via Current
+                        records.Add(reader.Current[0].ToString());
+                    }
+
+                    // Commit the transaction
+                    await tx.CommitAsync();
+                }
+                finally
+                {
+                    // asynchronously close session
+                    await session.CloseAsync();
+                }
+                // end::async-explicit-transaction[]
+                return records;
+            }
+
+            [RequireServerFact]
+            public async void TestAutocommitTransactionExample()
+            {
+                await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
+                    new {id = 0, title = "Product-0"});
+
+                var results = await AutocommitTransactionExample();
+
+                results.Should().NotBeNull();
+                results.Should().HaveCount(1);
+                results.Should().Contain("Product-0");
+            }
+            
+            [RequireServerFact]
+            public async void TestTransactionFunctionExample()
+            {
+                await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
+                    new {id = 0, title = "Product-0"});
+
+                var results = await TransactionFunctionExample();
+
+                results.Should().NotBeNull();
+                results.Should().HaveCount(1);
+                results.Should().Contain("Product-0");
+            }
+
+            [RequireServerFact]
+            public async void TestExplicitTransactionExample()
+            {
+                await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
+                    new {id = 0, title = "Product-0"});
+
+                var results = await ExplicitTransactionExample();
+
+                results.Should().NotBeNull();
+                results.Should().HaveCount(1);
+                results.Should().Contain("Product-0");
+            }
+            
+        }
+        
         public class AutocommitTransactionExample : BaseAsyncExample
         {
             public AutocommitTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -749,6 +909,19 @@ namespace Neo4j.Driver.ExamplesAsync
 
                     return (await result.SingleAsync())[0].As<int>();
                 });
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+        }
+
+        protected async Task WriteAsync(string statement, object parameters)
+        {
+            var session = Driver.Session();
+            try
+            {
+                await session.WriteTransactionAsync(tx => tx.RunAsync(statement, parameters));
             }
             finally
             {
