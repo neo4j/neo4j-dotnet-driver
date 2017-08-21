@@ -124,12 +124,14 @@
     <Compile Include="Internals\Cluster\SingleInstance.cs" />
     <Compile Include="Internals\Cluster\ExternalBoltkitClusterInstaller.cs" />
     <Compile Include="Internals\IInstaller.cs" />
+    <Compile Include="Internals\IShellCommandRunner.cs" />
     <Compile Include="Internals\ISingleInstance.cs" />
+    <Compile Include="Internals\ShellCommandRunnerTests.cs" />
     <Compile Include="Internals\StandAlone\ExternalBoltkitInstaller.cs" />
     <Compile Include="Internals\StandAlone\StandAlone.cs" />
     <Compile Include="Internals\IntegrationTestFixture.cs" />
     <Compile Include="Internals\StandAlone\Neo4jSettingsHelper.cs" />
-    <Compile Include="Internals\WindowsPowershellRunner.cs" />
+    <Compile Include="Internals\ProcessBasedCommandRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RoutingDriver\RoutingDriverAsyncIT.cs" />
     <Compile Include="RoutingDriver\RoutingDriverIT.cs" />

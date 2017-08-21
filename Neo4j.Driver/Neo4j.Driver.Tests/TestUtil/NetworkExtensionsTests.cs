@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Xunit;
@@ -30,6 +31,26 @@ namespace Neo4j.Driver.Tests
     {
         public class IpAddressResolveAsyncMethod
         {
+            [Fact]
+            public async Task ShouldParseLocalhostCorrectly()
+            {
+                var uri = new Uri("bolt+routing://LocALhosT:123");
+                var ipAddresses = await uri.ResolveAsync(true);
+                ipAddresses.Should().Contain(IPAddress.IPv6Loopback);
+                ipAddresses.Should().Contain(IPAddress.Loopback);
+                ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
+                ipAddresses.Should().Contain(IPAddress.Parse("[::1]"));
+            }
+
+            [Fact]
+            public async void ShouldOnlyGiveIpv6AddressWhenIpv6IsProvided()
+            {
+                var url = new Uri("bolt://[::1]");
+                var ips = await url.ResolveAsync(false);
+                ips.Length.Should().Be(1);
+                ips[0].ToString().Should().Be("::1");
+            }
+
             [Fact]
             public void ShouldSortIPv6AddrInFront()
             {
@@ -61,7 +82,7 @@ namespace Neo4j.Driver.Tests
                 var url = new Uri("bolt://127.0.0.1");
                 var ips = await url.ResolveAsync(true);
                 ips.Length.Should().Be(2);
-                ips[0].ToString().Should().Be("::ffff:127.0.0.1");
+                ips[0].ToString().Should().Be("::1");
                 ips[1].ToString().Should().Be("127.0.0.1");
             }
         }

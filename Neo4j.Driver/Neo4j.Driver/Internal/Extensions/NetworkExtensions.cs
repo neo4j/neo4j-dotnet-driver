@@ -36,12 +36,19 @@ namespace Neo4j.Driver.Internal
             IPAddress[] addresses;
             IPAddress address;
 
+            if (isLocalhost(uri) && IsRunningOnMono())
+            {
+                // to work around this issue: https://bugzilla.xamarin.com/show_bug.cgi?id=23862
+                uri = new UriBuilder(uri.Scheme, IPAddress.Loopback.ToString(), uri.Port).Uri;
+            }
+
             if (IPAddress.TryParse(uri.Host, out address))
             {
                 if (ipv6Enabled && address.AddressFamily == AddressFamily.InterNetwork)
                 {
                     // if it is a ipv4 address, then add the ipv6 address as the first attempt
-                    addresses = new[] { address.MapToIPv6(), address };
+                    var ipv6Address = IPAddress.IsLoopback(address) ? IPAddress.IPv6Loopback : address.MapToIPv6();
+                    addresses = new[] { ipv6Address, address };
                 }
                 else
                 {
@@ -55,6 +62,16 @@ namespace Neo4j.Driver.Internal
                     .OrderBy(x=>x, new AddressComparer(prefered)).ToArray();
             }
             return addresses;
+        }
+
+        private static bool isLocalhost(Uri uri)
+        {
+            return uri.Host.Equals("localhost", StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        private static bool IsRunningOnMono()
+        {
+            return Type.GetType("Mono.Runtime") != null;
         }
 
         internal class AddressComparer : IComparer<IPAddress>

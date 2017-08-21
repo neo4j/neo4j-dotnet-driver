@@ -54,7 +54,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             try
             {
-                WindowsPowershellRunner.RunCommand("neoctrl-cluster", "--help");
+                var commandRunner = ShellCommandRunnerFactory.Create();
+                commandRunner.RunCommand("neoctrl-cluster", "--help");
             }
             catch
             {
