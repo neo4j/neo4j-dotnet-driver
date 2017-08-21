@@ -235,8 +235,6 @@ namespace Neo4j.Driver.Internal.Connector
         public Task CloseAsync()
         {
             Close();
-
-// TODO verify this is the correct way to do it
             return TaskExtensions.GetCompletedTask();
         }
 

@@ -181,7 +181,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::autocommit-transaction[]
             public async Task AddPersonAsync(string name)
             {
                 var session = Driver.Session();
@@ -194,7 +193,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
             }
-            // end::autocommit-transaction[]
 
             [RequireServerFact]
             public async Task TestAutocommitTransactionExample()
@@ -215,12 +213,10 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::basic-auth[]
             public IDriver CreateDriverWithBasicAuth(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
             }
-            // end::basic-auth[]
 
             [RequireServerFact]
             public async Task TestBasicAuthExample()
@@ -252,13 +248,11 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::config-connection-timeout[]
             public IDriver CreateDriverWithCustomizedConnectionTimeout(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
                     new Config { ConnectionTimeout = TimeSpan.FromSeconds(15) });
             }
-            // end::config-connection-timeout[]
 
             [RequireServerFact]
             public async Task TestConfigConnectionTimeoutExample()
@@ -290,13 +284,11 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::config-max-retry-time[]
             public IDriver CreateDriverWithCustomizedMaxRetryTime(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
                     new Config { MaxTransactionRetryTime = TimeSpan.FromSeconds(15) });
             }
-            // end::config-max-retry-time[]
 
             [RequireServerFact]
             public async Task TestConfigMaxRetryTimeExample()
@@ -328,13 +320,11 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::config-trust[]
             public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
                     new Config { TrustStrategy = TrustStrategy.TrustAllCertificates });
             }
-            // end::config-trust[]
 
             [RequireServerFact]
             public async Task TestConfigTrustExample()
@@ -366,13 +356,11 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::config-unencrypted[]
             public IDriver CreateDriverWithCustomizedSecurityStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
                     new Config { EncryptionLevel = EncryptionLevel.None });
             }
-            // end::config-unencrypted[]
 
             [RequireServerFact]
             public async Task TestConfigUnencryptedExample()
@@ -404,14 +392,12 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::custom-auth[]
             public IDriver CreateDriverWithCustomizedAuth(string uri,
                 string principal, string credentials, string realm, string scheme, Dictionary<string, object> parameters)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
                     new Config { EncryptionLevel = EncryptionLevel.None });
             }
-            // end::custom-auth[]
 
             [RequireServerFact]
             public async Task TestCustomAuthExample()
@@ -443,7 +429,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::cypher-error[]
             public async Task<int> GetEmployeeNumberAsync(string name)
             {
                 var session = Driver.Session();
@@ -471,7 +456,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     return -1;
                 }
             }
-            // end::cypher-error[]
 
             [RequireServerFact]
             public async Task TestCypherErrorExample()
@@ -490,7 +474,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::driver-lifecycle[]
             public class DriverLifecycleExample : IDisposable
             {
                 public IDriver Driver { get; }
@@ -505,7 +488,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     Driver?.Dispose();
                 }
             }
-            // end::driver-lifecycle[]
 
             [RequireServerFact]
             public async Task TestDriverLifecycleExample()
@@ -548,7 +530,6 @@ namespace Neo4j.Driver.ExamplesAsync
                 }
             }
 
-            // tag::hello-world[]
             public class HelloWorldExample : IDisposable
             {
                 private readonly IDriver _driver;
@@ -594,7 +575,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     }
                 }
             }
-            // end::hello-world[]
         }
 
         public class ReadWriteTransactionExample : BaseAsyncExample
@@ -613,7 +593,6 @@ namespace Neo4j.Driver.ExamplesAsync
                 id.Should().BeGreaterOrEqualTo(0L);
             }
 
-            // tag::read-write-transaction[]
             public async Task<long> AddPersonAsync(string name)
             {
                 var session = Driver.Session();
@@ -641,7 +620,6 @@ namespace Neo4j.Driver.ExamplesAsync
                 
                 return (await result.SingleAsync())[0].As<long>();
             }
-            // end::read-write-transaction[]
         }
 
         public class ResultConsumeExample : BaseAsyncExample
@@ -651,7 +629,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::result-consume[]
             public async Task<List<string>> GetPeopleAsync()
             {
                 var session = Driver.Session();
@@ -669,7 +646,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
             }
-            // end::result-consume[]
 
             [RequireServerFact]
             public async Task TestResultConsumeExample()
@@ -691,7 +667,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::result-retain[]
             public async Task<int> AddEmployeesAsync(string companyName)
             {
                 var session = Driver.Session();
@@ -718,7 +693,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
             }
-            // end::result-retain[]
 
             [RequireServerFact]
             public async Task TestResultConsumeExample()
@@ -760,7 +734,6 @@ namespace Neo4j.Driver.ExamplesAsync
                 base.Dispose(true);
             }
 
-            // tag::service-unavailable[]
             public async Task<bool> AddItemAsync()
             {
                 var session = Driver.Session();
@@ -783,7 +756,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
             }
-            // end::service-unavailable[]
 
             [RequireServerFact]
             public async Task TestServiceUnavailableExample()
@@ -801,7 +773,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::session[]
             public async Task AddPersonAsync(string name)
             {
                 var session = Driver.Session();
@@ -814,7 +785,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
             }
-            // end::session[]
 
             [RequireServerFact]
             public async Task TestSessionExample()
@@ -835,7 +805,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            // tag::transaction-function[]
             public async Task AddPersonAsync(string name)
             {
                 var session = Driver.Session();
@@ -849,7 +818,6 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
             }
-            // end::transaction-function[]
 
             [RequireServerFact]
             public async void TestTransactionFunctionExample()
