@@ -6,12 +6,12 @@ namespace Neo4j.Driver.Internal
     internal class ConnectionValidator
     {
         private readonly TimeSpan _connIdleTimeout;
-        private readonly TimeSpan _maxConnLifeTime;
+        private readonly TimeSpan _maxConnLifetime;
 
-        public ConnectionValidator(TimeSpan connIdleTimeout, TimeSpan maxConnLifeTime)
+        public ConnectionValidator(TimeSpan connIdleTimeout, TimeSpan maxConnLifetime)
         {
             _connIdleTimeout = connIdleTimeout;
-            _maxConnLifeTime = maxConnLifeTime;
+            _maxConnLifetime = maxConnLifetime;
         }
 
         public bool IsConnectionReusable(IPooledConnection connection)
@@ -79,11 +79,11 @@ namespace Neo4j.Driver.Internal
         // I like this method name :P
         private bool HasBeenAliveForTooLong(IPooledConnection connection)
         {
-            if (!IsConnectionLifeTimeDetectionEnabled())
+            if (!IsConnectionLifetimeDetectionEnabled())
             {
                 return false;
             }
-            if (connection.LifeTimeTimer.ElapsedMilliseconds > _maxConnLifeTime.TotalMilliseconds)
+            if (connection.LifetimeTimer.ElapsedMilliseconds > _maxConnLifetime.TotalMilliseconds)
             {
                 return true;
             }
@@ -91,9 +91,9 @@ namespace Neo4j.Driver.Internal
             return false;
         }
 
-        private bool IsConnectionLifeTimeDetectionEnabled()
+        private bool IsConnectionLifetimeDetectionEnabled()
         {
-            return _maxConnLifeTime.TotalMilliseconds >= 0;
+            return _maxConnLifetime.TotalMilliseconds >= 0;
         }
 
         private bool HasBeenIdleForTooLong(IPooledConnection connection)

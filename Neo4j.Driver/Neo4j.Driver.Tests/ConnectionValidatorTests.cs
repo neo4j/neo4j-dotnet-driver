@@ -10,17 +10,17 @@ namespace Neo4j.Driver.Tests
     public class ConnectionValidatorTests
     {
         private static ConnectionValidator NewConnectionValidator(
-            TimeSpan? connIdleTimeout = null, TimeSpan? maxConnLifeTime = null)
+            TimeSpan? connIdleTimeout = null, TimeSpan? maxConnLifetime = null)
         {
             if (connIdleTimeout == null)
             {
                 connIdleTimeout = Config.Infinite;
             }
-            if (maxConnLifeTime == null)
+            if (maxConnLifetime == null)
             {
-                maxConnLifeTime = Config.Infinite;
+                maxConnLifetime = Config.Infinite;
             }
-            return new ConnectionValidator(connIdleTimeout.Value, maxConnLifeTime.Value);
+            return new ConnectionValidator(connIdleTimeout.Value, maxConnLifetime.Value);
         }
 
         public class IsConnectionReusableTests
@@ -87,9 +87,9 @@ namespace Neo4j.Driver.Tests
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
                 conn.Setup(x => x.IdleTimer).Returns(MockTimer(10));
-                conn.Setup(x => x.LifeTimeTimer).Returns(MockTimer(10));
+                conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
-                var validator = NewConnectionValidator(maxConnLifeTime: TimeSpan.Zero);
+                var validator = NewConnectionValidator(maxConnLifetime: TimeSpan.Zero);
                 validator.IsValid(conn.Object).Should().BeFalse();
             }
 
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests
                 idleTimmer.Setup(x => x.ElapsedMilliseconds).Returns(10);
                 conn.Setup(x => x.IsOpen).Returns(true);
                 conn.Setup(x => x.IdleTimer).Returns(idleTimmer.Object);
-                conn.Setup(x => x.LifeTimeTimer).Returns(MockTimer(10));
+                conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue);
                 validator.IsValid(conn.Object).Should().BeTrue();

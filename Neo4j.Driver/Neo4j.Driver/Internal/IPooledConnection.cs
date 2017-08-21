@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal
 
         ITimer IdleTimer { get; }
 
-        ITimer LifeTimeTimer { get; }
+        ITimer LifetimeTimer { get; }
     }
 
     internal interface ITimer

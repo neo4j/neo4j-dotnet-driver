@@ -75,8 +75,8 @@ namespace Neo4j.Driver.Internal
 
 
             var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
-            var maxConnectionLifeTime = connectionPoolSettings.MaxConnectionLifeTime;
-            _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifeTime);
+            var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
+            _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
 
             SetupStatisticsProvider(connectionPoolSettings.StatisticsCollector);
         }
