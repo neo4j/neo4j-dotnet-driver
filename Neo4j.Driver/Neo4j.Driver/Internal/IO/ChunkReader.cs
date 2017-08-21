@@ -49,16 +49,15 @@ namespace Neo4j.Driver.Internal.IO
             _logger = logger;
         }
 
-        private bool TryReadFromBuffer(Stream targetStream)
+        private bool TryReadOneCompleteMessageFromBuffer(Stream messageStream)
         {
             while (true)
             {
                 // First try to retrieve the chunk size.
                 if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
                 {
-                    ReadFromBuffer(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
-
-                    _currentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
+                    _currentChunkSize = ReadChunkSize();
+                    
                     // If this is the zero-length message boundary chunk, cleanup and return true.
                     if (_currentChunkSize == 0)
                     {
@@ -74,7 +73,7 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     var count = Math.Min(_currentChunkSize, _lastWritePosition - _lastReadPosition);
 
-                    CopyFromBuffer(targetStream, count);
+                    CopyFromBuffer(messageStream, count);
 
                     _currentChunkSize -= count;
 
@@ -99,14 +98,14 @@ namespace Neo4j.Driver.Internal.IO
             return false;
         } 
 
-        public int ReadNextMessages(Stream targetStream)
+        public int ReadNextMessages(Stream messageStream)
         {
             var messages = 0;
 
-            var previousPosition = targetStream.Position;
+            var previousPosition = messageStream.Position;
             try
             {
-                targetStream.Position = targetStream.Length;
+                messageStream.Position = messageStream.Length;
 
                 while (true)
                 {
@@ -118,7 +117,7 @@ namespace Neo4j.Driver.Internal.IO
                     _lastWritePosition += read;
 
                     // Can we read a whole message from what we have?
-                    if (TryReadFromBuffer(targetStream))
+                    if (TryReadOneCompleteMessageFromBuffer(messageStream))
                     {
                         messages += 1;
 
@@ -127,44 +126,44 @@ namespace Neo4j.Driver.Internal.IO
                 }
 
                 // Try to consume more messages from the left-over data in the buffer
-                var readFromBuffer = TryReadFromBuffer(targetStream);
+                var readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
                 while (readFromBuffer)
                 {
                     messages += 1;
 
-                    readFromBuffer = TryReadFromBuffer(targetStream);
+                    readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
                 }
             }
             finally
             {
-                targetStream.Position = previousPosition;
+                messageStream.Position = previousPosition;
             }
 
             return messages;
         }
 
         
-        public Task<int> ReadNextMessagesAsync(Stream targetStream)
+        public Task<int> ReadNextMessagesAsync(Stream messageStream)
         {
             var taskCompletionSource = new TaskCompletionSource<int>();
 
             // Track and manage target stream's positions.
-            var previousPosition = targetStream.Position;
+            var previousPosition = messageStream.Position;
             taskCompletionSource.Task.ContinueWith(t =>
             {
-                targetStream.Position = previousPosition;
+                messageStream.Position = previousPosition;
             }, TaskContinuationOptions.ExecuteSynchronously);
-            targetStream.Position = targetStream.Length;
+            messageStream.Position = messageStream.Length;
 
             ReadNextChunkLoopAsync(
-                targetStream,
+                messageStream,
                 taskCompletionSource,
                 TaskExtensions.GetCompletedTask());
 
             return taskCompletionSource.Task;
         }
 
-        private Task ReadNextChunkLoopAsync(Stream targetStream, TaskCompletionSource<int> taskCompletionSource,
+        private Task ReadNextChunkLoopAsync(Stream messageStream, TaskCompletionSource<int> taskCompletionSource,
             Task previousTask)
         {
             return previousTask.ContinueWith(pt =>
@@ -197,7 +196,7 @@ namespace Neo4j.Driver.Internal.IO
 
                                 _lastWritePosition += t.Result;
 
-                                return TryReadFromBuffer(targetStream);
+                                return TryReadOneCompleteMessageFromBuffer(messageStream);
                             }, TaskContinuationOptions.ExecuteSynchronously)
                             .ContinueWith(t =>
                             {
@@ -224,12 +223,12 @@ namespace Neo4j.Driver.Internal.IO
                                     var messages = 1;
 
                                     // Try to consume more messages from the left-over data in the buffer
-                                    var readFromBuffer = TryReadFromBuffer(targetStream);
+                                    var readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
                                     while (readFromBuffer)
                                     {
                                         messages += 1;
 
-                                        readFromBuffer = TryReadFromBuffer(targetStream);
+                                        readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
                                     }
 
                                     // Mark the asynchronous task as completed.
@@ -239,7 +238,7 @@ namespace Neo4j.Driver.Internal.IO
                                 }
 
                                 // We need some more data.
-                                return ReadNextChunkLoopAsync(targetStream, taskCompletionSource, t);
+                                return ReadNextChunkLoopAsync(messageStream, taskCompletionSource, t);
                             }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
                 }
                 catch (Exception exc)
@@ -261,11 +260,13 @@ namespace Neo4j.Driver.Internal.IO
             return count <= (_lastWritePosition - _lastReadPosition);
         }
 
-        private void ReadFromBuffer(byte[] buffer, int offset, int count)
+        private int ReadChunkSize()
         {
-            Array.ConstrainedCopy(_buffer, _lastReadPosition, buffer, offset, count);
+            Array.ConstrainedCopy(_buffer, _lastReadPosition, _chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
 
-            _lastReadPosition += count;
+            _lastReadPosition += _chunkSizeBuffer.Length;
+            
+            return PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
         }
         
         private void CopyFromBuffer(Stream target, int count)
