@@ -14,7 +14,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private StringBuilder _stdErr;
         private Process _process;
 
-        private Process CreateProcess(string command, string[] arguments, List<string> captureStdOut, StringBuilder captureStdErr)
+        private static Process CreateProcess(string command, string[] arguments, List<string> captureStdOut, StringBuilder captureStdErr)
         {
             var result = new Process()
             {
