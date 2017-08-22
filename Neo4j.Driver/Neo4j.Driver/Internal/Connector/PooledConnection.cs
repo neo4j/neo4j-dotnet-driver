@@ -29,7 +29,11 @@ namespace Neo4j.Driver.Internal.Connector
             :base (conn)
         {
             _releaseManager = releaseManager;
+            // IdleTimer starts to count when the connection is put back to the pool.
             IdleTimer = new StopwatchBasedTimer();
+            // LifetimeTimer starts to count once the connection is created.
+            LifetimeTimer = new StopwatchBasedTimer();
+            LifetimeTimer.Start();
         }
         public Guid Id { get; } = Guid.NewGuid();
 
@@ -46,6 +50,14 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;
+
+        public override void Destroy()
+        {
+            // stops the timmer
+            IdleTimer.Reset();
+            LifetimeTimer.Reset();
+            base.Destroy();
+        }
 
         public override void Close()
         {
@@ -91,6 +103,7 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public ITimer IdleTimer { get; }
+        public ITimer LifetimeTimer { get; }
     }
 
     internal class StopwatchBasedTimer : ITimer

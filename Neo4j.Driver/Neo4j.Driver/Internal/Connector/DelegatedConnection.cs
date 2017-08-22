@@ -288,7 +288,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
         
-        public void Destroy()
+        public virtual void Destroy()
         {
             Delegate.Destroy();
         }

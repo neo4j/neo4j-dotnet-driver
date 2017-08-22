@@ -55,11 +55,10 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
-            Uri seedUri,
             ISet<Uri> initUris,
             ILogger logger) :
             this(new RoutingTable(initUris),
-                routingSettings, poolManager, seedUri, logger)
+                routingSettings, poolManager, logger)
         {
         }
 
@@ -67,14 +66,13 @@ namespace Neo4j.Driver.Internal.Routing
             IRoutingTable routingTable,
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
-            Uri seedUri,
             ILogger logger)
         {
             _routingTable = routingTable;
             _routingContext = routingSettings.RoutingContext;
-            _poolManager = poolManager;
-            _seedUri = seedUri;
+            _seedUri = routingSettings.InitialServerUri;
 
+            _poolManager = poolManager;
             _logger = logger;
         }
 

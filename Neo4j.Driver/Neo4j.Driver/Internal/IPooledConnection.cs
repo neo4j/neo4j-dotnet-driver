@@ -35,6 +35,8 @@ namespace Neo4j.Driver.Internal
         Task ClearConnectionAsync();
 
         ITimer IdleTimer { get; }
+
+        ITimer LifetimeTimer { get; }
     }
 
     internal interface ITimer

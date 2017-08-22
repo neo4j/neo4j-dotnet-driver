@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 
@@ -99,6 +98,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="MaxConnectionPoolSize"/> : <c>20</c> </item>
         /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
         /// <item><see cref="ConnectionIdleTimeout"/>: <c>Infinite(-1ms)</c></item>
+        /// <item><see cref="MaxConnectionLifetime"/>: <c>Infinite(-1ms)</c></item>
         /// <br></br>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
@@ -190,6 +190,13 @@ namespace Neo4j.Driver.V1
         /// a.k.a. pooled connections will never be stale.
         /// </summary>
         public TimeSpan ConnectionIdleTimeout { get; set; } = Infinite;
+
+        /// <summary>
+        /// Gets or sets the maximum connection lifetime on pooled connecitons.
+        /// A connection that has been created for longer than the given time will be closed once it is seen.
+        /// Any negative <see cref="TimeSpan"/> value will be considered to be "Infinite",
+        /// </summary>
+        public TimeSpan MaxConnectionLifetime { get; set; } = Infinite;
 
         /// <summary>
         /// Gets or sets the connections to support ipv6 addresses.
@@ -306,6 +313,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan)
             {
                 _config.ConnectionIdleTimeout = timeSpan;
+                return this;
+            }
+
+            public IConfigBuilder WithMaxConnectionLifetime(TimeSpan timeSpan)
+            {
+                _config.MaxConnectionLifetime = timeSpan;
                 return this;
             }
 
@@ -456,6 +469,15 @@ namespace Neo4j.Driver.V1
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan);
+
+        /// <summary>
+        /// Specify the maximum connection life time.
+        /// The connection that has been created for longer than specified time will not be reused but closed.
+        /// </summary>
+        /// <param name="timeSpan">The max timespan that a connection can be reused after has been created for.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithMaxConnectionLifetime(TimeSpan timeSpan);
 
         /// <summary>
         /// Setting this option to true will enable ipv6 on socket connections.

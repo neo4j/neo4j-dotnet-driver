@@ -27,8 +27,8 @@ namespace Neo4j.Driver.Internal.Routing
     internal class LoadBalancer : IConnectionProvider, IClusterErrorHandler, IClusterConnectionPoolManager
     {
         private readonly IRoutingTableManager _routingTableManager;
-        private readonly IClusterConnectionPool _clusterConnectionPool;
         private readonly ILoadBalancingStrategy _loadBalancingStrategy;
+        private readonly IClusterConnectionPool _clusterConnectionPool;
         private readonly ILogger _logger;
 
         private volatile bool _disposeCalled = false;
@@ -41,11 +41,13 @@ namespace Neo4j.Driver.Internal.Routing
             Config config)
         {
             var logger = config.Logger;
-            var uris = connectionSettings.InitialServerUri.Resolve();
+            var uris = routingSettings.InitialServerUri.Resolve();
+
             _clusterConnectionPool = new ClusterConnectionPool(
                 connectionSettings, poolSettings, bufferSettings, uris, logger);
-            _routingTableManager = new RoutingTableManager(routingSettings, this, connectionSettings.InitialServerUri,
-                uris, logger);
+            _routingTableManager = new RoutingTableManager(
+                routingSettings, this, uris, logger);
+
             _loadBalancingStrategy = CreateLoadBalancingStrategy(config, _clusterConnectionPool);
             _logger = logger;
         }
@@ -263,19 +265,19 @@ namespace Neo4j.Driver.Internal.Routing
 
         private static ILoadBalancingStrategy CreateLoadBalancingStrategy(Config config, IClusterConnectionPool pool)
         {
+            LoadBalancingStrategy strategy = config.LoadBalancingStrategy;
             var logger = config.Logger;
-            var configuredStrategy = config.LoadBalancingStrategy;
-            if (configuredStrategy == LoadBalancingStrategy.LeastConnected)
+            if (strategy == LoadBalancingStrategy.LeastConnected)
             {
                 return new LeastConnectedLoadBalancingStrategy(pool, logger);
             }
-            else if (configuredStrategy == LoadBalancingStrategy.RoundRobin)
+            else if (strategy == LoadBalancingStrategy.RoundRobin)
             {
                 return new RoundRobinLoadBalancingStrategy(logger);
             }
             else
             {
-                throw new ArgumentException($"Unknown load balancing strategy: {configuredStrategy}");
+                throw new ArgumentException($"Unknown load balancing strategy: {strategy}");
             }
         }
     }
