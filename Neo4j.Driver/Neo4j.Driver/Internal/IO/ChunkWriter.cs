@@ -18,17 +18,26 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal class ChunkWriter: IChunkWriter
+    internal class ChunkWriter: Stream, IChunkWriter
     {
+        private static readonly byte[] ZeroChunkSizeBuffer = PackStreamBitConverter.GetBytes((ushort) 0);
+
         private readonly int _chunkSize;
         private readonly Stream _downStream;
         private readonly MemoryStream _chunkStream;
         private readonly ILogger _logger;
+        private readonly int _defaultBufferSize;
+        private readonly int _maxBufferSize;
+        private int _shrinkCounter = 0;
+
+        private long _startPos = -1;
+        private long _dataPos = -1;
 
         private readonly byte[] _buffer = new byte[8 * 1024];
 
@@ -50,7 +59,20 @@ namespace Neo4j.Driver.Internal.IO
 
         }
 
+        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger)
+            : this(downStream, defaultBufferSize, maxBufferSize, logger, Constants.MaxChunkSize)
+        {
+
+        }
+
+
         public ChunkWriter(Stream downStream, ILogger logger, int chunkSize)
+            : this(downStream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, logger, chunkSize)
+        {
+
+        }
+
+        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize, Constants.MinChunkSize, nameof(chunkSize));
@@ -59,41 +81,85 @@ namespace Neo4j.Driver.Internal.IO
             _logger = logger;
             _chunkSize = chunkSize;
             _downStream = downStream;
-            _chunkStream = new MemoryStream();
+            _defaultBufferSize = defaultBufferSize;
+            _maxBufferSize = maxBufferSize;
+            _chunkStream = new MemoryStream(_defaultBufferSize);
         }
 
-        public void WriteChunk(byte[] buffer, int offset, int count)
-        {
-            if (buffer.Length == 0 || count == 0)
-            {
-                byte[] chunkSize =
-                    PackStreamBitConverter.GetBytes((ushort)count);
+        public Stream ChunkerStream => this;
 
-                _chunkStream.Write(chunkSize, 0, chunkSize.Length);
-                _chunkStream.Write(buffer, offset, count);
-            }
-            else
+        public void OpenChunk()
+        {
+            // Emit size buffers into the buffer
+            _chunkStream.Write(ZeroChunkSizeBuffer, 0, ZeroChunkSizeBuffer.Length);
+
+            // Mark positions
+            _dataPos = _chunkStream.Position;
+            _startPos = _dataPos - ZeroChunkSizeBuffer.Length;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            var currentLength = _chunkStream.Position - _dataPos;
+            var nextLength = currentLength + count;
+
+            // Is the data exceeding our maximum chunk size?
+            if (nextLength > _chunkSize)
             {
                 var leftToChunk = count;
                 var thisChunkIndex = offset;
 
                 while (leftToChunk > 0)
                 {
-                    var thisChunkSize = (int)Math.Min(leftToChunk, _chunkSize);
+                    var thisChunkSize = (int)Math.Min(leftToChunk, _chunkSize - currentLength);
 
-                    byte[] chunkSize =
-                        PackStreamBitConverter.GetBytes((ushort)thisChunkSize);
-
-                    _chunkStream.Write(chunkSize, 0, chunkSize.Length);
                     _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
 
                     thisChunkIndex += thisChunkSize;
                     leftToChunk -= thisChunkSize;
+
+                    currentLength = 0;
+
+                    // If there's still more data, then close existing chunk and open a new one.
+                    if (leftToChunk > 0)
+                    {
+                        CloseChunk();
+
+                        OpenChunk();
+                    }
                 }
+            }
+            else
+            {
+                _chunkStream.Write(buffer, offset, count);
             }
         }
 
-        public void Flush()
+        public void CloseChunk()
+        {
+            // Fill size buffers with the actual length of the chunk.
+            var count = _chunkStream.Position - _dataPos;
+
+            if (count > 0)
+            {
+                byte[] chunkSize =
+                    PackStreamBitConverter.GetBytes((ushort)count);
+
+                var previousPos = _chunkStream.Position;
+                try
+                {
+                    _chunkStream.Position = _startPos;
+
+                    _chunkStream.Write(chunkSize, 0, chunkSize.Length);
+                }
+                finally
+                {
+                    _chunkStream.Position = previousPos;
+                }
+            }
+        }
+        
+        public void Send()
         {
             if (_logger != null)
             {
@@ -105,11 +171,10 @@ namespace Neo4j.Driver.Internal.IO
             _chunkStream.Position = 0;
             _chunkStream.CopyTo(_downStream);
 
-            _chunkStream.Position = 0;
-            _chunkStream.SetLength(0);
+            Cleanup();
         }
 
-        public Task FlushAsync()
+        public Task SendAsync()
         {
             if (_logger != null)
             {
@@ -124,12 +189,77 @@ namespace Neo4j.Driver.Internal.IO
                 _chunkStream.CopyToAsync(_downStream)
                     .ContinueWith(t =>
                     {
-                        _chunkStream.Position = 0;
-                        _chunkStream.SetLength(0);
+                        Cleanup();
 
                         return TaskExtensions.GetCompletedTask();
                     }).Unwrap();
         }
+
+        private void Cleanup()
+        {
+            _chunkStream.Position = 0;
+            _chunkStream.SetLength(0);
+            if (_chunkStream.Capacity > _maxBufferSize)
+            {
+                _logger?.Info(
+                    $@"Shrinking write buffers to the default write buffer size {
+                            _defaultBufferSize
+                        } since its size reached {
+                            _chunkStream.Capacity
+                        } which is larger than the maximum write buffer size {
+                            _maxBufferSize
+                        }. This has already occurred {
+                            _shrinkCounter
+                        } times for this connection.");
+
+                _shrinkCounter += 1;
+
+                _chunkStream.Capacity = _defaultBufferSize;
+            }
+        }
+
+        #region Stream Forwarders
+
+        public override long Position
+        {
+            get => _chunkStream.Position;
+            set => _chunkStream.Position = value;
+        }
+
+        public override bool CanRead => _chunkStream.CanRead;
+
+        public override bool CanWrite => _chunkStream.CanWrite;
+
+        public override bool CanSeek => _chunkStream.CanSeek;
+
+        public override long Length => _chunkStream.Length;
+
+        public override void SetLength(long value)
+        {
+            _chunkStream.SetLength(value);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            return _chunkStream.Seek(offset, origin);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return _chunkStream.Read(buffer, offset, count);
+        }
+
+        public override void Flush()
+        {
+            _chunkStream.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return _chunkStream.FlushAsync(cancellationToken);
+        }
+
+        #endregion
 
     }
 }

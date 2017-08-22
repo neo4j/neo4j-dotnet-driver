@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,11 +25,15 @@ namespace Neo4j.Driver.Internal.IO
     internal interface IChunkWriter
     {
 
-        void WriteChunk(byte[] buffer, int offset, int count);
+        Stream ChunkerStream { get; }
 
-        void Flush();
+        void OpenChunk();
 
-        Task FlushAsync();
+        void CloseChunk();
+
+        void Send();
+
+        Task SendAsync();
 
     }
 }

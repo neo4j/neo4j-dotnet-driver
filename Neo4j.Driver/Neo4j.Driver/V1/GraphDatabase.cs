@@ -206,6 +206,7 @@ namespace Neo4j.Driver.V1
             var routingSettings = new RoutingSettings(routingContext);
             var connectionSettings = new ConnectionSettings(parsedUri, authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config);
+            var bufferSettings = new BufferSettings(config);
 
             var logger = config.Logger;
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
@@ -218,10 +219,10 @@ namespace Neo4j.Driver.V1
                     {
                         throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
                     }
-                    connectionProvider = new ConnectionPool(parsedUri, connectionSettings, connectionPoolSettings, logger);
+                    connectionProvider = new ConnectionPool(parsedUri, connectionSettings, connectionPoolSettings, bufferSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(routingSettings, connectionSettings, connectionPoolSettings, config);
+                    connectionProvider = new LoadBalancer(routingSettings, connectionSettings, connectionPoolSettings, bufferSettings, config);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");

@@ -32,7 +32,6 @@ namespace Neo4j.Driver.Internal.IO
 
         private readonly IChunkWriter _chunkWriter;
         private readonly PackStreamWriter _packStreamWriter;
-        private readonly MemoryStream _bufferStream;
         private readonly ILogger _logger;
 
         public BoltWriter(Stream stream)
@@ -42,58 +41,49 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         public BoltWriter(Stream stream, bool supportBytes)
-            : this(stream, null, supportBytes)
+            : this(stream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, supportBytes)
+        {
+            
+        }
+
+        public BoltWriter(Stream stream, int defaultBufferSize, int maxBufferSize, bool supportBytes)
+            : this(stream, defaultBufferSize, maxBufferSize, null, supportBytes)
         {
 
         }
 
-        public BoltWriter(Stream stream, ILogger logger, bool supportBytes)
-            : this(new ChunkWriter(stream, logger), logger, supportBytes)
+        public BoltWriter(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, bool supportBytes)
         {
-
-        }
-
-        public BoltWriter(IChunkWriter chunkWriter, ILogger logger, bool supportBytes)
-        {
-            Throw.ArgumentNullException.IfNull(chunkWriter, nameof(chunkWriter));
+            Throw.ArgumentNullException.IfNull(stream, nameof(stream));
 
             _logger = logger;
-            _chunkWriter = chunkWriter;
-            _bufferStream = new MemoryStream();
-            _packStreamWriter = supportBytes ? new PackStreamWriter(_bufferStream) : new PackStreamWriterBytesIncompatible(_bufferStream);
+            _chunkWriter = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger);
+            _packStreamWriter = supportBytes ? new PackStreamWriter(_chunkWriter.ChunkerStream) : new PackStreamWriterBytesIncompatible(_chunkWriter.ChunkerStream);
         }
 
         public void Write(IRequestMessage message)
         {
+            _chunkWriter.OpenChunk();
+
             message.Dispatch(this);
 
-            // write buffered message into chunk writer
-            ArraySegment<byte> buffer;
-#if NET452
-            buffer = new ArraySegment<byte>(_bufferStream.GetBuffer(), 0, (int)_bufferStream.Length);
-#else
-            if (_bufferStream.TryGetBuffer(out buffer) == false)
-            {
-                buffer = new ArraySegment<byte>(_bufferStream.ToArray());
-            }
-#endif
-            _chunkWriter.WriteChunk(buffer.Array, buffer.Offset, buffer.Count);
-            _bufferStream.SetLength(0);
+            _chunkWriter.CloseChunk();
 
             // add message boundary
-            _chunkWriter.WriteChunk(MessageBoundary, 0, MessageBoundary.Length);
+            _chunkWriter.OpenChunk();
+            _chunkWriter.CloseChunk();
         }
 
         public void Flush()
         {
-            _chunkWriter.Flush();
+            _chunkWriter.Send();
         }
 
         public Task FlushAsync()
         {
-            return _chunkWriter.FlushAsync();
+            return _chunkWriter.SendAsync();
         }
-
+        
         public void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
         {
             _packStreamWriter.WriteStructHeader(1, MsgInit);

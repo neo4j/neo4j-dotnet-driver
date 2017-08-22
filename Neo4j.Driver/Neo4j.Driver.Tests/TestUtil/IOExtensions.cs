@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
             ChunkReader chunkReader = new ChunkReader(mBytesStream, logger);
 
             MemoryStream mStream = new MemoryStream();
-            chunkReader.ReadNextMessage(mStream);
+            chunkReader.ReadNextMessages(mStream);
 
             mStream.Position = 0;
 

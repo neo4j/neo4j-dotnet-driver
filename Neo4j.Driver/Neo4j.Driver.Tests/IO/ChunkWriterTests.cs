@@ -72,8 +72,10 @@ namespace Neo4j.Driver.Tests.IO
                     bytes[i] = (byte)(i + 1);
                 }
 
-                chunker.WriteChunk(bytes, 0, bytes.Length);
-                chunker.Flush();
+                chunker.OpenChunk();
+                chunker.Write(bytes, 0, bytes.Length);
+                chunker.CloseChunk();
+                chunker.Send();
 
                 byte[] expected = {0x00, 0x06, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x00, 0x04, 0x07, 0x08, 0x09, 0x0A};
 
@@ -92,8 +94,10 @@ namespace Neo4j.Driver.Tests.IO
                     bytes[i] = (byte)(i + 1);
                 }
 
-                chunker.WriteChunk(bytes, 0, bytes.Length);
-                chunker.Flush();
+                chunker.OpenChunk();
+                chunker.Write(bytes, 0, bytes.Length);
+                chunker.CloseChunk();
+                chunker.Send();
 
                 byte[] expected = new byte[ushort.MaxValue + 2];
 
@@ -113,8 +117,10 @@ namespace Neo4j.Driver.Tests.IO
                 var stream = new MemoryStream();
                 var chunker = new ChunkWriter(stream);
 
-                chunker.WriteChunk(new byte[0], 0, 0);
-                chunker.Flush();
+                chunker.OpenChunk();
+                chunker.Write(new byte[0], 0, 0);
+                chunker.CloseChunk();
+                chunker.Send();
 
                 Assert.Equal(new byte[2], stream.ToArray());
             }
@@ -126,8 +132,10 @@ namespace Neo4j.Driver.Tests.IO
                 var stream = new MemoryStream();
                 var chunker = new ChunkWriter(stream, loggerMock.Object);
 
-                chunker.WriteChunk(new byte[0], 0, 0);
-                chunker.Flush();
+                chunker.OpenChunk();
+                chunker.Write(new byte[0], 0, 0);
+                chunker.CloseChunk();
+                chunker.Send();
 
                 loggerMock.Verify(x => x.Trace("C: ", new byte[2], 0, 2), Times.Once);
             }
@@ -144,8 +152,10 @@ namespace Neo4j.Driver.Tests.IO
                     bytes[i] = (byte)(i + 1);
                 }
 
-                chunker.WriteChunk(bytes, 0, bytes.Length);
-                await chunker.FlushAsync();
+                chunker.OpenChunk();
+                chunker.Write(bytes, 0, bytes.Length);
+                chunker.CloseChunk();
+                await chunker.SendAsync();
 
                 byte[] expected = { 0x00, 0x06, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x00, 0x04, 0x07, 0x08, 0x09, 0x0A };
 
@@ -164,8 +174,10 @@ namespace Neo4j.Driver.Tests.IO
                     bytes[i] = (byte)(i + 1);
                 }
 
-                chunker.WriteChunk(bytes, 0, bytes.Length);
-                await chunker.FlushAsync();
+                chunker.OpenChunk();
+                chunker.Write(bytes, 0, bytes.Length);
+                chunker.CloseChunk();
+                await chunker.SendAsync();
 
                 byte[] expected = new byte[ushort.MaxValue + 2];
 
@@ -185,8 +197,10 @@ namespace Neo4j.Driver.Tests.IO
                 var stream = new MemoryStream();
                 var chunker = new ChunkWriter(stream);
 
-                chunker.WriteChunk(new byte[0], 0, 0);
-                await chunker.FlushAsync();
+                chunker.OpenChunk();
+                chunker.Write(new byte[0], 0, 0);
+                chunker.CloseChunk();
+                await chunker.SendAsync();
 
                 Assert.Equal(new byte[2], stream.ToArray());
             }
@@ -198,13 +212,104 @@ namespace Neo4j.Driver.Tests.IO
                 var stream = new MemoryStream();
                 var chunker = new ChunkWriter(stream, loggerMock.Object);
 
-                chunker.WriteChunk(new byte[0], 0, 0);
-                await chunker.FlushAsync();
+                chunker.OpenChunk();
+                chunker.Write(new byte[0], 0, 0);
+                chunker.CloseChunk();
+                await chunker.SendAsync();
 
                 loggerMock.Verify(x => x.Trace("C: ", new byte[2], 0, 2), Times.Once);
             }
 
 
+        }
+
+        public class BufferCleanUp
+        {
+
+            [Fact]
+            public void ShouldNotResetCapacityWhenCapacityDoesNotExceedMaxBufferSize()
+            {
+                var loggerMock = new Mock<ILogger>();
+                var stream = new MemoryStream();
+                var chunker = new ChunkWriter(stream, 256, 512, loggerMock.Object);
+
+                chunker.OpenChunk();
+                chunker.Write(new byte[128], 0, 128);
+                chunker.CloseChunk();
+                chunker.Send();
+
+                loggerMock.Verify(x => x.Info(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldResetCapacityWhenCapacityExceedsMaxBufferSize()
+            {
+                var loggerMock = new Mock<ILogger>();
+                var stream = new MemoryStream();
+                var chunker = new ChunkWriter(stream, 10, 20, loggerMock.Object);
+
+                chunker.OpenChunk();
+                chunker.Write(new byte[128], 0, 128);
+                chunker.CloseChunk();
+                chunker.Send();
+
+                loggerMock.Verify(x => x.Info(It.Is<string>(s => s.StartsWith("Shrinking write buffers to the default write buffer size"))), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldResetCapacityTwiceWhenCapacityExceedsMaxBufferSize()
+            {
+                var loggerMock = new Mock<ILogger>();
+                var stream = new MemoryStream();
+                var chunker = new ChunkWriter(stream, 10, 20, loggerMock.Object);
+
+                chunker.OpenChunk();
+                chunker.Write(new byte[128], 0, 128);
+                chunker.CloseChunk();
+                chunker.Send();
+
+                chunker.OpenChunk();
+                chunker.Write(new byte[128], 0, 128);
+                chunker.CloseChunk();
+                chunker.Send();
+
+                loggerMock.Verify(x => x.Info(It.Is<string>(s => s.StartsWith("Shrinking write buffers to the default write buffer size"))), Times.Exactly(2));
+            }
+
+            [Fact]
+            public async void ShouldResetCapacityWhenCapacityExceedsMaxBufferSizeAsync()
+            {
+                var loggerMock = new Mock<ILogger>();
+                var stream = new MemoryStream();
+                var chunker = new ChunkWriter(stream, 10, 20, loggerMock.Object);
+
+                chunker.OpenChunk();
+                chunker.Write(new byte[128], 0, 128);
+                chunker.CloseChunk();
+                await chunker.SendAsync();
+
+                loggerMock.Verify(x => x.Info(It.Is<string>(s => s.StartsWith("Shrinking write buffers to the default write buffer size"))), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldResetCapacityTwiceWhenCapacityExceedsMaxBufferSizeAsync()
+            {
+                var loggerMock = new Mock<ILogger>();
+                var stream = new MemoryStream();
+                var chunker = new ChunkWriter(stream, 10, 20, loggerMock.Object);
+
+                chunker.OpenChunk();
+                chunker.Write(new byte[128], 0, 128);
+                chunker.CloseChunk();
+                await chunker.SendAsync();
+
+                chunker.OpenChunk();
+                chunker.Write(new byte[128], 0, 128);
+                chunker.CloseChunk();
+                await chunker.SendAsync();
+
+                loggerMock.Verify(x => x.Info(It.Is<string>(s => s.StartsWith("Shrinking write buffers to the default write buffer size"))), Times.Exactly(2));
+            }
         }
 
     }

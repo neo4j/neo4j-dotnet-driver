@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
         public SocketClientTestHarness(Uri uri=null)
         {
             MockTcpSocketClient = new Mock<ITcpSocketClient>();
-            Client = new SocketClient(uri, new Mock<EncryptionManager>().Object, true, false, new Mock<ILogger>().Object, MockTcpSocketClient.Object);
+            Client = new SocketClient(uri, new Mock<EncryptionManager>().Object, true, false, new Mock<ILogger>().Object, new BufferSettings(Config.DefaultConfig), MockTcpSocketClient.Object);
         }
 
         public async Task ExpectException<T>(Func<Task> func, string errorMessage=null) where T : Exception

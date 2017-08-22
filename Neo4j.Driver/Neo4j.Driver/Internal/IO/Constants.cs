@@ -22,9 +22,13 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal static class Constants
     {
-        public const int BufferSize = 8 * 1024;
         public const int MaxChunkSize = ushort.MaxValue;
         public const int MinChunkSize = 6;
-        public const int MaxChunkBufferSize = MaxChunkSize;
+
+        public const int ChunkBufferSize = 16 * 1024;
+        public const int DefaultReadBufferSize = 32 * 1024;
+        public const int MaxReadBufferSize = 128 * 1024;
+        public const int DefaultWriteBufferSize = 16 * 1024;
+        public const int MaxWriteBufferSize = 64 * 1024;
     }
 }

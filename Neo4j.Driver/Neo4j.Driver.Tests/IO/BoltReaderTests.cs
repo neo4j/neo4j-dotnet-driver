@@ -491,6 +491,61 @@ namespace Neo4j.Driver.Tests.IO
 
         }
 
+        public class BufferCleanUp
+        {
+
+            [Fact]
+            public void ShouldNotResetCapacityWhenCapacityDoesNotExceedMaxBufferSize()
+            {
+                var dict = (IDictionary<string, object>)null;
+                var mockInput =
+                    IOExtensions.CreateMockStream("00 14 B1 70 A1 86  66 69 65 6C  64 73 92 84  6E 61 6D 65 83 61 67 65 00 00");
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                mockResponseHandler.Setup(x => x.HandleSuccessMessage(It.IsAny<IDictionary<string, object>>()))
+                    .Callback<IDictionary<string, object>>(x => dict = x);
+                var mockLogger = new Mock<ILogger>();
+                var reader = new BoltReader(mockInput.Object, 256, 512, mockLogger.Object, true);
+
+                reader.Read(mockResponseHandler.Object);
+
+                mockLogger.Verify(x => x.Info(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldResetCapacityWhenCapacityExceedsMaxBufferSize()
+            {
+                var dict = (IDictionary<string, object>)null;
+                var mockInput =
+                    IOExtensions.CreateMockStream("00 14 B1 70 A1 86  66 69 65 6C  64 73 92 84  6E 61 6D 65 83 61 67 65 00 00");
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                mockResponseHandler.Setup(x => x.HandleSuccessMessage(It.IsAny<IDictionary<string, object>>()))
+                    .Callback<IDictionary<string, object>>(x => dict = x);
+                var mockLogger = new Mock<ILogger>();
+                var reader = new BoltReader(mockInput.Object, 10, 15, mockLogger.Object, true);
+
+                reader.Read(mockResponseHandler.Object);
+
+                mockLogger.Verify(x => x.Info(It.Is<string>(s => s.StartsWith("Shrinking read buffers to the default read buffer size"))), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldResetCapacityWhenCapacityExceedsMaxBufferSizeAsync()
+            {
+                var dict = (IDictionary<string, object>)null;
+                var mockInput =
+                    IOExtensions.CreateMockStream("00 14 B1 70 A1 86  66 69 65 6C  64 73 92 84  6E 61 6D 65 83 61 67 65 00 00");
+                var mockResponseHandler = new Mock<IMessageResponseHandler>();
+                mockResponseHandler.Setup(x => x.HandleSuccessMessage(It.IsAny<IDictionary<string, object>>()))
+                    .Callback<IDictionary<string, object>>(x => dict = x);
+                var mockLogger = new Mock<ILogger>();
+                var reader = new BoltReader(mockInput.Object, 10, 15, mockLogger.Object, true);
+
+                await reader.ReadAsync(mockResponseHandler.Object);
+
+                mockLogger.Verify(x => x.Info(It.Is<string>(s => s.StartsWith("Shrinking read buffers to the default read buffer size"))), Times.Once);
+            }
+
+        }
 
         public class UnpackStructureMethod
         {

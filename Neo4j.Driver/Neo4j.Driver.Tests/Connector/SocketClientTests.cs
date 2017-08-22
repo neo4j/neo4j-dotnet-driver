@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests
                     0x61, 0x67, 0x65, 0x20, 0x31, 0xA0, 0x00, 0x00
                 };
                 var expectedLength = expectedBytes.Length;
-                expectedBytes = expectedBytes.PadRight(Constants.BufferSize);
+                expectedBytes = expectedBytes.PadRight(8 * 1024);
 
                 var messageHandler = new MessageResponseHandler();
                 messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
