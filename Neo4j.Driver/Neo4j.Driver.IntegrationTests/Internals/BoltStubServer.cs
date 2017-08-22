@@ -33,6 +33,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private readonly IShellCommandRunner _commandRunner;
         private readonly int _port;
+        private readonly TcpClient _testTcpClient = new TcpClient();
 
         private BoltStubServer(string script, int port)
         {
@@ -49,6 +50,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Dispose()
         {
+            _testTcpClient.Dispose();
             _commandRunner.EndRunCommand();
             WaitForServer(_port, ServerStatus.Offline);
         }
@@ -68,7 +70,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             Online, Offline
         }
 
-        private static void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
+        private void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
         {
             var retryAttempts = 20;
             for (var i = 0; i < retryAttempts; i++)
@@ -76,9 +78,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 ServerStatus currentStatus;
                 try
                 {
-                    var tcpClient = new TcpClient();
-                    tcpClient.Connect("127.0.0.1", port);
-                    if (tcpClient.Connected)
+                    _testTcpClient.Connect("127.0.0.1", port);
+                    if (_testTcpClient.Connected)
                     {
                         currentStatus = ServerStatus.Online;
                     }
