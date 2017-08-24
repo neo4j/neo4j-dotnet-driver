@@ -49,7 +49,12 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 var major = int.Parse(match.Groups[2].ToString());
                 var minor = int.Parse(match.Groups[3].ToString());
-                var patch = int.Parse(match.Groups[4].ToString());
+                var patch = 0;
+                var patchString = match.Groups[4].ToString();
+                if ( patchString != null && patchString.Length != 0 )
+                {
+                    patch = int.Parse( patchString );
+                }
                 return new ServerVersion(major, minor, patch);
             }
             return null;
