@@ -73,7 +73,7 @@ namespace Neo4j.Driver.IntegrationTests
 
                 // Then
                 exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should().Be("Cannot understand value with type System.Byte[]");
+                exception.Message.Should().Be("Cannot understand values with type System.Byte[]");
             }
         }
 
