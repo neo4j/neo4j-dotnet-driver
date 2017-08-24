@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface ISocketClient : IDisposable
     {
-        Task StartAsync(TimeSpan timeOut);
+        Task StartAsync();
         void Send(IEnumerable<IRequestMessage> messages);
         Task SendAsync(IEnumerable<IRequestMessage> messages);
         void Receive(IMessageResponseHandler responseHandler);

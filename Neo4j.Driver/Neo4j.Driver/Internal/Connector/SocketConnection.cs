@@ -29,7 +29,6 @@ namespace Neo4j.Driver.Internal.Connector
     {
         private readonly ISocketClient _client;
         private readonly IAuthToken _authToken;
-        private readonly TimeSpan _connectionTimeout;
         private readonly string _userAgent;
         private readonly IMessageResponseHandler _responseHandler;
 
@@ -40,16 +39,13 @@ namespace Neo4j.Driver.Internal.Connector
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
             ILogger logger)
-            : this(
-                new SocketClient(uri, connectionSettings.EncryptionManager, connectionSettings.SocketKeepAliveEnabled,
-                    connectionSettings.Ipv6Enabled, logger, bufferSettings),
-                connectionSettings.AuthToken, connectionSettings.ConnectionTimeout, connectionSettings.UserAgent,
-                logger, new ServerInfo(uri))
+            : this(new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, logger),
+                connectionSettings.AuthToken, connectionSettings.UserAgent, logger, new ServerInfo(uri))
         {
         }
 
         internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
-            TimeSpan connectionTimeout, string userAgent, ILogger logger, IServerInfo server,
+            string userAgent, ILogger logger, IServerInfo server,
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
@@ -59,7 +55,6 @@ namespace Neo4j.Driver.Internal.Connector
 
             _client = socketClient;
             _authToken = authToken;
-            _connectionTimeout = connectionTimeout;
             _userAgent = userAgent;
             Server = server;
 
@@ -71,13 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                var connected = Task.Run(() => _client.StartAsync(_connectionTimeout)).Wait(_connectionTimeout);
-                if (!connected)
-                {
-                    throw new IOException(
-                        $"Failed to connect to the server {Server.Address} within connection timeout {_connectionTimeout.TotalMilliseconds}ms");
-                }
-
+                Task.Run(() => _client.StartAsync()).Wait();
                 Init(_authToken);
             }
             catch (AggregateException e)
@@ -89,7 +78,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task InitAsync()
         {
-            await _client.StartAsync(_connectionTimeout).ConfigureAwait(false);
+            await _client.StartAsync().ConfigureAwait(false);
             await InitAsync(_authToken).ConfigureAwait(false);
         }
 

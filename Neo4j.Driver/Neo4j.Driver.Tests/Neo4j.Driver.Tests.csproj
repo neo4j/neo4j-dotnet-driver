@@ -103,6 +103,7 @@
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="BookmarkTests.cs" />
     <Compile Include="ConnectionValidatorTests.cs" />
+    <Compile Include="Connector\TcpSocketClientTests.cs" />
     <Compile Include="IO\BoltReaderTests.cs" />
     <Compile Include="IO\BoltWriterTests.cs" />
     <Compile Include="IO\ChunkReaderTests.cs" />

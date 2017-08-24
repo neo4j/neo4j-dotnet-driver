@@ -167,7 +167,7 @@ namespace Neo4j.Driver.V1
         /// The max connection pool size specifies the allowed maximum number of idle and current in-use connections by the driver.
         /// a.k.a. ConnectionPoolSize = IdleConnectionPoolSize + InUseConnectionSize.
         /// When a driver reaches its allowed maximum connection pool size, no new connections can be established.
-        /// Instead all threads that require a new connection have to wait and retry until an idle connection is available to reclaim from the pool
+        /// Instead all threads that require a new connection have to wait until a connection is available to reclaim.
         /// See <see cref="ConnectionAcquisitionTimeout"/>for the maximum waiting time to acquire an idle connection from the pool.
         /// It is hightly suggested to set a maximum number of connection pool size when using this driver asynchronously,
         /// otherwise when there is a burst of requests, establishing new connections might push the resource usage of this driver badly.

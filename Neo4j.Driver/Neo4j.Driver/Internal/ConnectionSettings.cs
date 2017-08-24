@@ -26,10 +26,7 @@ namespace Neo4j.Driver.Internal
 
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
-        public EncryptionManager EncryptionManager { get; }
-        public TimeSpan ConnectionTimeout { get; }
-        public bool SocketKeepAliveEnabled { get; }
-        public bool Ipv6Enabled { get; }
+        public SocketSettings SocketSettings { get; set; }
 
         public ConnectionSettings(IAuthToken auth, Config config)
         : this(auth, new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger),
@@ -45,11 +42,22 @@ namespace Neo4j.Driver.Internal
             IfNull(encryptionManager, nameof(encryptionManager));
 
             AuthToken = authToken;
-            EncryptionManager = encryptionManager;
-            ConnectionTimeout = connectionTimeout;
             UserAgent = userAgent ?? DefaultUserAgent;
-            SocketKeepAliveEnabled = socketKeepAlive;
-            Ipv6Enabled = ipv6Enabled;
+
+            SocketSettings = new SocketSettings
+            {
+                EncryptionManager =  encryptionManager,
+                ConnectionTimeout = connectionTimeout,
+                SocketKeepAliveEnabled = socketKeepAlive,
+                Ipv6Enabled = ipv6Enabled
+            };
         }
+    }
+    internal class SocketSettings
+    {
+        public EncryptionManager EncryptionManager { get; set; }
+        public TimeSpan ConnectionTimeout { get; set; }
+        public bool SocketKeepAliveEnabled { get; set; }
+        public bool Ipv6Enabled { get; set; }
     }
 }

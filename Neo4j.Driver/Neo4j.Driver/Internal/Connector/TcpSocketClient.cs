@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
@@ -28,36 +29,34 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class TcpSocketClient : ITcpSocketClient
     {
-        private readonly TcpClient _client;
+        private TcpClient _client;
         private Stream _stream;
-        private readonly bool _ipv6Enabled = false;
 
+        private readonly bool _ipv6Enabled;
         private readonly EncryptionManager _encryptionManager;
-
-        public TcpSocketClient(EncryptionManager encryptionManager, bool keepAlive, bool ipv6Enabled, ILogger logger = null)
-        {
-            _encryptionManager = encryptionManager;
-            _ipv6Enabled = ipv6Enabled;
-            if (_ipv6Enabled)
-            {
-                _client = new TcpClient(AddressFamily.InterNetworkV6);
-                _client.Client.DualMode = true;
-            }
-            else
-            {
-                _client = new TcpClient();
-            }
-            _client.NoDelay = true;
-            _client.Client.NoDelay = true;
-            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, keepAlive);
-        }
+        private readonly TimeSpan _connectionTimeout;
+        private readonly bool _socketKeepAliveEnabled;
+        private readonly ILogger _logger;
 
         public Stream ReadStream => _stream;
         public Stream WriteStream => _stream;
 
-        public async Task ConnectAsync(Uri uri, TimeSpan timeOut)
+        // only used in tests
+        internal TcpClient Client => _client;
+
+        public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
         {
-            await Connect(uri, timeOut).ConfigureAwait(false);
+            _logger = logger;
+            _encryptionManager = socketSettings.EncryptionManager;
+            _ipv6Enabled = socketSettings.Ipv6Enabled;
+            _connectionTimeout = socketSettings.ConnectionTimeout;
+            _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
+        }
+
+
+        public async Task ConnectAsync(Uri uri)
+        {
+            await ConnectSocketAsync(uri).ConfigureAwait(false);
             if (!_encryptionManager.UseTls)
             {
                 _stream = _client.GetStream();
@@ -80,38 +79,62 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private async Task Connect(Uri uri, TimeSpan timeOut)
+        private async Task ConnectSocketAsync(Uri uri)
         {
-            using (CancellationTokenSource cancellationSource = new CancellationTokenSource(timeOut))
+            var addresses = await uri.ResolveAsync(_ipv6Enabled).ConfigureAwait(false);
+            var innerErrors = new List<Exception>();
+            for (var i = 0; i < addresses.Length; i++)
             {
-                var addresses = await uri.ResolveAsync(_ipv6Enabled).ConfigureAwait(false);
-                var innerErrors = new List<Exception>();
-                for (var i = 0; i < addresses.Length; i++)
+                try
                 {
-                    try
-                    {
-                        cancellationSource.Token.ThrowIfCancellationRequested();
+                    await ConnectSocketAsync(addresses[i], uri.Port).ConfigureAwait(false);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    var error = new IOException(
+                        $"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);
+                    innerErrors.Add(error);
 
-                        await _client.ConnectAsync(addresses[i], uri.Port).ConfigureAwait(false);
-                        return;
-                    }
-                    catch (OperationCanceledException)
+                    if (i == addresses.Length - 1)
                     {
-                        throw;
+                        // if all failed
+                        throw new IOException(
+                            $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.",
+                            new AggregateException(innerErrors));
                     }
-                    catch (Exception e)
-                    {
-                        var error = new IOException($"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);
-                        innerErrors.Add(error);
+                }
+            }
+        }
 
-                        if (i == addresses.Length - 1)
+        internal async Task ConnectSocketAsync(IPAddress address, int port)
+        {
+            var cancellationCompletionSource = new TaskCompletionSource<bool>();
+            using (var cts = new CancellationTokenSource(_connectionTimeout))
+            {
+                InitClient();
+                var connectTask = _client.ConnectAsync(address, port);
+                using (cts.Token.Register(() => cancellationCompletionSource.TrySetResult(true)))
+                {
+                    var finishedTask = await Task.WhenAny(connectTask, cancellationCompletionSource.Task).ConfigureAwait(false);
+                    if (connectTask != finishedTask) // timed out
+                    {
+                        try
                         {
-                            // if all failed
-                            throw new IOException(
-                                $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.", 
-                                new AggregateException(innerErrors));
+                            // close client immediately when failed to connect within timeout
+                            Close();
                         }
+                        catch (Exception e)
+                        {
+                            _logger?.Error($"Failed to close connect to the server {address}:{port}" +
+                                           $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms" +
+                                           $" due to error: {e.Message}.", e);
+                        }
+                        throw new OperationCanceledException(
+                            $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.", cts.Token);
                     }
+
+                    await connectTask;
                 }
             }
         }
@@ -124,15 +147,11 @@ namespace Neo4j.Driver.Internal.Connector
             Close();
         }
 
-        private void Close()
+        protected void Close()
         {
             _stream?.Dispose();
+            CloseClient();
 
-#if NET452
-            _client?.Close();
-#else
-            _client?.Dispose();
-#endif
         }
 
         /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
@@ -140,6 +159,31 @@ namespace Neo4j.Driver.Internal.Connector
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        private void InitClient()
+        {
+            if (_ipv6Enabled)
+            {
+                _client = new TcpClient(AddressFamily.InterNetworkV6) {Client = {DualMode = true}};
+            }
+            else
+            {
+                _client = new TcpClient();
+            }
+            _client.NoDelay = true;
+            _client.Client.NoDelay = true;
+            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive,
+                _socketKeepAliveEnabled);
+        }
+
+        protected virtual void CloseClient()
+        {
+#if NET452
+            _client?.Close();
+#else
+            _client?.Dispose();
+#endif
         }
     }
 }
