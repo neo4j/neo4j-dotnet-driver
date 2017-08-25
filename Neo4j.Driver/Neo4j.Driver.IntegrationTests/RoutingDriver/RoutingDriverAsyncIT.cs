@@ -131,7 +131,7 @@ namespace Neo4j.Driver.IntegrationTests
             error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
         }
 
-        [RequireServerTheory]
+        [RequireClusterTheory]
         [InlineData(50)]
         [InlineData(5000)]
         public void SoakRunAsync(int threadCount)
