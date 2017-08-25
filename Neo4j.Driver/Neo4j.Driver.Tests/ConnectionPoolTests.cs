@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests
                     });
                 var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings)
                 {
-                    ConnAcquisitionBlockingTimeout = TimeSpan.FromMilliseconds(0)
+                    ConnAcquisitionQueuingTimeout = TimeSpan.FromMilliseconds(0)
                 };
                 var conn = pool.Acquire();
                 pool.Acquire();

@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -33,7 +34,7 @@ namespace Neo4j.Driver.Internal
         private readonly int _maxPoolSize;
         private readonly int _idlePoolSize;
         private readonly TimeSpan _connAcquisitionTimeout;
-        internal TimeSpan ConnAcquisitionBlockingTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        internal TimeSpan ConnAcquisitionQueuingTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
         private readonly ConnectionValidator _connectionValidator;
         private readonly ConnectionSettings _connectionSettings;
@@ -72,6 +73,10 @@ namespace Neo4j.Driver.Internal
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+            if (ConnAcquisitionQueuingTimeout > _connAcquisitionTimeout)
+            {
+                ConnAcquisitionQueuingTimeout = _connAcquisitionTimeout;
+            }
             _bufferSettings = bufferSettings;
 
 
@@ -195,7 +200,7 @@ namespace Neo4j.Driver.Internal
                             connection = CreateNewPooledConnection();
                             break;
                         }
-                        if (_availableConnections.TryTake(out connection, ConnAcquisitionBlockingTimeout))
+                        if (_availableConnections.TryTake(out connection, ConnAcquisitionQueuingTimeout))
                         {
                             break;
                         }
@@ -250,7 +255,7 @@ namespace Neo4j.Driver.Internal
                             connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
                             break;
                         }
-                        if (_availableConnections.TryTake(out connection, ConnAcquisitionBlockingTimeout))
+                        if (_availableConnections.TryTake(out connection, ConnAcquisitionQueuingTimeout))
                         {
                             break;
                         }
