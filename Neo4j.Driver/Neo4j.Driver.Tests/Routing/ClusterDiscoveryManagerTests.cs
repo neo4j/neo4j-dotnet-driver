@@ -271,6 +271,27 @@ namespace Neo4j.Driver.Tests.Routing
             }
         }
 
+        public class BoltRoutingUriMethod
+        {
+            [Theory]
+            [InlineData("localhost:9193", "localhost", 9193)]
+            [InlineData("neo4j.com:9193", "neo4j.com", 9193)]
+            [InlineData("royal-server.com.uk:4546", "royal-server.com.uk", 4546)]
+            [InlineData("127.0.0.1:8080", "127.0.0.1", 8080)]
+            [InlineData("0.0.0.0:9193", "0.0.0.0", 9193)]
+            [InlineData("192.0.2.235:4329", "192.0.2.235", 4329)]
+            [InlineData("172.31.255.255:255", "172.31.255.255", 255)]
+            [InlineData("[::1]:7676", "[::1]", 7676)]
+            [InlineData("[1afc:0:a33:85a3::ff2f]:5678", "[1afc:0:a33:85a3::ff2f]", 5678)]
+            public void ShouldHaveLocalhost(string input, string host, int port)
+            {
+                var uri = ClusterDiscoveryManager.BoltRoutingUri(input);
+                uri.Scheme.Should().Be("bolt+routing");
+                uri.Host.Should().Be(host);
+                uri.Port.Should().Be(port);
+            }
+        }
+
         internal static InitMessage InitMessage(IAuthToken auth = null)
         {
             auth = auth ?? AuthTokens.None;

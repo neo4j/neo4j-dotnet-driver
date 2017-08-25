@@ -151,7 +151,7 @@ namespace Neo4j.Driver.Internal.Routing
             ExpireAfterSeconds = record["ttl"].As<long>();
         }
 
-        private Uri BoltRoutingUri(string address)
+        public static Uri BoltRoutingUri(string address)
         {
             return new Uri("bolt+routing://" + address);
         }
