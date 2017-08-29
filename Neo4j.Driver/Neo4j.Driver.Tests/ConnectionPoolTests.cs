@@ -77,22 +77,22 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(2);
 
-                var timmer = new Stopwatch();
+                var timer = new Stopwatch();
                 var blockingAcquire = new Task(()=>{ pool.Acquire(); });
                 var releaseConn = new Task(()=>{ conn.Close(); });
 
-                timmer.Start();
+                timer.Start();
                 blockingAcquire.Start();
                 Task.Delay(1000).Wait(); // delay a bit here
                 releaseConn.Start();
 
                 releaseConn.Wait();
                 blockingAcquire.Wait();
-                timmer.Stop();
+                timer.Stop();
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(2);
-                timmer.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(1000);
+                timer.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(1000);
             }
 
             [Fact]
@@ -706,7 +706,7 @@ namespace Neo4j.Driver.Tests
             {
                 var uri = new Uri("localhost:7687");
                 var connectionSettings = new ConnectionSettings(AuthTokens.None, Config.DefaultConfig);
-                var poolSettings = new ConnectionPoolSettings(1, 1, Config.Infinite, Config.Infinite, Config.Infinite);
+                var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
                 var bufferSettings = new BufferSettings(Config.DefaultConfig);
                 var logger = new Mock<ILogger>().Object;
 

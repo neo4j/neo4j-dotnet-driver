@@ -70,17 +70,20 @@ namespace Neo4j.Driver.V1
     /// Use this class to config the <see cref="IDriver"/>.
     /// </summary>
     public class Config
-    {
+    {        
+        internal static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
+
+        /// <summary>
+        /// This const defines the value of Infinite in terms of configuration properties.
+        /// Applies to <see cref="MaxIdleConnectionPoolSize"/> and <see cref="MaxConnectionPoolSize"/>.
+        /// </summary>
+        public const int Infinite = -1;
+        
         /// <summary>
         /// This const is deprecated.
         /// </summary>
         [System.Obsolete("Do not set idle connection size to infinite.")]
-        public const int InfiniteMaxIdleSessionPoolSize = -1;
-
-        /// <summary>
-        /// This const sets the number of connections in connection pool <see cref="MaxConnectionPoolSize"/> to be inifinite,
-        /// </summary>
-        public const int InfiniteMaxConnectionPoolSize = -1;
+        public const int InfiniteMaxIdleSessionPoolSize = Infinite;
 
         static Config()
         {
@@ -100,10 +103,10 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="Ipv6Enabled"/>: <c>true</c></item>
         /// <br></br>
         /// <item><see cref="MaxIdleConnectionPoolSize"/> : <c>10</c> </item>
-        /// <item><see cref="MaxConnectionPoolSize"/> : <see cref="InfiniteMaxConnectionPoolSize"/> </item>
+        /// <item><see cref="MaxConnectionPoolSize"/> : <see cref="Infinite"/> </item>
         /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
-        /// <item><see cref="ConnectionIdleTimeout"/>: <c>Infinite(-1ms)</c></item>
-        /// <item><see cref="MaxConnectionLifetime"/>: <c>Infinite(-1ms)</c></item>
+        /// <item><see cref="ConnectionIdleTimeout"/>: <c>InfiniteInterval(-1ms)</c></item>
+        /// <item><see cref="MaxConnectionLifetime"/>: <c>InfiniteInterval(-1ms)</c></item>
         /// <br></br>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
@@ -169,10 +172,8 @@ namespace Neo4j.Driver.V1
         /// When a driver reaches its allowed maximum connection pool size, no new connections can be established.
         /// Instead all threads that require a new connection have to wait until a connection is available to reclaim.
         /// See <see cref="ConnectionAcquisitionTimeout"/>for the maximum waiting time to acquire an idle connection from the pool.
-        /// It is hightly suggested to set a maximum number of connection pool size when using this driver asynchronously,
-        /// otherwise when there is a burst of requests, establishing new connections might push the resource usage of this driver badly.
         /// </remarks>
-        public int MaxConnectionPoolSize { get; set; } = InfiniteMaxConnectionPoolSize;
+        public int MaxConnectionPoolSize { get; set; } = Infinite;
 
         /// <summary>
         /// Gets or sets the maximum waiting time to either acquire an idle connection from the pool when connection pool is full
@@ -190,22 +191,20 @@ namespace Neo4j.Driver.V1
         /// </summary>
         public bool SocketKeepAlive { get; set; } = true;
 
-        internal static readonly TimeSpan Infinite = TimeSpan.FromMilliseconds(-1);
-
         /// <summary>
         /// Gets or sets the idle timeout on pooled connecitons.
         /// A connection that has been idled in connection pool for longer than the given timeout is stale and will be closed once it is seen.
-        /// Any negative <see cref="TimeSpan"/> value will be considered to be "Infinite",
+        /// Any negative <see cref="TimeSpan"/> value will be considered to be "InfiniteInterval",
         /// a.k.a. pooled connections will never be stale.
         /// </summary>
-        public TimeSpan ConnectionIdleTimeout { get; set; } = Infinite;
+        public TimeSpan ConnectionIdleTimeout { get; set; } = InfiniteInterval;
 
         /// <summary>
         /// Gets or sets the maximum connection lifetime on pooled connecitons.
         /// A connection that has been created for longer than the given time will be closed once it is seen.
-        /// Any negative <see cref="TimeSpan"/> value will be considered to be "Infinite",
+        /// Any negative <see cref="TimeSpan"/> value will be considered to be "InfiniteInterval",
         /// </summary>
-        public TimeSpan MaxConnectionLifetime { get; set; } = Infinite;
+        public TimeSpan MaxConnectionLifetime { get; set; } = InfiniteInterval;
 
         /// <summary>
         /// Gets or sets the connections to support ipv6 addresses.

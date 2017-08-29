@@ -291,7 +291,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsConnectionPoolFull()
         {
-            return _maxPoolSize != Config.InfiniteMaxConnectionPoolSize && _poolSize >= _maxPoolSize;
+            return _maxPoolSize != Config.Infinite && _poolSize >= _maxPoolSize;
         }
 
         private bool IsIdlePoolFull()

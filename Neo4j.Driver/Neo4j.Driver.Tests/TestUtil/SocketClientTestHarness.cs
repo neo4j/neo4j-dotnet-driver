@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests
                 EncryptionManager = new Mock<EncryptionManager>().Object,
                 Ipv6Enabled = true,
                 SocketKeepAliveEnabled = true,
-                ConnectionTimeout = Config.Infinite
+                ConnectionTimeout = Config.InfiniteInterval
             };
             var bufferSettings = new BufferSettings(Config.DefaultConfig);
             Client = new SocketClient(uri, socketSettings, bufferSettings, new Mock<ILogger>().Object, MockTcpSocketClient.Object);

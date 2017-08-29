@@ -140,7 +140,7 @@ namespace Neo4j.Driver.IntegrationTests
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
             {
                 DriverStatisticsCollector = statisticsCollector,
-                ConnectionTimeout = Config.Infinite,
+                ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted,
                 MaxIdleConnectionPoolSize = 20,
                 MaxConnectionPoolSize = 50,
