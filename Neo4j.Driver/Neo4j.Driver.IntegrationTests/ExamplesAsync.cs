@@ -442,7 +442,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 }
             }
 
-            private async Task<int> SelectEmployee(ITransactionAsync tx, string name)
+            private async Task<int> SelectEmployee(ITransaction tx, string name)
             {
                 try
                 {
@@ -608,12 +608,12 @@ namespace Neo4j.Driver.ExamplesAsync
                 }
             }
 
-            private static Task CreatePersonNodeAsync(ITransactionAsync tx, string name)
+            private static Task CreatePersonNodeAsync(ITransaction tx, string name)
             {
                 return tx.RunAsync("CREATE (a:Person {name: $name})", new { name });
             }
 
-            private static async Task<long> MatchPersonNodeAsync(ITransactionAsync tx, string name)
+            private static async Task<long> MatchPersonNodeAsync(ITransaction tx, string name)
             {
                 var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN id(a)", new { name });
 

@@ -21,7 +21,7 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal abstract class StatementRunner : LoggerBase, IStatementRunner, IStatementRunnerAsync
+    internal abstract class StatementRunner : LoggerBase, IStatementRunner
     {
         protected StatementRunner(ILogger logger) : base(logger)
         {
