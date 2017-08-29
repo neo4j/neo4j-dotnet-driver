@@ -398,7 +398,7 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private async Task<ITransactionAsync> BeginTransactionWithoutLoggingAsync(AccessMode mode)
+        private async Task<ITransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode)
         {
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
@@ -409,12 +409,12 @@ namespace Neo4j.Driver.Internal
             return _transaction;
         }
 
-        public Task<ITransactionAsync> BeginTransactionAsync()
+        public Task<ITransaction> BeginTransactionAsync()
         {
             return TryExecuteAsync(async () => await BeginTransactionWithoutLoggingAsync(_defaultMode));
         }
 
-        private Task RunTransactionAsync(AccessMode mode, Func<ITransactionAsync, Task> work)
+        private Task RunTransactionAsync(AccessMode mode, Func<ITransaction, Task> work)
         {
             return RunTransactionAsync(mode, async tx =>
             {
@@ -424,11 +424,11 @@ namespace Neo4j.Driver.Internal
             });
         }
 
-        private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransactionAsync, Task<T>> work)
+        private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransaction, Task<T>> work)
         {
             return TryExecuteAsync(async () => await _retryLogic.RetryAsync(async () =>
             {
-                ITransactionAsync tx = await BeginTransactionWithoutLoggingAsync(mode).ConfigureAwait(false);
+                var tx = await BeginTransactionWithoutLoggingAsync(mode).ConfigureAwait(false);
                 {
                     try
                     {
@@ -445,22 +445,22 @@ namespace Neo4j.Driver.Internal
             }).ConfigureAwait(false));
         }
 
-        public Task<T> ReadTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work)
         {
             return RunTransactionAsync(AccessMode.Read, work);
         }
 
-        public Task ReadTransactionAsync(Func<ITransactionAsync, Task> work)
+        public Task ReadTransactionAsync(Func<ITransaction, Task> work)
         {
             return RunTransactionAsync(AccessMode.Read, work);
         }
 
-        public Task<T> WriteTransactionAsync<T>(Func<ITransactionAsync, Task<T>> work)
+        public Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work)
         {
             return RunTransactionAsync(AccessMode.Write, work);
         }
 
-        public Task WriteTransactionAsync(Func<ITransactionAsync, Task> work)
+        public Task WriteTransactionAsync(Func<ITransaction, Task> work)
         {
             return RunTransactionAsync(AccessMode.Write, work);
         }
