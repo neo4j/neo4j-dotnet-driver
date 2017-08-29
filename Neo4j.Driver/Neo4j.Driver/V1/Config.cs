@@ -105,8 +105,8 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="MaxIdleConnectionPoolSize"/> : <c>10</c> </item>
         /// <item><see cref="MaxConnectionPoolSize"/> : <see cref="Infinite"/> </item>
         /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
-        /// <item><see cref="ConnectionIdleTimeout"/>: <c>InfiniteInterval(-1ms)</c></item>
-        /// <item><see cref="MaxConnectionLifetime"/>: <c>InfiniteInterval(-1ms)</c></item>
+        /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
+        /// <item><see cref="MaxConnectionLifetime"/>: <see cref="InfiniteInterval"/></item>
         /// <br></br>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
@@ -192,17 +192,16 @@ namespace Neo4j.Driver.V1
         public bool SocketKeepAlive { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets the idle timeout on pooled connecitons.
+        /// Gets or sets the idle timeout on pooled connections.
         /// A connection that has been idled in connection pool for longer than the given timeout is stale and will be closed once it is seen.
-        /// Any negative <see cref="TimeSpan"/> value will be considered to be "InfiniteInterval",
-        /// a.k.a. pooled connections will never be stale.
+        /// Use <see cref="InfiniteInterval"/> to disable idle time checking.
         /// </summary>
         public TimeSpan ConnectionIdleTimeout { get; set; } = InfiniteInterval;
 
         /// <summary>
         /// Gets or sets the maximum connection lifetime on pooled connecitons.
         /// A connection that has been created for longer than the given time will be closed once it is seen.
-        /// Any negative <see cref="TimeSpan"/> value will be considered to be "InfiniteInterval",
+        /// Use <see cref="InfiniteInterval"/> to disable connection lifetime checking.
         /// </summary>
         public TimeSpan MaxConnectionLifetime { get; set; } = InfiniteInterval;
 
@@ -442,9 +441,9 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Specify socket connection timeout.
-        /// A <see cref="TimeSpan"/> that represents the number of milliseconds to wait, or a <see cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
+        /// A <see cref="TimeSpan"/> that represents the number of milliseconds to wait, or <see cref="Config.InfiniteInterval"/> to wait indefinitely.
         /// </summary>
-        /// <param name="timeSpan">Represents the number of milliseconds to wait or -1 ms to wait indefinitely.</param>
+        /// <param name="timeSpan">Represents the number of milliseconds to wait or <see cref="Config.InfiniteInterval"/> to wait indefinitely.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithConnectionTimeout(TimeSpan timeSpan);
