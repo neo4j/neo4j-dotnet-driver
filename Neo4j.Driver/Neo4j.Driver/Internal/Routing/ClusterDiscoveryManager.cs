@@ -153,7 +153,15 @@ namespace Neo4j.Driver.Internal.Routing
 
         public static Uri BoltRoutingUri(string address)
         {
-            return new Uri("bolt+routing://" + address);
+            UriBuilder builder = new UriBuilder("bolt+routing://" + address);
+            
+            // If scheme is not registered, then the port is -1
+            if (builder.Port == -1)
+            {
+                builder.Port = GraphDatabase.DefaultBoltPort;
+            }
+
+            return builder.Uri;
         }
 
         private class SingleConnectionBasedConnectionProvider : IConnectionProvider
