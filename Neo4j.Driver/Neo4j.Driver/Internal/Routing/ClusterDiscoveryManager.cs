@@ -155,7 +155,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             UriBuilder builder = new UriBuilder("bolt+routing://" + address);
             
-            // If scheme is not registered, then the port is -1
+            // If scheme is not registered and no port is specified, then the port is assigned as -1
             if (builder.Port == -1)
             {
                 builder.Port = GraphDatabase.DefaultBoltPort;
