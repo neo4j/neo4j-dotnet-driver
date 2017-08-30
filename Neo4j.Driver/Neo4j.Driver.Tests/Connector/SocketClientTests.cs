@@ -16,7 +16,6 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -25,7 +24,6 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.IO;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
 using Record = Xunit.Record;
@@ -46,7 +44,7 @@ namespace Neo4j.Driver.Tests
                     harness.SetupReadStream(new byte[] {0, 0, 0, 1});
                     harness.SetupWriteStream();
                     await harness.Client.StartAsync();
-                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri, Timeout.InfiniteTimeSpan),
+                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri),
                         Times.Once);
                 }
             }

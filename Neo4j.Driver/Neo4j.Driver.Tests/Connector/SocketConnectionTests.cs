@@ -33,7 +33,6 @@ namespace Neo4j.Driver.Tests
     public class SocketConnectionTests
     {
         private static IAuthToken AuthToken => AuthTokens.None;
-        private static TimeSpan ConnTimeout => Config.DefaultConfig.ConnectionTimeout;
         private static string UserAgent => ConnectionSettings.DefaultUserAgent;
         private static ILogger Logger => new Mock<ILogger>().Object;
         private static IServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
@@ -43,7 +42,7 @@ namespace Neo4j.Driver.Tests
         {
             socketClient = socketClient ?? SocketClient;
             server = server ?? Server;
-            return new SocketConnection(socketClient, AuthToken, ConnTimeout, UserAgent, Logger, server, handler);
+            return new SocketConnection(socketClient, AuthToken, UserAgent, Logger, server, handler);
         }
 
         public class Construction
@@ -51,7 +50,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
             {
-                var exception = Exception(() => new SocketConnection(null, AuthToken, ConnTimeout, UserAgent, Logger, Server));
+                var exception = Exception(() => new SocketConnection(null, AuthToken, UserAgent, Logger, Server));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -59,7 +58,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfAuthTokenIsNull()
             {
-                var exception = Exception(() => new SocketConnection(SocketClient, null, ConnTimeout, UserAgent, Logger, Server));
+                var exception = Exception(() => new SocketConnection(SocketClient, null, UserAgent, Logger, Server));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -67,7 +66,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfServerUriIsNull()
             {
-                var exception = Exception(() => new SocketConnection(SocketClient, AuthToken, ConnTimeout, UserAgent, Logger, null));
+                var exception = Exception(() => new SocketConnection(SocketClient, AuthToken, UserAgent, Logger, null));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -86,7 +85,7 @@ namespace Neo4j.Driver.Tests
                 conn.Init();
 
                 // Then
-                mockClient.Verify(c => c.StartAsync(It.IsAny<TimeSpan>()), Times.Once);
+                mockClient.Verify(c => c.StartAsync(), Times.Once);
             }
 
             [Fact]
@@ -113,14 +112,14 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.StartAsync(It.IsAny<TimeSpan>())).Returns(Task.Delay(TimeSpan.FromMinutes(1)));
+                mockClient.Setup(x => x.StartAsync()).Throws(new IOException("I will stop socket conn from initialization"));
                 // ReSharper disable once ObjectCreationAsStatement
-                var conn = new SocketConnection(mockClient.Object, AuthToken, TimeSpan.FromSeconds(1), UserAgent, Logger, Server);
+                var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
                 // When
                 var error = Exception(()=>conn.Init());
                 // Then
                 error.Should().BeOfType<IOException>();
-                error.Message.Should().Be("Failed to connect to the server neo4j.com:80 within connection timeout 1000ms");
+                error.Message.Should().Be("I will stop socket conn from initialization");
             }
         }
 

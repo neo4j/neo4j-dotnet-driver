@@ -42,12 +42,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         private readonly ILogger _logger;
 
-        public SocketClient(Uri uri, EncryptionManager encryptionManager, bool socketKeepAlive, bool ipv6Enabled, ILogger logger, BufferSettings bufferSettings, ITcpSocketClient socketClient = null)
+        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
-            _bufferSettings = bufferSettings ?? new BufferSettings(Config.DefaultConfig);
-            _tcpSocketClient = socketClient ?? new TcpSocketClient(encryptionManager, socketKeepAlive, ipv6Enabled, _logger);
+            _bufferSettings = bufferSettings;
+            _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
         }
 
         public void Dispose()
@@ -56,16 +56,11 @@ namespace Neo4j.Driver.Internal.Connector
             GC.SuppressFinalize(this);
         }
 
-        internal Task StartAsync()
-        {
-            return StartAsync(Timeout.InfiniteTimeSpan);
-        }
-
-        public Task StartAsync(TimeSpan timeOut)
+        public Task StartAsync()
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
 
-            _tcpSocketClient.ConnectAsync(_uri, timeOut)
+            _tcpSocketClient.ConnectAsync(_uri)
                 .ContinueWith(t =>
                     {
                         if (t.IsFaulted)

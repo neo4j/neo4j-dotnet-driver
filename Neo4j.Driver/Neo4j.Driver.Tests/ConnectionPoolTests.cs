@@ -18,6 +18,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -65,17 +68,54 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldNotThrowExceptionWhenIdlePoolSizeReached()
+            public void ShouldBlockWhenMaxPoolSizeReached()
             {
-                var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxIdleConnectionPoolSize = 2});
+                var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxConnectionPoolSize = 2});
                 var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
-                pool.Acquire();
+                var conn = pool.Acquire();
                 pool.Acquire();
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(2);
 
-                var ex = Record.Exception(() => pool.Acquire());
-                ex.Should().BeNull();
+                var timer = new Stopwatch();
+                var blockingAcquire = new Task(()=>{ pool.Acquire(); });
+                var releaseConn = new Task(()=>{ conn.Close(); });
+
+                timer.Start();
+                blockingAcquire.Start();
+                Task.Delay(1000).Wait(); // delay a bit here
+                releaseConn.Start();
+
+                releaseConn.Wait();
+                blockingAcquire.Wait();
+                timer.Stop();
+
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(2);
+                timer.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(1000);
+            }
+
+            [Fact]
+            public void ShouldThrowClientExceptionWhenFailedToAcquireWithinTimeout()
+            {
+                var connectionPoolSettings = new ConnectionPoolSettings(
+                    new Config
+                    {
+                        MaxConnectionPoolSize = 2,
+                        ConnectionAcquisitionTimeout = TimeSpan.FromMilliseconds(0)
+                    });
+                var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings)
+                {
+                    ConnAcquisitionQueuingTimeout = TimeSpan.FromMilliseconds(0)
+                };
+                var conn = pool.Acquire();
+                pool.Acquire();
+                pool.NumberOfAvailableConnections.Should().Be(0);
+                pool.NumberOfInUseConnections.Should().Be(2);
+
+                var exception = Record.Exception(() => pool.Acquire());
+                exception.Should().BeOfType<ClientException>();
+                exception.Message.Should().Contain("Failed to obtain a connection from pool within");
             }
 
             [Fact]
@@ -666,7 +706,7 @@ namespace Neo4j.Driver.Tests
             {
                 var uri = new Uri("localhost:7687");
                 var connectionSettings = new ConnectionSettings(AuthTokens.None, Config.DefaultConfig);
-                var poolSettings = new ConnectionPoolSettings(1, 1, Config.Infinite, Config.Infinite, Config.Infinite);
+                var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
                 var bufferSettings = new BufferSettings(Config.DefaultConfig);
                 var logger = new Mock<ILogger>().Object;
 

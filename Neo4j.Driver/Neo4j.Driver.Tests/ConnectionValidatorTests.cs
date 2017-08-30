@@ -14,11 +14,11 @@ namespace Neo4j.Driver.Tests
         {
             if (connIdleTimeout == null)
             {
-                connIdleTimeout = Config.Infinite;
+                connIdleTimeout = Config.InfiniteInterval;
             }
             if (maxConnLifetime == null)
             {
-                maxConnLifetime = Config.Infinite;
+                maxConnLifetime = Config.InfiniteInterval;
             }
             return new ConnectionValidator(connIdleTimeout.Value, maxConnLifetime.Value);
         }
