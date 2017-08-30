@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using TaskExtensions = Neo4j.Driver.Internal.TaskExtensions;
 
 namespace Neo4j.Driver.Tests.IO
 {
@@ -64,7 +65,7 @@ namespace Neo4j.Driver.Tests.IO
                         _receivedByteArrays.Enqueue(hex);
                         _receivedBytesAccumulated.Append(hex);
                     })
-                    .Returns(Task.CompletedTask);
+                    .Returns(TaskExtensions.GetCompletedTask());
             }
 
             public Stream OutputStream => _mockOutputStream.Object;

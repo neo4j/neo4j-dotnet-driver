@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Xunit;
+using CollectionExtensions = Neo4j.Driver.Internal.CollectionExtensions;
 
 namespace Neo4j.Driver.Tests.Extensions
 {
