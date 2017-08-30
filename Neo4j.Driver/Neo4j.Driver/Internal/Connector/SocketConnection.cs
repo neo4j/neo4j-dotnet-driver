@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                Task.Run(() => _client.StartAsync()).Wait();
+                _client.Start();
                 Init(_authToken);
             }
             catch (AggregateException e)

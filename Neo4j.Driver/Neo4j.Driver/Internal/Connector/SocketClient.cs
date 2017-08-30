@@ -56,6 +56,18 @@ namespace Neo4j.Driver.Internal.Connector
             GC.SuppressFinalize(this);
         }
 
+        public void Start()
+        {
+            _tcpSocketClient.Connect(_uri);
+
+            IsOpen = true;
+            _logger?.Debug($"~~ [CONNECT] {_uri}");
+
+            var version = DoHandshake();
+            
+            ConfigureVersion(version);
+        }
+        
         public Task StartAsync()
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
@@ -76,7 +88,7 @@ namespace Neo4j.Driver.Internal.Connector
                             IsOpen = true;
                             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
-                            return DoHandshake();
+                            return DoHandshakeAsync();
                         }
 
                         return Task.FromResult(-1);
@@ -89,24 +101,7 @@ namespace Neo4j.Driver.Internal.Connector
                     {
                         try
                         {
-                            switch (version)
-                            {
-                                case ProtocolVersion.Version1:
-                                    SetupPackStreamFormatWriterAndReader();
-                                    break;
-                                case ProtocolVersion.NoVersion:
-                                    throw new NotSupportedException(
-                                        "The Neo4j server does not support any of the protocol versions supported by this client. " +
-                                        "Ensure that you are using driver and server versions that are compatible with one another.");
-                                case ProtocolVersion.Http:
-                                    throw new NotSupportedException(
-                                        "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                                        $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})");
-                                default:
-                                    throw new NotSupportedException(
-                                        "Protocol error, server suggested unexpected protocol version: " + version);
-
-                            }
+                            ConfigureVersion(version);
 
                             tcs.SetResult(null);
                         }
@@ -274,7 +269,24 @@ namespace Neo4j.Driver.Internal.Connector
             return tcs.Task;
         }
 
-        private async Task<int> DoHandshake()
+        private int DoHandshake()
+        {
+            int[] supportedVersion = {1, 0, 0, 0};
+            
+            var data = PackVersions(supportedVersion);
+            _tcpSocketClient.WriteStream.Write(data, 0, data.Length);
+            _tcpSocketClient.WriteStream.Flush();
+            _logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
+
+            data = new byte[4];
+            _tcpSocketClient.ReadStream.Read(data, 0, data.Length);
+
+            var agreedVersion = GetAgreedVersion(data);
+            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
+            return agreedVersion;
+        }
+
+        private async Task<int> DoHandshakeAsync()
         {
             int[] supportedVersion = {1, 0, 0, 0};
             
@@ -289,6 +301,27 @@ namespace Neo4j.Driver.Internal.Connector
             var agreedVersion = GetAgreedVersion(data);
             _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
             return agreedVersion;
+        }
+
+        private void ConfigureVersion(int version)
+        {
+            switch (version)
+            {
+                case ProtocolVersion.Version1:
+                    SetupPackStreamFormatWriterAndReader();
+                    break;
+                case ProtocolVersion.NoVersion:
+                    throw new NotSupportedException(
+                        "The Neo4j server does not support any of the protocol versions supported by this client. " +
+                        "Ensure that you are using driver and server versions that are compatible with one another.");
+                case ProtocolVersion.Http:
+                    throw new NotSupportedException(
+                        "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                        $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})");
+                default:
+                    throw new NotSupportedException(
+                        "Protocol error, server suggested unexpected protocol version: " + version);
+            }
         }
 
         private static byte[] PackVersions(IEnumerable<int> versions)

@@ -54,9 +54,42 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
 
+        public void Connect(Uri uri)
+        {
+            ConnectSocket(uri);
+            
+            if (!_encryptionManager.UseTls)
+            {
+                _stream = _client.GetStream();
+            }
+            else
+            {
+                try
+                {
+                    var secureStream = new SslStream(_client.GetStream(), true,
+                        (sender, certificate, chain, errors) =>
+                            _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
+
+#if NET452
+                    secureStream.AuthenticateAsClient(uri.Host, null, Tls12, false);
+#else
+                    Task.Run(() => secureStream
+                        .AuthenticateAsClientAsync(uri.Host, null, Tls12, false)).Wait();
+#endif
+
+                    _stream = secureStream;
+                }
+                catch (Exception e)
+                {
+                    throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
+                }
+            }
+        }
+        
         public async Task ConnectAsync(Uri uri)
         {
             await ConnectSocketAsync(uri).ConfigureAwait(false);
+            
             if (!_encryptionManager.UseTls)
             {
                 _stream = _client.GetStream();
@@ -79,44 +112,124 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private async Task ConnectSocketAsync(Uri uri)
+        private void ConnectSocket(Uri uri)
         {
-            var addresses = await uri.ResolveAsync(_ipv6Enabled).ConfigureAwait(false);
             var innerErrors = new List<Exception>();
-            for (var i = 0; i < addresses.Length; i++)
+            var addresses = uri.Resolve(_ipv6Enabled);
+                        
+            foreach (var address in addresses)
             {
                 try
                 {
-                    await ConnectSocketAsync(addresses[i], uri.Port).ConfigureAwait(false);
+                    ConnectSocket(address, uri.Port);
+                    
                     return;
                 }
                 catch (Exception e)
                 {
-                    var error = new IOException(
-                        $"Failed to connect to server '{uri}' via IP address '{addresses[i]}': {e.Message}", e);
-                    innerErrors.Add(error);
-
-                    if (i == addresses.Length - 1)
+                    var actualException = e;
+                    if (actualException is AggregateException)
                     {
-                        // if all failed
-                        throw new IOException(
-                            $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.",
-                            new AggregateException(innerErrors));
+                        actualException = ((AggregateException) actualException).GetBaseException();
                     }
+
+                    innerErrors.Add(new IOException(
+                        $"Failed to connect to server '{uri}' via IP address '{address}': {actualException.Message}",
+                        actualException));
+                }
+            }
+            
+            // all failed
+            throw new IOException(
+                $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.",
+                new AggregateException(innerErrors));
+        }
+
+        private async Task ConnectSocketAsync(Uri uri)
+        {
+            var innerErrors = new List<Exception>();
+            var addresses = await uri.ResolveAsync(_ipv6Enabled).ConfigureAwait(false);
+                        
+            foreach (var address in addresses)
+            {
+                try
+                {
+                    await ConnectSocketAsync(address, uri.Port).ConfigureAwait(false);
+                    
+                    return;
+                }
+                catch (Exception e)
+                {
+                    var actualException = e;
+                    if (actualException is AggregateException)
+                    {
+                        actualException = ((AggregateException) actualException).GetBaseException();
+                    }
+
+                    innerErrors.Add(new IOException(
+                        $"Failed to connect to server '{uri}' via IP address '{address}': {actualException.Message}",
+                        actualException));
+                }
+            }
+            
+            // all failed
+            throw new IOException(
+                $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.",
+                new AggregateException(innerErrors));
+        }
+
+        internal void ConnectSocket(IPAddress address, int port)
+        {
+            InitClient();
+
+            using (var cts = new CancellationTokenSource(_connectionTimeout))
+            {
+#if NET452
+                try
+                {
+                    _client.Connect(address, port);
+                }
+                catch (SocketException ex) when (ex.Message.Contains(
+                    "An address incompatible with the requested protocol was used"))
+                {
+                    throw new NotSupportedException("This protocol version is not supported.");
+                }
+#else
+                Task.Run(() => _client.ConnectAsync(address, port), cts.Token).Wait(cts.Token);
+#endif
+
+                if (cts.IsCancellationRequested)
+                {
+                    try
+                    {
+                        // close client immediately when failed to connect within timeout
+                        Close();
+                    }
+                    catch (Exception e)
+                    {
+                        _logger?.Error($"Failed to close connect to the server {address}:{port}" +
+                                       $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms" +
+                                       $" due to error: {e.Message}.", e);
+                    }
+
+                    throw new OperationCanceledException(
+                        $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.",
+                        cts.Token);
                 }
             }
         }
 
         internal async Task ConnectSocketAsync(IPAddress address, int port)
         {
-            var cancellationCompletionSource = new TaskCompletionSource<bool>();
+            InitClient();
+
+            var tcs = new TaskCompletionSource<bool>();
             using (var cts = new CancellationTokenSource(_connectionTimeout))
             {
-                InitClient();
-                var connectTask = _client.ConnectAsync(address, port);
-                using (cts.Token.Register(() => cancellationCompletionSource.TrySetResult(true)))
+                using (cts.Token.Register(() => tcs.SetResult(true)))
                 {
-                    var finishedTask = await Task.WhenAny(connectTask, cancellationCompletionSource.Task).ConfigureAwait(false);
+                    var connectTask = _client.ConnectAsync(address, port);
+                    var finishedTask = await Task.WhenAny(connectTask, tcs.Task).ConfigureAwait(false);
                     if (connectTask != finishedTask) // timed out
                     {
                         try
@@ -130,6 +243,7 @@ namespace Neo4j.Driver.Internal.Connector
                                            $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms" +
                                            $" due to error: {e.Message}.", e);
                         }
+                        
                         throw new OperationCanceledException(
                             $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.", cts.Token);
                     }
