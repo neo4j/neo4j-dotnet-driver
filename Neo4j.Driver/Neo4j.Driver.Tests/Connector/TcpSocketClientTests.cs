@@ -53,12 +53,12 @@ namespace Neo4j.Driver.Tests.Connector
 
         private static Task ServerOnPort(int port)
         {
-            var serverSocket = new TcpListener(port);
+            var serverSocket = new TcpListener(new IPEndPoint(IPAddress.Loopback, port));
             serverSocket.Start();
-            var server = new Task(() =>
+            var server = new Task(async () =>
             {
                 // wait for a client to connect
-                serverSocket.AcceptTcpClient();
+                await serverSocket.AcceptTcpClientAsync();
                 serverSocket.Stop();
             });
             return server;
