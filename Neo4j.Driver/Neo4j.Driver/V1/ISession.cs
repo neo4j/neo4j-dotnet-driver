@@ -62,7 +62,7 @@ namespace Neo4j.Driver.V1
         /// Asynchronously begin a new transaction in this session. A session can have at most one transaction running at a time, if you
         /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
         /// 
-        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunnerAsync.RunAsync(Statement)"/>
+        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunner.RunAsync(Statement)"/>
         /// method directly on this session interface as well. When you use that method, your statement automatically gets
         /// wrapped in a transaction.
         ///
