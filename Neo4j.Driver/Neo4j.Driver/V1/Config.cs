@@ -71,11 +71,13 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public class Config
     {        
-        internal static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
+        /// <summary>
+        /// This const defines the value of infinite interval in terms of configuration properties.
+        /// </summary>
+        public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
 
         /// <summary>
-        /// This const defines the value of Infinite in terms of configuration properties.
-        /// Applies to <see cref="MaxIdleConnectionPoolSize"/> and <see cref="MaxConnectionPoolSize"/>.
+        /// This const defines the value of infinite in terms of configuration properties.
         /// </summary>
         public const int Infinite = -1;
         
