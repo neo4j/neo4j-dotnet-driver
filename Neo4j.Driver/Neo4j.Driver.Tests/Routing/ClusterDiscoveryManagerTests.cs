@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -268,6 +269,37 @@ namespace Neo4j.Driver.Tests.Routing
                 exception.Should().BeOfType<ProtocolException>();
                 exception.Message.Should().Contain("3 routers, 1 writers and 0 readers.");
                 clientMock.Verify(x => x.Dispose(), Times.Once);
+            }
+        }
+
+        public class BoltRoutingUriMethod
+        {
+            [Theory]
+            [InlineData("localhost", "localhost", GraphDatabase.DefaultBoltPort)]
+            [InlineData("localhost:9193", "localhost", 9193)]
+            [InlineData("neo4j.com", "neo4j.com", GraphDatabase.DefaultBoltPort)]
+            [InlineData("royal-server.com.uk", "royal-server.com.uk", GraphDatabase.DefaultBoltPort)]
+            [InlineData("royal-server.com.uk:4546", "royal-server.com.uk", 4546)]
+            // IPv4
+            [InlineData("127.0.0.1", "127.0.0.1", GraphDatabase.DefaultBoltPort)]
+            [InlineData("8.8.8.8:8080", "8.8.8.8", 8080)]
+            [InlineData("0.0.0.0", "0.0.0.0", GraphDatabase.DefaultBoltPort)]
+            [InlineData("192.0.2.235:4329", "192.0.2.235", 4329)]
+            [InlineData("172.31.255.255:255", "172.31.255.255", 255)]
+            // IPv6
+            [InlineData("[1afc:0:a33:85a3::ff2f]", "[1afc:0:a33:85a3::ff2f]", GraphDatabase.DefaultBoltPort)]
+            [InlineData("[::1]:1515", "[::1]", 1515)]
+            [InlineData("[ff0a::101]:8989", "[ff0a::101]", 8989)]
+            // IPv6 with zone id
+            [InlineData("[1afc:0:a33:85a3::ff2f%eth1]", "[1afc:0:a33:85a3::ff2f]", GraphDatabase.DefaultBoltPort)]
+            [InlineData("[::1%eth0]:3030", "[::1]", 3030)]
+            [InlineData("[ff0a::101%8]:4040", "[ff0a::101]", 4040)]
+            public void ShouldHaveLocalhost(string input, string host, int port)
+            {
+                var uri = ClusterDiscoveryManager.BoltRoutingUri(input);
+                uri.Scheme.Should().Be("bolt+routing");
+                uri.Host.Should().Be(host);
+                uri.Port.Should().Be(port);
             }
         }
 
