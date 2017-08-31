@@ -35,11 +35,13 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldParseLocalhostCorrectly()
             {
                 var uri = new Uri("bolt+routing://LocALhosT:123");
-                var ipAddresses = await uri.ResolveAsync(true);
+                var ipAddresses = await uri.ResolveAsync(true);                
+#if NET452
                 ipAddresses.Should().Contain(IPAddress.IPv6Loopback);
                 ipAddresses.Should().Contain(IPAddress.Loopback);
-                ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
                 ipAddresses.Should().Contain(IPAddress.Parse("[::1]"));
+#endif
+                ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
             }
 
             [Fact]

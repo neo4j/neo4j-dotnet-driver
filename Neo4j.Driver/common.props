@@ -1,0 +1,5 @@
+<Project>
+	<PropertyGroup>
+		<XunitVersion>2.3.0-beta3-*</XunitVersion>
+	</PropertyGroup>
+</Project>
