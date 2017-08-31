@@ -582,14 +582,6 @@ namespace Neo4j.Driver.ExamplesAsync
                 {
                     _driver?.Dispose();
                 }
-
-                public static void Main()
-                {
-                    using (var greeter = new HelloWorldExample("bolt://localhost:7687", "neo4j", "password"))
-                    {
-                        greeter.PrintGreetingAsync("hello, world").Wait();
-                    }
-                }
             }
         }
 
