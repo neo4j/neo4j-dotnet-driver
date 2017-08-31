@@ -43,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
             exception.Should().BeOfType<ServiceUnavailableException>();
             exception.Message.Should().Contain("Connection with the server breaks");
-            exception.GetBaseException().Should().BeOfType<SocketException>();
+            exception.GetBaseException().Should().BeAssignableTo<SocketException>();
         }
 
         [RequireServerFact]
