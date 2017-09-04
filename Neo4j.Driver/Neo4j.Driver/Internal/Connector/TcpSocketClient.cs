@@ -73,8 +73,7 @@ namespace Neo4j.Driver.Internal.Connector
 #if NET452
                     secureStream.AuthenticateAsClient(uri.Host, null, Tls12, false);
 #else
-                    Task.Run(() => secureStream
-                        .AuthenticateAsClientAsync(uri.Host, null, Tls12, false)).Wait();
+                    secureStream.AuthenticateAsClientAsync(uri.Host, null, Tls12, false).GetAwaiter().GetResult();
 #endif
 
                     _stream = secureStream;
@@ -195,7 +194,7 @@ namespace Neo4j.Driver.Internal.Connector
                     throw new NotSupportedException("This protocol version is not supported.");
                 }
 #else
-                Task.Run(() => _client.ConnectAsync(address, port), cts.Token).Wait(cts.Token);
+                _client.ConnectAsync(address, port).GetAwaiter().GetResult();
 #endif
 
                 if (cts.IsCancellationRequested)

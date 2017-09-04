@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
@@ -35,11 +36,7 @@ namespace Neo4j.Driver.Internal
 
             if (!TryResolveLocalHost(uri, ipv6Enabled, out result))
             {
-#if NET452
-                result = Dns.GetHostAddresses(uri.Host);
-#else
-                result = Task.Run(() => ResolveHostAddressesAsync(uri.Host)).Result;
-#endif
+                result = ResolveHostAddresses(uri.Host);
 
                 result = result.OrderBy(x => x,
                         new AddressComparer(ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork))
@@ -72,12 +69,25 @@ namespace Neo4j.Driver.Internal
 
             return Task.FromResult(result);
         }
-        
+
+        private static IPAddress[] ResolveHostAddresses(string host)
+        {
+            IPAddress[] result;
+
+#if NET452
+            result = Dns.GetHostAddresses(host);
+#else
+            result = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
+#endif
+
+            return result;
+        }
+
         private static Task<IPAddress[]> ResolveHostAddressesAsync(string host)
         {
             return Dns.GetHostAddressesAsync(host);
         }
-
+    
         private static bool TryResolveLocalHost(Uri uri, bool ipv6Enabled, out IPAddress[] result)
         {
             IPAddress address = null;
