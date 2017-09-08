@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Internal
 #if NET452
             result = Dns.GetHostAddresses(host);
 #else
-            result = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
+            result = Dns.GetHostAddressesAsync(host).ConfigureAwait(false).GetAwaiter().GetResult();
 #endif
 
             return result;
