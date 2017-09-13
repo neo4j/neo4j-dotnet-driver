@@ -20,51 +20,110 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
     internal static class NetworkExtensions
     {
-        public static ISet<Uri> Resolve(this Uri uri)
+        
+        public static IPAddress[] Resolve(this Uri uri, bool ipv6Enabled)
         {
-            return new HashSet<Uri> { uri };
-        }
+            IPAddress[] result = null;
 
-        public static async Task<IPAddress[]> ResolveAsync(this Uri uri, bool ipv6Enabled)
-        {
-            IPAddress[] addresses;
-            IPAddress address;
+            uri = CheckForLocalhostBugInMono(uri);
 
-            if (isLocalhost(uri) && IsRunningOnMono())
+            if (!TryResolveLocalHost(uri, ipv6Enabled, out result))
             {
-                // to work around this issue: https://bugzilla.xamarin.com/show_bug.cgi?id=23862
-                uri = new UriBuilder(uri.Scheme, IPAddress.Loopback.ToString(), uri.Port).Uri;
+                result = ResolveHostAddresses(uri.Host);
+
+                result = result.OrderBy(x => x,
+                        new AddressComparer(ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork))
+                    .ToArray();
             }
 
+            return result;
+        }
+
+        
+        public static Task<IPAddress[]> ResolveAsync(this Uri uri, bool ipv6Enabled)
+        {
+            IPAddress[] result = null;
+
+            uri = CheckForLocalhostBugInMono(uri);
+
+            if (!TryResolveLocalHost(uri, ipv6Enabled, out result))
+            {
+                return
+                    ResolveHostAddressesAsync(uri.Host).ContinueWith(t =>
+                    {
+                        return
+                            t.Result.OrderBy(x => x,
+                                    new AddressComparer(ipv6Enabled
+                                        ? AddressFamily.InterNetworkV6
+                                        : AddressFamily.InterNetwork))
+                                .ToArray();
+                    }, TaskContinuationOptions.ExecuteSynchronously);
+            }
+
+            return Task.FromResult(result);
+        }
+
+        private static IPAddress[] ResolveHostAddresses(string host)
+        {
+            IPAddress[] result;
+
+#if NET452
+            result = Dns.GetHostAddresses(host);
+#else
+            result = Dns.GetHostAddressesAsync(host).ConfigureAwait(false).GetAwaiter().GetResult();
+#endif
+
+            return result;
+        }
+
+        private static Task<IPAddress[]> ResolveHostAddressesAsync(string host)
+        {
+            return Dns.GetHostAddressesAsync(host);
+        }
+    
+        private static bool TryResolveLocalHost(Uri uri, bool ipv6Enabled, out IPAddress[] result)
+        {
+            IPAddress address = null;
+            
             if (IPAddress.TryParse(uri.Host, out address))
             {
                 if (ipv6Enabled && address.AddressFamily == AddressFamily.InterNetwork)
                 {
                     // if it is a ipv4 address, then add the ipv6 address as the first attempt
                     var ipv6Address = IPAddress.IsLoopback(address) ? IPAddress.IPv6Loopback : address.MapToIPv6();
-                    addresses = new[] { ipv6Address, address };
+                    result = new[] { ipv6Address, address };
                 }
                 else
                 {
-                    addresses = new[] { address };
+                    result = new[] { address };
                 }
+
+                return true;
             }
-            else
+
+            result = null;
+
+            return false;
+        } 
+        
+        private static Uri CheckForLocalhostBugInMono(Uri uri)
+        {
+            if (IsLocalhost(uri) && IsRunningOnMono())
             {
-                var prefered = ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
-                addresses = (await Dns.GetHostAddressesAsync(uri.Host).ConfigureAwait(false))
-                    .OrderBy(x=>x, new AddressComparer(prefered)).ToArray();
+                return new UriBuilder(uri.Scheme, IPAddress.Loopback.ToString(), uri.Port).Uri;
             }
-            return addresses;
+
+            return uri;
         }
 
-        private static bool isLocalhost(Uri uri)
+        private static bool IsLocalhost(Uri uri)
         {
             return uri.Host.Equals("localhost", StringComparison.CurrentCultureIgnoreCase);
         }

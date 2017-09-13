@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Internal.Routing
             Config config)
         {
             var logger = config.Logger;
-            var uris = routingSettings.InitialServerUri.Resolve();
+            var uris = new HashSet<Uri> { routingSettings.InitialServerUri };
 
             _clusterConnectionPool = new ClusterConnectionPool(
                 connectionSettings, poolSettings, bufferSettings, uris, logger);

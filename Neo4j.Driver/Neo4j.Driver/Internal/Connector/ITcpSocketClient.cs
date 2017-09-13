@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.Connector
     {
         Stream ReadStream { get;  }
         Stream WriteStream { get;  }
+        void Connect(Uri uri);
         Task ConnectAsync(Uri uri);
     }
 }

@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tests
                 conn.Init();
 
                 // Then
-                mockClient.Verify(c => c.StartAsync(), Times.Once);
+                mockClient.Verify(c => c.Start(), Times.Once);
             }
 
             [Fact]
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.StartAsync()).Throws(new IOException("I will stop socket conn from initialization"));
+                mockClient.Setup(x => x.Start()).Throws(new IOException("I will stop socket conn from initialization"));
                 // ReSharper disable once ObjectCreationAsStatement
                 var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
                 // When

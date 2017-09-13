@@ -92,7 +92,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return;
                 }
 
-                var routingTable = UpdateRoutingTableWithInitialUriFallback(_seedUri.Resolve());
+                var routingTable = UpdateRoutingTableWithInitialUriFallback(new HashSet<Uri> { _seedUri });
                 _poolManager.UpdateConnectionPool(routingTable.All());
                 _routingTable = routingTable;
                 _logger?.Info($"Updated routingTable to be {_routingTable}");
@@ -117,7 +117,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return;
                 }
 
-                var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(_seedUri.Resolve()).ConfigureAwait(false);
+                var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(new HashSet<Uri> { _seedUri }).ConfigureAwait(false);
                 _poolManager.UpdateConnectionPool(routingTable.All());
                 _routingTable = routingTable;
                 _logger?.Info($"Updated routingTable to be {_routingTable}");
