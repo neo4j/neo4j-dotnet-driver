@@ -34,7 +34,6 @@ namespace Neo4j.Driver.Internal
         private readonly int _maxPoolSize;
         private readonly int _idlePoolSize;
         private readonly TimeSpan _connAcquisitionTimeout;
-        internal TimeSpan ConnAcquisitionQueuingTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
         private readonly ConnectionValidator _connectionValidator;
         private readonly ConnectionSettings _connectionSettings;
@@ -73,10 +72,6 @@ namespace Neo4j.Driver.Internal
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
-            if (ConnAcquisitionQueuingTimeout > _connAcquisitionTimeout)
-            {
-                ConnAcquisitionQueuingTimeout = _connAcquisitionTimeout;
-            }
             _bufferSettings = bufferSettings;
 
 
@@ -174,118 +169,160 @@ namespace Neo4j.Driver.Internal
             return Acquire();
         }
 
-        public Task<IConnection> AcquireAsync(AccessMode mode)
-        {
-            return AcquireAsync();
-        }
-
         public IPooledConnection Acquire()
         {
-            return TryExecute(() =>
+            using (var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout))
             {
-                if (_disposeCalled)
-                {
-                    ThrowObjectDisposedException();
-                }
-                IPooledConnection connection;
-
-                if (!_availableConnections.TryTake(out connection))
-                {
-                    var connAcquisitionTimer = new Stopwatch();
-                    connAcquisitionTimer.Start();
-                    do
-                    {
-                        if (!IsConnectionPoolFull())
-                        {
-                            connection = CreateNewPooledConnection();
-                            break;
-                        }
-                        if (_availableConnections.TryTake(out connection, ConnAcquisitionQueuingTimeout))
-                        {
-                            break;
-                        }
-                    }
-                    while (connAcquisitionTimer.ElapsedMilliseconds < _connAcquisitionTimeout.TotalMilliseconds);
-                    connAcquisitionTimer.Stop();
-
-                    if (connection == null)
-                    {
-                        throw new ClientException($"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
-                    }
-                }
-
-                if (!_connectionValidator.IsValid(connection))
-                {
-                    DestoryConnection(connection);
-                    return Acquire();
-                }
-
-                _inUseConnections.TryAdd(connection);
-                if (_disposeCalled)
-                {
-                    if (_inUseConnections.TryRemove(connection))
-                    {
-                        DestoryConnection(connection);
-                    }
-                    ThrowObjectDisposedException();
-                }
-
-                return connection;
-            });
+                return Acquire(timeOutTokenSource.Token);
+            }
         }
 
-        private Task<IConnection> AcquireAsync()
+        private IPooledConnection Acquire(CancellationToken cancellationToken)
+        {
+            try
+            {
+                return TryExecute(() =>
+                {
+                    IPooledConnection connection = null;
+
+                    while (true)
+                    {
+                        if (_disposeCalled)
+                        {
+                            ThrowObjectDisposedException();
+                        }
+
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (!_availableConnections.TryTake(out connection, 0, cancellationToken))
+                        {
+                            do
+                            {
+                                if (!IsConnectionPoolFull())
+                                {
+                                    connection = CreateNewPooledConnection();
+                                    break;
+                                }
+
+                                if (_availableConnections.TryTake(out connection, 0, cancellationToken))
+                                {
+                                    break;
+                                }
+                            } while (!cancellationToken.IsCancellationRequested);
+
+                            if (connection == null)
+                            {
+                                throw new ClientException(
+                                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
+                            }
+                        }
+
+                        if (!_connectionValidator.IsValid(connection))
+                        {
+                            DestoryConnection(connection);
+                        }
+                        else
+                        {
+                            break;;
+                        }
+                    }
+
+                    _inUseConnections.TryAdd(connection);
+                    if (_disposeCalled)
+                    {
+                        if (_inUseConnections.TryRemove(connection))
+                        {
+                            DestoryConnection(connection);
+                        }
+
+                        ThrowObjectDisposedException();
+                    }
+
+                    return connection;
+                });
+            }
+            catch (OperationCanceledException ex)
+            {
+                throw new ClientException(
+                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+            }
+        }
+
+        public Task<IConnection> AcquireAsync(AccessMode mode)
+        {
+            using (var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout))
+            {
+                return AcquireAsync(timeOutTokenSource.Token);
+            }
+        }
+
+        private Task<IConnection> AcquireAsync(CancellationToken cancellationToken)
         {
             return TryExecuteAsync(async () =>
             {
-                if (_disposeCalled)
-                {
-                    ThrowObjectDisposedException();
-                }
-
                 IPooledConnection connection = null;
-                if (!_availableConnections.TryTake(out connection))
+
+                try
                 {
-                    var connAcquisitionTimer = new Stopwatch();
-                    connAcquisitionTimer.Start();
-                    do
+                    while (true)
                     {
-                        if (!IsConnectionPoolFull())
+                        if (_disposeCalled)
                         {
-                            connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                            ThrowObjectDisposedException();
+                        }
+
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (!_availableConnections.TryTake(out connection, 0, cancellationToken))
+                        {
+                            do
+                            {
+                                if (!IsConnectionPoolFull())
+                                {
+                                    connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                                    break;
+                                }
+
+                                if (_availableConnections.TryTake(out connection, 0, cancellationToken))
+                                {
+                                    break;
+                                }
+                            } while (!cancellationToken.IsCancellationRequested);
+
+                            if (connection == null)
+                            {
+                                throw new ClientException(
+                                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
+                            }
+                        }
+
+                        if (!_connectionValidator.IsValid(connection))
+                        {
+                            DestoryConnection(connection);
+                        }
+                        else
+                        {
                             break;
                         }
-                        if (_availableConnections.TryTake(out connection, ConnAcquisitionQueuingTimeout))
+                    }
+
+                    _inUseConnections.TryAdd(connection);
+                    if (_disposeCalled)
+                    {
+                        if (_inUseConnections.TryRemove(connection))
                         {
-                            break;
+                            DestoryConnection(connection);
                         }
-                    }
-                    while (connAcquisitionTimer.ElapsedMilliseconds < _connAcquisitionTimeout.TotalMilliseconds);
-                    connAcquisitionTimer.Stop();
-
-                    if (connection == null)
-                    {
-                        throw new ClientException($"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
+                        ThrowObjectDisposedException();
                     }
                 }
-
-                if (!_connectionValidator.IsValid(connection))
+                catch (OperationCanceledException ex)
                 {
-                    DestoryConnection(connection);
-                    return await AcquireAsync().ConfigureAwait(false);
+                    throw new ClientException(
+                        $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
                 }
 
-                _inUseConnections.TryAdd(connection);
-                if (_disposeCalled)
-                {
-                    if (_inUseConnections.TryRemove(connection))
-                    {
-                        DestoryConnection(connection);
-                    }
-                    ThrowObjectDisposedException();
-                }
-
-                return connection;
+                return (IConnection) connection;
             });
         }
 
