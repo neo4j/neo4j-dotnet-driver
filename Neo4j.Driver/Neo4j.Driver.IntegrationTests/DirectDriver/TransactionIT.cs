@@ -126,5 +126,207 @@ namespace Neo4j.Driver.IntegrationTests
                 matchResult.Should().Be(0);
             }
         }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableAfterRun()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = session.BeginTransaction())
+                    {
+                        var result = txc.Run("RETURN 1 As X");
+                        result.Keys.Should().HaveCount(1);
+                        result.Keys.Should().Contain("X");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableAfterRunAndResultConsumption()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = session.BeginTransaction())
+                    {
+                        var result = txc.Run("RETURN 1 As X");
+                        result.Keys.Should().HaveCount(1);
+                        result.Keys.Should().Contain("X");
+                        result.Consume();
+                        result.Keys.Should().HaveCount(1);
+                        result.Keys.Should().Contain("X");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableAfterConsecutiveRun()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = session.BeginTransaction())
+                    {
+                        var result1 = txc.Run("RETURN 1 As X");
+                        var result2 = txc.Run("RETURN 1 As Y");
+
+                        result1.Keys.Should().HaveCount(1);
+                        result1.Keys.Should().Contain("X");
+                        result2.Keys.Should().HaveCount(1);
+                        result2.Keys.Should().Contain("Y");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumption()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = session.BeginTransaction())
+                    {
+                        var result1 = txc.Run("RETURN 1 As X");
+                        var result2 = txc.Run("RETURN 1 As Y");
+
+                        result1.Keys.Should().HaveCount(1);
+                        result1.Keys.Should().Contain("X");
+                        result2.Keys.Should().HaveCount(1);
+                        result2.Keys.Should().Contain("Y");
+
+                        result1.Consume();
+                        result2.Consume();
+
+                        result1.Keys.Should().HaveCount(1);
+                        result1.Keys.Should().Contain("X");
+                        result2.Keys.Should().HaveCount(1);
+                        result2.Keys.Should().Contain("Y");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableAfterConsecutiveRunNoOrder()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = session.BeginTransaction())
+                    {
+                        var result1 = txc.Run("RETURN 1 As X");
+                        var result2 = txc.Run("RETURN 1 As Y");
+
+                        result2.Keys.Should().HaveCount(1);
+                        result2.Keys.Should().Contain("Y");
+                        result1.Keys.Should().HaveCount(1);
+                        result1.Keys.Should().Contain("X");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumptionNoOrder()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = session.BeginTransaction())
+                    {
+                        var result1 = txc.Run("RETURN 1 As X");
+                        var result2 = txc.Run("RETURN 1 As Y");
+
+                        result2.Keys.Should().HaveCount(1);
+                        result2.Keys.Should().Contain("Y");
+                        result1.Keys.Should().HaveCount(1);
+                        result1.Keys.Should().Contain("X");
+
+                        result2.Consume();
+                        result1.Consume();
+
+                        result2.Keys.Should().HaveCount(1);
+                        result2.Keys.Should().Contain("Y");
+                        result1.Keys.Should().HaveCount(1);
+                        result1.Keys.Should().Contain("X");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async void KeysShouldBeAvailableJustAfterRunAsync()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = await session.BeginTransactionAsync())
+                    {
+                        var cursor = await txc.RunAsync("RETURN 1 As X");
+                        cursor.Keys.Should().HaveCount(1);
+                        cursor.Keys.Should().Contain("X");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsync()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = await session.BeginTransactionAsync())
+                    {
+                        var cursor1 = await txc.RunAsync("RETURN 1 As X");
+                        var cursor2 = await txc.RunAsync("RETURN 1 As Y");
+
+                        cursor1.Keys.Should().HaveCount(1);
+                        cursor1.Keys.Should().Contain("X");
+
+                        cursor2.Keys.Should().HaveCount(1);
+                        cursor2.Keys.Should().Contain("Y");
+                    }
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsyncWithConsumptionInBetween()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    using (var txc = await session.BeginTransactionAsync())
+                    {
+                        var cursor1 = await txc.RunAsync("RETURN 1 As X");
+                        var cursor2 = await txc.RunAsync("RETURN 1 As Y");
+
+                        await cursor1.ConsumeAsync();
+
+                        cursor1.Keys.Should().HaveCount(1);
+                        cursor1.Keys.Should().Contain("X");
+
+                        cursor2.Keys.Should().HaveCount(1);
+                        cursor2.Keys.Should().Contain("Y");
+                    }
+                }
+            }
+        }
+
+
     }
 }

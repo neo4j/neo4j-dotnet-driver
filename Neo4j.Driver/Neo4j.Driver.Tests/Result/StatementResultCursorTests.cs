@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfRecordsIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new StatementResult(new List<string>{"test"}, null));
+                var ex = Xunit.Record.Exception(() => new StatementResult(() => new List<string>{"test"}, null));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetKeysProperlyIfKeysNotNull()
             {
-                var result = new StatementResult(new List<string>{"test"}, new ListBasedRecordSet(new List<IRecord>()));
+                var result = new StatementResult(() => new List<string>{"test"}, new ListBasedRecordSet(new List<IRecord>()));
                 result.Keys.Should().HaveCount(1);
                 result.Keys.Should().Contain("test");
             }

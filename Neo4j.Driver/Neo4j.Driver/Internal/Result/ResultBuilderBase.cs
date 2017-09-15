@@ -22,12 +22,26 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal abstract class ResultBuilderBase : IMessageResponseCollector
     {
-        protected List<string> Keys { get; } = new List<string>();
+        private bool _statementProcessed = false;
+        protected List<string> _keys = new List<string>();
         protected SummaryCollector SummaryCollector { get; }
 
         protected ResultBuilderBase(Statement statement, IServerInfo server)
         {
             SummaryCollector = new SummaryCollector(statement, server);
+        }
+
+        protected List<string> Keys
+        {
+            get
+            {
+                if (!_statementProcessed)
+                {
+                    EnsureStatementProcessed();
+                }
+
+                return _keys;
+            }
         }
 
         public void CollectFields(IDictionary<string, object> meta)
@@ -36,7 +50,8 @@ namespace Neo4j.Driver.Internal.Result
             {
                 return;
             }
-            CollectKeys(meta, "fields", Keys);
+
+            CollectKeys(meta, "fields", _keys);
             SummaryCollector.CollectWithFields(meta);
         }
 
@@ -48,7 +63,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectRecord(object[] fields)
         {
-            var record = new Record(Keys, fields);
+            var record = new Record(_keys, fields);
             EnqueueRecord(record);
         }
 
@@ -65,18 +80,22 @@ namespace Neo4j.Driver.Internal.Result
         public void DoneSuccess()
         {
             // do nothing
+            _statementProcessed = true;
         }
 
         public void DoneFailure()
         {
             NoMoreRecords();// an error received, so the result is broken
+            _statementProcessed = true;
         }
 
         public void DoneIgnored()
         {
             NoMoreRecords();// the result is ignored
+            _statementProcessed = true;
         }
 
+        protected abstract void EnsureStatementProcessed();
         protected abstract void NoMoreRecords();
         protected abstract void EnqueueRecord(Record record);
 

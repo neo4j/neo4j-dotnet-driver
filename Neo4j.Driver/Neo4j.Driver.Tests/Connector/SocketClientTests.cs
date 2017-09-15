@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests
 
                 var messageHandler = new MessageResponseHandler();
                 messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
-                var rb = new ResultBuilder();
+                var rb = new ResultBuilder(null, () => { }, null, null);
                 messageHandler.EnqueueMessage(messages[0], rb);
                 messageHandler.EnqueueMessage(messages[1], rb);
 
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Tests
                     var messages = new IRequestMessage[] {new RunMessage("This will cause a syntax error")};
                     var messageHandler = new MessageResponseHandler();
                     messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
-                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder());
+                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder(null, () => { }, null, null));
 
                     harness.SetupReadStream("00 00 00 01" +
                                             "00 03 b1 70 a0 00 00" +
@@ -152,8 +152,8 @@ namespace Neo4j.Driver.Tests
                     var messageHandler = new TestResponseHandler();
 
                     messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
-                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder());
-                    messageHandler.EnqueueMessage(messages[1], new ResultBuilder());
+                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder(null, () => { }, null, null));
+                    messageHandler.EnqueueMessage(messages[1], new ResultBuilder(null, () => { }, null, null));
 
                     harness.SetupReadStream("00 00 00 01" +
                                             "00 03 b1 70 a0 00 00" +
