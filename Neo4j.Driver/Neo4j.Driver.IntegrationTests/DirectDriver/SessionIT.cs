@@ -198,5 +198,102 @@ namespace Neo4j.Driver.IntegrationTests
             driver.Dispose();
             session.Dispose();
         }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableOnlyAfterRunAndResultConsumption()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var result = session.Run("RETURN 1 As X");
+                    result.Keys.Should().BeEmpty();
+                    result.Consume();
+                    result.Keys.Should().HaveCount(1);
+                    result.Keys.Should().Contain("X");
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public void KeysShouldBeAvailableOnlyAfterConsecutiveRunAndResultConsumption()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var result1 = session.Run("RETURN 1 As X");
+                    var result2 = session.Run("RETURN 1 As Y");
+                    //result1.Keys.Should().BeEmpty(); // Failed
+                    result1.Keys.Should().HaveCount(1);
+                    result1.Keys.Should().Contain("X");
+
+                    result2.Keys.Should().BeEmpty();
+                    result1.Consume();
+                    result1.Keys.Should().HaveCount(1);
+                    result1.Keys.Should().Contain("X");
+
+                    result2.Keys.Should().BeEmpty();
+                    result2.Consume();
+                    result2.Keys.Should().HaveCount(1);
+                    result2.Keys.Should().Contain("Y");
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async void KeysShouldBeAvailableJustAfterRunAsync()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var cursor = await session.RunAsync("RETURN 1 As X");
+                    cursor.Keys.Should().HaveCount(1);
+                    cursor.Keys.Should().Contain("X");
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsync()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var cursor1 = await session.RunAsync("RETURN 1 As X");
+                    var cursor2 = await session.RunAsync("RETURN 1 As Y");
+
+                    cursor1.Keys.Should().HaveCount(1);
+                    cursor1.Keys.Should().Contain("X");
+
+                    cursor2.Keys.Should().HaveCount(1);
+                    cursor2.Keys.Should().Contain("Y");
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsyncWithConsumptionInBetween()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                using (var session = driver.Session())
+                {
+                    var cursor1 = await session.RunAsync("RETURN 1 As X");
+                    var cursor2 = await session.RunAsync("RETURN 1 As Y");
+
+                    await cursor1.ConsumeAsync();
+
+                    cursor1.Keys.Should().HaveCount(1);
+                    cursor1.Keys.Should().Contain("X");
+
+                    cursor2.Keys.Should().HaveCount(1);
+                    cursor2.Keys.Should().Contain("Y");
+                }
+            }
+        }
+
     }
 }

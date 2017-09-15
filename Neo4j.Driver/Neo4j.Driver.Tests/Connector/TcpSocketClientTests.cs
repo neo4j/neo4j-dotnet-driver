@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Tests.Connector
                     new SocketSettings{ConnectionTimeout = TimeSpan.FromSeconds(0)});
                 var exception = await Record.ExceptionAsync(
                     ()=>client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 9999));
-                exception.Should().BeOfType<OperationCanceledException>();
+                exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
                 client.DisposeCalled.Should().BeTrue();
             }
 
