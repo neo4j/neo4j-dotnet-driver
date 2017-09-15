@@ -28,6 +28,8 @@ namespace Neo4j.Driver.Internal
 {
     internal class ConnectionPool : LoggerBase, IConnectionPool
     {
+        private const int SpinningWaitInterval = 500;
+
         private readonly Uri _uri;
 
         private int _poolSize = 0;
@@ -179,12 +181,12 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection Acquire(CancellationToken cancellationToken)
         {
-            try
+            return TryExecute(() =>
             {
-                return TryExecute(() =>
-                {
-                    IPooledConnection connection = null;
+                IPooledConnection connection = null;
 
+                try
+                {
                     while (true)
                     {
                         if (_disposeCalled)
@@ -192,9 +194,7 @@ namespace Neo4j.Driver.Internal
                             ThrowObjectDisposedException();
                         }
 
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        if (!_availableConnections.TryTake(out connection, 0, cancellationToken))
+                        if (!_availableConnections.TryTake(out connection))
                         {
                             do
                             {
@@ -204,7 +204,7 @@ namespace Neo4j.Driver.Internal
                                     break;
                                 }
 
-                                if (_availableConnections.TryTake(out connection, 0, cancellationToken))
+                                if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
                                 {
                                     break;
                                 }
@@ -223,8 +223,11 @@ namespace Neo4j.Driver.Internal
                         }
                         else
                         {
-                            break;;
+                            break;
+                            ;
                         }
+
+                        cancellationToken.ThrowIfCancellationRequested();
                     }
 
                     _inUseConnections.TryAdd(connection);
@@ -237,15 +240,15 @@ namespace Neo4j.Driver.Internal
 
                         ThrowObjectDisposedException();
                     }
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new ClientException(
+                        $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+                }
 
-                    return connection;
-                });
-            }
-            catch (OperationCanceledException ex)
-            {
-                throw new ClientException(
-                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
-            }
+                return connection;
+            });
         }
 
         public Task<IConnection> AcquireAsync(AccessMode mode)
@@ -271,9 +274,7 @@ namespace Neo4j.Driver.Internal
                             ThrowObjectDisposedException();
                         }
 
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        if (!_availableConnections.TryTake(out connection, 0, cancellationToken))
+                        if (!_availableConnections.TryTake(out connection))
                         {
                             do
                             {
@@ -283,7 +284,7 @@ namespace Neo4j.Driver.Internal
                                     break;
                                 }
 
-                                if (_availableConnections.TryTake(out connection, 0, cancellationToken))
+                                if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
                                 {
                                     break;
                                 }
@@ -304,6 +305,8 @@ namespace Neo4j.Driver.Internal
                         {
                             break;
                         }
+
+                        cancellationToken.ThrowIfCancellationRequested();
                     }
 
                     _inUseConnections.TryAdd(connection);
