@@ -105,5 +105,11 @@ namespace Neo4j.Driver.Internal.Result
         {
             _hasMoreRecords = false;
         }
+
+        protected override void EnsureStatementProcessed()
+        {
+            
+        }
+
     }
 }

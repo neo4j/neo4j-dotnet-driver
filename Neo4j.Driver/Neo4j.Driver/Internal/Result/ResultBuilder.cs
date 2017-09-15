@@ -28,10 +28,6 @@ namespace Neo4j.Driver.Internal.Result
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
-        public ResultBuilder() : this(null, null, null, null, null)
-        {
-        }
-
         public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler = null)
             : base(statement, server)
         {
@@ -44,10 +40,10 @@ namespace Neo4j.Driver.Internal.Result
             : this(new Statement(statement, parameters), receiveOneAction, server, resourceHandler)
         {
         }
-
+        
         public StatementResult PreBuild()
         {
-            return new StatementResult(Keys, new RecordSet(NextRecord), Summary);
+            return new StatementResult(() => Keys, new RecordSet(NextRecord), Summary);
         }
 
         /// <summary>
@@ -94,6 +90,11 @@ namespace Neo4j.Driver.Internal.Result
                     _resourceHandler?.OnResultConsumed();
                 }
             };
+        }
+
+        protected override void EnsureStatementProcessed()
+        {
+            _receiveOneAction();
         }
 
         protected override void EnqueueRecord(Record record)

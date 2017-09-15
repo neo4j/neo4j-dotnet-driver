@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
                 var keys = RecordCreator.CreateKeys(keySize);
                 var records = RecordCreator.CreateRecords(recordSize, keys);
 
-                return new StatementResult(keys, new ListBasedRecordSet(records), getSummaryFunc);
+                return new StatementResult(() => keys, new ListBasedRecordSet(records), getSummaryFunc);
             }
         }
 
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfRecordsIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new StatementResult(new List<string>{"test"}, null));
+                var ex = Xunit.Record.Exception(() => new StatementResult(() => new List<string>{"test"}, null));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetKeysProperlyIfKeysNotNull()
             {
-                var result = new StatementResult(new List<string>{"test"}, new ListBasedRecordSet(new List<IRecord>()));
+                var result = new StatementResult(() => new List<string>{"test"}, new ListBasedRecordSet(new List<IRecord>()));
                 result.Keys.Should().HaveCount(1);
                 result.Keys.Should().Contain("test");
             }
@@ -229,7 +229,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecords()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var cursor = new StatementResult( TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.RecordsWithAutoLoad));
+                var cursor = new StatementResult(() => TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.RecordsWithAutoLoad));
                 var records = cursor.ToList();
                 records.Count.Should().Be(10);
             }
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Tests
                 var recordYielder = new TestRecordYielder(5, 10, _output);
 
                 int count = 0;
-                var cursor = new StatementResult(TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
+                var cursor = new StatementResult(() => TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
                 var t = Task.Factory.StartNew(() =>
                {
                     // ReSharper disable once LoopCanBeConvertedToQuery
@@ -264,7 +264,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecordsImmediatelyWhenReady()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var result = new StatementResult(TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
+                var result = new StatementResult(() => TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
                 var temp = result.Take(5);
                 var records = temp.ToList();
                 records.Count.Should().Be(5);

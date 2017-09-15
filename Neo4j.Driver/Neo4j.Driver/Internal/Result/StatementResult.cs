@@ -26,13 +26,13 @@ namespace Neo4j.Driver.Internal.Result
     /// </summary>
     internal class StatementResult : IStatementResult
     {
-        private readonly List<string> _keys;
+        private readonly Func<List<string>> _keys;
         private readonly Func<IResultSummary> _getSummary;
         private readonly IRecordSet _recordSet;
 
         private IResultSummary _summary;
 
-        public StatementResult(List<string> keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
+        public StatementResult(Func<List<string>> keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
         {
             Throw.ArgumentNullException.IfNull(keys, nameof(keys));
             Throw.ArgumentNullException.IfNull(recordSet, nameof(recordSet));
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.Result
             _getSummary = getSummary;
         }
 
-        public IReadOnlyList<string> Keys => _keys;
+        public IReadOnlyList<string> Keys => _keys();
 
         public IResultSummary Summary
         {
