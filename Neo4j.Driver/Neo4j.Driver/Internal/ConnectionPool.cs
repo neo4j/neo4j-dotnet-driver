@@ -224,7 +224,6 @@ namespace Neo4j.Driver.Internal
                         else
                         {
                             break;
-                            ;
                         }
 
                         cancellationToken.ThrowIfCancellationRequested();
