@@ -31,7 +31,6 @@ namespace Neo4j.Driver.Internal
         private const int SpinningWaitInterval = 500;
 
         private readonly Uri _uri;
-        private readonly object _syncObject = new object();
 
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
@@ -149,17 +148,6 @@ namespace Neo4j.Driver.Internal
         private PooledConnection NewPooledConnection()
         {
             Interlocked.Increment(ref _poolSize);
-            if (_maxPoolSize != Config.Infinite && _poolSize > _maxPoolSize)
-            {
-                lock (_syncObject)
-                {
-                    if (_poolSize > _maxPoolSize)
-                    {
-                        throw new InvalidOperationException();
-                    }
-                }
-            }
-
             return _fakeConnection != null
                 ? new PooledConnection(_fakeConnection, this)
                 : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, Logger), this);
@@ -212,15 +200,8 @@ namespace Neo4j.Driver.Internal
                             {
                                 if (!IsConnectionPoolFull())
                                 {
-                                    try
-                                    {
-                                        connection = CreateNewPooledConnection();
-                                        break;
-                                    }
-                                    catch (InvalidOperationException)
-                                    {
-                                        // we have exceeded MaxConnectionPoolSize, so continue looping...
-                                    }
+                                    connection = CreateNewPooledConnection();
+                                    break;
                                 }
 
                                 if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
@@ -243,6 +224,7 @@ namespace Neo4j.Driver.Internal
                         else
                         {
                             break;
+                            ;
                         }
 
                         cancellationToken.ThrowIfCancellationRequested();
@@ -298,15 +280,8 @@ namespace Neo4j.Driver.Internal
                             {
                                 if (!IsConnectionPoolFull())
                                 {
-                                    try
-                                    {
-                                        connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                                        break;
-                                    }
-                                    catch (InvalidOperationException)
-                                    {
-                                        // we have exceeded MaxConnectionPoolSize, so continue looping...
-                                    }
+                                    connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                                    break;
                                 }
 
                                 if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))

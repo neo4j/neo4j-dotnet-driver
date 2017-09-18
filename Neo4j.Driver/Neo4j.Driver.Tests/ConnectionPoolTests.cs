@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseConnectionIfFailedToCreate()
             {
                 var mockedConnection = new Mock<IConnection>();
-                mockedConnection.Setup(x => x.Init()).Throws(new NotImplementedException());
+                mockedConnection.Setup(x => x.Init()).Throws(new InvalidOperationException());
 
                 var pool = new ConnectionPool(mockedConnection.Object);
 
