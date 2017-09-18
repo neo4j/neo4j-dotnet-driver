@@ -31,7 +31,6 @@ namespace Neo4j.Driver.Internal
         private const int SpinningWaitInterval = 500;
 
         private readonly Uri _uri;
-        private readonly object _syncObject = new object();
 
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
@@ -148,16 +147,10 @@ namespace Neo4j.Driver.Internal
 
         private PooledConnection NewPooledConnection()
         {
-            Interlocked.Increment(ref _poolSize);
-            if (_maxPoolSize != Config.Infinite && _poolSize > _maxPoolSize)
+            var currentPoolSize = Interlocked.Increment(ref _poolSize);
+            if (_maxPoolSize != Config.Infinite && currentPoolSize > _maxPoolSize)
             {
-                lock (_syncObject)
-                {
-                    if (_poolSize > _maxPoolSize)
-                    {
-                        throw new InvalidOperationException();
-                    }
-                }
+                throw new InvalidOperationException();
             }
 
             return _fakeConnection != null
