@@ -34,5 +34,7 @@ namespace Neo4j.Driver.Internal.Connector
         Task ReceiveOneAsync(IMessageResponseHandler responseHandler);
         bool IsOpen { get; }
         void UpdatePackStream(string serverVersion);
+        void Stop();
+        Task StopAsync();
     }
 }

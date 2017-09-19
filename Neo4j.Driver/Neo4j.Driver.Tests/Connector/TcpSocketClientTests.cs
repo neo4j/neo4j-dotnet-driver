@@ -36,10 +36,16 @@ namespace Neo4j.Driver.Tests.Connector
             {
             }
 
-            protected override void CloseClient()
+            public override void Disconnect()
             {
                 DisposeCalled = true;
-                base.CloseClient();
+                base.Disconnect();
+            }
+
+            public override Task DisconnectAsync()
+            {
+                DisposeCalled = true;
+                return base.DisconnectAsync();
             }
 
             public bool DisposeCalled { get; set; }
@@ -108,5 +114,6 @@ namespace Neo4j.Driver.Tests.Connector
                 baseException.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
             }
         }
+        
     }
 }

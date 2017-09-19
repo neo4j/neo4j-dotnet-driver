@@ -19,6 +19,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
@@ -37,7 +38,7 @@ namespace Neo4j.Driver.Internal.Routing
         // for test only
         private readonly IConnectionPool _fakePool;
 
-        private volatile bool _disposeCalled;
+        private int _closedMarker = 0;
 
         public ClusterConnectionPool(
             ConnectionSettings connectionSettings,
@@ -100,7 +101,7 @@ namespace Neo4j.Driver.Internal.Routing
         private void Add(Uri uri)
         {
             _pools.GetOrAdd(uri, CreateNewConnectionPool);
-            if (_disposeCalled)
+            if (_closedMarker > 0)
             {
                 // Anything added after dispose should be directly cleaned.
                 Clear();
@@ -134,12 +135,22 @@ namespace Neo4j.Driver.Internal.Routing
 
         public void Purge(Uri uri)
         {
-            IConnectionPool toRemvoe;
-            var removed = _pools.TryRemove(uri, out toRemvoe);
+            var removed = _pools.TryRemove(uri, out var toRemove);
             if (removed)
             {
-                toRemvoe.Dispose();
+                toRemove.Close();
             }
+        }
+
+        public Task PurgeAsync(Uri uri)
+        {
+            var removed = _pools.TryRemove(uri, out var toRemove);
+            if (removed)
+            {
+                return toRemove.CloseAsync();
+            }
+
+            return TaskExtensions.GetCompletedTask();
         }
 
         public int NumberOfInUseConnections(Uri uri)
@@ -161,10 +172,48 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        protected override void Dispose(bool isDisposing)
+        private Task ClearAsync()
         {
-            _disposeCalled = true;
-            Clear();
+            var clearTasks = new List<Task>();
+
+            var uris = _pools.Keys;
+            foreach (var uri in uris)
+            {
+                clearTasks.Add(PurgeAsync(uri));
+            }
+
+            return Task.WhenAll(clearTasks);
+        }
+
+        public void Close()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                Clear();
+            }
+        }
+
+        public Task CloseAsync()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                return ClearAsync();
+            }
+
+            return TaskExtensions.GetCompletedTask();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (_closedMarker > 0)
+                return;
+
+            if (disposing)
+            {
+                Close();
+            }
+
+            base.Dispose(disposing);
         }
 
         public override string ToString()

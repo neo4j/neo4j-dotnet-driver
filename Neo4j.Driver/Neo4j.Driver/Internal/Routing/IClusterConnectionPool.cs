@@ -34,5 +34,9 @@ namespace Neo4j.Driver.Internal.Routing
         void Purge(Uri uri);
         // Get number of in-use connections for the uri
         int NumberOfInUseConnections(Uri uri);
+
+        void Close();
+
+        Task CloseAsync();
     }
 }

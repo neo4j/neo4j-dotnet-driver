@@ -58,6 +58,11 @@ namespace Neo4j.Driver.Internal.Connector
         void Destroy();
 
         /// <summary>
+        /// Close and release related resources
+        /// </summary>
+        Task DestroyAsync();
+
+        /// <summary>
         /// Close connection
         /// </summary>
         void Close();

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
@@ -31,7 +32,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IClusterConnectionPool _clusterConnectionPool;
         private readonly ILogger _logger;
 
-        private volatile bool _disposeCalled = false;
+        private int _closedMarker = 0;
 
         public LoadBalancer(
             RoutingSettings routingSettings,
@@ -64,14 +65,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         public IConnection Acquire(AccessMode mode)
         {
-            if (_disposeCalled)
+            if (_closedMarker > 0)
             {
                 ThrowObjectDisposedException();
             }
 
             IConnection conn = AcquireConnection(mode);
 
-            if (_disposeCalled)
+            if (_closedMarker > 0)
             {
                 ThrowObjectDisposedException();
             }
@@ -80,14 +81,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         public async Task<IConnection> AcquireAsync(AccessMode mode)
         {
-            if (_disposeCalled)
+            if (_closedMarker > 0)
             {
                 ThrowObjectDisposedException();
             }
 
             IConnection conn = await AcquireConnectionAsync(mode).ConfigureAwait(false);
 
-            if (_disposeCalled)
+            if (_closedMarker > 0)
             {
                 ThrowObjectDisposedException();
             }
@@ -124,7 +125,27 @@ namespace Neo4j.Driver.Internal.Routing
         public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
         {
             return CreateClusterConnectionAsync(uri, AccessMode.Write);
-;        }
+;       }
+
+        public void Close()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                _routingTableManager.RoutingTable.Clear();
+                _clusterConnectionPool.Close();
+            }
+        }
+
+        public Task CloseAsync()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                _routingTableManager.RoutingTable.Clear();
+                return _clusterConnectionPool.CloseAsync();
+            }
+
+            return TaskExtensions.GetCompletedTask();
+        }
 
         public void Dispose()
         {
@@ -132,16 +153,15 @@ namespace Neo4j.Driver.Internal.Routing
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        protected void Dispose(bool disposing)
         {
-            if (!isDisposing)
+            if (_closedMarker > 0)
                 return;
-            _disposeCalled = true;
-            // We cannot set routing table and cluster conn pool to null as we do not want get NPE in concurrent call of dispose and acquire
-            _routingTableManager.RoutingTable.Clear();
-            _clusterConnectionPool.Dispose();
 
-            // cannot set logger to null here otherwise we might concurrent call log and set log to null.
+            if (disposing)
+            {
+                Close();
+            }
         }
 
         public IConnection AcquireConnection(AccessMode mode)

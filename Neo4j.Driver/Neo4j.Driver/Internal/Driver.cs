@@ -16,17 +16,19 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Neo4j.Driver.V1;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
     internal class Driver : IDriver
     {
-        private volatile bool _disposeCalled = false;
+        private int _closedMarker = 0;
 
         private readonly IConnectionProvider _connectionProvider;
         private readonly IRetryLogic _retryLogic;
-        private ILogger _logger;
+        private readonly ILogger _logger;
         public Uri Uri { get; }
 
         private const AccessMode DefaultAccessMode = AccessMode.Write;
@@ -63,31 +65,7 @@ namespace Neo4j.Driver.Internal
             return Session(defaultMode, Bookmark.From(bookmark, _logger));
         }
 
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-            {
-                return;
-            }
-            _disposeCalled = true;
-
-            // We cannot set connection pool to be null,
-            // otherwise we might get NPE when using concurrently with NewSession
-            _connectionProvider.Dispose();
-            _logger = null;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void ThrowDriverClosedException()
-        {
-            throw new ObjectDisposedException(GetType().Name, "Cannot open a new session on a driver that is already disposed.");
-        }
-
+       
         public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
         {
             return Session(defaultMode, Bookmark.From(bookmarks));
@@ -100,19 +78,61 @@ namespace Neo4j.Driver.Internal
 
         private ISession Session(AccessMode defaultMode, Bookmark bookmark)
         {
-            if (_disposeCalled)
+            if (_closedMarker > 0)
             {
                 ThrowDriverClosedException();
             }
 
             var session = new Session(_connectionProvider, _logger, _retryLogic, defaultMode, bookmark);
 
-            if (_disposeCalled)
+            if (_closedMarker > 0)
             {
                 session.Dispose();
                 ThrowDriverClosedException();
             }
+
             return session;
         }
+
+        public void Close()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                _connectionProvider.Close();
+            }
+        }
+
+        public Task CloseAsync()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                return _connectionProvider.CloseAsync();
+            }
+
+            return TaskExtensions.GetCompletedTask();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_closedMarker > 0)
+                return;
+
+            if (disposing)
+            {
+                Close();
+            }
+        }
+
+        private void ThrowDriverClosedException()
+        {
+            throw new ObjectDisposedException(GetType().Name, "Cannot open a new session on a driver that is already disposed.");
+        }
+
     }
 }

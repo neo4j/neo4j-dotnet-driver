@@ -34,7 +34,6 @@ namespace Neo4j.Driver.Internal
         private Transaction _transaction;
 
         private readonly IRetryLogic _retryLogic;
-        private readonly ILogger _logger;
         private bool _isOpen = true;
 
         private Bookmark _bookmark;
@@ -42,12 +41,11 @@ namespace Neo4j.Driver.Internal
 
         public Guid Id { get; } = Guid.NewGuid();
 
-        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null) : base(logger)
+        public Session(IConnectionProvider provider, ILogger logger, IRetryLogic retryLogic = null,
+            AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null) : base(logger)
         {
             _connectionProvider = provider;
             _retryLogic = retryLogic;
-
-            _logger = logger;
 
             _defaultMode = defaultMode;
             UpdateBookmark(bookmark);
@@ -96,7 +94,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction(string bookmark)
         {
-            UpdateBookmark(Bookmark.From(bookmark, _logger));
+            UpdateBookmark(Bookmark.From(bookmark, Logger));
             return BeginTransaction();
         }
 
@@ -105,7 +103,7 @@ namespace Neo4j.Driver.Internal
             EnsureCanRunMoreStatements();
 
             _connection = _connectionProvider.Acquire(mode);
-            var tx = new Transaction(_connection, this, _logger, _bookmark);
+            var tx = new Transaction(_connection, this, Logger, _bookmark);
             tx.SyncBookmark(_bookmark);
             _transaction = tx;
             return _transaction;
@@ -406,7 +404,7 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            var tx = new Transaction(_connection, this, _logger, _bookmark);
+            var tx = new Transaction(_connection, this, Logger, _bookmark);
             await tx.SyncBookmarkAsync(_bookmark).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
@@ -414,7 +412,7 @@ namespace Neo4j.Driver.Internal
 
         public Task<ITransaction> BeginTransactionAsync()
         {
-            return TryExecuteAsync(async () => await BeginTransactionWithoutLoggingAsync(_defaultMode));
+            return TryExecuteAsync(() => BeginTransactionWithoutLoggingAsync(_defaultMode));
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<ITransaction, Task> work)

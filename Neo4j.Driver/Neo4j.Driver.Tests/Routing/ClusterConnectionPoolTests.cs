@@ -160,7 +160,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = Record.Exception(() => pool.Update(new[] {ServerUri}));
 
                 // Then
-                mockedConnectionPool.Verify(x => x.Dispose());
+                mockedConnectionPool.Verify(x => x.Close());
 
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().Contain("Failed to create connections with server");
@@ -199,7 +199,7 @@ namespace Neo4j.Driver.Tests.Routing
                 pool.Purge(ServerUri);
 
                 // Then
-                mockedConnectionPool.Verify(x => x.Dispose(), Times.Once);
+                mockedConnectionPool.Verify(x => x.Close(), Times.Once);
                 connectionPoolDict.Count.Should().Be(0);
                 connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
             }
@@ -237,7 +237,7 @@ namespace Neo4j.Driver.Tests.Routing
                 pool.Dispose();
 
                 // Then
-                mockedConnectionPool.Verify(x => x.Dispose(), Times.Once);
+                mockedConnectionPool.Verify(x => x.Close(), Times.Once);
                 connectionPoolDict.Count.Should().Be(0);
                 connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
             }

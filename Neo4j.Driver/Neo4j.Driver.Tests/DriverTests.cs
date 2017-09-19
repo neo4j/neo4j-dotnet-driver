@@ -82,5 +82,50 @@ namespace Neo4j.Driver.Tests
                 driver.Uri.Host.Should().Be("localhost");
             }
         }
+
+        [Fact]
+        public void DisposeClosesDriver()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost");
+            driver.Dispose();
+
+            var ex = Record.Exception(() => driver.Session());
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ObjectDisposedException>();
+        }
+
+        [Fact]
+        public void CloseClosesDriver()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost");
+            driver.Close();
+
+            var ex = Record.Exception(() => driver.Session());
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ObjectDisposedException>();
+        }
+
+        [Fact]
+        public async void CloseAsyncClosesDriver()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost");
+            await driver.CloseAsync();
+
+            var ex = Record.Exception(() => driver.Session());
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ObjectDisposedException>();
+        }
+
+        [Fact] public async void MultipleCloseAndDisposeIsValidOnDriver()
+        {
+            var driver = GraphDatabase.Driver("bolt://localhost");
+            driver.Close();
+            await driver.CloseAsync();
+            driver.Dispose();
+
+            var ex = Record.Exception(() => driver.Session());
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ObjectDisposedException>();
+        }
     }
 }
