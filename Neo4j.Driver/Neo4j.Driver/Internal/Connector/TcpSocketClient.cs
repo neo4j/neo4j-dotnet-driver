@@ -251,9 +251,12 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (_client != null)
             {
-                _client.Shutdown(SocketShutdown.Both);
+                if (_client.Connected)
+                {
+                    _client.Shutdown(SocketShutdown.Both);
+                }
+
                 _client.Dispose();
-                _stream.Dispose();
 
                 _client = null;
                 _stream = null;
@@ -264,26 +267,30 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (_client != null)
             {
+                if (_client.Connected)
+                {
 #if NET452
-                return Task.Factory.FromAsync(_client.BeginDisconnect, _client.EndDisconnect, false, null).ContinueWith(
-                    t =>
-                    {
-                        _client.Close();
-                        _client.Dispose();
-                        _stream.Dispose();
+                    return Task.Factory.FromAsync(_client.BeginDisconnect, _client.EndDisconnect, false, null)
+                        .ContinueWith(
+                            t =>
+                            {
+                                _client.Dispose();
+                                _stream.Dispose();
 
-                        _client = null;
-                        _stream = null;
+                                _client = null;
+                                _stream = null;
 
-                        return TaskExtensions.GetCompletedTask();
-                    }).Unwrap();
+                                return TaskExtensions.GetCompletedTask();
+                            }).Unwrap();
 #else
-                _client.Shutdown(SocketShutdown.Both);
+                    _client.Shutdown(SocketShutdown.Both);
+#endif
+                }
+
                 _client.Dispose();
-                
+
                 _client = null;
                 _stream = null;
-#endif
             }
 
             return TaskExtensions.GetCompletedTask();
