@@ -63,16 +63,18 @@ namespace Neo4j.Driver.Internal.Routing
             _loadBalancingStrategy = CreateLoadBalancingStrategy(Config.DefaultConfig, clusterConnPool);
         }
 
+        private bool IsClosed => _closedMarker > 0;
+
         public IConnection Acquire(AccessMode mode)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
             {
                 ThrowObjectDisposedException();
             }
 
             IConnection conn = AcquireConnection(mode);
 
-            if (_closedMarker > 0)
+            if (IsClosed)
             {
                 ThrowObjectDisposedException();
             }
@@ -81,14 +83,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         public async Task<IConnection> AcquireAsync(AccessMode mode)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
             {
                 ThrowObjectDisposedException();
             }
 
             IConnection conn = await AcquireConnectionAsync(mode).ConfigureAwait(false);
 
-            if (_closedMarker > 0)
+            if (IsClosed)
             {
                 ThrowObjectDisposedException();
             }
@@ -155,7 +157,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         protected void Dispose(bool disposing)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
                 return;
 
             if (disposing)

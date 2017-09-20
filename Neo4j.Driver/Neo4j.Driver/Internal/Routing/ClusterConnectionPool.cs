@@ -68,6 +68,8 @@ namespace Neo4j.Driver.Internal.Routing
             _pools = clusterPool;
         }
 
+        private bool IsClosed => _closedMarker > 0;
+
         private IConnectionPool CreateNewConnectionPool(Uri uri)
         {
             return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, _bufferSettings, Logger);
@@ -101,7 +103,7 @@ namespace Neo4j.Driver.Internal.Routing
         private void Add(Uri uri)
         {
             _pools.GetOrAdd(uri, CreateNewConnectionPool);
-            if (_closedMarker > 0)
+            if (IsClosed)
             {
                 // Anything added after dispose should be directly cleaned.
                 Clear();
@@ -205,7 +207,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         protected override void Dispose(bool disposing)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
                 return;
 
             if (disposing)

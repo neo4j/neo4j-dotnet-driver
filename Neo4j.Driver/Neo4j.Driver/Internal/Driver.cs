@@ -44,6 +44,8 @@ namespace Neo4j.Driver.Internal
             _retryLogic = retryLogic;
         }
 
+        private bool IsClosed => _closedMarker > 0;
+
         public ISession Session()
         {
             return Session(DefaultAccessMode);
@@ -78,14 +80,14 @@ namespace Neo4j.Driver.Internal
 
         private ISession Session(AccessMode defaultMode, Bookmark bookmark)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
             var session = new Session(_connectionProvider, _logger, _retryLogic, defaultMode, bookmark);
 
-            if (_closedMarker > 0)
+            if (IsClosed)
             {
                 session.Dispose();
                 ThrowDriverClosedException();
@@ -120,7 +122,7 @@ namespace Neo4j.Driver.Internal
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
                 return;
 
             if (disposing)

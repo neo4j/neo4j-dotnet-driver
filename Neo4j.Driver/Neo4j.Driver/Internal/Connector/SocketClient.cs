@@ -40,8 +40,7 @@ namespace Neo4j.Driver.Internal.Connector
         private IBoltWriter _writer;
         private readonly BufferSettings _bufferSettings;
 
-        private int _closedMarker = 0;
-        private bool _isOpen = false;
+        private int _closedMarker = -1;
 
         private readonly ILogger _logger;
 
@@ -53,13 +52,15 @@ namespace Neo4j.Driver.Internal.Connector
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
         }
 
-        public bool IsOpen => _closedMarker == 0 && _isOpen;
+        public bool IsOpen => _closedMarker == 0;
+
+        private bool IsClosed => _closedMarker > 0;
 
         public void Start()
         {
             _tcpSocketClient.Connect(_uri);
 
-            _isOpen = true;
+            SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var version = DoHandshake();
@@ -84,7 +85,7 @@ namespace Neo4j.Driver.Internal.Connector
                         }
                         else
                         {
-                            _isOpen = true;
+                            SetOpened();
                             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
                             return DoHandshakeAsync();
@@ -199,7 +200,6 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-
         public void ReceiveOne(IMessageResponseHandler responseHandler)
         {
             try
@@ -255,6 +255,11 @@ namespace Neo4j.Driver.Internal.Connector
             });
 
             return tcs.Task;
+        }
+
+        private void SetOpened()
+        {
+            Interlocked.CompareExchange(ref _closedMarker, 0, -1);
         }
 
         private int DoHandshake()
@@ -357,7 +362,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
                 return;
 
             if (disposing)

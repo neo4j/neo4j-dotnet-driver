@@ -100,6 +100,8 @@ namespace Neo4j.Driver.Internal
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
         }
 
+        private bool IsClosed => _closedMarker > 0;
+
         public IPooledConnection CreateNewPooledConnection()
         {
             PooledConnection conn = null;
@@ -203,7 +205,7 @@ namespace Neo4j.Driver.Internal
                 {
                     while (true)
                     {
-                        if (_closedMarker > 0)
+                        if (IsClosed)
                         {
                             ThrowObjectDisposedException();
                         }
@@ -244,7 +246,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     _inUseConnections.TryAdd(connection);
-                    if (_closedMarker > 0)
+                    if (IsClosed)
                     {
                         if (_inUseConnections.TryRemove(connection))
                         {
@@ -282,7 +284,7 @@ namespace Neo4j.Driver.Internal
                 {
                     while (true)
                     {
-                        if (_closedMarker > 0)
+                        if (IsClosed)
                         {
                             ThrowObjectDisposedException();
                         }
@@ -323,7 +325,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     _inUseConnections.TryAdd(connection);
-                    if (_closedMarker > 0)
+                    if (IsClosed)
                     {
                         if (_inUseConnections.TryRemove(connection))
                         {
@@ -356,7 +358,7 @@ namespace Neo4j.Driver.Internal
         {
             TryExecute(() =>
             {
-                if (_closedMarker > 0)
+                if (IsClosed)
                 {
                     // pool already disposed.
                     return;
@@ -378,7 +380,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                    if (_closedMarker > 0 && _availableConnections.TryTake(out connection))
+                    if (IsClosed && _availableConnections.TryTake(out connection))
                     {
                         DestroyConnection(connection);
                     }
@@ -395,7 +397,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecuteAsync(async () =>
             {
-                if (_closedMarker > 0)
+                if (IsClosed)
                 {
                     // pool already disposed
                     return;
@@ -418,7 +420,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                    if (_closedMarker > 0 && _availableConnections.TryTake(out connection))
+                    if (IsClosed && _availableConnections.TryTake(out connection))
                     {
                         await DestroyConnectionAsync(connection).ConfigureAwait(false);
                     }
@@ -435,7 +437,7 @@ namespace Neo4j.Driver.Internal
         // However it is forbiden to put something back to the conn queues after we've already started disposing.
         protected override void Dispose(bool disposing)
         {
-            if (_closedMarker > 0)
+            if (IsClosed)
                 return;
 
             if (disposing)
