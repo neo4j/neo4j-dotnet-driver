@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests
         public class CollectRecordMethod
         {
             [Fact]
-            public void ShouldStreamResults()
+            public async void ShouldStreamResults()
             {
                 var builder = GenerateBuilder();
                 var i = 0;
@@ -67,6 +67,7 @@ namespace Neo4j.Driver.Tests
                     if (i++ >= 3)
                     {
                         builder.CollectSummary(null);
+                        builder.DoneSuccess();
                     }
                     else
                     {
@@ -75,7 +76,7 @@ namespace Neo4j.Driver.Tests
 
                     return Task.CompletedTask;
                 });
-                var result = builder.PreBuild();
+                var result = await builder.PreBuildAsync();
 
                 var t = AssertGetExpectResults(result, 3, new List<object> {124, 125, 126});
 
@@ -83,16 +84,16 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReturnNoResultsWhenNoneRecieved()
+            public async void ShouldReturnNoResultsWhenNoneRecieved()
             {
                 var builder = GenerateBuilder();
                 builder.SetReceiveOneFunc(() =>
                 {
                     builder.CollectSummary(null);
-
+                    builder.DoneSuccess();
                     return Task.CompletedTask;
                 });
-                var result = builder.PreBuild();
+                var result = await builder.PreBuildAsync();
 
                 var t = AssertGetExpectResults(result, 0);
 
@@ -100,7 +101,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReturnQueuedResultsWithExspectedValue()
+            public async void ShouldReturnQueuedResultsWithExspectedValue()
             {
                 var builder = GenerateBuilder();
                 List<object> recordValues = new List<object>
@@ -115,15 +116,16 @@ namespace Neo4j.Driver.Tests
                     builder.CollectRecord(new[] { recordValues[i] });
                 }
                 builder.CollectSummary(null);
+                builder.DoneSuccess();
 
-                var result = builder.PreBuild();
+                var result = await builder.PreBuildAsync();
 
                 var task = AssertGetExpectResults(result, recordValues.Count, recordValues);
                 task.Wait();
             }
 
             [Fact]
-            public void ShouldStopStreamingWhenResultIsInvalid()
+            public async void ShouldStopStreamingWhenResultIsInvalid()
             {
                 var builder = GenerateBuilder();
                 var i = 0;
@@ -140,7 +142,7 @@ namespace Neo4j.Driver.Tests
 
                     return Task.CompletedTask;
                 });
-                var result = builder.PreBuild();
+                var result = await builder.PreBuildAsync();
 
                 var t = AssertGetExpectResults(result, 3, new List<object> { 124, 125, 126 });
                 t.Wait();
