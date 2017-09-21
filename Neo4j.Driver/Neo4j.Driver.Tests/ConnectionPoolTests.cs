@@ -104,7 +104,10 @@ namespace Neo4j.Driver.Tests
                         MaxConnectionPoolSize = 2,
                         ConnectionAcquisitionTimeout = TimeSpan.FromMilliseconds(0)
                     });
-                var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings);
+                var pool = new ConnectionPool(MockedConnection, settings: connectionPoolSettings)
+                {
+                    ConnAcquisitionQueuingTimeout = TimeSpan.FromMilliseconds(0)
+                };
                 var conn = pool.Acquire();
                 pool.Acquire();
                 pool.NumberOfAvailableConnections.Should().Be(0);
@@ -428,79 +431,6 @@ namespace Neo4j.Driver.Tests
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().StartWith("Failed to acquire a new connection");
             }
-
-            [Fact]
-            public void ShouldTimeoutAfterAcquireTimeoutIfPoolIsFull()
-            {
-                Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(10))
-                    .WithMaxConnectionPoolSize(5).WithMaxIdleConnectionPoolSize(0).ToConfig();
-
-                var pool = new ConnectionPool(MockedConnection, null, null, null, new ConnectionPoolSettings(config), null);
-
-                for (var i = 0; i < config.MaxConnectionPoolSize; i++)
-                {
-                    pool.Acquire();
-                }
-
-                var exception = Record.Exception(() => pool.Acquire());
-
-                exception.Should().BeOfType<ClientException>();
-                exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
-            }
-
-            [Fact]
-            public void ShouldTimeoutAfterAcquireTimeoutWhenConnectionIsNotValidated()
-            {
-                Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(5))
-                    .ToConfig();
-
-                var notValidConnection = new Mock<IPooledConnection>();
-                notValidConnection.Setup(x => x.IsOpen).Returns(false);
-
-                var pool = new ConnectionPool(notValidConnection.Object, null, null, null, new ConnectionPoolSettings(config), null);
-
-                var exception = Record.Exception(() => pool.Acquire());
-
-                exception.Should().BeOfType<ClientException>();
-                exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
-            }
-
-            [Fact]
-            public async void ShouldTimeoutAfterAcquireAsyncTimeoutIfPoolIsFull()
-            {
-                Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(10))
-                    .WithMaxConnectionPoolSize(5).WithMaxIdleConnectionPoolSize(0).ToConfig();
-
-                var pool = new ConnectionPool(MockedConnection, null, null, null, new ConnectionPoolSettings(config), null);
-
-                for (var i = 0; i < config.MaxConnectionPoolSize; i++)
-                {
-                    pool.Acquire();
-                }
-
-                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
-
-                exception.Should().BeOfType<ClientException>();
-                exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
-            }
-
-            [Fact]
-            public async void ShouldTimeoutAfterAcquireAsyncTimeoutWhenConnectionIsNotValidated()
-            {
-                Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(5))
-                    .ToConfig();
-
-                var notValidConnection = new Mock<IPooledConnection>();
-                notValidConnection.Setup(x => x.IsOpen).Returns(false);
-
-                var pool = new ConnectionPool(notValidConnection.Object, null, null, null, new ConnectionPoolSettings(config), null);
-
-                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
-
-                exception.Should().BeOfType<ClientException>();
-                exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
-            }
-
         }
 
         public class ReleaseMethod

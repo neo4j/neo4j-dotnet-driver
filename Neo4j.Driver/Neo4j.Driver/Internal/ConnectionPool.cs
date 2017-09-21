@@ -28,14 +28,13 @@ namespace Neo4j.Driver.Internal
 {
     internal class ConnectionPool : LoggerBase, IConnectionPool
     {
-        private const int SpinningWaitInterval = 500;
-
         private readonly Uri _uri;
 
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
         private readonly int _idlePoolSize;
         private readonly TimeSpan _connAcquisitionTimeout;
+        internal TimeSpan ConnAcquisitionQueuingTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
         private readonly ConnectionValidator _connectionValidator;
         private readonly ConnectionSettings _connectionSettings;
@@ -74,6 +73,10 @@ namespace Neo4j.Driver.Internal
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+            if (ConnAcquisitionQueuingTimeout > _connAcquisitionTimeout)
+            {
+                ConnAcquisitionQueuingTimeout = _connAcquisitionTimeout;
+            }
             _bufferSettings = bufferSettings;
 
 
@@ -171,160 +174,118 @@ namespace Neo4j.Driver.Internal
             return Acquire();
         }
 
-        public IPooledConnection Acquire()
+        public Task<IConnection> AcquireAsync(AccessMode mode)
         {
-            using (var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout))
-            {
-                return Acquire(timeOutTokenSource.Token);
-            }
+            return AcquireAsync();
         }
 
-        private IPooledConnection Acquire(CancellationToken cancellationToken)
+        public IPooledConnection Acquire()
         {
             return TryExecute(() =>
             {
-                IPooledConnection connection = null;
-
-                try
+                if (_disposeCalled)
                 {
-                    while (true)
+                    ThrowObjectDisposedException();
+                }
+                IPooledConnection connection;
+
+                if (!_availableConnections.TryTake(out connection))
+                {
+                    var connAcquisitionTimer = new Stopwatch();
+                    connAcquisitionTimer.Start();
+                    do
                     {
-                        if (_disposeCalled)
+                        if (!IsConnectionPoolFull())
                         {
-                            ThrowObjectDisposedException();
+                            connection = CreateNewPooledConnection();
+                            break;
                         }
-
-                        if (!_availableConnections.TryTake(out connection))
-                        {
-                            do
-                            {
-                                if (!IsConnectionPoolFull())
-                                {
-                                    connection = CreateNewPooledConnection();
-                                    break;
-                                }
-
-                                if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
-                                {
-                                    break;
-                                }
-                            } while (!cancellationToken.IsCancellationRequested);
-
-                            if (connection == null)
-                            {
-                                throw new ClientException(
-                                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
-                            }
-                        }
-
-                        if (!_connectionValidator.IsValid(connection))
-                        {
-                            DestoryConnection(connection);
-                        }
-                        else
+                        if (_availableConnections.TryTake(out connection, ConnAcquisitionQueuingTimeout))
                         {
                             break;
                         }
-
-                        cancellationToken.ThrowIfCancellationRequested();
                     }
+                    while (connAcquisitionTimer.ElapsedMilliseconds < _connAcquisitionTimeout.TotalMilliseconds);
+                    connAcquisitionTimer.Stop();
 
-                    _inUseConnections.TryAdd(connection);
-                    if (_disposeCalled)
+                    if (connection == null)
                     {
-                        if (_inUseConnections.TryRemove(connection))
-                        {
-                            DestoryConnection(connection);
-                        }
-
-                        ThrowObjectDisposedException();
+                        throw new ClientException($"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
                     }
                 }
-                catch (OperationCanceledException ex)
+
+                if (!_connectionValidator.IsValid(connection))
                 {
-                    throw new ClientException(
-                        $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+                    DestoryConnection(connection);
+                    return Acquire();
+                }
+
+                _inUseConnections.TryAdd(connection);
+                if (_disposeCalled)
+                {
+                    if (_inUseConnections.TryRemove(connection))
+                    {
+                        DestoryConnection(connection);
+                    }
+                    ThrowObjectDisposedException();
                 }
 
                 return connection;
             });
         }
 
-        public Task<IConnection> AcquireAsync(AccessMode mode)
-        {
-            using (var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout))
-            {
-                return AcquireAsync(timeOutTokenSource.Token);
-            }
-        }
-
-        private Task<IConnection> AcquireAsync(CancellationToken cancellationToken)
+        private Task<IConnection> AcquireAsync()
         {
             return TryExecuteAsync(async () =>
             {
-                IPooledConnection connection = null;
-
-                try
+                if (_disposeCalled)
                 {
-                    while (true)
+                    ThrowObjectDisposedException();
+                }
+
+                IPooledConnection connection = null;
+                if (!_availableConnections.TryTake(out connection))
+                {
+                    var connAcquisitionTimer = new Stopwatch();
+                    connAcquisitionTimer.Start();
+                    do
                     {
-                        if (_disposeCalled)
+                        if (!IsConnectionPoolFull())
                         {
-                            ThrowObjectDisposedException();
+                            connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                            break;
                         }
-
-                        if (!_availableConnections.TryTake(out connection))
-                        {
-                            do
-                            {
-                                if (!IsConnectionPoolFull())
-                                {
-                                    connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                                    break;
-                                }
-
-                                if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
-                                {
-                                    break;
-                                }
-                            } while (!cancellationToken.IsCancellationRequested);
-
-                            if (connection == null)
-                            {
-                                throw new ClientException(
-                                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
-                            }
-                        }
-
-                        if (!_connectionValidator.IsValid(connection))
-                        {
-                            DestoryConnection(connection);
-                        }
-                        else
+                        if (_availableConnections.TryTake(out connection, ConnAcquisitionQueuingTimeout))
                         {
                             break;
                         }
-
-                        cancellationToken.ThrowIfCancellationRequested();
                     }
+                    while (connAcquisitionTimer.ElapsedMilliseconds < _connAcquisitionTimeout.TotalMilliseconds);
+                    connAcquisitionTimer.Stop();
 
-                    _inUseConnections.TryAdd(connection);
-                    if (_disposeCalled)
+                    if (connection == null)
                     {
-                        if (_inUseConnections.TryRemove(connection))
-                        {
-                            DestoryConnection(connection);
-                        }
-                        ThrowObjectDisposedException();
+                        throw new ClientException($"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
                     }
                 }
-                catch (OperationCanceledException ex)
+
+                if (!_connectionValidator.IsValid(connection))
                 {
-                    throw new ClientException(
-                        $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+                    DestoryConnection(connection);
+                    return await AcquireAsync().ConfigureAwait(false);
                 }
 
-                return (IConnection) connection;
+                _inUseConnections.TryAdd(connection);
+                if (_disposeCalled)
+                {
+                    if (_inUseConnections.TryRemove(connection))
+                    {
+                        DestoryConnection(connection);
+                    }
+                    ThrowObjectDisposedException();
+                }
+
+                return connection;
             });
         }
 
