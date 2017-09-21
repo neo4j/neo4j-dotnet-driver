@@ -211,11 +211,16 @@ namespace Neo4j.Driver.Internal.Connector
             Close();
         }
 
+        public Task DestroyAsync()
+        {
+            return CloseAsync();
+        }
+
         public void Close()
         {
             try
             {
-                _client.Dispose();
+                _client.Stop();
             }
             catch (Exception e)
             {
@@ -226,8 +231,17 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task CloseAsync()
         {
-            Close();
-            return TaskExtensions.GetCompletedTask();
+            return _client.StopAsync().ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    var cause = t.Exception.GetBaseException();
+                    // only log the exception if failed to close connection
+                    _logger.Error($"Failed to close connection properly due to error: {cause.Message}", cause);
+                }
+
+                return TaskExtensions.GetCompletedTask();
+            }).Unwrap();
         }
 
         private void AssertNoServerFailure()

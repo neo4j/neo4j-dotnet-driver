@@ -59,6 +59,15 @@ namespace Neo4j.Driver.Internal.Connector
             base.Destroy();
         }
 
+        public override Task DestroyAsync()
+        {
+            // stops the timmer
+            IdleTimer.Reset();
+            LifetimeTimer.Reset();
+
+            return base.DestroyAsync();
+        }
+
         public override void Close()
         {
             _releaseManager?.Release(this);

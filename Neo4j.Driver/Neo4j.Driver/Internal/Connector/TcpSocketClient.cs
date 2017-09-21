@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class TcpSocketClient : ITcpSocketClient
     {
-        private TcpClient _client;
+        private Socket _client;
         private Stream _stream;
 
         private readonly bool _ipv6Enabled;
@@ -40,9 +40,6 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Stream ReadStream => _stream;
         public Stream WriteStream => _stream;
-
-        // only used in tests
-        internal TcpClient Client => _client;
 
         public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
         {
@@ -58,15 +55,12 @@ namespace Neo4j.Driver.Internal.Connector
         {
             ConnectSocket(uri);
             
-            if (!_encryptionManager.UseTls)
-            {
-                _stream = _client.GetStream();
-            }
-            else
+            _stream = new NetworkStream(_client);
+            if (_encryptionManager.UseTls)
             {
                 try
                 {
-                    var secureStream = new SslStream(_client.GetStream(), true,
+                    var secureStream = new SslStream(_stream, true,
                         (sender, certificate, chain, errors) =>
                             _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
 
@@ -88,16 +82,13 @@ namespace Neo4j.Driver.Internal.Connector
         public async Task ConnectAsync(Uri uri)
         {
             await ConnectSocketAsync(uri).ConfigureAwait(false);
-            
-            if (!_encryptionManager.UseTls)
-            {
-                _stream = _client.GetStream();
-            }
-            else
+
+            _stream = new NetworkStream(_client);
+            if (_encryptionManager.UseTls)
             {
                 try
                 {
-                    _stream = new SslStream(_client.GetStream(), true,
+                    _stream = new SslStream(_stream, true,
                         (sender, certificate, chain, errors) =>
                             _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
 
@@ -202,7 +193,7 @@ namespace Neo4j.Driver.Internal.Connector
                     try
                     {
                         // close client immediately when failed to connect within timeout
-                        Close();
+                        Disconnect();
                     }
                     catch (Exception e)
                     {
@@ -227,14 +218,18 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 using (cts.Token.Register(() => tcs.SetResult(true)))
                 {
+#if NET452
+                    var connectTask = Task.Factory.FromAsync(_client.BeginConnect, _client.EndConnect, address, port, null);
+#else
                     var connectTask = _client.ConnectAsync(address, port);
+#endif
                     var finishedTask = await Task.WhenAny(connectTask, tcs.Task).ConfigureAwait(false);
                     if (connectTask != finishedTask) // timed out
                     {
                         try
                         {
                             // close client immediately when failed to connect within timeout
-                            Close();
+                            await DisconnectAsync().ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
@@ -247,24 +242,58 @@ namespace Neo4j.Driver.Internal.Connector
                             $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.", cts.Token);
                     }
 
-                    await connectTask;
+                    await connectTask.ConfigureAwait(false);
                 }
             }
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        public virtual void Disconnect()
         {
-            if (!isDisposing)
-                return;
+            if (_client != null)
+            {
+                if (_client.Connected)
+                {
+                    _client.Shutdown(SocketShutdown.Both);
+                }
 
-            Close();
+                _client.Dispose();
+
+                _client = null;
+                _stream = null;
+            }   
         }
 
-        protected void Close()
+        public virtual Task DisconnectAsync()
         {
-            _stream?.Dispose();
-            CloseClient();
+            if (_client != null)
+            {
+                if (_client.Connected)
+                {
+#if NET452
+                    return Task.Factory.FromAsync(_client.BeginDisconnect, _client.EndDisconnect, false, null)
+                        .ContinueWith(
+                            t =>
+                            {
+                                _client.Dispose();
+                                _stream.Dispose();
 
+                                _client = null;
+                                _stream = null;
+
+                                return TaskExtensions.GetCompletedTask();
+                            }).Unwrap();
+#else
+                    _client.Shutdown(SocketShutdown.Both);
+#endif
+                }
+
+                _client.Dispose();
+
+                _client = null;
+                _stream = null;
+            }
+
+            return TaskExtensions.GetCompletedTask();
         }
 
         /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
@@ -274,29 +303,28 @@ namespace Neo4j.Driver.Internal.Connector
             GC.SuppressFinalize(this);
         }
 
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (!isDisposing)
+                return;
+
+            Disconnect();
+        }
+
         private void InitClient()
         {
             if (_ipv6Enabled)
             {
-                _client = new TcpClient(AddressFamily.InterNetworkV6) {Client = {DualMode = true}};
+                _client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                _client.DualMode = true;
             }
             else
             {
-                _client = new TcpClient();
+                _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             }
             _client.NoDelay = true;
-            _client.Client.NoDelay = true;
-            _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive,
-                _socketKeepAliveEnabled);
+            _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
         }
-
-        protected virtual void CloseClient()
-        {
-#if NET452
-            _client?.Close();
-#else
-            _client?.Dispose();
-#endif
-        }
+        
     }
 }

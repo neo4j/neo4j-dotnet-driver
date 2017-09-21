@@ -189,6 +189,11 @@ namespace Neo4j.Driver.Internal.Routing
                 return Task.FromResult(Acquire(mode));
             }
 
+            public void Close()
+            {
+                _connection?.Close();
+            }
+
             public Task CloseAsync()
             {
                 if (_connection != null)

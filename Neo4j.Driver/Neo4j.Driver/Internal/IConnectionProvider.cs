@@ -25,5 +25,7 @@ namespace Neo4j.Driver.Internal
     {
         IConnection Acquire(AccessMode mode);
         Task<IConnection> AcquireAsync(AccessMode mode);
+        void Close();
+        Task CloseAsync();
     }
 }

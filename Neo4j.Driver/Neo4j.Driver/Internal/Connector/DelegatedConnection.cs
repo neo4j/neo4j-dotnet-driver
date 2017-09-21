@@ -293,6 +293,11 @@ namespace Neo4j.Driver.Internal.Connector
             Delegate.Destroy();
         }
 
+        public virtual Task DestroyAsync()
+        {
+            return Delegate.DestroyAsync();
+        }
+
         public virtual void Close()
         {
             Delegate.Close();

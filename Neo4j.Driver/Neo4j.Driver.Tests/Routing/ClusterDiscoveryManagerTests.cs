@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Tests.Routing
                 manager.Writers.Count().Should().Be(writerCount);
                 manager.Routers.Count().Should().Be(routerCount);
                 manager.ExpireAfterSeconds = 9223372036854775807;
-                clientMock.Verify(x => x.Dispose(), Times.Once);
+                clientMock.Verify(x => x.Stop(), Times.Once);
             }
 
             [Theory]
@@ -147,7 +147,7 @@ namespace Neo4j.Driver.Tests.Routing
                 manager.Writers.Count().Should().Be(writerCount);
                 manager.Routers.Count().Should().Be(routerCount);
                 manager.ExpireAfterSeconds = 9223372036854775807;
-                clientMock.Verify(x => x.Dispose(), Times.Once);
+                clientMock.Verify(x => x.Stop(), Times.Once);
             }
 
             [Fact]
@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Then
                 exception.Should().BeOfType<ServiceUnavailableException>();
                 exception.Message.Should().StartWith("Error when calling `getServers` procedure: ");
-                messagingClient.ClientMock.Verify(x => x.Dispose(), Times.Once);
+                messagingClient.ClientMock.Verify(x => x.Stop(), Times.Once);
             }
 
             [Fact]
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Then
                 exception.Should().BeOfType<ProtocolException>();
                 exception.Message.Should().Be("Error when parsing `getServers` result: Sequence contains no elements.");
-                clientMock.Verify(x => x.Dispose(), Times.Once);
+                clientMock.Verify(x => x.Stop(), Times.Once);
             }
 
             [Fact]
@@ -211,7 +211,7 @@ namespace Neo4j.Driver.Tests.Routing
                 exception.Should().BeOfType<ProtocolException>();
                 exception.Message.Should()
                     .Be("Error when parsing `getServers` result: Sequence contains more than one element.");
-                clientMock.Verify(x => x.Dispose(), Times.Once);
+                clientMock.Verify(x => x.Stop(), Times.Once);
             }
 
             [Fact]
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.Tests.Routing
                 exception.Should().BeOfType<ProtocolException>();
                 exception.Message.Should()
                     .Be("Error when parsing `getServers` result: keys (2) does not equal to values (1).");
-                clientMock.Verify(x => x.Dispose(), Times.Once);
+                clientMock.Verify(x => x.Stop(), Times.Once);
             }
 
             [Fact]
@@ -248,7 +248,7 @@ namespace Neo4j.Driver.Tests.Routing
                 manager.Routers.Count().Should().Be(0);
                 exception.Should().BeOfType<ProtocolException>();
                 exception.Message.Should().Contain("0 routers, 2 writers and 1 readers.");
-                clientMock.Verify(x => x.Dispose(), Times.Once);
+                clientMock.Verify(x => x.Stop(), Times.Once);
             }
 
             [Fact]
@@ -268,7 +268,7 @@ namespace Neo4j.Driver.Tests.Routing
                 manager.Routers.Count().Should().Be(3);
                 exception.Should().BeOfType<ProtocolException>();
                 exception.Message.Should().Contain("3 routers, 1 writers and 0 readers.");
-                clientMock.Verify(x => x.Dispose(), Times.Once);
+                clientMock.Verify(x => x.Stop(), Times.Once);
             }
         }
 

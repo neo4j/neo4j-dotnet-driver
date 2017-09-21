@@ -40,6 +40,8 @@ namespace Neo4j.Driver.Internal.Connector
         private IBoltWriter _writer;
         private readonly BufferSettings _bufferSettings;
 
+        private int _closedMarker = -1;
+
         private readonly ILogger _logger;
 
         public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger, ITcpSocketClient socketClient = null)
@@ -50,17 +52,15 @@ namespace Neo4j.Driver.Internal.Connector
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+        public bool IsOpen => _closedMarker == 0;
+
+        private bool IsClosed => _closedMarker > 0;
 
         public void Start()
         {
             _tcpSocketClient.Connect(_uri);
 
-            IsOpen = true;
+            SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var version = DoHandshake();
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Internal.Connector
                         }
                         else
                         {
-                            IsOpen = true;
+                            SetOpened();
                             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
                             return DoHandshakeAsync();
@@ -124,16 +124,7 @@ namespace Neo4j.Driver.Internal.Connector
             _writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize, _bufferSettings.MaxWriteBufferSize, _logger, supportBytes); 
             _reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize, _bufferSettings.MaxReadBufferSize, _logger, supportBytes);
         }
-
-        private void Stop()
-        {
-            if (IsOpen)
-            {
-                _tcpSocketClient?.Dispose();
-            }
-            IsOpen = false;
-        }
-
+        
         public void Send(IEnumerable<IRequestMessage> messages)
         {
             try
@@ -193,8 +184,6 @@ namespace Neo4j.Driver.Internal.Connector
             return taskCompletionSource.Task;
         }
 
-        public bool IsOpen { get; private set; }
-
         public void Receive(IMessageResponseHandler responseHandler)
         {
             while(responseHandler.UnhandledMessageSize > 0)
@@ -210,7 +199,6 @@ namespace Neo4j.Driver.Internal.Connector
                 await ReceiveOneAsync(responseHandler).ConfigureAwait(false);
             }
         }
-
 
         public void ReceiveOne(IMessageResponseHandler responseHandler)
         {
@@ -267,6 +255,11 @@ namespace Neo4j.Driver.Internal.Connector
             });
 
             return tcs.Task;
+        }
+
+        private void SetOpened()
+        {
+            Interlocked.CompareExchange(ref _closedMarker, 0, -1);
         }
 
         private int DoHandshake()
@@ -343,12 +336,39 @@ namespace Neo4j.Driver.Internal.Connector
             return PackStreamBitConverter.ToInt32(data);
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        public void Dispose()
         {
-            if (!isDisposing)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public void Stop()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                _tcpSocketClient.Disconnect();
+            }
+        }
+
+        public Task StopAsync()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                return _tcpSocketClient.DisconnectAsync();
+            }
+
+            return TaskExtensions.GetCompletedTask();
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (IsClosed)
                 return;
 
-            Stop();
+            if (disposing)
+            {
+                Stop();
+            }
         }
 
         public void UpdatePackStream(string serverVersion)

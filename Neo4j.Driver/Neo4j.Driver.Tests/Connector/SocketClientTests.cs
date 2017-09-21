@@ -208,7 +208,7 @@ namespace Neo4j.Driver.Tests
                     var ex = Record.Exception(() => harness.Client.Receive(messageHandler));
                     ex.Should().BeOfType<ProtocolException>();
 
-                    harness.MockTcpSocketClient.Verify(x => x.Dispose(), Times.Once);
+                    harness.MockTcpSocketClient.Verify(x => x.Disconnect(), Times.Once);
                 }
             }
 
@@ -272,10 +272,25 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class DisposeMethod
+        public class DisposeAndStopMethods
         {
+
             [Fact]
-            public async Task ShouldCallDisconnectOnTheTcpSocketClient()
+            public void ShouldCallDisconnectOnTheTcpSocketClientWhenDisposed()
+            {
+                using (var harness = new SocketClientTestHarness(FakeUri))
+                {
+                    harness.SetupReadStream("00 00 00 01");
+                    harness.SetupWriteStream();
+                    harness.Client.Start();
+                    harness.Client.Dispose();
+                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
+                    harness.Client.IsOpen.Should().BeFalse();
+                }
+            }
+
+            [Fact]
+            public async Task ShouldCallDisconnectOnTheTcpSocketClientWhenDisposedAsync()
             {
                 using (var harness = new SocketClientTestHarness(FakeUri))
                 {
@@ -283,10 +298,39 @@ namespace Neo4j.Driver.Tests
                     harness.SetupWriteStream();
                     await harness.Client.StartAsync();
                     harness.Client.Dispose();
-                    harness.MockTcpSocketClient.Verify(s => s.Dispose(), Times.Once);
+                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
                     harness.Client.IsOpen.Should().BeFalse();
                 }
             }
+
+            [Fact]
+            public void ShouldCallDisconnectOnTheTcpSocketClientWhenStopped()
+            {
+                using (var harness = new SocketClientTestHarness(FakeUri))
+                {
+                    harness.SetupReadStream("00 00 00 01");
+                    harness.SetupWriteStream();
+                    harness.Client.Start();
+                    harness.Client.Stop();
+                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
+                    harness.Client.IsOpen.Should().BeFalse();
+                }
+            }
+
+            [Fact]
+            public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
+            {
+                using (var harness = new SocketClientTestHarness(FakeUri))
+                {
+                    harness.SetupReadStream("00 00 00 01");
+                    harness.SetupWriteStream();
+                    await harness.Client.StartAsync();
+                    await harness.Client.StopAsync();
+                    harness.MockTcpSocketClient.Verify(s => s.DisconnectAsync(), Times.Once);
+                    harness.Client.IsOpen.Should().BeFalse();
+                }
+            }
+
         }
     }
 }

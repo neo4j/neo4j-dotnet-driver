@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection(mock.Object);
 
                 con.Destroy();
-                mock.Verify(c => c.Dispose(), Times.Once);
+                mock.Verify(c => c.Stop(), Times.Once);
             }
         }
 

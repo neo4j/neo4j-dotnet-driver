@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             // now lock
-            await _semaphore.WaitAsync();
+            await _semaphore.WaitAsync().ConfigureAwait(false);
             try
             {
                 // test against to avoid update it multipule times

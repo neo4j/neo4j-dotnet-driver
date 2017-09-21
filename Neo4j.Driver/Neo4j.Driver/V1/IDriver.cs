@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.V1
 {
@@ -91,6 +92,17 @@ namespace Neo4j.Driver.V1
         /// Specify bookmarks if the statement excuted inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
         ISession Session(IEnumerable<string> bookmarks);
+
+        /// <summary>
+        /// Releases all resources (connection pools, connections, etc) associated with this IDriver instance.
+        /// </summary>
+        void Close();
+
+        /// <summary>
+        /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
+        /// </summary>
+        Task CloseAsync();
+
     }
     /// <summary>
     /// Used by driver to route a cypher statement to a write server or a read server.
