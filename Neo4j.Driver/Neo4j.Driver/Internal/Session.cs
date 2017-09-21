@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Internal
 
                 await _connection.SendAsync().ConfigureAwait(false);
 
-                return await resultBuilder.PreBuildAsync();
+                return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
             });
         }
 

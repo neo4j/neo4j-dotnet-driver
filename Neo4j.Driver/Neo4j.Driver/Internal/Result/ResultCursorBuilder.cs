@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public async Task<IStatementResultCursor> PreBuildAsync()
         {
-            await GetKeys();
+            await GetKeys().ConfigureAwait(false);
             return new StatementResultCursor(Keys, NextRecordAsync, SummaryAsync);
         }
 
