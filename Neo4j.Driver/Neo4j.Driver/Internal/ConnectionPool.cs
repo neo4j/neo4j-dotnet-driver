@@ -150,7 +150,12 @@ namespace Neo4j.Driver.Internal
 
         private PooledConnection NewPooledConnection()
         {
-            Interlocked.Increment(ref _poolSize);
+            var currentPoolSize = Interlocked.Increment(ref _poolSize);
+            if (_maxPoolSize != Config.Infinite && currentPoolSize > _maxPoolSize)
+            {
+                throw new InvalidOperationException();
+            }
+
             return _fakeConnection != null
                 ? new PooledConnection(_fakeConnection, this)
                 : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, Logger), this);
@@ -216,8 +221,15 @@ namespace Neo4j.Driver.Internal
                             {
                                 if (!IsConnectionPoolFull())
                                 {
-                                    connection = CreateNewPooledConnection();
-                                    break;
+                                    try
+                                    {
+                                        connection = CreateNewPooledConnection();
+                                        break;
+                                    }
+                                    catch (InvalidOperationException)
+                                    {
+                                        // we have exceeded MaxConnectionPoolSize, so continue looping...
+                                    }
                                 }
 
                                 if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
@@ -295,8 +307,15 @@ namespace Neo4j.Driver.Internal
                             {
                                 if (!IsConnectionPoolFull())
                                 {
-                                    connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                                    break;
+                                    try
+                                    {
+                                        connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
+                                        break;
+                                    }
+                                    catch (InvalidOperationException)
+                                    {
+                                        // we have exceeded MaxConnectionPoolSize, so continue looping...
+                                    }
                                 }
 
                                 if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
