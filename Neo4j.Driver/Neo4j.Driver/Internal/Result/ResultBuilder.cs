@@ -43,7 +43,16 @@ namespace Neo4j.Driver.Internal.Result
         
         public StatementResult PreBuild()
         {
-            return new StatementResult(() => Keys, new RecordSet(NextRecord), Summary);
+            return new StatementResult(GetKeys, new RecordSet(NextRecord), Summary);
+        }
+
+        private List<string> GetKeys()
+        {
+            while (!StatementProcessed)
+            {
+                _receiveOneAction();
+            }
+            return Keys;
         }
 
         /// <summary>
@@ -90,11 +99,6 @@ namespace Neo4j.Driver.Internal.Result
                     _resourceHandler?.OnResultConsumed();
                 }
             };
-        }
-
-        protected override void EnsureStatementProcessed()
-        {
-            _receiveOneAction();
         }
 
         protected override void EnqueueRecord(Record record)

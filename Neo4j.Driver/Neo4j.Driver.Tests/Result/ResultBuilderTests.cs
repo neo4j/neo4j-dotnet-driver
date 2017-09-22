@@ -143,6 +143,8 @@ namespace Neo4j.Driver.Tests
             public void ShouldPassDefaultKeysToResultIfNoKeySet()
             {
                 var builder = new ResultBuilder(null, () => { }, null, null);
+                builder.DoneSuccess();
+
                 var result = builder.PreBuild();
 
                 result.Keys.Should().BeEmpty();
@@ -153,6 +155,7 @@ namespace Neo4j.Driver.Tests
             {
                 var builder = new ResultBuilder(null, () => { }, null, null);
                 builder.CollectFields(null);
+                builder.DoneSuccess();
 
                 var result = builder.PreBuild();
                 result.Keys.Should().BeEmpty();
@@ -167,6 +170,7 @@ namespace Neo4j.Driver.Tests
                     {"something", "here" }
                 };
                 builder.CollectFields(meta);
+                builder.DoneSuccess();
 
                 var result = builder.PreBuild();
                 result.Keys.Should().BeEmpty();
@@ -180,6 +184,7 @@ namespace Neo4j.Driver.Tests
 
                 var builder = new ResultBuilder(null, () => { }, null, null);
                 builder.CollectFields(meta);
+                builder.DoneSuccess();
                 var result = builder.PreBuild();
 
                 result.Keys.Should().ContainInOrder("fieldKey1", "fieldKey2", "fieldKey3");

@@ -45,9 +45,19 @@ namespace Neo4j.Driver.Internal.Result
         {
         }
 
-        public IStatementResultCursor PreBuild()
+        public async Task<IStatementResultCursor> PreBuildAsync()
         {
+            await GetKeys().ConfigureAwait(false);
             return new StatementResultCursor(Keys, NextRecordAsync, SummaryAsync);
+        }
+
+        private async Task<List<string>> GetKeys()
+        {
+            while (!StatementProcessed)
+            {
+                await _receiveOneFunc().ConfigureAwait(false);
+            }
+            return Keys;
         }
 
         /// <summary>
@@ -104,11 +114,6 @@ namespace Neo4j.Driver.Internal.Result
         protected override void NoMoreRecords()
         {
             _hasMoreRecords = false;
-        }
-
-        protected override void EnsureStatementProcessed()
-        {
-            
         }
 
     }

@@ -75,6 +75,12 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalalal");
 
@@ -87,6 +93,12 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalalal");
 
@@ -284,6 +296,13 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
+
                 var session = NewSession(mockConn.Object);
                 var tx = await session.BeginTransactionAsync();
                 await tx.RollbackAsync();
@@ -295,6 +314,12 @@ namespace Neo4j.Driver.Tests
             public async void ShouldClosePreviousRunConnectionWhenRunMoreStatements()
             {
                 var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
 
@@ -307,6 +332,12 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(false);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lala");
 
@@ -320,6 +351,12 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
@@ -458,6 +495,12 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
                 await session.CloseAsync();
@@ -472,6 +515,12 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
 
@@ -492,6 +541,12 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
 

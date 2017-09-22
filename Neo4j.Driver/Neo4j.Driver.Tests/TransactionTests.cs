@@ -192,6 +192,12 @@ namespace Neo4j.Driver.Tests
             public async void ShouldRunPullAllSyncRun()
             {
                 var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var tx = new Transaction(mockConn.Object);
 
                 await tx.RunAsync("lalala");
@@ -225,6 +231,12 @@ namespace Neo4j.Driver.Tests
             public async void ShouldThrowExceptionIfFailedToRunAndFetchResult()
             {
                 var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
                 var tx = new Transaction(mockConn.Object);
 
                 mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultCursorBuilder>(), true))
@@ -238,6 +250,13 @@ namespace Neo4j.Driver.Tests
             public async void ResultBuilderShouldObtainServerInfoFromConnection()
             {
                 var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.Run(It.IsAny<string>(), It.IsAny<IDictionary<string, object>>(),
+                    It.IsAny<IMessageResponseCollector>(), It.IsAny<bool>())).Callback<string, IDictionary<string, object>, IMessageResponseCollector, bool>(
+                    (s, d, c, b) =>
+                    {
+                        c?.DoneSuccess();
+                    });
+
                 var tx = new Transaction(mockConn.Object);
 
                 await tx.RunAsync("lalala");

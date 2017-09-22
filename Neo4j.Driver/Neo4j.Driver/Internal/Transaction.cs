@@ -224,10 +224,7 @@ namespace Neo4j.Driver.Internal
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 await _connection.SendAsync().ConfigureAwait(false);
 
-                // Wait for SUCCESS/FAILURE message from the server
-                await _connection.ReceiveOneAsync().ConfigureAwait(false);
-
-                return resultBuilder.PreBuild();
+                return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
             });
         }
 

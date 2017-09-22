@@ -22,26 +22,13 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal abstract class ResultBuilderBase : IMessageResponseCollector
     {
-        private bool _statementProcessed = false;
-        protected List<string> _keys = new List<string>();
+        protected bool StatementProcessed { get; set; } = false;
+        protected List<string> Keys { get; } = new List<string>();
         protected SummaryCollector SummaryCollector { get; }
 
         protected ResultBuilderBase(Statement statement, IServerInfo server)
         {
             SummaryCollector = new SummaryCollector(statement, server);
-        }
-
-        protected List<string> Keys
-        {
-            get
-            {
-                if (!_statementProcessed)
-                {
-                    EnsureStatementProcessed();
-                }
-
-                return _keys;
-            }
         }
 
         public void CollectFields(IDictionary<string, object> meta)
@@ -51,7 +38,7 @@ namespace Neo4j.Driver.Internal.Result
                 return;
             }
 
-            CollectKeys(meta, "fields", _keys);
+            CollectKeys(meta, "fields", Keys);
             SummaryCollector.CollectWithFields(meta);
         }
 
@@ -63,7 +50,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectRecord(object[] fields)
         {
-            var record = new Record(_keys, fields);
+            var record = new Record(Keys, fields);
             EnqueueRecord(record);
         }
 
@@ -80,22 +67,21 @@ namespace Neo4j.Driver.Internal.Result
         public void DoneSuccess()
         {
             // do nothing
-            _statementProcessed = true;
+            StatementProcessed = true;
         }
 
         public void DoneFailure()
         {
             NoMoreRecords();// an error received, so the result is broken
-            _statementProcessed = true;
+            StatementProcessed = true;
         }
 
         public void DoneIgnored()
         {
             NoMoreRecords();// the result is ignored
-            _statementProcessed = true;
+            StatementProcessed = true;
         }
 
-        protected abstract void EnsureStatementProcessed();
         protected abstract void NoMoreRecords();
         protected abstract void EnqueueRecord(Record record);
 
