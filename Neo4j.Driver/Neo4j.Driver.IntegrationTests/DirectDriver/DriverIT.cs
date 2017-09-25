@@ -171,41 +171,26 @@ namespace Neo4j.Driver.IntegrationTests
                 EncryptionLevel = EncryptionLevel.Encrypted
             });
 
-            string[] queries =
-            {
-                "RETURN 1295 + 42",
-                "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
-            };
+
             var startTime = DateTime.Now;
-            Output.WriteLine($"[{startTime.ToString("HH:mm:ss.ffffff")}] Started");
+            Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            Parallel.For(0, threadCount, i =>
+            var workItem = new SoakRunWorkItem(driver, statisticsCollector, Output);
+
+            var tasks = new List<Task>();
+            for (var i = 0; i < threadCount; i++)
             {
-                if (i % 1000 == 0)
-                {
-                    Output.WriteLine(statisticsCollector.CollectStatistics().ToContentString());
-                }
-                try
-                {
-                    using (var session = driver.Session())
-                    {
-                        session.Run(queries[i % 2]).Consume();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Output.WriteLine(
-                        $"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Thread {i} failed to run query {queries[i % 2]} due to {e.Message}");
-                }
-            });
+                tasks.Add(workItem.Run());
+            }
+            Task.WaitAll(tasks.ToArray());
 
-            driver.Dispose();
+            driver.Close();
 
             var statistics = statisticsCollector.CollectStatistics().Single();
             var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value as IDictionary<string, object>);
             Output.WriteLine(st.ReportStatistics().ToContentString());
             var endTime = DateTime.Now;
-            Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
+            Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
             st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
@@ -216,65 +201,121 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireServerTheory]
         [InlineData(50)]
         [InlineData(5000)]
-        public void SoakRunAsync(int threadCount)
+        public async void SoakRunAsync(int threadCount)
         {
             var statisticsCollector = new StatisticsCollector();
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
             {
                 DriverStatisticsCollector = statisticsCollector,
                 ConnectionTimeout = Config.InfiniteInterval,
+                MaxConnectionPoolSize = 500,
                 EncryptionLevel = EncryptionLevel.Encrypted,
-                MaxIdleConnectionPoolSize = 20,
-                MaxConnectionPoolSize = 50,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
             });
 
-            string[] queries =
-            {
-                "RETURN 1295 + 42",
-                "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
-            };
             var startTime = DateTime.Now;
-            Output.WriteLine($"[{startTime.ToString("HH:mm:ss.ffffff")}] Started");
+            Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var tasks = Enumerable.Range(0, threadCount)
-                .Select(async i =>
-                {
-                    var session = driver.Session();
-                    try
-                    {
-                        var result = await session.RunAsync(queries[i % 2]);
-                        if (i % 1000 == 0)
-                        {
-                            Output.WriteLine(statisticsCollector.CollectStatistics().ToContentString());
-                        }
-                        await result.SummaryAsync();
-                    }
-                    catch (Exception e)
-                    {
-                        Output.WriteLine(
-                            $"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Thread {i} failed to run query {queries[i % 2]} due to {e.Message}");
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }).ToArray();
+            var workItem = new SoakRunWorkItem(driver, statisticsCollector, Output);
 
-            Task.WhenAll(tasks).Wait();
+            var tasks = new List<Task>();
+            for (var i = 0; i < threadCount; i++)
+            {
+                tasks.Add(workItem.RunAsync());
+            }
+            await Task.WhenAll(tasks);
 
-            driver.Dispose();
+            await driver.CloseAsync();
 
             var statistics = statisticsCollector.CollectStatistics().Single();
             var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value as IDictionary<string, object>);
             Output.WriteLine(st.ReportStatistics().ToContentString());
             var endTime = DateTime.Now;
-            Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
+            Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
             st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
             st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
             st.ConnToClose.Should().Be(st.ConnClosed);
         }
+
+        private class SoakRunWorkItem
+        {
+            private static readonly string[] queries = new[]
+            {
+                "RETURN 1295 + 42",
+                "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
+            };
+
+            private readonly ITestOutputHelper _output;
+            private readonly IDriver _driver;
+            private readonly IStatisticsCollector _collector;
+            private int _counter;
+
+            public SoakRunWorkItem(IDriver driver, IStatisticsCollector collector, ITestOutputHelper output)
+            {
+                this._driver = driver;
+                this._collector = collector;
+                this._output = output;
+            }
+
+            public Task Run()
+            {
+                return Task.Run(() =>
+                {
+                    var currentIteration = Interlocked.Increment(ref _counter);
+                    var query = queries[currentIteration % 2];
+
+                    using (var session = _driver.Session())
+                    {
+                        try
+                        {
+                            var result = session.Run(query);
+                            if (currentIteration % 1000 == 0)
+                            {
+                                _output.WriteLine(_collector.CollectStatistics().ToContentString());
+                            }
+
+                            result.Consume();
+                        }
+                        catch (Exception e)
+                        {
+                            _output.WriteLine(
+                                $"[{DateTime.Now:HH:mm:ss.ffffff}] Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                        }
+                    }
+                });
+            }
+
+            public async Task RunAsync()
+            {
+                var currentIteration = Interlocked.Increment(ref _counter);
+                var query = queries[currentIteration % 2];
+
+                var session = _driver.Session();
+                try
+                {
+
+                    var result = await session.RunAsync(query);
+                    if (currentIteration % 1000 == 0)
+                    {
+                        _output.WriteLine(_collector.CollectStatistics().ToContentString());
+                    }
+                    await result.SummaryAsync();
+                }
+                catch (Exception e)
+                {
+                    _output.WriteLine(
+                        $"[{DateTime.Now:HH:mm:ss.ffffff}] Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+            
+        }
+
+
     }
 }
