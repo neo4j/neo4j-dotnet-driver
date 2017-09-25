@@ -55,6 +55,7 @@ namespace Neo4j.Driver.Internal
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
+        internal int PoolSize => _poolSize;
 
         internal bool DisposeCalled
         {
