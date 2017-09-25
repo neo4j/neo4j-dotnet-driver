@@ -25,8 +25,8 @@ namespace Neo4j.Driver.Internal.IO
     internal class PackStreamReaderBytesIncompatible: PackStreamReader
     {
 
-        public PackStreamReaderBytesIncompatible(Stream stream)
-            : base(stream)
+        public PackStreamReaderBytesIncompatible(Stream stream, IDictionary<byte, IPackStreamStructHandler> handlers)
+            : base(stream, handlers)
         {
             
         }

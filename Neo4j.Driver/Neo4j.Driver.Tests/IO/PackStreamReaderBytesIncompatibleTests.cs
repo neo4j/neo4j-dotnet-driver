@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var mockInput =
                 IOExtensions.CreateMockStream("CC 01 01".ToByteArray());
-            var reader = new PackStreamReaderBytesIncompatible(mockInput.Object);
+            var reader = new PackStreamReaderBytesIncompatible(mockInput.Object, BoltReader.StructHandlers);
 
             var ex = Record.Exception(() => reader.Read());
 
