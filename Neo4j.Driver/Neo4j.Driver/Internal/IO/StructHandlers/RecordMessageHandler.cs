@@ -24,8 +24,6 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
     internal class RecordMessageHandler : IPackStreamStructHandler
     {
-        public byte Signature => PackStream.MsgRecord;
-
         public object Read(PackStreamReader reader, long size)
         {
             var fieldCount = (int) reader.ReadListHeader();

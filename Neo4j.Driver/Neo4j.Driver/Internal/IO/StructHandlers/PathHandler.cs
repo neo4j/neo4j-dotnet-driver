@@ -25,39 +25,28 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
     internal class PathHandler : IPackStreamStructHandler
     {
-        private readonly IPackStreamStructHandler _nodeHandler;
-
-        public PathHandler()
-        {
-            _nodeHandler = new NodeHandler();
-        }
-
         public object Read(PackStreamReader reader, long size)
         {
             // List of unique nodes
             var uniqNodes = new INode[(int) reader.ReadListHeader()];
-            for (int i = 0; i < uniqNodes.Length; i++)
+            for (var i = 0; i < uniqNodes.Length; i++)
             {
-                Throw.ProtocolException.IfNotEqual(NodeFields, reader.ReadStructHeader(), nameof(NodeFields),
-                    $"received{nameof(NodeFields)}");
-                Throw.ProtocolException.IfNotEqual(PackStream.Node, reader.ReadStructSignature(),
-                    nameof(PackStream.Node),
-                    $"received{nameof(PackStream.Node)}");
-                uniqNodes[i] = (INode) _nodeHandler.Read(reader, NodeFields);
+                var node = reader.Read() as INode;
+
+                Throw.ProtocolException.IfFalse(node != null, "receivedNode");
+
+                uniqNodes[i] = node;
             }
 
             // List of unique relationships, without start/end information
             var uniqRels = new Relationship[(int) reader.ReadListHeader()];
-            for (int i = 0; i < uniqRels.Length; i++)
+            for (var i = 0; i < uniqRels.Length; i++)
             {
-                Throw.ProtocolException.IfNotEqual(UnboundRelationshipFields, reader.ReadStructHeader(),
-                    nameof(UnboundRelationshipFields), $"received{nameof(UnboundRelationshipFields)}");
-                Throw.ProtocolException.IfNotEqual(UnboundRelationship, reader.ReadStructSignature(),
-                    nameof(UnboundRelationship), $"received{nameof(UnboundRelationship)}");
-                var urn = reader.ReadLong();
-                var relType = reader.ReadString();
-                var props = reader.ReadMap();
-                uniqRels[i] = new Relationship(urn, -1, -1, relType, props);
+                var uniqRel = reader.Read() as Relationship;
+
+                Throw.ProtocolException.IfFalse(uniqRel != null, "receivedUnboundRelationship");
+
+                uniqRels[i] = uniqRel;
             }
 
             // Path sequence
@@ -69,14 +58,13 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var rels = new IRelationship[segments.Length];
 
             var prevNode = uniqNodes[0];
-            INode nextNode; // Start node is always 0, and isn't encoded in the sequence
-            Relationship rel;
             nodes[0] = prevNode;
-            for (int i = 0; i < segments.Length; i++)
+            for (var i = 0; i < segments.Length; i++)
             {
-                int relIdx = (int) reader.ReadLong();
-                nextNode = uniqNodes[(int) reader.ReadLong()];
+                var relIdx = (int) reader.ReadLong();
+                var nextNode = uniqNodes[(int) reader.ReadLong()]; // Start node is always 0, and isn't encoded in the sequence
                 // Negative rel index means this rel was traversed "inversed" from its direction
+                Relationship rel;
                 if (relIdx < 0)
                 {
                     rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed

@@ -23,8 +23,6 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
     internal class RelationshipHandler : IPackStreamStructHandler
     {
-        public byte Signature => PackStream.Relationship;
-
         public object Read(PackStreamReader reader, long size)
         {
             var urn = reader.ReadLong();

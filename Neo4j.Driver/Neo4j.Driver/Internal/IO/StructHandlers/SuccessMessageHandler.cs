@@ -24,8 +24,6 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
     internal class SuccessMessageHandler : IPackStreamStructHandler
     {
-        public byte Signature => PackStream.MsgSuccess;
-
         public object Read(PackStreamReader reader, long size)
         {
             var map = reader.ReadMap();

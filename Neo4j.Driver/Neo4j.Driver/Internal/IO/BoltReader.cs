@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Internal.IO
                 {PackStream.MsgSuccess, new SuccessMessageHandler()},
                 {PackStream.Node, new NodeHandler()},
                 {PackStream.Relationship, new RelationshipHandler()},
+                {PackStream.UnboundRelationship, new UnboundRelationshipHandler()},
                 {PackStream.Path, new PathHandler()}
             });
 
