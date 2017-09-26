@@ -163,16 +163,13 @@ namespace Neo4j.Driver.Internal
 
         private PooledConnection NewPooledConnection()
         {
-            if (IncrementAndCheckPoolSize())
+            if (TryIncrementPoolSize())
             {
                 return _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, this)
                     : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, Logger),
                         this);
             }
-
-            DecrementPoolSize();
-
             return null;
         }
 
@@ -189,11 +186,18 @@ namespace Neo4j.Driver.Internal
             _statistics?.IncrementConnectionClosed();
         }
 
-        private bool IncrementAndCheckPoolSize()
+
+        /// <summary>
+        /// Returns true if pool size is successfully increased, otherwise false.
+        /// The reason to failed to increase the pool size probably due to the pool is full already
+        /// </summary>
+        /// <returns>true if pool size is successfully increased, otherwise false.</returns>
+        private bool TryIncrementPoolSize()
         {
             var currentPoolSize = Interlocked.Increment(ref _poolSize);
             if (_maxPoolSize != Config.Infinite && currentPoolSize > _maxPoolSize)
             {
+                DecrementPoolSize();
                 return false;
             }
 
