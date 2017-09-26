@@ -184,51 +184,5 @@ namespace Neo4j.Driver.IntegrationTests
                 st.ConnToClose.Should().Be(st.ConnClosed);
             }
         }
-
-        public class Job
-        {
-            private readonly IDriver _driver;
-            private static readonly AccessMode[] Access = {AccessMode.Read, AccessMode.Write};
-            private static readonly string[] Queries = { "RETURN 1295 + 42", "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)" };
-            private readonly Random _random;
-            private readonly ITestOutputHelper _output;
-
-            public Job(IDriver driver, Random random, ITestOutputHelper output)
-            {
-                _driver = driver;
-                _random = random;
-                _output = output;
-            }
-
-            public void Execute()
-            {
-                var i = _random.Next(2);
-                ISession session = null;
-                try
-                {
-                    session = _driver.Session(Access[i]);
-                    var result = session.Run(Queries[i]);
-                    switch (i)
-                    {
-                        case 0:
-                            result.Single()[0].ValueAs<int>().Should().Be(1337);
-                            break;
-                        case 1:
-                            result.Single()[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
-                            break;
-                    }
-                }
-                catch (Exception e)
-                {
-                    _output.WriteLine($"Failed to run query {Queries[i]} due to {e.Message}");
-                    e.Should().BeOfType<SessionExpiredException>();
-                    e.Message.Should().Contain("no longer accepts writes");
-                }
-                finally
-                {
-                    session?.Dispose();
-                }
-            }
-        }
     }
 }
