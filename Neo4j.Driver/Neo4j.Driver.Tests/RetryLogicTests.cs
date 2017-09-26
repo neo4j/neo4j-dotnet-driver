@@ -55,8 +55,10 @@ namespace Neo4j.Driver.Tests
         {
             var timer = new Stopwatch();
             timer.Start();
+            var runCounter = 0;
             var e = Record.Exception(() => retryLogic.Retry<int>(() =>
             {
+                runCounter++;
                 var errorMessage = $"Thread {index} Failed at {timer.Elapsed}";
                 throw new SessionExpiredException(errorMessage);
             }));
@@ -66,7 +68,7 @@ namespace Neo4j.Driver.Tests
             var error = e.InnerException as AggregateException;
             var innerErrors = error.Flatten().InnerExceptions;
 
-            innerErrors.Count.Should().BeGreaterOrEqualTo(2);
+            innerErrors.Count.Should().Be(runCounter);
             timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(5);
         }
 
