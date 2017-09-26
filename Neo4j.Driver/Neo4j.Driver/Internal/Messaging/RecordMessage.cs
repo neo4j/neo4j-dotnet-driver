@@ -24,21 +24,21 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class RecordMessage : IResponseMessage
     {
-        private object[] fields;
+        private readonly object[] _fields;
 
         public RecordMessage(object[] fields)
         {
-            this.fields = fields;
+            _fields = fields;
         }
 
         public override string ToString()
         {
-            return $"RECORD {fields.ValueToString()}";
+            return $"RECORD {_fields.ValueToString()}";
         }
 
         public void Dispatch(IMessageResponseHandler messageResponseHandler)
         {
-            messageResponseHandler.HandleRecordMessage(fields);
+            messageResponseHandler.HandleRecordMessage(_fields);
         }
     }
 }

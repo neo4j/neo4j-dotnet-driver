@@ -1,41 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) 2002-2017 "Neo Technology,"
+// Network Engine for Objects in Lund AB [http://neotechnology.com]
+//
+// This file is part of Neo4j.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    class PathHandler: IPackStreamStructHandler
+    internal class PathHandler : IPackStreamStructHandler
     {
-        private IPackStreamStructHandler _nodeHandler;
+        private readonly IPackStreamStructHandler _nodeHandler;
 
-        public PathHandler(IPackStreamStructHandler nodeHandler)
+        public PathHandler()
         {
-            Throw.ArgumentNullException.IfNull(nodeHandler, nameof(nodeHandler));
-
-            _nodeHandler = nodeHandler;
+            _nodeHandler = new NodeHandler();
         }
-
-        public byte Signature => PackStream.Path;
 
         public object Read(PackStreamReader reader, long size)
         {
             // List of unique nodes
-            var uniqNodes = new INode[(int)reader.ReadListHeader()];
+            var uniqNodes = new INode[(int) reader.ReadListHeader()];
             for (int i = 0; i < uniqNodes.Length; i++)
             {
                 Throw.ProtocolException.IfNotEqual(NodeFields, reader.ReadStructHeader(), nameof(NodeFields),
                     $"received{nameof(NodeFields)}");
-                Throw.ProtocolException.IfNotEqual(PackStream.Node, reader.ReadStructSignature(), nameof(PackStream.Node),
+                Throw.ProtocolException.IfNotEqual(PackStream.Node, reader.ReadStructSignature(),
+                    nameof(PackStream.Node),
                     $"received{nameof(PackStream.Node)}");
-                uniqNodes[i] = (INode)_nodeHandler.Read(reader, NodeFields);
+                uniqNodes[i] = (INode) _nodeHandler.Read(reader, NodeFields);
             }
 
             // List of unique relationships, without start/end information
-            var uniqRels = new Relationship[(int)reader.ReadListHeader()];
+            var uniqRels = new Relationship[(int) reader.ReadListHeader()];
             for (int i = 0; i < uniqRels.Length; i++)
             {
                 Throw.ProtocolException.IfNotEqual(UnboundRelationshipFields, reader.ReadStructHeader(),
@@ -49,7 +61,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             }
 
             // Path sequence
-            var length = (int)reader.ReadListHeader();
+            var length = (int) reader.ReadListHeader();
 
             // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in their "path order"
             var segments = new ISegment[length / 2];
@@ -62,8 +74,8 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             nodes[0] = prevNode;
             for (int i = 0; i < segments.Length; i++)
             {
-                int relIdx = (int)reader.ReadLong();
-                nextNode = uniqNodes[(int)reader.ReadLong()];
+                int relIdx = (int) reader.ReadLong();
+                nextNode = uniqNodes[(int) reader.ReadLong()];
                 // Negative rel index means this rel was traversed "inversed" from its direction
                 if (relIdx < 0)
                 {
