@@ -134,7 +134,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterTheory]
         [InlineData(50)]
         [InlineData(5000)]
-        public void SoakRunAsync(int threadCount)
+        public async void SoakRunAsync(int threadCount)
         {
             var statisticsCollector = new StatisticsCollector();
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
@@ -146,52 +146,24 @@ namespace Neo4j.Driver.IntegrationTests
                 MaxConnectionPoolSize = 50,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
             });
-
-            string[] queries =
-            {
-                "RETURN 1295 + 42",
-                "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)"
-            };
-            AccessMode[] mode =
-            {
-                AccessMode.Read,
-                AccessMode.Write
-            };
             var startTime = DateTime.Now;
-            Output.WriteLine($"[{startTime.ToString("HH:mm:ss.ffffff")}] Started");
+            Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var tasks = Enumerable.Range(0, threadCount)
-                .Select(async i =>
-                {
-                    var session = driver.Session(mode[i % 2]);
-                    try
-                    {
-                        var result = await session.RunAsync(queries[i % 2]);
-                        if (i % 1000 == 0)
-                        {
-                            Output.WriteLine(statisticsCollector.CollectStatistics().ToContentString());
-                        }
-                        await result.SummaryAsync();
-                    }
-                    catch (Exception e)
-                    {
-                        Output.WriteLine(
-                            $"[{DateTime.Now.ToString("HH:mm:ss.ffffff")}] Thread {i} failed to run query {queries[i % 2]} due to {e.Message}");
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }).ToArray();
+            var workItem = new SoakRunWorkItem(driver, statisticsCollector, Output);
 
-            Task.WhenAll(tasks).Wait();
+            var tasks = new List<Task>();
+            for (var i = 0; i < threadCount; i++)
+            {
+                tasks.Add(workItem.RunAsync());
+            }
+            await Task.WhenAll(tasks);
 
-            driver.Dispose();
+            await driver.CloseAsync();
 
             var statistics = statisticsCollector.CollectStatistics();
             Output.WriteLine(statistics.ToContentString());
             var endTime = DateTime.Now;
-            Output.WriteLine($"[{endTime.ToString("HH:mm:ss.ffffff")}] Finished");
+            Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
             foreach (var statistic in statistics)
@@ -202,7 +174,6 @@ namespace Neo4j.Driver.IntegrationTests
                 st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
                 st.ConnToClose.Should().Be(st.ConnClosed);
             }
-            
         }
     }
 }
