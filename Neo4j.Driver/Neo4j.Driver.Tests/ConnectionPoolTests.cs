@@ -19,6 +19,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -168,7 +169,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseConnectionIfFailedToCreate()
             {
                 var mockedConnection = new Mock<IConnection>();
-                mockedConnection.Setup(x => x.Init()).Throws(new InvalidOperationException());
+                mockedConnection.Setup(x => x.Init()).Throws(new NotImplementedException());
 
                 var pool = new ConnectionPool(mockedConnection.Object);
 
@@ -847,5 +848,183 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(2);
             }
         }
+
+        public class PoolSize
+        {
+
+            private static ConnectionPool CreatePool(IConnection conn, int maxPoolSize)
+            {
+                var poolSettings = new ConnectionPoolSettings(Config.Infinite, maxPoolSize, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
+                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+
+                var pool = new ConnectionPool(conn, null, null, null, poolSettings, bufferSettings);
+
+                return pool;
+            }
+
+            [Fact]
+            public void ShoulReportCorrectPoolSize()
+            {
+                var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.IsOpen).Returns(true);
+
+                var pool = CreatePool(connectionMock.Object, 5);
+
+                pool.PoolSize.Should().Be(0);
+
+                var conn1 = pool.Acquire();
+                pool.PoolSize.Should().Be(1);
+
+                var conn2 = pool.Acquire();
+                var conn3 = pool.Acquire();
+                var conn4 = pool.Acquire();
+                pool.PoolSize.Should().Be(4);
+
+                conn1.Close();
+                pool.PoolSize.Should().Be(3);
+
+                var conn5 = pool.Acquire();
+                pool.PoolSize.Should().Be(4);
+
+                conn5.Close();
+                conn4.Close();
+                conn3.Close();
+                conn2.Close();
+
+                pool.PoolSize.Should().Be(0);
+
+                connectionMock.Verify(x => x.IsOpen, Times.Exactly(5 * 2)); // On Acquire and Release
+            }
+
+            [Fact]
+            public void ShoulReportPoolSizeCorrectOnConcurrentRequests()
+            {
+                var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.IsOpen).Returns(true);
+                var pool = CreatePool(connectionMock.Object, 5);
+
+                var rnd = new Random(Guid.NewGuid().GetHashCode());
+                var acquireCounter = 0;
+                var releaseCounter = 0;
+                var stopMarker = 0;
+                var waitedTime = 0;
+
+                var acquireTasks = Enumerable.Range(0, 100).Select(i => Task.Run(() => {
+                    var conn = pool.Acquire();
+                    Interlocked.Increment(ref acquireCounter);
+
+                    var wait = rnd.Next(1000);
+                    Interlocked.Add(ref waitedTime, wait);
+                    Thread.Sleep(wait);
+
+                    conn.Close();
+                    Interlocked.Increment(ref releaseCounter);
+                }));
+
+                var reportedSizes = new ConcurrentQueue<int>();
+                var reportTask = Task.Run(() =>
+                {
+                    while (stopMarker == 0)
+                    {
+                        reportedSizes.Enqueue(pool.PoolSize);
+
+                        Thread.Sleep(50);
+                    }
+                });
+
+                var tasks = acquireTasks as Task[] ?? acquireTasks.ToArray();
+
+                Task.WhenAll(tasks).ContinueWith(t => Interlocked.CompareExchange(ref stopMarker, 1, 0)).Wait();
+
+                reportTask.Wait();
+                reportedSizes.Should().NotBeEmpty();
+                reportedSizes.Should().NotContain(v => v < 0);
+                reportedSizes.Should().NotContain(v => v > 5);
+            }
+
+
+            [Fact]
+            public async void ShoulReportCorrectPoolSizeAsync()
+            {
+                var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.IsOpen).Returns(true);
+
+                var pool = CreatePool(connectionMock.Object, 5);
+
+                pool.PoolSize.Should().Be(0);
+
+                var conn1 = await pool.AcquireAsync(AccessMode.Read);
+                pool.PoolSize.Should().Be(1);
+
+                var conn2 = await pool.AcquireAsync(AccessMode.Read);
+                var conn3 = await pool.AcquireAsync(AccessMode.Read);
+                var conn4 = await pool.AcquireAsync(AccessMode.Read);
+                pool.PoolSize.Should().Be(4);
+
+                await conn1.CloseAsync();
+                pool.PoolSize.Should().Be(3);
+
+                var conn5 = await pool.AcquireAsync(AccessMode.Read);
+                pool.PoolSize.Should().Be(4);
+
+                await conn5.CloseAsync();
+                await conn4.CloseAsync();
+                await conn3.CloseAsync();
+                await conn2.CloseAsync();
+
+                pool.PoolSize.Should().Be(0);
+
+                connectionMock.Verify(x => x.IsOpen, Times.Exactly(5 * 2)); // On Acquire and Release
+            }
+
+            [Fact]
+            public async void ShoulReportPoolSizeCorrectOnConcurrentRequestsAsync()
+            {
+                var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.IsOpen).Returns(true);
+                var pool = CreatePool(connectionMock.Object, 5);
+
+                var rnd = new Random(Guid.NewGuid().GetHashCode());
+                var acquireCounter = 0;
+                var releaseCounter = 0;
+                var stopMarker = 0;
+                var waitedTime = 0;
+
+                var acquireTasks = Enumerable.Range(0, 100).Select(i => Task.Run(async () => {
+                    var conn = await pool.AcquireAsync(AccessMode.Read);
+                    Interlocked.Increment(ref acquireCounter);
+
+                    var wait = rnd.Next(1000);
+                    Interlocked.Add(ref waitedTime, wait);
+                    await Task.Delay(wait);
+
+                    await conn.CloseAsync();
+                    Interlocked.Increment(ref releaseCounter);
+                }));
+
+                var reportedSizes = new ConcurrentQueue<int>();
+                var reportTask = Task.Run(() =>
+                {
+                    while (stopMarker == 0)
+                    {
+                        reportedSizes.Enqueue(pool.PoolSize);
+
+                        Thread.Sleep(50);
+                    }
+                });
+
+                var tasks = acquireTasks as Task[] ?? acquireTasks.ToArray();
+
+                await Task.WhenAll(tasks).ContinueWith(t => Interlocked.CompareExchange(ref stopMarker, 1, 0));
+
+                await reportTask;
+
+                reportedSizes.Should().NotBeEmpty();
+                reportedSizes.Should().NotContain(v => v < 0);
+                reportedSizes.Should().NotContain(v => v > 5);
+            }
+
+        }
+
     }
 }

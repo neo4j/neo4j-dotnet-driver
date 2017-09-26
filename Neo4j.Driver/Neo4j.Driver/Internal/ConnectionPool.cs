@@ -55,6 +55,7 @@ namespace Neo4j.Driver.Internal
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
         internal int NumberOfAvailableConnections => _availableConnections.Count;
+        internal int PoolSize => _poolSize;
 
         internal bool DisposeCalled
         {
@@ -107,13 +108,17 @@ namespace Neo4j.Driver.Internal
             PooledConnection conn = null;
             try
             {
-                _statistics?.IncrementConnectionToCreate();
-
                 conn = NewPooledConnection();
-                conn.Init();
+                if (conn != null)
+                {
+                    _statistics?.IncrementConnectionToCreate();
 
-                _statistics?.IncrementConnectionCreated();
-                return conn;
+                    conn.Init();
+
+                    _statistics?.IncrementConnectionCreated();
+
+                    return conn;
+                }
             }
             catch
             {
@@ -123,6 +128,8 @@ namespace Neo4j.Driver.Internal
                 DestroyConnection(conn);
                 throw;
             }
+
+            return null;
         }
 
         private async Task<IPooledConnection> CreateNewPooledConnectionAsync()
@@ -130,13 +137,17 @@ namespace Neo4j.Driver.Internal
             PooledConnection conn = null;
             try
             {
-                _statistics?.IncrementConnectionToCreate();
-
                 conn = NewPooledConnection();
-                await conn.InitAsync().ConfigureAwait(false);
+                if (conn != null)
+                {
+                    _statistics?.IncrementConnectionToCreate();
 
-                _statistics?.IncrementConnectionCreated();
-                return conn;
+                    await conn.InitAsync().ConfigureAwait(false);
+
+                    _statistics?.IncrementConnectionCreated();
+
+                    return conn;
+                }
             }
             catch
             {
@@ -146,19 +157,25 @@ namespace Neo4j.Driver.Internal
                 await DestroyConnectionAsync(conn).ConfigureAwait(false);
                 throw;
             }
+
+            return null;
         }
 
         private PooledConnection NewPooledConnection()
         {
-            Interlocked.Increment(ref _poolSize);
-            return _fakeConnection != null
-                ? new PooledConnection(_fakeConnection, this)
-                : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, Logger), this);
+            if (TryIncrementPoolSize())
+            {
+                return _fakeConnection != null
+                    ? new PooledConnection(_fakeConnection, this)
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, Logger),
+                        this);
+            }
+            return null;
         }
 
         private void DestroyConnection(IPooledConnection conn)
         {
-            Interlocked.Decrement(ref _poolSize);
+            DecrementPoolSize();
             if (conn == null)
             {
                 return;
@@ -169,9 +186,32 @@ namespace Neo4j.Driver.Internal
             _statistics?.IncrementConnectionClosed();
         }
 
-        private async Task DestroyConnectionAsync(IPooledConnection conn)
+
+        /// <summary>
+        /// Returns true if pool size is successfully increased, otherwise false.
+        /// The reason to failed to increase the pool size probably due to the pool is full already
+        /// </summary>
+        /// <returns>true if pool size is successfully increased, otherwise false.</returns>
+        private bool TryIncrementPoolSize()
+        {
+            var currentPoolSize = Interlocked.Increment(ref _poolSize);
+            if (_maxPoolSize != Config.Infinite && currentPoolSize > _maxPoolSize)
+            {
+                DecrementPoolSize();
+                return false;
+            }
+
+            return true;
+        }
+
+        private void DecrementPoolSize()
         {
             Interlocked.Decrement(ref _poolSize);
+        }
+
+        private async Task DestroyConnectionAsync(IPooledConnection conn)
+        {
+            DecrementPoolSize();
             if (conn == null)
             {
                 return;
@@ -217,7 +257,10 @@ namespace Neo4j.Driver.Internal
                                 if (!IsConnectionPoolFull())
                                 {
                                     connection = CreateNewPooledConnection();
-                                    break;
+                                    if (connection != null)
+                                    {
+                                        break;
+                                    }
                                 }
 
                                 if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
@@ -296,7 +339,10 @@ namespace Neo4j.Driver.Internal
                                 if (!IsConnectionPoolFull())
                                 {
                                     connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                                    break;
+                                    if (connection != null)
+                                    {
+                                        break;
+                                    }
                                 }
 
                                 if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
