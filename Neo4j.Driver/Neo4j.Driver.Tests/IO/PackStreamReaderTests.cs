@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadNullSuccessfully()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Null);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadNull();
 
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes16);
 
-                var unpacker = new PackStreamReader(mockInput.Object);
+                var unpacker = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => unpacker.ReadNull());
                 ex.Should().BeOfType<ProtocolException>();
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadBooleanTrueSuccessfully()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.True);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadBoolean();
 
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadBooleanFalseSuccessfully()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.False);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadBoolean();
 
@@ -93,7 +93,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotTrueOrFalse()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes16);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadBoolean());
                 ex.Should().BeOfType<ProtocolException>();
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadLongAsTinyByte(byte data, sbyte expected)
             {
                 var mockInput = IOExtensions.CreateMockStream(data);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = (sbyte)reader.ReadLong();
 
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const sbyte expected = 1;
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Int8, (byte) expected);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = (sbyte)reader.ReadLong();
 
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const short expected = 124;
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Int16, PackStreamBitConverter.GetBytes(expected));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadLong();
 
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const int expected = 1024;
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Int32, PackStreamBitConverter.GetBytes(expected));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadLong();
 
@@ -161,7 +161,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const long expected = 1024;
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Int64, PackStreamBitConverter.GetBytes(expected));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadLong();
 
@@ -173,7 +173,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotLong()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes16);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadLong());
                 ex.Should().BeOfType<ProtocolException>();
@@ -187,7 +187,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const double expected = 1.12;
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Float64, PackStreamBitConverter.GetBytes(expected));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadDouble();
 
@@ -199,7 +199,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotDouble()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes16);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadDouble());
                 ex.Should().BeOfType<ProtocolException>();
@@ -212,7 +212,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadTinyStringAsEmptyString()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.TinyString);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadString();
 
@@ -224,7 +224,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadStringLessThan16Chars()
             {
                 var mockInput = IOExtensions.CreateMockStream(0x81, 0x61);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadString();
 
@@ -236,7 +236,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadString8()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.String8, (byte) 1, 0x61);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadString();
 
@@ -249,7 +249,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput = IOExtensions.CreateMockStream(new byte[] {PackStream.String16},
                     PackStreamBitConverter.GetBytes((short) 1), new byte[] {0x61});
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadString();
 
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput = IOExtensions.CreateMockStream(new byte[] { PackStream.String32 },
                     PackStreamBitConverter.GetBytes((int)1), new byte[] { 0x61 });
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadString();
 
@@ -274,7 +274,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionWhenReadString32ReturnsStringSizeLonggerThanIntMax()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.String32, PackStreamBitConverter.GetBytes((int)-1));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadString());
 
@@ -286,7 +286,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotString()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.False);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadString());
 
@@ -302,7 +302,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadBytes8()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes8, 1, 0x61);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadBytes();
 
@@ -316,7 +316,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput = IOExtensions.CreateMockStream(new byte[] { PackStream.Bytes16 },
                     PackStreamBitConverter.GetBytes((short)1), new byte[] { 0x61 });
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadBytes();
 
@@ -330,7 +330,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput = IOExtensions.CreateMockStream(new byte[] { PackStream.Bytes32 },
                     PackStreamBitConverter.GetBytes((int)1), new byte[] { 0x61 });
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.ReadBytes();
 
@@ -343,7 +343,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionWhenReadBytes32ReturnsBytesSizeLonggerThanIntMax()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes32, PackStreamBitConverter.GetBytes((int)-1));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadBytes());
 
@@ -355,7 +355,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotBytes()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.False);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadBytes());
 
@@ -370,7 +370,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadTinyMap()
             {
                 var mockInput = IOExtensions.CreateMockStream(0xA2);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadMapHeader();
 
@@ -382,7 +382,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadMap8()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Map8, (byte) 1);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadMapHeader();
 
@@ -395,7 +395,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadMap16()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Map16, PackStreamBitConverter.GetBytes((short)1));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadMapHeader();
 
@@ -408,7 +408,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadMap32()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Map32, PackStreamBitConverter.GetBytes((int)-1));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadMapHeader();
 
@@ -421,7 +421,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotMap()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.False);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadMapHeader());
 
@@ -436,7 +436,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadTinyList()
             {
                 var mockInput = IOExtensions.CreateMockStream(0x92);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadListHeader();
 
@@ -448,7 +448,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadList8()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.List8, (byte) 1);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadListHeader();
 
@@ -461,7 +461,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadList16()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.List16, PackStreamBitConverter.GetBytes((short)1));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadListHeader();
 
@@ -474,7 +474,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadList32()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.List32, PackStreamBitConverter.GetBytes((int) -1));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadListHeader();
 
@@ -487,7 +487,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotList()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.False);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadListHeader());
 
@@ -502,7 +502,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldCallReadByteOnce()
             {
                 var mockInput = IOExtensions.CreateMockStream(0xFF);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var signature = reader.ReadStructSignature();
 
@@ -518,7 +518,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadTinyStruct()
             {
                 var mockInput = IOExtensions.CreateMockStream(0xB2);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadStructHeader();
 
@@ -530,7 +530,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadStruct8()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Struct8, (byte) 1);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadStructHeader();
 
@@ -543,7 +543,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldReadStruct16()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Struct16, PackStreamBitConverter.GetBytes((short)1));
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var header = reader.ReadStructHeader();
 
@@ -556,7 +556,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteNotStruct()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.False);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.ReadStructHeader());
 
@@ -597,7 +597,7 @@ namespace Neo4j.Driver.Tests.IO
             internal void ShouldPeekTypeCorrectly(byte marker, PackStream.PackType expected)
             {
                 var mockInput = IOExtensions.CreateMockStream(marker);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var nextType = reader.PeekNextType();
 
@@ -609,7 +609,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionIfMarkerByteUnDefined()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.ReservedC4);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Xunit.Record.Exception(() => reader.PeekNextType());
 
@@ -626,7 +626,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 const byte expected = 1;
                 var mockInput = IOExtensions.CreateMockStream(1, 2, 3);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.PeekByte();
 
@@ -642,7 +642,7 @@ namespace Neo4j.Driver.Tests.IO
             public void ShouldThrowExceptionWhenTheresNoBytesToPeek()
             {
                 var mockInput = IOExtensions.CreateMockStream(new byte[0]);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var ex = Record.Exception(() => reader.PeekByte());
 
@@ -662,7 +662,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("A0".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -677,7 +677,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D8 00".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -692,7 +692,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D9 00 00 ".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -707,7 +707,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("DA 00 00 00 00".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -724,7 +724,7 @@ namespace Neo4j.Driver.Tests.IO
                     IOExtensions.CreateMockStream(
                         "AF 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05"
                             .ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -743,7 +743,7 @@ namespace Neo4j.Driver.Tests.IO
                     IOExtensions.CreateMockStream(
                         "D8 10 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05 81 70 06"
                             .ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -763,7 +763,7 @@ namespace Neo4j.Driver.Tests.IO
                     IOExtensions.CreateMockStream(
                         "D9 00 10 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05 81 70 06"
                             .ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -783,7 +783,7 @@ namespace Neo4j.Driver.Tests.IO
                     IOExtensions.CreateMockStream(
                         "DA 00 00 00 10 81 61  01 81 62 01  81 63 03 81  64 04 81 65 05 81 66 06  81 67 07 81  68 08 81 69  09 81 6A 00 81 6B 01 81  6C 02 81 6D  03 81 6E 04  81 6F 05 81 70 06"
                             .ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IDictionary<string, object>>();
@@ -806,16 +806,18 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("B0 01".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
-                var real = reader.Read();
-                real.Should().BeOfType<PackStreamStruct>();
+                var header = reader.ReadStructHeader();
+                var signature = reader.ReadStructSignature();
+                var fields = new List<object>();
+                for (var i = 0; i < header; i++)
+                {
+                    fields.Add(reader.Read());
+                }
 
-                var structure = real as PackStreamStruct;
-                structure.Should().NotBeNull();
-                structure.Signature.Should().Be(0x01);
-                structure.Fields.Should().NotBeNull();
-                structure.Fields.Count.Should().Be(0);
+                signature.Should().Be(0x01);
+                fields.Count.Should().Be(0);
             }
 
             [Fact]
@@ -823,16 +825,18 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("DC 00 01".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
-                var real = reader.Read();
-                real.Should().BeOfType<PackStreamStruct>();
+                var header = reader.ReadStructHeader();
+                var signature = reader.ReadStructSignature();
+                var fields = new List<object>();
+                for (var i = 0; i < header; i++)
+                {
+                    fields.Add(reader.Read());
+                }
 
-                var structure = real as PackStreamStruct;
-                structure.Should().NotBeNull();
-                structure.Signature.Should().Be(0x01);
-                structure.Fields.Should().NotBeNull();
-                structure.Fields.Count.Should().Be(0);
+                signature.Should().Be(0x01);
+                fields.Count.Should().Be(0);
             }
 
             [Fact]
@@ -840,16 +844,18 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("DD 00 00 01".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
-                var real = reader.Read();
-                real.Should().BeOfType<PackStreamStruct>();
+                var header = reader.ReadStructHeader();
+                var signature = reader.ReadStructSignature();
+                var fields = new List<object>();
+                for (var i = 0; i < header; i++)
+                {
+                    fields.Add(reader.Read());
+                }
 
-                var structure = real as PackStreamStruct;
-                structure.Should().NotBeNull();
-                structure.Signature.Should().Be(0x01);
-                structure.Fields.Should().NotBeNull();
-                structure.Fields.Count.Should().Be(0);
+                signature.Should().Be(0x01);
+                fields.Count.Should().Be(0);
             }
 
             [Fact]
@@ -857,19 +863,21 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("B3 01 01 02 03".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
-                var real = reader.Read();
-                real.Should().BeOfType<PackStreamStruct>();
+                var header = reader.ReadStructHeader();
+                var signature = reader.ReadStructSignature();
+                var fields = new List<object>();
+                for (var i = 0; i < header; i++)
+                {
+                    fields.Add(reader.Read());
+                }
 
-                var structure = real as PackStreamStruct;
-                structure.Should().NotBeNull();
-                structure.Signature.Should().Be(0x01);
-                structure.Fields.Should().NotBeNull();
-                structure.Fields.Count.Should().Be(3);
-                structure.Fields.Should().Contain(1L);
-                structure.Fields.Should().Contain(2L);
-                structure.Fields.Should().Contain(3L);
+                signature.Should().Be(0x01);
+                fields.Count.Should().Be(3);
+                fields.Should().Contain(1L);
+                fields.Should().Contain(2L);
+                fields.Should().Contain(3L);
             }
 
             [Fact]
@@ -877,19 +885,21 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("DC 03 01 01 02 03".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
-                var real = reader.Read();
-                real.Should().BeOfType<PackStreamStruct>();
+                var header = reader.ReadStructHeader();
+                var signature = reader.ReadStructSignature();
+                var fields = new List<object>();
+                for (var i = 0; i < header; i++)
+                {
+                    fields.Add(reader.Read());
+                }
 
-                var structure = real as PackStreamStruct;
-                structure.Should().NotBeNull();
-                structure.Signature.Should().Be(0x01);
-                structure.Fields.Should().NotBeNull();
-                structure.Fields.Count.Should().Be(3);
-                structure.Fields.Should().Contain(1L);
-                structure.Fields.Should().Contain(2L);
-                structure.Fields.Should().Contain(3L);
+                signature.Should().Be(0x01);
+                fields.Count.Should().Be(3);
+                fields.Should().Contain(1L);
+                fields.Should().Contain(2L);
+                fields.Should().Contain(3L);
             }
 
             [Fact]
@@ -897,19 +907,21 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("DD 00 03 01 01 02 03".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
-                var real = reader.Read();
-                real.Should().BeOfType<PackStreamStruct>();
+                var header = reader.ReadStructHeader();
+                var signature = reader.ReadStructSignature();
+                var fields = new List<object>();
+                for (var i = 0; i < header; i++)
+                {
+                    fields.Add(reader.Read());
+                }
 
-                var structure = real as PackStreamStruct;
-                structure.Should().NotBeNull();
-                structure.Signature.Should().Be(0x01);
-                structure.Fields.Should().NotBeNull();
-                structure.Fields.Count.Should().Be(3);
-                structure.Fields.Should().Contain(1L);
-                structure.Fields.Should().Contain(2L);
-                structure.Fields.Should().Contain(3L);
+                signature.Should().Be(0x01);
+                fields.Count.Should().Be(3);
+                fields.Should().Contain(1L);
+                fields.Should().Contain(2L);
+                fields.Should().Contain(3L);
             }
             
         }
@@ -922,7 +934,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("90".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -937,7 +949,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D4 00".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -952,7 +964,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D5 00 00 ".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -967,7 +979,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D6 00 00 00 00".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -982,7 +994,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("93 01 02 03".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -1000,7 +1012,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D4 03 01 02 03".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -1018,7 +1030,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D5 00 03 01 02 03".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -1036,7 +1048,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D6 00 00 00 03 01 02 03".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeAssignableTo<IList<object>>();
@@ -1061,7 +1073,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream(value ? PackStream.True : PackStream.False);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeOfType<bool>();
@@ -1075,7 +1087,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream(PackStream.Null);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeNull();
@@ -1086,7 +1098,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("CC 01 01".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeOfType<byte[]>();
@@ -1101,7 +1113,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("C1 3F F1 99 99 99 99 99 9A".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeOfType<double>();
@@ -1115,7 +1127,7 @@ namespace Neo4j.Driver.Tests.IO
             {
                 var mockInput =
                     IOExtensions.CreateMockStream("D0 1A 61 62  63 64 65 66 67 68 69 6A 6B 6C 6D 6E 6F 70 71 72 73 74 75 76 77 78 79 7A".ToByteArray());
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
                 real.Should().BeOfType<string>();
@@ -1166,7 +1178,7 @@ namespace Neo4j.Driver.Tests.IO
             private void ShouldReadNumCorrectly(long expected, byte[] data)
             {
                 var mockInput = IOExtensions.CreateMockStream(data);
-                var reader = new PackStreamReader(mockInput.Object);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
 
                 var real = reader.Read();
 
@@ -1181,7 +1193,7 @@ namespace Neo4j.Driver.Tests.IO
             [Fact]
             public void ShouldThrowWhenPackTypeIsNotSupported()
             {
-                var reader = new PackStreamReader(new MemoryStream());
+                var reader = new PackStreamReader(new MemoryStream(), BoltReader.StructHandlers);
 
                 var ex = Record.Exception(() => reader.ReadValue((PackStream.PackType)100));
 

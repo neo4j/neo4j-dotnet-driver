@@ -72,10 +72,6 @@ namespace Neo4j.Driver.Internal.IO
             {
                 Write((IDictionary)value);
             }
-            else if (value is PackStreamStruct)
-            {
-                Write((PackStreamStruct)value);    
-            }
             else
             {
                 throw new ProtocolException(
@@ -178,23 +174,7 @@ namespace Neo4j.Driver.Internal.IO
                 }
             }
         }
-
-        public void Write(PackStreamStruct value)
-        {
-            if (value == null)
-            {
-                WriteNull();
-            }
-            else
-            {
-                WriteStructHeader(value.Fields.Count, value.Signature);
-                foreach (var obj in value.Fields)
-                {
-                    Write(obj);
-                }
-            }
-        }
-
+        
         public void WriteNull()
         {
             _stream.WriteByte(Null);

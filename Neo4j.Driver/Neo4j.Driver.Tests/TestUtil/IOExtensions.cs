@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests
 
             mStream.Position = 0;
 
-            return new PackStreamReader(mStream);
+            return new PackStreamReader(mStream, BoltReader.StructHandlers);
         }
 
         public static Mock<MemoryStream> CreateMockStream(string bytesAsHexString)

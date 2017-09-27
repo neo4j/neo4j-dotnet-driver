@@ -28,6 +28,8 @@ namespace Neo4j.Driver.Internal.IO
     {
         private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
 
+        private readonly IDictionary<byte, IPackStreamStructHandler> _structHandlers;
+
         private readonly byte[] _byteBuffer = new byte[1];
         private readonly byte[] _shortBuffer = new byte[2];
         private readonly byte[] _intBuffer = new byte[4];
@@ -35,12 +37,13 @@ namespace Neo4j.Driver.Internal.IO
 
         private readonly Stream _stream;
 
-        public PackStreamReader(Stream stream)
+        public PackStreamReader(Stream stream, IDictionary<byte, IPackStreamStructHandler> structHandlers)
         {
             Throw.ArgumentNullException.IfNull(stream, nameof(stream));
             Throw.ArgumentOutOfRangeException.IfFalse(stream.CanRead, nameof(stream));
 
             _stream = stream;
+            _structHandlers = structHandlers ?? new Dictionary<byte, IPackStreamStructHandler>();
         }
 
         public object Read()
@@ -50,7 +53,7 @@ namespace Neo4j.Driver.Internal.IO
             return result;
         }
 
-        private Dictionary<string, object> ReadMap()
+        public Dictionary<string, object> ReadMap()
         {
             var size = (int)ReadMapHeader();
             if (size == 0)
@@ -77,47 +80,45 @@ namespace Neo4j.Driver.Internal.IO
             return new List<object>(vals);
         }
 
-        protected internal virtual object ReadValue(PackStream.PackType type)
+        protected internal virtual object ReadValue(PackType type)
         {
             switch (type)
             {
-                case PackStream.PackType.Bytes:
+                case PackType.Bytes:
                     return ReadBytes();
-                case PackStream.PackType.Null:
+                case PackType.Null:
                     return ReadNull();
-                case PackStream.PackType.Boolean:
+                case PackType.Boolean:
                     return ReadBoolean();
-                case PackStream.PackType.Integer:
+                case PackType.Integer:
                     return ReadLong();
-                case PackStream.PackType.Float:
+                case PackType.Float:
                     return ReadDouble();
-                case PackStream.PackType.String:
+                case PackType.String:
                     return ReadString();
-                case PackStream.PackType.Map:
+                case PackType.Map:
                     return ReadMap();
-                case PackStream.PackType.List:
+                case PackType.List:
                     return ReadList();
-                case PackStream.PackType.Struct:
+                case PackType.Struct:
                     return ReadStruct();
             }
             throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
         }
 
-
-        private PackStreamStruct ReadStruct()
+        public object ReadStruct()
         {
             var size = ReadStructHeader();
             var signature = ReadStructSignature();
 
-            var fields = new List<object>();
-            for (var i = 0; i < size; i++)
+            if (_structHandlers.TryGetValue(signature, out var handler))
             {
-                fields.Add(Read());
+                return handler.Read(this, size);
             }
 
-            return new PackStreamStruct(signature, fields);
+            throw new ProtocolException("Unknown structure type: " + signature);
         }
-
+        
         public object ReadNull()
         {
             byte markerByte = NextByte();

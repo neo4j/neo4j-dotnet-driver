@@ -122,11 +122,6 @@ namespace Neo4j.Driver.Internal.IO
         public const byte UnboundRelationship = (byte)'r';
         public const byte Path = (byte)'P';
 
-        public const int NodeFields = 3;
-        public const int RelationshipFields = 5;
-        public const int UnboundRelationshipFields = 3;
-        public const int PathFields = 3;
-
         #endregion Consts
     }
 }
