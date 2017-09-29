@@ -95,8 +95,8 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="result">The result stream.</param>
         /// <param name="operation">The operation is carried out on each record.</param>
-        /// <returns>A Task that completes when all records have been processed.</returns>
-        public static async Task ForEachAsync(this IStatementResultCursor result, Action<IRecord> operation)
+        /// <returns>The result summary after all records have been processed.</returns>
+        public static async Task<IResultSummary> ForEachAsync(this IStatementResultCursor result, Action<IRecord> operation)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));
             while (await result.FetchAsync().ConfigureAwait(false))
@@ -104,6 +104,7 @@ namespace Neo4j.Driver.V1
                 var record = result.Current;
                 operation(record);
             }
+            return await result.SummaryAsync().ConfigureAwait(false);
         }
     }
 }
