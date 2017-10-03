@@ -104,8 +104,8 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
         /// <item><see cref="Ipv6Enabled"/>: <c>true</c></item>
         /// <br></br>
-        /// <item><see cref="MaxIdleConnectionPoolSize"/> : <c>10</c> </item>
-        /// <item><see cref="MaxConnectionPoolSize"/> : <see cref="Infinite"/> </item>
+        /// <item><see cref="MaxIdleConnectionPoolSize"/> : <see cref="MaxConnectionPoolSize"/> </item>
+        /// <item><see cref="MaxConnectionPoolSize"/> : <c>250</c> </item>
         /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
         /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
         /// <item><see cref="MaxConnectionLifetime"/>: <see cref="InfiniteInterval"/></item>
@@ -148,13 +148,19 @@ namespace Neo4j.Driver.V1
         public TimeSpan MaxTransactionRetryTime { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
-        /// Gets or sets the max idle connection pool size.
+        /// Gets or sets the max idle connection pool size. If the value of this is not set,
+        /// then it will default to be the same as <see cref="MaxConnectionPoolSize"/>
         /// </summary>
         /// <remarks> 
         /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver. 
         /// An idle connection is a connection that has already been connected to the database instance and doesn't need to re-initialize.
         /// </remarks>
-        public int MaxIdleConnectionPoolSize { get; set; } = 10;
+        public int MaxIdleConnectionPoolSize {
+            get => _maxIdleConnPoolSize == Infinite ? MaxConnectionPoolSize : _maxIdleConnPoolSize;
+            set => _maxIdleConnPoolSize = value;
+        }
+
+        private int _maxIdleConnPoolSize = Infinite;
 
         /// <summary>
         /// This property is deprecated. Use <see cref="MaxIdleConnectionPoolSize"/> instead.
@@ -175,7 +181,7 @@ namespace Neo4j.Driver.V1
         /// Instead all threads that require a new connection have to wait until a connection is available to reclaim.
         /// See <see cref="ConnectionAcquisitionTimeout"/>for the maximum waiting time to acquire an idle connection from the pool.
         /// </remarks>
-        public int MaxConnectionPoolSize { get; set; } = Infinite;
+        public int MaxConnectionPoolSize { get; set; } = 250;
 
         /// <summary>
         /// Gets or sets the maximum waiting time to either acquire an idle connection from the pool when connection pool is full

@@ -91,9 +91,9 @@ namespace Neo4j.Driver.Internal
             BlockingCollection<IPooledConnection> availableConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ILogger logger = null,
-            ConnectionPoolSettings settings = null,
+            ConnectionPoolSettings poolSettings = null,
             BufferSettings bufferSettings = null)
-            : this(null, null, settings ?? new ConnectionPoolSettings(Config.DefaultConfig), 
+            : this(null, null, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig),
                   bufferSettings ?? new BufferSettings(Config.DefaultConfig), logger)
         {
             _fakeConnection = connection;

@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Examples
                     new Config
                     {
                         MaxConnectionLifetime = TimeSpan.FromMinutes(30),
-                        MaxConnectionPoolSize = 50, MaxIdleConnectionPoolSize = 50,
+                        MaxConnectionPoolSize = 50,
                         ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
                     });
             }
