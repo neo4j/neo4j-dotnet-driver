@@ -104,11 +104,11 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
         /// <item><see cref="Ipv6Enabled"/>: <c>true</c></item>
         /// <br></br>
-        /// <item><see cref="MaxIdleConnectionPoolSize"/> : <see cref="MaxConnectionPoolSize"/> </item>
-        /// <item><see cref="MaxConnectionPoolSize"/> : <c>250</c> </item>
+        /// <item><see cref="MaxIdleConnectionPoolSize"/> : Same as <see cref="MaxConnectionPoolSize"/> if not explicitly set </item>
+        /// <item><see cref="MaxConnectionPoolSize"/> : <c>500</c> </item>
         /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
         /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
-        /// <item><see cref="MaxConnectionLifetime"/>: <see cref="InfiniteInterval"/></item>
+        /// <item><see cref="MaxConnectionLifetime"/>: <c>1h</c></item>
         /// <br></br>
         /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
@@ -154,7 +154,9 @@ namespace Neo4j.Driver.V1
         /// <remarks> 
         /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver. 
         /// An idle connection is a connection that has already been connected to the database instance and doesn't need to re-initialize.
+        /// Setting this value to <see cref="Infinite"/> results in the idle pool size to be asigned the same value as <see cref="MaxConnectionPoolSize"/>.
         /// </remarks>
+        /// <remarks>Also see <see cref="MaxConnectionPoolSize"/></remarks>
         public int MaxIdleConnectionPoolSize {
             get => _maxIdleConnPoolSize == Infinite ? MaxConnectionPoolSize : _maxIdleConnPoolSize;
             set => _maxIdleConnPoolSize = value;
@@ -180,8 +182,10 @@ namespace Neo4j.Driver.V1
         /// When a driver reaches its allowed maximum connection pool size, no new connections can be established.
         /// Instead all threads that require a new connection have to wait until a connection is available to reclaim.
         /// See <see cref="ConnectionAcquisitionTimeout"/>for the maximum waiting time to acquire an idle connection from the pool.
+        /// Setting this value to <see cref="Infinite"/> will result in an infinite pool.
         /// </remarks>
-        public int MaxConnectionPoolSize { get; set; } = 250;
+        /// <remarks>Also see <see cref="MaxIdleConnectionPoolSize"/></remarks>
+        public int MaxConnectionPoolSize { get; set; } = 500;
 
         /// <summary>
         /// Gets or sets the maximum waiting time to either acquire an idle connection from the pool when connection pool is full
@@ -211,7 +215,7 @@ namespace Neo4j.Driver.V1
         /// A connection that has been created for longer than the given time will be closed once it is seen.
         /// Use <see cref="InfiniteInterval"/> to disable connection lifetime checking.
         /// </summary>
-        public TimeSpan MaxConnectionLifetime { get; set; } = InfiniteInterval;
+        public TimeSpan MaxConnectionLifetime { get; set; } = TimeSpan.FromHours(1);
 
         /// <summary>
         /// Gets or sets the connections to support ipv6 addresses.
