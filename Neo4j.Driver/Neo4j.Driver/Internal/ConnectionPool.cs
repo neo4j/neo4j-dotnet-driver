@@ -18,6 +18,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,7 +78,6 @@ namespace Neo4j.Driver.Internal
             _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
             _bufferSettings = bufferSettings;
-
 
             var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
             var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
@@ -311,10 +311,14 @@ namespace Neo4j.Driver.Internal
 
         public Task<IConnection> AcquireAsync(AccessMode mode)
         {
-            using (var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout))
+            var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
+
+            return AcquireAsync(timeOutTokenSource.Token).ContinueWith(t =>
             {
-                return AcquireAsync(timeOutTokenSource.Token);
-            }
+                timeOutTokenSource.Dispose();
+
+                return t;
+            }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
         }
 
         private Task<IConnection> AcquireAsync(CancellationToken cancellationToken)
@@ -345,7 +349,9 @@ namespace Neo4j.Driver.Internal
                                     }
                                 }
 
-                                if (_availableConnections.TryTake(out connection, SpinningWaitInterval, cancellationToken))
+                                await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
+                                
+                                if (_availableConnections.TryTake(out connection))
                                 {
                                     break;
                                 }
@@ -397,7 +403,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsIdlePoolFull()
         {
-            return _availableConnections.Count >= _idlePoolSize;
+            return _idlePoolSize != Config.Infinite && _availableConnections.Count >= _idlePoolSize;
         }
 
         public void Release(IPooledConnection connection)

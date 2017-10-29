@@ -473,8 +473,11 @@ namespace Neo4j.Driver.Tests
                     pool.Acquire();
                 }
 
+                var stopWatch = new Stopwatch(); stopWatch.Start();
+
                 var exception = Record.Exception(() => pool.Acquire());
 
+                stopWatch.Elapsed.Seconds.Should().BeGreaterOrEqualTo(10);
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
             }
@@ -510,8 +513,11 @@ namespace Neo4j.Driver.Tests
                     pool.Acquire();
                 }
 
+                var stopWatch = new Stopwatch(); stopWatch.Start();
+
                 var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
+                stopWatch.Elapsed.Seconds.Should().BeGreaterOrEqualTo(10);
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
             }
@@ -886,9 +892,9 @@ namespace Neo4j.Driver.Tests
         public class PoolSize
         {
 
-            private static ConnectionPool CreatePool(IConnection conn, int maxPoolSize)
+            private static ConnectionPool CreatePool(IConnection conn, int maxIdlePoolSize, int maxPoolSize)
             {
-                var poolSettings = new ConnectionPoolSettings(Config.Infinite, maxPoolSize, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
+                var poolSettings = new ConnectionPoolSettings(maxIdlePoolSize, maxPoolSize, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
                 var bufferSettings = new BufferSettings(Config.DefaultConfig);
 
                 var pool = new ConnectionPool(conn, null, null, null, poolSettings, bufferSettings);
@@ -897,12 +903,12 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShoulReportCorrectPoolSize()
+            public void ShoulReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowed()
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
 
-                var pool = CreatePool(connectionMock.Object, 5);
+                var pool = CreatePool(connectionMock.Object, 0, 5);
 
                 pool.PoolSize.Should().Be(0);
 
@@ -931,11 +937,45 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public void ShoulReportCorrectPoolSize()
+            {
+                var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.IsOpen).Returns(true);
+
+                var pool = CreatePool(connectionMock.Object, 5, 5);
+
+                pool.PoolSize.Should().Be(0);
+
+                var conn1 = pool.Acquire();
+                pool.PoolSize.Should().Be(1);
+
+                var conn2 = pool.Acquire();
+                var conn3 = pool.Acquire();
+                var conn4 = pool.Acquire();
+                pool.PoolSize.Should().Be(4);
+
+                conn1.Close();
+                pool.PoolSize.Should().Be(4);
+
+                var conn5 = pool.Acquire();
+                pool.PoolSize.Should().Be(4);
+
+                conn5.Close();
+                conn4.Close();
+                conn3.Close();
+                conn2.Close();
+
+                pool.PoolSize.Should().Be(4);
+
+                connectionMock.Verify(x => x.IsOpen, Times.Exactly(5 * 2)); // On Acquire and Release
+            }
+
+            [Fact]
             public void ShoulReportPoolSizeCorrectOnConcurrentRequests()
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
-                var pool = CreatePool(connectionMock.Object, 5);
+                var pool = CreatePool(connectionMock.Object, 5, 5);
 
                 var rnd = new Random(Guid.NewGuid().GetHashCode());
                 var acquireCounter = 0;
@@ -976,14 +1016,47 @@ namespace Neo4j.Driver.Tests
                 reportedSizes.Should().NotContain(v => v > 5);
             }
 
-
             [Fact]
             public async void ShoulReportCorrectPoolSizeAsync()
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
 
-                var pool = CreatePool(connectionMock.Object, 5);
+                var pool = CreatePool(connectionMock.Object, 5, 5);
+
+                pool.PoolSize.Should().Be(0);
+
+                var conn1 = await pool.AcquireAsync(AccessMode.Read);
+                pool.PoolSize.Should().Be(1);
+
+                var conn2 = await pool.AcquireAsync(AccessMode.Read);
+                var conn3 = await pool.AcquireAsync(AccessMode.Read);
+                var conn4 = await pool.AcquireAsync(AccessMode.Read);
+                pool.PoolSize.Should().Be(4);
+
+                await conn1.CloseAsync();
+                pool.PoolSize.Should().Be(4);
+
+                var conn5 = await pool.AcquireAsync(AccessMode.Read);
+                pool.PoolSize.Should().Be(4);
+
+                await conn5.CloseAsync();
+                await conn4.CloseAsync();
+                await conn3.CloseAsync();
+                await conn2.CloseAsync();
+
+                pool.PoolSize.Should().Be(4);
+
+                connectionMock.Verify(x => x.IsOpen, Times.Exactly(5 * 2)); // On Acquire and Release
+            }
+
+            [Fact]
+            public async void ShoulReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowedAsync()
+            {
+                var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.IsOpen).Returns(true);
+
+                var pool = CreatePool(connectionMock.Object, 0, 5);
 
                 pool.PoolSize.Should().Be(0);
 
@@ -1016,7 +1089,7 @@ namespace Neo4j.Driver.Tests
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
-                var pool = CreatePool(connectionMock.Object, 5);
+                var pool = CreatePool(connectionMock.Object, 5, 5);
 
                 var rnd = new Random(Guid.NewGuid().GetHashCode());
                 var acquireCounter = 0;
