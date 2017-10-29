@@ -109,6 +109,19 @@ namespace Neo4j.Driver.Tests.IO
                 real.Should().Equal(correctValue);
             }
 
+            [Fact]
+            public void ShouldThrowExceptionOnEndOfStream()
+            {
+                var reader = new ChunkReader(new MemoryStream(new byte[0]));
+                var targetStream = new MemoryStream();
+
+                var exc = Record.Exception(() => reader.ReadNextMessages(targetStream));
+
+                exc.Should().NotBeNull();
+                exc.Should().BeOfType<IOException>();
+                exc.Message.Should().StartWith("Unexpected end of stream");
+            }
+
         }
 
         public class ReadNextMessagesAsyncMethod
@@ -145,6 +158,18 @@ namespace Neo4j.Driver.Tests.IO
                 ex.Should().BeOfType<InvalidOperationException>();
             }
 
+            [Fact]
+            public async void ShouldThrowExceptionOnEndOfStream()
+            {
+                var reader = new ChunkReader(new MemoryStream(new byte[0]));
+                var targetStream = new MemoryStream();
+
+                var exc = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(targetStream));
+
+                exc.Should().NotBeNull();
+                exc.Should().BeOfType<IOException>();
+                exc.Message.Should().StartWith("Unexpected end of stream");
+            }
         }
         
     }
