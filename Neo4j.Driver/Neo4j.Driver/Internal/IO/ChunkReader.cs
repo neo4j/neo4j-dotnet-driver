@@ -111,6 +111,10 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     // Read next available bytes from the down stream and process it.
                     var read = _downStream.Read(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition);
+                    if (read <= 0)
+                    {
+                        throw new IOException("Unexpected end of stream.");
+                    }
 
                     _logger?.Trace("S: ", _buffer, _lastWritePosition, read);
 
@@ -191,6 +195,11 @@ namespace Neo4j.Driver.Internal.IO
                                     throw new OperationCanceledException();
                                 }
 
+                                if (t.Result <= 0)
+                                {
+                                    throw new IOException("Unexpected end of stream.");
+                                }
+
                                 // Otherwise process it.
                                 _logger?.Trace("S: ", _buffer, _lastWritePosition, t.Result);
 
@@ -211,10 +220,14 @@ namespace Neo4j.Driver.Internal.IO
                                 // Is buffer processing faulted?
                                 if (t.IsFaulted)
                                 {
-                                    if (t.Exception.GetBaseException() is OperationCanceledException)
+                                    var exc = t.Exception.GetBaseException();
+
+                                    if (!(exc is OperationCanceledException))
                                     {
-                                        return TaskExtensions.GetCompletedTask();
+                                        taskCompletionSource.SetException(exc);
                                     }
+
+                                    return TaskExtensions.GetCompletedTask();
                                 }
 
                                 // Could we read a whole message from what we have?
@@ -291,5 +304,6 @@ namespace Neo4j.Driver.Internal.IO
             _lastWritePosition = 0;
             _lastReadPosition = 0;
         }
+        
     }
 }
