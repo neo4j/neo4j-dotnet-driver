@@ -16,8 +16,10 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
@@ -29,8 +31,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             EncryptionLevel = EncryptionLevel.None,
         };
-        private static readonly string ScriptSourcePath = new DirectoryInfo("../../Resources").FullName;
+        private static readonly string ScriptSourcePath;
 
+        static BoltStubServer()
+        {
+            Uri assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.CodeBase);
+            string assemblyDirectory = new FileInfo(assemblyUri.AbsolutePath).Directory.FullName;
+            
+            ScriptSourcePath = Path.Combine(assemblyDirectory, "Resources");
+        }
+        
         private readonly IShellCommandRunner _commandRunner;
         private readonly int _port;
         private readonly TcpClient _testTcpClient = new TcpClient();
@@ -50,7 +60,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Dispose()
         {
+#if NET452
+            _testTcpClient.Close();
+#else
             _testTcpClient.Dispose();
+#endif
             _commandRunner.EndRunCommand();
             WaitForServer(_port, ServerStatus.Offline);
         }
@@ -78,7 +92,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 ServerStatus currentStatus;
                 try
                 {
+#if NET452
                     _testTcpClient.Connect("127.0.0.1", port);
+#else
+                    Task.Run(() => _testTcpClient.ConnectAsync("127.0.0.1", port)).Wait();
+#endif
                     if (_testTcpClient.Connected)
                     {
                         currentStatus = ServerStatus.Online;

@@ -22,6 +22,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
+using TaskExtensions = Neo4j.Driver.Internal.TaskExtensions; 
 
 namespace Neo4j.Driver.Tests
 {
@@ -74,7 +75,7 @@ namespace Neo4j.Driver.Tests
                         builder.CollectRecord(new object[] {123 + i});
                     }
 
-                    return Task.CompletedTask;
+                    return TaskExtensions.GetCompletedTask();
                 });
                 var result = await builder.PreBuildAsync();
 
@@ -90,8 +91,10 @@ namespace Neo4j.Driver.Tests
                 builder.SetReceiveOneFunc(() =>
                 {
                     builder.CollectSummary(null);
+
                     builder.DoneSuccess();
-                    return Task.CompletedTask;
+
+                    return TaskExtensions.GetCompletedTask();
                 });
                 var result = await builder.PreBuildAsync();
 
@@ -140,7 +143,7 @@ namespace Neo4j.Driver.Tests
                         builder.CollectRecord(new object[] { 123 + i });
                     }
 
-                    return Task.CompletedTask;
+                    return TaskExtensions.GetCompletedTask();
                 });
                 var result = await builder.PreBuildAsync();
 

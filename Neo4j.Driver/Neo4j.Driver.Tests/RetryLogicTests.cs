@@ -80,16 +80,17 @@ namespace Neo4j.Driver.Tests
             var mockLogger = new Mock<ILogger>();
             mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
             var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
-            var timer = new Stopwatch();
-            timer.Start();
+
+            int count = 0;
             var e = Record.Exception(() => retryLogic.Retry<int>(() =>
             {
+                count++;
                 throw ParseServerException(errorCode, "an error");
             }));
-            timer.Stop();
+
             e.Should().BeOfType<TransientException>();
             (e as TransientException).Code.Should().Be(errorCode);
-            timer.Elapsed.TotalMilliseconds.Should().BeLessThan(10);
+            count.Should().Be(1);
             mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.Never);
         }
     }
