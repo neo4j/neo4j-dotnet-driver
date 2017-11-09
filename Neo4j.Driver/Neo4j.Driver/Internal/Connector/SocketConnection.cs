@@ -15,13 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
+using static System.Threading.CancellationTokenSource;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -36,6 +39,8 @@ namespace Neo4j.Driver.Internal.Connector
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
         private readonly ILogger _logger;
+
+        private volatile bool ackFailureMuted = false;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
             ILogger logger)
@@ -173,11 +178,37 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public async Task ReceiveOneAsync()
+        public async Task ReceiveOneAsync(CancellationToken ctx = default(CancellationToken))
         {
-            await _client.ReceiveOneAsync(_responseHandler).ConfigureAwait(false);
+            // create a task that will not timeout until it is cancelled by user cancellation token or recieveOne finished
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancelTask = Task.Delay(Timeout.Infinite,
+                CreateLinkedTokenSource(ctx, cancellationTokenSource.Token).Token);
+
+            var receiveOneTask = _client.ReceiveOneAsync(_responseHandler);
+            var task = await Task.WhenAny(cancelTask, receiveOneTask).ConfigureAwait(false);
+            if (task == receiveOneTask)
+            {
+                cancellationTokenSource.Cancel();
+            }
+            else // user cancelled tx
+            {
+                MuteAckFailure();
+                Enqueue(new ResetMessage(), new ResetCollector(UnmuteAckFailure));
+                await SendAsync().ConfigureAwait(false);
+            }
 
             AssertNoServerFailure();
+        }
+
+        private void UnmuteAckFailure()
+        {
+            ackFailureMuted = false;
+        }
+
+        private void MuteAckFailure()
+        {
+            ackFailureMuted = true;
         }
 
         public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)

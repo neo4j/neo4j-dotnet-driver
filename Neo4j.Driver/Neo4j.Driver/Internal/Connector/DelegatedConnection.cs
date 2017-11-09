@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
@@ -153,13 +154,13 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public Task ReceiveOneAsync()
+        public Task ReceiveOneAsync(CancellationToken ctx = default(CancellationToken))
         {
             var tcs = new TaskCompletionSource<bool>();
 
             try
             {
-                Delegate.ReceiveOneAsync().ContinueWith(t =>
+                Delegate.ReceiveOneAsync(ctx).ContinueWith(t =>
                 {
                     if (t.IsFaulted)
                     {

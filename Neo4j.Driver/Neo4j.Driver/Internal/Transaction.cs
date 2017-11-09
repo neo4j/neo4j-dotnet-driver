@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
@@ -213,13 +214,13 @@ namespace Neo4j.Driver.Internal
             });
         }
 
-        public override Task<IStatementResultCursor> RunAsync(Statement statement)
+        public override Task<IStatementResultCursor> RunAsync(Statement statement, CancellationToken ctx)
         {
             return TryExecuteAsync(async () =>
             {
                 EnsureNotFailed();
 
-                var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(),
+                var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(ctx),
                     _connection.Server);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 await _connection.SendAsync().ConfigureAwait(false);

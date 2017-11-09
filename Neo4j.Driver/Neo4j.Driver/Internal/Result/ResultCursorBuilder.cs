@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Collections.Generic;
 using System;
+using System.Threading;
 using Neo4j.Driver.V1;
 using System.Threading.Tasks;
 

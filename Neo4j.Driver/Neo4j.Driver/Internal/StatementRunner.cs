@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
@@ -29,7 +30,12 @@ namespace Neo4j.Driver.Internal
 
         public abstract IStatementResult Run(Statement statement);
 
-        public abstract Task<IStatementResultCursor> RunAsync(Statement statement);
+        public abstract Task<IStatementResultCursor> RunAsync(Statement statement, CancellationToken ctx);
+
+        public Task<IStatementResultCursor> RunAsync(Statement statement)
+        {
+            return RunAsync(statement, default(CancellationToken));
+        }
 
         public IStatementResult Run(string statement)
         {

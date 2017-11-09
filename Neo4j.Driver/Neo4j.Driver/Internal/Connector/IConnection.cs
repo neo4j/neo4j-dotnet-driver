@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
@@ -41,7 +42,7 @@ namespace Neo4j.Driver.Internal.Connector
         // receive one
         void ReceiveOne();
 
-        Task ReceiveOneAsync();
+        Task ReceiveOneAsync(CancellationToken ctx = default(CancellationToken));
 
         // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
         void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true);
