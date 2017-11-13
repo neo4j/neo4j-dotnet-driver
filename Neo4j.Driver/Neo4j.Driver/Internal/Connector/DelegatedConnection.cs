@@ -34,6 +34,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         public abstract void OnError(Exception error);
 
+        public void OnError(AggregateException error)
+        {
+            OnError(error.GetBaseException());
+        }
+
         public void Sync()
         {
             try
@@ -265,11 +270,11 @@ namespace Neo4j.Driver.Internal.Connector
             return tcs.Task;
         }
 
-        public void Reset()
+        public void Reset(IMessageResponseCollector collector = null)
         {
             try
             {
-                Delegate.Reset();
+                Delegate.Reset(collector);
             }
             catch (Exception e)
             {

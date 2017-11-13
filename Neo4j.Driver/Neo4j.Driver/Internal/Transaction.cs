@@ -206,7 +206,7 @@ namespace Neo4j.Driver.Internal
                 EnsureNotFailed();
 
                 var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOne(),
-                    _connection.Server);
+                    _connection);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
 
@@ -221,7 +221,7 @@ namespace Neo4j.Driver.Internal
                 EnsureNotFailed();
 
                 var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(ctx),
-                    _connection.Server);
+                    _connection);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 await _connection.SendAsync().ConfigureAwait(false);
 

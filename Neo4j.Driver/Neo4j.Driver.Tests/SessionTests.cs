@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -85,6 +86,7 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalalal");
 
                 mockConn.Verify(x => x.Run("lalalal", new Dictionary<string, object>(), It.IsAny<ResultCursorBuilder>(), true), Times.Once);
+                mockConn.Verify(x => x.ReceiveOneAsync(default(CancellationToken)), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
             }
 

@@ -254,11 +254,6 @@ namespace Neo4j.Driver.Tests
                     _messageHandler.EnqueueMessage(requestMessage, responseCollector);
                 }
 
-                public void Clear()
-                {
-                    throw new NotImplementedException();
-                }
-
                 public int UnhandledMessageSize => _messageHandler.UnhandledMessageSize;
                 public IMessageResponseCollector CurrentResponseCollector => _messageHandler.CurrentResponseCollector;
 

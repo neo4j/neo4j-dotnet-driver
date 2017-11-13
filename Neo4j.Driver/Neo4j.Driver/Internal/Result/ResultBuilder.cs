@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Collections.Generic;
 using System;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
@@ -28,16 +29,16 @@ namespace Neo4j.Driver.Internal.Result
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
-        public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler = null)
-            : base(statement, server)
+        public ResultBuilder(Statement statement, Action receiveOneAction, IConnection connection, IResultResourceHandler resourceHandler = null)
+            : base(statement, connection)
         {
             SetReceiveOneAction(receiveOneAction);
             _resourceHandler = resourceHandler;
         }
 
         public ResultBuilder(string statement, IDictionary<string, object> parameters, 
-            Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler= null)
-            : this(new Statement(statement, parameters), receiveOneAction, server, resourceHandler)
+            Action receiveOneAction, IConnection connection, IResultResourceHandler resourceHandler= null)
+            : this(new Statement(statement, parameters), receiveOneAction, connection, resourceHandler)
         {
         }
         

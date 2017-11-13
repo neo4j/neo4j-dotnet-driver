@@ -16,9 +16,9 @@
 // limitations under the License.
 using System.Collections.Generic;
 using System;
-using System.Threading;
 using Neo4j.Driver.V1;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Result
 {
@@ -33,16 +33,16 @@ namespace Neo4j.Driver.Internal.Result
         {
         }
 
-        public ResultCursorBuilder(Statement statement, Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler = null)
-            : base(statement, server)
+        public ResultCursorBuilder(Statement statement, Func<Task> receiveOneFunc, IConnection conn, IResultResourceHandler resourceHandler = null)
+            : base(statement, conn)
         {
             SetReceiveOneFunc(receiveOneFunc);
             _resourceHandler = resourceHandler;
         }
 
         public ResultCursorBuilder(string statement, IDictionary<string, object> parameters,
-            Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler= null)
-            : this(new Statement(statement, parameters), receiveOneFunc, server, resourceHandler)
+            Func<Task> receiveOneFunc, IConnection conn, IResultResourceHandler resourceHandler= null)
+            : this(new Statement(statement, parameters), receiveOneFunc, conn, resourceHandler)
         {
         }
 

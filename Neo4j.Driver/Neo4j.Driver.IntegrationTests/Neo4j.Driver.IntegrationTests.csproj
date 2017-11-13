@@ -136,6 +136,8 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="Resources\cancel_streaming_with_reset.script" />
+    <None Include="Resources\cancel_run_with_reset.script" />
     <None Include="Resources\get_routing_table.script" />
     <None Include="Resources\get_routing_table_with_context.script" />
     <None Include="Resources\multiple_bookmarks.script" />

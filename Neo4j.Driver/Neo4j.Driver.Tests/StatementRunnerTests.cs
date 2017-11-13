@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
@@ -38,7 +39,7 @@ namespace Neo4j.Driver.Tests
                 return null; // nah, I do not care
             }
 
-            public override Task<IStatementResultCursor> RunAsync(Statement statement)
+            public override Task<IStatementResultCursor> RunAsync(Statement statement, CancellationToken token = default(CancellationToken))
             {
                 throw new System.NotImplementedException();
             }

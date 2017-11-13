@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Internal
 
                 _connection = _connectionProvider.Acquire(_defaultMode);
                 var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
-                    () => _connection.ReceiveOne(), _connection.Server, this);
+                    () => _connection.ReceiveOne(), _connection, this);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
                 _connection.Send();
 
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal
 
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
-                    () => _connection.ReceiveOneAsync(ctx), _connection.Server, this);
+                    () => _connection.ReceiveOneAsync(ctx), _connection, this);
                 _connection.Run(statement.Text, statement.Parameters, resultBuilder);
 
                 await _connection.SendAsync().ConfigureAwait(false);

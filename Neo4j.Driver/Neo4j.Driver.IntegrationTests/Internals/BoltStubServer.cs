@@ -19,7 +19,9 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
+using Path = System.IO.Path;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
@@ -28,6 +30,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public static readonly Config Config = new Config
         {
             EncryptionLevel = EncryptionLevel.None,
+            Logger = new DebugLogger {Level = LogLevel.Debug}
         };
         private static readonly string ScriptSourcePath = new DirectoryInfo("../../Resources").FullName;
 

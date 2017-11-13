@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private readonly ILogger _logger;
 
-        private volatile bool ackFailureMuted = false;
+        private volatile bool _ackFailureMuted = false;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
             ILogger logger)
@@ -181,34 +181,37 @@ namespace Neo4j.Driver.Internal.Connector
         public async Task ReceiveOneAsync(CancellationToken ctx = default(CancellationToken))
         {
             // create a task that will not timeout until it is cancelled by user cancellation token or recieveOne finished
-            var cancellationTokenSource = new CancellationTokenSource();
-            var cancelTask = Task.Delay(Timeout.Infinite,
-                CreateLinkedTokenSource(ctx, cancellationTokenSource.Token).Token);
-
-            var receiveOneTask = _client.ReceiveOneAsync(_responseHandler);
-            var task = await Task.WhenAny(cancelTask, receiveOneTask).ConfigureAwait(false);
-            if (task == receiveOneTask)
+            using (var cancellationTokenSource = new CancellationTokenSource())
             {
-                cancellationTokenSource.Cancel();
-            }
-            else // user cancelled tx
-            {
-                MuteAckFailure();
-                Enqueue(new ResetMessage(), new ResetCollector(UnmuteAckFailure));
-                await SendAsync().ConfigureAwait(false);
-            }
+                var cancelTask = Task.Delay(Timeout.Infinite,
+                    CreateLinkedTokenSource(ctx, cancellationTokenSource.Token).Token);
 
+                var receiveOneTask = _client.ReceiveOneAsync(_responseHandler);
+                var task = await Task.WhenAny(cancelTask, receiveOneTask).ConfigureAwait(false);
+                if (task == receiveOneTask)
+                {
+                    cancellationTokenSource.Cancel();
+                }
+                else // user cancelled tx
+                {
+                    MuteAckFailure();
+                    Reset(new ResetCollector(UnmuteAckFailure));
+                    await SendAsync().ConfigureAwait(false);
+                    // still wait for receive one to finally finish
+                    await receiveOneTask.ConfigureAwait(false);
+                }
+            }
             AssertNoServerFailure();
         }
 
         private void UnmuteAckFailure()
         {
-            ackFailureMuted = false;
+            _ackFailureMuted = false;
         }
 
         private void MuteAckFailure()
         {
-            ackFailureMuted = true;
+            _ackFailureMuted = true;
         }
 
         public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
@@ -223,15 +226,17 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public void Reset()
+        public void Reset(IMessageResponseCollector collector = null)
         {
-            Enqueue(new ResetMessage());
+            Enqueue(new ResetMessage(), collector);
         }
 
         public void AckFailure()
         {
-
-            Enqueue(new AckFailureMessage());
+            if (!_ackFailureMuted && _responseHandler.Error.IsRecoverableError())
+            {
+                Enqueue(new AckFailureMessage());
+            }
         }
 
         public bool IsOpen => _client.IsOpen;
@@ -285,17 +290,17 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
+        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultCollector = null,
             IRequestMessage requestStreamingMessage = null)
         {
 
             _messages.Enqueue(requestMessage);
-            _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
+            _responseHandler.EnqueueMessage(requestMessage, resultCollector);
 
             if (requestStreamingMessage != null)
             {
                 _messages.Enqueue(requestStreamingMessage);
-                _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
+                _responseHandler.EnqueueMessage(requestStreamingMessage, resultCollector);
             }
         }
     }

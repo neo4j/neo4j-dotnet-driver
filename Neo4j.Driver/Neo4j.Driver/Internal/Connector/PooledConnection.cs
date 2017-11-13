@@ -79,18 +79,14 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         /// <summary>
-        /// Return true if unrecoverable error has been received on this connection, otherwise false.
+        /// Return true if unrecoverable error has been attached with this connection, otherwise false.
         /// The connection that has been marked as has unrecoverable errors will be eventally closed when returning back to the pool.
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
         public override void OnError(Exception error)
         {
-            if (error.IsRecoverableError())
-            {
-                Delegate.AckFailure();
-            }
-            else
+            if (!error.IsRecoverableError())
             {
                 HasUnrecoverableError = true;
             }
