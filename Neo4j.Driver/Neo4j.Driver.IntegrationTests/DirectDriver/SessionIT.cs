@@ -90,18 +90,30 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact]
-        public async void ShouldReset()
+        public async void ShouldResetRun()
         {
             var session = Driver.Session();
             var exception = await ExceptionAsync(() => session.RunAsync(
                 new Statement("CALL test.driver.longRunningStatement({seconds})",
-                    new Dictionary<string, object> {{"seconds", 5}}), // will finish running in 1s 
+                    new Dictionary<string, object> {{"seconds", 60}}), // will finish running in 2min 
                 new CancellationTokenSource(TimeSpan.Zero).Token));
-            /*var exception = await ExceptionAsync(() => session.RunAsync(
-                new Statement("UNWIND range(1,1000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x) AS n",
-                    new Dictionary<string, object> { { "n", 5 } }), // will finish running in 1s 
-                new CancellationTokenSource(TimeSpan.Zero).Token));*/
             exception.Should().BeOfType<TransientException>();
+            await session.CloseAsync();
+        }
+
+        [RequireServerFact]
+        public async void ShouldResetStreaming()
+        {
+            var session = Driver.Session();
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cursor = await session.RunAsync(
+                new Statement("CALL test.driver.longStreamingResult({seconds})",
+                    new Dictionary<string, object> {{"seconds", 60}}), // will finish running in 2min 
+                cancellationTokenSource.Token);
+            cursor.Keys.Should().NotBeNullOrEmpty();
+            cancellationTokenSource.Cancel(); // cancel after the first record arrives with keys
+            var exception = await ExceptionAsync(() => cursor.SummaryAsync());
+            exception.Should().BeOfType<ClientException>();
             await session.CloseAsync();
         }
 

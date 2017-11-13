@@ -32,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             EncryptionLevel = EncryptionLevel.None,
             Logger = new DebugLogger {Level = LogLevel.Debug}
         };
-        private static readonly string ScriptSourcePath = new DirectoryInfo("../../Resources").FullName;
+        public static readonly string ScriptSourcePath = new DirectoryInfo("../../Resources").FullName;
 
         private readonly IShellCommandRunner _commandRunner;
         private readonly int _port;
