@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.Result
 
         protected ResultBuilderBase(Statement statement, IConnection connection)
         {
-            SummaryCollector = new SummaryCollector(statement, connection.Server);
+            SummaryCollector = new SummaryCollector(statement, connection?.Server);
             Connection = connection;
         }
 
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Internal.Result
         {
             NoMoreRecords();// an error received, so the result is broken
             StatementProcessed = true;
-            Connection.AckFailure();
+            Connection?.AckFailure();
         }
 
         public void DoneIgnored()

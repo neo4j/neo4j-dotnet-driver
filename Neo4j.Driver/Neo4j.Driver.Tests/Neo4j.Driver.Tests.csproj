@@ -118,6 +118,7 @@
     <Compile Include="Result\ResultCursorBuilderTests.cs" />
     <Compile Include="Result\StatementResultCursorTests.cs" />
     <Compile Include="Routing\LeastConnectedLoadBalancingStrategyTests.cs" />
+    <Compile Include="Connector\MockedMessagingClient.cs" />
     <Compile Include="Routing\RoundRobinLoadBalancingStrategyTests.cs" />
     <Compile Include="Routing\RoundRobinArrayIndexTests.cs" />
     <Compile Include="Routing\RoutingTableManagerTests.cs" />

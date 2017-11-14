@@ -261,8 +261,8 @@ namespace Neo4j.Driver.Tests
 
                 public Neo4jException Error
                 {
-                    get { return _messageHandler.Error; }
-                    set { _messageHandler.Error = value; }
+                    get => _messageHandler.Error;
+                    set => _messageHandler.Error = value;
                 }
             }
         }
