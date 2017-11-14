@@ -17,6 +17,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
@@ -87,8 +88,7 @@ namespace Neo4j.Driver.Internal.IO
 
         public Task ReadAsync(IMessageResponseHandler responseHandler)
         {
-            return
-                _chunkReader.ReadNextMessagesAsync(_bufferStream)
+            return _chunkReader.ReadNextMessagesAsync(_bufferStream)
                     .ContinueWith(t =>
                     {
                         ConsumeMessages(responseHandler, t.Result);

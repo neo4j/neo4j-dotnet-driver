@@ -16,9 +16,11 @@
 // limitations under the License.
 using System;
 using System.Linq;
+using System.Threading;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.V1;
+using static Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -40,6 +42,46 @@ namespace Neo4j.Driver.IntegrationTests
                 }
             }
         }
+
+        [RequireBoltStubServerFact]
+        public async void CancelRunWithReset()
+        {
+            using (BoltStubServer.Start("cancel_run_with_reset", 9001))
+            {
+                var uri = new Uri("bolt://127.0.0.1:9001");
+                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                {
+                    var session = driver.Session();
+                    var error = await ExceptionAsync( () => session.RunAsync( new Statement("Infinite"), 
+                        new CancellationTokenSource(TimeSpan.Zero).Token));
+                    error.Should().BeOfType<ClientException>();
+                    error.Message.Should().Be("Stopped!");
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireBoltStubServerFact]
+        public async void CancelStreamingWithReset()
+        {
+            using (BoltStubServer.Start("cancel_streaming_with_reset", 9001))
+            {
+                var uri = new Uri("bolt://127.0.0.1:9001");
+                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                {
+                    var session = driver.Session();
+                    var cancellationTokenSource = new CancellationTokenSource();
+
+                    var cursor = await session.RunAsync(new Statement("Infinite Stream"), cancellationTokenSource.Token);
+                    cancellationTokenSource.Cancel(); // let's cancel streaming
+                    var error = await ExceptionAsync(() => cursor.SummaryAsync());
+                    error.Should().BeOfType<ClientException>();
+                    error.Message.Should().Be("Stopped!");
+                    await session.CloseAsync();
+                }
+            }
+        }
+
 
         [RequireBoltStubServerFact]
         public void InvokeProcedureGetRoutingTableWhenServerVersionPermits()

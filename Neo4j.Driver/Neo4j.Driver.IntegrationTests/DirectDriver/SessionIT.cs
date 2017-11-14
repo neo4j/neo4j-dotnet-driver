@@ -15,12 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.V1;
-using Xunit;
 using Xunit.Abstractions;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
+using static Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -39,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (var driver = GraphDatabase.Driver("bolt://localhost:123"))
             using (var session = driver.Session())
             {
-                exception = Record.Exception(() => session.Run("RETURN 1"));
+                exception = Exception(() => session.Run("RETURN 1"));
             }
             exception.Should().BeOfType<ServiceUnavailableException>();
             exception.Message.Should().Contain("Connection with the server breaks");
@@ -56,7 +58,7 @@ namespace Neo4j.Driver.IntegrationTests
             driver.Dispose();
             session.Dispose();
 
-            var error = Record.Exception(() => driver.Session());
+            var error = Exception(() => driver.Session());
             error.Should().BeOfType<ObjectDisposedException>();
             error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
         }
@@ -70,7 +72,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             driver.Dispose();
 
-            var error = Record.Exception(() => session.Run("RETURN 1"));
+            var error = Exception(() => session.Run("RETURN 1"));
             error.Should().BeOfType<ObjectDisposedException>();
             error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
@@ -85,6 +87,34 @@ namespace Neo4j.Driver.IntegrationTests
                 result.Keys.Should().Contain("Number");
                 result.Keys.Count.Should().Be(1);
             }
+        }
+
+        [RequireServerFact]
+        public async void ShouldResetRun()
+        {
+            var session = Driver.Session();
+            var exception = await ExceptionAsync(() => session.RunAsync(
+                new Statement("CALL test.driver.longRunningStatement({seconds})",
+                    new Dictionary<string, object> {{"seconds", 60}}), // will finish running in 2min 
+                new CancellationTokenSource(TimeSpan.Zero).Token));
+            exception.Should().BeOfType<TransientException>();
+            await session.CloseAsync();
+        }
+
+        [RequireServerFact]
+        public async void ShouldResetStreaming()
+        {
+            var session = Driver.Session();
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cursor = await session.RunAsync(
+                new Statement("CALL test.driver.longStreamingResult({seconds})",
+                    new Dictionary<string, object> {{"seconds", 60}}), // will finish running in 2min 
+                cancellationTokenSource.Token);
+            cursor.Keys.Should().NotBeNullOrEmpty();
+            cancellationTokenSource.Cancel(); // cancel after the first record arrives with keys
+            var exception = await ExceptionAsync(() => cursor.SummaryAsync());
+            exception.Should().BeOfType<ClientException>();
+            await session.CloseAsync();
         }
 
         [RequireServerFact]
@@ -107,7 +137,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var session = Driver.Session())
             {
-                var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
+                var ex = Exception(() => session.Run("Invalid Cypher").Consume());
                 ex.Should().BeOfType<ClientException>();
                 ex.Message.Should().StartWith("Invalid input");
             }
@@ -123,7 +153,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var session = Driver.Session())
             {
-                var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
+                var ex = Exception(() => session.Run("Invalid Cypher").Consume());
                 ex.Should().BeOfType<ClientException>();
                 ex.Message.Should().StartWith("Invalid input");
                 var result = session.Run("RETURN 1");
@@ -140,7 +170,7 @@ namespace Neo4j.Driver.IntegrationTests
                 // When failed to run a tx with consume
                 using (var tx = session.BeginTransaction())
                 {
-                    var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
+                    var ex = Exception(() => tx.Run("Invalid Cypher").Consume());
                     ex.Should().BeOfType<ClientException>();
                     ex.Message.Should().StartWith("Invalid input");
                 }
@@ -165,7 +195,7 @@ namespace Neo4j.Driver.IntegrationTests
                 tx.Run("CREATE (a { name: 'lizhen' })");
                 tx.Run("Invalid Cypher");
                 tx.Success();
-                var ex = Record.Exception(() => tx.Dispose());
+                var ex = Exception(() => tx.Dispose());
                 ex.Should().BeOfType<ClientException>();
                 ex.Message.Should().StartWith("Invalid input");
 
@@ -187,7 +217,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             using (var tx = session.BeginTransaction())
             {
-                var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
+                var ex = Exception(() => tx.Run("Invalid Cypher").Consume());
                 ex.Should().BeOfType<ClientException>();
                 ex.Message.Should().StartWith("Invalid input");
             }

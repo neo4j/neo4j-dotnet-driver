@@ -28,6 +28,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
 
         private static readonly string HomeDir = Path.Combine(BoltkitHelper.TargetDir, "neo4jhome");
+        private static readonly string PlugInDir = Path.Combine(HomeDir, "plugins");
 
         private const string Password = "neo4j";
         private const string HttpUri = "http://localhost:7474";
@@ -60,6 +61,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             _commandRunner.RunCommand("neoctrl-create-user", HomeDir, "neo4j", Password);
             UpdateSettings(new Dictionary<string, string> { {ListenAddr, Ipv6EnabledAddr} });
+            UpdateProcedures(Path.Combine(BoltStubServer.ScriptSourcePath, "longRunningStatement.jar"));
         }
 
         public ISet<ISingleInstance> Start()
@@ -97,19 +99,15 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             Neo4jSettingsHelper.UpdateSettings(HomeDir, keyValuePair);
         }
 
-        public void EnsureProcedures(string sourceProcedureJarPath)
+        private void UpdateProcedures(string sourceProcedureJarPath)
         {
             var jarName = new DirectoryInfo(sourceProcedureJarPath).Name;
-
-            var pluginFolderPath = Path.Combine(HomeDir, "plugins");
-            var destProcedureJarPath = Path.Combine(pluginFolderPath, jarName);
+            var destProcedureJarPath = Path.Combine(PlugInDir, jarName);
 
             if (!File.Exists(destProcedureJarPath))
             {
-                Stop();
                 _commandRunner.Debug($"Adding procedure {jarName}");
                 File.Copy(sourceProcedureJarPath, destProcedureJarPath);
-                Start();
             }
         }
     }

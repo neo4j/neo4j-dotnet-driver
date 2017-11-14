@@ -1,0 +1,11 @@
+!: AUTO INIT
+
+S: SUCCESS {"server": "Neo4j/3.2.2"}
+C: RUN "Infinite" {}
+   PULL_ALL
+   RESET
+S: FAILURE {"code": "Neo.ClientError.General.Unknown", "message": "Stopped!"}
+   IGNORED
+   SUCCESS {}
+C: RESET
+S: SUCCESS {}

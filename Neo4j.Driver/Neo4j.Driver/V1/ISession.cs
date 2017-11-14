@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.V1
@@ -241,8 +242,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(Statement statement);
-
+        Task<IStatementResultCursor> RunAsync(Statement statement, CancellationToken token = default(CancellationToken) );
     }
 
     /// <summary>

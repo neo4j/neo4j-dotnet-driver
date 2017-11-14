@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Collections.Generic;
 using System;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Result
@@ -25,10 +26,12 @@ namespace Neo4j.Driver.Internal.Result
         protected bool StatementProcessed { get; set; } = false;
         protected List<string> Keys { get; } = new List<string>();
         protected SummaryCollector SummaryCollector { get; }
+        private IConnection Connection { get; }
 
-        protected ResultBuilderBase(Statement statement, IServerInfo server)
+        protected ResultBuilderBase(Statement statement, IConnection connection)
         {
-            SummaryCollector = new SummaryCollector(statement, server);
+            SummaryCollector = new SummaryCollector(statement, connection?.Server);
+            Connection = connection;
         }
 
         public void CollectFields(IDictionary<string, object> meta)
@@ -74,6 +77,7 @@ namespace Neo4j.Driver.Internal.Result
         {
             NoMoreRecords();// an error received, so the result is broken
             StatementProcessed = true;
+            Connection?.AckFailure();
         }
 
         public void DoneIgnored()

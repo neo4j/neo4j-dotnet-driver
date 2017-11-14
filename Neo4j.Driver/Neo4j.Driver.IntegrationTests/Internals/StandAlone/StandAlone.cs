@@ -84,25 +84,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             NewBoltDriver();
         }
 
-        /// <summary>
-        /// This method will not restart the server if the file already exist in path
-        /// </summary>
-        /// <param name="sourceProcedureJarPath"></param>
-        public void RestartServerWithProcedures(string sourceProcedureJarPath)
-        {
-            DisposeBoltDriver();
-            try
-            {
-                _installer.EnsureProcedures(sourceProcedureJarPath);
-            }
-            catch
-            {
-                try { Dispose(); } catch { /*Do nothing*/ }
-                throw;
-            }
-            NewBoltDriver();
-        }
-
         public void Dispose()
         {
             DisposeBoltDriver();

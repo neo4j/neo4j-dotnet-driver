@@ -55,10 +55,10 @@ namespace Neo4j.Driver.Internal
             return $"[{string.Join(", ", output)}]";
         }
 
-        public static string ToContentString<K>(this IEnumerable<K> enumerable)
+        public static string ToContentString<K>(this IEnumerable<K> enumerable, string separator = ", ")
         {
             var output = enumerable.Select(item => $"{item}");
-            return $"[{string.Join(", ", output)}]";
+            return $"[{string.Join(separator, output)}]";
         }
 
         public static string ValueToString(this object o)

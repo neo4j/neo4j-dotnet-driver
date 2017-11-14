@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -219,6 +220,30 @@ namespace Neo4j.Driver.Tests
 
                 mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), rb), Times.Once);
                 mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<PullAllMessage>(), rb), Times.Once);
+            }
+        }
+
+        public class ReceiveOneAsync
+        {
+            [Fact]
+            public async void ShouldEnqueueResetMessageOnCancellation()
+            {
+                // Given
+                var messages = new List<IRequestMessage>();
+                var mockClient = new Mock<ISocketClient>();
+                mockClient.Setup(x => x.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()))
+                    .Callback<IEnumerable<IRequestMessage>>(x => messages.AddRange(x)).Returns(Task.CompletedTask);
+                mockClient.Setup(x => x.ReceiveOneAsync(It.IsAny<IMessageResponseHandler>()))
+                    .Returns(Task.Delay(TimeSpan.FromSeconds(1))); // pause for 1s to wait for cancel
+
+                var con = NewSocketConnection(mockClient.Object);
+
+                // When
+                await con.ReceiveOneAsync(new CancellationTokenSource(TimeSpan.Zero).Token); // immediately cancel
+
+                // Then
+                messages.Count.Should().Be(1);
+                messages[0].Should().BeAssignableTo<ResetMessage>();
             }
         }
 
