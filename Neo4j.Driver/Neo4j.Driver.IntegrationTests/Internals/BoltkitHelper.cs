@@ -18,15 +18,18 @@
 using System;
 using System.IO;
 using System.Linq;
+using static Neo4j.Driver.Internal.Routing.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class BoltkitHelper
     {
-        public const string TestRequireBoltkit = "Boltkit required to run test not accessible";
-        public static readonly string BoltkitArgs = Environment.GetEnvironmentVariable("NeoctrlArgs") ?? "-e 3.2.7";
+        public const string TestRequireBoltkit = "Test is skipped due to Boltkit not accessible";
+        public const string TestRequireEnterprise = "Test is skipped due to enterprise server is not accessible";
+        public static readonly string BoltkitArgs = Environment.GetEnvironmentVariable("NeoctrlArgs") ?? "3.2.1";
         public static readonly string TargetDir = new DirectoryInfo("../../../../Target").FullName;
         private static BoltkitStatus _boltkitAvailable = BoltkitStatus.Unknown;
+        private static Tuple<bool, string> _isClusterSupported = null;
         private static readonly object _syncLock = new object();
 
         private enum BoltkitStatus
@@ -50,6 +53,43 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return _boltkitAvailable == BoltkitStatus.Installed;
         }
 
+        public static Tuple<bool, string> IsClusterSupported()
+        {
+            if (_isClusterSupported != null)
+            {
+                return _isClusterSupported;
+            }
+
+            var supported = true;
+            var message = "All good to go";
+
+            if (!IsBoltkitAvailable())
+            {
+                supported = false;
+                message = TestRequireBoltkit;
+            }
+            else if (!IsEnterprise())
+            {
+                supported = false;
+                message = TestRequireEnterprise;
+            }
+            else if (!(Version(ServerVersion()) >= V3_1_0))
+            {
+                supported = false;
+                message = $"Server {ServerVersion()} does not support causal cluster";
+            }
+
+            _isClusterSupported = new Tuple<bool, string>(supported, message);
+            return _isClusterSupported;
+        }
+
+        public static string ServerVersion()
+        {
+            // the last of the args is the version to installed
+            var strings = BoltkitArgs.Split(null);
+            return strings.Last();
+        }
+
         private static BoltkitStatus TestBoltkitAvailability()
         {
             try
@@ -64,11 +104,10 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return BoltkitStatus.Installed;
         }
 
-        public static string ServerVersion()
+        private static bool IsEnterprise()
         {
-            // the last of the args is the version to installed
             var strings = BoltkitArgs.Split(null);
-            return strings.Last();
+            return strings.Contains("-e");
         }
     }
 }
