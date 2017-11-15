@@ -856,7 +856,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 var result = session.Run("MATCH (n) DETACH DELETE n");
                 result.Consume();
-
             }
         }
 

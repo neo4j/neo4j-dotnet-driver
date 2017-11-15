@@ -26,7 +26,6 @@ namespace Neo4j.Driver.IntegrationTests
     [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class DirectDriverIT : IDisposable
     {
-        public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
         protected ITestOutputHelper Output { get; }
         protected StandAlone Server { get; }
         protected Uri ServerEndPoint { get; }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
@@ -117,7 +118,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 if (_process.ExitCode != 0 || _stdErr.Length > 0)
                 {
                     throw new InvalidOperationException(
-                        $"Failed to execute `{GetProcessCommandLine(_process)}` due to error:{Environment.NewLine}{_stdErr}.");
+                        $"Failed to execute `{GetProcessCommandLine(_process)}` due to error:{Environment.NewLine}{_stdErr}" +
+                        $"{Environment.NewLine}output:{Environment.NewLine}{_stdOut.ToContentString($"{Environment.NewLine}")}");
                 }
                 
                 return _stdOut.ToArray();
