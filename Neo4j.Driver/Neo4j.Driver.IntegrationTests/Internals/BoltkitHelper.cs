@@ -18,19 +18,55 @@
 using System;
 using System.IO;
 using System.Linq;
+using static System.Environment;
 using static Neo4j.Driver.Internal.Routing.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class BoltkitHelper
+    public static class BoltkitHelper
     {
-        public const string TestRequireBoltkit = "Test is skipped due to Boltkit not accessible";
-        public const string TestRequireEnterprise = "Test is skipped due to enterprise server is not accessible";
-        public static readonly string BoltkitArgs = Environment.GetEnvironmentVariable("NeoctrlArgs") ?? "3.2.1";
         public static readonly string TargetDir = new DirectoryInfo("../../../../Target").FullName;
+
+        public const string TestRequireBoltkit = "Test is skipped due to Boltkit not accessible";
+        private const string TestRequireEnterprise = "Test is skipped due to enterprise server is not accessible";
+
+        private static readonly string DefaultServerVersion = "3.2.7";
+        private static string _boltkitArgs;
         private static BoltkitStatus _boltkitAvailable = BoltkitStatus.Unknown;
-        private static Tuple<bool, string> _isClusterSupported = null;
+        private static Tuple<bool, string> _isClusterSupported;
         private static readonly object _syncLock = new object();
+
+        public static string BoltkitArgs
+        {
+            get
+            {
+                if (_boltkitArgs != null)
+                {
+                    return _boltkitArgs;
+                }
+                // User could always overwrite the env var
+                var envVar = GetEnvironmentVariable("NeoctrlArgs");
+                if (envVar != null)
+                {
+                    _boltkitArgs = envVar;
+                }
+                else // If a user did not specify any value then we compute a default one based on if he has access to the enterprise server
+                {
+                    if (GetEnvironmentVariable("AWS_ACCESS_KEY_ID") != null &&
+                        GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") != null)
+                    {
+                        // enterprise server
+                        _boltkitArgs = $"-e {DefaultServerVersion}";
+                    }
+                    else
+                    {
+                        // community server
+                        _boltkitArgs = DefaultServerVersion;
+                    }
+                }
+                return _boltkitArgs;
+            }
+        }
 
         private enum BoltkitStatus
         {
