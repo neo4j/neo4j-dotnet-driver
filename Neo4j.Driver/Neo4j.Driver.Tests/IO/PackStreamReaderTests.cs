@@ -299,6 +299,17 @@ namespace Neo4j.Driver.Tests.IO
         {
 
             [Fact]
+            public void ShouldReadZeroLengthBytes()
+            {
+                var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes8, 0);
+                var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
+
+                var real = reader.ReadBytes();
+
+                real.Length.Should().Be(0);
+            }
+
+            [Fact]
             public void ShouldReadBytes8()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes8, 1, 0x61);
