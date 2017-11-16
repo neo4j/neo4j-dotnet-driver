@@ -137,16 +137,7 @@ namespace Neo4j.Driver.Tests
         public static Mock<Stream> CreateWriteStreamMock(Mock<ITcpSocketClient> mock)
         {
             var mockedStream = new Mock<Stream>();
-
-            //mockedStream.Setup(x => x.Seek(It.IsAny<long>(), It.IsAny<SeekOrigin>())).CallBase();
             mockedStream.Setup(x => x.CanWrite).Returns(true);
-            //mockedStream.Setup(x => x.CanWrite).CallBase();
-            //mockedStream.Setup(x => x.Length).CallBase();
-            //mockedStream.Setup(x => x.Position).CallBase();
-            //mockedStream.Setup(x => x.NextByte()).CallBase();
-            //mockedStream.Setup(x => x.ToArray()).CallBase();
-            //mockedStream.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>())).CallBase();
-
             mock.Setup(c => c.WriteStream).Returns(mockedStream.Object);
 
             return mockedStream;

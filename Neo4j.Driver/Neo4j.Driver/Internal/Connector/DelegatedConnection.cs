@@ -33,6 +33,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         public abstract void OnError(Exception error);
 
+        private void OnError(AggregateException error)
+        {
+            OnError(error.GetBaseException());
+        }
+
         public void Sync()
         {
             try
@@ -47,44 +52,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task SyncAsync()
         {
-            var tcs = new TaskCompletionSource<bool>();
-
-            try
-            {
-                // TODO: Create a helper for this pattern
-                Delegate.SyncAsync().ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        try
-                        {
-                            OnError(t.Exception);
-                        }
-                        catch (AggregateException exc)
-                        {
-                            tcs.SetException(exc.GetBaseException());
-                        }
-                        catch (Exception exc)
-                        {
-                            tcs.SetException(exc);
-                        }
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        tcs.SetCanceled();
-                    }
-                    else
-                    {
-                        tcs.SetResult(true);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-
-            return tcs.Task;
+            return TaskWithErrorHandling(()=>Delegate.SyncAsync());
         }
 
         public void Send()
@@ -101,44 +69,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task SendAsync()
         {
-            var tcs = new TaskCompletionSource<bool>();
-
-            try
-            {
-                // TODO: Create a helper for this pattern
-                Delegate.SendAsync().ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        try
-                        {
-                            OnError(t.Exception);
-                        }
-                        catch (AggregateException exc)
-                        {
-                            tcs.SetException(exc.GetBaseException());
-                        }
-                        catch (Exception exc)
-                        {
-                            tcs.SetException(exc);
-                        }
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        tcs.SetCanceled();
-                    }
-                    else
-                    {
-                        tcs.SetResult(true);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-
-            return tcs.Task;
+            return TaskWithErrorHandling(()=>Delegate.SendAsync());
         }
 
         public void ReceiveOne()
@@ -155,61 +86,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task ReceiveOneAsync()
         {
-            var tcs = new TaskCompletionSource<bool>();
-
-            try
-            {
-                Delegate.ReceiveOneAsync().ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        try
-                        {
-                            OnError(t.Exception);
-                        }
-                        catch (AggregateException exc)
-                        {
-                            tcs.SetException(exc.GetBaseException());
-                        }
-                        catch (Exception exc)
-                        {
-                            tcs.SetException(exc);
-                        }
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        tcs.SetCanceled();
-                    }
-                    else
-                    {
-                        tcs.SetResult(true);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-
-            return tcs.Task;
+            return TaskWithErrorHandling(()=>Delegate.ReceiveOneAsync());
         }
-
-        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
-            bool pullAll = true)
-        {
-            try
-            {
-                Delegate.Run(statement, parameters, resultBuilder, pullAll);
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
-        public virtual bool IsOpen => Delegate.IsOpen;
-
-        public IServerInfo Server => Delegate.Server;
 
         public void Init()
         {
@@ -225,43 +103,20 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task InitAsync()
         {
-            var tcs = new TaskCompletionSource<bool>();
+            return TaskWithErrorHandling(()=>Delegate.InitAsync());
+        }
 
+        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
+            bool pullAll = true)
+        {
             try
             {
-                Delegate.InitAsync().ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        try
-                        {
-                            OnError(t.Exception);
-                        }
-                        catch (AggregateException exc)
-                        {
-                            tcs.SetException(exc.GetBaseException());
-                        }
-                        catch (Exception exc)
-                        {
-                            tcs.SetException(exc);
-                        }
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        tcs.SetCanceled();
-                    }
-                    else
-                    {
-                        tcs.SetResult(true);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                Delegate.Run(statement, parameters, resultBuilder, pullAll);
             }
             catch (Exception e)
             {
                 OnError(e);
             }
-
-            return tcs.Task;
         }
 
         public void Reset()
@@ -287,7 +142,11 @@ namespace Neo4j.Driver.Internal.Connector
                 OnError(e);
             }
         }
-        
+
+        public virtual bool IsOpen => Delegate.IsOpen;
+
+        public IServerInfo Server => Delegate.Server;
+
         public virtual void Destroy()
         {
             Delegate.Destroy();
@@ -306,6 +165,47 @@ namespace Neo4j.Driver.Internal.Connector
         public virtual Task CloseAsync()
         {
             return Delegate.CloseAsync();
+        }
+
+        internal Task TaskWithErrorHandling(Func<Task> task)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            try
+            {
+                task().ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        try
+                        {
+                            OnError(t.Exception);
+                        }
+                        catch (AggregateException exc)
+                        {
+                            tcs.SetException(exc.GetBaseException());
+                        }
+                        catch (Exception exc)
+                        {
+                            tcs.SetException(exc);
+                        }
+                    }
+                    else if (t.IsCanceled)
+                    {
+                        tcs.SetCanceled();
+                    }
+                    else
+                    {
+                        tcs.SetResult(true);
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
+            }
+            catch (Exception e) // this is to catch whatever direct error in `task()` before returning a task
+            {
+                OnError(e);
+            }
+
+            return tcs.Task;
         }
     }
 }

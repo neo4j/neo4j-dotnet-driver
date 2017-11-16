@@ -103,6 +103,8 @@
     <Compile Include="AuthTokenTests.cs" />
     <Compile Include="BookmarkTests.cs" />
     <Compile Include="ConnectionValidatorTests.cs" />
+    <Compile Include="Connector\DelegatedConnectionTests.cs" />
+    <Compile Include="Connector\MockedMessagingClient.cs" />
     <Compile Include="Connector\TcpSocketClientTests.cs" />
     <Compile Include="IO\BoltReaderTests.cs" />
     <Compile Include="IO\BoltWriterTests.cs" />
