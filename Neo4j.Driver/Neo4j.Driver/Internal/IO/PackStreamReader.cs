@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Internal.IO
     internal class PackStreamReader: IPackStreamReader
     {
         private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
+        private static readonly byte[] EmptyByteArray = new byte[0];
 
         private readonly IDictionary<byte, IPackStreamStructHandler> _structHandlers;
 
@@ -221,6 +222,11 @@ namespace Neo4j.Driver.Internal.IO
 
         internal byte[] ReadBytes(int size)
         {
+            if (size == 0)
+            {
+                return EmptyByteArray;
+            }
+
             var heapBuffer = new byte[size];
             _stream.Read(heapBuffer);
             return heapBuffer;
