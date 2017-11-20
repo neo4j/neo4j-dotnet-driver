@@ -3,7 +3,14 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class ConnectionValidator
+    internal interface IConnectionValidator
+    {
+        bool IsConnectionReusable(IPooledConnection connection);
+        Task<bool> IsConnectionReusableAsync(IPooledConnection connection);
+        bool IsValid(IPooledConnection connection);
+    }
+
+    internal class ConnectionValidator : IConnectionValidator
     {
         private readonly TimeSpan _connIdleTimeout;
         private readonly TimeSpan _maxConnLifetime;

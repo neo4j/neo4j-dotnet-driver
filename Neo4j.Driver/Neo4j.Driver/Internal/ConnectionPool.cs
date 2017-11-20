@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal
         private readonly int _idlePoolSize;
         private readonly TimeSpan _connAcquisitionTimeout;
 
-        private readonly ConnectionValidator _connectionValidator;
+        private readonly IConnectionValidator _connectionValidator;
         private readonly ConnectionSettings _connectionSettings;
         private readonly BufferSettings _bufferSettings;
 
@@ -62,15 +62,11 @@ namespace Neo4j.Driver.Internal
         private ConnectionPoolStatistics _statistics;
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
-        internal int NumberOfAvailableConnections => _idleConnections.Count;
+        internal int NumberOfIdleConnections => _idleConnections.Count;
         internal int PoolSize => _poolSize;
 
         // for test only
         private readonly IConnection _fakeConnection;
-        internal bool DisposeCalled
-        {
-            set => Interlocked.Exchange(ref _poolStatus, Closed);
-        }
 
         internal int Status
         {
@@ -103,17 +99,22 @@ namespace Neo4j.Driver.Internal
 
         internal ConnectionPool(
             IConnection connection,
-            BlockingCollection<IPooledConnection> availableConnections = null,
+            BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ILogger logger = null,
             ConnectionPoolSettings poolSettings = null,
-            BufferSettings bufferSettings = null)
+            BufferSettings bufferSettings = null,
+            IConnectionValidator validator = null)
             : this(null, null, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig),
                   bufferSettings ?? new BufferSettings(Config.DefaultConfig), logger)
         {
             _fakeConnection = connection;
-            _idleConnections = availableConnections ?? new BlockingCollection<IPooledConnection>();
+            _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
+            if (validator != null)
+            {
+                _connectionValidator = validator;
+            }
         }
 
         private IPooledConnection CreateNewPooledConnection()
@@ -199,6 +200,18 @@ namespace Neo4j.Driver.Internal
             _statistics?.IncrementConnectionClosed();
         }
 
+        private async Task DestroyConnectionAsync(IPooledConnection conn)
+        {
+            DecrementPoolSize();
+            if (conn == null)
+            {
+                return;
+            }
+
+            _statistics?.IncrementConnectionToClose();
+            await conn.DestroyAsync().ConfigureAwait(false);
+            _statistics?.IncrementConnectionClosed();
+        }
 
         /// <summary>
         /// Returns true if pool size is successfully increased, otherwise false.
@@ -220,19 +233,6 @@ namespace Neo4j.Driver.Internal
         private void DecrementPoolSize()
         {
             Interlocked.Decrement(ref _poolSize);
-        }
-
-        private async Task DestroyConnectionAsync(IPooledConnection conn)
-        {
-            DecrementPoolSize();
-            if (conn == null)
-            {
-                return;
-            }
-
-            _statistics?.IncrementConnectionToClose();
-            await conn.DestroyAsync().ConfigureAwait(false);
-            _statistics?.IncrementConnectionClosed();
         }
 
         public IConnection Acquire(AccessMode mode)
@@ -302,7 +302,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     _inUseConnections.TryAdd(connection);
-                    if (IsZombieOrClosed)
+                    if (IsClosed)
                     {
                         if (_inUseConnections.TryRemove(connection))
                         {
@@ -390,7 +390,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     _inUseConnections.TryAdd(connection);
-                    if (IsZombieOrClosed)
+                    if (IsClosed)
                     {
                         if (_inUseConnections.TryRemove(connection))
                         {
@@ -575,7 +575,7 @@ namespace Neo4j.Driver.Internal
             return TaskExtensions.GetCompletedTask();
         }
 
-        public void Active()
+        public void Activate()
         {
             Interlocked.CompareExchange(ref _poolStatus, Open, Zombie);
         }

@@ -8,7 +8,7 @@ namespace Neo4j.Driver.Internal
     internal class ConnectionPoolStatistics : IStatisticsProvider, IDisposable
     {
         public int InUseConns => _pool?.NumberOfInUseConnections ?? _inUseConns;
-        public int AvailableConns => _pool?.NumberOfAvailableConnections ?? _availableConns;
+        public int AvailableConns => _pool?.NumberOfIdleConnections ?? _availableConns;
         public long ConnCreated => _connCreated;
         public long ConnClosed => _connClosed;
         public long ConnToCreate => _connToCreate;

@@ -21,6 +21,6 @@ namespace Neo4j.Driver.Internal
     {
         int NumberOfInUseConnections { get; }
         void Deactivate();
-        void Active();
+        void Activate();
     }
 }
