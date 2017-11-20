@@ -35,11 +35,17 @@ namespace Neo4j.Driver.Tests
 {
     public class ConnectionPoolTests
     {
-        internal static ConnectionPool NewConnectionPoolWithNoConnectionTimeoutValidation(
-            IConnection connection,
+        internal static ConnectionPool NewConnectionPool(
+            IConnection connection = null,
             BlockingCollection<IPooledConnection> availableConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null)
         {
+            if(connection == null)
+            {
+                var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.IsOpen).Returns(true);
+                connection = connectionMock.Object;
+            }
             var testConfigWithIdleTimeoutAndLifetimeCheckDisabled = new Config
             {
                 MaxConnectionLifetime = Config.InfiniteInterval,
@@ -48,6 +54,7 @@ namespace Neo4j.Driver.Tests
             return new ConnectionPool(connection, availableConnections, inUseConnections,
                 poolSettings: new ConnectionPoolSettings(testConfigWithIdleTimeoutAndLifetimeCheckDisabled));
         }
+
         public class AcquireMethod
         {
             private readonly ITestOutputHelper _output;
@@ -263,7 +270,7 @@ namespace Neo4j.Driver.Tests
 
                 conns.Add(unhealthyMock.Object);
                 conns.Add(healthyMock.Object);
-                var pool = NewConnectionPoolWithNoConnectionTimeoutValidation(MockedConnection, conns);
+                var pool = NewConnectionPool(MockedConnection, conns);
 
                 pool.NumberOfAvailableConnections.Should().Be(2);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -373,7 +380,7 @@ namespace Neo4j.Driver.Tests
                     mockConns.Enqueue(mock);
                 }
 
-                var pool = NewConnectionPoolWithNoConnectionTimeoutValidation(MockedConnection, conns);
+                var pool = NewConnectionPool(MockedConnection, conns);
 
                 pool.NumberOfAvailableConnections.Should().Be(numberOfThreads);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -437,7 +444,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var conns = new BlockingCollection<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
-                var pool = NewConnectionPoolWithNoConnectionTimeoutValidation(MockedConnection, conns);
+                var pool = NewConnectionPool(MockedConnection, conns);
 
                 pool.NumberOfAvailableConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -1133,5 +1140,186 @@ namespace Neo4j.Driver.Tests
 
         }
 
+        public class PoolStateTests
+        {
+            // open
+            [Fact]
+            public void FromOpenViaAcquireToOpen()
+            {
+                var pool = NewConnectionPool();
+                pool.Acquire();
+                pool.Status.Should().Be(PoolStatus.Open);
+            }
+
+            [Fact]
+            public void FromOpenViaReleaseToOpen()
+            {
+                var idleQueue = new BlockingCollection<IPooledConnection>();
+                var inUseConnections = new ConcurrentSet<IPooledConnection>();
+                var conn = new Mock<IPooledConnection>().Object;
+                inUseConnections.TryAdd(conn);
+                var pool = NewConnectionPool(null, idleQueue, inUseConnections);
+
+                pool.Release(conn);
+
+                idleQueue.Count.Should().Be(1);
+                inUseConnections.Count.Should().Be(0);
+                pool.Status.Should().Be(PoolStatus.Open);
+            }
+
+            [Fact]
+            public void FromOpenViaDisposeToClosed()
+            {
+                var pool = NewConnectionPool();
+                pool.Dispose();
+                pool.Status.Should().Be(PoolStatus.Closed);
+            }
+
+            [Fact]
+            public void FromOpenViaActiveToOpen()
+            {
+                var pool = NewConnectionPool();
+                pool.Active();
+                pool.Status.Should().Be(PoolStatus.Open);
+            }
+
+            [Fact]
+            public void FromOpenViaDeactiveToZombie()
+            {
+                var pool = NewConnectionPool();
+                pool.Deactivate();
+                pool.Status.Should().Be(PoolStatus.Zombie);
+            }
+
+            // zombie
+            [Fact]
+            public void FromZombieViaAcquireThrowsError()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Zombie;
+
+                var exception = Record.Exception(()=>pool.Acquire());
+
+                exception.Should().BeOfType<ObjectDisposedException>();
+                pool.Status.Should().Be(PoolStatus.Zombie);
+            }
+
+            [Fact]
+            public void FromZombieViaReleaseToZombie()
+            {
+                var idleQueue = new BlockingCollection<IPooledConnection>();
+                var inUseConnections = new ConcurrentSet<IPooledConnection>();
+
+                var conn = new Mock<IPooledConnection>().Object;
+                inUseConnections.TryAdd(conn);
+
+                var pool = NewConnectionPool(null, idleQueue, inUseConnections);
+                pool.Status = PoolStatus.Zombie;
+
+                pool.Release(conn);
+
+                inUseConnections.Count.Should().Be(0);
+                idleQueue.Count.Should().Be(0);
+                pool.Status.Should().Be(PoolStatus.Zombie);
+            }
+
+            [Fact]
+            public void FromZombieViaDisposeToClosed()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Zombie;
+
+                pool.Dispose();
+
+                pool.Status.Should().Be(PoolStatus.Closed);
+            }
+
+            [Fact]
+            public void FromZombieViaActiveToOpen()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Zombie;
+
+                pool.Active();
+
+                pool.Status.Should().Be(PoolStatus.Open);
+            }
+
+            [Fact]
+            public void FromZombieViaDeactiveToZombie()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Zombie;
+
+                pool.Deactivate();
+
+                pool.Status.Should().Be(PoolStatus.Zombie);
+            }
+
+            //closed
+            [Fact]
+            public void FromClosedViaAcquireThrowsError()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Closed;
+
+                var exception = Record.Exception(()=>pool.Acquire());
+
+                exception.Should().BeOfType<ObjectDisposedException>();
+                pool.Status.Should().Be(PoolStatus.Closed);
+            }
+
+            [Fact]
+            public void FromClosedViaReleaseToClosed()
+            {
+                var idleQueue = new BlockingCollection<IPooledConnection>();
+                var inUseConnections = new ConcurrentSet<IPooledConnection>();
+
+                var conn = new Mock<IPooledConnection>().Object;
+                inUseConnections.TryAdd(conn);
+
+                var pool = NewConnectionPool(null, idleQueue, inUseConnections);
+                pool.Status = PoolStatus.Closed;
+
+                pool.Release(conn);
+
+                inUseConnections.Count.Should().Be(1);
+                idleQueue.Count.Should().Be(0);
+                pool.Status.Should().Be(PoolStatus.Closed);
+            }
+
+            [Fact]
+            public void FromClosedViaDisposeToClosed()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Closed;
+
+                pool.Dispose();
+
+                pool.Status.Should().Be(PoolStatus.Closed);
+            }
+
+            [Fact]
+            public void FromClosedViaActiveToClosed()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Closed;
+
+                pool.Active();
+
+                pool.Status.Should().Be(PoolStatus.Closed);
+            }
+
+            [Fact]
+            public void FromClosedViaDeactiveToClosed()
+            {
+                var pool = NewConnectionPool();
+                pool.Status = PoolStatus.Closed;
+
+                pool.Deactivate();
+
+                pool.Status.Should().Be(PoolStatus.Closed);
+            }
+        }
     }
 }

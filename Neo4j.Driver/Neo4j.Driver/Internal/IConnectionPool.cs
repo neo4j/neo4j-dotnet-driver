@@ -20,5 +20,7 @@ namespace Neo4j.Driver.Internal
     internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
     {
         int NumberOfInUseConnections { get; }
+        void Deactivate();
+        void Active();
     }
 }

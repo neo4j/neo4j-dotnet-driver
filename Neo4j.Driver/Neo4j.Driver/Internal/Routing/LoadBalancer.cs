@@ -21,7 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
-using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
+using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -114,9 +114,9 @@ namespace Neo4j.Driver.Internal.Routing
             _clusterConnectionPool.Add(uris);
         }
 
-        public void UpdateConnectionPool(IEnumerable<Uri> uris)
+        public void UpdateConnectionPool(IEnumerable<Uri> added, IEnumerable<Uri> removed)
         {
-            _clusterConnectionPool.Update(uris);
+            _clusterConnectionPool.Update(added, removed);
         }
 
         public IConnection CreateClusterConnection(Uri uri)
@@ -276,7 +276,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private void ThrowObjectDisposedException()
         {
-            FailedToCreateConnection(this);
+            FailedToAcquireConnection(this);
         }
 
         public override string ToString()

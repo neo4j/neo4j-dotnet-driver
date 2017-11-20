@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(mockedConnectionPool.Object, connectionPoolDict);
 
                 // When
-                pool.Update(new[] {ServerUri});
+                pool.Update(new[] {ServerUri}, new Uri[0]);
 
                 // Then
                 connectionPoolDict.Count.Should().Be(1);
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Fact]
-            public void ShouldRemoveNewlyCreatedPoolnIfDisposeAlreadyCalled()
+            public void ShouldRemoveNewlyCreatedPoolIfDisposeAlreadyCalled()
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
@@ -157,7 +157,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 pool.Dispose();
-                var exception = Record.Exception(() => pool.Update(new[] {ServerUri}));
+                var exception = Record.Exception(() => pool.Update(new[] {ServerUri}, new Uri[0]));
 
                 // Then
                 mockedConnectionPool.Verify(x => x.Close());
@@ -176,7 +176,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(mockedConnectionPool.Object, connectionPoolDict);
 
                 // When
-                pool.Update(new Uri[0]);
+                pool.Update(new Uri[0], new[] {ServerUri});
 
                 // Then
                 connectionPoolDict.Count.Should().Be(0);

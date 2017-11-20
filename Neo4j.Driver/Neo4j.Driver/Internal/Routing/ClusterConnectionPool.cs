@@ -120,16 +120,16 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        public void Update(IEnumerable<Uri> servers)
+        public void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed)
         {
             foreach (var uri in _pools.Keys)
             {
-                if (!servers.Contains(uri))
+                if (!added.Contains(uri))
                 {
                     Purge(uri);
                 }
             }
-            foreach (var uri in servers)
+            foreach (var uri in added)
             {
                 Add(uri);
             }
@@ -144,7 +144,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        public Task PurgeAsync(Uri uri)
+        private Task PurgeAsync(Uri uri)
         {
             var removed = _pools.TryRemove(uri, out var toRemove);
             if (removed)
@@ -157,8 +157,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public int NumberOfInUseConnections(Uri uri)
         {
-            IConnectionPool pool;
-            if (_pools.TryGetValue(uri, out pool))
+            if (_pools.TryGetValue(uri, out var pool))
             {
                 return pool.NumberOfInUseConnections;
             }

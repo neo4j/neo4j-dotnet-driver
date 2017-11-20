@@ -93,9 +93,8 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var routingTable = UpdateRoutingTableWithInitialUriFallback(new HashSet<Uri> { _seedUri });
-                _poolManager.UpdateConnectionPool(routingTable.All());
-                _routingTable = routingTable;
-                _logger?.Info($"Updated routingTable to be {_routingTable}");
+                Update(routingTable);
+
             }
         }
 
@@ -118,15 +117,26 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(new HashSet<Uri> { _seedUri }).ConfigureAwait(false);
-                _poolManager.UpdateConnectionPool(routingTable.All());
-                _routingTable = routingTable;
-                _logger?.Info($"Updated routingTable to be {_routingTable}");
+                Update(routingTable);
             }
             finally
             {
                 // no matter whether we succes to update or not, we release the lock
                 _semaphore.Release();
             }
+        }
+
+        private void Update(IRoutingTable newTable)
+        {
+            var added = newTable.All();
+            added.ExceptWith(_routingTable.All());
+            var removed = _routingTable.All();
+            removed.ExceptWith(newTable.All());
+
+            _poolManager.UpdateConnectionPool(added, removed);
+            _routingTable = newTable;
+
+            _logger?.Info($"Updated routingTable to be {_routingTable}");
         }
 
         private bool IsRoutingTableStale(IRoutingTable routingTable, AccessMode mode = AccessMode.Read)
