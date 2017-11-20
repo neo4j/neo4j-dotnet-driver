@@ -103,13 +103,10 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterFactAttribute()
         {
-            if (!IsBoltkitAvailable())
+            var isClusterSupported = IsClusterSupported();
+            if (!isClusterSupported.Item1)
             {
-                Skip = TestRequireBoltkit;
-            }
-            if (!(Version(ServerVersion()) >= V3_1_0))
-            {
-                Skip = $"Server {ServerVersion()} does not support causal cluster";
+                Skip = isClusterSupported.Item2;
             }
         }
     }
@@ -121,13 +118,10 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterTheoryAttribute()
         {
-            if (!IsBoltkitAvailable())
+            var isClusterSupported = IsClusterSupported();
+            if (!isClusterSupported.Item1)
             {
-                Skip = TestRequireBoltkit;
-            }
-            if (!(Version(ServerVersion()) >= V3_1_0))
-            {
-                Skip = $"Server {ServerVersion()} does not support causal cluster";
+                Skip = isClusterSupported.Item2;
             }
         }
     }

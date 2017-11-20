@@ -26,6 +26,11 @@ namespace Neo4j.Driver.IntegrationTests
 
         public StandAloneIntegrationTestFixture()
         {
+            if (!BoltkitHelper.IsBoltkitAvailable())
+            {
+                return;
+            }
+
             try
             {
                 StandAlone = new StandAlone();
@@ -49,6 +54,12 @@ namespace Neo4j.Driver.IntegrationTests
 
         public CausalClusterIntegrationTestFixture()
         {
+            var isClusterSupported = BoltkitHelper.IsClusterSupported();
+            if (!isClusterSupported.Item1)
+            {
+                return;
+            }
+
             try
             {
                 Cluster = new CausalCluster();

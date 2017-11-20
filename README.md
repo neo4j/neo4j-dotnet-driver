@@ -33,7 +33,7 @@ Snapshot builds are available at our [MyGet feed](https://www.myget.org/feed/neo
 
 ## Visual Studio Version
 
-The driver is written in C# 6 so will require Visual Studio 2015 (community edition).
+The driver is written in C# 7 so will require Visual Studio 2017 (community edition).
 
 ## Integration Tests
 
@@ -44,7 +44,14 @@ They can fail for three main reasons:
 2. The tests aren't run as Administrator (you'll need to run Visual Studio as administrator)
 3. You have an instance of Neo4j already installed / running on your local machine.
 
+The database installation uses boltkit `neoctr-install` command to install the database.
+The integration tests could pass parameters to this command by setting environment variable `NeoctrlArgs`.
+
 ## Run tests
 The simplest way to run all tests from command line is to run `runTests.ps1` powershell script:
 
 	.\Neo4j.Driver\runTests.ps1
+
+Any parameter to this powershell script will be used to reset environment variable `NeoctrlArgs`:
+
+	.\Neo4j.Driver\runTests.ps1 -e 3.3.0
