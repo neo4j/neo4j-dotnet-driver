@@ -77,8 +77,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public IConnection Acquire(Uri uri)
         {
-            IConnectionPool pool;
-            if (!_pools.TryGetValue(uri, out pool))
+            if (!_pools.TryGetValue(uri, out var pool))
             {
                 return null;
             }
@@ -89,8 +88,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public Task<IConnection> AcquireAsync(Uri uri)
         {
-            IConnectionPool pool;
-            if (!_pools.TryGetValue(uri, out pool))
+            if (!_pools.TryGetValue(uri, out var pool))
             {
                 return Task.FromResult((IConnection)null);
             }
@@ -122,16 +120,48 @@ namespace Neo4j.Driver.Internal.Routing
 
         public void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed)
         {
-            foreach (var uri in _pools.Keys)
+            foreach (var uri in added)
             {
-                if (!added.Contains(uri))
+                if (_pools.ContainsKey(uri))
+                {
+                    _pools[uri].Activate();
+                }
+                else
+                {
+                    Add(uri);
+                }
+            }
+            foreach (var uri in removed)
+            {
+                _pools[uri].Deactivate();
+                if (_pools[uri].NumberOfInUseConnections == 0)
                 {
                     Purge(uri);
                 }
             }
+        }
+
+        public async Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
+        {
             foreach (var uri in added)
             {
-                Add(uri);
+                if (_pools.ContainsKey(uri))
+                {
+                    _pools[uri].Activate();
+                }
+                else
+                {
+                    Add(uri);
+                }
+            }
+            // TODO chain this part and use task.waitAll
+            foreach (var uri in removed)
+            {
+                await _pools[uri].DeactivateAsync().ConfigureAwait(false);
+                if (_pools[uri].NumberOfInUseConnections == 0)
+                {
+                    await PurgeAsync(uri).ConfigureAwait(false);
+                }
             }
         }
 

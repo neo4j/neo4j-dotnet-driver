@@ -117,7 +117,7 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(new HashSet<Uri> { _seedUri }).ConfigureAwait(false);
-                Update(routingTable);
+                await UpdateAsync(routingTable).ConfigureAwait(false);
             }
             finally
             {
@@ -134,6 +134,19 @@ namespace Neo4j.Driver.Internal.Routing
             removed.ExceptWith(newTable.All());
 
             _poolManager.UpdateConnectionPool(added, removed);
+            _routingTable = newTable;
+
+            _logger?.Info($"Updated routingTable to be {_routingTable}");
+        }
+
+        private async Task UpdateAsync(IRoutingTable newTable)
+        {
+            var added = newTable.All();
+            added.ExceptWith(_routingTable.All());
+            var removed = _routingTable.All();
+            removed.ExceptWith(newTable.All());
+
+            await _poolManager.UpdateConnectionPoolAsync(added, removed).ConfigureAwait(false);
             _routingTable = newTable;
 
             _logger?.Info($"Updated routingTable to be {_routingTable}");

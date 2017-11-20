@@ -15,12 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading.Tasks;
+
 namespace Neo4j.Driver.Internal
 {
     internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
     {
         int NumberOfInUseConnections { get; }
         void Deactivate();
+        Task DeactivateAsync();
         void Activate();
     }
 }

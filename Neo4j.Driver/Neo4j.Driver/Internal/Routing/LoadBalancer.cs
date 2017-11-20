@@ -119,6 +119,11 @@ namespace Neo4j.Driver.Internal.Routing
             _clusterConnectionPool.Update(added, removed);
         }
 
+        public Task UpdateConnectionPoolAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
+        {
+            return _clusterConnectionPool.UpdateAsync(added, removed);
+        }
+
         public IConnection CreateClusterConnection(Uri uri)
         {
             return CreateClusterConnection(uri, AccessMode.Write);
