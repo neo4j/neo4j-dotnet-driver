@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
@@ -47,7 +48,35 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 _errorHandler.OnConnectionError(_uri, error);
             }
-            else if (error.IsClusterError())
+            else
+            {
+                HandleClusterError(error);
+            }
+            throw error;
+        }
+
+        public async Task OnErrorAsync(Exception error)
+        {
+            if (error is ServiceUnavailableException)
+            {
+                await _errorHandler.OnConnectionErrorAsync(_uri, error).ConfigureAwait(false);
+                throw new SessionExpiredException(
+                    $"Server at {_uri} is no longer available due to error: {error.Message}.", error);
+            }
+            else if (error.IsDatabaseUnavailableError())
+            {
+                await _errorHandler.OnConnectionErrorAsync(_uri, error).ConfigureAwait(false);
+            }
+            else
+            {
+                HandleClusterError(error);
+            }
+            throw error;
+        }
+
+        private void HandleClusterError(Exception error)
+        {
+            if (error.IsClusterError())
             {
                 switch (_mode)
                 {
@@ -65,7 +94,6 @@ namespace Neo4j.Driver.Internal.Routing
                         throw new ArgumentOutOfRangeException($"Unsupported mode type {_mode}");
                 }
             }
-            throw error;
         }
     }
 }

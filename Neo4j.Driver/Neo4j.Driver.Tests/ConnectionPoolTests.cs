@@ -546,7 +546,8 @@ namespace Neo4j.Driver.Tests
                     pool.Acquire();
                 }
 
-                var stopWatch = new Stopwatch(); stopWatch.Start();
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
 
                 var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 

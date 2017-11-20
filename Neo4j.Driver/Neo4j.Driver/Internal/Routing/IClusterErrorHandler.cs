@@ -15,12 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IClusterErrorHandler
     {
         void OnConnectionError(Uri uri, Exception e);
+        Task OnConnectionErrorAsync(Uri uri, Exception e);
         void OnWriteError(Uri uri);
     }
 }

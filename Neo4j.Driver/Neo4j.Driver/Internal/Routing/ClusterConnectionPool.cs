@@ -19,6 +19,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -114,14 +115,6 @@ namespace Neo4j.Driver.Internal.Routing
         {
             foreach (var uri in servers)
             {
-                Add(uri);
-            }
-        }
-
-        public void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed)
-        {
-            foreach (var uri in added)
-            {
                 if (_pools.ContainsKey(uri))
                 {
                     _pools[uri].Activate();
@@ -131,6 +124,11 @@ namespace Neo4j.Driver.Internal.Routing
                     Add(uri);
                 }
             }
+        }
+
+        public void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed)
+        {
+            Add(added);
             foreach (var uri in removed)
             {
                 _pools[uri].Deactivate();
@@ -143,17 +141,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public async Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
         {
-            foreach (var uri in added)
-            {
-                if (_pools.ContainsKey(uri))
-                {
-                    _pools[uri].Activate();
-                }
-                else
-                {
-                    Add(uri);
-                }
-            }
+            Add(added);
             // TODO chain this part and use task.waitAll
             foreach (var uri in removed)
             {
@@ -165,7 +153,24 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        public void Purge(Uri uri)
+        public void Deactiviate(Uri uri)
+        {
+            if (_pools.TryGetValue(uri, out var pool))
+            {
+                pool.Deactivate();
+            }
+        }
+
+        public Task DeactiviateAsync(Uri uri)
+        {
+            if (_pools.TryGetValue(uri, out var pool))
+            {
+                return pool.DeactivateAsync();
+            }
+            return TaskExtensions.GetCompletedTask();
+        }
+
+        private void Purge(Uri uri)
         {
             var removed = _pools.TryRemove(uri, out var toRemove);
             if (removed)

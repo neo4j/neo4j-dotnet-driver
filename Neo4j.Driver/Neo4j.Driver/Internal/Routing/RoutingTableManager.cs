@@ -126,7 +126,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        private void Update(IRoutingTable newTable)
+        internal void Update(IRoutingTable newTable)
         {
             var added = newTable.All();
             added.ExceptWith(_routingTable.All());
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Internal.Routing
             _logger?.Info($"Updated routingTable to be {_routingTable}");
         }
 
-        private async Task UpdateAsync(IRoutingTable newTable)
+        internal async Task UpdateAsync(IRoutingTable newTable)
         {
             var added = newTable.All();
             added.ExceptWith(_routingTable.All());
@@ -354,11 +354,6 @@ namespace Neo4j.Driver.Internal.Routing
             await discoveryManager.RediscoveryAsync().ConfigureAwait(false);
             return new RoutingTable(discoveryManager.Routers, discoveryManager.Readers,
                 discoveryManager.Writers, discoveryManager.ExpireAfterSeconds);
-        }
-
-        public void Clear()
-        {
-            _routingTable.Clear();
         }
     }
 }

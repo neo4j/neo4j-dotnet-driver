@@ -101,7 +101,14 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
             _routingTableManager.RoutingTable.Remove(uri);
-            _clusterConnectionPool.Purge(uri);
+            _clusterConnectionPool.Deactiviate(uri);
+        }
+
+        public Task OnConnectionErrorAsync(Uri uri, Exception e)
+        {
+            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+            _routingTableManager.RoutingTable.Remove(uri);
+            return _clusterConnectionPool.DeactiviateAsync(uri);
         }
 
         public void OnWriteError(Uri uri)
@@ -268,13 +275,13 @@ namespace Neo4j.Driver.Internal.Routing
                 {
                     return new ClusterConnection(conn, uri, mode, this);
                 }
-                OnConnectionError(uri, new ArgumentException(
+                await OnConnectionErrorAsync(uri, new ArgumentException(
                     $"Routing table {_routingTableManager.RoutingTable} contains a server {uri} " +
-                    $"that is not known to cluster connection pool {_clusterConnectionPool}."));
+                    $"that is not known to cluster connection pool {_clusterConnectionPool}.")).ConfigureAwait(false);
             }
             catch (ServiceUnavailableException e)
             {
-                OnConnectionError(uri, e);
+                await OnConnectionErrorAsync(uri, e).ConfigureAwait(false);
             }
             return null;
         }
