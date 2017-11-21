@@ -31,9 +31,9 @@ namespace Neo4j.Driver.Internal.Routing
         // Update the pool keys with the new server uris
         void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed);
         Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
-        // Deactiviate all the connection pool with the server specified by the uri
-        void Deactiviate(Uri uri);
-        Task DeactiviateAsync(Uri uri);
+        // Deactivate all the connection pool with the server specified by the uri
+        void Deactivate(Uri uri);
+        Task DeactivateAsync(Uri uri);
         // Get number of in-use connections for the uri
         int NumberOfInUseConnections(Uri uri);
 

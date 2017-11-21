@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        public void Deactiviate(Uri uri)
+        public void Deactivate(Uri uri)
         {
             if (_pools.TryGetValue(uri, out var pool))
             {
@@ -161,7 +161,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        public Task DeactiviateAsync(Uri uri)
+        public Task DeactivateAsync(Uri uri)
         {
             if (_pools.TryGetValue(uri, out var pool))
             {

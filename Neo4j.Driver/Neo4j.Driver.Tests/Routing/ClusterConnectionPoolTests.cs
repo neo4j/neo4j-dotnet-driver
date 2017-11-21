@@ -180,12 +180,12 @@ namespace Neo4j.Driver.Tests.Routing
                 pool.Update(new Uri[0], new[] {ServerUri});
 
                 // Then
-                mockedConnectionPool.Verify(x => x.Deactivate(), Times.Once); // first deactiviate then remove
+                mockedConnectionPool.Verify(x => x.Deactivate(), Times.Once); // first deactivate then remove
                 connectionPoolDict.Count.Should().Be(0);
             }
 
             [Fact]
-            public void ShouldDeactiviateServerPoolIfNotPresentInNewServersButHasInUseConnections()
+            public void ShouldDeactivateServerPoolIfNotPresentInNewServersButHasInUseConnections()
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
@@ -206,7 +206,7 @@ namespace Neo4j.Driver.Tests.Routing
         public class AddMethod
         {
             [Fact]
-            public void ShouldActiviateIfExist()
+            public void ShouldActivateIfExist()
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
@@ -243,10 +243,10 @@ namespace Neo4j.Driver.Tests.Routing
             }
         }
 
-        public class DeactiviateMethod
+        public class DeactivateMethod
         {
             [Fact]
-            public void ShouldDeactiviateIfExist()
+            public void ShouldDeactivateIfExist()
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
@@ -256,7 +256,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
                 // When
-                pool.Deactiviate(ServerUri);
+                pool.Deactivate(ServerUri);
 
                 // Then
                 mockedConnectionPool.Verify(x => x.Deactivate(), Times.Once);
@@ -265,7 +265,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Fact]
-            public void ShouldDeactiviateNothingIfNotFound()
+            public void ShouldDeactivateNothingIfNotFound()
             {
                 // Given
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -273,7 +273,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
                 // When
-                pool.Deactiviate(ServerUri);
+                pool.Deactivate(ServerUri);
 
                 // Then
                 connectionPoolDict.Count.Should().Be(0);

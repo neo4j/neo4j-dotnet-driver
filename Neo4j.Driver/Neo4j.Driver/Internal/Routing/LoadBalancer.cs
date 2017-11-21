@@ -101,14 +101,14 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
             _routingTableManager.RoutingTable.Remove(uri);
-            _clusterConnectionPool.Deactiviate(uri);
+            _clusterConnectionPool.Deactivate(uri);
         }
 
         public Task OnConnectionErrorAsync(Uri uri, Exception e)
         {
             _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
             _routingTableManager.RoutingTable.Remove(uri);
-            return _clusterConnectionPool.DeactiviateAsync(uri);
+            return _clusterConnectionPool.DeactivateAsync(uri);
         }
 
         public void OnWriteError(Uri uri)

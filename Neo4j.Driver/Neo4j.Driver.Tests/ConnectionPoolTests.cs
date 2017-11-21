@@ -1362,7 +1362,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class DeactiviateMethod
+        public class DeactivateMethod
         {
             private static List<Mock<IPooledConnection>> FillIdleConnections(
                 BlockingCollection<IPooledConnection> idleConnections, int count)
@@ -1443,7 +1443,7 @@ namespace Neo4j.Driver.Tests
             // concurrent test
             // concurrently close and deactive
             [Fact]
-            public void DeactiviateAndThenCloseShouldCloseAllConnections()
+            public void DeactivateAndThenCloseShouldCloseAllConnections()
             {
                 var idleConnections = new BlockingCollection<IPooledConnection>();
                 var idleMocks = FillIdleConnections(idleConnections, 5);
@@ -1486,7 +1486,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
 
                 // This is to simulate Acquire called first,
-                // but before Acquire put a new conn into inUseConn, Deactiviate get called.
+                // but before Acquire put a new conn into inUseConn, Deactivate get called.
                 openConnMock.Setup(x => x.IsOpen).Returns(true)
                     .Callback(() => pool.Deactivate());
                 idleConnections.Add(openConnMock.Object);
@@ -1511,7 +1511,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
 
                 // This is to simulate Acquire called first,
-                // but before Acquire put a new conn into inUseConn, Deactiviate get called.
+                // but before Acquire put a new conn into inUseConn, Deactivate get called.
                 // However here, this connection is not healthy and will be destoried directly
                 closedConnMock.Setup(x => x.IsOpen).Returns(false)
                     .Callback(() => pool.Deactivate());
