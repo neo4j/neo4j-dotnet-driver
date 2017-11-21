@@ -28,6 +28,7 @@ namespace Neo4j.Driver.Internal.Routing
         Task<IConnection> AcquireAsync(Uri uri);
         // Add a set of uri to this pool
         void Add(IEnumerable<Uri> uris);
+        Task AddAsync(IEnumerable<Uri> uris);
         // Update the pool keys with the new server uris
         void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed);
         Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);

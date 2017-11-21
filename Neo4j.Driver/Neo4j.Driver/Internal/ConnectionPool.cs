@@ -428,31 +428,26 @@ namespace Neo4j.Driver.Internal
                     // pool already disposed, and this connection is also already closed
                     return;
                 }
+
+                // Remove from inUse
                 if (!_inUseConnections.TryRemove(connection))
                 {
                     // pool already disposed.
                     return;
                 }
-                if (_connectionValidator.IsConnectionReusable(connection))
-                {
-                    if (IsIdlePoolFull())
-                    {
-                        DestroyConnection(connection);
-                    }
-                    else
-                    {
-                        _idleConnections.Add(connection);
-                    }
 
-                    // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                    if (IsZombieOrClosed && _idleConnections.TryTake(out connection))
-                    {
-                        DestroyConnection(connection);
-                    }
-                }
-                else
+                if (!_connectionValidator.IsConnectionReusable(connection) || IsIdlePoolFull() || IsZombieOrClosed)
                 {
-                    //release resources by connection
+                    // cannot return to the idle pool
+                    DestroyConnection(connection);
+                    return;
+                }
+
+                // Add back to the idle pool
+                _idleConnections.Add(connection);
+                // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
+                if (IsZombieOrClosed && _idleConnections.TryTake(out connection))
+                {
                     DestroyConnection(connection);
                 }
             });
@@ -467,32 +462,26 @@ namespace Neo4j.Driver.Internal
                     // pool already disposed
                     return;
                 }
+                // Remove from idle
                 if (!_inUseConnections.TryRemove(connection))
                 {
                     // pool already disposed
                     return;
                 }
 
-                if (await _connectionValidator.IsConnectionReusableAsync(connection).ConfigureAwait(false))
+                if (!await _connectionValidator.IsConnectionReusableAsync(connection).ConfigureAwait(false)
+                    || IsIdlePoolFull() || IsZombieOrClosed)
                 {
-                    if (IsIdlePoolFull())
-                    {
-                        await DestroyConnectionAsync(connection).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        _idleConnections.Add(connection);
-                    }
-
-                    // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                    if (IsZombieOrClosed && _idleConnections.TryTake(out connection))
-                    {
-                        await DestroyConnectionAsync(connection).ConfigureAwait(false);
-                    }
+                    // cannot return to idle pool
+                    await DestroyConnectionAsync(connection).ConfigureAwait(false);
+                    return;
                 }
-                else
+
+                // Add back to idle pool
+                _idleConnections.Add(connection);
+                // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
+                if (IsZombieOrClosed && _idleConnections.TryTake(out connection))
                 {
-                    //release resources by connection
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
                 }
             });

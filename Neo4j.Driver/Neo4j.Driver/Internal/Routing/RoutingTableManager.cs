@@ -176,6 +176,12 @@ namespace Neo4j.Driver.Internal.Routing
             _poolManager.AddConnectionPool(uris);
         }
 
+        private Task PrependRoutersAsync(ISet<Uri> uris)
+        {
+            _routingTable.PrependRouters(uris);
+            return _poolManager.AddConnectionPoolAsync(uris);
+        }
+
         internal IRoutingTable UpdateRoutingTableWithInitialUriFallback(ISet<Uri> initialUriSet,
             Func<ISet<Uri>, IRoutingTable> updateRoutingTableFunc = null)
         {
@@ -224,7 +230,7 @@ namespace Neo4j.Driver.Internal.Routing
             var hasPrependedInitialRouters = false;
             if (_isReadingInAbsenceOfWriter)
             {
-                PrependRouters(initialUriSet);
+                await PrependRoutersAsync(initialUriSet).ConfigureAwait(false);
                 hasPrependedInitialRouters = true;
             }
 
@@ -241,7 +247,7 @@ namespace Neo4j.Driver.Internal.Routing
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
-                    PrependRouters(uris);
+                    await PrependRoutersAsync(uris).ConfigureAwait(false);
                     routingTable = await updateRoutingTableFunc(null).ConfigureAwait(false);
                     if (routingTable != null)
                     {

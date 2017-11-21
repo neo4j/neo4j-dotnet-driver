@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal interface IClusterConnectionPoolManager
     {
         void AddConnectionPool(IEnumerable<Uri> uris);
+        Task AddConnectionPoolAsync(IEnumerable<Uri> uris);
         void UpdateConnectionPool(IEnumerable<Uri> added, IEnumerable<Uri> removed);
         Task UpdateConnectionPoolAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
         IConnection CreateClusterConnection(Uri uri);
