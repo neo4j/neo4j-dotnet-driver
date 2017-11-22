@@ -142,7 +142,6 @@ namespace Neo4j.Driver.Internal.Routing
         public async Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
         {
             await AddAsync(added).ConfigureAwait(false);
-            // TODO chain this part and use task.waitAll
             foreach (var uri in removed)
             {
                 if (_pools.TryGetValue(uri, out var pool))

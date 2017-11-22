@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.Routing
             throw error;
         }
 
-        public async Task OnErrorAsync(Exception error)
+        public override async Task OnErrorAsync(Exception error)
         {
             if (error is ServiceUnavailableException)
             {
