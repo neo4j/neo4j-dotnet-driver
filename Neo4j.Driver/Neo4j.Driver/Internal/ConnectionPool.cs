@@ -31,9 +31,9 @@ namespace Neo4j.Driver.Internal
 {
     internal static class PoolStatus
     {
-        public const int Open = 0;
+        public const int Active = 0;
         public const int Closed = 1;
-        public const int Zombie = 2;
+        public const int Inactive = 2;
     }
 
     internal class ConnectionPool : LoggerBase, IConnectionPool
@@ -42,10 +42,10 @@ namespace Neo4j.Driver.Internal
 
         private readonly Uri _uri;
 
-        private int _poolStatus = Open;
+        private int _poolStatus = Active;
         private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
-        private bool IsZombie => AtomicRead(ref _poolStatus) == Zombie;
-        private bool IsZombieOrClosed => AtomicRead(ref _poolStatus) != Open;
+        private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
+        private bool IsInactiveOrClosed => AtomicRead(ref _poolStatus) != Active;
 
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
@@ -263,7 +263,7 @@ namespace Neo4j.Driver.Internal
                         {
                             ThrowObjectDisposedException();
                         }
-                        else if (IsZombie)
+                        else if (IsInactive)
                         {
                             ThrowClientExceptionDueToZombified();
                         }
@@ -353,7 +353,7 @@ namespace Neo4j.Driver.Internal
                         {
                             ThrowObjectDisposedException();
                         }
-                        else if (IsZombie)
+                        else if (IsInactive)
                         {
                             ThrowClientExceptionDueToZombified();
                         }
@@ -445,7 +445,7 @@ namespace Neo4j.Driver.Internal
                     return;
                 }
 
-                if (!_connectionValidator.IsConnectionReusable(connection) || IsIdlePoolFull() || IsZombieOrClosed)
+                if (!_connectionValidator.IsConnectionReusable(connection) || IsIdlePoolFull() || IsInactiveOrClosed)
                 {
                     // cannot return to the idle pool
                     DestroyConnection(connection);
@@ -455,7 +455,7 @@ namespace Neo4j.Driver.Internal
                 // Add back to the idle pool
                 _idleConnections.Add(connection);
                 // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                if (IsZombieOrClosed && _idleConnections.TryTake(out connection))
+                if (IsInactiveOrClosed && _idleConnections.TryTake(out connection))
                 {
                     DestroyConnection(connection);
                 }
@@ -479,7 +479,7 @@ namespace Neo4j.Driver.Internal
                 }
 
                 if (!await _connectionValidator.IsConnectionReusableAsync(connection).ConfigureAwait(false)
-                    || IsIdlePoolFull() || IsZombieOrClosed)
+                    || IsIdlePoolFull() || IsInactiveOrClosed)
                 {
                     // cannot return to idle pool
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
@@ -489,7 +489,7 @@ namespace Neo4j.Driver.Internal
                 // Add back to idle pool
                 _idleConnections.Add(connection);
                 // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
-                if (IsZombieOrClosed && _idleConnections.TryTake(out connection))
+                if (IsInactiveOrClosed && _idleConnections.TryTake(out connection))
                 {
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
                 }
@@ -558,7 +558,7 @@ namespace Neo4j.Driver.Internal
 
         public void Deactivate()
         {
-            if (Interlocked.CompareExchange(ref _poolStatus, Zombie, Open) == Open)
+            if (Interlocked.CompareExchange(ref _poolStatus, Inactive, Active) == Active)
             {
                 TerminateIdleConnections();
             }
@@ -566,7 +566,7 @@ namespace Neo4j.Driver.Internal
 
         public Task DeactivateAsync()
         {
-            if (Interlocked.CompareExchange(ref _poolStatus, Zombie, Open) == Open)
+            if (Interlocked.CompareExchange(ref _poolStatus, Inactive, Active) == Active)
             {
                 return Task.WhenAll(TerminateIdleConnectionsAsync());
             }
@@ -575,7 +575,7 @@ namespace Neo4j.Driver.Internal
 
         public void Activate()
         {
-            Interlocked.CompareExchange(ref _poolStatus, Open, Zombie);
+            Interlocked.CompareExchange(ref _poolStatus, Active, Inactive);
         }
 
         private void TerminateIdleConnections()

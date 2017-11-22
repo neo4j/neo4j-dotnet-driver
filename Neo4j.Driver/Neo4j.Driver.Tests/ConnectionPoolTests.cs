@@ -1182,17 +1182,17 @@ namespace Neo4j.Driver.Tests
 
         public class PoolState
         {
-            // open
+            // active
             [Fact]
-            public void FromOpenViaAcquireToOpen()
+            public void FromActiveViaAcquireToActive()
             {
                 var pool = NewConnectionPool();
                 pool.Acquire();
-                pool.Status.Should().Be(PoolStatus.Open);
+                pool.Status.Should().Be(PoolStatus.Active);
             }
 
             [Fact]
-            public void FromOpenViaReleaseToOpen()
+            public void FromActiveViaReleaseToActive()
             {
                 var idleQueue = new BlockingCollection<IPooledConnection>();
                 var inUseConnections = new ConcurrentSet<IPooledConnection>();
@@ -1204,11 +1204,11 @@ namespace Neo4j.Driver.Tests
 
                 idleQueue.Count.Should().Be(1);
                 inUseConnections.Count.Should().Be(0);
-                pool.Status.Should().Be(PoolStatus.Open);
+                pool.Status.Should().Be(PoolStatus.Active);
             }
 
             [Fact]
-            public void FromOpenViaDisposeToClosed()
+            public void FromActiveViaDisposeToClosed()
             {
                 var pool = NewConnectionPool();
                 pool.Dispose();
@@ -1216,36 +1216,36 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromOpenViaActivateToOpen()
+            public void FromActiveViaActivateToActive()
             {
                 var pool = NewConnectionPool();
                 pool.Activate();
-                pool.Status.Should().Be(PoolStatus.Open);
+                pool.Status.Should().Be(PoolStatus.Active);
             }
 
             [Fact]
-            public void FromOpenViaDeactiateToZombie()
+            public void FromActiveViaDeactiateToInactive()
             {
                 var pool = NewConnectionPool();
                 pool.Deactivate();
-                pool.Status.Should().Be(PoolStatus.Zombie);
+                pool.Status.Should().Be(PoolStatus.Inactive);
             }
 
-            // zombie
+            // inactive
             [Fact]
-            public void FromZombieViaAcquireThrowsError()
+            public void FromInactiveViaAcquireThrowsError()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Zombie;
+                pool.Status = PoolStatus.Inactive;
 
                 var exception = Record.Exception(()=>pool.Acquire());
 
                 exception.Should().BeOfType<ClientException>();
-                pool.Status.Should().Be(PoolStatus.Zombie);
+                pool.Status.Should().Be(PoolStatus.Inactive);
             }
 
             [Fact]
-            public void FromZombieViaReleaseToZombie()
+            public void FromInactiveViaReleaseToInactive()
             {
                 var idleQueue = new BlockingCollection<IPooledConnection>();
                 var inUseConnections = new ConcurrentSet<IPooledConnection>();
@@ -1254,20 +1254,20 @@ namespace Neo4j.Driver.Tests
                 inUseConnections.TryAdd(conn);
 
                 var pool = NewConnectionPool(idleQueue, inUseConnections);
-                pool.Status = PoolStatus.Zombie;
+                pool.Status = PoolStatus.Inactive;
 
                 pool.Release(conn);
 
                 inUseConnections.Count.Should().Be(0);
                 idleQueue.Count.Should().Be(0);
-                pool.Status.Should().Be(PoolStatus.Zombie);
+                pool.Status.Should().Be(PoolStatus.Inactive);
             }
 
             [Fact]
-            public void FromZombieViaDisposeToClosed()
+            public void FromInactiveViaDisposeToClosed()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Zombie;
+                pool.Status = PoolStatus.Inactive;
 
                 pool.Dispose();
 
@@ -1275,25 +1275,25 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromZombieViaActivateToOpen()
+            public void FromInactiveViaActivateToActive()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Zombie;
+                pool.Status = PoolStatus.Inactive;
 
                 pool.Activate();
 
-                pool.Status.Should().Be(PoolStatus.Open);
+                pool.Status.Should().Be(PoolStatus.Active);
             }
 
             [Fact]
-            public void FromZombieViaDeactiateToZombie()
+            public void FromInactiveViaDeactiateToInactive()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Zombie;
+                pool.Status = PoolStatus.Inactive;
 
                 pool.Deactivate();
 
-                pool.Status.Should().Be(PoolStatus.Zombie);
+                pool.Status.Should().Be(PoolStatus.Inactive);
             }
 
             //closed
