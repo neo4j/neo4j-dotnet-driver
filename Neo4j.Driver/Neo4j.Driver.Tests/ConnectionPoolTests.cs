@@ -1240,7 +1240,7 @@ namespace Neo4j.Driver.Tests
 
                 var exception = Record.Exception(()=>pool.Acquire());
 
-                exception.Should().BeOfType<ObjectDisposedException>();
+                exception.Should().BeOfType<ClientException>();
                 pool.Status.Should().Be(PoolStatus.Zombie);
             }
 

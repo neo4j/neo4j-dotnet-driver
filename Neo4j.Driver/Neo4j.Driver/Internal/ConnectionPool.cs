@@ -43,8 +43,9 @@ namespace Neo4j.Driver.Internal
         private readonly Uri _uri;
 
         private int _poolStatus = Open;
-        private bool IsClosed => _poolStatus == Closed;
-        private bool IsZombieOrClosed => _poolStatus != Open;
+        private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
+        private bool IsZombie => AtomicRead(ref _poolStatus) == Zombie;
+        private bool IsZombieOrClosed => AtomicRead(ref _poolStatus) != Open;
 
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
@@ -70,7 +71,7 @@ namespace Neo4j.Driver.Internal
 
         internal int Status
         {
-            get => _poolStatus;
+            get => AtomicRead(ref _poolStatus);
             set => Interlocked.Exchange(ref _poolStatus, value);
         }
 
@@ -258,9 +259,13 @@ namespace Neo4j.Driver.Internal
                 {
                     while (true)
                     {
-                        if (IsZombieOrClosed)
+                        if (IsClosed)
                         {
                             ThrowObjectDisposedException();
+                        }
+                        else if (IsZombie)
+                        {
+                            ThrowClientExceptionDueToZombified();
                         }
 
                         if (!_idleConnections.TryTake(out connection))
@@ -344,9 +349,13 @@ namespace Neo4j.Driver.Internal
                 {
                     while (true)
                     {
-                        if (IsZombieOrClosed)
+                        if (IsClosed)
                         {
                             ThrowObjectDisposedException();
+                        }
+                        else if (IsZombie)
+                        {
+                            ThrowClientExceptionDueToZombified();
                         }
 
                         if (!_idleConnections.TryTake(out connection))
@@ -594,6 +603,15 @@ namespace Neo4j.Driver.Internal
             FailedToAcquireConnectionDueToPoolClosed(this);
         }
 
+        private void ThrowClientExceptionDueToZombified()
+        {
+            throw new ClientException(
+                $"Failed to obtain a connection from connection pool for server with URI `{_uri}` " +
+                "as this server has already been removed from routing table. " +
+                "Please retry your statement again and you should be routed with a different server from the new routing table. " +
+                "You should not see this error persistenly.");
+        }
+
         private void SetupStatisticsProvider(IStatisticsCollector collector)
         {
             _statisticsCollector = collector;
@@ -611,6 +629,12 @@ namespace Neo4j.Driver.Internal
                 _statisticsCollector?.Unregister(_statistics);
                 _statistics.Dispose();
             }
+        }
+
+        private static int AtomicRead(ref int value)
+        {
+            return Interlocked.CompareExchange(ref value, 0, 0); // change to 0 if the value was 0,
+                                                                 // a.k.a. do nothing but return the original value
         }
 
         public override string ToString()
