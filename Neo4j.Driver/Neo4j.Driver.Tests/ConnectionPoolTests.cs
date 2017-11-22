@@ -1475,7 +1475,7 @@ namespace Neo4j.Driver.Tests
             // cncurrent tests
             // ConcurrentlyAcquireAndDeactivate
             [Fact]
-            public void ReturnConnectionIfAcquiredValidConnectionBeforeZombified()
+            public void ReturnConnectionIfAcquiredValidConnectionBeforeInactivation()
             {
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
@@ -1500,7 +1500,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ErrorIfAcquiredInvalidConnectionBeforeZombified()
+            public void ErrorIfAcquiredInvalidConnectionBeforeInactivation()
             {
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
@@ -1524,8 +1524,8 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
                 closedConnMock.Verify(x => x.IsOpen, Times.Once);
                 closedConnMock.Verify(x => x.Destroy(), Times.Once);
-                exception.Should().BeOfType<ObjectDisposedException>();
-                exception.Message.Should().StartWith("Failed to acquire a new connection");
+                exception.Should().BeOfType<ClientException>();
+                exception.Message.Should().StartWith("Failed to acquire a connection");
             }
 
             // concurrent test
