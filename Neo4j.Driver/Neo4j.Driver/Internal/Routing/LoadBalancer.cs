@@ -21,7 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
-using static Neo4j.Driver.Internal.Throw.DriverDisposedException;
+using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -101,7 +101,14 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
             _routingTableManager.RoutingTable.Remove(uri);
-            _clusterConnectionPool.Purge(uri);
+            _clusterConnectionPool.Deactivate(uri);
+        }
+
+        public Task OnConnectionErrorAsync(Uri uri, Exception e)
+        {
+            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+            _routingTableManager.RoutingTable.Remove(uri);
+            return _clusterConnectionPool.DeactivateAsync(uri);
         }
 
         public void OnWriteError(Uri uri)
@@ -114,9 +121,19 @@ namespace Neo4j.Driver.Internal.Routing
             _clusterConnectionPool.Add(uris);
         }
 
-        public void UpdateConnectionPool(IEnumerable<Uri> uris)
+        public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
         {
-            _clusterConnectionPool.Update(uris);
+            return _clusterConnectionPool.AddAsync(uris);
+        }
+
+        public void UpdateConnectionPool(IEnumerable<Uri> added, IEnumerable<Uri> removed)
+        {
+            _clusterConnectionPool.Update(added, removed);
+        }
+
+        public Task UpdateConnectionPoolAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
+        {
+            return _clusterConnectionPool.UpdateAsync(added, removed);
         }
 
         public IConnection CreateClusterConnection(Uri uri)
@@ -263,20 +280,20 @@ namespace Neo4j.Driver.Internal.Routing
                 {
                     return new ClusterConnection(conn, uri, mode, this);
                 }
-                OnConnectionError(uri, new ArgumentException(
+                await OnConnectionErrorAsync(uri, new ArgumentException(
                     $"Routing table {_routingTableManager.RoutingTable} contains a server {uri} " +
-                    $"that is not known to cluster connection pool {_clusterConnectionPool}."));
+                    $"that is not known to cluster connection pool {_clusterConnectionPool}.")).ConfigureAwait(false);
             }
             catch (ServiceUnavailableException e)
             {
-                OnConnectionError(uri, e);
+                await OnConnectionErrorAsync(uri, e).ConfigureAwait(false);
             }
             return null;
         }
 
         private void ThrowObjectDisposedException()
         {
-            FailedToCreateConnection(this);
+            FailedToAcquireConnection(this);
         }
 
         public override string ToString()

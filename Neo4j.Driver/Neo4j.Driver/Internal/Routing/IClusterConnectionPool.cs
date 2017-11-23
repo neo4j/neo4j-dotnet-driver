@@ -28,10 +28,13 @@ namespace Neo4j.Driver.Internal.Routing
         Task<IConnection> AcquireAsync(Uri uri);
         // Add a set of uri to this pool
         void Add(IEnumerable<Uri> uris);
+        Task AddAsync(IEnumerable<Uri> uris);
         // Update the pool keys with the new server uris
-        void Update(IEnumerable<Uri> uris);
-        // Remove all the connection pool with the server specified by the uri
-        void Purge(Uri uri);
+        void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed);
+        Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
+        // Deactivate all the connection pool with the server specified by the uri
+        void Deactivate(Uri uri);
+        Task DeactivateAsync(Uri uri);
         // Get number of in-use connections for the uri
         int NumberOfInUseConnections(Uri uri);
 

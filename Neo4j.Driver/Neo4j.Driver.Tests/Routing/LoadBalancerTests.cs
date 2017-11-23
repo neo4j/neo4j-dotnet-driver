@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
 
                     loadBalancer.OnConnectionError(uri, new ClientException());
-                    clusterPoolMock.Verify(x => x.Purge(uri), Times.Once);
+                    clusterPoolMock.Verify(x => x.Deactivate(uri), Times.Once);
                     routingTableMock.Verify(x => x.Remove(uri), Times.Once);
                     routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Never);
                 }
@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
 
                     loadBalancer.OnWriteError(uri);
-                    clusterPoolMock.Verify(x => x.Purge(uri), Times.Never);
+                    clusterPoolMock.Verify(x => x.Deactivate(uri), Times.Never);
                     routingTableMock.Verify(x => x.Remove(uri), Times.Never);
                     routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Once);
                 }
@@ -141,7 +141,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // should be removed
                 routingTableMock.Verify(m => m.Remove(uri), Times.Once);
-                clusterConnPoolMock.Verify(m => m.Purge(uri), Times.Once);
+                clusterConnPoolMock.Verify(m => m.Deactivate(uri), Times.Once);
             }
 
             [Theory]
@@ -170,7 +170,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // while the server is not removed
                 routingTableMock.Verify(m => m.Remove(uri), Times.Never);
-                clusterConnPoolMock.Verify(m => m.Purge(uri), Times.Never);
+                clusterConnPoolMock.Verify(m => m.Deactivate(uri), Times.Never);
             }
 
             [Theory]
@@ -199,7 +199,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // while the server is not removed
                 routingTableMock.Verify(m => m.Remove(uri), Times.Never);
-                clusterConnPoolMock.Verify(m => m.Purge(uri), Times.Never);
+                clusterConnPoolMock.Verify(m => m.Deactivate(uri), Times.Never);
             }
 
             [Theory]

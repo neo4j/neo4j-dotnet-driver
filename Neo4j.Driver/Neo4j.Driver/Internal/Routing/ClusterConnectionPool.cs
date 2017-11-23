@@ -19,6 +19,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -70,15 +71,9 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        private IConnectionPool CreateNewConnectionPool(Uri uri)
-        {
-            return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, _bufferSettings, Logger);
-        }
-
         public IConnection Acquire(Uri uri)
         {
-            IConnectionPool pool;
-            if (!_pools.TryGetValue(uri, out pool))
+            if (!_pools.TryGetValue(uri, out var pool))
             {
                 return null;
             }
@@ -89,8 +84,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public Task<IConnection> AcquireAsync(Uri uri)
         {
-            IConnectionPool pool;
-            if (!_pools.TryGetValue(uri, out pool))
+            if (!_pools.TryGetValue(uri, out var pool))
             {
                 return Task.FromResult((IConnection)null);
             }
@@ -99,70 +93,111 @@ namespace Neo4j.Driver.Internal.Routing
             return pool.AcquireAsync(ignored);
         }
 
-        // This is the ultimate method to add a pool
-        private void Add(Uri uri)
+        public void Add(IEnumerable<Uri> servers)
         {
-            _pools.GetOrAdd(uri, CreateNewConnectionPool);
+            foreach (var uri in servers)
+            {
+                _pools.AddOrUpdate(uri, CreateNewConnectionPool, ActivateConnectionPool);
+            }
             if (IsClosed)
             {
                 // Anything added after dispose should be directly cleaned.
                 Clear();
                 throw new ObjectDisposedException(GetType().Name,
-                    $"Failed to create connections with server {uri} as the driver has already started to dispose.");
+                    $"Failed to create connections with servers {servers.ToContentString()} as the driver has already started to dispose.");
             }
         }
 
-        public void Add(IEnumerable<Uri> servers)
+        public async Task AddAsync(IEnumerable<Uri> servers)
         {
             foreach (var uri in servers)
             {
-                Add(uri);
+                _pools.AddOrUpdate(uri, CreateNewConnectionPool, ActivateConnectionPool);
+            }
+            if (IsClosed)
+            {
+                // Anything added after dispose should be directly cleaned.
+                await ClearAsync().ConfigureAwait(false);
+                throw new ObjectDisposedException(GetType().Name,
+                    $"Failed to create connections with servers {servers.ToContentString()} as the driver has already started to dispose.");
             }
         }
 
-        public void Update(IEnumerable<Uri> servers)
+        public void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed)
         {
-            foreach (var uri in _pools.Keys)
+            Add(added);
+            foreach (var uri in removed)
             {
-                if (!servers.Contains(uri))
+                if (_pools.TryGetValue(uri, out var pool))
                 {
-                    Purge(uri);
+                    pool.Deactivate();
+                    if (pool.NumberOfInUseConnections == 0)
+                    {
+                        Purge(uri);
+                    }
                 }
             }
-            foreach (var uri in servers)
+        }
+
+        public async Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
+        {
+            await AddAsync(added).ConfigureAwait(false);
+            // TODO chain this part and use task.waitAll
+            foreach (var uri in removed)
             {
-                Add(uri);
+                if (_pools.TryGetValue(uri, out var pool))
+                {
+                    await pool.DeactivateAsync().ConfigureAwait(false);
+                    if (pool.NumberOfInUseConnections == 0)
+                    {
+                        await PurgeAsync(uri).ConfigureAwait(false);
+                    }
+                }
             }
         }
 
-        public void Purge(Uri uri)
+        public void Deactivate(Uri uri)
         {
-            var removed = _pools.TryRemove(uri, out var toRemove);
-            if (removed)
+            if (_pools.TryGetValue(uri, out var pool))
             {
-                toRemove.Close();
+                pool.Deactivate();
             }
         }
 
-        public Task PurgeAsync(Uri uri)
+        public Task DeactivateAsync(Uri uri)
         {
-            var removed = _pools.TryRemove(uri, out var toRemove);
-            if (removed)
+            if (_pools.TryGetValue(uri, out var pool))
             {
-                return toRemove.CloseAsync();
+                return pool.DeactivateAsync();
             }
-
             return TaskExtensions.GetCompletedTask();
         }
 
         public int NumberOfInUseConnections(Uri uri)
         {
-            IConnectionPool pool;
-            if (_pools.TryGetValue(uri, out pool))
+            if (_pools.TryGetValue(uri, out var pool))
             {
                 return pool.NumberOfInUseConnections;
             }
             return 0;
+        }
+
+        public void Close()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                Clear();
+            }
+        }
+
+        public Task CloseAsync()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                return ClearAsync();
+            }
+
+            return TaskExtensions.GetCompletedTask();
         }
 
         private void Clear()
@@ -187,19 +222,21 @@ namespace Neo4j.Driver.Internal.Routing
             return Task.WhenAll(clearTasks);
         }
 
-        public void Close()
+        private void Purge(Uri uri)
         {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            var removed = _pools.TryRemove(uri, out var toRemove);
+            if (removed)
             {
-                Clear();
+                toRemove.Close();
             }
         }
 
-        public Task CloseAsync()
+        private Task PurgeAsync(Uri uri)
         {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            var removed = _pools.TryRemove(uri, out var toRemove);
+            if (removed)
             {
-                return ClearAsync();
+                return toRemove.CloseAsync();
             }
 
             return TaskExtensions.GetCompletedTask();
@@ -221,6 +258,17 @@ namespace Neo4j.Driver.Internal.Routing
         public override string ToString()
         {
             return _pools.ValueToString();
+        }
+
+        private IConnectionPool CreateNewConnectionPool(Uri uri)
+        {
+            return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, _bufferSettings, Logger);
+        }
+
+        private IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)
+        {
+            pool.Activate();
+            return pool;
         }
     }
 }

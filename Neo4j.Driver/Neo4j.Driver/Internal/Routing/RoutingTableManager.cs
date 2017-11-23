@@ -93,9 +93,8 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var routingTable = UpdateRoutingTableWithInitialUriFallback(new HashSet<Uri> { _seedUri });
-                _poolManager.UpdateConnectionPool(routingTable.All());
-                _routingTable = routingTable;
-                _logger?.Info($"Updated routingTable to be {_routingTable}");
+                Update(routingTable);
+
             }
         }
 
@@ -118,15 +117,39 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(new HashSet<Uri> { _seedUri }).ConfigureAwait(false);
-                _poolManager.UpdateConnectionPool(routingTable.All());
-                _routingTable = routingTable;
-                _logger?.Info($"Updated routingTable to be {_routingTable}");
+                await UpdateAsync(routingTable).ConfigureAwait(false);
             }
             finally
             {
                 // no matter whether we succes to update or not, we release the lock
                 _semaphore.Release();
             }
+        }
+
+        internal void Update(IRoutingTable newTable)
+        {
+            var added = newTable.All();
+            added.ExceptWith(_routingTable.All());
+            var removed = _routingTable.All();
+            removed.ExceptWith(newTable.All());
+
+            _poolManager.UpdateConnectionPool(added, removed);
+            _routingTable = newTable;
+
+            _logger?.Info($"Updated routingTable to be {_routingTable}");
+        }
+
+        internal async Task UpdateAsync(IRoutingTable newTable)
+        {
+            var added = newTable.All();
+            added.ExceptWith(_routingTable.All());
+            var removed = _routingTable.All();
+            removed.ExceptWith(newTable.All());
+
+            await _poolManager.UpdateConnectionPoolAsync(added, removed).ConfigureAwait(false);
+            _routingTable = newTable;
+
+            _logger?.Info($"Updated routingTable to be {_routingTable}");
         }
 
         private bool IsRoutingTableStale(IRoutingTable routingTable, AccessMode mode = AccessMode.Read)
@@ -151,6 +174,12 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _routingTable.PrependRouters(uris);
             _poolManager.AddConnectionPool(uris);
+        }
+
+        private Task PrependRoutersAsync(ISet<Uri> uris)
+        {
+            _routingTable.PrependRouters(uris);
+            return _poolManager.AddConnectionPoolAsync(uris);
         }
 
         internal IRoutingTable UpdateRoutingTableWithInitialUriFallback(ISet<Uri> initialUriSet,
@@ -201,7 +230,7 @@ namespace Neo4j.Driver.Internal.Routing
             var hasPrependedInitialRouters = false;
             if (_isReadingInAbsenceOfWriter)
             {
-                PrependRouters(initialUriSet);
+                await PrependRoutersAsync(initialUriSet).ConfigureAwait(false);
                 hasPrependedInitialRouters = true;
             }
 
@@ -218,7 +247,7 @@ namespace Neo4j.Driver.Internal.Routing
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
-                    PrependRouters(uris);
+                    await PrependRoutersAsync(uris).ConfigureAwait(false);
                     routingTable = await updateRoutingTableFunc(null).ConfigureAwait(false);
                     if (routingTable != null)
                     {
@@ -331,11 +360,6 @@ namespace Neo4j.Driver.Internal.Routing
             await discoveryManager.RediscoveryAsync().ConfigureAwait(false);
             return new RoutingTable(discoveryManager.Routers, discoveryManager.Readers,
                 discoveryManager.Writers, discoveryManager.ExpireAfterSeconds);
-        }
-
-        public void Clear()
-        {
-            _routingTable.Clear();
         }
     }
 }
