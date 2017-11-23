@@ -33,9 +33,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         public abstract void OnError(Exception error);
 
-        private void OnError(AggregateException error)
+        public virtual Task OnErrorAsync(Exception error)
         {
-            OnError(error.GetBaseException());
+            OnError(error);
+            return TaskExtensions.GetCompletedTask();
         }
 
         public void Sync()
@@ -167,45 +168,16 @@ namespace Neo4j.Driver.Internal.Connector
             return Delegate.CloseAsync();
         }
 
-        internal Task TaskWithErrorHandling(Func<Task> task)
+        internal async Task TaskWithErrorHandling(Func<Task> task)
         {
-            var tcs = new TaskCompletionSource<bool>();
-
             try
             {
-                task().ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        try
-                        {
-                            OnError(t.Exception);
-                        }
-                        catch (AggregateException exc)
-                        {
-                            tcs.SetException(exc.GetBaseException());
-                        }
-                        catch (Exception exc)
-                        {
-                            tcs.SetException(exc);
-                        }
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        tcs.SetCanceled();
-                    }
-                    else
-                    {
-                        tcs.SetResult(true);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                await task().ConfigureAwait(false);
             }
-            catch (Exception e) // this is to catch whatever direct error in `task()` before returning a task
+            catch (Exception e)
             {
-                OnError(e);
+                await OnErrorAsync(e).ConfigureAwait(false);
             }
-
-            return tcs.Task;
         }
     }
 }
