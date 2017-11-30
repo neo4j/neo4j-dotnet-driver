@@ -664,6 +664,120 @@ namespace Neo4j.Driver.Examples
                 CountPerson("Alice").Should().Be(1);
             }
         }
+        
+        public class PassBookmarksExample : BaseExample
+        {
+            public PassBookmarksExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::pass-bookmarks[]
+            // Create a company node
+            private void AddCompany(ITransaction tx, string name)
+            {
+                tx.Run("CREATE (a:Company {name: $name})", new {name});
+            }
+            
+            // Create a person node
+            private void AddPerson(ITransaction tx, string name)
+            {
+                tx.Run("CREATE (a:Person {name: $name})", new {name});
+            }
+
+            // Create an employment relationship to a pre-existing company node.
+            // This relies on the person first having been created.
+            private void Employ(ITransaction tx, string personName, string companyName)
+            {
+                tx.Run(@"MATCH (person:Person {name: $personName}) 
+                         MATCH (company:Company {name: $companyName}) 
+                         CREATE (person)-[:WORKS_FOR]->(company)", new {personName, companyName});
+            }
+
+            // Create a friendship between two people.
+            private void MakeFriends(ITransaction tx, string name1, string name2)
+            {
+                tx.Run(@"MATCH (a:Person {name: $name1}) 
+                         MATCH (b:Person {name: $name2})
+                         MERGE (a)-[:KNOWS]->(b)", new {name1, name2});
+            }
+
+            // Match and display all friendships.
+            private void PrintFriendships(ITransaction tx)
+            {
+                var result = tx.Run("MATCH (a)-[:KNOWS]->(b) RETURN a.name, b.name");
+
+                foreach (var record in result)
+                {
+                    Console.WriteLine($"{record["a.name"]} knows {record["b.name"]}");
+                }
+            }
+
+            public void AddEmployAndMakeFriends()
+            {
+                // To collect the session bookmarks
+                var savedBookmarks = new List<string>();
+
+                // Create the first person and employment relationship.
+                using (var session1 = Driver.Session(AccessMode.Write))
+                {
+                    session1.WriteTransaction(tx => AddCompany(tx, "Wayne Enterprises"));
+                    session1.WriteTransaction(tx => AddPerson(tx, "Alice"));
+                    session1.WriteTransaction(tx => Employ(tx, "Alice", "Wayne Enterprises"));
+
+                    savedBookmarks.Add(session1.LastBookmark);
+                }
+
+                // Create the second person and employment relationship.
+                using (var session2 = Driver.Session(AccessMode.Write))
+                {
+                    session2.WriteTransaction(tx => AddCompany(tx, "LexCorp"));
+                    session2.WriteTransaction(tx => AddPerson(tx, "Bob"));
+                    session2.WriteTransaction(tx => Employ(tx, "Bob", "LexCorp"));
+                    
+                    savedBookmarks.Add(session2.LastBookmark);
+                }
+
+                // Create a friendship between the two people created above.
+                using (var session3 = Driver.Session(AccessMode.Write, savedBookmarks))
+                {
+                    session3.WriteTransaction(tx => MakeFriends(tx, "Alice", "Bob"));
+                    
+                    session3.ReadTransaction(PrintFriendships);
+                }
+            }
+            
+            // end::pass-bookmarks[]
+
+            [RequireServerFact]
+            public void TestPassBookmarksExample()
+            {
+                // Given & When
+                AddEmployAndMakeFriends();
+                
+                // Then
+                CountNodes("Person", "name", "Alice").Should().Be(1);
+                CountNodes("Person", "name", "Bob").Should().Be(1);
+                CountNodes("Company", "name", "Wayne Enterprises").Should().Be(1);
+                CountNodes("Company", "name", "LexCorp").Should().Be(1);
+
+                var works1 = Read(
+                    "MATCH (a:Person {name: $person})-[:WORKS_FOR]->(b:Company {name: $company}) RETURN count(a)",
+                    new {person = "Alice", company = "Wayne Enterprises"});
+                works1.Count().Should().Be(1);
+                
+                var works2 = Read(
+                    "MATCH (a:Person {name: $person})-[:WORKS_FOR]->(b:Company {name: $company}) RETURN count(a)",
+                    new {person = "Bob", company = "LexCorp"});
+                works2.Count().Should().Be(1);
+
+                var friends = Read(
+                    "MATCH (a:Person {name: $person1})-[:KNOWS]->(b:Person {name: $person2}) RETURN count(a)",
+                    new {person1 = "Alice", person2 = "Bob"});
+                friends.Count().Should().Be(1);
+            }
+        }
+        
     }
 
     [Collection(SAIntegrationCollection.CollectionName)]
@@ -697,17 +811,22 @@ namespace Neo4j.Driver.Examples
             Dispose(true);
         }
 
-        protected int CountPerson(string name)
+        protected int CountNodes(string label, string property, string value)
         {
             using (var session = Driver.Session())
             {
                 return session.ReadTransaction(
-                    tx => tx.Run("MATCH (a:Person {name: $name}) RETURN count(a)",
-                    new { name }).Single()[0].As<int>());
+                    tx => tx.Run($"MATCH (a:{label} {{{property}: $value}}) RETURN count(a)",
+                        new { value }).Single()[0].As<int>());
             }
         }
+        
+        protected int CountPerson(string name)
+        {
+            return CountNodes("Person", "name", name);
+        }
 
-        protected void Write(string statement, IDictionary<string, object> parameters = null)
+        protected void Write(string statement, object parameters = null)
         {
             using (var session = Driver.Session())
             {
@@ -716,14 +835,15 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        protected IStatementResult Read(string statement, IDictionary<string, object> parameters = null)
+        protected IStatementResult Read(string statement, object parameters = null)
         {
             using (var session = Driver.Session())
             {
-                return session.WriteTransaction(tx =>
+                return session.ReadTransaction(tx =>
                     tx.Run(statement, parameters));
             }
         }
+        
     }
 
     // TODO Remove it after we figure out a way to solve the naming problem
