@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal
        
         public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
         {
-            return Session(defaultMode, Bookmark.From(bookmarks));
+            return Session(defaultMode, Bookmark.From(bookmarks, _logger));
         }
 
         public ISession Session(IEnumerable<string> bookmarks)

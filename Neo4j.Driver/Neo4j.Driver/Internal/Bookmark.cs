@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal
 
         public static Bookmark From(IEnumerable<string> values, ILogger logger = null)
         {
-            return new Bookmark(values, null);
+            return new Bookmark(values, logger);
         }
 
         public string MaxBookmarkAsString()
