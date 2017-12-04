@@ -106,6 +106,7 @@ namespace Neo4j.Driver.V1
         /// <param name="timeout">Transaction timeout</param>
         /// <returns>A task of new transaction</returns>
         Task<ITransaction> BeginTransactionAsync(TimeSpan timeout);
+
         /// <summary>
         /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
         /// </summary>
@@ -134,7 +135,44 @@ namespace Neo4j.Driver.V1
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
         /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
         Task ReadTransactionAsync(Func<ITransaction, Task> work);
-        
+
+        /// <summary>
+        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        /// <returns>A result as returned by the given unit of work.</returns>
+        T ReadTransaction<T>(Func<ITransaction, T> work, TimeSpan timeout);
+
+        /// <summary>
+        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new read transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        /// <returns>A task of a result as returned by the given unit of work.</returns>
+        Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TimeSpan timeout);
+
+        /// <summary>
+        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <param name="work">The <see cref="Action{T}"/> to be applied to a new read transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        void ReadTransaction(Action<ITransaction> work, TimeSpan timeout);
+
+        /// <summary>
+        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
+        Task ReadTransactionAsync(Func<ITransaction, Task> work, TimeSpan timeout);
+
         /// <summary>
         ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
         /// </summary>
@@ -163,6 +201,43 @@ namespace Neo4j.Driver.V1
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
         /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
         Task WriteTransactionAsync(Func<ITransaction, Task> work);
+
+        /// <summary>
+        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        /// <returns>A result as returned by the given unit of work.</returns>
+        T WriteTransaction<T>(Func<ITransaction, T> work, TimeSpan timeout);
+
+        /// <summary>
+        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new write transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        /// <returns>A task of a result as returned by the given unit of work.</returns>
+        Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work, TimeSpan timeout);
+
+        /// <summary>
+        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <param name="work">The <see cref="Action{T}"/> to be applied to a new write transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        void WriteTransaction(Action<ITransaction> work, TimeSpan timeout);
+
+        /// <summary>
+        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
+        /// If the work is not finished within specified transaction timeout, the transaction will be cancelled and rolled back.
+        /// </summary>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
+        /// <param name="timeout">Transaction timeout.</param>
+        /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
+        Task WriteTransactionAsync(Func<ITransaction, Task> work, TimeSpan timeout);
 
         /// <summary>
         /// Close all resources used in this Session. If any transaction is left open in this session without commit or rollback,
