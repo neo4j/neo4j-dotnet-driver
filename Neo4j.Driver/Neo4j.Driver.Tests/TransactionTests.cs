@@ -96,6 +96,19 @@ namespace Neo4j.Driver.Tests
                 mockConn.Verify(RunBegin(paramters), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
+
+            [Fact]
+            public void ShouldRunWithParameters()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From(FakeABookmark(234));
+                var tx = new Transaction(mockConn.Object, null, null, bookmark, TimeSpan.FromMinutes(1));
+
+                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
+                paramters.Add("txTimeout", 60000L);
+                mockConn.Verify(RunBegin(paramters), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
         }
 
         public class SyncBoomarkMethod

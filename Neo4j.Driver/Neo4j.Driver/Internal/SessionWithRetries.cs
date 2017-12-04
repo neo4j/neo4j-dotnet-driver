@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Internal
             return RunTransactionAsync(AccessMode.Read, work);
         }
 
-        public Task ReadTransactionAsync(Func<ITransaction, Task> work, TimeSpan timeout)
+        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TimeSpan timeout)
         {
             return RunTransactionAsync(AccessMode.Read, work, timeout);
         }
@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Internal
             return RunTransactionAsync(AccessMode.Read, work);
         }
 
-        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TimeSpan timeout)
+        public Task ReadTransactionAsync(Func<ITransaction, Task> work, TimeSpan timeout)
         {
             return RunTransactionAsync(AccessMode.Read, work, timeout);
         }
