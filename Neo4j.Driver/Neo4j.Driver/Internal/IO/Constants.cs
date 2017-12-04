@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal.IO
         public const int MinChunkSize = 6;
 
         public const int ChunkBufferSize = 16 * 1024;
+        public const int ChunkBufferResetPositionsWatermark = 1024;
         public const int DefaultReadBufferSize = 32 * 1024;
         public const int MaxReadBufferSize = 128 * 1024;
         public const int DefaultWriteBufferSize = 16 * 1024;
