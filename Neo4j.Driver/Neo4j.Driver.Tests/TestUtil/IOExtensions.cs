@@ -24,12 +24,47 @@ using System.Threading.Tasks;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Tests
 {
     internal static class IOExtensions
     {
+
+        public static byte[] GenerateBoltMessage(int paramBytesLength)
+        {
+            using (var data = new MemoryStream())
+            {
+                var boltWriter = new BoltWriter(data);
+                boltWriter.Write(new RunMessage("RETUN {a}", new Dictionary<string, object>
+                {
+                    {"a", Enumerable.Repeat((byte) 0, paramBytesLength).ToArray()}
+                }));
+                boltWriter.Flush();
+
+                return data.ToArray();
+            }
+        }
+
+        public static byte[] GenerateBoltMessages(int paramBytesLength, int limit)
+        {
+            using (var data = new MemoryStream())
+            {
+                var boltWriter = new BoltWriter(data);
+
+                while (data.Length < limit)
+                {
+                    boltWriter.Write(new RunMessage("RETUN {a}", new Dictionary<string, object>
+                    {
+                        {"a", Enumerable.Repeat((byte) 0, paramBytesLength).ToArray()}
+                    }));
+                    boltWriter.Flush();
+                }
+
+                return data.ToArray();
+            }
+        }
 
         public static PackStreamReader CreateChunkedPackStreamReaderFromBytes(byte[] bytes, ILogger logger = null)
         {
