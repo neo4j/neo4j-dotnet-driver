@@ -51,6 +51,23 @@ namespace Neo4j.Driver.V1
         ITransaction BeginTransaction();
 
         /// <summary>
+        /// Begin a new transaction with transaction timeout in this session.
+        /// The transaction running longger than the specified timeout on the server side will be cancelled and rolled back.
+        /// A session can have at most one transaction running at a time, if you
+        /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
+        ///
+        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunner.Run(Statement)"/>
+        /// method directly on this session interface as well. When you use that method, your statement automatically gets
+        /// wrapped in a transaction.
+        ///
+        /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
+        /// method.
+        /// </summary>
+        /// <param name="timeout">Transaction timeout</param>
+        /// <returns>A new transaction.</returns>
+        ITransaction BeginTransaction(TimeSpan timeout);
+
+        /// <summary>
         /// This method is deprecated.
         /// </summary>
         /// <param name="bookmark"></param>
@@ -72,7 +89,23 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <returns>A task of a new transaction.</returns>
         Task<ITransaction> BeginTransactionAsync();
-        
+
+        /// <summary>
+        /// Asynchronously begin a new transaction with transaction timeout in this session.
+        /// The transaction running longger than the specified timeout on the server side will be cancelled and rolled back.
+        /// A session can have at most one transaction running at a time, if you
+        /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
+        ///
+        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunner.RunAsync(Statement)"/>
+        /// method directly on this session interface as well. When you use that method, your statement automatically gets
+        /// wrapped in a transaction.
+        ///
+        /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
+        /// method.
+        /// </summary>
+        /// <param name="timeout">Transaction timeout</param>
+        /// <returns>A task of new transaction</returns>
+        Task<ITransaction> BeginTransactionAsync(TimeSpan timeout);
         /// <summary>
         /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
         /// </summary>

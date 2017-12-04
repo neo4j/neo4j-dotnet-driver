@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
@@ -89,18 +90,23 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() => BeginTransactionWithoutLogging(_defaultMode));
         }
 
+        public ITransaction BeginTransaction(TimeSpan timeout)
+        {
+            return TryExecute(() => BeginTransactionWithoutLogging(_defaultMode, timeout));
+        }
+
         public ITransaction BeginTransaction(string bookmark)
         {
             UpdateBookmark(Bookmark.From(bookmark, Logger));
             return BeginTransaction();
         }
 
-        private ITransaction BeginTransactionWithoutLogging(AccessMode mode)
+        private ITransaction BeginTransactionWithoutLogging(AccessMode mode, TimeSpan? timeout = null)
         {
             EnsureCanRunMoreStatements();
 
             _connection = _connectionProvider.Acquire(mode);
-            var tx = new Transaction(_connection, this, Logger, _bookmark);
+            var tx = new Transaction(_connection, this, Logger, _bookmark, timeout);
             tx.SyncBookmark(_bookmark);
             _transaction = tx;
             return _transaction;
@@ -396,12 +402,12 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private async Task<ITransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode)
+        private async Task<ITransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode, TimeSpan? timeout = null)
         {
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            var tx = new Transaction(_connection, this, Logger, _bookmark);
+            var tx = new Transaction(_connection, this, Logger, _bookmark, timeout);
             await tx.SyncBookmarkAsync(_bookmark).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
@@ -410,6 +416,11 @@ namespace Neo4j.Driver.Internal
         public Task<ITransaction> BeginTransactionAsync()
         {
             return TryExecuteAsync(() => BeginTransactionWithoutLoggingAsync(_defaultMode));
+        }
+
+        public Task<ITransaction> BeginTransactionAsync(TimeSpan timeout)
+        {
+            return TryExecuteAsync(() => BeginTransactionWithoutLoggingAsync(_defaultMode, timeout));
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<ITransaction, Task> work)
