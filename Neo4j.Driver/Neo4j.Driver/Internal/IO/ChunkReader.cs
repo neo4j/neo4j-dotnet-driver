@@ -83,10 +83,7 @@ namespace Neo4j.Driver.Internal.IO
                     }
 
                     // Just reset the position trackers to not to run over our fixed size buffer.
-                    if (_lastReadPosition == _lastWritePosition)
-                    {
-                        ResetPositions();
-                    }
+                    ResetPositions();
                 }
                 else
                 {
@@ -113,7 +110,7 @@ namespace Neo4j.Driver.Internal.IO
                     var read = _downStream.Read(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition);
                     if (read <= 0)
                     {
-                        throw new IOException("Unexpected end of stream.");
+                        throw new IOException($"Unexpected end of stream, read returned {read}");
                     }
 
                     _logger?.Trace("S: ", _buffer, _lastWritePosition, read);
@@ -197,7 +194,7 @@ namespace Neo4j.Driver.Internal.IO
 
                                 if (t.Result <= 0)
                                 {
-                                    throw new IOException("Unexpected end of stream.");
+                                    throw new IOException($"Unexpected end of stream, read returned {t.Result}.");
                                 }
 
                                 // Otherwise process it.
@@ -293,16 +290,27 @@ namespace Neo4j.Driver.Internal.IO
         {
             _currentChunkSize = -1;
 
-            if (_lastReadPosition == _lastWritePosition)
-            {
-                ResetPositions();
-            }
+            ResetPositions();
         }
 
         private void ResetPositions()
         {
-            _lastWritePosition = 0;
-            _lastReadPosition = 0;
+            var leftWritableBytes = _buffer.Length - _lastWritePosition;
+
+            if (leftWritableBytes < Constants.ChunkBufferResetPositionsWatermark)
+            {
+                var leftOverBytes = _lastWritePosition - _lastReadPosition;
+
+                _logger?.Trace($"{leftWritableBytes} bytes left in chunk buffer [lastWritePosition: {_lastWritePosition}, lastReadPosition: {_lastReadPosition}], compacting.");
+
+                if (leftOverBytes > 0)
+                {
+                    Array.Copy(_buffer, _lastReadPosition, _buffer, 0, leftOverBytes);
+                }
+
+                _lastWritePosition = leftOverBytes;
+                _lastReadPosition = 0;
+            }
         }
         
     }
