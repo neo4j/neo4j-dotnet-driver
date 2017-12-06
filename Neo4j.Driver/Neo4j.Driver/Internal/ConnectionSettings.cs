@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal
 {
     internal class ConnectionSettings
     {
-        internal const string DefaultUserAgent = "neo4j-dotnet/1.5";
+        internal const string DefaultUserAgent = "neo4j-dotnet/1.6";
 
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }

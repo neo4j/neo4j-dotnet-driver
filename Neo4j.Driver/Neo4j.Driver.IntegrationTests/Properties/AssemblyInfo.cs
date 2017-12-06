@@ -48,9 +48,9 @@ using Xunit;
 //
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.5.*")]
-[assembly: AssemblyVersion("1.5.0.0")]
-[assembly: AssemblyFileVersion("1.5.0.0")]
+// [assembly: AssemblyVersion("1.6.*")]
+[assembly: AssemblyVersion("1.6.0.0")]
+[assembly: AssemblyFileVersion("1.6.0.0")]
 
 // The integration tests defined in this assembly require a database service running in the background.
 // The tests might rely on certain status of the database, therefore the tests should be executed sequentially.
