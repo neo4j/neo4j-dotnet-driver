@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests
         public class Constructor
         {
             [Fact]
-            public void ShouldRunWithoutBookmarkIfNoBookmarkGiven()
+            public void ShouldRunWithoutParameterIfParameterGiven()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
@@ -53,6 +53,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
+            [Fact]
             public void ShouldRunWithoutBookmarkIfInvalidBookmarkGiven()
             {
                 var mockConn = new Mock<IConnection>();
@@ -83,6 +84,30 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
                 tx.Bookmark.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldRunWithTxTimeoutIfProvided()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object, null, null, null, TimeSpan.FromMinutes(1));
+
+                IDictionary<string, object> paramters = new Dictionary<string, object>{{"txTimeout", 60000L}};
+                mockConn.Verify(RunBegin(paramters), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldRunWithParameters()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From(FakeABookmark(234));
+                var tx = new Transaction(mockConn.Object, null, null, bookmark, TimeSpan.FromMinutes(1));
+
+                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
+                paramters.Add("txTimeout", 60000L);
+                mockConn.Verify(RunBegin(paramters), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
             }
         }
 

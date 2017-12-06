@@ -109,6 +109,26 @@ namespace Neo4j.Driver.Tests
         public class BeginTransactionMethod
         {
             [Fact]
+            public void NullDefaultTimeout()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                session.BeginTransaction();
+                mockConn.Verify(x=>x.Run("BEGIN", null, null, true));
+            }
+
+            [Fact]
+            public void ShouldSendTimeout()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                session.BeginTransaction(TimeSpan.FromSeconds(10));
+                mockConn.Verify(x=>x.Run("BEGIN", new Dictionary<string, object>{{"txTimeout", 10000L}}, null, true));
+            }
+
+            [Fact]
             public void NullDefaultBookmark()
             {
                 var mockConn = new Mock<IConnection>();
@@ -257,6 +277,26 @@ namespace Neo4j.Driver.Tests
 
         public class BeginTransactionAsyncMethod
         {
+            [Fact]
+            public async void NullDefaultTimeout()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.BeginTransactionAsync();
+                mockConn.Verify(x=>x.Run("BEGIN", null, null, true));
+            }
+
+            [Fact]
+            public async void ShouldSendTimeout()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var session = NewSession(mockConn.Object);
+                await session.BeginTransactionAsync(TimeSpan.FromSeconds(10));
+                mockConn.Verify(x=>x.Run("BEGIN", new Dictionary<string, object>{{"txTimeout", 10000L}}, null, true));
+            }
+
             [Fact]
             public async void ShouldNotAllowNewTxWhileOneIsRunning()
             {

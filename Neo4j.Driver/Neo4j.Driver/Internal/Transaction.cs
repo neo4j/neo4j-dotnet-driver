@@ -33,6 +33,7 @@ namespace Neo4j.Driver.Internal
         private const string Begin = "BEGIN";
         private const string Commit = "COMMIT";
         private const string Rollback = "ROLLBACK";
+        private const string Timeout = "txTimeout";
 
         private State _state = State.Active;
 
@@ -60,11 +61,23 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
-        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null,
+            ILogger logger=null, Bookmark bookmark = null, TimeSpan? timeout = null) : base(logger)
         {
             _connection = new TransactionConnection(this, connection);
             _resourceHandler = resourceHandler;
-            IDictionary<string, object> paramters = bookmark?.AsBeginTransactionParameters();
+            var paramters = bookmark?.AsBeginTransactionParameters();
+
+            if (timeout != null)
+            {
+                var totalMilliseconds = Math.Max(0L, (long) timeout.Value.TotalMilliseconds);
+                if (paramters == null)
+                {
+                    paramters = new Dictionary<string, object>();
+                }
+                paramters.Add(Timeout, totalMilliseconds);
+            }
+
             _connection.Run(Begin, paramters);
         }
 
