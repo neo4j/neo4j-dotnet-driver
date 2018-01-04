@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2018 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -27,7 +27,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Neo4j.Driver")]
-[assembly: AssemblyCopyright("Copyright ©  2002-2017")]
+[assembly: AssemblyCopyright("Copyright ©  2002-2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
