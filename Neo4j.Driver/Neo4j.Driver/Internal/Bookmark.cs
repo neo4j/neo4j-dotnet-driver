@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2017 "Neo Technology,"
+// Copyright (c) 2002-2018 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal
 
         public static Bookmark From(IEnumerable<string> values, ILogger logger = null)
         {
-            return new Bookmark(values, null);
+            return new Bookmark(values, logger);
         }
 
         public string MaxBookmarkAsString()

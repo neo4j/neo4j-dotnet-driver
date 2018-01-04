@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2018 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal.IO
         public const int MinChunkSize = 6;
 
         public const int ChunkBufferSize = 16 * 1024;
+        public const int ChunkBufferResetPositionsWatermark = 1024;
         public const int DefaultReadBufferSize = 32 * 1024;
         public const int MaxReadBufferSize = 128 * 1024;
         public const int DefaultWriteBufferSize = 16 * 1024;

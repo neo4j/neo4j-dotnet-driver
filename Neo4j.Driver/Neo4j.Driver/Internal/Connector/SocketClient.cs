@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2018 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -208,7 +208,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception ex)
             {
-                _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", ex);
+                _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", ex);
                 Stop();
                 throw;
             }
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 if (t.IsFaulted)
                 {
-                    _logger?.Info($"Unable to read message from server {_uri}, connection will be terminated.", t.Exception);
+                    _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", t.Exception);
                     Stop();
 
                     tcs.SetException(t.Exception.GetBaseException());

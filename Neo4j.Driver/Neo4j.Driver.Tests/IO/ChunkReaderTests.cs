@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2017 "Neo Technology,"
+﻿// Copyright (c) 2002-2018 "Neo Technology,"
 // Network Engine for Objects in Lund AB [http://neotechnology.com]
 // 
 // This file is part of Neo4j.
@@ -15,13 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -122,6 +125,83 @@ namespace Neo4j.Driver.Tests.IO
                 exc.Message.Should().StartWith("Unexpected end of stream");
             }
 
+            [Fact]
+            public void ShouldNotResetInternalBufferPositionsAfterSmallMessageIsRead()
+            {
+                var size = Constants.ChunkBufferSize - (2 * Constants.ChunkBufferResetPositionsWatermark);
+                var data = IOExtensions.GenerateBoltMessage(size);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = reader.ReadNextMessages(new MemoryStream());
+
+                count.Should().Be(1);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldResetInternalBufferPositionsAfterOneLargeMessageIsRead()
+            {
+                var size = Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark;
+                var data = IOExtensions.GenerateBoltMessage(size);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = reader.ReadNextMessages(new MemoryStream());
+
+                count.Should().Be(1);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldNotResetInternalBufferPositionsAfterConsecutiveSmallMessagesAreRead()
+            {
+                var size = 1000;
+                var limit = Constants.ChunkBufferSize - (2 * Constants.ChunkBufferResetPositionsWatermark);
+                var data = IOExtensions.GenerateBoltMessages(size, limit);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = reader.ReadNextMessages(new MemoryStream());
+
+                count.Should().BeGreaterOrEqualTo(limit / size);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldResetInternalBufferPositionsAfterConsecutiveSmallMessagesAreRead()
+            {
+                var size = 1000;
+                var limit = Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark;
+                var data = IOExtensions.GenerateBoltMessages(size, limit);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = reader.ReadNextMessages(new MemoryStream());
+
+                count.Should().BeGreaterOrEqualTo(limit / size);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldResetInternalBufferPositionsAfterOneChunkSpanningMessageIsRead()
+            {
+                var size = Constants.MaxChunkSize * 3;
+                var data = IOExtensions.GenerateBoltMessage(size);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = reader.ReadNextMessages(new MemoryStream());
+
+                count.Should().Be(1);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.AtLeast(size / Constants.ChunkBufferSize));
+            }
+            
         }
 
         public class ReadNextMessagesAsyncMethod
@@ -170,7 +250,85 @@ namespace Neo4j.Driver.Tests.IO
                 exc.Should().BeOfType<IOException>();
                 exc.Message.Should().StartWith("Unexpected end of stream");
             }
+
+            [Fact]
+            public async void ShouldNotResetInternalBufferPositionsAfterSmallMessageIsRead()
+            {
+                var size = Constants.ChunkBufferSize - (2 * Constants.ChunkBufferResetPositionsWatermark);
+                var data = IOExtensions.GenerateBoltMessage(size);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = await reader.ReadNextMessagesAsync(new MemoryStream());
+
+                count.Should().Be(1);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Never);
+            }
+
+            [Fact]
+            public async void ShouldResetInternalBufferPositionsAfterOneLargeMessageIsRead()
+            {
+                var size = Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark;
+                var data = IOExtensions.GenerateBoltMessage(size);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = await reader.ReadNextMessagesAsync(new MemoryStream());
+
+                count.Should().Be(1);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldNotResetInternalBufferPositionsAfterConsecutiveSmallMessagesAreRead()
+            {
+                var size = 1000;
+                var limit = Constants.ChunkBufferSize - (2 * Constants.ChunkBufferResetPositionsWatermark);
+                var data = IOExtensions.GenerateBoltMessages(size, limit);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = await reader.ReadNextMessagesAsync(new MemoryStream());
+
+                count.Should().BeGreaterOrEqualTo(limit / size);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Never);
+            }
+
+            [Fact]
+            public async void ShouldResetInternalBufferPositionsAfterConsecutiveSmallMessagesAreRead()
+            {
+                var size = 1000;
+                var limit = Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark;
+                var data = IOExtensions.GenerateBoltMessages(size, limit);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = await reader.ReadNextMessagesAsync(new MemoryStream());
+
+                count.Should().BeGreaterOrEqualTo(limit / size);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.Once);
+            }
+
+            [Fact]
+            public async void ShouldResetInternalBufferPositionsAfterOneChunkSpanningMessageIsRead()
+            {
+                var size = Constants.MaxChunkSize * 3;
+                var data = IOExtensions.GenerateBoltMessage(size);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var count = await reader.ReadNextMessagesAsync(new MemoryStream());
+
+                count.Should().Be(1);
+                logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.AtLeast(size / Constants.ChunkBufferSize));
+            }
+
         }
-        
+
     }
 }
