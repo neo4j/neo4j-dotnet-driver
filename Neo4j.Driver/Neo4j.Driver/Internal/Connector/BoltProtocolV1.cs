@@ -27,8 +27,8 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly BufferSettings _bufferSettings;
         private readonly ILogger _logger;
 
-        public IBoltReader Reader { get; set; }
-        public IBoltWriter Writer { get; set; }
+        public IBoltReader Reader { get; private set; }
+        public IBoltWriter Writer { get; private set; }
 
         public BoltProtocolV1(ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger=null)
         {

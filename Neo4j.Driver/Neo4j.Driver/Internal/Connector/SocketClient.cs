@@ -27,10 +27,11 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketClient :  ISocketClient
     {
-        private readonly ITcpSocketClient _tcpSocketClient;
         private readonly Uri _uri;
-        private IBoltProtocol _boltProtocol;
         private readonly BufferSettings _bufferSettings;
+
+        private readonly ITcpSocketClient _tcpSocketClient;
+        private IBoltProtocol _boltProtocol;
 
         private int _closedMarker = -1;
 
@@ -42,6 +43,13 @@ namespace Neo4j.Driver.Internal.Connector
             _logger = logger;
             _bufferSettings = bufferSettings;
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
+        }
+
+        // For testing only
+        internal SocketClient(IBoltProtocol boltProtocol, ITcpSocketClient socketClient = null)
+        {
+            _boltProtocol = boltProtocol;
+            _tcpSocketClient = socketClient;
         }
 
         public bool IsOpen => _closedMarker == 0;
@@ -246,7 +254,7 @@ namespace Neo4j.Driver.Internal.Connector
             _boltProtocol.ReconfigIfNecessary(serverVersion);
         }
 
-        private void SetOpened()
+        internal void SetOpened()
         {
             Interlocked.CompareExchange(ref _closedMarker, 0, -1);
         }
