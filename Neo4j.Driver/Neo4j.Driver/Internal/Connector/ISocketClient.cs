@@ -32,8 +32,8 @@ namespace Neo4j.Driver.Internal.Connector
         Task ReceiveAsync(IMessageResponseHandler responseHandler);
         void ReceiveOne(IMessageResponseHandler responseHandler);
         Task ReceiveOneAsync(IMessageResponseHandler responseHandler);
+        void UpdateBoltProtocol(string serverVersion);
         bool IsOpen { get; }
-        void UpdatePackStream(string serverVersion);
         void Stop();
         Task StopAsync();
     }
