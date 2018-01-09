@@ -136,10 +136,8 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public Task SendAsync(IEnumerable<IRequestMessage> messages)
+        public async Task SendAsync(IEnumerable<IRequestMessage> messages)
         {
-            var taskCompletionSource = new TaskCompletionSource<object>();
-
             try
             {
                 foreach (var message in messages)
@@ -147,33 +145,14 @@ namespace Neo4j.Driver.Internal.Connector
                     _boltProtocol.Writer.Write(message);
                     _logger?.Debug("C: ", message);
                 }
-
-                _boltProtocol.Writer.FlushAsync().ContinueWith(t =>
-                {
-                    if (t.IsFaulted && t.Exception != null)
-                    {
-                        _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", t.Exception);
-                        Stop();
-                        taskCompletionSource.SetException(t.Exception.GetBaseException());
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        taskCompletionSource.SetCanceled();
-                    }
-                    else
-                    {
-                        taskCompletionSource.SetResult(null);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                await _boltProtocol.Writer.FlushAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
-                Stop();
+                await StopAsync().ConfigureAwait(false);
                 throw;
             }
-
-            return taskCompletionSource.Task;
         }
 
         public void Receive(IMessageResponseHandler responseHandler)
@@ -212,42 +191,25 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
+        public async Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
         {
-            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
-
-            _boltProtocol.Reader.ReadAsync(responseHandler).ContinueWith(t =>
+            try
             {
-                if (t.IsFaulted)
-                {
-                    _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", t.Exception);
-                    Stop();
-
-                    tcs.SetException(t.Exception.GetBaseException());
-                }
-                else if (t.IsCanceled)
-                {
-                    tcs.SetCanceled();
-                }
-                else
-                {
-                    if (responseHandler.HasProtocolViolationError)
-                    {
-                        _logger?.Info(
-                            $"Received bolt protocol error from server {_uri}, connection will be terminated.",
-                            responseHandler.Error);
-                        Stop();
-                        tcs.SetException(responseHandler.Error);
-                    }
-                    else
-                    {
-                        tcs.SetResult(null);
-                    }
-                }
-            });
-
-            return tcs.Task;
-        }
+                await _boltProtocol.Reader.ReadAsync(responseHandler).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", ex);
+                await StopAsync().ConfigureAwait(false);
+                throw;
+            }
+            if (responseHandler.HasProtocolViolationError)
+            {
+                _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
+                await StopAsync().ConfigureAwait(false);
+                throw responseHandler.Error;
+            }
+       }
 
         public void UpdateBoltProtocol(string serverVersion)
         {
