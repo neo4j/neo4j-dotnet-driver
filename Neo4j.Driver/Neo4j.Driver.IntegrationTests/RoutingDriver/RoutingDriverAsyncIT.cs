@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.SoakRunWorkItem;
 using static Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests
@@ -152,10 +153,10 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(5000)]
         public async void SoakRunAsync(int threadCount)
         {
-            var statisticsCollector = new StatisticsCollector();
+            var metrics = new DriverMetrics();
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
             {
-                DriverStatisticsCollector = statisticsCollector,
+                DriverMetrics = metrics,
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted,
                 MaxIdleConnectionPoolSize = 20,
@@ -165,7 +166,7 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var workItem = new SoakRunWorkItem(driver, statisticsCollector, Output);
+            var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
             for (var i = 0; i < threadCount; i++)
@@ -174,22 +175,23 @@ namespace Neo4j.Driver.IntegrationTests
             }
             await Task.WhenAll(tasks);
 
-            await driver.CloseAsync();
-
-            var statistics = statisticsCollector.CollectStatistics();
-            Output.WriteLine(statistics.ToContentString());
+            var poolMetrics = metrics.Pools;
+            Output.WriteLine(poolMetrics.ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
-            foreach (var statistic in statistics)
+            foreach (var value in poolMetrics)
             {
-                var st = ConnectionPoolStatistics.FromDictionary(statistic.Key, statistic.Value.ValueAs<IDictionary<string, object>>());
+                var st = value.Value;
 
-                st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
-                st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
-                st.ConnToClose.Should().Be(st.ConnClosed);
+                st.ToCreate.Should().Be(0);
+                st.ToClose.Should().Be(0);
+                st.InUse.Should().Be(0);
+                st.Idle.Should().Be((int) (st.Created - st.Closed));
             }
+
+            await driver.CloseAsync();
         }
     }
 }
