@@ -19,10 +19,10 @@ using HdrHistogram;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
-    internal class Hisotgram : IHistogram
+    internal class Histogram : IHistogram
     {
         private readonly LongConcurrentHistogram _histogram;
-        public Hisotgram(LongConcurrentHistogram histgram)
+        public Histogram(LongConcurrentHistogram histgram)
         {
             _histogram = histgram;
         }

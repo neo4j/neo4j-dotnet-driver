@@ -25,9 +25,21 @@ namespace Neo4j.Driver.Internal.Metrics
     internal interface IDriverMetrics
     {
         /// <summary>
-        /// The connection pool metrics
+        /// The connection pool metrics.
+        /// Example: metrics.PoolMetrics[Name].Status
         /// </summary>
-        IDictionary<string, IConnectionPoolMetrics> Pools { get; }
+        IDictionary<string, IConnectionPoolMetrics> PoolMetrics { get; }
+
+        // The connection metrics.
+        // Example: metrics.ConnectionMetrics[Name].CreationTimeHistogram
+        IDictionary<string, IConnectionMetrics> ConnectionMetrics { get; }
+    }
+
+    internal interface IConnectionMetrics
+    {
+        string UniqueName { get; }
+        IHistogram ConnectionTimeHistogram { get; }
+        IHistogram InUseTimeHistogram { get; }
     }
 
     /// <summary>
@@ -82,8 +94,7 @@ namespace Neo4j.Driver.Internal.Metrics
         long FailedToCreate { get; }
 
         /// <summary>
-        /// The histgram of the delays to acquire a connection from the pool.
-        /// The time recorded is in nano seconds.
+        /// The histgram of the delays to acquire a connection from the pool in nano seconds.
         /// The delays could either be the time to create a new connection or the time waiting for a connection available from the pool.
         /// </summary>
         IHistogram AcuisitionTimeHistogram { get; }

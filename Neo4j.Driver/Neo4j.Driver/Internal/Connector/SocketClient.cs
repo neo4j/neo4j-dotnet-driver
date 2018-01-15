@@ -16,10 +16,12 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
@@ -36,13 +38,20 @@ namespace Neo4j.Driver.Internal.Connector
         private int _closedMarker = -1;
 
         private readonly ILogger _logger;
+        private IConnectionListener _metrics;
 
-        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger, ITcpSocketClient socketClient = null)
+        private Stopwatch _timmer;
+
+        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings,
+            IConnectionListener metricsListener = null, ILogger logger = null, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
             _bufferSettings = bufferSettings;
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
+
+            _timmer = new Stopwatch();
+            _metrics = metricsListener;
         }
 
         // For testing only
@@ -58,10 +67,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Start()
         {
+            _metrics.BeforeConnect(_timmer);
             _tcpSocketClient.Connect(_uri);
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
+            _metrics.AfterConnect(_timmer);
 
             var version = DoHandshake();
             _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
@@ -71,9 +82,12 @@ namespace Neo4j.Driver.Internal.Connector
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
 
+            _metrics.BeforeConnect(_timmer);
             _tcpSocketClient.ConnectAsync(_uri)
                 .ContinueWith(t =>
                     {
+                        _metrics.AfterConnect(_timmer);
+
                         if (t.IsFaulted)
                         {
                             tcs.SetException(t.Exception.GetBaseException());

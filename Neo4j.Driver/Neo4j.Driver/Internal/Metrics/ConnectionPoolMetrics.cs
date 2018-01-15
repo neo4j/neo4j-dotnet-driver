@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Metrics
         public int Idle => _pool?.NumberOfIdleConnections ?? 0;
 
         private readonly ConcurrentSet<Stopwatch> _acquisitionDelayTimers = new ConcurrentSet<Stopwatch>();
-        private readonly Hisotgram _histogram;
+        private readonly Histogram _histogram;
         public IHistogram AcuisitionTimeHistogram => _histogram;
 
         public string UniqueName { get; }
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.Metrics
         {
             UniqueName = uri.ToString();
             _pool = pool;
-            _histogram = new Hisotgram(new LongConcurrentHistogram(1, connAcquisitionTimeout.Ticks, 0));
+            _histogram = new Histogram(new LongConcurrentHistogram(1, connAcquisitionTimeout.Ticks, 0));
         }
 
         public void BeforeConnectionCreated()

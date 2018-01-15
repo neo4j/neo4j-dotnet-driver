@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
 
@@ -26,7 +28,7 @@ namespace Neo4j.Driver.Internal
 
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
-        public SocketSettings SocketSettings { get; set; }
+        public SocketSettings SocketSettings { get; }
 
         public ConnectionSettings(IAuthToken auth, Config config)
         : this(auth, new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger),

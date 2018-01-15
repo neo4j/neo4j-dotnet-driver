@@ -17,9 +17,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -89,6 +86,8 @@ namespace Neo4j.Driver.Internal
         // for test only
         private readonly IConnection _fakeConnection;
 
+        private ConnectionMetrics _connMetrics;
+
         internal int Status
         {
             get => AtomicRead(ref _poolStatus);
@@ -115,7 +114,8 @@ namespace Neo4j.Driver.Internal
             var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
             _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
 
-            SetupStatisticsProvider(connectionPoolSettings.DriverMetrics);
+            _driverMetrics = connectionPoolSettings.DriverMetrics;
+            RegisterAtDriverMetrics();
         }
 
         internal ConnectionPool(
@@ -196,8 +196,8 @@ namespace Neo4j.Driver.Internal
             {
                 return _fakeConnection != null
                     ? new PooledConnection(_fakeConnection, this)
-                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, Logger),
-                        this);
+                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings,
+                            _connMetrics, Logger), this);
             }
             return null;
         }
@@ -390,7 +390,7 @@ namespace Neo4j.Driver.Internal
                                 }
 
                                 await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
-                                
+
                                 if (_idleConnections.TryTake(out connection))
                                 {
                                     break;
@@ -545,7 +545,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     TerminateIdleConnections();
-                    DisposeStatisticsProvider();
+                    UnregisterFromDriverMetrics();
                 });
             }
         }
@@ -566,7 +566,7 @@ namespace Neo4j.Driver.Internal
                 }
 
                 allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
-                DisposeStatisticsProvider();
+                UnregisterFromDriverMetrics();
 
                 return Task.WhenAll(allCloseTasks);
             }
@@ -630,22 +630,30 @@ namespace Neo4j.Driver.Internal
                 "You should not see this error persistenly.");
         }
 
-        private void SetupStatisticsProvider(IDriverMetrics collector)
+        private void RegisterAtDriverMetrics()
         {
-            _driverMetrics = collector;
-            if (_driverMetrics?.Pools != null)
+            if (_driverMetrics?.PoolMetrics != null)
             {
                 _poolMetrics = new ConnectionPoolMetrics(_uri, this, _connAcquisitionTimeout);
-                _driverMetrics.Pools.Add(_poolMetrics.UniqueName, _poolMetrics);
+                _driverMetrics.PoolMetrics.Add(_poolMetrics.UniqueName, _poolMetrics);
+            }
+            if (_driverMetrics?.ConnectionMetrics != null)
+            {
+                _connMetrics = new ConnectionMetrics(_uri, _connectionSettings.SocketSettings.ConnectionTimeout);
+                _driverMetrics.ConnectionMetrics.Add(_connMetrics.UniqueName, _connMetrics);
             }
         }
 
-        private void DisposeStatisticsProvider()
+        private void UnregisterFromDriverMetrics()
         {
             if (_poolMetrics != null)
             {
-                _driverMetrics?.Pools?.Remove(_poolMetrics.UniqueName);
+                _driverMetrics?.PoolMetrics?.Remove(_poolMetrics.UniqueName);
                 _poolMetrics.Dispose();
+            }
+            if (_connMetrics != null)
+            {
+                _driverMetrics?.ConnectionMetrics?.Remove(_connMetrics.UniqueName);
             }
         }
 
