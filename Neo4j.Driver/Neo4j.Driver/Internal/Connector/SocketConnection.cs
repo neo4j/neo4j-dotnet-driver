@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
             Sync();
             ((ServerInfo)Server).Version = initCollector.Server;
-            _client.UpdatePackStream(initCollector.Server);
+            _client.UpdateBoltProtocol(initCollector.Server);
         }
 
         private async Task InitAsync(IAuthToken authToken)
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
             await SyncAsync().ConfigureAwait(false);
             ((ServerInfo)Server).Version = initCollector.Server;
-            _client.UpdatePackStream(initCollector.Server);
+            _client.UpdateBoltProtocol(initCollector.Server);
         }
 
         public void Sync()

@@ -27,18 +27,11 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketClient :  ISocketClient
     {
-        private static class ProtocolVersion
-        {
-            public const int NoVersion = 0;
-            public const int Version1 = 1;
-            public const int Http = 1213486160;
-        }
+        private readonly Uri _uri;
+        private readonly BufferSettings _bufferSettings;
 
         private readonly ITcpSocketClient _tcpSocketClient;
-        private readonly Uri _uri;
-        private IBoltReader _reader;
-        private IBoltWriter _writer;
-        private readonly BufferSettings _bufferSettings;
+        private IBoltProtocol _boltProtocol;
 
         private int _closedMarker = -1;
 
@@ -50,6 +43,13 @@ namespace Neo4j.Driver.Internal.Connector
             _logger = logger;
             _bufferSettings = bufferSettings;
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
+        }
+
+        // For testing only
+        internal SocketClient(IBoltProtocol boltProtocol, ITcpSocketClient socketClient = null)
+        {
+            _boltProtocol = boltProtocol;
+            _tcpSocketClient = socketClient;
         }
 
         public bool IsOpen => _closedMarker == 0;
@@ -64,10 +64,9 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var version = DoHandshake();
-            
-            ConfigureVersion(version);
+            _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
         }
-        
+
         public Task StartAsync()
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
@@ -101,8 +100,7 @@ namespace Neo4j.Driver.Internal.Connector
                     {
                         try
                         {
-                            ConfigureVersion(version);
-
+                            _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
                             tcs.SetResult(null);
                         }
                         catch (AggregateException exc)
@@ -119,22 +117,16 @@ namespace Neo4j.Driver.Internal.Connector
             return tcs.Task;
         }
 
-        private void SetupPackStreamFormatWriterAndReader(bool supportBytes = true)
-        {
-            _writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize, _bufferSettings.MaxWriteBufferSize, _logger, supportBytes); 
-            _reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize, _bufferSettings.MaxReadBufferSize, _logger, supportBytes);
-        }
-        
         public void Send(IEnumerable<IRequestMessage> messages)
         {
             try
             {
                 foreach (var message in messages)
                 {
-                    _writer.Write(message);
+                    _boltProtocol.Writer.Write(message);
                     _logger?.Debug("C: ", message);
                 }
-                _writer.Flush();
+                _boltProtocol.Writer.Flush();
             }
             catch (Exception ex)
             {
@@ -144,44 +136,23 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public Task SendAsync(IEnumerable<IRequestMessage> messages)
+        public async Task SendAsync(IEnumerable<IRequestMessage> messages)
         {
-            var taskCompletionSource = new TaskCompletionSource<object>();
-
             try
             {
                 foreach (var message in messages)
                 {
-                    _writer.Write(message);
+                    _boltProtocol.Writer.Write(message);
                     _logger?.Debug("C: ", message);
                 }
-
-                _writer.FlushAsync().ContinueWith(t =>
-                {
-                    if (t.IsFaulted && t.Exception != null)
-                    {
-                        _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", t.Exception);
-                        Stop();
-                        taskCompletionSource.SetException(t.Exception.GetBaseException());
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        taskCompletionSource.SetCanceled();
-                    }
-                    else
-                    {
-                        taskCompletionSource.SetResult(null);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                await _boltProtocol.Writer.FlushAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
-                Stop();
+                await StopAsync().ConfigureAwait(false);
                 throw;
             }
-
-            return taskCompletionSource.Task;
         }
 
         public void Receive(IMessageResponseHandler responseHandler)
@@ -204,7 +175,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                _reader.Read(responseHandler);
+                _boltProtocol.Reader.Read(responseHandler);
             }
             catch (Exception ex)
             {
@@ -220,127 +191,36 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
+        public async Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
         {
-            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
-
-            _reader.ReadAsync(responseHandler).ContinueWith(t =>
+            try
             {
-                if (t.IsFaulted)
-                {
-                    _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", t.Exception);
-                    Stop();
+                await _boltProtocol.Reader.ReadAsync(responseHandler).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", ex);
+                await StopAsync().ConfigureAwait(false);
+                throw;
+            }
+            if (responseHandler.HasProtocolViolationError)
+            {
+                _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
+                await StopAsync().ConfigureAwait(false);
+                throw responseHandler.Error;
+            }
+       }
 
-                    tcs.SetException(t.Exception.GetBaseException());
-                }
-                else if (t.IsCanceled)
-                {
-                    tcs.SetCanceled();
-                }
-                else
-                {
-                    if (responseHandler.HasProtocolViolationError)
-                    {
-                        _logger?.Info(
-                            $"Received bolt protocol error from server {_uri}, connection will be terminated.",
-                            responseHandler.Error);
-                        Stop();
-                        tcs.SetException(responseHandler.Error);
-                    }
-                    else
-                    {
-                        tcs.SetResult(null);
-                    }
-                }
-            });
-
-            return tcs.Task;
+        public void UpdateBoltProtocol(string serverVersion)
+        {
+            _boltProtocol.ReconfigIfNecessary(serverVersion);
         }
 
-        private void SetOpened()
+        internal void SetOpened()
         {
             Interlocked.CompareExchange(ref _closedMarker, 0, -1);
         }
 
-        private int DoHandshake()
-        {
-            int[] supportedVersion = {1, 0, 0, 0};
-            
-            var data = PackVersions(supportedVersion);
-            _tcpSocketClient.WriteStream.Write(data, 0, data.Length);
-            _tcpSocketClient.WriteStream.Flush();
-            _logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
-
-            data = new byte[4];
-            _tcpSocketClient.ReadStream.Read(data, 0, data.Length);
-
-            var agreedVersion = GetAgreedVersion(data);
-            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
-            return agreedVersion;
-        }
-
-        private async Task<int> DoHandshakeAsync()
-        {
-            int[] supportedVersion = {1, 0, 0, 0};
-            
-            var data = PackVersions(supportedVersion);
-            await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
-            await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
-            _logger?.Debug("C: [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]");
-
-            data = new byte[4];
-            await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
-
-            var agreedVersion = GetAgreedVersion(data);
-            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
-            return agreedVersion;
-        }
-
-        private void ConfigureVersion(int version)
-        {
-            switch (version)
-            {
-                case ProtocolVersion.Version1:
-                    SetupPackStreamFormatWriterAndReader();
-                    break;
-                case ProtocolVersion.NoVersion:
-                    throw new NotSupportedException(
-                        "The Neo4j server does not support any of the protocol versions supported by this client. " +
-                        "Ensure that you are using driver and server versions that are compatible with one another.");
-                case ProtocolVersion.Http:
-                    throw new NotSupportedException(
-                        "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                        $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})");
-                default:
-                    throw new NotSupportedException(
-                        "Protocol error, server suggested unexpected protocol version: " + version);
-            }
-        }
-
-        private static byte[] PackVersions(IEnumerable<int> versions)
-        {
-            //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
-            var aLittleBitOfMagic = PackStreamBitConverter.GetBytes(0x6060B017);
-
-            var bytes = new List<byte>(aLittleBitOfMagic);
-            foreach (var version in versions)
-            {
-                bytes.AddRange(PackStreamBitConverter.GetBytes(version));
-            }
-            return bytes.ToArray();
-        }
-
-
-        private static int GetAgreedVersion(byte[] data)
-        {
-            return PackStreamBitConverter.ToInt32(data);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
 
         public void Stop()
         {
@@ -360,6 +240,12 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskExtensions.GetCompletedTask();
         }
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (IsClosed)
@@ -371,14 +257,34 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public void UpdatePackStream(string serverVersion)
+        private int DoHandshake()
         {
-            var version = ServerVersion.Version(serverVersion);
-            if ( version >= ServerVersion.V3_2_0 )
-            {
-                return;
-            }
-            SetupPackStreamFormatWriterAndReader(false);
+            var data = BoltProtocolFactory.PackSupportedVersions();
+            _tcpSocketClient.WriteStream.Write(data, 0, data.Length);
+            _tcpSocketClient.WriteStream.Flush();
+            _logger?.Debug("C: [HANDSHAKE] ", data);
+
+            data = new byte[4];
+            _tcpSocketClient.ReadStream.Read(data, 0, data.Length);
+
+            var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
+            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
+            return agreedVersion;
+        }
+
+        private async Task<int> DoHandshakeAsync()
+        {
+            var data = BoltProtocolFactory.PackSupportedVersions();
+            await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+            await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
+            _logger?.Debug("C: [HANDSHAKE] ", data);
+
+            data = new byte[4];
+            await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
+
+            var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
+            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
+            return agreedVersion;
         }
     }
 }

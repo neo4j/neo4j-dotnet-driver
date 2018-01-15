@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -24,9 +25,10 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.IO;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
-using Record = Xunit.Record;
+using static Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
@@ -37,233 +39,257 @@ namespace Neo4j.Driver.Tests
         public class StartMethod
         {
             [Fact]
-            public async Task ShouldConnectWithoutTlsToTheServer()
+            public void ShouldConnectServer()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    harness.SetupReadStream(new byte[] {0, 0, 0, 1});
-                    harness.SetupWriteStream();
-                    await harness.Client.StartAsync();
-                    harness.MockTcpSocketClient.Verify(t => t.ConnectAsync(FakeUri),
-                        Times.Once);
-                }
+                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] {0, 0, 0, 1});
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+
+                var client = new SocketClient(FakeUri, null, bufferSettings, null, connMock.Object);
+
+                client.Start();
+
+                // Then
+                connMock.Verify(x=>x.Connect(FakeUri), Times.Once);
             }
 
-            [Theory]
-            [InlineData(new byte[] {0, 0, 0, 0}, "The Neo4j server does not support any of the protocol versions supported by this client")]
-            [InlineData(new byte[] {0, 0, 0, 2}, "Protocol error, server suggested unexpected protocol version: 2")]
-            [InlineData(new byte[] {0x48, 0x54, 0x54, 0x50 /*HTTP*/}, "Server responded HTTP.")]
-            public async Task ShouldThrowExceptionIfVersionIsNotSupported(byte[] response, string errorMessage)
+            [Fact]
+            public async Task ShouldConnectServerAsync()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    harness.SetupReadStream(response);
-                    harness.SetupWriteStream();
-                    await harness.ExpectException<NotSupportedException>(() => harness.Client.StartAsync(), errorMessage);
-                }
+                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] {0, 0, 0, 1});
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+
+                var client = new SocketClient(FakeUri, null, bufferSettings, null, connMock.Object);
+
+                await client.StartAsync();
+
+                // Then
+                connMock.Verify(x=>x.ConnectAsync(FakeUri), Times.Once);
             }
         }
 
-        public class SendReceiveMethod
+        public class SendMethod
         {
             [Fact]
-            public async Task ShouldSendMessagesAsExpected()
+            public void ShouldSendAllMessages()
             {
                 // Given
-                var messages = new IRequestMessage[] {new RunMessage("Run message 1"), new RunMessage("Run message 1")};
-                byte[] expectedBytes =
-                {
-                    0x00, 0x11, 0xB2, 0x10, 0x8D, 0x52, 0x75, 0x6E, 0x20, 0x6D, 0x65, 0x73, 0x73,
-                    0x61, 0x67, 0x65, 0x20, 0x31, 0xA0, 0x00, 0x00, 0x00, 0x11, 0xB2, 0x10, 0x8D, 0x52, 0x75, 0x6E, 0x20,
-                    0x6D, 0x65, 0x73, 0x73,
-                    0x61, 0x67, 0x65, 0x20, 0x31, 0xA0, 0x00, 0x00
-                };
-                var expectedLength = expectedBytes.Length;
-                expectedBytes = expectedBytes.PadRight(8 * 1024);
+                var protocolMock = new Mock<IBoltProtocol>();
+                var writerMock = new Mock<IBoltWriter>();
+                protocolMock.Setup(x => x.Writer).Returns(writerMock.Object);
 
-                var messageHandler = new MessageResponseHandler();
-                messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
-                var rb = new ResultBuilder(null, () => { }, null, null);
-                messageHandler.EnqueueMessage(messages[0], rb);
-                messageHandler.EnqueueMessage(messages[1], rb);
+                var m1 = new RunMessage("Run message 1");
+                var m2 = new RunMessage("Run message 2");
+                var messages = new IRequestMessage[] {m1, m2};
+                var client = new SocketClient(protocolMock.Object);
 
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    harness.SetupReadStream("00 00 00 01" +
-                                            "00 03 b1 70 a0 00 00" +
-                                            "00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75 6d 00 00" +
-                                            "00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75 6d 00 00");
-                    harness.SetupWriteStream();
+                // When
+                client.Send(messages);
 
-                    await harness.Client.StartAsync();
-                    harness.ResetCalls();
-
-                    // When
-                    harness.Client.Send(messages);
-                    harness.Client.Receive(messageHandler);
-
-                    // Then
-                    harness.VerifyWriteStreamContent(expectedBytes, expectedLength);
-                }
+                // Then
+                writerMock.Verify(x=>x.Write(m1), Times.Once);
+                writerMock.Verify(x=>x.Write(m2), Times.Once);
+                writerMock.Verify(x=>x.Flush(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldCreateExceptionWhenErrorReceivedFromDatabase()
+            public async Task ShouldSendAllMessagesAsync()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    var messages = new IRequestMessage[] {new RunMessage("This will cause a syntax error")};
-                    var messageHandler = new MessageResponseHandler();
-                    messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
-                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder(null, () => { }, null, null));
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var writerMock = new Mock<IBoltWriter>();
+                protocolMock.Setup(x => x.Writer).Returns(writerMock.Object);
 
-                    harness.SetupReadStream("00 00 00 01" +
-                                            "00 03 b1 70 a0 00 00" +
-                                            "00a0b17fa284636f6465d0274e656f2e436c69656e744572726f722e53746174656d656e742e496e76616c696453796e746178876d657373616765d065496e76616c696420696e707574202754273a206578706563746564203c696e69743e20286c696e6520312c20636f6c756d6e203120286f66667365743a203029290a22546869732077696c6c20636175736520612073796e746178206572726f72220a205e0000");
+                var m1 = new RunMessage("Run message 1");
+                var m2 = new RunMessage("Run message 2");
+                var messages = new IRequestMessage[] {m1, m2};
+                var client = new SocketClient(protocolMock.Object);
 
-                    harness.SetupWriteStream();
+                // When
+                await client.SendAsync(messages);
 
-                    await harness.Client.StartAsync();
-                    harness.ResetCalls();
-
-                    // When
-                    harness.Client.Send(messages);
-                    Record.Exception(() => harness.Client.Receive(messageHandler));
-
-                    // Then
-                    messageHandler.HasError.Should().BeTrue();
-                    messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
-                    messageHandler.Error.Message.Should().Be(
-                        "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
-                }
+                // Then
+                writerMock.Verify(x=>x.Write(m1), Times.Once);
+                writerMock.Verify(x=>x.Write(m2), Times.Once);
+                writerMock.Verify(x=>x.FlushAsync(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldIgnorePullAllWhenErrorHappenedDuringRun()
+            public void ShouldCloseConnectionIfError()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    var messages = new IRequestMessage[]
-                    {
-                        new RunMessage("This will cause a syntax error"),
-                        new PullAllMessage()
-                    };
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var connMock = new Mock<ITcpSocketClient>();
 
-                    var messageHandler = new TestResponseHandler();
+                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                client.SetOpened();
 
-                    messageHandler.EnqueueMessage(new InitMessage(DefaultUserAgent, new Dictionary<string, object>()));
-                    messageHandler.EnqueueMessage(messages[0], new ResultBuilder(null, () => { }, null, null));
-                    messageHandler.EnqueueMessage(messages[1], new ResultBuilder(null, () => { }, null, null));
+                // When
+                var exception = Exception(()=>client.Send(null /*cause null point excpetion in send method*/));
 
-                    harness.SetupReadStream("00 00 00 01" +
-                                            "00 03 b1 70 a0 00 00" +
-                                            "00a0b17fa284636f6465d0274e656f2e436c69656e744572726f722e53746174656d656e742e496e76616c696453796e746178876d657373616765d065496e76616c696420696e707574202754273a206578706563746564203c696e69743e20286c696e6520312c20636f6c756d6e203120286f66667365743a203029290a22546869732077696c6c20636175736520612073796e746178206572726f72220a205e0000" +
-                                            "00 02 b0 7e 00 00");
-
-                    harness.SetupWriteStream();
-
-                    await harness.Client.StartAsync();
-                    harness.ResetCalls();
-
-                    // When
-                    harness.Client.Send(messages);
-                    Record.Exception(() => harness.Client.Receive(messageHandler));
-
-                    // Then
-                    messageHandler.HasError.Should().BeTrue();
-                    messageHandler.Error.Code.Should().Be("Neo.ClientError.Statement.InvalidSyntax");
-                    messageHandler.Error.Message.Should().Be(
-                        "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n\"This will cause a syntax error\"\n ^");
-                    messageHandler.UnhandledMessageSize.Should().Be(0);
-                    messageHandler.FailureMessageCalled.Should().Be(1);
-                    messageHandler.IgnoreMessageCalled.Should().Be(1);
-                }
+                // Then
+                exception.Should().BeOfType<NullReferenceException>();
+                connMock.Verify(x=>x.Disconnect(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldStopClientAndThrowExceptionWhenProtocolErrorOccurs()
+            public async Task ShouldCloseConnectionIfErrorAsync()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    var messages = new IRequestMessage[]
-                    {
-                        new RunMessage("Any message"),
-                    };
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var connMock = new Mock<ITcpSocketClient>();
 
-                    var messageHandler = new TestResponseHandler();
+                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                client.SetOpened();
 
-                    messageHandler.EnqueueMessage(messages[0]);
-                    harness.SetupReadStream("00 00 00 01" +
-                                            "00 02 b0 7e 00 00"); // read whatever message but not success
+                // When
+                var exception = await ExceptionAsync(()=>client.SendAsync(null /*cause null point excpetion in send method*/));
 
-                    harness.SetupWriteStream();
+                // Then
+                exception.Should().BeOfType<NullReferenceException>();
+                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
+            }
+        }
 
-                    await harness.Client.StartAsync();
+        public class ReceiveOneMethod
+        {
+            [Fact]
+            public void ShouldReadMessage()
+            {
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var readerMock = new Mock<IBoltReader>();
+                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
 
-                    // force to recive an error
-                    messageHandler.Error = new ProtocolException("Neo.ClientError.Request.Invalid", "Test Message");
+                var client = new SocketClient(protocolMock.Object);
+                var handlerMock = new Mock<IMessageResponseHandler>();
 
-                    // When
-                    harness.Client.Send(messages);
-                    var ex = Record.Exception(() => harness.Client.Receive(messageHandler));
-                    ex.Should().BeOfType<ProtocolException>();
+                // When
+                client.ReceiveOne(handlerMock.Object);
 
-                    harness.MockTcpSocketClient.Verify(x => x.Disconnect(), Times.Once);
-                }
+                // Then
+                readerMock.Verify(x=>x.Read(handlerMock.Object), Times.Once);
             }
 
-            private class TestResponseHandler : IMessageResponseHandler
+            [Fact]
+            public async Task ShouldReadMessageAsync()
             {
-                private readonly MessageResponseHandler _messageHandler;
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var readerMock = new Mock<IBoltReader>();
+                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
 
-                public TestResponseHandler()
-                {
-                    _messageHandler = new MessageResponseHandler();
-                }
+                var client = new SocketClient(protocolMock.Object);
+                var handlerMock = new Mock<IMessageResponseHandler>();
 
-                public int FailureMessageCalled { get; private set; }
-                public int IgnoreMessageCalled { get; private set; }
+                // When
+                await client.ReceiveOneAsync(handlerMock.Object);
 
+                // Then
+                readerMock.Verify(x=>x.ReadAsync(handlerMock.Object), Times.Once);
+            }
 
-                public bool HasProtocolViolationError => _messageHandler.HasProtocolViolationError;
+            [Fact]
+            public void ShouldCloseConnectionIfError()
+            {
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var readerMock = new Mock<IBoltReader>();
+                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var connMock = new Mock<ITcpSocketClient>();
 
-                public void HandleSuccessMessage(IDictionary<string, object> meta)
-                {
-                    _messageHandler.HandleSuccessMessage(meta);
-                }
+                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                client.SetOpened();
 
-                public void HandleFailureMessage(string code, string message)
-                {
-                    FailureMessageCalled++;
-                    _messageHandler.HandleFailureMessage(code, message);
-                }
+                var handlerMock = new Mock<IMessageResponseHandler>();
+                // Throw error when try to read
+                readerMock.Setup(x => x.Read(handlerMock.Object)).Throws<IOException>();
 
-                public void HandleIgnoredMessage()
-                {
-                    IgnoreMessageCalled++;
-                    _messageHandler.HandleIgnoredMessage();
-                }
+                // When
+                var exception = Exception(()=>client.ReceiveOne(handlerMock.Object));
 
-                public void HandleRecordMessage(object[] fields)
-                {
-                    _messageHandler.HandleRecordMessage(fields);
-                }
+                // Then
+                exception.Should().BeOfType<IOException>();
+                connMock.Verify(x=>x.Disconnect(), Times.Once);
+            }
 
-                public void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null)
-                {
-                    _messageHandler.EnqueueMessage(requestMessage, responseCollector);
-                }
+            [Fact]
+            public async Task ShouldCloseConnectionIfErrorAsync()
+            {
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var readerMock = new Mock<IBoltReader>();
+                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var connMock = new Mock<ITcpSocketClient>();
 
-                public int UnhandledMessageSize => _messageHandler.UnhandledMessageSize;
-                public IMessageResponseCollector CurrentResponseCollector => _messageHandler.CurrentResponseCollector;
+                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                client.SetOpened();
 
-                public bool HasError => _messageHandler.HasError;
+                var handlerMock = new Mock<IMessageResponseHandler>();
+                // Throw error when try to read
+                readerMock.Setup(x => x.ReadAsync(handlerMock.Object)).Throws<IOException>();
 
-                public Neo4jException Error
-                {
-                    get => _messageHandler.Error;
-                    set => _messageHandler.Error = value;
-                }
+                // When
+                var exception = await ExceptionAsync(()=>client.ReceiveOneAsync(handlerMock.Object));
+
+                // Then
+                exception.Should().BeOfType<IOException>();
+                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
+            }
+
+            [Fact]
+            public void ShouldCloseConnectionIfServerError()
+            {
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var readerMock = new Mock<IBoltReader>();
+                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var connMock = new Mock<ITcpSocketClient>();
+
+                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                client.SetOpened();
+
+                var handlerMock = new Mock<IMessageResponseHandler>();
+                handlerMock.Setup(x => x.HasProtocolViolationError).Returns(true);
+                handlerMock.Setup(x => x.Error).Returns(new DatabaseException());
+
+                // When
+                var exception = Exception(()=>client.ReceiveOne(handlerMock.Object));
+
+                // Then
+                exception.Should().BeOfType<DatabaseException>();
+                readerMock.Verify(x=>x.Read(handlerMock.Object), Times.Once);
+                connMock.Verify(x=>x.Disconnect(), Times.Once);
+            }
+
+            [Fact]
+            public async Task ShouldCloseConnectionIfServerErrorAsync()
+            {
+                // Given
+                var protocolMock = new Mock<IBoltProtocol>();
+                var readerMock = new Mock<IBoltReader>();
+                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var connMock = new Mock<ITcpSocketClient>();
+
+                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                client.SetOpened();
+
+                var handlerMock = new Mock<IMessageResponseHandler>();
+                handlerMock.Setup(x => x.HasProtocolViolationError).Returns(true);
+                handlerMock.Setup(x => x.Error).Returns(new DatabaseException());
+
+                // When
+                var exception = await ExceptionAsync(()=>client.ReceiveOneAsync(handlerMock.Object));
+
+                // Then
+                exception.Should().BeOfType<DatabaseException>();
+                readerMock.Verify(x=>x.ReadAsync(handlerMock.Object), Times.Once);
+                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
             }
         }
 
@@ -273,59 +299,47 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldCallDisconnectOnTheTcpSocketClientWhenDisposed()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    harness.SetupReadStream("00 00 00 01");
-                    harness.SetupWriteStream();
-                    harness.Client.Start();
-                    harness.Client.Dispose();
-                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
-                    harness.Client.IsOpen.Should().BeFalse();
-                }
-            }
+                var connMock = new Mock<ITcpSocketClient>();
+                var client = new SocketClient(null, connMock.Object);
+                client.SetOpened();
 
-            [Fact]
-            public async Task ShouldCallDisconnectOnTheTcpSocketClientWhenDisposedAsync()
-            {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    harness.SetupReadStream("00 00 00 01");
-                    harness.SetupWriteStream();
-                    await harness.Client.StartAsync();
-                    harness.Client.Dispose();
-                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
-                    harness.Client.IsOpen.Should().BeFalse();
-                }
+                // When
+                client.Dispose();
+
+                // Then
+                connMock.Verify(x=>x.Disconnect(), Times.Once);
+                client.IsOpen.Should().BeFalse();
             }
 
             [Fact]
             public void ShouldCallDisconnectOnTheTcpSocketClientWhenStopped()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    harness.SetupReadStream("00 00 00 01");
-                    harness.SetupWriteStream();
-                    harness.Client.Start();
-                    harness.Client.Stop();
-                    harness.MockTcpSocketClient.Verify(s => s.Disconnect(), Times.Once);
-                    harness.Client.IsOpen.Should().BeFalse();
-                }
+                var connMock = new Mock<ITcpSocketClient>();
+                var client = new SocketClient(null, connMock.Object);
+                client.SetOpened();
+
+                // When
+                client.Stop();
+
+                // Then
+                connMock.Verify(x=>x.Disconnect(), Times.Once);
+                client.IsOpen.Should().BeFalse();
             }
 
             [Fact]
             public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
             {
-                using (var harness = new SocketClientTestHarness(FakeUri))
-                {
-                    harness.SetupReadStream("00 00 00 01");
-                    harness.SetupWriteStream();
-                    await harness.Client.StartAsync();
-                    await harness.Client.StopAsync();
-                    harness.MockTcpSocketClient.Verify(s => s.DisconnectAsync(), Times.Once);
-                    harness.Client.IsOpen.Should().BeFalse();
-                }
-            }
+                var connMock = new Mock<ITcpSocketClient>();
+                var client = new SocketClient(null, connMock.Object);
+                client.SetOpened();
 
+                // When
+                await client.StopAsync();
+
+                // Then
+                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
+                client.IsOpen.Should().BeFalse();
+            }
         }
     }
 }

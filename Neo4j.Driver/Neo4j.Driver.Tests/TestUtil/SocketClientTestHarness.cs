@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -27,103 +28,8 @@ using static Neo4j.Driver.Tests.TcpSocketClientTestSetup;
 
 namespace Neo4j.Driver.Tests
 {
-    internal class SocketClientTestHarness : IDisposable
-    {
-        public SocketClient Client { get; }
-        public Mock<Stream> MockWriteStream { get; private set; }
-        public Mock<ITcpSocketClient> MockTcpSocketClient { get; }
-        string _received = string.Empty;
-
-        public SocketClientTestHarness(Uri uri=null)
-        {
-            MockTcpSocketClient = new Mock<ITcpSocketClient>();
-            var socketSettings = new SocketSettings
-            {
-                EncryptionManager = new Mock<EncryptionManager>().Object,
-                Ipv6Enabled = true,
-                SocketKeepAliveEnabled = true,
-                ConnectionTimeout = Config.InfiniteInterval
-            };
-            var bufferSettings = new BufferSettings(Config.DefaultConfig);
-            Client = new SocketClient(uri, socketSettings, bufferSettings, new Mock<ILogger>().Object, MockTcpSocketClient.Object);
-        }
-
-        public async Task ExpectException<T>(Func<Task> func, string errorMessage=null) where T : Exception
-        {
-            var exception = await Record.ExceptionAsync(() => func());
-            Assert.NotNull(exception);
-            Assert.IsType<T>(exception);
-            if (errorMessage != null)
-            {
-                exception.Message.Should().Contain(errorMessage);
-            }
-        }
-
-        public void SetupReadStream(string hexBytes)
-        {
-            SetupReadStream(hexBytes.ToByteArray());
-        }
-
-        public void ResetCalls()
-        {
-            MockTcpSocketClient.ResetCalls();
-            MockWriteStream.ResetCalls();
-        }
-
-        public void SetupWriteStream()
-        {
-            MockWriteStream = CreateWriteStreamMock(MockTcpSocketClient);
-
-            MockWriteStream
-                .Setup(s => s.Write(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()))
-                .Callback<byte[], int, int>((buffer, start, size) => _received += $"{buffer.ToHexString(start, size)}");
-        }
-
-        public void VerifyWriteStreamUsages(int count)
-        {
-            MockTcpSocketClient.Verify(c => c.WriteStream, Times.Exactly(count));
-        }
-
-        public void VerifyWriteStreamContent(byte[] expectedBytes, int expectedLength)
-        {
-            Assert.Equal(expectedBytes.ToHexString(0, expectedLength), _received);
-
-            MockWriteStream.Verify(c => c.Write(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>()), Times.AtLeastOnce);
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
-            Client.Dispose();
-        }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public void SetupReadStream(byte[] bytes)
-        {
-            CreateReadStreamMock(MockTcpSocketClient, bytes);
-        }
-    }
-
     internal static class TcpSocketClientTestSetup
     {
-        public static void SetupClientWithReadStream(Mock<ITcpSocketClient> mock, byte[] response)
-        {
-            var memoryStream = new MemoryStream();
-            memoryStream.Write(response);
-            memoryStream.Flush();
-            memoryStream.Position = 0;
-            mock.Setup(c => c.ReadStream).Returns(memoryStream);
-
-            var writeStream = new MemoryStream();
-            mock.Setup(c => c.WriteStream).Returns(writeStream);
-        }
-
         public static void CreateReadStreamMock(Mock<ITcpSocketClient> mock, byte[] response)
         {
             var memoryStream = new MemoryStream();
@@ -132,6 +38,14 @@ namespace Neo4j.Driver.Tests
             memoryStream.Position = 0;
 
             mock.Setup(c => c.ReadStream).Returns(memoryStream);
+        }
+
+        public static Mock<Stream> CreateReadStreamMock(Mock<ITcpSocketClient> mock)
+        {
+            var mockedStream = new Mock<Stream>();
+            mockedStream.Setup(x => x.CanRead).Returns(true);
+            mock.Setup(c => c.ReadStream).Returns(mockedStream.Object);
+            return mockedStream;
         }
 
         public static Mock<Stream> CreateWriteStreamMock(Mock<ITcpSocketClient> mock)
