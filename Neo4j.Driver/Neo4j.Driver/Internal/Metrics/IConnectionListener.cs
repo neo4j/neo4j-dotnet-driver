@@ -22,10 +22,34 @@ namespace Neo4j.Driver.Internal.Metrics
 {
     internal interface IConnectionListener
     {
-        void BeforeConnect(Stopwatch timmerFromConnection);
-        void AfterConnect(Stopwatch timmerFromConnection);
+        void BeforeConnect(IListenerEvent connEvent);
+        void AfterConnect(IListenerEvent connEvent);
 
-        void BeforeAcquire(Stopwatch timmerFromConnection);
-        void AfterRelease(Stopwatch timmerFromConnection);
+        void OnAcquire(IListenerEvent connEvent);
+        void OnRelease(IListenerEvent connEvent);
+    }
+
+    internal interface IListenerEvent
+    {
+        void Start();
+        long GetElapsed();
+    }
+
+    /// <summary>
+    /// A very simple impl of <see cref="IListenerEvent"/> without much error checks.
+    /// </summary>
+    internal class SimpleTimerEvent : IListenerEvent
+    {
+        private long _startTimestamp;
+
+        public void Start()
+        {
+            _startTimestamp = Stopwatch.GetTimestamp();
+        }
+
+        public long GetElapsed()
+        {
+            return Stopwatch.GetTimestamp() - _startTimestamp;
+        }
     }
 }

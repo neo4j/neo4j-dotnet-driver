@@ -28,11 +28,14 @@ namespace Neo4j.Driver.Internal
         Guid Id { get; }
 
         /// <summary>
-        /// Try to reset the connection to a clean state to prepare it for a new session.
+        /// Try to reset the connection to a clean state.
         /// </summary>
         void ClearConnection();
-
         Task ClearConnectionAsync();
+
+        void OnRequire();
+
+        void OnRelease();
 
         ITimer IdleTimer { get; }
 

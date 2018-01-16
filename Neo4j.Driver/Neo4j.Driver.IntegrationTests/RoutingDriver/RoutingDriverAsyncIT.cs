@@ -159,9 +159,9 @@ namespace Neo4j.Driver.IntegrationTests
                 DriverMetrics = metrics,
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted,
-                MaxIdleConnectionPoolSize = 20,
+                MaxIdleConnectionPoolSize = 50,
                 MaxConnectionPoolSize = 50,
-                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
+                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5)
             });
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
             await Task.WhenAll(tasks);
 
-            var poolMetrics = metrics.Pools;
+            var poolMetrics = metrics.PoolMetrics;
             Output.WriteLine(poolMetrics.ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");

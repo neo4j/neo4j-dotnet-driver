@@ -167,7 +167,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
             Task.WaitAll(tasks.ToArray());
 
-            var poolMetrics = metrics.Pools;
+            var poolMetrics = metrics.PoolMetrics;
             Output.WriteLine(poolMetrics.ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");

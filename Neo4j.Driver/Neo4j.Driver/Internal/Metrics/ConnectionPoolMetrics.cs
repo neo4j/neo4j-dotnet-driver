@@ -19,6 +19,8 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using HdrHistogram;
+using static Neo4j.Driver.Internal.Metrics.ConnectionMetrics;
+using static Neo4j.Driver.Internal.Metrics.Histogram;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
@@ -43,9 +45,9 @@ namespace Neo4j.Driver.Internal.Metrics
         public int InUse => _pool?.NumberOfInUseConnections ?? 0;
         public int Idle => _pool?.NumberOfIdleConnections ?? 0;
 
-        private readonly ConcurrentSet<Stopwatch> _acquisitionDelayTimers = new ConcurrentSet<Stopwatch>();
+        private readonly ConcurrentSet<IListenerEvent> _acquisitionDelayTimers = new ConcurrentSet<IListenerEvent>();
         private readonly Histogram _histogram;
-        public IHistogram AcuisitionTimeHistogram => _histogram;
+        public IHistogram AcquisitionTimeHistogram => _histogram;
 
         public string UniqueName { get; }
         public string Status => _pool == null ? _poolStatus : PoolStatus.StatusName(_pool.Status);
@@ -55,6 +57,10 @@ namespace Neo4j.Driver.Internal.Metrics
         {
             UniqueName = uri.ToString();
             _pool = pool;
+            if (connAcquisitionTimeout.IsTimeoutDetectionDisabled())
+            {
+                connAcquisitionTimeout = DefaulHighestTrackable;
+            }
             _histogram = new Histogram(new LongConcurrentHistogram(1, connAcquisitionTimeout.Ticks, 0));
         }
 
@@ -86,19 +92,17 @@ namespace Neo4j.Driver.Internal.Metrics
             Interlocked.Decrement(ref _toClose);
         }
 
-        public Stopwatch BeforeAcquire()
+        public void BeforeAcquire(IListenerEvent listenerEvent)
         {
-            var timer = new Stopwatch();
-            _acquisitionDelayTimers.TryAdd(timer);
-            timer.Start();
-            return timer;
+            _acquisitionDelayTimers.TryAdd(listenerEvent);
+            listenerEvent.Start();
         }
 
-        public void AfterAcquire(Stopwatch timer)
+        public void AfterAcquire(IListenerEvent listenerEvent)
         {
-            timer.Stop();
-            _histogram.RecordValue(timer.ElapsedTicks);
-            _acquisitionDelayTimers.TryRemove(timer);
+            var value = TruncateValue(listenerEvent.GetElapsed(), _histogram.GetHistgram());
+            _histogram.RecordValue(value);
+            _acquisitionDelayTimers.TryRemove(listenerEvent);
         }
 
         public void Dispose()

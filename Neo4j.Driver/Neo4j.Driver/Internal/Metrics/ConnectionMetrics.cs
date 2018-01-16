@@ -16,8 +16,8 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using HdrHistogram;
+using static Neo4j.Driver.Internal.Metrics.Histogram;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
@@ -27,47 +27,47 @@ namespace Neo4j.Driver.Internal.Metrics
         public IHistogram ConnectionTimeHistogram { get; }
         public IHistogram InUseTimeHistogram { get; }
 
-        private LongConcurrentHistogram _connectionTimeHistogram;
-        private LongConcurrentHistogram _inUseTimeHistogram;
-
-        private static readonly TimeSpan DefaultInUseMaxTimeout = TimeSpan.FromMinutes(5); // TODO: make this configurable
+        private readonly LongConcurrentHistogram _connectionTimeHistogram;
+        private readonly LongConcurrentHistogram _inUseTimeHistogram;
 
         public ConnectionMetrics(Uri uri, TimeSpan connectionTimeout)
         {
             UniqueName = uri.ToString();
 
+            if (connectionTimeout.IsTimeoutDetectionDisabled())
+            {
+                connectionTimeout = DefaulHighestTrackable;
+            }
             _connectionTimeHistogram = new LongConcurrentHistogram(1, connectionTimeout.Ticks, 0);
-            _inUseTimeHistogram = new LongConcurrentHistogram(1, DefaultInUseMaxTimeout.Ticks, 0);
+            _inUseTimeHistogram = new LongConcurrentHistogram(1, DefaulHighestTrackable.Ticks, 0);
 
             ConnectionTimeHistogram = new Histogram(_connectionTimeHistogram);
             InUseTimeHistogram = new Histogram(_inUseTimeHistogram);
         }
 
-        public void BeforeConnect(Stopwatch timmerFromConnection)
+        public void BeforeConnect(IListenerEvent connEvent)
         {
-            timmerFromConnection.Restart();
+            connEvent.Start();
         }
 
-        public void AfterConnect(Stopwatch timmerFromConnection)
+        public void AfterConnect(IListenerEvent connEvent)
         {
-            timmerFromConnection.Stop();
-            _connectionTimeHistogram.RecordValue(timmerFromConnection.ElapsedTicks);
+            var newValue = TruncateValue(connEvent.GetElapsed(), _connectionTimeHistogram);
+            _connectionTimeHistogram.RecordValue(newValue);
         }
 
-        public void BeforeAcquire(Stopwatch timmerFromConnection)
+        public void OnAcquire(IListenerEvent connEvent)
         {
-            timmerFromConnection.Restart();
+            connEvent.Start();
         }
 
-        public void AfterRelease(Stopwatch timmerFromConnection)
+        public void OnRelease(IListenerEvent connEvent)
         {
-            timmerFromConnection.Stop();
-            var newValue = timmerFromConnection.ElapsedTicks;
-            if (newValue > DefaultInUseMaxTimeout.Ticks)
-            {
-                newValue = DefaultInUseMaxTimeout.Ticks;
-            }
+            var newValue = TruncateValue(connEvent.GetElapsed(), _inUseTimeHistogram);
             _inUseTimeHistogram.RecordValue(newValue);
         }
+
+
     }
+
 }

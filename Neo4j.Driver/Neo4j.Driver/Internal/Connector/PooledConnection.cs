@@ -17,6 +17,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -24,8 +25,10 @@ namespace Neo4j.Driver.Internal.Connector
     internal class PooledConnection : DelegatedConnection, IPooledConnection
     {
         private readonly IConnectionReleaseManager _releaseManager;
+        private readonly IConnectionListener _connMetricsListener;
+        private readonly IListenerEvent _connEvent;
 
-        public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null)
+        public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null, IConnectionListener connMetricsListener = null)
             :base (conn)
         {
             _releaseManager = releaseManager;
@@ -34,6 +37,12 @@ namespace Neo4j.Driver.Internal.Connector
             // LifetimeTimer starts to count once the connection is created.
             LifetimeTimer = new StopwatchBasedTimer();
             LifetimeTimer.Start();
+
+            _connMetricsListener = connMetricsListener;
+            if (_connMetricsListener != null)
+            {
+                _connEvent = new SimpleTimerEvent();
+            }
         }
         public Guid Id { get; } = Guid.NewGuid();
 
@@ -47,6 +56,16 @@ namespace Neo4j.Driver.Internal.Connector
         {
             Reset();
             return SyncAsync();
+        }
+
+        public void OnRequire()
+        {
+            _connMetricsListener?.OnAcquire(_connEvent);
+        }
+
+        public void OnRelease()
+        {
+            _connMetricsListener?.OnRelease(_connEvent);
         }
 
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;

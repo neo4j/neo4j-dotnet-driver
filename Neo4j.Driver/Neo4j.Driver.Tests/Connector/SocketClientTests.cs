@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] {0, 0, 0, 1});
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 
-                var client = new SocketClient(FakeUri, null, bufferSettings, null, connMock.Object);
+                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
                 client.Start();
 
@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] {0, 0, 0, 1});
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 
-                var client = new SocketClient(FakeUri, null, bufferSettings, null, connMock.Object);
+                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
                 await client.StartAsync();
 

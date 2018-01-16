@@ -38,7 +38,15 @@ namespace Neo4j.Driver.Internal.Metrics
     internal interface IConnectionMetrics
     {
         string UniqueName { get; }
+
+        /// <summary>
+        /// Records the distribution of connection establish time in Ticks where a tick equals to 100 ns.
+        /// </summary>
         IHistogram ConnectionTimeHistogram { get; }
+
+        /// <summary>
+        /// Records the distribution of the time that connections are lent out of pool.
+        /// </summary>
         IHistogram InUseTimeHistogram { get; }
     }
 
@@ -94,10 +102,10 @@ namespace Neo4j.Driver.Internal.Metrics
         long FailedToCreate { get; }
 
         /// <summary>
-        /// The histgram of the delays to acquire a connection from the pool in nano seconds.
+        /// The histgram of the delays to acquire a connection from the pool in ticks where a tick equals to 100 ns.
         /// The delays could either be the time to create a new connection or the time waiting for a connection available from the pool.
         /// </summary>
-        IHistogram AcuisitionTimeHistogram { get; }
+        IHistogram AcquisitionTimeHistogram { get; }
     }
 
     /// <summary>

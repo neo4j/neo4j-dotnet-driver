@@ -148,7 +148,7 @@ namespace Neo4j.Driver.IntegrationTests
                 }
 
                 // Then
-                var m = metrics.Pools.Single().Value;
+                var m = metrics.PoolMetrics.Single().Value;
                 Output.WriteLine(m.ToString());
                 m.Created.Should().Be(sessionCount);
                 m.Created.Should().Be(m.Closed + 1);
@@ -182,9 +182,12 @@ namespace Neo4j.Driver.IntegrationTests
             }
             Task.WaitAll(tasks.ToArray());
 
-            var m = metrics.Pools.Single().Value;
+            var m = metrics.PoolMetrics.Single().Value;
+            var cm = metrics.ConnectionMetrics.Single().Value;
             Output.WriteLine(m.ToString());
-            Output.WriteLine(m.AcuisitionTimeHistogram.ToString());
+            Output.WriteLine(m.AcquisitionTimeHistogram.ToString());
+            Output.WriteLine(cm.ConnectionTimeHistogram.ToString());
+            Output.WriteLine(cm.InUseTimeHistogram.ToString());
 
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
@@ -225,9 +228,9 @@ namespace Neo4j.Driver.IntegrationTests
             }
             await Task.WhenAll(tasks);
 
-            var m = metrics.Pools.Single().Value;
+            var m = metrics.PoolMetrics.Single().Value;
             Output.WriteLine(m.ToString());
-            Output.WriteLine(m.AcuisitionTimeHistogram.ToString());
+            Output.WriteLine(m.AcquisitionTimeHistogram.ToString());
 
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");

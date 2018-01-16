@@ -43,11 +43,13 @@ namespace Neo4j.Driver.IntegrationTests
 
         public class DriverMetrics : IDriverMetrics
         {
-            public IDictionary<string, IConnectionPoolMetrics> Pools { get; }
+            public IDictionary<string, IConnectionPoolMetrics> PoolMetrics { get; }
+            public IDictionary<string, IConnectionMetrics> ConnectionMetrics { get; }
 
             public DriverMetrics()
             {
-                Pools = new Dictionary<string, IConnectionPoolMetrics>();
+                PoolMetrics = new Dictionary<string, IConnectionPoolMetrics>();
+                ConnectionMetrics = new Dictionary<string, IConnectionMetrics>();
             }
         }
 
@@ -78,7 +80,7 @@ namespace Neo4j.Driver.IntegrationTests
                         var result = session.Run(query);
                         if (currentIteration % 1000 == 0)
                         {
-                            _output.WriteLine(_collector.Pools.ToContentString());
+                            _output.WriteLine(_collector.PoolMetrics.ToContentString());
                         }
 
                         result.Consume();
@@ -105,7 +107,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var result = await session.RunAsync(query);
                 if (currentIteration % 1000 == 0)
                 {
-                    _output.WriteLine(_collector.Pools.ToContentString());
+                    _output.WriteLine(_collector.PoolMetrics.ToContentString());
                 }
                 await result.SummaryAsync();
             }

@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Metrics
         void AfterConnectionFailedToCreate();
         void BeforeConnectionClosed();
         void AfterConnectionClosed();
-        Stopwatch BeforeAcquire();
-        void AfterAcquire(Stopwatch timer);
+        void BeforeAcquire(IListenerEvent listenerEvent);
+        void AfterAcquire(IListenerEvent listenerEvent);
     }
 }

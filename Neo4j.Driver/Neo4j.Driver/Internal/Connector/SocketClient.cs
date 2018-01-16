@@ -38,20 +38,22 @@ namespace Neo4j.Driver.Internal.Connector
         private int _closedMarker = -1;
 
         private readonly ILogger _logger;
-        private IConnectionListener _metrics;
-
-        private Stopwatch _timmer;
+        private readonly IConnectionListener _connMetricsListener;
+        private readonly IListenerEvent _connEvent;
 
         public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings,
-            IConnectionListener metricsListener = null, ILogger logger = null, ITcpSocketClient socketClient = null)
+            IConnectionListener connMetricsListener = null, ILogger logger = null, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
             _bufferSettings = bufferSettings;
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
 
-            _timmer = new Stopwatch();
-            _metrics = metricsListener;
+            _connMetricsListener = connMetricsListener;
+            if (_connMetricsListener != null)
+            {
+                _connEvent = new SimpleTimerEvent();
+            }
         }
 
         // For testing only
@@ -67,12 +69,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Start()
         {
-            _metrics.BeforeConnect(_timmer);
+            _connMetricsListener?.BeforeConnect(_connEvent);
             _tcpSocketClient.Connect(_uri);
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
-            _metrics.AfterConnect(_timmer);
+            _connMetricsListener?.AfterConnect(_connEvent);
 
             var version = DoHandshake();
             _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
@@ -82,11 +84,11 @@ namespace Neo4j.Driver.Internal.Connector
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
 
-            _metrics.BeforeConnect(_timmer);
+            _connMetricsListener?.BeforeConnect(_connEvent);
             _tcpSocketClient.ConnectAsync(_uri)
                 .ContinueWith(t =>
                     {
-                        _metrics.AfterConnect(_timmer);
+                        _connMetricsListener?.AfterConnect(_connEvent);
 
                         if (t.IsFaulted)
                         {
