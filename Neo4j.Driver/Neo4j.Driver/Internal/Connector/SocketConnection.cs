@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -38,8 +39,8 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly ILogger _logger;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
-            ILogger logger)
-            : this(new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, logger),
+            IConnectionListener metricsListener = null, ILogger logger = null)
+            : this(new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener, logger),
                 connectionSettings.AuthToken, connectionSettings.UserAgent, logger, new ServerInfo(uri))
         {
         }

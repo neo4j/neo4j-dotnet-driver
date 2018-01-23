@@ -26,16 +26,6 @@ namespace Neo4j.Driver.Internal
 {
     internal static class CollectionExtensions
     {
-        public static T[] DequeueToArray<T>(this Queue<T> queue, int length)
-        {
-            var output = new T[length];
-            for (var i = 0; i < length; i++)
-            {
-                output[i] = queue.Dequeue();
-            }
-            return output;
-        }
-
         public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key)
         {
             if (!dictionary.ContainsKey(key))

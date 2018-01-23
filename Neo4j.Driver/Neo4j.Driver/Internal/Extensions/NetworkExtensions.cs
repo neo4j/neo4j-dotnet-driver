@@ -201,5 +201,15 @@ namespace Neo4j.Driver.Internal
             }
             return context;
         }
+
+        public static bool IsTimeoutDetectionEnabled(this TimeSpan timeout)
+        {
+            return timeout.TotalMilliseconds >= 0;
+        }
+
+        public static bool IsTimeoutDetectionDisabled(this TimeSpan timeout)
+        {
+            return timeout.TotalMilliseconds < 0;
+        }
     }
 }

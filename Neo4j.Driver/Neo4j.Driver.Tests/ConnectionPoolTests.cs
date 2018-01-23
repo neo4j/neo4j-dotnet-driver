@@ -43,17 +43,17 @@ namespace Neo4j.Driver.Tests
                 _isValid = isValid;
             }
 
-            public bool IsConnectionReusable(IPooledConnection connection)
+            public bool OnRelease(IPooledConnection connection)
             {
                 return _isValid;
             }
 
-            public Task<bool> IsConnectionReusableAsync(IPooledConnection connection)
+            public Task<bool> OnReleaseAsync(IPooledConnection connection)
             {
                 return Task.FromResult(_isValid);
             }
 
-            public bool IsValid(IPooledConnection connection)
+            public bool OnRequire(IPooledConnection connection)
             {
                 return _isValid;
             }
