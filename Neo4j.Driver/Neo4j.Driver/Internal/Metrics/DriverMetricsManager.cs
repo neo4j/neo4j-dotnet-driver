@@ -47,6 +47,12 @@ namespace Neo4j.Driver.Internal.Metrics
 
         public DriverMetricsManager(IDriverMetrics driverMetrics, Uri poolUri, ConnectionPool pool, TimeSpan acquisitionTimeout, TimeSpan connectionTimeout)
         {
+            Throw.ArgumentNullException.IfNull(driverMetrics, nameof(driverMetrics));
+            Throw.ArgumentNullException.IfNull(driverMetrics.ConnectionMetrics, nameof(driverMetrics.ConnectionMetrics));
+            Throw.ArgumentNullException.IfNull(driverMetrics.PoolMetrics, nameof(driverMetrics.PoolMetrics));
+            Throw.ArgumentNullException.IfNull(poolUri, nameof(poolUri));
+            Throw.ArgumentNullException.IfNull(pool, nameof(pool));
+
             _driverMetrics = driverMetrics;
             RegisterAtDriverMetrics(poolUri, pool, acquisitionTimeout, connectionTimeout);
         }
@@ -56,32 +62,19 @@ namespace Neo4j.Driver.Internal.Metrics
             UnregisterFromDriverMetrics();
         }
 
-        private void RegisterAtDriverMetrics(Uri poolUri, ConnectionPool pool, TimeSpan acquisitionTimeout, TimeSpan connectionTimeout)
+        private void RegisterAtDriverMetrics(Uri poolUri, ConnectionPool pool, TimeSpan acquisitionTimeout,
+            TimeSpan connectionTimeout)
         {
-            if (_driverMetrics?.PoolMetrics != null)
-            {
-                _poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
-                _driverMetrics.PoolMetrics.Add(_poolMetrics.UniqueName, _poolMetrics);
-            }
-            if (_driverMetrics?.ConnectionMetrics != null)
-            {
-                _connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);
-                _driverMetrics.ConnectionMetrics.Add(_connMetrics.UniqueName, _connMetrics);
-            }
+            _poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
+            _driverMetrics.PoolMetrics.Add(_poolMetrics.UniqueName, _poolMetrics);
+
+            _connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);
+            _driverMetrics.ConnectionMetrics.Add(_connMetrics.UniqueName, _connMetrics);
         }
 
         private void UnregisterFromDriverMetrics()
         {
-            if (_poolMetrics != null)
-            {
-                _driverMetrics?.PoolMetrics?.Remove(_poolMetrics.UniqueName);
-                _poolMetrics.Dispose();
-            }
-            if (_connMetrics != null)
-            {
-                _driverMetrics?.ConnectionMetrics?.Remove(_connMetrics.UniqueName);
-            }
+            _poolMetrics.Dispose();
         }
-
     }
 }

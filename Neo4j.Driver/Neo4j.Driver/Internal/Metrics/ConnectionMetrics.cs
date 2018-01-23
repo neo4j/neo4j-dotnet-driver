@@ -24,25 +24,17 @@ namespace Neo4j.Driver.Internal.Metrics
     internal class ConnectionMetrics : IConnectionMetrics, IConnectionListener
     {
         public string UniqueName { get; }
-        public IHistogram ConnectionTimeHistogram { get; }
-        public IHistogram InUseTimeHistogram { get; }
+        public IHistogram ConnectionTimeHistogram => _connectionTimeHistogram.Snapshot();
+        public IHistogram InUseTimeHistogram => _inUseTimeHistogram.Snapshot();
 
-        private readonly LongConcurrentHistogram _connectionTimeHistogram;
-        private readonly LongConcurrentHistogram _inUseTimeHistogram;
+        private readonly Histogram _connectionTimeHistogram;
+        private readonly Histogram _inUseTimeHistogram;
 
         public ConnectionMetrics(Uri uri, TimeSpan connectionTimeout)
         {
             UniqueName = uri.ToString();
-
-            if (connectionTimeout.IsTimeoutDetectionDisabled())
-            {
-                connectionTimeout = DefaulHighestTrackable;
-            }
-            _connectionTimeHistogram = new LongConcurrentHistogram(1, connectionTimeout.Ticks, 0);
-            _inUseTimeHistogram = new LongConcurrentHistogram(1, DefaulHighestTrackable.Ticks, 0);
-
-            ConnectionTimeHistogram = new Histogram(_connectionTimeHistogram);
-            InUseTimeHistogram = new Histogram(_inUseTimeHistogram);
+            _connectionTimeHistogram = new Histogram(connectionTimeout.Ticks);
+            _inUseTimeHistogram = new Histogram();
         }
 
         public void BeforeConnect(IListenerEvent connEvent)
@@ -52,8 +44,7 @@ namespace Neo4j.Driver.Internal.Metrics
 
         public void AfterConnect(IListenerEvent connEvent)
         {
-            var newValue = TruncateValue(connEvent.GetElapsed(), _connectionTimeHistogram);
-            _connectionTimeHistogram.RecordValue(newValue);
+            _connectionTimeHistogram.RecordValue(connEvent.GetElapsed());
         }
 
         public void OnAcquire(IListenerEvent connEvent)
@@ -63,11 +54,13 @@ namespace Neo4j.Driver.Internal.Metrics
 
         public void OnRelease(IListenerEvent connEvent)
         {
-            var newValue = TruncateValue(connEvent.GetElapsed(), _inUseTimeHistogram);
-            _inUseTimeHistogram.RecordValue(newValue);
+            _inUseTimeHistogram.RecordValue(connEvent.GetElapsed());
         }
 
-
+        public override string ToString()
+        {
+            return this.ToDictionary().ToContentString();
+        }
     }
 
 }

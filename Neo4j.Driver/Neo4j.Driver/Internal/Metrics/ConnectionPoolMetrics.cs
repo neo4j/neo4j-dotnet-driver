@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Metrics
         private int _toClose;
 
         private ConnectionPool _pool;
-        private readonly string _poolStatus = PoolStatus.StatusName(PoolStatus.Closed);
+        private static readonly string ClosedPoolStatus = Internal.PoolStatus.StatusName(Internal.PoolStatus.Closed);
 
         public long Created => _created;
         public long Closed => _closed;
@@ -47,21 +47,17 @@ namespace Neo4j.Driver.Internal.Metrics
 
         private readonly ConcurrentSet<IListenerEvent> _acquisitionDelayTimers = new ConcurrentSet<IListenerEvent>();
         private readonly Histogram _histogram;
-        public IHistogram AcquisitionTimeHistogram => _histogram;
+        public IHistogram AcquisitionTimeHistogram => _histogram.Snapshot();
 
         public string UniqueName { get; }
-        public string Status => _pool == null ? _poolStatus : PoolStatus.StatusName(_pool.Status);
+        public string PoolStatus => _pool == null ? ClosedPoolStatus : Internal.PoolStatus.StatusName(_pool.Status);
 
 
         public ConnectionPoolMetrics(Uri uri, ConnectionPool pool, TimeSpan connAcquisitionTimeout)
         {
             UniqueName = uri.ToString();
             _pool = pool;
-            if (connAcquisitionTimeout.IsTimeoutDetectionDisabled())
-            {
-                connAcquisitionTimeout = DefaulHighestTrackable;
-            }
-            _histogram = new Histogram(new LongConcurrentHistogram(1, connAcquisitionTimeout.Ticks, 0));
+            _histogram = new Histogram(connAcquisitionTimeout.Ticks);
         }
 
         public void BeforeConnectionCreated()
@@ -100,8 +96,7 @@ namespace Neo4j.Driver.Internal.Metrics
 
         public void AfterAcquire(IListenerEvent listenerEvent)
         {
-            var value = TruncateValue(listenerEvent.GetElapsed(), _histogram.GetHistgram());
-            _histogram.RecordValue(value);
+            _histogram.RecordValue(listenerEvent.GetElapsed());
             _acquisitionDelayTimers.TryRemove(listenerEvent);
         }
 

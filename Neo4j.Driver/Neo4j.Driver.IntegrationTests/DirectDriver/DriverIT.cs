@@ -128,10 +128,9 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldCloseIdleForTooLongConns(int sessionCount)
         {
             // Given
-            var metrics = new DriverMetrics();
             using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config
             {
-                DriverMetrics = metrics,
+                DriverMetricsEnabled = true,
                 ConnectionIdleTimeout = TimeSpan.Zero // enable but always timeout idle connections
             }))
             {
@@ -148,6 +147,7 @@ namespace Neo4j.Driver.IntegrationTests
                 }
 
                 // Then
+                var metrics = ((Internal.Driver) driver).GetDriverMetrics();
                 var m = metrics.PoolMetrics.Single().Value;
                 Output.WriteLine(m.ToString());
                 m.Created.Should().Be(sessionCount);
@@ -161,10 +161,9 @@ namespace Neo4j.Driver.IntegrationTests
 //        [InlineData(50000)] leave this to a long dedicated build
         public void SoakRun(int threadCount)
         {
-            var metrics = new DriverMetrics();
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
             {
-                DriverMetrics = metrics,
+                DriverMetricsEnabled = true,
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted
             });
@@ -173,6 +172,7 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
+            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
             var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
@@ -206,10 +206,9 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(5000)]
         public async void SoakRunAsync(int threadCount)
         {
-            var metrics = new DriverMetrics();
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
             {
-                DriverMetrics = metrics,
+                DriverMetricsEnabled = true,
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 500,
                 EncryptionLevel = EncryptionLevel.Encrypted,
@@ -219,6 +218,7 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
+            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
             var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();

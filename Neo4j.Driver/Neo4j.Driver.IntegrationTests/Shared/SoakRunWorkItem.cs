@@ -15,8 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,55 +42,50 @@ namespace Neo4j.Driver.IntegrationTests
             AccessMode.Write
         };
 
-        public class DriverMetrics : IDriverMetrics
-        {
-            public IDictionary<string, IConnectionPoolMetrics> PoolMetrics { get; }
-            public IDictionary<string, IConnectionMetrics> ConnectionMetrics { get; }
-
-            public DriverMetrics()
-            {
-                PoolMetrics = new Dictionary<string, IConnectionPoolMetrics>();
-                ConnectionMetrics = new Dictionary<string, IConnectionMetrics>();
-            }
-        }
-
         private readonly ITestOutputHelper _output;
         private readonly IDriver _driver;
-        private readonly IDriverMetrics _collector;
+        private readonly IDriverMetrics _driverMetrics;
         private int _counter;
 
-        public SoakRunWorkItem(IDriver driver, IDriverMetrics collector, ITestOutputHelper output)
+        public SoakRunWorkItem(IDriver driver, IDriverMetrics driverMetrics, ITestOutputHelper output)
         {
             this._driver = driver;
-            this._collector = collector;
+            this._driverMetrics = driverMetrics;
             this._output = output;
         }
 
-        public Task Run()
+        public Task Run(int times = 1)
         {
             return Task.Run(() =>
             {
-                var currentIteration = Interlocked.Increment(ref _counter);
-                var query = queries[currentIteration % queries.Length];
-                var accessMode = accessModes[currentIteration % accessModes.Length];
-
-                using (var session = _driver.Session(accessMode))
+                for (var i = 0; i < times; i++)
                 {
-                    try
-                    {
-                        var result = session.Run(query);
-                        if (currentIteration % 1000 == 0)
-                        {
-                            _output.WriteLine(_collector.PoolMetrics.ToContentString());
-                        }
+                    var currentIteration = Interlocked.Increment(ref _counter);
+                    var query = queries[currentIteration % queries.Length];
+                    var accessMode = accessModes[currentIteration % accessModes.Length];
 
-                        result.Consume();
-                    }
-                    catch (Exception e)
+                    using (var session = _driver.Session(accessMode))
                     {
-                        _output.WriteLine(
-                            $"[{DateTime.Now:HH:mm:ss.ffffff}] Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                        try
+                        {
+                            var result = session.Run(query);
+                            if (currentIteration % 1000 == 0)
+                            {
+                                _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
+                            }
+
+                            result.Consume();
+                        }
+                        catch (Exception e)
+                        {
+                            _output.WriteLine(
+                                $"[{DateTime.Now:HH:mm:ss.ffffff}] " +
+                                $"Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                            _output.WriteLine(e.StackTrace);
+                        }
                     }
+                    // pause for each duration
+                    Task.Delay(10).Wait();
                 }
             });
         }
@@ -107,7 +103,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var result = await session.RunAsync(query);
                 if (currentIteration % 1000 == 0)
                 {
-                    _output.WriteLine(_collector.PoolMetrics.ToContentString());
+                    _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
                 }
                 await result.SummaryAsync();
             }
@@ -115,6 +111,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 _output.WriteLine(
                     $"[{DateTime.Now:HH:mm:ss.ffffff}] Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                _output.WriteLine(e.StackTrace);
             }
             finally
             {

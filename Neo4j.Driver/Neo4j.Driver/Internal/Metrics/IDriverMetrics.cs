@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Metrics
@@ -26,26 +27,30 @@ namespace Neo4j.Driver.Internal.Metrics
     {
         /// <summary>
         /// The connection pool metrics.
-        /// Example: metrics.PoolMetrics[Name].Status
         /// </summary>
         IDictionary<string, IConnectionPoolMetrics> PoolMetrics { get; }
 
-        // The connection metrics.
-        // Example: metrics.ConnectionMetrics[Name].CreationTimeHistogram
+        /// <summary>
+        /// The connection metrics.
+        /// </summary>
         IDictionary<string, IConnectionMetrics> ConnectionMetrics { get; }
     }
 
     internal interface IConnectionMetrics
     {
+        /// <summary>
+        /// The unique name of this metrics, used as an unique identifier among all <see cref="IConnectionMetrics"/> instances.
+        /// </summary>
         string UniqueName { get; }
 
         /// <summary>
-        /// Records the distribution of connection establish time in Ticks where a tick equals to 100 ns.
+        /// Records the distribution of connection establish time in "ticks" where a tick equals to 100 ns.
         /// </summary>
         IHistogram ConnectionTimeHistogram { get; }
 
         /// <summary>
-        /// Records the distribution of the time that connections are lent out of pool.
+        /// Records the distribution of the time that connections are borrowed out of the pool.
+        /// The value are recorded in "ticks" where a tick equals to 100 ns.
         /// </summary>
         IHistogram InUseTimeHistogram { get; }
     }
@@ -56,14 +61,14 @@ namespace Neo4j.Driver.Internal.Metrics
     internal interface IConnectionPoolMetrics
     {
         /// <summary>
-        /// The unique name of this metrics, used as an unique identifier for this metrics.
+        /// The unique name of this metrics, used as an unique identifier among all <see cref="IConnectionPoolMetrics"/> instances.
         /// </summary>
         string UniqueName { get; }
 
         /// <summary>
         /// The pool status
         /// </summary>
-        string Status { get; }
+        string PoolStatus { get; }
 
         /// <summary>
         /// The amount of the connections that are used by user's application
@@ -102,7 +107,7 @@ namespace Neo4j.Driver.Internal.Metrics
         long FailedToCreate { get; }
 
         /// <summary>
-        /// The histgram of the delays to acquire a connection from the pool in ticks where a tick equals to 100 ns.
+        /// The histgram of the delays to acquire a connection from the pool in "ticks" where a tick equals to 100 ns.
         /// The delays could either be the time to create a new connection or the time waiting for a connection available from the pool.
         /// </summary>
         IHistogram AcquisitionTimeHistogram { get; }
@@ -118,24 +123,25 @@ namespace Neo4j.Driver.Internal.Metrics
         /// </summary>
         long Max { get; }
         /// <summary>
-        /// Mean value
+        /// Mean value. If there is no values recorded in this histogram, a <see cref="double.NaN"/> will be return
         /// </summary>
         double Mean { get; }
         /// <summary>
-        /// The standard deviation
+        /// The standard deviation.
+        /// If there is no values recorded in this histogram, a <see cref="double.NaN"/> will be return.
         /// </summary>
         double StdDeviation { get; }
         /// <summary>
-        /// Total count of values
+        /// Total number of recorded values
         /// </summary>
-        double TotalCount { get; }
+        long TotalCount { get; }
         /// <summary>
-        /// Get the value at a given percentile
+        /// Get the value at a given percentile.
+        /// Throws <see cref="ArgumentOutOfRangeException"/> when querying value on an empty histogram.
         /// </summary>
         /// <param name="percentile">The given percentile</param>
         /// <returns>The value at a given percentile</returns>
         long GetValueAtPercentile(double percentile);
-
         /// <summary>
         /// Reset the histogram content
         /// </summary>

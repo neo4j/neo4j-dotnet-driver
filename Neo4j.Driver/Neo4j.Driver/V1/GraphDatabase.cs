@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.V1
@@ -226,7 +227,7 @@ namespace Neo4j.Driver.V1
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, connectionPoolSettings.DriverMetrics);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)

@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Neo4j.Driver.V1;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.Internal
 {
@@ -29,12 +30,14 @@ namespace Neo4j.Driver.Internal
         private readonly IConnectionProvider _connectionProvider;
         private readonly IRetryLogic _retryLogic;
         private readonly ILogger _logger;
+        private readonly IDriverMetrics _driverMetrics;
         public Uri Uri { get; }
 
         private const AccessMode DefaultAccessMode = AccessMode.Write;
         private const string NullBookmark = null;
 
-        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, ILogger logger)
+        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, ILogger logger,
+            IDriverMetrics driverMetrics=null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
 
@@ -42,6 +45,7 @@ namespace Neo4j.Driver.Internal
             _logger = logger;
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
+            _driverMetrics = driverMetrics;
         }
 
         private bool IsClosed => _closedMarker > 0;
@@ -136,5 +140,13 @@ namespace Neo4j.Driver.Internal
             throw new ObjectDisposedException(GetType().Name, "Cannot open a new session on a driver that is already disposed.");
         }
 
+        internal IDriverMetrics GetDriverMetrics()
+        {
+            if (_driverMetrics == null)
+            {
+                throw new InvalidOperationException("Cannot access driver metrics if it is not enabled when creating this driver.");
+            }
+            return _driverMetrics;
+        }
     }
 }
