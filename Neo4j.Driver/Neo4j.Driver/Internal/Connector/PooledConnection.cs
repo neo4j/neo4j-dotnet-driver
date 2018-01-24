@@ -28,7 +28,8 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly IConnectionListener _connMetricsListener;
         private readonly IListenerEvent _connEvent;
 
-        public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null, IConnectionListener connMetricsListener = null)
+        public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null,
+            IConnectionListener connMetricsListener = null)
             :base (conn)
         {
             _releaseManager = releaseManager;

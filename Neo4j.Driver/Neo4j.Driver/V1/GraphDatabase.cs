@@ -202,15 +202,18 @@ namespace Neo4j.Driver.V1
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
             config = config ?? Config.DefaultConfig;
 
+            var logger = config.Logger;
+
             var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
             var routingContext = uri.ParseRoutingContext();
 
             var routingSettings = new RoutingSettings(parsedUri, routingContext);
-            var connectionSettings = new ConnectionSettings(authToken, config);
             var connectionPoolSettings = new ConnectionPoolSettings(config);
-            var bufferSettings = new BufferSettings(config);
 
-            var logger = config.Logger;
+            var connectionSettings = new ConnectionSettings(authToken, config);
+            var bufferSettings = new BufferSettings(config);
+            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, logger);
+
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 
             IConnectionProvider connectionProvider = null;
@@ -218,10 +221,10 @@ namespace Neo4j.Driver.V1
             {
                 case "bolt":
                     EnsureNoRoutingContext(uri, routingContext);
-                    connectionProvider = new ConnectionPool(parsedUri, connectionSettings, connectionPoolSettings, bufferSettings, logger);
+                    connectionProvider = new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(routingSettings, connectionSettings, connectionPoolSettings, bufferSettings, config);
+                    connectionProvider = new LoadBalancer(routingSettings, connectionPoolSettings, connectionFactory, config);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");

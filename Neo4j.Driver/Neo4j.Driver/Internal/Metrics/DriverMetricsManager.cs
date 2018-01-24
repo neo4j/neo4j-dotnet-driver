@@ -45,7 +45,8 @@ namespace Neo4j.Driver.Internal.Metrics
         public IConnectionPoolListener PoolMetricsListener => _poolMetrics;
         public IConnectionListener ConnectionMetricsListener => _connMetrics;
 
-        public DriverMetricsManager(IDriverMetrics driverMetrics, Uri poolUri, ConnectionPool pool, TimeSpan acquisitionTimeout, TimeSpan connectionTimeout)
+        public DriverMetricsManager(IDriverMetrics driverMetrics, Uri poolUri, ConnectionPool pool,
+            TimeSpan acquisitionTimeout, TimeSpan connectionTimeout)
         {
             Throw.ArgumentNullException.IfNull(driverMetrics, nameof(driverMetrics));
             Throw.ArgumentNullException.IfNull(driverMetrics.ConnectionMetrics, nameof(driverMetrics.ConnectionMetrics));

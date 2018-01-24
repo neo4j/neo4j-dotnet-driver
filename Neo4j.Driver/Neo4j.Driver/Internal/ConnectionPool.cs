@@ -70,8 +70,7 @@ namespace Neo4j.Driver.Internal
         private readonly TimeSpan _connAcquisitionTimeout;
 
         private readonly IConnectionValidator _connectionValidator;
-        private readonly ConnectionSettings _connectionSettings;
-        private readonly BufferSettings _bufferSettings;
+        private readonly IPooledConnectionFactory _connectionFactory;
 
         private readonly BlockingCollection<IPooledConnection> _idleConnections = new BlockingCollection<IPooledConnection>();
         private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
@@ -83,9 +82,6 @@ namespace Neo4j.Driver.Internal
         public int NumberOfIdleConnections => _idleConnections.Count;
         internal int PoolSize => _poolSize;
 
-        // for test only
-        private readonly IConnection _fakeConnection;
-
         internal int Status
         {
             get => AtomicRead(ref _poolStatus);
@@ -94,19 +90,17 @@ namespace Neo4j.Driver.Internal
 
         public ConnectionPool(
             Uri uri,
-            ConnectionSettings connectionSettings,
+            IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
-            BufferSettings bufferSettings,
             ILogger logger)
             : base(logger)
         {
             _uri = uri;
-            _connectionSettings = connectionSettings;
 
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
-            _bufferSettings = bufferSettings;
+            _connectionFactory = connectionFactory;
 
             var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
             var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
@@ -116,17 +110,14 @@ namespace Neo4j.Driver.Internal
         }
 
         internal ConnectionPool(
-            IConnection connection,
+            IPooledConnectionFactory connectionFactory,
             BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
-            ILogger logger = null,
             ConnectionPoolSettings poolSettings = null,
-            BufferSettings bufferSettings = null,
-            IConnectionValidator validator = null)
-            : this(null, null, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig),
-                  bufferSettings ?? new BufferSettings(Config.DefaultConfig), logger)
+            IConnectionValidator validator = null,
+            ILogger logger = null)
+            : this(null, connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
         {
-            _fakeConnection = connection;
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
             if (validator != null)
@@ -138,7 +129,7 @@ namespace Neo4j.Driver.Internal
         private IPooledConnection CreateNewPooledConnection()
         {
             _poolMetricsListener?.BeforeConnectionCreated();
-            PooledConnection conn = null;
+            IPooledConnection conn = null;
             try
             {
                 conn = NewPooledConnection();
@@ -164,7 +155,7 @@ namespace Neo4j.Driver.Internal
         private async Task<IPooledConnection> CreateNewPooledConnectionAsync()
         {
             _poolMetricsListener?.BeforeConnectionCreated();
-            PooledConnection conn = null;
+            IPooledConnection conn = null;
             try
             {
                 conn = NewPooledConnection();
@@ -187,14 +178,11 @@ namespace Neo4j.Driver.Internal
             return null;
         }
 
-        private PooledConnection NewPooledConnection()
+        private IPooledConnection NewPooledConnection()
         {
             if (TryIncrementPoolSize())
             {
-                return _fakeConnection != null
-                    ? new PooledConnection(_fakeConnection, this)
-                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings,
-                            _metricsManager.ConnectionMetricsListener, Logger), this, _metricsManager.ConnectionMetricsListener);
+                return _connectionFactory.Create(_uri, this);
             }
             return null;
         }

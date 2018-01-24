@@ -36,16 +36,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         public LoadBalancer(
             RoutingSettings routingSettings,
-            ConnectionSettings connectionSettings,
             ConnectionPoolSettings poolSettings,
-            BufferSettings bufferSettings,
+            IPooledConnectionFactory connectionFactory,
             Config config)
         {
             var logger = config.Logger;
             var uris = new HashSet<Uri> { routingSettings.InitialServerUri };
 
-            _clusterConnectionPool = new ClusterConnectionPool(
-                connectionSettings, poolSettings, bufferSettings, uris, logger);
+            _clusterConnectionPool = new ClusterConnectionPool(uris, connectionFactory, poolSettings, logger);
             _routingTableManager = new RoutingTableManager(
                 routingSettings, this, uris, logger);
 
