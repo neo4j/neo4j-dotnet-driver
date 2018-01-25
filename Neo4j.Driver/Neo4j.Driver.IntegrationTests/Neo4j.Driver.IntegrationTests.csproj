@@ -129,9 +129,11 @@
     <Compile Include="Internals\StandAlone\Neo4jSettingsHelper.cs" />
     <Compile Include="Internals\ProcessBasedCommandRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RoutingDriver\LoadBalancerStressIT.cs" />
     <Compile Include="RoutingDriver\RoutingDriverAsyncIT.cs" />
     <Compile Include="RoutingDriver\RoutingDriverIT.cs" />
     <Compile Include="Shared\SoakRunWorkItem.cs" />
+    <Compile Include="Shared\TestLogger.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

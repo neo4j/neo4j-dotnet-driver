@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -36,7 +37,7 @@ namespace Neo4j.Driver.IntegrationTests
         protected CausalCluster Cluster { get; }
         protected IAuthToken AuthToken { get; }
 
-        private string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
+        protected string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
         private string WrongServer => "bolt+routing://localhost:1234";
 
         public RoutingDriverIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)

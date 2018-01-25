@@ -202,17 +202,21 @@ namespace Neo4j.Driver.V1
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
             config = config ?? Config.DefaultConfig;
 
+            var connectionSettings = new ConnectionSettings(authToken, config);
+            var bufferSettings = new BufferSettings(config);
+            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+
+            return CreateDriver(uri, config, connectionFactory);
+        }
+
+        internal static IDriver CreateDriver(Uri uri, Config config, IPooledConnectionFactory connectionFactory)
+        {
             var logger = config.Logger;
 
             var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
             var routingContext = uri.ParseRoutingContext();
-
             var routingSettings = new RoutingSettings(parsedUri, routingContext);
             var connectionPoolSettings = new ConnectionPoolSettings(config);
-
-            var connectionSettings = new ConnectionSettings(authToken, config);
-            var bufferSettings = new BufferSettings(config);
-            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, logger);
 
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 

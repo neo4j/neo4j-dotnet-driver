@@ -119,6 +119,51 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
+        public Task RunWithRetries(int repeat = 1)
+        {
+            return Task.Run(() =>
+            {
+                for (var i = 0; i < repeat; i++)
+                {
+                    var currentIteration = Interlocked.Increment(ref _counter);
+                    var query = queries[currentIteration % queries.Length];
+                    var accessMode = accessModes[currentIteration % accessModes.Length];
+
+                    using (var session = _driver.Session())
+                    {
+                        try
+                        {
+                            void Action(ITransaction tx)
+                            {
+                                tx.Run(query).Consume();
+                            }
+
+                            if (accessMode == AccessMode.Read)
+                            {
+                                session.ReadTransaction(Action);
+                            }
+                            else
+                            {
+                                session.WriteTransaction(Action);
+                            }
+
+                            if (currentIteration % 1000 == 0)
+                            {
+                                _output.WriteLine(_collector.CollectStatistics().ToContentString());
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _output.WriteLine(
+                                $"[{DateTime.Now:HH:mm:ss.ffffff}] Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                        }
+                    }
+
+                    Task.Delay(10).Wait();
+                }
+            });
+        }
+
     }
 
 }

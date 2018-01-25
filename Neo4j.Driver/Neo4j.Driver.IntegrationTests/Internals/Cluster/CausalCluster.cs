@@ -24,10 +24,10 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     public class CausalCluster : IDisposable
     {
         private readonly ExternalBoltkitClusterInstaller _installer = new ExternalBoltkitClusterInstaller();
-        public ISet<ISingleInstance> ClusterMembers { get; }
+        public ISet<ISingleInstance> Members { get; }
 
         // Assume the whole cluster use exact the same authToken
-        public IAuthToken AuthToken => ClusterMembers?.First().AuthToken;
+        public IAuthToken AuthToken => Members?.First().AuthToken;
 
         public CausalCluster()
         {
@@ -35,7 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             try
             {
                 _installer.Install();
-                ClusterMembers = _installer.Start();
+                Members = _installer.Start();
             }
             catch
             {
@@ -53,12 +53,12 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public ISingleInstance AnyCore()
         {
-            return ClusterMembers.First();
+            return Members.First();
         }
 
         public bool IsRunning()
         {
-            return ClusterMembers != null;
+            return Members != null;
         }
 
         private void Kill()

@@ -203,7 +203,7 @@ namespace Neo4j.Driver.Tests.Routing
         public class AddMethod
         {
             [Fact]
-            public void ShouldDeactivateIfExist()
+            public void ShouldActivateIfExist()
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
