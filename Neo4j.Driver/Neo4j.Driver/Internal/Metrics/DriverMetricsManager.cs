@@ -38,15 +38,13 @@ namespace Neo4j.Driver.Internal.Metrics
 
     internal class DriverMetricsManager : IDriverMetricsManager
     {
-        private readonly IDriverMetrics _driverMetrics;
-        private ConnectionPoolMetrics _poolMetrics;
-        private ConnectionMetrics _connMetrics;
+        private readonly ConnectionPoolMetrics _poolMetrics;
+        private readonly ConnectionMetrics _connMetrics;
 
         public IConnectionPoolListener PoolMetricsListener => _poolMetrics;
         public IConnectionListener ConnectionMetricsListener => _connMetrics;
 
-        public DriverMetricsManager(IDriverMetrics driverMetrics, Uri poolUri, ConnectionPool pool,
-            TimeSpan acquisitionTimeout, TimeSpan connectionTimeout)
+        public DriverMetricsManager(DriverMetrics driverMetrics, Uri poolUri, ConnectionPool pool)
         {
             Throw.ArgumentNullException.IfNull(driverMetrics, nameof(driverMetrics));
             Throw.ArgumentNullException.IfNull(driverMetrics.ConnectionMetrics, nameof(driverMetrics.ConnectionMetrics));
@@ -54,26 +52,11 @@ namespace Neo4j.Driver.Internal.Metrics
             Throw.ArgumentNullException.IfNull(poolUri, nameof(poolUri));
             Throw.ArgumentNullException.IfNull(pool, nameof(pool));
 
-            _driverMetrics = driverMetrics;
-            RegisterAtDriverMetrics(poolUri, pool, acquisitionTimeout, connectionTimeout);
+            _poolMetrics = driverMetrics.AddPoolMetrics(poolUri, pool);
+            _connMetrics = driverMetrics.AddConnMetrics(poolUri);
         }
 
         public void Dispose()
-        {
-            UnregisterFromDriverMetrics();
-        }
-
-        private void RegisterAtDriverMetrics(Uri poolUri, ConnectionPool pool, TimeSpan acquisitionTimeout,
-            TimeSpan connectionTimeout)
-        {
-            _poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
-            _driverMetrics.PoolMetrics.Add(_poolMetrics.UniqueName, _poolMetrics);
-
-            _connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);
-            _driverMetrics.ConnectionMetrics.Add(_connMetrics.UniqueName, _connMetrics);
-        }
-
-        private void UnregisterFromDriverMetrics()
         {
             _poolMetrics.Dispose();
         }

@@ -15,10 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
@@ -110,7 +106,8 @@ namespace Neo4j.Driver.IntegrationTests
             catch (Exception e)
             {
                 _output.WriteLine(
-                    $"[{DateTime.Now:HH:mm:ss.ffffff}] Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                    $"[{DateTime.Now:HH:mm:ss.ffffff}] " +
+                    $"Iteration {currentIteration} failed to run query {query} due to {e.Message}");
                 _output.WriteLine(e.StackTrace);
             }
             finally
@@ -149,13 +146,15 @@ namespace Neo4j.Driver.IntegrationTests
 
                             if (currentIteration % 1000 == 0)
                             {
-                                _output.WriteLine(_collector.CollectStatistics().ToContentString());
+                                _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
                             }
                         }
                         catch (Exception e)
                         {
                             _output.WriteLine(
-                                $"[{DateTime.Now:HH:mm:ss.ffffff}] Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                                $"[{DateTime.Now:HH:mm:ss.ffffff}] " +
+                                $"Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                            _output.WriteLine(e.StackTrace);
                         }
                     }
 

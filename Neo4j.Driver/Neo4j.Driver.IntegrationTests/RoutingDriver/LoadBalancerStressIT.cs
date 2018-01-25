@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -31,16 +32,14 @@ namespace Neo4j.Driver.IntegrationTests
     public class LoadBalancerStressIT : RoutingDriverIT
     {
         private Internal.Driver _driver;
+        private IDriverMetrics _metrics;
         private ConcurrentSet<IPooledConnection> _connections;
-        private StatisticsCollector _statisticsCollector;
-        private readonly IList<Uri> _clusterMembers;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
 
         public LoadBalancerStressIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
             : base(output, fixture)
         {
-            _clusterMembers = Cluster.Members.Select(x=>x.BoltRoutingUri).ToList();
             _cancellationTokenSource = new CancellationTokenSource();
             SetupMonitoredDriver();
         }
@@ -55,7 +54,7 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var workItem = new SoakRunWorkItem(_driver, _statisticsCollector, Output);
+            var workItem = new SoakRunWorkItem(_driver, _metrics, Output);
 
             ConnectionTerminatorTask();
             var tasks = new List<Task>();
@@ -67,37 +66,36 @@ namespace Neo4j.Driver.IntegrationTests
             Task.WaitAll(tasks.ToArray());
             _cancellationTokenSource.Cancel();
 
-            _driver.Close();
-
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
             PrintStatistics();
+
+            _driver.Close();
         }
 
         private void PrintStatistics()
         {
-            var statistics = _statisticsCollector.CollectStatistics();
-            Output.WriteLine(statistics.ToContentString());
+            var poolMetrics = _metrics.PoolMetrics;
+            Output.WriteLine(poolMetrics.ToContentString());
 
-            foreach (var statistic in statistics)
+            foreach (var value in poolMetrics)
             {
-                var st = ConnectionPoolStatistics.FromDictionary(statistic.Key,
-                    statistic.Value.ValueAs<IDictionary<string, object>>());
+                var st = value.Value;
 
-                st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
-                st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
-                st.ConnToClose.Should().Be(st.ConnClosed);
+                st.ToCreate.Should().Be(0);
+                st.ToClose.Should().Be(0);
+                st.InUse.Should().Be(0);
+                st.Idle.Should().Be((int) (st.Created - st.Closed));
             }
         }
 
         private void SetupMonitoredDriver()
         {
-            _statisticsCollector = new StatisticsCollector();
             var config = new Config
             {
-                DriverStatisticsCollector = _statisticsCollector,
+                DriverMetricsEnabled = true,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 50,
@@ -111,6 +109,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             _driver = (Internal.Driver) GraphDatabase.CreateDriver(new Uri(RoutingServer), config, connectionFactory);
             _connections = connectionFactory.Connections;
+            _metrics = _driver.GetDriverMetrics();
         }
 
         private Task ConnectionTerminatorTask()
@@ -139,9 +138,9 @@ namespace Neo4j.Driver.IntegrationTests
                 _delegate = factory;
             }
 
-            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
+            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IConnectionListener metricsListener)
             {
-                var pooledConnection = _delegate.Create(uri, releaseManager);
+                var pooledConnection = _delegate.Create(uri, releaseManager, metricsListener);
                 Connections.TryAdd(pooledConnection);
                 return pooledConnection;
             }

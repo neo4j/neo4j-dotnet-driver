@@ -215,8 +215,14 @@ namespace Neo4j.Driver.V1
 
             var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
             var routingContext = uri.ParseRoutingContext();
-            var routingSettings = new RoutingSettings(parsedUri, routingContext);
-            var connectionPoolSettings = new ConnectionPoolSettings(config);
+            var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
+
+            DriverMetrics driverMetrics = null;
+            if (config.DriverMetricsEnabled)
+            {
+                driverMetrics = new DriverMetrics(config);
+            }
+            var connectionPoolSettings = new ConnectionPoolSettings(config, driverMetrics);
 
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 
@@ -228,13 +234,13 @@ namespace Neo4j.Driver.V1
                     connectionProvider = new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(routingSettings, connectionPoolSettings, connectionFactory, config);
+                    connectionProvider = new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, connectionPoolSettings.DriverMetrics);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, driverMetrics);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)

@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.Metrics
         private int _toCreate;
         private int _toClose;
 
-        private ConnectionPool _pool;
+        private IConnectionPool _pool;
         private static readonly string ClosedPoolStatus = Internal.PoolStatus.StatusName(Internal.PoolStatus.Closed);
 
         public long Created => _created;
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.Metrics
         public string PoolStatus => _pool == null ? ClosedPoolStatus : Internal.PoolStatus.StatusName(_pool.Status);
 
 
-        public ConnectionPoolMetrics(Uri uri, ConnectionPool pool, TimeSpan connAcquisitionTimeout)
+        public ConnectionPoolMetrics(Uri uri, IConnectionPool pool, TimeSpan connAcquisitionTimeout)
         {
             UniqueName = uri.ToString();
             _pool = pool;

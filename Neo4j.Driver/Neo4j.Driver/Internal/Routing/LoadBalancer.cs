@@ -35,20 +35,18 @@ namespace Neo4j.Driver.Internal.Routing
         private int _closedMarker = 0;
 
         public LoadBalancer(
+            IPooledConnectionFactory connectionFactory,
             RoutingSettings routingSettings,
             ConnectionPoolSettings poolSettings,
-            IPooledConnectionFactory connectionFactory,
-            Config config)
+            ILogger logger)
         {
-            var logger = config.Logger;
-            var uris = new HashSet<Uri> { routingSettings.InitialServerUri };
+            _logger = logger;
+            var uris = routingSettings.InitialServers;
 
             _clusterConnectionPool = new ClusterConnectionPool(uris, connectionFactory, poolSettings, logger);
-            _routingTableManager = new RoutingTableManager(
-                routingSettings, this, uris, logger);
+            _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
 
-            _loadBalancingStrategy = CreateLoadBalancingStrategy(config, _clusterConnectionPool);
-            _logger = logger;
+            _loadBalancingStrategy = CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, logger);
         }
 
         // for test only
@@ -58,7 +56,8 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _clusterConnectionPool = clusterConnPool;
             _routingTableManager = routingTableManager;
-            _loadBalancingStrategy = CreateLoadBalancingStrategy(Config.DefaultConfig, clusterConnPool);
+            var config = Config.DefaultConfig;
+            _loadBalancingStrategy = CreateLoadBalancingStrategy(config.LoadBalancingStrategy, clusterConnPool, config.Logger);
         }
 
         private bool IsClosed => _closedMarker > 0;
@@ -300,10 +299,9 @@ namespace Neo4j.Driver.Internal.Routing
                    $"{nameof(_clusterConnectionPool)}: {{{_clusterConnectionPool}}}";
         }
 
-        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(Config config, IClusterConnectionPool pool)
+        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(LoadBalancingStrategy strategy, IClusterConnectionPool pool,
+            ILogger logger)
         {
-            LoadBalancingStrategy strategy = config.LoadBalancingStrategy;
-            var logger = config.Logger;
             if (strategy == LoadBalancingStrategy.LeastConnected)
             {
                 return new LeastConnectedLoadBalancingStrategy(pool, logger);

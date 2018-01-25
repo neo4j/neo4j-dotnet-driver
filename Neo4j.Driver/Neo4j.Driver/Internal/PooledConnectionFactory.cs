@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IPooledConnectionFactory
     {
-        IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager);
+        IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IConnectionListener metricsListener);
     }
     internal class PooledConnectionFactory : IPooledConnectionFactory
     {
@@ -40,11 +40,11 @@ namespace Neo4j.Driver.Internal
             _logger = logger;
         }
 
-        public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
+        public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IConnectionListener metricsListener)
         {
             Throw.ArgumentNullException.IfNull(releaseManager, nameof(releaseManager));
-            return new PooledConnection(new SocketConnection(uri, _connectionSettings, _bufferSettings, _logger),
-                releaseManager);
+            return new PooledConnection(new SocketConnection(uri, _connectionSettings, _bufferSettings, metricsListener, _logger),
+                releaseManager, metricsListener);
         }
     }
 }

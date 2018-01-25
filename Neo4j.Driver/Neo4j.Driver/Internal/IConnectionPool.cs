@@ -22,6 +22,8 @@ namespace Neo4j.Driver.Internal
     internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
     {
         int NumberOfInUseConnections { get; }
+        int NumberOfIdleConnections { get; }
+        int Status { get; }
         void Deactivate();
         Task DeactivateAsync();
         void Activate();

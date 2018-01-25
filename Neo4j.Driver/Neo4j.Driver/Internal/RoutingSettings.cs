@@ -17,20 +17,24 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
     internal class RoutingSettings
     {
         public IDictionary<string, string> RoutingContext { get; }
-        public Uri InitialServerUri { get; }
+        public ISet<Uri> InitialServers { get; }
+        public LoadBalancingStrategy Strategy { get; }
 
-        public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext)
+        public RoutingSettings(Uri initServers, IDictionary<string, string> routingContext, Config config)
         {
-            Throw.ArgumentNullException.IfNull(initServerUri, nameof(initServerUri));
+            Throw.ArgumentNullException.IfNull(initServers, nameof(initServers));
             Throw.ArgumentNullException.IfNull(routingContext, nameof(routingContext));
-            InitialServerUri = initServerUri;
+            Throw.ArgumentNullException.IfNull(config, nameof(config));
+            InitialServers = new HashSet<Uri> {initServers};
             RoutingContext = routingContext;
+            Strategy = config.LoadBalancingStrategy;
         }
     }
 }

@@ -82,10 +82,10 @@ namespace Neo4j.Driver.Internal
         public int NumberOfIdleConnections => _idleConnections.Count;
         internal int PoolSize => _poolSize;
 
-        internal int Status
+        public int Status
         {
             get => AtomicRead(ref _poolStatus);
-            set => Interlocked.Exchange(ref _poolStatus, value);
+            internal set => Interlocked.Exchange(ref _poolStatus, value);
         }
 
         public ConnectionPool(
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Internal
         {
             if (TryIncrementPoolSize())
             {
-                return _connectionFactory.Create(_uri, this);
+                return _connectionFactory.Create(_uri, this, _metricsManager.ConnectionMetricsListener);
             }
             return null;
         }
@@ -623,7 +623,7 @@ namespace Neo4j.Driver.Internal
                                                                  // a.k.a. do nothing but return the original value
         }
 
-        private void SetupMetrics(IDriverMetrics driverMetrics)
+        private void SetupMetrics(DriverMetrics driverMetrics)
         {
             if ( driverMetrics == null)
             {
@@ -632,7 +632,7 @@ namespace Neo4j.Driver.Internal
             else
             {
                 _metricsManager = new DriverMetricsManager(driverMetrics, _uri,
-                    this, _connAcquisitionTimeout, _connectionSettings.SocketSettings.ConnectionTimeout);
+                    this);
             }
             _poolMetricsListener = _metricsManager.PoolMetricsListener;
         }

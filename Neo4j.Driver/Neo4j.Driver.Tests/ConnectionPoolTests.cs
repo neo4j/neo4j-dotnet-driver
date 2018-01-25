@@ -26,6 +26,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -1551,9 +1552,9 @@ namespace Neo4j.Driver.Tests
             {
                 _connection = conn ?? new Mock<IConnection>().Object;
             }
-            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
+            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IConnectionListener listener)
             {
-                return new PooledConnection(_connection, releaseManager);
+                return new PooledConnection(_connection, releaseManager, listener);
             }
         }
 

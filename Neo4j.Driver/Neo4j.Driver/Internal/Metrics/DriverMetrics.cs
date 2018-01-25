@@ -15,8 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
@@ -24,11 +26,31 @@ namespace Neo4j.Driver.Internal.Metrics
     {
         public IDictionary<string, IConnectionPoolMetrics> PoolMetrics { get; }
         public IDictionary<string, IConnectionMetrics> ConnectionMetrics { get; }
+        private readonly Config _config;
 
-        public DriverMetrics()
+        public DriverMetrics(Config config)
         {
+            _config = config;
             PoolMetrics = new ConcurrentDictionary<string, IConnectionPoolMetrics>();
             ConnectionMetrics = new ConcurrentDictionary<string, IConnectionMetrics>();
+        }
+
+        public ConnectionPoolMetrics AddPoolMetrics(Uri poolUri, IConnectionPool pool)
+        {
+            var acquisitionTimeout = _config.ConnectionAcquisitionTimeout;
+            var poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
+            PoolMetrics.Add(poolMetrics.UniqueName, poolMetrics);
+
+            return poolMetrics;
+        }
+
+        public ConnectionMetrics AddConnMetrics(Uri poolUri)
+        {
+            var connectionTimeout = _config.ConnectionTimeout;
+            var connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);
+            ConnectionMetrics.Add(connMetrics.UniqueName, connMetrics);
+
+            return connMetrics;
         }
     }
 }

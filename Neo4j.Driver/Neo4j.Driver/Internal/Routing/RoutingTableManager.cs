@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Routing
     {
         private readonly ILogger _logger;
 
-        private readonly Uri _seedUri;
+        private readonly ISet<Uri> _seedServers;
         private readonly IDictionary<string, string> _routingContext;
 
         private IRoutingTable _routingTable;
@@ -55,9 +55,8 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
-            ISet<Uri> initUris,
             ILogger logger) :
-            this(new RoutingTable(initUris),
+            this(new RoutingTable(routingSettings.InitialServers),
                 routingSettings, poolManager, logger)
         {
         }
@@ -70,7 +69,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _routingTable = routingTable;
             _routingContext = routingSettings.RoutingContext;
-            _seedUri = routingSettings.InitialServerUri;
+            _seedServers = routingSettings.InitialServers;
 
             _poolManager = poolManager;
             _logger = logger;
@@ -92,7 +91,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return;
                 }
 
-                var routingTable = UpdateRoutingTableWithInitialUriFallback(new HashSet<Uri> { _seedUri });
+                var routingTable = UpdateRoutingTableWithInitialUriFallback(_seedServers);
                 Update(routingTable);
 
             }
@@ -116,7 +115,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return;
                 }
 
-                var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(new HashSet<Uri> { _seedUri }).ConfigureAwait(false);
+                var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(_seedServers).ConfigureAwait(false);
                 await UpdateAsync(routingTable).ConfigureAwait(false);
             }
             finally
