@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class ResultIT : DirectDriverIT
+    public class ResultIT : DirectDriverTestBase
     {
         private IDriver Driver => Server.Driver;
 

@@ -29,7 +29,7 @@ using static Neo4j.Driver.IntegrationTests.SoakRunWorkItem;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class DriverIT : DirectDriverIT
+    public class DriverIT : DirectDriverTestBase
     {
         public DriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {

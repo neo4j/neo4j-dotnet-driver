@@ -28,26 +28,10 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.IntegrationTests
 {
     [Collection(CCIntegrationCollection.CollectionName)]
-    public class RoutingDriverIT : IDisposable
+    public class RoutingDriverIT : RoutingDriverTestBase
     {
-        public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig();
-        protected ITestOutputHelper Output { get; }
-        protected CausalCluster Cluster { get; }
-        protected IAuthToken AuthToken { get; }
-
-        protected string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
-        private string WrongServer => "bolt+routing://localhost:1234";
-
-        public RoutingDriverIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+        public RoutingDriverIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(output, fixture)
         {
-            Output = output;
-            Cluster = fixture.Cluster;
-            AuthToken = Cluster.AuthToken;
-        }
-
-        public void Dispose()
-        {
-            // put some code that you want to run after each unit test
         }
 
         [RequireClusterFact]

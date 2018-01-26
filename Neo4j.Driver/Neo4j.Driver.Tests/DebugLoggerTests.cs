@@ -31,6 +31,24 @@ namespace Neo4j.Driver.Tests
             { }
         }
 
+        public class Constructor
+        {
+            [Fact]
+            public void ShouldDefaultToLogLevelInfo()
+            {
+                var lines = new List<string>();
+                var logger = new StringLogger(lines);
+                logger.Error("You should see this Error");
+                logger.Info("You should see this Info.");
+                logger.Debug("You should not see Debug");
+                logger.Trace("You should not see Trace");
+
+                lines.Count.Should().Be(2);
+                lines[0].Should().StartWith("[Error] => You should see this Error");
+                lines[1].Should().StartWith("[Info] => You should see this Info");
+            }
+        }
+
         public class TraceMethod
         {
             [Fact]

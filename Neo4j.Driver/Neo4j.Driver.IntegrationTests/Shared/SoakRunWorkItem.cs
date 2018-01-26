@@ -80,8 +80,6 @@ namespace Neo4j.Driver.IntegrationTests
                             _output.WriteLine(e.StackTrace);
                         }
                     }
-                    // pause for each duration
-                    Task.Delay(10).Wait();
                 }
             });
         }
@@ -130,18 +128,18 @@ namespace Neo4j.Driver.IntegrationTests
                     {
                         try
                         {
-                            void Action(ITransaction tx)
+                            void RunTx(ITransaction tx)
                             {
                                 tx.Run(query).Consume();
                             }
 
                             if (accessMode == AccessMode.Read)
                             {
-                                session.ReadTransaction(Action);
+                                session.ReadTransaction(RunTx);
                             }
                             else
                             {
-                                session.WriteTransaction(Action);
+                                session.WriteTransaction(RunTx);
                             }
 
                             if (currentIteration % 1000 == 0)
@@ -157,12 +155,55 @@ namespace Neo4j.Driver.IntegrationTests
                             _output.WriteLine(e.StackTrace);
                         }
                     }
-
-                    Task.Delay(10).Wait();
                 }
             });
         }
 
+        public async Task RunWithRetriesAsync(int repeat = 1)
+        {
+            for (var i = 0; i < repeat; i++)
+            {
+                var currentIteration = Interlocked.Increment(ref _counter);
+                var query = queries[currentIteration % queries.Length];
+                var accessMode = accessModes[currentIteration % accessModes.Length];
+
+                var session = _driver.Session(accessMode);
+                try
+                {
+                    async Task RunTxAsync(ITransaction tx)
+                    {
+                        var result = await tx.RunAsync(query);
+                        await result.ConsumeAsync();
+                    }
+
+                    if (accessMode == AccessMode.Read)
+                    {
+                        await session.ReadTransactionAsync(RunTxAsync);
+                    }
+                    else
+                    {
+                        await session.WriteTransactionAsync(RunTxAsync);
+                    }
+
+                    if (currentIteration % 1000 == 0)
+                    {
+                        _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    _output.WriteLine(
+                        $"[{DateTime.Now:HH:mm:ss.ffffff}] " +
+                        $"Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                    _output.WriteLine(e.StackTrace);
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
     }
 
 }

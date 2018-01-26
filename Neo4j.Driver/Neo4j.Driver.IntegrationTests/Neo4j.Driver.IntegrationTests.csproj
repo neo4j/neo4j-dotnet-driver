@@ -106,7 +106,7 @@
     <Compile Include="DirectDriver\AuthenticationIT.cs" />
     <Compile Include="DirectDriver\BookmarkIT.cs" />
     <Compile Include="DirectDriver\CypherParametersIT.cs" />
-    <Compile Include="DirectDriver\DirectDriverIT.cs" />
+    <Compile Include="DirectDriver\DirectDriverTestBase.cs" />
     <Compile Include="DirectDriver\ResultIT.cs" />
     <Compile Include="DirectDriver\SessionIT.cs" />
     <Compile Include="DirectDriver\TransactionIT.cs" />
@@ -129,7 +129,8 @@
     <Compile Include="Internals\StandAlone\Neo4jSettingsHelper.cs" />
     <Compile Include="Internals\ProcessBasedCommandRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RoutingDriver\LoadBalancerStressIT.cs" />
+    <Compile Include="RoutingDriver\RoutingDriverTestBase.cs" />
+    <Compile Include="RoutingDriver\RoutingDriverStressIT.cs" />
     <Compile Include="RoutingDriver\RoutingDriverAsyncIT.cs" />
     <Compile Include="RoutingDriver\RoutingDriverIT.cs" />
     <Compile Include="Shared\SoakRunWorkItem.cs" />

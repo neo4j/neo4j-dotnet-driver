@@ -26,7 +26,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.DirectDriver
 {
-    public class CypherParametersIT: DirectDriverIT
+    public class CypherParametersIT: DirectDriverTestBase
     {
         private IDriver Driver => Server.Driver;
 

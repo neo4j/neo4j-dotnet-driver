@@ -39,8 +39,16 @@ namespace Neo4j.Driver.Internal.Metrics
         {
             var acquisitionTimeout = _config.ConnectionAcquisitionTimeout;
             var poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
-            PoolMetrics.Add(poolMetrics.UniqueName, poolMetrics);
+            var key = poolMetrics.UniqueName;
 
+            if (PoolMetrics.ContainsKey(key))
+            {
+                PoolMetrics[key] = poolMetrics;
+            }
+            else
+            {
+                PoolMetrics.Add(key, poolMetrics);
+            }
             return poolMetrics;
         }
 
@@ -48,7 +56,16 @@ namespace Neo4j.Driver.Internal.Metrics
         {
             var connectionTimeout = _config.ConnectionTimeout;
             var connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);
-            ConnectionMetrics.Add(connMetrics.UniqueName, connMetrics);
+            var key = connMetrics.UniqueName;
+
+            if (PoolMetrics.ContainsKey(key))
+            {
+                ConnectionMetrics[key] = connMetrics;
+            }
+            else
+            {
+                ConnectionMetrics.Add(key, connMetrics);
+            }
 
             return connMetrics;
         }
