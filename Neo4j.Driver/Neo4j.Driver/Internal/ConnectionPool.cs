@@ -27,29 +27,17 @@ using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 
 namespace Neo4j.Driver.Internal
 {
-    internal static class PoolStatus
+    internal sealed class PoolStatus
     {
-        public const int Active = 0;
-        public const int Closed = 1;
-        public const int Inactive = 2;
+        public static readonly PoolStatus Active = new PoolStatus(nameof(Active));
+        public static readonly PoolStatus Closed = new PoolStatus(nameof(Closed));
+        public static readonly PoolStatus Inactive = new PoolStatus(nameof(Inactive));
 
-        private static readonly IDictionary<int, string> StatusCodeToNameMappingTable = new Dictionary<int, string>
-        {
-            {Active, "Active"},
-            {Closed, "Closed"},
-            {Inactive, "Inactive"}
-        };
+        public string Name;
 
-        public static string StatusName(int code)
+        private PoolStatus(string name)
         {
-            if (StatusCodeToNameMappingTable.ContainsKey(code))
-            {
-                return StatusCodeToNameMappingTable[code];
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException($"Unknown pool status code: {code}");
-            }
+            Name = name;
         }
     }
 
@@ -59,7 +47,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly Uri _uri;
 
-        private int _poolStatus = Active;
+        private PoolStatus _poolStatus = Active;
         private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
         private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
         private bool IsInactiveOrClosed => AtomicRead(ref _poolStatus) != Active;
@@ -82,7 +70,7 @@ namespace Neo4j.Driver.Internal
         public int NumberOfIdleConnections => _idleConnections.Count;
         internal int PoolSize => _poolSize;
 
-        public int Status
+        public PoolStatus Status
         {
             get => AtomicRead(ref _poolStatus);
             internal set => Interlocked.Exchange(ref _poolStatus, value);
@@ -196,8 +184,14 @@ namespace Neo4j.Driver.Internal
             }
 
             _poolMetricsListener?.BeforeConnectionClosed();
-            conn.Destroy();
-            _poolMetricsListener?.AfterConnectionClosed();
+            try
+            {
+                conn.Destroy();
+            }
+            finally
+            {
+                _poolMetricsListener?.AfterConnectionClosed();
+            }
         }
 
         private async Task DestroyConnectionAsync(IPooledConnection conn)
@@ -209,8 +203,14 @@ namespace Neo4j.Driver.Internal
             }
 
             _poolMetricsListener?.BeforeConnectionClosed();
-            await conn.DestroyAsync().ConfigureAwait(false);
-            _poolMetricsListener?.AfterConnectionClosed();
+            try
+            {
+                await conn.DestroyAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _poolMetricsListener?.AfterConnectionClosed();
+            }
         }
 
         /// <summary>
@@ -239,9 +239,15 @@ namespace Neo4j.Driver.Internal
         {
             var acquireEvent = new SimpleTimerEvent();
             _poolMetricsListener?.BeforeAcquire(acquireEvent);
-            var conn = Acquire();
-            _poolMetricsListener?.AfterAcquire(acquireEvent);
-            return conn;
+            try
+            {
+                var conn = Acquire();
+                return conn;
+            }
+            finally
+            {
+                _poolMetricsListener?.AfterAcquire(acquireEvent);
+            }
         }
 
         public IPooledConnection Acquire()
@@ -617,10 +623,11 @@ namespace Neo4j.Driver.Internal
                 "You should not see this error persistenly.");
         }
 
-        private static int AtomicRead(ref int value)
+        private static PoolStatus AtomicRead(ref PoolStatus value)
         {
-            return Interlocked.CompareExchange(ref value, 0, 0); // change to 0 if the value was 0,
-                                                                 // a.k.a. do nothing but return the original value
+            // change to the same value,
+            // a.k.a. do nothing but return the original value
+            return Interlocked.CompareExchange(ref value, Active, Active);
         }
 
         private void SetupMetrics(DriverMetrics driverMetrics)

@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.Connector
             return SyncAsync();
         }
 
-        public void OnRequire()
+        public void OnAcquire()
         {
             _connMetricsListener?.OnAcquire(_connEvent);
         }

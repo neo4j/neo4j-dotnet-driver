@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal
         void ClearConnection();
         Task ClearConnectionAsync();
 
-        void OnRequire();
+        void OnAcquire();
 
         void OnRelease();
 

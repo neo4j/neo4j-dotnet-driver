@@ -134,7 +134,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             var connectionSettings = new ConnectionSettings(AuthToken, config);
             var bufferSettings = new BufferSettings(config);
-            var connectionFactory = new MonitoredPoolledConnectionFactory(
+            var connectionFactory = new MonitoredPooledConnectionFactory(
                 new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger));
 
             _driver = (Internal.Driver) GraphDatabase.CreateDriver(new Uri(RoutingServer), config, connectionFactory);
@@ -192,12 +192,12 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
 
-        private class MonitoredPoolledConnectionFactory : IPooledConnectionFactory
+        private class MonitoredPooledConnectionFactory : IPooledConnectionFactory
         {
             private readonly IPooledConnectionFactory _delegate;
             public readonly ConcurrentQueue<IPooledConnection> Connections = new ConcurrentQueue<IPooledConnection>();
 
-            public MonitoredPoolledConnectionFactory(IPooledConnectionFactory factory)
+            public MonitoredPooledConnectionFactory(IPooledConnectionFactory factory)
             {
                 _delegate = factory;
             }

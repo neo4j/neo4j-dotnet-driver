@@ -107,7 +107,7 @@ namespace Neo4j.Driver.Internal
             if (isRequirable)
             {
                 ResetIdleTimer(connection);
-                connection.OnRequire();
+                connection.OnAcquire();
             }
             return isRequirable;
         }

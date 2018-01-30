@@ -128,18 +128,15 @@ namespace Neo4j.Driver.IntegrationTests
                     {
                         try
                         {
-                            void RunTx(ITransaction tx)
-                            {
-                                tx.Run(query).Consume();
-                            }
+                            Action<ITransaction> runTx = (tx) => tx.Run(query).Consume();
 
                             if (accessMode == AccessMode.Read)
                             {
-                                session.ReadTransaction(RunTx);
+                                session.ReadTransaction(runTx);
                             }
                             else
                             {
-                                session.WriteTransaction(RunTx);
+                                session.WriteTransaction(runTx);
                             }
 
                             if (currentIteration % 1000 == 0)
@@ -170,19 +167,17 @@ namespace Neo4j.Driver.IntegrationTests
                 var session = _driver.Session(accessMode);
                 try
                 {
-                    async Task RunTxAsync(ITransaction tx)
-                    {
-                        var result = await tx.RunAsync(query);
-                        await result.ConsumeAsync();
-                    }
+
+                    Func<ITransaction, Task> runTxAsync = async (txc) =>
+                        await (await txc.RunAsync(query)).ConsumeAsync();
 
                     if (accessMode == AccessMode.Read)
                     {
-                        await session.ReadTransactionAsync(RunTxAsync);
+                        await session.ReadTransactionAsync(runTxAsync);
                     }
                     else
                     {
-                        await session.WriteTransactionAsync(RunTxAsync);
+                        await session.WriteTransactionAsync(runTxAsync);
                     }
 
                     if (currentIteration % 1000 == 0)

@@ -33,7 +33,6 @@ namespace Neo4j.Driver.Internal.Metrics
         private int _toClose;
 
         private IConnectionPool _pool;
-        private static readonly string ClosedPoolStatus = Internal.PoolStatus.StatusName(Internal.PoolStatus.Closed);
 
         public long Created => _created;
         public long Closed => _closed;
@@ -45,13 +44,11 @@ namespace Neo4j.Driver.Internal.Metrics
         public int InUse => _pool?.NumberOfInUseConnections ?? 0;
         public int Idle => _pool?.NumberOfIdleConnections ?? 0;
 
-        private readonly ConcurrentSet<IListenerEvent> _acquisitionDelayTimers = new ConcurrentSet<IListenerEvent>();
         private readonly Histogram _histogram;
         public IHistogram AcquisitionTimeHistogram => _histogram.Snapshot();
 
         public string UniqueName { get; }
-        public string PoolStatus => _pool == null ? ClosedPoolStatus : Internal.PoolStatus.StatusName(_pool.Status);
-
+        public string PoolStatus => _pool == null ? Internal.PoolStatus.Closed.Name : _pool.Status.Name;
 
         public ConnectionPoolMetrics(Uri uri, IConnectionPool pool, TimeSpan connAcquisitionTimeout)
         {
@@ -90,14 +87,12 @@ namespace Neo4j.Driver.Internal.Metrics
 
         public void BeforeAcquire(IListenerEvent listenerEvent)
         {
-            _acquisitionDelayTimers.TryAdd(listenerEvent);
             listenerEvent.Start();
         }
 
         public void AfterAcquire(IListenerEvent listenerEvent)
         {
             _histogram.RecordValue(listenerEvent.GetElapsed());
-            _acquisitionDelayTimers.TryRemove(listenerEvent);
         }
 
         public void Dispose()

@@ -24,15 +24,15 @@ namespace Neo4j.Driver.Internal.Metrics
 {
     internal class DriverMetrics : IDriverMetrics
     {
-        public IDictionary<string, IConnectionPoolMetrics> PoolMetrics { get; }
-        public IDictionary<string, IConnectionMetrics> ConnectionMetrics { get; }
+        private readonly ConcurrentDictionary<string, IConnectionPoolMetrics> _poolMetrics;
+        private readonly ConcurrentDictionary<string, IConnectionMetrics> _connMetrics;
         private readonly Config _config;
 
         public DriverMetrics(Config config)
         {
             _config = config;
-            PoolMetrics = new ConcurrentDictionary<string, IConnectionPoolMetrics>();
-            ConnectionMetrics = new ConcurrentDictionary<string, IConnectionMetrics>();
+            _poolMetrics = new ConcurrentDictionary<string, IConnectionPoolMetrics>();
+            _connMetrics = new ConcurrentDictionary<string, IConnectionMetrics>();
         }
 
         public ConnectionPoolMetrics AddPoolMetrics(Uri poolUri, IConnectionPool pool)
@@ -41,14 +41,7 @@ namespace Neo4j.Driver.Internal.Metrics
             var poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
             var key = poolMetrics.UniqueName;
 
-            if (PoolMetrics.ContainsKey(key))
-            {
-                PoolMetrics[key] = poolMetrics;
-            }
-            else
-            {
-                PoolMetrics.Add(key, poolMetrics);
-            }
+            _poolMetrics.AddOrUpdate(key, poolMetrics, (oldKey, oldValue) => poolMetrics);
             return poolMetrics;
         }
 
@@ -58,16 +51,11 @@ namespace Neo4j.Driver.Internal.Metrics
             var connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);
             var key = connMetrics.UniqueName;
 
-            if (PoolMetrics.ContainsKey(key))
-            {
-                ConnectionMetrics[key] = connMetrics;
-            }
-            else
-            {
-                ConnectionMetrics.Add(key, connMetrics);
-            }
-
+            _connMetrics.AddOrUpdate(key, connMetrics, (oldKey, oldValue) => connMetrics);
             return connMetrics;
         }
+
+        public IDictionary<string, IConnectionPoolMetrics> PoolMetrics => _poolMetrics;
+        public IDictionary<string, IConnectionMetrics> ConnectionMetrics => _connMetrics;
     }
 }
