@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Internal.IO
         
         public void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
         {
-            _packStreamWriter.WriteStructHeader(1, MsgInit);
+            _packStreamWriter.WriteStructHeader(2, MsgInit);
             _packStreamWriter.Write(clientNameAndVersion);
             _packStreamWriter.Write(authToken ?? EmptyDictionary);
         }
