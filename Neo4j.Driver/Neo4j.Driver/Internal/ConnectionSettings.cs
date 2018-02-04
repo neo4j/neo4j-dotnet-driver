@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal
 
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
-        public SocketSettings SocketSettings { get; set; }
+        public SocketSettings SocketSettings { get; }
 
         public ConnectionSettings(IAuthToken auth, Config config)
         : this(auth, new EncryptionManager(config.EncryptionLevel, config.TrustStrategy, config.Logger),

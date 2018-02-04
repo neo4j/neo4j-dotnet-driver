@@ -27,7 +27,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class BookmarkIT : DirectDriverIT
+    public class BookmarkIT : DirectDriverTestBase
     {
         private IDriver Driver => Server.Driver;
 

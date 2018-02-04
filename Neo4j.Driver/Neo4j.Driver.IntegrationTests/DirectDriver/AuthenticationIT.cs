@@ -24,7 +24,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class AuthenticationIT : DirectDriverIT
+    public class AuthenticationIT : DirectDriverTestBase
     {
         public AuthenticationIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output, fixture)

@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal
     internal abstract class BaseOutLogger : ILogger
     {
         protected Action<string> LogMethod { get; set; }
-        public LogLevel Level { get; set; }
+        public LogLevel Level { get; set; } = LogLevel.Info;
 
         protected BaseOutLogger() { }
         protected BaseOutLogger(Action<string> logMethod)

@@ -21,9 +21,26 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IConnectionValidator
     {
-        bool IsConnectionReusable(IPooledConnection connection);
-        Task<bool> IsConnectionReusableAsync(IPooledConnection connection);
-        bool IsValid(IPooledConnection connection);
+        /// <summary>
+        /// Healthy check on connection before pooling.
+        /// </summary>
+        /// <param name="connection">The connection to be checked.</param>
+        /// <returns>True if the connection is good to be pooled, otherwise false.</returns>
+        bool OnRelease(IPooledConnection connection);
+
+        /// <summary>
+        /// Healthy check on the connection before pooling
+        /// </summary>
+        /// <param name="connection">The connection to be checked.</param>
+        /// <returns>True if the connection is good to be pooled, otherwise false.</returns>
+        Task<bool> OnReleaseAsync(IPooledConnection connection);
+
+        /// <summary>
+        /// Healthy check before lending the connection outside the pool.
+        /// </summary>
+        /// <param name="connection">The connection to be checked.</param>
+        /// <returns>True if the connection is in a good state to be used by transactions and sessions, otherwise false.</returns>
+        bool OnRequire(IPooledConnection connection);
     }
 
     internal class ConnectionValidator : IConnectionValidator
@@ -37,7 +54,7 @@ namespace Neo4j.Driver.Internal
             _maxConnLifetime = maxConnLifetime;
         }
 
-        public bool IsConnectionReusable(IPooledConnection connection)
+        public bool OnRelease(IPooledConnection connection)
         {
             if (!connection.IsOpen)
             {
@@ -54,11 +71,12 @@ namespace Neo4j.Driver.Internal
             }
 
             RestartIdleTimer(connection);
+            connection.OnRelease();
 
             return true;
         }
 
-        public async Task<bool> IsConnectionReusableAsync(IPooledConnection connection)
+        public async Task<bool> OnReleaseAsync(IPooledConnection connection)
         {
             if (!connection.IsOpen)
             {
@@ -75,34 +93,44 @@ namespace Neo4j.Driver.Internal
             }
 
             RestartIdleTimer(connection);
+            connection.OnRelease();
 
             return true;
         }
 
+        public bool OnRequire(IPooledConnection connection)
+        {
+            var isRequirable = connection.IsOpen
+                   && !HasBeenIdleForTooLong(connection)
+                   && !HasBeenAliveForTooLong(connection);
+
+            if (isRequirable)
+            {
+                ResetIdleTimer(connection);
+                connection.OnAcquire();
+            }
+            return isRequirable;
+        }
+
         private void RestartIdleTimer(IPooledConnection connection)
         {
-            if (IsConnectionIdleDetectionEnabled())
+            if (_connIdleTimeout.IsTimeoutDetectionEnabled())
             {
                 connection.IdleTimer.Start();
             }
         }
 
-        private bool IsConnectionIdleDetectionEnabled()
+        private void ResetIdleTimer(IPooledConnection connection)
         {
-            return _connIdleTimeout.TotalMilliseconds >= 0;
+            if (_connIdleTimeout.IsTimeoutDetectionEnabled())
+            {
+                connection.IdleTimer.Reset();
+            }
         }
 
-        public bool IsValid(IPooledConnection connection)
-        {
-            return connection.IsOpen 
-                && !HasBeenIdleForTooLong(connection) 
-                && !HasBeenAliveForTooLong(connection);
-        }
-
-        // I like this method name :P
         private bool HasBeenAliveForTooLong(IPooledConnection connection)
         {
-            if (!IsConnectionLifetimeDetectionEnabled())
+            if (_maxConnLifetime.IsTimeoutDetectionDisabled())
             {
                 return false;
             }
@@ -114,14 +142,9 @@ namespace Neo4j.Driver.Internal
             return false;
         }
 
-        private bool IsConnectionLifetimeDetectionEnabled()
-        {
-            return _maxConnLifetime.TotalMilliseconds >= 0;
-        }
-
         private bool HasBeenIdleForTooLong(IPooledConnection connection)
         {
-            if (!IsConnectionIdleDetectionEnabled())
+            if (_connIdleTimeout.IsTimeoutDetectionDisabled())
             {
                 return false;
             }
@@ -130,9 +153,6 @@ namespace Neo4j.Driver.Internal
                 return true;
             }
 
-            // if it has not been idle for too long, then it is good to be claimed.
-            // And we will stop the timmer to prepare it to be claimed now
-            connection.IdleTimer.Reset();
             return false;
         }
     }

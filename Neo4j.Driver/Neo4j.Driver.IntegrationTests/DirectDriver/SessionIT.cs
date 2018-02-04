@@ -24,7 +24,7 @@ using System.Net.Sockets;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class SessionIT : DirectDriverIT
+    public class SessionIT : DirectDriverTestBase
     {
         private IDriver Driver => Server.Driver;
 

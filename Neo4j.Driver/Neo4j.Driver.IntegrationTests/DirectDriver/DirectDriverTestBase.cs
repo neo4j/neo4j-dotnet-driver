@@ -24,14 +24,14 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.IntegrationTests
 {
     [Collection(SAIntegrationCollection.CollectionName)]
-    public abstract class DirectDriverIT : IDisposable
+    public abstract class DirectDriverTestBase : IDisposable
     {
         protected ITestOutputHelper Output { get; }
         protected StandAlone Server { get; }
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
-        protected DirectDriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
             Server = fixture.StandAlone;

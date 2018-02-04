@@ -17,23 +17,28 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.PoolStatus;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 
 namespace Neo4j.Driver.Internal
 {
-    internal static class PoolStatus
+    internal sealed class PoolStatus
     {
-        public const int Active = 0;
-        public const int Closed = 1;
-        public const int Inactive = 2;
+        public static readonly PoolStatus Active = new PoolStatus(nameof(Active));
+        public static readonly PoolStatus Closed = new PoolStatus(nameof(Closed));
+        public static readonly PoolStatus Inactive = new PoolStatus(nameof(Inactive));
+
+        public string Name;
+
+        private PoolStatus(string name)
+        {
+            Name = name;
+        }
     }
 
     internal class ConnectionPool : LoggerBase, IConnectionPool
@@ -42,74 +47,65 @@ namespace Neo4j.Driver.Internal
 
         private readonly Uri _uri;
 
-        private int _poolStatus = Active;
+        private PoolStatus _poolStatus = Active;
         private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
         private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
         private bool IsInactiveOrClosed => AtomicRead(ref _poolStatus) != Active;
 
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
-        private readonly int _idlePoolSize;
+        private readonly int _maxIdlePoolSize;
         private readonly TimeSpan _connAcquisitionTimeout;
 
         private readonly IConnectionValidator _connectionValidator;
-        private readonly ConnectionSettings _connectionSettings;
-        private readonly BufferSettings _bufferSettings;
+        private readonly IPooledConnectionFactory _connectionFactory;
 
         private readonly BlockingCollection<IPooledConnection> _idleConnections = new BlockingCollection<IPooledConnection>();
         private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
 
-        private IStatisticsCollector _statisticsCollector;
-        private ConnectionPoolStatistics _statistics;
+        private IDriverMetricsManager _metricsManager;
+        private IConnectionPoolListener _poolMetricsListener;
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
-        internal int NumberOfIdleConnections => _idleConnections.Count;
+        public int NumberOfIdleConnections => _idleConnections.Count;
         internal int PoolSize => _poolSize;
 
-        // for test only
-        private readonly IConnection _fakeConnection;
-
-        internal int Status
+        public PoolStatus Status
         {
             get => AtomicRead(ref _poolStatus);
-            set => Interlocked.Exchange(ref _poolStatus, value);
+            internal set => Interlocked.Exchange(ref _poolStatus, value);
         }
 
         public ConnectionPool(
             Uri uri,
-            ConnectionSettings connectionSettings,
+            IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
-            BufferSettings bufferSettings,
             ILogger logger)
             : base(logger)
         {
             _uri = uri;
-            _connectionSettings = connectionSettings;
 
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
-            _idlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
+            _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
             _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
-            _bufferSettings = bufferSettings;
+            _connectionFactory = connectionFactory;
 
             var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
             var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
             _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
 
-            SetupStatisticsProvider(connectionPoolSettings.StatisticsCollector);
+            SetupMetrics(connectionPoolSettings.DriverMetrics);
         }
 
         internal ConnectionPool(
-            IConnection connection,
+            IPooledConnectionFactory connectionFactory,
             BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
-            ILogger logger = null,
             ConnectionPoolSettings poolSettings = null,
-            BufferSettings bufferSettings = null,
-            IConnectionValidator validator = null)
-            : this(null, null, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig),
-                  bufferSettings ?? new BufferSettings(Config.DefaultConfig), logger)
+            IConnectionValidator validator = null,
+            ILogger logger = null)
+            : this(null, connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
         {
-            _fakeConnection = connection;
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
             if (validator != null)
@@ -120,24 +116,21 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            PooledConnection conn = null;
+            _poolMetricsListener?.BeforeConnectionCreated();
+            IPooledConnection conn = null;
             try
             {
                 conn = NewPooledConnection();
                 if (conn != null)
                 {
-                    _statistics?.IncrementConnectionToCreate();
-
                     conn.Init();
-
-                    _statistics?.IncrementConnectionCreated();
-
+                    _poolMetricsListener?.AfterConnectionCreatedSuccessfully();
                     return conn;
                 }
             }
             catch
             {
-                _statistics?.IncrementConnectionFailedToCreate();
+                _poolMetricsListener?.AfterConnectionFailedToCreate();
 
                 // shut down and clean all the resources of the conneciton if failed to establish
                 DestroyConnection(conn);
@@ -149,24 +142,21 @@ namespace Neo4j.Driver.Internal
 
         private async Task<IPooledConnection> CreateNewPooledConnectionAsync()
         {
-            PooledConnection conn = null;
+            _poolMetricsListener?.BeforeConnectionCreated();
+            IPooledConnection conn = null;
             try
             {
                 conn = NewPooledConnection();
                 if (conn != null)
                 {
-                    _statistics?.IncrementConnectionToCreate();
-
                     await conn.InitAsync().ConfigureAwait(false);
-
-                    _statistics?.IncrementConnectionCreated();
-
+                    _poolMetricsListener?.AfterConnectionCreatedSuccessfully();
                     return conn;
                 }
             }
             catch
             {
-                _statistics?.IncrementConnectionFailedToCreate();
+                _poolMetricsListener?.AfterConnectionFailedToCreate();
 
                 // shut down and clean all the resources of the conneciton if failed to establish
                 await DestroyConnectionAsync(conn).ConfigureAwait(false);
@@ -176,14 +166,11 @@ namespace Neo4j.Driver.Internal
             return null;
         }
 
-        private PooledConnection NewPooledConnection()
+        private IPooledConnection NewPooledConnection()
         {
             if (TryIncrementPoolSize())
             {
-                return _fakeConnection != null
-                    ? new PooledConnection(_fakeConnection, this)
-                    : new PooledConnection(new SocketConnection(_uri, _connectionSettings, _bufferSettings, Logger),
-                        this);
+                return _connectionFactory.Create(_uri, this, _metricsManager.ConnectionMetricsListener);
             }
             return null;
         }
@@ -196,9 +183,15 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            _statistics?.IncrementConnectionToClose();
-            conn.Destroy();
-            _statistics?.IncrementConnectionClosed();
+            _poolMetricsListener?.BeforeConnectionClosed();
+            try
+            {
+                conn.Destroy();
+            }
+            finally
+            {
+                _poolMetricsListener?.AfterConnectionClosed();
+            }
         }
 
         private async Task DestroyConnectionAsync(IPooledConnection conn)
@@ -209,9 +202,15 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            _statistics?.IncrementConnectionToClose();
-            await conn.DestroyAsync().ConfigureAwait(false);
-            _statistics?.IncrementConnectionClosed();
+            _poolMetricsListener?.BeforeConnectionClosed();
+            try
+            {
+                await conn.DestroyAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _poolMetricsListener?.AfterConnectionClosed();
+            }
         }
 
         /// <summary>
@@ -238,7 +237,17 @@ namespace Neo4j.Driver.Internal
 
         public IConnection Acquire(AccessMode mode)
         {
-            return Acquire();
+            var acquireEvent = new SimpleTimerEvent();
+            _poolMetricsListener?.BeforeAcquire(acquireEvent);
+            try
+            {
+                var conn = Acquire();
+                return conn;
+            }
+            finally
+            {
+                _poolMetricsListener?.AfterAcquire(acquireEvent);
+            }
         }
 
         public IPooledConnection Acquire()
@@ -294,7 +303,7 @@ namespace Neo4j.Driver.Internal
                             }
                         }
 
-                        if (!_connectionValidator.IsValid(connection))
+                        if (!_connectionValidator.OnRequire(connection))
                         {
                             DestroyConnection(connection);
                         }
@@ -329,14 +338,17 @@ namespace Neo4j.Driver.Internal
 
         public Task<IConnection> AcquireAsync(AccessMode mode)
         {
+            var acquireEvent = new SimpleTimerEvent();
+            _poolMetricsListener?.BeforeAcquire(acquireEvent);
             var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
-
-            return AcquireAsync(timeOutTokenSource.Token).ContinueWith(t =>
+            var task = AcquireAsync(timeOutTokenSource.Token).ContinueWith(t =>
             {
                 timeOutTokenSource.Dispose();
 
                 return t;
             }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
+            _poolMetricsListener?.AfterAcquire(acquireEvent);
+            return task;
         }
 
         private Task<IConnection> AcquireAsync(CancellationToken cancellationToken)
@@ -344,7 +356,6 @@ namespace Neo4j.Driver.Internal
             return TryExecuteAsync(async () =>
             {
                 IPooledConnection connection = null;
-
                 try
                 {
                     while (true)
@@ -372,7 +383,7 @@ namespace Neo4j.Driver.Internal
                                 }
 
                                 await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
-                                
+
                                 if (_idleConnections.TryTake(out connection))
                                 {
                                     break;
@@ -386,7 +397,7 @@ namespace Neo4j.Driver.Internal
                             }
                         }
 
-                        if (!_connectionValidator.IsValid(connection))
+                        if (!_connectionValidator.OnRequire(connection))
                         {
                             await DestroyConnectionAsync(connection).ConfigureAwait(false);
                         }
@@ -425,7 +436,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsIdlePoolFull()
         {
-            return _idlePoolSize != Config.Infinite && _idleConnections.Count >= _idlePoolSize;
+            return _maxIdlePoolSize != Config.Infinite && _idleConnections.Count >= _maxIdlePoolSize;
         }
 
         public void Release(IPooledConnection connection)
@@ -445,7 +456,7 @@ namespace Neo4j.Driver.Internal
                     return;
                 }
 
-                if (!_connectionValidator.IsConnectionReusable(connection) || IsIdlePoolFull() || IsInactiveOrClosed)
+                if (!_connectionValidator.OnRelease(connection) || IsIdlePoolFull() || IsInactiveOrClosed)
                 {
                     // cannot return to the idle pool
                     DestroyConnection(connection);
@@ -478,7 +489,7 @@ namespace Neo4j.Driver.Internal
                     return;
                 }
 
-                if (!await _connectionValidator.IsConnectionReusableAsync(connection).ConfigureAwait(false)
+                if (!await _connectionValidator.OnReleaseAsync(connection).ConfigureAwait(false)
                     || IsIdlePoolFull() || IsInactiveOrClosed)
                 {
                     // cannot return to idle pool
@@ -527,7 +538,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     TerminateIdleConnections();
-                    DisposeStatisticsProvider();
+                    _metricsManager.Dispose();
                 });
             }
         }
@@ -548,7 +559,7 @@ namespace Neo4j.Driver.Internal
                 }
 
                 allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
-                DisposeStatisticsProvider();
+                _metricsManager.Dispose();
 
                 return Task.WhenAll(allCloseTasks);
             }
@@ -612,29 +623,25 @@ namespace Neo4j.Driver.Internal
                 "You should not see this error persistenly.");
         }
 
-        private void SetupStatisticsProvider(IStatisticsCollector collector)
+        private static PoolStatus AtomicRead(ref PoolStatus value)
         {
-            _statisticsCollector = collector;
-            if (_statisticsCollector != null)
-            {
-                _statistics = new ConnectionPoolStatistics(_uri, this);
-                _statisticsCollector.Register(_statistics);
-            }
+            // change to the same value,
+            // a.k.a. do nothing but return the original value
+            return Interlocked.CompareExchange(ref value, Active, Active);
         }
 
-        private void DisposeStatisticsProvider()
+        private void SetupMetrics(DriverMetrics driverMetrics)
         {
-            if (_statistics != null)
+            if ( driverMetrics == null)
             {
-                _statisticsCollector?.Unregister(_statistics);
-                _statistics.Dispose();
+                _metricsManager = new DevNullDriverMetricsManager();
             }
-        }
-
-        private static int AtomicRead(ref int value)
-        {
-            return Interlocked.CompareExchange(ref value, 0, 0); // change to 0 if the value was 0,
-                                                                 // a.k.a. do nothing but return the original value
+            else
+            {
+                _metricsManager = new DriverMetricsManager(driverMetrics, _uri,
+                    this);
+            }
+            _poolMetricsListener = _metricsManager.PoolMetricsListener;
         }
 
         public override string ToString()

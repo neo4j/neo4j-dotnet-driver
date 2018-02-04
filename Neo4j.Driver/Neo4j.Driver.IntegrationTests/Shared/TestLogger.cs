@@ -15,17 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.V1;
+using Xunit.Abstractions;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.IntegrationTests
 {
-    internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
+    internal class TestLogger : BaseOutLogger
     {
-        int NumberOfInUseConnections { get; }
-        int NumberOfIdleConnections { get; }
-        PoolStatus Status { get; }
-        void Deactivate();
-        Task DeactivateAsync();
-        void Activate();
+        public TestLogger(ITestOutputHelper output):
+            base(output.WriteLine)
+        {
+        }
     }
 }

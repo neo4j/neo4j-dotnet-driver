@@ -17,20 +17,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.SoakRunWorkItem;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class DriverIT : DirectDriverIT
+    public class DriverIT : DirectDriverTestBase
     {
         public DriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
         {
@@ -129,10 +128,9 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldCloseIdleForTooLongConns(int sessionCount)
         {
             // Given
-            var statisticsCollector = new StatisticsCollector();
             using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config
             {
-                DriverStatisticsCollector = statisticsCollector,
+                DriverMetricsEnabled = true,
                 ConnectionIdleTimeout = TimeSpan.Zero // enable but always timeout idle connections
             }))
             {
@@ -149,24 +147,23 @@ namespace Neo4j.Driver.IntegrationTests
                 }
 
                 // Then
-                var statistics = statisticsCollector.CollectStatistics().Single();
-                var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value.ValueAs<IDictionary<string, object>>());
-                Output.WriteLine(st.ReportStatistics().ToContentString());
-                st.ConnCreated.Should().Be(sessionCount);
-                st.ConnCreated.Should().Be(st.ConnClosed + 1);
+                var metrics = ((Internal.Driver) driver).GetDriverMetrics();
+                var m = metrics.PoolMetrics.Single().Value;
+                Output.WriteLine(m.ToString());
+                m.Created.Should().Be(sessionCount);
+                m.Created.Should().Be(m.Closed + 1);
             }
         }
 
         [RequireServerTheory]
         [InlineData(50)]
         [InlineData(5000)]
-        //        [InlineData(50000)] leave this to a long dedicated build
+//        [InlineData(50000)] leave this to a long dedicated build
         public void SoakRun(int threadCount)
         {
-            var statisticsCollector = new StatisticsCollector();
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
             {
-                DriverStatisticsCollector = statisticsCollector,
+                DriverMetricsEnabled = true,
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted
             });
@@ -175,7 +172,8 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var workItem = new SoakRunWorkItem(driver, statisticsCollector, Output);
+            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
+            var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
             for (var i = 0; i < threadCount; i++)
@@ -184,18 +182,23 @@ namespace Neo4j.Driver.IntegrationTests
             }
             Task.WaitAll(tasks.ToArray());
 
-            driver.Close();
+            var m = metrics.PoolMetrics.Single().Value;
+            var cm = metrics.ConnectionMetrics.Single().Value;
+            Output.WriteLine(m.ToString());
+            Output.WriteLine(m.AcquisitionTimeHistogram.ToString());
+            Output.WriteLine(cm.ConnectionTimeHistogram.ToString());
+            Output.WriteLine(cm.InUseTimeHistogram.ToString());
 
-            var statistics = statisticsCollector.CollectStatistics().Single();
-            var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value as IDictionary<string, object>);
-            Output.WriteLine(st.ReportStatistics().ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
-            st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
-            st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
-            st.ConnToClose.Should().Be(st.ConnClosed);
+            m.ToCreate.Should().Be(0);
+            m.ToClose.Should().Be(0);
+            m.InUse.Should().Be(0);
+            m.Idle.Should().Be((int) (m.Created - m.Closed));
+
+            driver.Close();
         }
 
         [RequireServerTheory]
@@ -203,10 +206,9 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(5000)]
         public async void SoakRunAsync(int threadCount)
         {
-            var statisticsCollector = new StatisticsCollector();
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
             {
-                DriverStatisticsCollector = statisticsCollector,
+                DriverMetricsEnabled = true,
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 500,
                 EncryptionLevel = EncryptionLevel.Encrypted,
@@ -216,7 +218,8 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var workItem = new SoakRunWorkItem(driver, statisticsCollector, Output);
+            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
+            var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
             for (var i = 0; i < threadCount; i++)
@@ -225,21 +228,20 @@ namespace Neo4j.Driver.IntegrationTests
             }
             await Task.WhenAll(tasks);
 
-            await driver.CloseAsync();
+            var m = metrics.PoolMetrics.Single().Value;
+            Output.WriteLine(m.ToString());
+            Output.WriteLine(m.AcquisitionTimeHistogram.ToString());
 
-            var statistics = statisticsCollector.CollectStatistics().Single();
-            var st = ConnectionPoolStatistics.FromDictionary(statistics.Key, statistics.Value as IDictionary<string, object>);
-            Output.WriteLine(st.ReportStatistics().ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
-            st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
-            st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
-            st.ConnToClose.Should().Be(st.ConnClosed);
+            m.ToCreate.Should().Be(0);
+            m.ToClose.Should().Be(0);
+            m.InUse.Should().Be(0);
+            m.Idle.Should().Be((int) (m.Created - m.Closed));
+
+            await driver.CloseAsync();
         }
-
-        
-
     }
 }

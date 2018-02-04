@@ -19,7 +19,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -29,44 +28,40 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterConnectionPool : LoggerBase, IClusterConnectionPool
     {
+        private readonly IConnectionPoolFactory _poolFactory;
+
         private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools =
             new ConcurrentDictionary<Uri, IConnectionPool>();
-
-        private readonly ConnectionSettings _connectionSettings;
-        private readonly ConnectionPoolSettings _poolSettings;
-        private readonly BufferSettings _bufferSettings;
-
-        // for test only
-        private readonly IConnectionPool _fakePool;
 
         private int _closedMarker = 0;
 
         public ClusterConnectionPool(
-            ConnectionSettings connectionSettings,
+            IEnumerable<Uri> initUris,
+            IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings poolSettings,
-            BufferSettings bufferSettings,
-            IEnumerable<Uri> initUris, ILogger logger
-        )
-            : base(logger)
+            ILogger logger
+        ) : this(initUris, new ConnectionPoolFactory(connectionFactory, poolSettings, logger), logger)
         {
-            _connectionSettings = connectionSettings;
-            _poolSettings = poolSettings;
-            _bufferSettings = bufferSettings;
-            Add(initUris);
         }
 
+        // test only
         internal ClusterConnectionPool(
-            IConnectionPool connectionPool,
-            ConcurrentDictionary<Uri, IConnectionPool> clusterPool = null,
-            ConnectionSettings connSettings = null,
-            ConnectionPoolSettings poolSettings = null,
-            BufferSettings bufferSettings = null,
+            IConnectionPoolFactory poolFactory,
+            ConcurrentDictionary<Uri, IConnectionPool> clusterPool,
             ILogger logger = null
         ) :
-            this(connSettings, poolSettings, bufferSettings, Enumerable.Empty<Uri>(), logger)
+            this(Enumerable.Empty<Uri>(), poolFactory, logger)
         {
-            _fakePool = connectionPool;
             _pools = clusterPool;
+        }
+
+
+        private ClusterConnectionPool(IEnumerable<Uri> initUris,
+            IConnectionPoolFactory poolFactory, ILogger logger)
+            : base(logger)
+        {
+            _poolFactory = poolFactory;
+            Add(initUris);
         }
 
         private bool IsClosed => _closedMarker > 0;
@@ -97,7 +92,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             foreach (var uri in servers)
             {
-                _pools.AddOrUpdate(uri, CreateNewConnectionPool, ActivateConnectionPool);
+                _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
             }
             if (IsClosed)
             {
@@ -112,7 +107,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             foreach (var uri in servers)
             {
-                _pools.AddOrUpdate(uri, CreateNewConnectionPool, ActivateConnectionPool);
+                _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
             }
             if (IsClosed)
             {
@@ -257,11 +252,6 @@ namespace Neo4j.Driver.Internal.Routing
         public override string ToString()
         {
             return _pools.ValueToString();
-        }
-
-        private IConnectionPool CreateNewConnectionPool(Uri uri)
-        {
-            return _fakePool ?? new ConnectionPool(uri, _connectionSettings, _poolSettings, _bufferSettings, Logger);
         }
 
         private IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)

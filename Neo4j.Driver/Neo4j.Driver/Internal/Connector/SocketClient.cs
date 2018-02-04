@@ -16,10 +16,12 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
@@ -36,13 +38,22 @@ namespace Neo4j.Driver.Internal.Connector
         private int _closedMarker = -1;
 
         private readonly ILogger _logger;
+        private readonly IConnectionListener _connMetricsListener;
+        private readonly IListenerEvent _connEvent;
 
-        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger, ITcpSocketClient socketClient = null)
+        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings,
+            IConnectionListener connMetricsListener = null, ILogger logger = null, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
             _bufferSettings = bufferSettings;
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
+
+            _connMetricsListener = connMetricsListener;
+            if (_connMetricsListener != null)
+            {
+                _connEvent = new SimpleTimerEvent();
+            }
         }
 
         // For testing only
@@ -58,10 +69,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Start()
         {
+            _connMetricsListener?.BeforeConnect(_connEvent);
             _tcpSocketClient.Connect(_uri);
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
+            _connMetricsListener?.AfterConnect(_connEvent);
 
             var version = DoHandshake();
             _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
@@ -71,9 +84,12 @@ namespace Neo4j.Driver.Internal.Connector
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
 
+            _connMetricsListener?.BeforeConnect(_connEvent);
             _tcpSocketClient.ConnectAsync(_uri)
                 .ContinueWith(t =>
                     {
+                        _connMetricsListener?.AfterConnect(_connEvent);
+
                         if (t.IsFaulted)
                         {
                             tcs.SetException(t.Exception.GetBaseException());

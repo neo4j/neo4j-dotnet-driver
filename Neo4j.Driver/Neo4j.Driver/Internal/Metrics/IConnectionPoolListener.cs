@@ -15,17 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
+using System;
+using System.Diagnostics;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal.Metrics
 {
-    internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
+    internal interface IConnectionPoolListener: IDisposable
     {
-        int NumberOfInUseConnections { get; }
-        int NumberOfIdleConnections { get; }
-        PoolStatus Status { get; }
-        void Deactivate();
-        Task DeactivateAsync();
-        void Activate();
+        void BeforeConnectionCreated();
+        void AfterConnectionCreatedSuccessfully();
+        void AfterConnectionFailedToCreate();
+        void BeforeConnectionClosed();
+        void AfterConnectionClosed();
+        void BeforeAcquire(IListenerEvent listenerEvent);
+        void AfterAcquire(IListenerEvent listenerEvent);
     }
 }

@@ -47,6 +47,9 @@
     <Reference Include="FluentAssertions.Core, Version=4.19.3.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
       <HintPath>..\packages\FluentAssertions.4.19.3\lib\net45\FluentAssertions.Core.dll</HintPath>
     </Reference>
+    <Reference Include="HdrHistogram, Version=2.5.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\hdrhistogram.2.5.0\lib\net45\HdrHistogram.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Moq, Version=4.7.63.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
       <HintPath>..\packages\Moq.4.7.63\lib\net45\Moq.dll</HintPath>
@@ -117,6 +120,7 @@
     <Compile Include="IO\PackStreamReaderTests.cs" />
     <Compile Include="IO\PackStreamWriterTests.cs" />
     <Compile Include="IO\WriterTests.cs" />
+    <Compile Include="Metrics\HistogramTests.cs" />
     <Compile Include="Result\SummaryCollectorTests.cs" />
     <Compile Include="Result\ResultCursorBuilderTests.cs" />
     <Compile Include="Result\StatementResultCursorTests.cs" />
@@ -168,7 +172,6 @@
       <Name>Neo4j.Driver</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

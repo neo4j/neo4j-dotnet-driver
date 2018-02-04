@@ -17,6 +17,7 @@
 using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.V1
 {
@@ -228,9 +229,10 @@ namespace Neo4j.Driver.V1
         public LoadBalancingStrategy LoadBalancingStrategy { get; set; } = LoadBalancingStrategy.LeastConnected;
 
         /// <summary>
-        /// Gets or sets the statistics collector to which the statistics inside the driver could be published.
+        /// Gets or sets the option to enable driver metrics.
+        /// Internally used for testing and experimenting.
         /// </summary>
-        internal IStatisticsCollector DriverStatisticsCollector { get; set; }
+        internal bool DriverMetricsEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the default read buffer size which the driver allocates for its internal buffers.

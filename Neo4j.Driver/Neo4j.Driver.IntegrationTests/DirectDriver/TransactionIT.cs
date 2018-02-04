@@ -25,7 +25,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class TransactionIT : DirectDriverIT
+    public class TransactionIT : DirectDriverTestBase
     {
         private IDriver Driver => Server.Driver;
 

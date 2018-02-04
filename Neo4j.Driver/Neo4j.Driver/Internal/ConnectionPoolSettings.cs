@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
@@ -27,26 +28,24 @@ namespace Neo4j.Driver.Internal
         public TimeSpan ConnectionAcquisitionTimeout { get; }
         public TimeSpan ConnectionIdleTimeout { get; }
         public TimeSpan MaxConnectionLifetime { get; }
+        public DriverMetrics DriverMetrics { get; }
 
-
-        public IStatisticsCollector StatisticsCollector { get; }
-
-        public ConnectionPoolSettings(Config config)
-            :this(config.MaxIdleConnectionPoolSize, config.MaxConnectionPoolSize, config.ConnectionAcquisitionTimeout,
-                 config.ConnectionIdleTimeout, config.MaxConnectionLifetime, config.DriverStatisticsCollector)
+        public ConnectionPoolSettings(Config config, DriverMetrics metrics = null)
+            : this(config.MaxIdleConnectionPoolSize, config.MaxConnectionPoolSize, config.ConnectionAcquisitionTimeout,
+                config.ConnectionIdleTimeout, config.MaxConnectionLifetime, metrics)
         {
         }
 
         internal ConnectionPoolSettings(int maxIdleConnectionPoolSize, int maxConnectionPoolSize,
             TimeSpan connectionAcquisitionTimeout, TimeSpan connectionIdleTimeout, TimeSpan maxConnectionLifetime,
-            IStatisticsCollector statisticsCollector=null)
+            DriverMetrics metrics = null)
         {
             MaxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
             MaxConnectionPoolSize = maxConnectionPoolSize;
             ConnectionAcquisitionTimeout = connectionAcquisitionTimeout;
             ConnectionIdleTimeout = connectionIdleTimeout;
             MaxConnectionLifetime = maxConnectionLifetime;
-            StatisticsCollector = statisticsCollector;
+            DriverMetrics = metrics;
         }
     }
 }

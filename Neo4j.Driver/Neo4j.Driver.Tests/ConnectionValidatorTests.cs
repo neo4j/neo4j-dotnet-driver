@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(false);
                 var validator = NewConnectionValidator();
-                validator.IsConnectionReusable(conn.Object).Should().BeFalse();
+                validator.OnRelease(conn.Object).Should().BeFalse();
             }
 
             [Fact]
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.IsOpen).Returns(true);
                 conn.Setup(x => x.ClearConnection()).Throws(new InvalidOperationException());
                 var validator = NewConnectionValidator();
-                validator.IsConnectionReusable(conn.Object).Should().BeFalse();
+                validator.OnRelease(conn.Object).Should().BeFalse();
             }
 
             [Fact]
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
 
-                validator.IsConnectionReusable(conn.Object).Should().BeTrue();
+                validator.OnRelease(conn.Object).Should().BeTrue();
                 idleTimmer.Verify(x=>x.Start(), Times.Once);
             }
         }
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(false);
                 var validator = NewConnectionValidator();
-                validator.IsValid(conn.Object).Should().BeFalse();
+                validator.OnRequire(conn.Object).Should().BeFalse();
             }
 
             [Fact]
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.IdleTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
-                validator.IsValid(conn.Object).Should().BeFalse();
+                validator.OnRequire(conn.Object).Should().BeFalse();
             }
 
             [Fact]
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(maxConnLifetime: TimeSpan.Zero);
-                validator.IsValid(conn.Object).Should().BeFalse();
+                validator.OnRequire(conn.Object).Should().BeFalse();
             }
 
             [Fact]
@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue);
-                validator.IsValid(conn.Object).Should().BeTrue();
+                validator.OnRequire(conn.Object).Should().BeTrue();
                 idleTimmer.Verify(x=>x.Reset(), Times.Once);
             }
 

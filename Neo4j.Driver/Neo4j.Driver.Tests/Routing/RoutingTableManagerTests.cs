@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.Routing
             var seedUri = new Uri("bolt+routing://neo4j.com:6060");
             return new RoutingTableManager(
                 routingTable,
-                new RoutingSettings(seedUri, new Dictionary<string, string>()),
+                new RoutingSettings(seedUri, new Dictionary<string, string>(), Config.DefaultConfig),
                 poolManager, null);
         }
 

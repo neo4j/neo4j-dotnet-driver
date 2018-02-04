@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.V1
@@ -201,15 +202,28 @@ namespace Neo4j.Driver.V1
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
             config = config ?? Config.DefaultConfig;
 
+            var connectionSettings = new ConnectionSettings(authToken, config);
+            var bufferSettings = new BufferSettings(config);
+            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+
+            return CreateDriver(uri, config, connectionFactory);
+        }
+
+        internal static IDriver CreateDriver(Uri uri, Config config, IPooledConnectionFactory connectionFactory)
+        {
+            var logger = config.Logger;
+
             var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
             var routingContext = uri.ParseRoutingContext();
+            var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
 
-            var routingSettings = new RoutingSettings(parsedUri, routingContext);
-            var connectionSettings = new ConnectionSettings(authToken, config);
-            var connectionPoolSettings = new ConnectionPoolSettings(config);
-            var bufferSettings = new BufferSettings(config);
+            DriverMetrics driverMetrics = null;
+            if (config.DriverMetricsEnabled)
+            {
+                driverMetrics = new DriverMetrics(config);
+            }
+            var connectionPoolSettings = new ConnectionPoolSettings(config, driverMetrics);
 
-            var logger = config.Logger;
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 
             IConnectionProvider connectionProvider = null;
@@ -217,16 +231,16 @@ namespace Neo4j.Driver.V1
             {
                 case "bolt":
                     EnsureNoRoutingContext(uri, routingContext);
-                    connectionProvider = new ConnectionPool(parsedUri, connectionSettings, connectionPoolSettings, bufferSettings, logger);
+                    connectionProvider = new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(routingSettings, connectionSettings, connectionPoolSettings, bufferSettings, config);
+                    connectionProvider = new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, driverMetrics);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)

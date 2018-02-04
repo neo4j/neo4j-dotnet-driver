@@ -25,31 +25,15 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.SoakRunWorkItem;
 using static Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    [Collection(CCIntegrationCollection.CollectionName)]
-    public class RoutingDriverAsyncIT : IDisposable
+    public class RoutingDriverAsyncIT : RoutingDriverTestBase
     {
-        public static readonly Config DebugConfig = Config.Builder.WithLogger(new DebugLogger { Level = LogLevel.Debug }).ToConfig();
-        protected ITestOutputHelper Output { get; }
-        protected CausalCluster Cluster { get; }
-        protected IAuthToken AuthToken { get; }
-
-        private string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
-        private string WrongServer => "bolt+routing://localhost:1234";
-
-        public RoutingDriverAsyncIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+        public RoutingDriverAsyncIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(output, fixture)
         {
-            Output = output;
-            Cluster = fixture.Cluster;
-            AuthToken = Cluster.AuthToken;
-        }
-
-        public void Dispose()
-        {
-            // put some code that you want to run after each unit test
         }
 
         [RequireClusterFact]
@@ -152,20 +136,20 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(5000)]
         public async void SoakRunAsync(int threadCount)
         {
-            var statisticsCollector = new StatisticsCollector();
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
             {
-                DriverStatisticsCollector = statisticsCollector,
+                DriverMetricsEnabled = true,
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted,
-                MaxIdleConnectionPoolSize = 20,
+                MaxIdleConnectionPoolSize = 50,
                 MaxConnectionPoolSize = 50,
-                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
+                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5)
             });
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var workItem = new SoakRunWorkItem(driver, statisticsCollector, Output);
+            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
+            var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
             for (var i = 0; i < threadCount; i++)
@@ -174,22 +158,23 @@ namespace Neo4j.Driver.IntegrationTests
             }
             await Task.WhenAll(tasks);
 
-            await driver.CloseAsync();
-
-            var statistics = statisticsCollector.CollectStatistics();
-            Output.WriteLine(statistics.ToContentString());
+            var poolMetrics = metrics.PoolMetrics;
+            Output.WriteLine(poolMetrics.ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
-            foreach (var statistic in statistics)
+            foreach (var value in poolMetrics)
             {
-                var st = ConnectionPoolStatistics.FromDictionary(statistic.Key, statistic.Value.ValueAs<IDictionary<string, object>>());
+                var st = value.Value;
 
-                st.ConnToCreate.Should().Be(st.ConnCreated + st.ConnFailedToCreate);
-                st.ConnToCreate.Should().Be(st.InUseConns + st.AvailableConns + st.ConnToClose);
-                st.ConnToClose.Should().Be(st.ConnClosed);
+                st.ToCreate.Should().Be(0);
+                st.ToClose.Should().Be(0);
+                st.InUse.Should().Be(0);
+                st.Idle.Should().Be((int) (st.Created - st.Closed));
             }
+
+            await driver.CloseAsync();
         }
     }
 }
