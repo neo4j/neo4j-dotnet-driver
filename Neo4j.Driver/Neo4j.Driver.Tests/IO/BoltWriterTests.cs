@@ -285,7 +285,7 @@ namespace Neo4j.Driver.Tests.IO
                 writer.Write(new InitMessage("a", new Dictionary<string, object>()));
                 await writer.FlushAsync();
 
-                mocks.VerifyResult("00 05 B1 01 81 61 A0 00 00");
+                mocks.VerifyResult("00 05 B2 01 81 61 A0 00 00");
             }
 
             [Fact]

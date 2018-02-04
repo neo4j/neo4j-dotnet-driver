@@ -510,9 +510,10 @@ namespace Neo4j.Driver.Tests
 
                 var exception = Record.Exception(() => pool.Acquire());
 
-                stopWatch.Elapsed.Seconds.Should().BeGreaterOrEqualTo(10);
-                exception.Should().BeOfType<ClientException>();
+                stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10);
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
+                exception.Should().BeOfType<ClientException>();
+
             }
 
             [Fact]
