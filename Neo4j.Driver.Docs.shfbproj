@@ -7,13 +7,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{e4682985-dabf-462a-997e-debdfb01ede9}</ProjectGuid>
-    <SHFBSchemaVersion>2017.9.26.0</SHFBSchemaVersion>
+    <SHFBSchemaVersion>2015.6.5.0</SHFBSchemaVersion>
     <!-- AssemblyName, Name, and RootNamespace are not used by SHFB but Visual Studio adds them anyway -->
     <AssemblyName>Documentation</AssemblyName>
     <RootNamespace>Documentation</RootNamespace>
     <Name>Documentation</Name>
     <!-- SHFB properties -->
-    <FrameworkVersion>Cross-platform (.NET Core/.NET Standard)</FrameworkVersion>
+    <FrameworkVersion>.NET Portable Library 5.0 (NuGet)</FrameworkVersion>
     <OutputPath>.\Docs\</OutputPath>
     <HtmlHelpName>Neo4j.Driver.Documentation</HtmlHelpName>
     <Language>en-US</Language>
@@ -29,7 +29,7 @@
     <MissingTags>Summary, Parameter, Returns, AutoDocumentCtors, Namespace, TypeParameter, AutoDocumentDispose</MissingTags>
     <ApiFilter>
     </ApiFilter>
-    <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected, ProtectedInternalAsProtected, EditorBrowsableNever, NonBrowsable</VisibleItems>
+    <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected, ProtectedInternalAsProtected</VisibleItems>
     <HelpFileVersion>1.5.0.0</HelpFileVersion>
     <MaximumGroupParts>2</MaximumGroupParts>
     <NamespaceGrouping>False</NamespaceGrouping>
@@ -52,9 +52,7 @@
         <configuration useGAC="false">
           <assemblyBinding />
           <ignoreIfUnresolved>
-            <assemblyIdentity name="BusinessObjects.Licensing.KeycodeDecoder" />
             <assemblyIdentity name="HdrHistogram" />
-            <assemblyIdentity name="Microsoft.VisualStudio.TestTools.UITest.Playback" />
           </ignoreIfUnresolved>
         </configuration>
       </PlugInConfig>
