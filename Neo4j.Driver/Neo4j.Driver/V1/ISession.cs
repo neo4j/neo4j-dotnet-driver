@@ -53,8 +53,8 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// This method is deprecated.
         /// </summary>
-        /// <param name="bookmark"></param>
-        /// <returns></returns>
+        /// <param name="bookmark">A bookmark.</param>
+        /// <returns>A new transaction.</returns>
         [Obsolete("Pass in bookmark at session instead.")]
         ITransaction BeginTransaction(string bookmark);
 
@@ -68,7 +68,6 @@ namespace Neo4j.Driver.V1
         ///
         /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
         /// method.
-        ///
         /// </summary>
         /// <returns>A task of a new transaction.</returns>
         Task<ITransaction> BeginTransactionAsync();

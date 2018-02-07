@@ -407,7 +407,7 @@ namespace Neo4j.Driver.V1
         /// The <paramref name="strategy"/> will not take effects if <see cref="Config.EncryptionLevel"/> decides to use no TLS encryption on the connections.
         /// </summary>
         /// <param name="strategy">See <see cref="TrustStrategy"/> for available strategies.</param>
-        /// <returns></returns>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithTrustStrategy(TrustStrategy strategy);
 
@@ -423,7 +423,7 @@ namespace Neo4j.Driver.V1
         /// This method is deprecated. Use <see cref="WithMaxIdleConnectionPoolSize"/> instead.
         /// </summary>
         /// <param name="size"></param>
-        /// <returns></returns>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         [System.Obsolete("Please use WithMaxIdleConnectionPoolSize instead.")]
         IConfigBuilder WithMaxIdleSessionPoolSize(int size);
 

@@ -16,11 +16,7 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using System.Threading;
-using HdrHistogram;
-using static Neo4j.Driver.Internal.Metrics.ConnectionMetrics;
-using static Neo4j.Driver.Internal.Metrics.Histogram;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
