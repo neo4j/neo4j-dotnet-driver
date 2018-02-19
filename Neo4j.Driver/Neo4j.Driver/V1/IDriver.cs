@@ -101,6 +101,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
         /// </summary>
+        /// <returns>The close task.</returns>
         Task CloseAsync();
 
     }

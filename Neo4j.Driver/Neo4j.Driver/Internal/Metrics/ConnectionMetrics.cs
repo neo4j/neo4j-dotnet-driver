@@ -16,8 +16,6 @@
 // limitations under the License.
 
 using System;
-using HdrHistogram;
-using static Neo4j.Driver.Internal.Metrics.Histogram;
 
 namespace Neo4j.Driver.Internal.Metrics
 {

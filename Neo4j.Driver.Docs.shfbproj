@@ -18,8 +18,8 @@
     <HtmlHelpName>Neo4j.Driver.Documentation</HtmlHelpName>
     <Language>en-US</Language>
     <DocumentationSources>
-      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\netstandard1.3\Neo4j.Driver.dll" />
-<DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\netstandard1.3\Neo4j.Driver.xml" /></DocumentationSources>
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\net452\Neo4j.Driver.dll" />
+<DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\net452\Neo4j.Driver.xml" /></DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <HelpFileFormat>Website</HelpFileFormat>
     <IndentHtml>False</IndentHtml>
@@ -51,28 +51,17 @@
       <PlugInConfig id="Assembly Binding Redirection" enabled="True">
         <configuration useGAC="false">
           <assemblyBinding />
-          <ignoreIfUnresolved />
+          <ignoreIfUnresolved>
+            <assemblyIdentity name="HdrHistogram" />
+          </ignoreIfUnresolved>
         </configuration>
       </PlugInConfig>
-      <PlugInConfig id="Additional Content Only" enabled="False">
-        <configuration />
-      </PlugInConfig>
-      <PlugInConfig id="Additional Reference Links" enabled="False">
-        <configuration />
-      </PlugInConfig>
-      <PlugInConfig id="AjaxDoc Builder" enabled="False">
-        <configuration />
-      </PlugInConfig>
-      <PlugInConfig id="Bibliography Support" enabled="False">
-        <configuration />
-      </PlugInConfig>
-      <PlugInConfig id="Output Deployment" enabled="False">
-        <configuration />
-      </PlugInConfig>
-      <PlugInConfig id="Table of Contents Exclusion" enabled="True">
-        <configuration />
-      </PlugInConfig>
-    </PlugInConfigurations>
+<PlugInConfig id="Additional Content Only" enabled="False"><configuration /></PlugInConfig>
+<PlugInConfig id="Additional Reference Links" enabled="False"><configuration /></PlugInConfig>
+<PlugInConfig id="AjaxDoc Builder" enabled="False"><configuration /></PlugInConfig>
+<PlugInConfig id="Bibliography Support" enabled="False"><configuration /></PlugInConfig>
+<PlugInConfig id="Output Deployment" enabled="False"><configuration /></PlugInConfig>
+<PlugInConfig id="Table of Contents Exclusion" enabled="True"><configuration /></PlugInConfig></PlugInConfigurations>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in order for Visual Studio to perform
 			 the build.  The others are optional common platform types that may appear. -->
