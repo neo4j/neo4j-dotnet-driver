@@ -490,6 +490,7 @@ namespace Neo4j.Driver.Tests
 
                 var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
+                stopWatch.Stop();
                 stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10);
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");

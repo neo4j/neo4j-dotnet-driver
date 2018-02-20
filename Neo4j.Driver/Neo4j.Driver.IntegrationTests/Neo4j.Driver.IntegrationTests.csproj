@@ -2,7 +2,7 @@
     <Import Project="..\common.props" />
 
     <PropertyGroup>
-        <TargetFrameworks>net452;netcoreapp1.0</TargetFrameworks>
+        <TargetFrameworks>net452;netcoreapp1.1</TargetFrameworks>
         <IsPackable>false</IsPackable>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <GenerateProgramFile>false</GenerateProgramFile>
@@ -26,7 +26,7 @@
         <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.0'">
+    <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
         <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
         <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
         <PackageReference Include="System.Net.Security" Version="4.3.1" />

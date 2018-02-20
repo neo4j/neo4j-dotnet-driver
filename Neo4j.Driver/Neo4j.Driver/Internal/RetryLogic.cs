@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
@@ -78,7 +79,7 @@ namespace Neo4j.Driver.Internal
 
                     var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
                     _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
-                    Task.Delay(delay).ConfigureAwait(false).GetAwaiter().GetResult(); // blocking for this delay
+                    Thread.Sleep(delay);
                     delayMs = delayMs * _multiplier;
                 }
             } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);

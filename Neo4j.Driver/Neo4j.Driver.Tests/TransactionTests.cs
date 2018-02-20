@@ -53,6 +53,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
+            [Fact]
             public void ShouldRunWithoutBookmarkIfInvalidBookmarkGiven()
             {
                 var mockConn = new Mock<IConnection>();

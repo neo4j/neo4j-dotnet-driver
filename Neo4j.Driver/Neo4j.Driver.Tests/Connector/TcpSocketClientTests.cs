@@ -103,6 +103,7 @@ namespace Neo4j.Driver.Tests.Connector
                 exception.Should().BeOfType<IOException>();
                 exception.Message.Should().Be(
                     "Failed to connect to server 'bolt://127.0.0.1:9999/' via IP addresses'[127.0.0.1]' at port '9999'.");
+
                 var baseException = exception.GetBaseException();
                 baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
                 baseException.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
