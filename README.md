@@ -1,5 +1,5 @@
 # Neo4j .NET Driver
-This is the source code of the driver under development. To get the latest stable released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/). To find changelogs, rich examples of how to use the driver and API documents of the driver, checkout the [wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki). 
+This is the source code of the driver under development. To get the latest stable released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/). To find changelogs, examples of how to use the driver and API documents of the driver, checkout our [wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki). 
 
 ## Minimum viable snippet
 
@@ -44,7 +44,7 @@ They can fail for three main reasons:
 2. The tests aren't run as Administrator (you'll need to run Visual Studio as administrator)
 3. You have an instance of Neo4j already installed / running on your local machine.
 
-The database installation uses boltkit `neoctr-install` command to install the database.
+The database installation uses boltkit `neoctrl-install` command to install the database.
 The integration tests could pass parameters to this command by setting environment variable `NeoctrlArgs`.
 
 ## Run tests
