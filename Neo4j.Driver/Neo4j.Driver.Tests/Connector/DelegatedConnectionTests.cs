@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Xunit;
 
@@ -43,7 +44,7 @@ namespace Neo4j.Driver.Tests.Connector
             public override Task OnErrorAsync(Exception error)
             {
                 ErrorList.Add(error);
-                return Task.FromException(error);
+                return TaskUtils.GetFailedTask(error);
             }
         }
 

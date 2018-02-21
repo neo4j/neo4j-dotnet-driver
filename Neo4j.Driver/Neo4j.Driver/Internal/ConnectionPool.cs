@@ -564,7 +564,7 @@ namespace Neo4j.Driver.Internal
                 return Task.WhenAll(allCloseTasks);
             }
 
-            return TaskExtensions.GetCompletedTask();
+            return TaskUtils.GetCompletedTask();
         }
 
         public void Deactivate()
@@ -581,7 +581,7 @@ namespace Neo4j.Driver.Internal
             {
                 return Task.WhenAll(TerminateIdleConnectionsAsync());
             }
-            return TaskExtensions.GetCompletedTask();
+            return TaskUtils.GetCompletedTask();
         }
 
         public void Activate()

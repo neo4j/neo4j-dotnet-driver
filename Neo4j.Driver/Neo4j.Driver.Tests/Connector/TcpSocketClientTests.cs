@@ -51,19 +51,6 @@ namespace Neo4j.Driver.Tests.Connector
             public bool DisposeCalled { get; set; }
         }
 
-        private static Task ServerOnPort(int port)
-        {
-            var serverSocket = new TcpListener(port);
-            serverSocket.Start();
-            var server = new Task(() =>
-            {
-                // wait for a client to connect
-                serverSocket.AcceptTcpClient();
-                serverSocket.Stop();
-            });
-            return server;
-        }
-
         public class ConnectSocketAsyncMethod
         {
             [Fact]
@@ -74,9 +61,8 @@ namespace Neo4j.Driver.Tests.Connector
 
                 var exception = await Record.ExceptionAsync(
                     ()=>client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 9999));
-                exception.Should().BeOfType<OperationCanceledException>();
+                exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
                 exception.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
-
                 client.DisposeCalled.Should().BeTrue();
             }
 
@@ -91,10 +77,18 @@ namespace Neo4j.Driver.Tests.Connector
                     async()=> await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 20003));
                 // start a server on port 20003
 
-                ServerOnPort(20003).Start();
+                var serverSocket = new TcpListener(new IPEndPoint(IPAddress.Loopback, 20003));
+                try
+                {
+                    serverSocket.Start();
 
-                // We should not get any error this time as server in online now.
-                await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 20003);
+                    // We should not get any error this time as server in online now.
+                    await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 20003);
+                }
+                finally
+                {
+                    serverSocket.Stop();
+                }
             }
         }
 
@@ -109,8 +103,9 @@ namespace Neo4j.Driver.Tests.Connector
                 exception.Should().BeOfType<IOException>();
                 exception.Message.Should().Be(
                     "Failed to connect to server 'bolt://127.0.0.1:9999/' via IP addresses'[127.0.0.1]' at port '9999'.");
+
                 var baseException = exception.GetBaseException();
-                baseException.Should().BeOfType<OperationCanceledException>();
+                baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
                 baseException.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
             }
         }

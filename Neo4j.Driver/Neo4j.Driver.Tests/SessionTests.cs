@@ -26,7 +26,6 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
 using Record = Xunit.Record;
-using TaskExtensions = Neo4j.Driver.Internal.TaskExtensions;
 
 namespace Neo4j.Driver.Tests
 {
@@ -594,7 +593,7 @@ namespace Neo4j.Driver.Tests
 
             public Task CloseAsync()
             {
-                return TaskExtensions.GetCompletedTask();
+                return TaskUtils.GetCompletedTask();
             }
         }
     }

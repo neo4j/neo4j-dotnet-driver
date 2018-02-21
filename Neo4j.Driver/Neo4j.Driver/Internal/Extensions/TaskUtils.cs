@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -21,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
-    internal static class TaskExtensions
+    internal static class TaskUtils
     {
 #if NET452
         private static readonly Task completedTask = Task.WhenAll();
@@ -36,5 +37,16 @@ namespace Neo4j.Driver.Internal
 #endif
         }
 
+        public static Task GetFailedTask(Exception exc)
+        {
+#if NET452
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+            tcs.SetException(exc);
+            return tcs.Task;
+#else
+            return Task.FromException(exc);
+#endif
+        }
+        
     }
 }

@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests.IO
                         _receivedByteArrays.Enqueue(hex);
                         _receivedBytesAccumulated.Append(hex);
                     })
-                    .Returns(Task.CompletedTask);
+                    .Returns(TaskUtils.GetCompletedTask());
             }
 
             public Stream OutputStream => _mockOutputStream.Object;
