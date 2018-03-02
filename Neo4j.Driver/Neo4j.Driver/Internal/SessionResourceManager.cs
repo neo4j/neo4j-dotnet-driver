@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Internal
         /// <exception cref="ClientException">If error when rollback the transaction</exception>
         private void DisposeTransaction()
         {
-            // When there is a open transation, this method will aslo try to close the tx
+            // When there is a open transaction, this method will aslo try to close the tx
             if (_transaction != null)
             {
                 try
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Internal
 
         private async Task DisposeTransactionAsync()
         {
-            // When there is a open transation, this method will aslo try to close the tx
+            // When there is a open transaction, this method will aslo try to close the tx
             if (_transaction != null)
             {
                 try
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.Internal
             {
                 try
                 {
-                    // this will enfore to buffer all unconsumed result
+                    // this will force buffering of all unconsumed result
                     _connection.Sync();
                 }
                 catch (Exception e)
@@ -195,7 +195,7 @@ namespace Neo4j.Driver.Internal
             {
                 try
                 {
-                    // this will enfore to buffer all unconsumed result
+                    // this will force buffering of all unconsumed result
                     await _connection.SyncAsync().ConfigureAwait(false);
                 }
                 catch (Exception e)

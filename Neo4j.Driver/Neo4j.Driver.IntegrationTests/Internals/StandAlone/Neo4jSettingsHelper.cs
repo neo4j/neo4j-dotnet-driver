@@ -67,7 +67,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     }
                 }
 
-                // write the extral propertes at the end of the file
+                // write the extra properties at the end of the file
                 foreach (var pair in keyValuePairCopy)
                 {
                     writer.WriteLine($"{pair.Key}={pair.Value}");

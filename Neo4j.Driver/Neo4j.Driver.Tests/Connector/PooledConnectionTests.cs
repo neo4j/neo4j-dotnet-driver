@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.Connector
         public class IsOpenMethod
         {
             [Fact]
-            public void ShouldBeFalseWhenConectionIsNotOpen()
+            public void ShouldBeFalseWhenConnectionIsNotOpen()
             {
                 var mockClient = new Mock<ISocketClient>();
                 mockClient.Setup(x => x.IsOpen).Returns(false);

@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests.Routing
             public class OnConnectionErrorMethod
             {
                 [Fact]
-                public void ShouldRmoveFromLoadBalancer()
+                public void ShouldRemoveFromLoadBalancer()
                 {
                     var clusterPoolMock = new Mock<IClusterConnectionPool>();
                     var routingTableMock = new Mock<IRoutingTable>();

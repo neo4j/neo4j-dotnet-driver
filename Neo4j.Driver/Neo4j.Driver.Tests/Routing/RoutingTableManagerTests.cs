@@ -234,7 +234,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // When
                 var newRoutingTable = manager.UpdateRoutingTable(null, connection =>
                 {
-                    // the second connectin will give a new routingTable
+                    // the second connection will give a new routingTable
                     if (connection.Equals(connA)) // uriA
                     {
                         routingTable.Remove(uriA);

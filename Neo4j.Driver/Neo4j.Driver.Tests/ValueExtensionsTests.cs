@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldThrowExceptionWhenCovertingFromNullToNotNullable()
+            public void ShouldThrowExceptionWhenConvertingFromNullToNotNullable()
             {
                 object value = null;
                 var ex = Record.Exception(() => value.ValueAs<bool>());

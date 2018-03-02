@@ -153,11 +153,11 @@ namespace Neo4j.Driver.IntegrationTests
                     if (_connections.Count > minimalConnCount && _connections.TryDequeue(out conn))
                     {
                         conn.Destroy();
-                        Output.WriteLine($"Terminitor killed a connection torwards server {conn.Server}");
+                        Output.WriteLine($"Terminator killed a connection towards server {conn.Server}");
                     }
                     else
                     {
-                        Output.WriteLine("Terminitor failed to find a open connection to kill.");
+                        Output.WriteLine("Terminator failed to find a open connection to kill.");
                     }
                     Task.Delay(1000, _cancellationTokenSource.Token).Wait(_cancellationTokenSource.Token); // sleep
                 }
@@ -173,11 +173,11 @@ namespace Neo4j.Driver.IntegrationTests
                 if (_connections.Count > minimalConnCount && _connections.TryDequeue(out conn))
                 {
                     await conn.DestroyAsync();
-                    Output.WriteLine($"Terminitor killed connection {conn.Id} torwards server {conn.Server}");
+                    Output.WriteLine($"Terminator killed connection {conn.Id} towards server {conn.Server}");
                 }
                 else
                 {
-                    Output.WriteLine("Terminitor failed to find a open connection to kill.");
+                    Output.WriteLine("Terminator failed to find a open connection to kill.");
                 }
 
                 try

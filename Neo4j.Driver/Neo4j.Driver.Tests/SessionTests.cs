@@ -428,7 +428,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldDisposeConnectinOnDispose()
+            public void ShouldDisposeConnectionOnDispose()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);
@@ -490,7 +490,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldDisposeConnectinOnDispose()
+            public async void ShouldDisposeConnectionOnDispose()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.IsOpen).Returns(true);

@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.Routing
                 return null;
             }
 
-            // choose start index for iteration in round-rodin fashion
+            // choose start index for iteration in round-robin fashion
             var startIndex = roundRobinIndex.Next(count);
             var index = startIndex;
 

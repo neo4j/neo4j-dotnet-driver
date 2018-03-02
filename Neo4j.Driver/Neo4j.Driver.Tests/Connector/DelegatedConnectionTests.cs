@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.Connector
             }
         }
 
-        public class TaskWithErrrorHandlingMethod
+        public class TaskWithErrorHandlingMethod
         {
             private static async Task FaultedTask()
             {

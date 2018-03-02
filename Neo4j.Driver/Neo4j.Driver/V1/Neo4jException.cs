@@ -63,7 +63,7 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Create a new <see cref="Neo4jException"/> with an error code, an error message and an excpetion.
+        /// Create a new <see cref="Neo4jException"/> with an error code, an error message and an exception.
         /// </summary>
         /// <param name="code">The error code.</param>
         /// <param name="message">The error message.</param>

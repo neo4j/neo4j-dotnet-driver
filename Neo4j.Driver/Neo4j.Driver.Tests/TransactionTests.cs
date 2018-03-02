@@ -71,8 +71,8 @@ namespace Neo4j.Driver.Tests
                 var bookmark = Bookmark.From(FakeABookmark(234));
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
 
-                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
-                mockConn.Verify(RunBegin(paramters), Times.Once);
+                IDictionary<string, object> parameters = bookmark.AsBeginTransactionParameters();
+                mockConn.Verify(RunBegin(parameters), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
 
@@ -87,10 +87,10 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class SyncBoomarkMethod
+        public class SyncBookmarkMethod
         {
             [Fact]
-            public void ShouldNotSyncIfBookmakIsNull()
+            public void ShouldNotSyncIfBookmarkIsNull()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
@@ -120,9 +120,9 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, null, null, bookmark);
                 tx.SyncBookmark(bookmark);
 
-                IDictionary<string, object> paramters = bookmark.AsBeginTransactionParameters();
+                IDictionary<string, object> parameters = bookmark.AsBeginTransactionParameters();
 
-                mockConn.Verify(RunBegin(paramters), Times.Once);
+                mockConn.Verify(RunBegin(parameters), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }

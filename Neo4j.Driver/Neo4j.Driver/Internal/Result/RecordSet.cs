@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.Result
         {
             while (!HasReadAllRecords())
             {
-                // first try to return if already retrived,
+                // first try to return if already retrieved,
                 // otherwise pull from input stream
 
                 if (_peekedRecord != null)

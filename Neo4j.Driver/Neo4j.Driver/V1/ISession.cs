@@ -182,7 +182,7 @@ namespace Neo4j.Driver.V1
         /// Execute a statement and return a result stream.
         /// </summary>
         /// <param name="statement">A Cypher statement.</param>
-        /// <param name="parameters">A parameter dictonary which is made of prop.Name=prop.Value pairs would be created.</param>
+        /// <param name="parameters">A parameter dictionary which is made of prop.Name=prop.Value pairs would be created.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
         IStatementResult Run(string statement, object parameters);
         
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.V1
         /// Asynchronously execute a statement and return a task of result stream.
         /// </summary>
         /// <param name="statement">A Cypher statement.</param>
-        /// <param name="parameters">A parameter dictonary which is made of prop.Name=prop.Value pairs would be created.</param>
+        /// <param name="parameters">A parameter dictionary which is made of prop.Name=prop.Value pairs would be created.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
         Task<IStatementResultCursor> RunAsync(string statement, object parameters);
 
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Mark this transaction as failed. Calling <see cref="IDisposable.Dispose"/> will roll back the transaction.
         ///
-        /// Marking a transaction as failed is irreversable and guarantees that subsequent calls to <see cref="Success"/> will not change it's status.
+        /// Marking a transaction as failed is irreversible and guarantees that subsequent calls to <see cref="Success"/> will not change it's status.
         /// </summary>
         void Failure();
         

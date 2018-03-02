@@ -77,10 +77,10 @@ namespace Neo4j.Driver.Internal.Metrics
         private static readonly long DefaultHighestTrackableInTicks = TimeSpan.FromMinutes(10).Ticks;
 
         /// <summary>
-        /// This method creates a HdrHistogram where the minimal acuracy is 1 tick, a.k.a. 100 nanoseconds, or 0.1 microseconds.
+        /// This method creates a HdrHistogram where the minimal accuracy is 1 tick, a.k.a. 100 nanoseconds, or 0.1 microseconds.
         /// The significant decimal digits is 3 decimal across the whole range.
         /// </summary>
-        /// <param name="highestTrackableValueInTicks">The highest acuracy of this histogram.</param>
+        /// <param name="highestTrackableValueInTicks">The highest accuracy of this histogram.</param>
         /// <returns>A concurrent HdrHistogram of long values.</returns>
         private static LongConcurrentHistogram CreateHdrHistogram(long highestTrackableValueInTicks)
         {

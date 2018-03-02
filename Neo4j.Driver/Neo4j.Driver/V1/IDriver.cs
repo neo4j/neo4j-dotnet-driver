@@ -56,7 +56,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
-        /// Specify a bookmark if the statement excuted inside this session need to be chained after statements from other sessions.</param>
+        /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
         ISession Session(string bookmark);
 
@@ -68,28 +68,28 @@ namespace Neo4j.Driver.V1
         /// the statement will be executed in connections satisfying the default access mode.</param>
         /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
-        /// Specify a bookmark if the statement excuted inside this session need to be chained after statements from other sessions.</param>
+        /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
         ISession Session(AccessMode defaultMode, string bookmark);
 
         /// <summary>
-        /// Obtain a session with the default <see cref="AccessMode"/> and a series of start bookmars.
+        /// Obtain a session with the default <see cref="AccessMode"/> and a series of start bookmarks.
         /// </summary>
         /// <param name="defaultMode">The default access mode of the session.
         /// If no access mode is specified when using the statement running methods inside this session,
         /// the statement will be executed in connections satisfying the default access mode.</param>
         /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
-        /// Specify bookmarks if the statement excuted inside this session need to be chained after statements from other sessions.</param>
+        /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
         ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks);
 
         /// <summary>
-        /// Obtain a session with the default <see cref="AccessMode.Write"/> access mode and a series of start bookmars.
+        /// Obtain a session with the default <see cref="AccessMode.Write"/> access mode and a series of start bookmarks.
         /// </summary>
         /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
-        /// Specify bookmarks if the statement excuted inside this session need to be chained after statements from other sessions.</param>
+        /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
         ISession Session(IEnumerable<string> bookmarks);
 
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.V1
     public enum AccessMode
     {
         /// <summary>
-        /// Requires cypher statememt to be carried out on a read server
+        /// Requires cypher statement to be carried out on a read server
         /// </summary>
         Read,
         /// <summary>

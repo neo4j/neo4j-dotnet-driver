@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldSetMaxIdleValueWhenSetSeperately()
+            public void ShouldSetMaxIdleValueWhenSetSeparately()
             {
                 var config = new Config {MaxIdleConnectionPoolSize = 20, MaxConnectionPoolSize = 50};
                 config.MaxConnectionPoolSize.Should().Be(50);
@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldSetMaxIdleValueWhenSetSeperately()
+            public void ShouldSetMaxIdleValueWhenSetSeparately()
             {
                 var config = Config.Builder.WithMaxConnectionPoolSize(50).WithMaxIdleConnectionPoolSize(20).ToConfig();
                 config.MaxConnectionPoolSize.Should().Be(50);

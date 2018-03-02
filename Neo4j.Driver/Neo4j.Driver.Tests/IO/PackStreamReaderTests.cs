@@ -271,7 +271,7 @@ namespace Neo4j.Driver.Tests.IO
             }
 
             [Fact]
-            public void ShouldThrowExceptionWhenReadString32ReturnsStringSizeLonggerThanIntMax()
+            public void ShouldThrowExceptionWhenReadString32ReturnsStringSizeLongerThanIntMax()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.String32, PackStreamBitConverter.GetBytes((int)-1));
                 var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);
@@ -351,7 +351,7 @@ namespace Neo4j.Driver.Tests.IO
             }
 
             [Fact]
-            public void ShouldThrowExceptionWhenReadBytes32ReturnsBytesSizeLonggerThanIntMax()
+            public void ShouldThrowExceptionWhenReadBytes32ReturnsBytesSizeLongerThanIntMax()
             {
                 var mockInput = IOExtensions.CreateMockStream(PackStream.Bytes32, PackStreamBitConverter.GetBytes((int)-1));
                 var reader = new PackStreamReader(mockInput.Object, BoltReader.StructHandlers);

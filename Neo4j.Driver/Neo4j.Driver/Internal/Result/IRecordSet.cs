@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.Result
         bool AtEnd { get; }
 
         /// <summary>
-        /// Reterives the next <see cref="IRecord"/>  without consuming it or returns null if the set is empty.
+        /// Retrievers the next <see cref="IRecord"/>  without consuming it or returns null if the set is empty.
         /// </summary>
         IRecord Peek();
 
