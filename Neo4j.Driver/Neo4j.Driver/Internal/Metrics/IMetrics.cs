@@ -23,12 +23,12 @@ namespace Neo4j.Driver.Internal.Metrics
     /// <summary>
     /// The driver metrics
     /// </summary>
-    internal interface IDriverMetrics
+    internal interface IMetrics
     {
         /// <summary>
         /// The connection pool metrics.
         /// </summary>
-        IDictionary<string, IConnectionPoolMetrics> PoolMetrics { get; }
+        IDictionary<string, IConnectionPoolMetrics> ConnectionPoolMetrics { get; }
 
         /// <summary>
         /// The connection metrics.
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal.Metrics
         /// <summary>
         /// The pool status
         /// </summary>
-        string PoolStatus { get; }
+        PoolStatus PoolStatus { get; }
 
         /// <summary>
         /// The amount of the connections that are used by user's application
@@ -83,22 +83,12 @@ namespace Neo4j.Driver.Internal.Metrics
         /// <summary>
         /// The amount of connections that are waiting to be created.
         /// </summary>
-        int ToCreate { get; }
-
-        /// <summary>
-        /// The amount of connections that are waiting to be closed.
-        /// </summary>
-        int ToClose { get; }
+        int Creating { get; }
 
         /// <summary>
         /// The amount of connections that have been created by this driver
         /// </summary>
         long Created { get; }
-
-        /// <summary>
-        /// The amount of connections that have been closed by this driver.
-        /// </summary>
-        long Closed { get; }
 
         /// <summary>
         /// The amount of connections that are failed to be created.
@@ -107,10 +97,40 @@ namespace Neo4j.Driver.Internal.Metrics
         long FailedToCreate { get; }
 
         /// <summary>
+        /// The amount of connections that are waiting to be closed.
+        /// </summary>
+        int Closing { get; }
+
+        /// <summary>
+        /// The amount of connections that have been closed by this driver.
+        /// </summary>
+        long Closed { get; }
+
+        /// <summary>
+        /// The amount of requests trying to acquire a connection from the pool.
+        /// </summary>
+        int Acquiring { get; }
+
+        /// <summary>
+        /// The amount of requests that have acquired a connection out of the pool.
+        /// </summary>
+        long Acquired { get; }
+
+        /// <summary>
+        /// The amount of requests to acquire a connection from pool but failed due to acquisition timeout.
+        /// </summary>
+        long TimedOutToAcquire { get; }
+
+        /// <summary>
         /// The histgram of the delays to acquire a connection from the pool in "ticks" where a tick equals to 100 ns.
         /// The delays could either be the time to create a new connection or the time waiting for a connection available from the pool.
         /// </summary>
         IHistogram AcquisitionTimeHistogram { get; }
+    }
+
+    internal enum PoolStatus
+    {
+        Open, Closed, Inactive
     }
 
     /// <summary>

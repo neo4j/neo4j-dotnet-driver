@@ -148,7 +148,7 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
+            var metrics = ((Internal.Driver) driver).GetMetrics();
             var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
@@ -158,7 +158,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
             await Task.WhenAll(tasks);
 
-            var poolMetrics = metrics.PoolMetrics;
+            var poolMetrics = metrics.ConnectionPoolMetrics;
             Output.WriteLine(poolMetrics.ToContentString());
             var endTime = DateTime.Now;
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
@@ -168,8 +168,8 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 var st = value.Value;
 
-                st.ToCreate.Should().Be(0);
-                st.ToClose.Should().Be(0);
+                st.Creating.Should().Be(0);
+                st.Closing.Should().Be(0);
                 st.InUse.Should().Be(0);
                 st.Idle.Should().Be((int) (st.Created - st.Closed));
             }

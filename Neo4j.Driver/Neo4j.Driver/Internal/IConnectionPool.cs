@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal
     {
         int NumberOfInUseConnections { get; }
         int NumberOfIdleConnections { get; }
-        PoolStatus Status { get; }
+        ConnectionPoolStatus Status { get; }
         void Deactivate();
         Task DeactivateAsync();
         void Activate();

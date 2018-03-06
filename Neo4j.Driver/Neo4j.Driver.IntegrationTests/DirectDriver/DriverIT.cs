@@ -147,8 +147,8 @@ namespace Neo4j.Driver.IntegrationTests
                 }
 
                 // Then
-                var metrics = ((Internal.Driver) driver).GetDriverMetrics();
-                var m = metrics.PoolMetrics.Single().Value;
+                var metrics = ((Internal.Driver) driver).GetMetrics();
+                var m = metrics.ConnectionPoolMetrics.Single().Value;
                 Output.WriteLine(m.ToString());
                 m.Created.Should().Be(sessionCount);
                 m.Created.Should().Be(m.Closed + 1);
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
+            var metrics = ((Internal.Driver) driver).GetMetrics();
             var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
             Task.WaitAll(tasks.ToArray());
 
-            var m = metrics.PoolMetrics.Single().Value;
+            var m = metrics.ConnectionPoolMetrics.Single().Value;
             var cm = metrics.ConnectionMetrics.Single().Value;
             Output.WriteLine(m.ToString());
             Output.WriteLine(m.AcquisitionTimeHistogram.ToString());
@@ -193,8 +193,8 @@ namespace Neo4j.Driver.IntegrationTests
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
-            m.ToCreate.Should().Be(0);
-            m.ToClose.Should().Be(0);
+            m.Creating.Should().Be(0);
+            m.Closing.Should().Be(0);
             m.InUse.Should().Be(0);
             m.Idle.Should().Be((int) (m.Created - m.Closed));
 
@@ -218,7 +218,7 @@ namespace Neo4j.Driver.IntegrationTests
             var startTime = DateTime.Now;
             Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
 
-            var metrics = ((Internal.Driver) driver).GetDriverMetrics();
+            var metrics = ((Internal.Driver) driver).GetMetrics();
             var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
             var tasks = new List<Task>();
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
             await Task.WhenAll(tasks);
 
-            var m = metrics.PoolMetrics.Single().Value;
+            var m = metrics.ConnectionPoolMetrics.Single().Value;
             Output.WriteLine(m.ToString());
             Output.WriteLine(m.AcquisitionTimeHistogram.ToString());
 
@@ -236,8 +236,8 @@ namespace Neo4j.Driver.IntegrationTests
             Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
             Output.WriteLine($"Total time spent: {endTime - startTime}");
 
-            m.ToCreate.Should().Be(0);
-            m.ToClose.Should().Be(0);
+            m.Creating.Should().Be(0);
+            m.Closing.Should().Be(0);
             m.InUse.Should().Be(0);
             m.Idle.Should().Be((int) (m.Created - m.Closed));
 

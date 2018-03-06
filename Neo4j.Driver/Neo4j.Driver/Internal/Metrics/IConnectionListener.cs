@@ -22,11 +22,11 @@ namespace Neo4j.Driver.Internal.Metrics
 {
     internal interface IConnectionListener
     {
-        void BeforeConnect(IListenerEvent connEvent);
-        void AfterConnect(IListenerEvent connEvent);
+        void ConnectionConnecting(IListenerEvent connEvent);
+        void ConnectionConnected(IListenerEvent connEvent);
 
-        void OnAcquire(IListenerEvent connEvent);
-        void OnRelease(IListenerEvent connEvent);
+        void ConnectionAcquired(IListenerEvent connEvent);
+        void ConnectionReleased(IListenerEvent connEvent);
     }
 
     internal interface IListenerEvent

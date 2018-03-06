@@ -217,12 +217,12 @@ namespace Neo4j.Driver.V1
             var routingContext = uri.ParseRoutingContext();
             var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
 
-            DriverMetrics driverMetrics = null;
+            Metrics metrics = null;
             if (config.DriverMetricsEnabled)
             {
-                driverMetrics = new DriverMetrics(config);
+                metrics = new Metrics(config);
             }
-            var connectionPoolSettings = new ConnectionPoolSettings(config, driverMetrics);
+            var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
 
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.V1
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, driverMetrics);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)

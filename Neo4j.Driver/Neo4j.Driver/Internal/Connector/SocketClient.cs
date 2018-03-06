@@ -69,12 +69,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void Start()
         {
-            _connMetricsListener?.BeforeConnect(_connEvent);
+            _connMetricsListener?.ConnectionConnecting(_connEvent);
             _tcpSocketClient.Connect(_uri);
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
-            _connMetricsListener?.AfterConnect(_connEvent);
+            _connMetricsListener?.ConnectionConnected(_connEvent);
 
             var version = DoHandshake();
             _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
@@ -84,11 +84,11 @@ namespace Neo4j.Driver.Internal.Connector
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
 
-            _connMetricsListener?.BeforeConnect(_connEvent);
+            _connMetricsListener?.ConnectionConnecting(_connEvent);
             _tcpSocketClient.ConnectAsync(_uri)
                 .ContinueWith(t =>
                     {
-                        _connMetricsListener?.AfterConnect(_connEvent);
+
 
                         if (t.IsFaulted)
                         {
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Internal.Connector
                         {
                             SetOpened();
                             _logger?.Debug($"~~ [CONNECT] {_uri}");
-
+                            _connMetricsListener?.ConnectionConnected(_connEvent);
                             return DoHandshakeAsync();
                         }
 
