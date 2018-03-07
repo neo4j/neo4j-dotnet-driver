@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,6 +30,88 @@ namespace Neo4j.Driver.Tests.Extensions
     public class CollectionExtensionsTests
     {
 
+        public class ToContentString
+        {
+            [Fact]
+            public void ShouldConvertListToStringCorrectly()
+            {
+                var list = new List<object> {"a", 2, new[] {3, 4}};
+                list.ToContentString().Should().Be("[a, 2, [3, 4]]");
+            }
+
+            [Fact]
+            public void ShouldConvertDictionaryToStringCorrectly()
+            {
+                var dict = new Dictionary<string, object>
+                {
+                    {"a", "a"},
+                    {"b", 2},
+                    {"c", new[] {1, 2, 3}}
+                };
+                dict.ToContentString().Should().Be("[{a, a}, {b, 2}, {c, [1, 2, 3]}]");
+            }
+        }
+
+        public class GetValueMethod
+        {
+            [Fact]
+            public void ShouldGetDefaultValueCorrectly()
+            {
+                var dict = new Dictionary<string, object>();
+                int defaultValue = 10;
+                dict.GetValue("any", defaultValue).Should().Be(defaultValue);
+            }
+
+            [Fact]
+            public void ShouldGetValueCorrectlyWhenExpectingInt()
+            {
+                object o = 10;
+                var dict = new Dictionary<string, object> { { "any", o } };
+                var actual = dict.GetValue("any", -1);
+                actual.Should().Be(10);
+            }
+
+            [Fact]
+            public void ShouldGetDefaultValueCorrectlyWhenExpectingList()
+            {
+                var dict = new Dictionary<string, object>();
+                List<int> defaultValue = new List<int>();
+                List<int> actual = dict.GetValue("any", defaultValue);
+                actual.Should().BeOfType<List<int>>();
+                actual.Should().BeEmpty();
+            }
+
+            [Fact]
+            public void ShouldGetValueCorrectlyWhenExpectingList()
+            {
+                var dict = new Dictionary<string, object> { {"any", new List<object> {11} } };
+                var actual = dict.GetValue("any", new List<object>()).Cast<int>().ToList();
+                actual.Should().BeOfType<List<int>>();
+                actual.Should().ContainInOrder(11);
+            }
+
+            [Fact]
+            public void ShouldGetDefaultValueCorrectlyWhenExpectingMap()
+            {
+                var dict = new Dictionary<string, object>();
+                var defaultValue = new Dictionary<string, int>();
+                var actual = dict.GetValue("any", defaultValue);
+                actual.Should().BeOfType<Dictionary<string, int>>();
+                actual.Should().BeEmpty();
+            }
+
+            [Fact]
+            public void ShouldGetValueCorrectlyWhenExpectingMap()
+            {
+                var dict = new Dictionary<string, object>
+                {
+                    { "any", new Dictionary<string, object> { {"lala", 1} }}
+                };
+                var actual = dict.GetValue("any", new Dictionary<string, object>());
+                actual.Should().BeOfType<Dictionary<string, object>>();
+                actual.GetValue("lala", 0).Should().Be(1);
+            }
+        }
         public class ToDictionaryMethod
         {
 
@@ -279,6 +362,74 @@ namespace Neo4j.Driver.Tests.Extensions
                 ex.Message.Should().Contain("string keys");
             }
 
+            [Fact]
+            public void ShouldHandleListOfArbitraryObjects()
+            {
+                var dict = CollectionExtensions.ToDictionary(new
+                {
+                    InnerList = new List<object>()
+                    {
+                        new {a = "a"},
+                        "b",
+                        3
+                    }
+                });
+
+                dict.Should().NotBeNull();
+                dict.Should().HaveCount(1);
+                dict.Should().ContainKey("InnerList");
+
+                var innerListObject = dict["InnerList"];
+                innerListObject.Should().NotBeNull();
+                innerListObject.Should().BeAssignableTo<IList<object>>();
+
+                var innerList = (IList<object>)innerListObject;
+                innerList.Should().HaveCount(3);
+                innerList[0].Should().BeAssignableTo<IDictionary<string, object>>();
+                innerList[0].As<IDictionary<string, object>>().Should().Contain(new KeyValuePair<string, object>("a", "a"));
+                innerList[1].Should().Be("b");
+                innerList[2].As<int>().Should().Be(3);
+            }
+
+
+            [Fact]
+            public void ShouldHandleEnumerable()
+            {
+                var array = new[] {1, 2, 3};
+                var value = new MyCollection<int>(array);
+
+                var dict = CollectionExtensions.ToDictionary(new
+                {
+                    key = value
+                });
+
+                dict.Should().NotBeNull();
+                dict.Should().HaveCount(1);
+                dict.Should().ContainKey("key");
+                var s = dict["key"].ToContentString();
+                s.Should().Be("[1, 2, 3]"); // GetEnumerator rather than the Name field
+            }
+
+            [Fact]
+            public void ShouldHandleEnumerableofEnumerable()
+            {
+                var array = new[] {1, 2, 3};
+                IEnumerable element = new MyCollection<int>(array);
+                var value = new MyCollection<object>(new []{element, "a"});
+
+                var dict = CollectionExtensions.ToDictionary(new
+                {
+                    key = value
+                });
+
+                dict.Should().NotBeNull();
+                dict.Should().HaveCount(1);
+                dict.Should().ContainKey("key");
+                var s = dict["key"].ToContentString();
+                s.Should().Be("[[1, 2, 3], a]"); // GetEnumerator rather than the Name field
+            }
+
+
             private class MyPOCO
             {
                 public string Key1 { get; set; }
@@ -287,5 +438,25 @@ namespace Neo4j.Driver.Tests.Extensions
             }
         }
 
+        public class MyCollection<T> : IEnumerable<T>
+        {
+            private readonly IEnumerable<T> _values;
+            public string Name => "My Collection implements IEnumerable<T>";
+
+            public MyCollection(IEnumerable<T> values)
+            {
+                _values = values;
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return _values.GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
     }
 }

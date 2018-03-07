@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal
 {
     internal static class CollectionExtensions
     {
+        private const string DefalutItemSeparator = ", ";
         public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key)
         {
             if (!dictionary.ContainsKey(key))
@@ -39,19 +40,19 @@ namespace Neo4j.Driver.Internal
             return dict.ContainsKey(key) ? (T)dict[key] : defaultValue;
         }
 
-        public static string ToContentString<K, V>(this IDictionary<K, V> dict)
+        private static string ToContentString(this IDictionary dict, string separator)
         {
-            var output = dict.Select(item => $"{{{item.Key}, {item.Value.ValueToString()}}}");
-            return $"[{string.Join(", ", output)}]";
+            var dictStrings = from object key in dict.Keys select $"{{{key.ToContentString()}, {dict[key].ToContentString()}}}";
+            return $"[{string.Join(separator, dictStrings)}]";
         }
 
-        public static string ToContentString<K>(this IEnumerable<K> enumerable, string separator = ", ")
+        private static string ToContentString(this IEnumerable enumerable, string separator)
         {
-            var output = enumerable.Select(item => $"{item}");
-            return $"[{string.Join(separator, output)}]";
+            var listStrings = from object item in enumerable select item.ToContentString();
+            return $"[{string.Join(separator, listStrings)}]";
         }
 
-        public static string ValueToString(this object o)
+        public static string ToContentString(this object o, string separator = DefalutItemSeparator)
         {
             if (o == null)
             {
@@ -63,14 +64,11 @@ namespace Neo4j.Driver.Internal
             }
             if (o is IDictionary)
             {
-                var dict = (IDictionary) o;
-                var dictStrings = (from object key in dict.Keys select $"{{{key.ValueToString()} : {dict[key].ValueToString()}}}").ToList();
-                return $"[{string.Join(", ", dictStrings)}]";
+                return ToContentString((IDictionary) o, separator);
             }
             if (o is IEnumerable)
             {
-                var listStrings = (from object item in ((IEnumerable) o) select item.ValueToString());
-                return $"[{string.Join(", ", listStrings)}]";
+                return ToContentString((IEnumerable) o, separator);
             }
 
             return o.ToString();
@@ -169,6 +167,26 @@ namespace Neo4j.Driver.Internal
                         convertedDict.Add((string)key, Transform(dict[key]));
                     }
                     value = convertedDict;
+                }
+            }
+            else if (value is IEnumerable && !(value is string))
+            {
+                var valueTypeInfo = valueType.GetTypeInfo();
+                var elementType = (Type)null;
+
+                if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
+                {
+                    elementType = valueTypeInfo.GenericTypeArguments[0];
+                }
+
+                if (elementType == null || elementType.NeedsConversion())
+                {
+                    var convertedList = new List<object>();
+                    foreach (var element in (IEnumerable)value)
+                    {
+                        convertedList.Add(Transform(element));
+                    }
+                    value = convertedList;
                 }
             }
             else

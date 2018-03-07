@@ -14,17 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Tests.Extensions.CollectionExtensionsTests;
 
 namespace Neo4j.Driver.Tests.IO
 {
@@ -410,6 +409,64 @@ namespace Neo4j.Driver.Tests.IO
                 var ex = Record.Exception(() => writer.Write(new { Name = "Test" }));
 
                 ex.Should().BeOfType<ProtocolException>();
+            }
+
+            [Fact]
+            public void ShouldWriteGenericListCorrectly()
+            {
+                var list = new List<int>{1, 2, 3};
+
+                var mocks = new WriterTests.Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                writer.Write((object)list);
+
+                mocks.VerifyWrite((byte)(PackStream.TinyList | list.Count));
+                mocks.VerifyWrite(1);
+                mocks.VerifyWrite(2);
+                mocks.VerifyWrite(3);
+            }
+
+
+
+            [Fact]
+            public void ShouldWriteListOfEnumerableTypeCorrectly()
+            {
+                var nums = new MyCollection<int>(new[] {1, 2, 3});
+
+                var mocks = new WriterTests.Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                writer.Write(nums);
+
+                mocks.VerifyWrite((byte)(PackStream.TinyList | nums.Count()));
+                mocks.VerifyWrite(1);
+                mocks.VerifyWrite(2);
+                mocks.VerifyWrite(3);
+            }
+
+            [Fact]
+            public void ShouldWriteListOfEnumerableOfRandomTypeCorrectly()
+            {
+                var values = new MyCollection<object>(new object[]
+                {
+                    1,
+                    new[] {2, 3},
+                    'a'
+                });
+
+                var mocks = new WriterTests.Mocks();
+                var writer = new PackStreamWriter(mocks.OutputStream);
+
+                writer.Write(values);
+
+                mocks.VerifyWrite((byte) (PackStream.TinyList | values.Count()));
+                mocks.VerifyWrite(1);
+                mocks.VerifyWrite((byte) (PackStream.TinyList | 2));
+                mocks.VerifyWrite(2);
+                mocks.VerifyWrite(3);
+                mocks.VerifyWrite(PackStream.TinyString | 1);
+                mocks.VerifyWrite(new byte[] {97});
             }
         }
 

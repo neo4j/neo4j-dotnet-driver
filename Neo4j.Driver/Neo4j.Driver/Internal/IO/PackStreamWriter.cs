@@ -19,6 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.IO.PackStream;
@@ -72,11 +73,25 @@ namespace Neo4j.Driver.Internal.IO
             {
                 Write((IDictionary)value);
             }
+            else if (value is IEnumerable)
+            {
+                Write((IEnumerable)value);
+            }
             else
             {
                 throw new ProtocolException(
                     $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
             }
+        }
+
+        public void Write(IEnumerable value)
+        {
+            IList list = new List<object>();
+            foreach (var item in value)
+            {
+                list.Add(item);
+            }
+            Write(list);
         }
 
         public void Write(long value)
