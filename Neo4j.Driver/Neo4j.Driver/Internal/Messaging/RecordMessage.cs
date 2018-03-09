@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Messaging
 
         public override string ToString()
         {
-            return $"RECORD {_fields.ValueToString()}";
+            return $"RECORD {_fields.ToContentString()}";
         }
 
         public void Dispatch(IMessageResponseHandler messageResponseHandler)

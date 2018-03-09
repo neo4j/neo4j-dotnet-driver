@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.Messaging
 
         public override string ToString()
         {
-            return $"SUCCESS {_meta.ValueToString()}";
+            return $"SUCCESS {_meta.ToContentString()}";
         }
 
         public void Dispatch(IMessageResponseHandler messageResponseHandler)
