@@ -22,22 +22,22 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
-using static Neo4j.Driver.Internal.PoolStatus;
+using static Neo4j.Driver.Internal.ConnectionPoolStatus;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 
 namespace Neo4j.Driver.Internal
 {
-    internal sealed class PoolStatus
+    internal sealed class ConnectionPoolStatus
     {
-        public static readonly PoolStatus Active = new PoolStatus(nameof(Active));
-        public static readonly PoolStatus Closed = new PoolStatus(nameof(Closed));
-        public static readonly PoolStatus Inactive = new PoolStatus(nameof(Inactive));
+        public static readonly ConnectionPoolStatus Active = new ConnectionPoolStatus(PoolStatus.Open);
+        public static readonly ConnectionPoolStatus Closed = new ConnectionPoolStatus(PoolStatus.Closed);
+        public static readonly ConnectionPoolStatus Inactive = new ConnectionPoolStatus(PoolStatus.Inactive);
 
-        public string Name;
+        public readonly PoolStatus Code;
 
-        private PoolStatus(string name)
+        private ConnectionPoolStatus(PoolStatus code)
         {
-            Name = name;
+            Code = code;
         }
     }
 
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly Uri _uri;
 
-        private PoolStatus _poolStatus = Active;
+        private ConnectionPoolStatus _poolStatus = Active;
         private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
         private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
         private bool IsInactiveOrClosed => AtomicRead(ref _poolStatus) != Active;
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal
         public int NumberOfIdleConnections => _idleConnections.Count;
         internal int PoolSize => _poolSize;
 
-        public PoolStatus Status
+        public ConnectionPoolStatus Status
         {
             get => AtomicRead(ref _poolStatus);
             internal set => Interlocked.Exchange(ref _poolStatus, value);
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Internal
             var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
             _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
 
-            SetupMetrics(connectionPoolSettings.DriverMetrics);
+            SetupMetrics(connectionPoolSettings.Metrics);
         }
 
         internal ConnectionPool(
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            _poolMetricsListener?.BeforeConnectionCreated();
+            _poolMetricsListener?.ConnectionCreating();
             IPooledConnection conn = null;
             try
             {
@@ -124,13 +124,13 @@ namespace Neo4j.Driver.Internal
                 if (conn != null)
                 {
                     conn.Init();
-                    _poolMetricsListener?.AfterConnectionCreatedSuccessfully();
+                    _poolMetricsListener?.ConnectionCreated();
                     return conn;
                 }
             }
             catch
             {
-                _poolMetricsListener?.AfterConnectionFailedToCreate();
+                _poolMetricsListener?.ConnectionFailedToCreate();
 
                 // shut down and clean all the resources of the conneciton if failed to establish
                 DestroyConnection(conn);
@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Internal
 
         private async Task<IPooledConnection> CreateNewPooledConnectionAsync()
         {
-            _poolMetricsListener?.BeforeConnectionCreated();
+            _poolMetricsListener?.ConnectionCreating();
             IPooledConnection conn = null;
             try
             {
@@ -150,13 +150,13 @@ namespace Neo4j.Driver.Internal
                 if (conn != null)
                 {
                     await conn.InitAsync().ConfigureAwait(false);
-                    _poolMetricsListener?.AfterConnectionCreatedSuccessfully();
+                    _poolMetricsListener?.ConnectionCreated();
                     return conn;
                 }
             }
             catch
             {
-                _poolMetricsListener?.AfterConnectionFailedToCreate();
+                _poolMetricsListener?.ConnectionFailedToCreate();
 
                 // shut down and clean all the resources of the conneciton if failed to establish
                 await DestroyConnectionAsync(conn).ConfigureAwait(false);
@@ -183,14 +183,14 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            _poolMetricsListener?.BeforeConnectionClosed();
+            _poolMetricsListener?.ConnectionClosing();
             try
             {
                 conn.Destroy();
             }
             finally
             {
-                _poolMetricsListener?.AfterConnectionClosed();
+                _poolMetricsListener?.ConnectionClosed();
             }
         }
 
@@ -202,14 +202,14 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            _poolMetricsListener?.BeforeConnectionClosed();
+            _poolMetricsListener?.ConnectionClosing();
             try
             {
                 await conn.DestroyAsync().ConfigureAwait(false);
             }
             finally
             {
-                _poolMetricsListener?.AfterConnectionClosed();
+                _poolMetricsListener?.ConnectionClosed();
             }
         }
 
@@ -238,15 +238,17 @@ namespace Neo4j.Driver.Internal
         public IConnection Acquire(AccessMode mode)
         {
             var acquireEvent = new SimpleTimerEvent();
-            _poolMetricsListener?.BeforeAcquire(acquireEvent);
+            _poolMetricsListener?.PoolAcquiring(acquireEvent);
             try
             {
                 var conn = Acquire();
+                _poolMetricsListener?.PoolAcquired(acquireEvent);
                 return conn;
             }
-            finally
+            catch
             {
-                _poolMetricsListener?.AfterAcquire(acquireEvent);
+                _poolMetricsListener?.PoolFailedToAcquire();
+                throw;
             }
         }
 
@@ -298,8 +300,7 @@ namespace Neo4j.Driver.Internal
 
                             if (connection == null)
                             {
-                                throw new ClientException(
-                                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
+                                ThrowConnectionAcquisitionTimedOutException();
                             }
                         }
 
@@ -328,26 +329,38 @@ namespace Neo4j.Driver.Internal
                 }
                 catch (OperationCanceledException ex)
                 {
-                    throw new ClientException(
-                        $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+                    ThrowConnectionAcquisitionTimedOutException(ex);
                 }
 
                 return connection;
             });
         }
 
+        private void ThrowConnectionAcquisitionTimedOutException(OperationCanceledException ex=null)
+        {
+            _poolMetricsListener?.PoolTimedOutToAcquire();
+            throw new ClientException(
+                $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+        }
+
         public Task<IConnection> AcquireAsync(AccessMode mode)
         {
             var acquireEvent = new SimpleTimerEvent();
-            _poolMetricsListener?.BeforeAcquire(acquireEvent);
+            _poolMetricsListener?.PoolAcquiring(acquireEvent);
             var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
             var task = AcquireAsync(timeOutTokenSource.Token).ContinueWith(t =>
             {
                 timeOutTokenSource.Dispose();
-
+                if (t.Status == TaskStatus.RanToCompletion)
+                {
+                    _poolMetricsListener?.PoolAcquired(acquireEvent);
+                }
+                else
+                {
+                    _poolMetricsListener?.PoolFailedToAcquire();
+                }
                 return t;
             }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
-            _poolMetricsListener?.AfterAcquire(acquireEvent);
             return task;
         }
 
@@ -392,8 +405,7 @@ namespace Neo4j.Driver.Internal
 
                             if (connection == null)
                             {
-                                throw new ClientException(
-                                    $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}");
+                                ThrowConnectionAcquisitionTimedOutException();
                             }
                         }
 
@@ -421,8 +433,7 @@ namespace Neo4j.Driver.Internal
                 }
                 catch (OperationCanceledException ex)
                 {
-                    throw new ClientException(
-                        $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+                    ThrowConnectionAcquisitionTimedOutException(ex);
                 }
 
                 return (IConnection) connection;
@@ -623,22 +634,22 @@ namespace Neo4j.Driver.Internal
                 "You should not see this error persistenly.");
         }
 
-        private static PoolStatus AtomicRead(ref PoolStatus value)
+        private static ConnectionPoolStatus AtomicRead(ref ConnectionPoolStatus value)
         {
             // change to the same value,
             // a.k.a. do nothing but return the original value
             return Interlocked.CompareExchange(ref value, Active, Active);
         }
 
-        private void SetupMetrics(DriverMetrics driverMetrics)
+        private void SetupMetrics(Metrics.Metrics metrics)
         {
-            if ( driverMetrics == null)
+            if ( metrics == null)
             {
                 _metricsManager = new DevNullDriverMetricsManager();
             }
             else
             {
-                _metricsManager = new DriverMetricsManager(driverMetrics, _uri,
+                _metricsManager = new DriverMetricsManager(metrics, _uri,
                     this);
             }
             _poolMetricsListener = _metricsManager.PoolMetricsListener;

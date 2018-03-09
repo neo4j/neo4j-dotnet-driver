@@ -44,16 +44,16 @@ namespace Neo4j.Driver.Internal.Metrics
         public IConnectionPoolListener PoolMetricsListener => _poolMetrics;
         public IConnectionListener ConnectionMetricsListener => _connMetrics;
 
-        public DriverMetricsManager(DriverMetrics driverMetrics, Uri poolUri, ConnectionPool pool)
+        public DriverMetricsManager(Metrics metrics, Uri poolUri, ConnectionPool pool)
         {
-            Throw.ArgumentNullException.IfNull(driverMetrics, nameof(driverMetrics));
-            Throw.ArgumentNullException.IfNull(driverMetrics.ConnectionMetrics, nameof(driverMetrics.ConnectionMetrics));
-            Throw.ArgumentNullException.IfNull(driverMetrics.PoolMetrics, nameof(driverMetrics.PoolMetrics));
+            Throw.ArgumentNullException.IfNull(metrics, nameof(metrics));
+            Throw.ArgumentNullException.IfNull(metrics.ConnectionMetrics, nameof(metrics.ConnectionMetrics));
+            Throw.ArgumentNullException.IfNull(metrics.ConnectionPoolMetrics, nameof(metrics.ConnectionPoolMetrics));
             Throw.ArgumentNullException.IfNull(poolUri, nameof(poolUri));
             Throw.ArgumentNullException.IfNull(pool, nameof(pool));
 
-            _poolMetrics = driverMetrics.AddPoolMetrics(poolUri, pool);
-            _connMetrics = driverMetrics.AddConnMetrics(poolUri);
+            _poolMetrics = metrics.AddPoolMetrics(poolUri, pool);
+            _connMetrics = metrics.AddConnMetrics(poolUri);
         }
 
         public void Dispose()

@@ -35,22 +35,22 @@ namespace Neo4j.Driver.Internal.Metrics
             _inUseTimeHistogram = new Histogram();
         }
 
-        public void BeforeConnect(IListenerEvent connEvent)
+        public void ConnectionConnecting(IListenerEvent connEvent)
         {
             connEvent.Start();
         }
 
-        public void AfterConnect(IListenerEvent connEvent)
+        public void ConnectionConnected(IListenerEvent connEvent)
         {
             _connectionTimeHistogram.RecordValue(connEvent.GetElapsed());
         }
 
-        public void OnAcquire(IListenerEvent connEvent)
+        public void ConnectionAcquired(IListenerEvent connEvent)
         {
             connEvent.Start();
         }
 
-        public void OnRelease(IListenerEvent connEvent)
+        public void ConnectionReleased(IListenerEvent connEvent)
         {
             _inUseTimeHistogram.RecordValue(connEvent.GetElapsed());
         }

@@ -18,17 +18,18 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
-    internal class DriverMetrics : IDriverMetrics
+    internal class Metrics : IMetrics
     {
         private readonly ConcurrentDictionary<string, IConnectionPoolMetrics> _poolMetrics;
         private readonly ConcurrentDictionary<string, IConnectionMetrics> _connMetrics;
         private readonly Config _config;
 
-        public DriverMetrics(Config config)
+        public Metrics(Config config)
         {
             _config = config;
             _poolMetrics = new ConcurrentDictionary<string, IConnectionPoolMetrics>();
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Internal.Metrics
             return connMetrics;
         }
 
-        public IDictionary<string, IConnectionPoolMetrics> PoolMetrics => _poolMetrics;
-        public IDictionary<string, IConnectionMetrics> ConnectionMetrics => _connMetrics;
+        public IDictionary<string, IConnectionPoolMetrics> ConnectionPoolMetrics => new ReadOnlyDictionary<string, IConnectionPoolMetrics>(_poolMetrics);
+        public IDictionary<string, IConnectionMetrics> ConnectionMetrics => new ReadOnlyDictionary<string, IConnectionMetrics>(_connMetrics);
     }
 }

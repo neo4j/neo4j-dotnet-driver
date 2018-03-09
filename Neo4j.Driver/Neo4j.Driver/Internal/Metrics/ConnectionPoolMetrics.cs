@@ -22,29 +22,38 @@ namespace Neo4j.Driver.Internal.Metrics
 {
     internal class ConnectionPoolMetrics : IConnectionPoolMetrics, IConnectionPoolListener
     {
+        private int _creating;
         private long _created;
-        private long _closed;
         private long _failedToCreate;
-        private int _toCreate;
-        private int _toClose;
 
-        private IConnectionPool _pool;
+        private int _closing;
+        private long _closed;
 
+        private int _acquiring;
+        private long _acquired;
+        private long _timedOutToAcquire;
+
+        public int Creating => _creating;
         public long Created => _created;
-        public long Closed => _closed;
         public long FailedToCreate => _failedToCreate;
 
-        public int ToCreate => _toCreate;
-        public int ToClose => _toClose;
+        public int Closing => _closing;
+        public long Closed => _closed;
 
+        public int Acquiring => _acquiring;
+        public long Acquired => _acquired;
+        public long TimedOutToAcquire => _timedOutToAcquire;
+
+
+        public string UniqueName { get; }
+
+        private IConnectionPool _pool;
         public int InUse => _pool?.NumberOfInUseConnections ?? 0;
         public int Idle => _pool?.NumberOfIdleConnections ?? 0;
+        public PoolStatus PoolStatus => _pool?.Status.Code ?? PoolStatus.Closed;
 
         private readonly Histogram _histogram;
         public IHistogram AcquisitionTimeHistogram => _histogram.Snapshot();
-
-        public string UniqueName { get; }
-        public string PoolStatus => _pool == null ? Internal.PoolStatus.Closed.Name : _pool.Status.Name;
 
         public ConnectionPoolMetrics(Uri uri, IConnectionPool pool, TimeSpan connAcquisitionTimeout)
         {
@@ -53,42 +62,55 @@ namespace Neo4j.Driver.Internal.Metrics
             _histogram = new Histogram(connAcquisitionTimeout.Ticks);
         }
 
-        public void BeforeConnectionCreated()
+        public void ConnectionCreating()
         {
-            Interlocked.Increment(ref _toCreate);
+            Interlocked.Increment(ref _creating);
         }
 
-        public void AfterConnectionCreatedSuccessfully()
+        public void ConnectionCreated()
         {
             Interlocked.Increment(ref _created);
-            Interlocked.Decrement(ref _toCreate);
+            Interlocked.Decrement(ref _creating);
         }
 
-        public void AfterConnectionFailedToCreate()
+        public void ConnectionFailedToCreate()
         {
             Interlocked.Increment(ref _failedToCreate);
-            Interlocked.Decrement(ref _toCreate);
+            Interlocked.Decrement(ref _creating);
         }
 
-        public void BeforeConnectionClosed()
+        public void ConnectionClosing()
         {
-            Interlocked.Increment(ref _toClose);
+            Interlocked.Increment(ref _closing);
         }
 
-        public void AfterConnectionClosed()
+        public void ConnectionClosed()
         {
             Interlocked.Increment(ref _closed);
-            Interlocked.Decrement(ref _toClose);
+            Interlocked.Decrement(ref _closing);
         }
 
-        public void BeforeAcquire(IListenerEvent listenerEvent)
+        public void PoolAcquiring(IListenerEvent listenerEvent)
         {
+            Interlocked.Increment(ref _acquiring);
             listenerEvent.Start();
         }
 
-        public void AfterAcquire(IListenerEvent listenerEvent)
+        public void PoolAcquired(IListenerEvent listenerEvent)
         {
+            Interlocked.Decrement(ref _acquiring);
+            Interlocked.Increment(ref _acquired);
             _histogram.RecordValue(listenerEvent.GetElapsed());
+        }
+
+        public void PoolFailedToAcquire()
+        {
+            Interlocked.Decrement(ref _acquiring);
+        }
+
+        public void PoolTimedOutToAcquire()
+        {
+            Interlocked.Increment(ref _timedOutToAcquire);
         }
 
         public void Dispose()

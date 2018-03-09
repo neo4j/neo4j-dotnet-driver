@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests
     public class RoutingDriverStressIT : RoutingDriverTestBase
     {
         private Internal.Driver _driver;
-        private IDriverMetrics _metrics;
+        private IMetrics _metrics;
         private ConcurrentQueue<IPooledConnection> _connections;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
@@ -107,15 +107,15 @@ namespace Neo4j.Driver.IntegrationTests
 
         private void PrintStatistics()
         {
-            var poolMetrics = _metrics.PoolMetrics;
+            var poolMetrics = _metrics.ConnectionPoolMetrics;
             Output.WriteLine(poolMetrics.ToContentString());
 
             foreach (var value in poolMetrics)
             {
                 var st = value.Value;
 
-                st.ToCreate.Should().Be(0);
-                st.ToClose.Should().Be(0);
+                st.Creating.Should().Be(0);
+                st.Closing.Should().Be(0);
                 st.InUse.Should().Be(0);
                 st.Idle.Should().Be((int) (st.Created + st.FailedToCreate - st.Closed));
             }
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             _driver = (Internal.Driver) GraphDatabase.CreateDriver(new Uri(RoutingServer), config, connectionFactory);
             _connections = connectionFactory.Connections;
-            _metrics = _driver.GetDriverMetrics();
+            _metrics = _driver.GetMetrics();
         }
 
         private Task ConnectionTerminator()

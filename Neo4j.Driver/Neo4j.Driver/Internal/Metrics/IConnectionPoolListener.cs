@@ -22,12 +22,14 @@ namespace Neo4j.Driver.Internal.Metrics
 {
     internal interface IConnectionPoolListener: IDisposable
     {
-        void BeforeConnectionCreated();
-        void AfterConnectionCreatedSuccessfully();
-        void AfterConnectionFailedToCreate();
-        void BeforeConnectionClosed();
-        void AfterConnectionClosed();
-        void BeforeAcquire(IListenerEvent listenerEvent);
-        void AfterAcquire(IListenerEvent listenerEvent);
+        void ConnectionCreating();
+        void ConnectionCreated();
+        void ConnectionFailedToCreate();
+        void ConnectionClosing();
+        void ConnectionClosed();
+        void PoolAcquiring(IListenerEvent listenerEvent);
+        void PoolAcquired(IListenerEvent listenerEvent);
+        void PoolFailedToAcquire();
+        void PoolTimedOutToAcquire();
     }
 }

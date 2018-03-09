@@ -61,12 +61,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void OnAcquire()
         {
-            _connMetricsListener?.OnAcquire(_connEvent);
+            _connMetricsListener?.ConnectionAcquired(_connEvent);
         }
 
         public void OnRelease()
         {
-            _connMetricsListener?.OnRelease(_connEvent);
+            _connMetricsListener?.ConnectionReleased(_connEvent);
         }
 
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;

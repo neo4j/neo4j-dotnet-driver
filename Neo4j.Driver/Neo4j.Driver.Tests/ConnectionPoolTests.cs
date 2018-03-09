@@ -1120,7 +1120,7 @@ namespace Neo4j.Driver.Tests
             {
                 var pool = NewConnectionPool();
                 pool.Acquire();
-                pool.Status.Should().Be(PoolStatus.Active);
+                pool.Status.Should().Be(ConnectionPoolStatus.Active);
             }
 
             [Fact]
@@ -1136,7 +1136,7 @@ namespace Neo4j.Driver.Tests
 
                 idleQueue.Count.Should().Be(1);
                 inUseConnections.Count.Should().Be(0);
-                pool.Status.Should().Be(PoolStatus.Active);
+                pool.Status.Should().Be(ConnectionPoolStatus.Active);
             }
 
             [Fact]
@@ -1144,7 +1144,7 @@ namespace Neo4j.Driver.Tests
             {
                 var pool = NewConnectionPool();
                 pool.Dispose();
-                pool.Status.Should().Be(PoolStatus.Closed);
+                pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
             [Fact]
@@ -1152,7 +1152,7 @@ namespace Neo4j.Driver.Tests
             {
                 var pool = NewConnectionPool();
                 pool.Activate();
-                pool.Status.Should().Be(PoolStatus.Active);
+                pool.Status.Should().Be(ConnectionPoolStatus.Active);
             }
 
             [Fact]
@@ -1160,7 +1160,7 @@ namespace Neo4j.Driver.Tests
             {
                 var pool = NewConnectionPool();
                 pool.Deactivate();
-                pool.Status.Should().Be(PoolStatus.Inactive);
+                pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
             // inactive
@@ -1168,12 +1168,12 @@ namespace Neo4j.Driver.Tests
             public void FromInactiveViaAcquireThrowsError()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Inactive;
+                pool.Status = ConnectionPoolStatus.Inactive;
 
                 var exception = Record.Exception(()=>pool.Acquire());
 
                 exception.Should().BeOfType<ClientException>();
-                pool.Status.Should().Be(PoolStatus.Inactive);
+                pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
             [Fact]
@@ -1186,46 +1186,46 @@ namespace Neo4j.Driver.Tests
                 inUseConnections.TryAdd(conn);
 
                 var pool = NewConnectionPool(idleQueue, inUseConnections);
-                pool.Status = PoolStatus.Inactive;
+                pool.Status = ConnectionPoolStatus.Inactive;
 
                 pool.Release(conn);
 
                 inUseConnections.Count.Should().Be(0);
                 idleQueue.Count.Should().Be(0);
-                pool.Status.Should().Be(PoolStatus.Inactive);
+                pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
             [Fact]
             public void FromInactiveViaDisposeToClosed()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Inactive;
+                pool.Status = ConnectionPoolStatus.Inactive;
 
                 pool.Dispose();
 
-                pool.Status.Should().Be(PoolStatus.Closed);
+                pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
             [Fact]
             public void FromInactiveViaActivateToActive()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Inactive;
+                pool.Status = ConnectionPoolStatus.Inactive;
 
                 pool.Activate();
 
-                pool.Status.Should().Be(PoolStatus.Active);
+                pool.Status.Should().Be(ConnectionPoolStatus.Active);
             }
 
             [Fact]
             public void FromInactiveViaDeactiateToInactive()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Inactive;
+                pool.Status = ConnectionPoolStatus.Inactive;
 
                 pool.Deactivate();
 
-                pool.Status.Should().Be(PoolStatus.Inactive);
+                pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
             //closed
@@ -1233,12 +1233,12 @@ namespace Neo4j.Driver.Tests
             public void FromClosedViaAcquireThrowsError()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Closed;
+                pool.Status = ConnectionPoolStatus.Closed;
 
                 var exception = Record.Exception(()=>pool.Acquire());
 
                 exception.Should().BeOfType<ObjectDisposedException>();
-                pool.Status.Should().Be(PoolStatus.Closed);
+                pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
             [Fact]
@@ -1251,46 +1251,46 @@ namespace Neo4j.Driver.Tests
                 inUseConnections.TryAdd(conn);
 
                 var pool = NewConnectionPool(idleQueue, inUseConnections);
-                pool.Status = PoolStatus.Closed;
+                pool.Status = ConnectionPoolStatus.Closed;
 
                 pool.Release(conn);
 
                 inUseConnections.Count.Should().Be(1);
                 idleQueue.Count.Should().Be(0);
-                pool.Status.Should().Be(PoolStatus.Closed);
+                pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
             [Fact]
             public void FromClosedViaDisposeToClosed()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Closed;
+                pool.Status = ConnectionPoolStatus.Closed;
 
                 pool.Dispose();
 
-                pool.Status.Should().Be(PoolStatus.Closed);
+                pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
             [Fact]
             public void FromClosedViaActivateToClosed()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Closed;
+                pool.Status = ConnectionPoolStatus.Closed;
 
                 pool.Activate();
 
-                pool.Status.Should().Be(PoolStatus.Closed);
+                pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
             [Fact]
             public void FromClosedViaDeactivateToClosed()
             {
                 var pool = NewConnectionPool();
-                pool.Status = PoolStatus.Closed;
+                pool.Status = ConnectionPoolStatus.Closed;
 
                 pool.Deactivate();
 
-                pool.Status.Should().Be(PoolStatus.Closed);
+                pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
         }
 

@@ -40,13 +40,13 @@ namespace Neo4j.Driver.IntegrationTests
 
         private readonly ITestOutputHelper _output;
         private readonly IDriver _driver;
-        private readonly IDriverMetrics _driverMetrics;
+        private readonly IMetrics _metrics;
         private int _counter;
 
-        public SoakRunWorkItem(IDriver driver, IDriverMetrics driverMetrics, ITestOutputHelper output)
+        public SoakRunWorkItem(IDriver driver, IMetrics metrics, ITestOutputHelper output)
         {
             this._driver = driver;
-            this._driverMetrics = driverMetrics;
+            this._metrics = metrics;
             this._output = output;
         }
 
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.IntegrationTests
                             var result = session.Run(query);
                             if (currentIteration % 1000 == 0)
                             {
-                                _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
+                                _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
                             }
 
                             result.Consume();
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var result = await session.RunAsync(query);
                 if (currentIteration % 1000 == 0)
                 {
-                    _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
+                    _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
                 }
                 await result.SummaryAsync();
             }
@@ -141,7 +141,7 @@ namespace Neo4j.Driver.IntegrationTests
 
                             if (currentIteration % 1000 == 0)
                             {
-                                _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
+                                _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
                             }
                         }
                         catch (Exception e)
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.IntegrationTests
 
                     if (currentIteration % 1000 == 0)
                     {
-                        _output.WriteLine(_driverMetrics.PoolMetrics.ToContentString());
+                        _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
                     }
 
                 }
