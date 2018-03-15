@@ -157,8 +157,8 @@ namespace Neo4j.Driver.V1
             if (!(dict is IDictionary))
                 throw new InvalidOperationException("Unable to call 'Add' on something that's not a Dictionary.");
 
-            var methodKey = GetInvokableAsMethod(genericParameters[0]);
-            var methodVal = GetInvokableAsMethod(genericParameters[1]);
+            var methodKey = GetInvocableAsMethod(genericParameters[0]);
+            var methodVal = GetInvocableAsMethod(genericParameters[1]);
 
             dict.GetType().GetRuntimeMethod("Add", genericParameters).Invoke(dict, new[] { methodKey.InvokeStatic(toAdd.Key), methodVal.InvokeStatic(toAdd.Value) });
         }
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.V1
                 throw new InvalidOperationException("Unable to call 'Add' on something that's not a list.");
             }
 
-            var method = GetInvokableAsMethod(genericParameters);
+            var method = GetInvocableAsMethod(genericParameters);
             list.GetType().GetRuntimeMethod("Add", genericParameters).Invoke(list, new[] { method.InvokeStatic(toAdd) });
         }
 
@@ -192,7 +192,7 @@ namespace Neo4j.Driver.V1
             return method.Invoke(null, parameters);
         }
 
-        private static MethodInfo GetInvokableAsMethod(params Type[] genericParameters)
+        private static MethodInfo GetInvocableAsMethod(params Type[] genericParameters)
         {
             return typeof(ValueExtensions).GetRuntimeMethod("As", genericParameters).MakeGenericMethod(genericParameters);
         }

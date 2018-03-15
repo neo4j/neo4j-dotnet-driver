@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Internal.Result
     }
 
     /// <summary>
-    /// This is a notifcation
+    /// This is a notification
     /// </summary>
     internal class Notification : INotification
     {

@@ -40,7 +40,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             if (Directory.Exists(ClusterDir))
             {
-                _commandRunner.Debug($"Found and using cluster intalled at `{ClusterDir}`.");
+                _commandRunner.Debug($"Found and using cluster installed at `{ClusterDir}`.");
                 // no need to redownload and change the password if already downloaded locally
                 return;
             }
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 if (tokens.Length != 3)
                 {
                     throw new ArgumentException(
-                        "Failed to parse cluster memeber created by boltkit. " +
+                        "Failed to parse cluster member created by boltkit. " +
                         "Expected output to have 'http_uri, bolt_uri, path' in each line. " +
                         $"The output:{Environment.NewLine}{string.Join(Environment.NewLine, lines)}" +
                         $"{Environment.NewLine}The error found in line: {line}");

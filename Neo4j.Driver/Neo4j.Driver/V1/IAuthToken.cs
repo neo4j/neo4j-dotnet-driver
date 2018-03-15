@@ -136,7 +136,7 @@ namespace Neo4j.Driver.V1
         /// <param name="credentials">This is credentials authenticating the principal.</param>
         /// <param name="realm">This is the "realm", specifies the authentication provider.</param>
         /// <param name="scheme">This is the authentication scheme, specifying what kind of authentication that should be used.</param>
-        /// <param name="parameters">Extra parameters to be sent along the authentication provider. If none is given, then no parameter will be added extral.</param>
+        /// <param name="parameters">Extra parameters to be sent along the authentication provider. If none is given, then no extra parameters will be added.</param>
         /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
         public static IAuthToken Custom(string principal, string credentials, string realm, string scheme,
             Dictionary<string, object> parameters)

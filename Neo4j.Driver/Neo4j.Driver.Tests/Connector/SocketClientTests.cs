@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Tests
                 client.SetOpened();
 
                 // When
-                var exception = Exception(()=>client.Send(null /*cause null point excpetion in send method*/));
+                var exception = Exception(()=>client.Send(null /*cause null point exception in send method*/));
 
                 // Then
                 exception.Should().BeOfType<NullReferenceException>();
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests
                 client.SetOpened();
 
                 // When
-                var exception = await ExceptionAsync(()=>client.SendAsync(null /*cause null point excpetion in send method*/));
+                var exception = await ExceptionAsync(()=>client.SendAsync(null /*cause null point exception in send method*/));
 
                 // Then
                 exception.Should().BeOfType<NullReferenceException>();

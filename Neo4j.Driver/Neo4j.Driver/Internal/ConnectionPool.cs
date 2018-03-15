@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Internal
             {
                 _poolMetricsListener?.ConnectionFailedToCreate();
 
-                // shut down and clean all the resources of the conneciton if failed to establish
+                // shut down and clean all the resources of the connection if failed to establish
                 DestroyConnection(conn);
                 throw;
             }
@@ -158,7 +158,7 @@ namespace Neo4j.Driver.Internal
             {
                 _poolMetricsListener?.ConnectionFailedToCreate();
 
-                // shut down and clean all the resources of the conneciton if failed to establish
+                // shut down and clean all the resources of the connection if failed to establish
                 await DestroyConnectionAsync(conn).ConfigureAwait(false);
                 throw;
             }
@@ -519,7 +519,7 @@ namespace Neo4j.Driver.Internal
         }
 
         // For concurrent calling: you are free to get something from inUseConn or availConn when we dispose.
-        // However it is forbiden to put something back to the conn queues after we've already started disposing.
+        // However it is forbidden to put something back to the conn queues after we've already started disposing.
         protected override void Dispose(bool disposing)
         {
             if (IsClosed)
@@ -631,7 +631,7 @@ namespace Neo4j.Driver.Internal
                 $"Failed to acquire a connection from connection pool for server with URI `{_uri}` " +
                 "as this server has already been removed from routing table. " +
                 "Please retry your statement again and you should be routed with a different server from the new routing table. " +
-                "You should not see this error persistenly.");
+                "You should not see this error persistently.");
         }
 
         private static ConnectionPoolStatus AtomicRead(ref ConnectionPoolStatus value)

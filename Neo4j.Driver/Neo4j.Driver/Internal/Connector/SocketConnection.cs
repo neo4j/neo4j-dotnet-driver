@@ -181,15 +181,15 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Run(string statement, IDictionary<string, object> paramters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
+        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
         {
             if (pullAll)
             {
-                Enqueue(new RunMessage(statement, paramters), resultBuilder, new PullAllMessage());
+                Enqueue(new RunMessage(statement, parameters), resultBuilder, new PullAllMessage());
             }
             else
             {
-                Enqueue(new RunMessage(statement, paramters), resultBuilder, new DiscardAllMessage());
+                Enqueue(new RunMessage(statement, parameters), resultBuilder, new DiscardAllMessage());
             }
         }
 

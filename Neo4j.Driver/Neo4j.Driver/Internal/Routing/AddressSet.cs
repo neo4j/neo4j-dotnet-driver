@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Internal.Routing
             return _items.GetEnumerator();
         }
 
-        /// <returns>The eumerator of the current snapshot of the set</returns>
+        /// <returns>The enumerator of the current snapshot of the set</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();

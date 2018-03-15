@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData("1.9.9")]
             [InlineData("Neo4j/3.1.9")]
             [InlineData("3.1.9")]
-            public void ShouldUseGetServersProceudre(string version)
+            public void ShouldUseGetServersProcedure(string version)
             {
                 // Given
                 var mock = new Mock<IConnection>();
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData("3.2.0-alpha01")]
             [InlineData("Neo4j/3.2.1")]
             [InlineData("3.2.1")]
-            public void ShouldUseGetRoutingTableProceudre(string version)
+            public void ShouldUseGetRoutingTableProcedure(string version)
             {
                 // Given
                 var mock = new Mock<IConnection>();
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Tests.Routing
                 {
                     {"name", "molly"},
                     {"age", "1"},
-                    {"color", "whilte"}
+                    {"color", "white"}
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var clientMock = new Mock<ISocketClient>();

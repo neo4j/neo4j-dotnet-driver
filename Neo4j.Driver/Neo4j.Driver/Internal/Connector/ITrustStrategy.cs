@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Internal.Connector
                     _logger?.Error("Certificate not available.");
                     return false;
             }
-            _logger?.Debug("Autentication succeeded");
+            _logger?.Debug("Authentication succeeded");
             return true;
         }
     }

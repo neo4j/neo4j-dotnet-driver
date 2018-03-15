@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Fact]
-            public void ShouldReturnExisitingConnectionPoolIfUriAlreadyExist()
+            public void ShouldReturnExistingConnectionPoolIfUriAlreadyExist()
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();

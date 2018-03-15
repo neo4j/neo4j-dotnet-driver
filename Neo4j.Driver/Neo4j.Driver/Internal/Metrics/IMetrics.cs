@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Internal.Metrics
         long TimedOutToAcquire { get; }
 
         /// <summary>
-        /// The histgram of the delays to acquire a connection from the pool in "ticks" where a tick equals to 100 ns.
+        /// The histogram of the delays to acquire a connection from the pool in "ticks" where a tick equals to 100 ns.
         /// The delays could either be the time to create a new connection or the time waiting for a connection available from the pool.
         /// </summary>
         IHistogram AcquisitionTimeHistogram { get; }
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Internal.Metrics
     }
 
     /// <summary>
-    /// A very simple histgram interface
+    /// A very simple histogram interface
     /// </summary>
     internal interface IHistogram
     {

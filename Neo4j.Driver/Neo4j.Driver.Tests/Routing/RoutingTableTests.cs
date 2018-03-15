@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
         }
 
-        public class IsStatleMethod
+        public class IsStaleMethod
         {
             [Theory] [InlineData(1, 2, 1, 5 * 60, false)] // 1 router, 2 reader, 1 writer
             [InlineData(0, 2, 1, 5 * 60, true)] // no router

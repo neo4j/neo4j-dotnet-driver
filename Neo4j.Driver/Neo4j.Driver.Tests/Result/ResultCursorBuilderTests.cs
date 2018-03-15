@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Tests
             return builder;
         }
 
-        private static Task AssertGetExpectResults(IStatementResultCursor cursor, int numberExpected, List<object> exspectedRecordsValues = null)
+        private static Task AssertGetExpectResults(IStatementResultCursor cursor, int numberExpected, List<object> expectedRecordsValues = null)
         {
             int count = 0;
             var t = Task.Factory.StartNew(async () =>
@@ -43,9 +43,9 @@ namespace Neo4j.Driver.Tests
                 // ReSharper disable once LoopCanBeConvertedToQuery
                 while (await cursor.FetchAsync())
                 {
-                    if (exspectedRecordsValues != null)
+                    if (expectedRecordsValues != null)
                     {
-                        cursor.Current.Values.First().Value.Should().Be(exspectedRecordsValues[count]);
+                        cursor.Current.Values.First().Value.Should().Be(expectedRecordsValues[count]);
                     }
 
                     count++;
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldReturnNoResultsWhenNoneRecieved()
+            public async void ShouldReturnNoResultsWhenNoneReceived()
             {
                 var builder = GenerateBuilder();
                 builder.SetReceiveOneFunc(() =>
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldReturnQueuedResultsWithExspectedValue()
+            public async void ShouldReturnQueuedResultsWithExpectedValue()
             {
                 var builder = GenerateBuilder();
                 List<object> recordValues = new List<object>

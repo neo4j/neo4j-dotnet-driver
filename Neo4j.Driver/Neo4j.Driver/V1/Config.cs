@@ -46,7 +46,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         TrustAllCertificates,
         /// <summary>
-        /// Trust the servers whoes certifiacte is trusted by OS.
+        /// Trust the servers whose certificate is trusted by OS.
         /// </summary>
         TrustSystemCaSignedCertificates
     }
@@ -144,7 +144,7 @@ namespace Neo4j.Driver.V1
         public ILogger Logger { get; set; } = new DebugLogger {Level = LogLevel.Info};
 
         /// <summary>
-        /// Gets or sets the maximum transaction rety timeout.
+        /// Gets or sets the maximum transaction retry timeout.
         /// </summary>
         public TimeSpan MaxTransactionRetryTime { get; set; } = TimeSpan.FromSeconds(30);
 
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.V1
         /// <remarks> 
         /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver. 
         /// An idle connection is a connection that has already been connected to the database instance and doesn't need to re-initialize.
-        /// Setting this value to <see cref="Infinite"/> results in the idle pool size to be asigned the same value as <see cref="MaxConnectionPoolSize"/>.
+        /// Setting this value to <see cref="Infinite"/> results in the idle pool size to be assigned the same value as <see cref="MaxConnectionPoolSize"/>.
         /// </remarks>
         /// <remarks>Also see <see cref="MaxConnectionPoolSize"/></remarks>
         public int MaxIdleConnectionPoolSize {

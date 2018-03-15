@@ -91,7 +91,7 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Read each record in the result stream and aplly the operation on each record.
+        /// Read each record in the result stream and apply the operation on each record.
         /// </summary>
         /// <param name="result">The result stream.</param>
         /// <param name="operation">The operation is carried out on each record.</param>

@@ -24,7 +24,7 @@ namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Provides access to the result as an asynchronous stream of <see cref="IRecord"/>s.
-    /// The records in the result is lazily retrived and could only be visited once in a sequential order.
+    /// The records in the result is lazily retrieved and could only be visited once in a sequential order.
     /// </summary>
     /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
     public interface IStatementResultCursor

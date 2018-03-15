@@ -41,7 +41,7 @@ namespace Neo4j.Driver.V1
         public IDictionary<string, object> Parameters { get; }
 
         /// <summary>
-        /// Create a statemete with no statement parameters.
+        /// Create a statement with no statement parameters.
         /// </summary>
         /// <param name="text">The statement's text</param>
         public Statement(string text): this(text, null)
@@ -49,10 +49,10 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Create a statemete
+        /// Create a statement
         /// </summary>
         /// <param name="text">The statement's text</param>
-        /// <param name="parameters">The statement's parameters, whoes values should not be changed while the statement is used in a session/transaction.</param>
+        /// <param name="parameters">The statement's parameters, whose values should not be changed while the statement is used in a session/transaction.</param>
         public Statement(string text, IDictionary<string, object> parameters)
         {
             Text = text;

@@ -64,8 +64,8 @@ namespace Neo4j.Driver.Internal
         {
             _connection = new TransactionConnection(this, connection);
             _resourceHandler = resourceHandler;
-            IDictionary<string, object> paramters = bookmark?.AsBeginTransactionParameters();
-            _connection.Run(Begin, paramters);
+            IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
+            _connection.Run(Begin, parameters);
         }
 
         protected override void Dispose(bool isDisposing)
@@ -285,7 +285,7 @@ namespace Neo4j.Driver.Internal
 
             public override void Close()
             {
-                // no resouce will be closed as the resources passed in this class are managed outside this class
+                // no resources will be closed as the resources passed in this class are managed outside this class
                 Delegate = null;
                 _transaction = null;
             }

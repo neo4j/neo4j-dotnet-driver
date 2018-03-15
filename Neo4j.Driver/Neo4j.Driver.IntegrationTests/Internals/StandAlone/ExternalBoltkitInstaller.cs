@@ -44,7 +44,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             if (Directory.Exists(HomeDir))
             {
-                _commandRunner.Debug($"Found and using server intalled at `{HomeDir}`.");
+                _commandRunner.Debug($"Found and using server installed at `{HomeDir}`.");
             }
             else
             {

@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Internal.Routing
             await _semaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                // test against to avoid update it multipule times
+                // test against to avoid update it multiple times
                 if (!IsRoutingTableStale(_routingTable, mode))
                 {
                     return;

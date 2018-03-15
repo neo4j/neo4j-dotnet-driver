@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal
             return output;
         }
 
-        public static string ToHexString(this byte[] bytes, string seperator, int start = 0, int size = -1)
+        public static string ToHexString(this byte[] bytes, string separator, int start = 0, int size = -1)
         {
             if (bytes == null)
                 return "NULL";
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal
             Array.Copy(bytes, start, destination, 0, size);
             var output = BitConverter.ToString(destination);
 
-            return output.Replace("-", seperator);
+            return output.Replace("-", separator);
         }
 
         public static string ToHexString(this byte[] bytes, int start = 0, int size = -1, bool showX = false)

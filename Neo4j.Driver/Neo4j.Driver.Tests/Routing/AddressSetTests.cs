@@ -144,7 +144,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 var set = new AddressSet<int> {0, 1, 2, 3};
 
-                // we loop serveral turns on the full set
+                // we loop several turns on the full set
                 for (var j = 0; j < times; j++)
                 {
                     for (var i = 0; i < set.Count; i++)

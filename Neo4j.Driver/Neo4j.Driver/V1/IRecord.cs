@@ -34,7 +34,7 @@ namespace Neo4j.Driver.V1
         /// Gets the value specified by the given key.
         /// </summary>
         /// <param name="key">The key</param>
-        /// <returns>the value spcified with the given key.</returns>
+        /// <returns>the value specified with the given key.</returns>
         object this[string key] { get; }
 
         /// <summary>
