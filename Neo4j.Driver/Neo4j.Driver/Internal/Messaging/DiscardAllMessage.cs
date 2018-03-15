@@ -24,11 +24,6 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class DiscardAllMessage:IRequestMessage
     {
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleDiscardAllMessage();
-        }
-
         public override string ToString()
         {
             return "DISCARDALL";

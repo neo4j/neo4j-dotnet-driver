@@ -24,22 +24,24 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class FailureMessage : IResponseMessage
     {
-        private readonly string _code;
-        private readonly string _message;
         public FailureMessage(string code, string message)
         {
-            _code = code;
-            _message = message;
+            Code = code;
+            Message = message;
         }
+
+        public string Code { get; }
+
+        public string Message { get; }
 
         public override string ToString()
         {
-            return $"FAILURE code={_code}, message={_message}";
+            return $"FAILURE code={Code}, message={Message}";
         }
 
         public void Dispatch(IMessageResponseHandler messageResponseHandler)
         {
-            messageResponseHandler.HandleFailureMessage(_code, _message);
+            messageResponseHandler.HandleFailureMessage(Code, Message);
         }
     }
 }

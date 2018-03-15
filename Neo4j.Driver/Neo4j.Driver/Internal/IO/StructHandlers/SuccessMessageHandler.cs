@@ -16,19 +16,30 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
     internal class SuccessMessageHandler : IPackStreamStructHandler
     {
-        public object Read(PackStreamReader reader, long size)
+        public IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgSuccess};
+
+        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
+
+        public object Read(IPackStreamReader reader, byte signature, long size)
         {
             var map = reader.ReadMap();
 
             return new SuccessMessage(map);
+        }
+
+        public void Write(IPackStreamWriter writer, object value)
+        {
+            throw new ProtocolException($"It is not allowed to send Success({string.Join(",", ReadableStructs)}) messages to the server.");
         }
     }
 }

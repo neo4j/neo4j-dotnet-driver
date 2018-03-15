@@ -16,14 +16,21 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
     internal class RelationshipHandler : IPackStreamStructHandler
     {
-        public object Read(PackStreamReader reader, long size)
+        public IEnumerable<byte> ReadableStructs => new[] {PackStream.Relationship};
+
+        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
+
+        public object Read(IPackStreamReader reader, byte signature, long size)
         {
             var urn = reader.ReadLong();
             var startUrn = reader.ReadLong();
@@ -32,6 +39,11 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var props = reader.ReadMap();
 
             return new Relationship(urn, startUrn, endUrn, relType, props);
+        }
+
+        public void Write(IPackStreamWriter writer, object value)
+        {
+            throw new ProtocolException($"It is not allowed to send Relationship({string.Join(",", ReadableStructs)}) values to the server.");
         }
     }
 }

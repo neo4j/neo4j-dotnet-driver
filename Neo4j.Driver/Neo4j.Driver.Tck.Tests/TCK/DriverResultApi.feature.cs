@@ -782,9 +782,6 @@ namespace Neo4j.Driver.Tck.Tests.TCK
             table12.AddRow(new string[] {
                         "description",
                         @"""If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m))"""});
-            table12.AddRow(new string[] {
-                        "position",
-                        "{\"offset\": 0,\"line\": 1,\"column\": 1}"});
 #line 277
     testRunner.Then("the `Result Summary` `Notifications` has one notification with", ((string)(null)), table12, "Then ");
 #line hidden

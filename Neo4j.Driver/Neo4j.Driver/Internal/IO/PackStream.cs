@@ -20,10 +20,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal static partial class PackStream
+    internal static class PackStream
     {
         public enum PackType
         {
@@ -123,5 +124,19 @@ namespace Neo4j.Driver.Internal.IO
         public const byte Path = (byte)'P';
 
         #endregion Consts
+
+        #region Helper Methods 
+
+        public static readonly Dictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
+
+        public static void EnsureStructSize(String structName, int expected, long actual)
+        {
+            if (expected != actual)
+            {
+                throw new ClientException($"{structName} structures should have {expected} fields, however received {actual} fields.");
+            }
+        }
+
+        #endregion
     }
 }

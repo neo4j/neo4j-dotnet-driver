@@ -26,19 +26,6 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal class BoltReader: IBoltReader
     {
-        internal static readonly IDictionary<byte, IPackStreamStructHandler> StructHandlers =
-            new ReadOnlyDictionary<byte, IPackStreamStructHandler>(new Dictionary<byte, IPackStreamStructHandler>
-            {
-                {PackStream.MsgFailure, new FailureMessageHandler()},
-                {PackStream.MsgIgnored, new IgnoredMessageHandler()},
-                {PackStream.MsgRecord, new RecordMessageHandler()},
-                {PackStream.MsgSuccess, new SuccessMessageHandler()},
-                {PackStream.Node, new NodeHandler()},
-                {PackStream.Relationship, new RelationshipHandler()},
-                {PackStream.UnboundRelationship, new UnboundRelationshipHandler()},
-                {PackStream.Path, new PathHandler()}
-            });
-
         private readonly IChunkReader _chunkReader;
         private readonly IPackStreamReader _packStreamReader;
         private readonly ILogger _logger;
@@ -48,34 +35,29 @@ namespace Neo4j.Driver.Internal.IO
 
         private int _shrinkCounter = 0;
 
-        public BoltReader(Stream stream)
-            : this(stream, true)
-        {
-            
-        }
-
-        public BoltReader(Stream stream, bool supportBytes)
-            : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, supportBytes)
+        public BoltReader(Stream stream, IPackStreamFactory packStreamFactory)
+            : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, packStreamFactory)
         {
 
         }
 
-        public BoltReader(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, bool supportBytes)
-            : this(new ChunkReader(stream, logger), defaultBufferSize, maxBufferSize, logger, supportBytes)
+        public BoltReader(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, IPackStreamFactory packStreamFactory)
+            : this(new ChunkReader(stream, logger), defaultBufferSize, maxBufferSize, logger, packStreamFactory)
         {
 
         }
 
-        public BoltReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, ILogger logger, bool supportBytes)
+        public BoltReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, ILogger logger, IPackStreamFactory packStreamFactory)
         {
             Throw.ArgumentNullException.IfNull(chunkReader, nameof(chunkReader));
+            Throw.ArgumentNullException.IfNull(packStreamFactory, nameof(packStreamFactory));
 
             _logger = logger;
             _chunkReader = chunkReader;
             _defaultBufferSize = defaultBufferSize;
             _maxBufferSize = maxBufferSize;
             _bufferStream = new MemoryStream(_defaultBufferSize);
-            _packStreamReader = supportBytes ? new PackStreamReader(_bufferStream, StructHandlers) : new PackStreamReaderBytesIncompatible(_bufferStream, StructHandlers);
+            _packStreamReader = packStreamFactory.CreateReader(_bufferStream);
         }
 
         public void Read(IMessageResponseHandler responseHandler)
@@ -97,7 +79,7 @@ namespace Neo4j.Driver.Internal.IO
 
         private void ConsumeMessages(IMessageResponseHandler responseHandler, int messages)
         {
-            int leftMessages = messages;
+            var leftMessages = messages;
 
             while (_bufferStream.Length > _bufferStream.Position && leftMessages > 0)
             {
@@ -133,25 +115,13 @@ namespace Neo4j.Driver.Internal.IO
         {
             var message = _packStreamReader.Read();
 
-            if (message is RecordMessage record)
+            if (message is IResponseMessage response)
             {
-                record.Dispatch(responseHandler);
-            }
-            else if (message is SuccessMessage success)
-            {
-                success.Dispatch(responseHandler);
-            }
-            else if (message is FailureMessage failure)
-            {
-                failure.Dispatch(responseHandler);
-            }
-            else if (message is IgnoredMessage ignored)
-            {
-                ignored.Dispatch(responseHandler);
+                response.Dispatch(responseHandler);
             }
             else
             {
-                throw new ProtocolException("Unknown response message type: " + message.GetType().FullName);
+                throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
             }
         }
 

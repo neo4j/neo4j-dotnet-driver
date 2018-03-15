@@ -20,21 +20,21 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class SuccessMessage : IResponseMessage
     {
-        private readonly IDictionary<string, object> _meta;
-
         public SuccessMessage(IDictionary<string, object> meta)
         {
-            _meta = meta;
+            Meta = meta;
         }
+
+        public IDictionary<string, object> Meta { get; }
 
         public override string ToString()
         {
-            return $"SUCCESS {_meta.ValueToString()}";
+            return $"SUCCESS {Meta.ValueToString()}";
         }
 
         public void Dispatch(IMessageResponseHandler messageResponseHandler)
         {
-            messageResponseHandler.HandleSuccessMessage(_meta);
+            messageResponseHandler.HandleSuccessMessage(Meta);
         }
     }
 }

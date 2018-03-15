@@ -21,16 +21,6 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    internal interface IMessageRequestHandler
-    {
-        void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken);
-        void HandleRunMessage(string statement, IDictionary<string, object> parameters);
-        void HandlePullAllMessage();
-        void HandleDiscardAllMessage();
-        void HandleResetMessage();
-        void HandleAckFailureMessage();
-    }
-
     internal interface IMessageResponseHandler
     {
         Neo4jException Error { get; set; }

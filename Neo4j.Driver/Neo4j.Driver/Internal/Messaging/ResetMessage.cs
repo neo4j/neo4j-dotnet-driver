@@ -24,11 +24,6 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class ResetMessage:IRequestMessage
     {
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleResetMessage();
-        }
-
         public override string ToString()
         {
             return "RESET";

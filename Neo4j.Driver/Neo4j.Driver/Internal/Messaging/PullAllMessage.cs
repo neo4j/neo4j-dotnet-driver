@@ -24,11 +24,6 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class PullAllMessage : IRequestMessage
     {
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandlePullAllMessage();
-        }
-
         public override string ToString()
         {
             return "PULLALL";

@@ -15,14 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV1 : IBoltProtocol
+    internal class BoltProtocolV2 : IBoltProtocol
     {
+
+
         private readonly ITcpSocketClient _tcpSocketClient;
         private readonly BufferSettings _bufferSettings;
         private readonly ILogger _logger;
@@ -30,33 +33,22 @@ namespace Neo4j.Driver.Internal.Connector
         public IBoltReader Reader { get; private set; }
         public IBoltWriter Writer { get; private set; }
 
-        public BoltProtocolV1(ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger=null)
+        public BoltProtocolV2(ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger=null)
         {
             _tcpSocketClient = tcpSocketClient;
             _bufferSettings = bufferSettings;
             _logger = logger;
-            CreateReaderAndWriter();
+
+            Reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
+                _bufferSettings.MaxReadBufferSize, _logger, BoltProtocolV2PackStreamFactory.V2);
+            Writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
+                _bufferSettings.MaxWriteBufferSize, _logger, BoltProtocolV2PackStreamFactory.V2);
         }
 
         public bool ReconfigIfNecessary(string serverVersion)
         {
-            var version = ServerVersion.Version(serverVersion);
-            if ( version >= ServerVersion.V3_2_0 )
-            {
-                return false;
-            }
-
-            // downgrade PackStream to not support byte array.
-            CreateReaderAndWriter(false);
-            return true;
+            return false;
         }
 
-        private void CreateReaderAndWriter(bool supportBytes = true)
-        {
-            Reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
-                _bufferSettings.MaxReadBufferSize, _logger, supportBytes);
-            Writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
-                _bufferSettings.MaxWriteBufferSize, _logger, supportBytes);
-        }
     }
 }

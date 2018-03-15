@@ -24,11 +24,6 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class AckFailureMessage : IRequestMessage
     {
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleAckFailureMessage();
-        }
-
         public override string ToString()
         {
             return "ACK_FAILURE";

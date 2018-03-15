@@ -21,23 +21,19 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class RunMessage : IRequestMessage
     {
-        private readonly string _statement;
-        private readonly IDictionary<string, object> _statementParameters;
-
         public RunMessage(string statement, IDictionary<string, object> statementParameters = null)
         {
-            _statement = statement;
-            _statementParameters = statementParameters;
+            Statement = statement;
+            StatementParameters = statementParameters;
         }
 
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleRunMessage( _statement, _statementParameters );
-        }
+        public string Statement { get; }
+
+        public IDictionary<string, object> StatementParameters { get; }
 
         public override string ToString()
         {
-            return $"RUN `{_statement}` {_statementParameters.ValueToString()}";
+            return $"RUN `{Statement}` {StatementParameters.ValueToString()}";
         }
     }
 }

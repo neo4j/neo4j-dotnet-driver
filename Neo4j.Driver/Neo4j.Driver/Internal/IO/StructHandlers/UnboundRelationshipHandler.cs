@@ -20,18 +20,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
     internal class UnboundRelationshipHandler: IPackStreamStructHandler
     {
-        public object Read(PackStreamReader reader, long size)
+        public IEnumerable<byte> ReadableStructs => new[] {PackStream.UnboundRelationship};
+
+        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
+
+        public object Read(IPackStreamReader reader, byte signature, long size)
         {
             var urn = reader.ReadLong();
             var relType = reader.ReadString();
             var props = reader.ReadMap();
 
             return new Relationship(urn, -1, -1, relType, props);
+        }
+
+        public void Write(IPackStreamWriter writer, object value)
+        {
+            throw new ProtocolException($"It is not allowed to send UnboundRelationship({string.Join(",", ReadableStructs)}) values to the server.");
         }
     }
 }

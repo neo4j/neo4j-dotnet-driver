@@ -20,12 +20,12 @@ using System.IO;
 using System.Text;
 using Neo4j.Driver.V1;
 using Neo4j.Driver.Internal;
-using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamReader: IPackStreamReader
     {
+        private static readonly IDictionary<byte, IPackStreamStructHandler> NoHandlers = new Dictionary<byte, IPackStreamStructHandler>();
         private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
         private static readonly byte[] EmptyByteArray = new byte[0];
 
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.IO
             Throw.ArgumentOutOfRangeException.IfFalse(stream.CanRead, nameof(stream));
 
             _stream = stream;
-            _structHandlers = structHandlers ?? new Dictionary<byte, IPackStreamStructHandler>();
+            _structHandlers = structHandlers ?? NoHandlers;
         }
 
         public object Read()
@@ -81,30 +81,31 @@ namespace Neo4j.Driver.Internal.IO
             return new List<object>(vals);
         }
 
-        protected internal virtual object ReadValue(PackType type)
+        protected internal virtual object ReadValue(PackStream.PackType type)
         {
             switch (type)
             {
-                case PackType.Bytes:
+                case PackStream.PackType.Bytes:
                     return ReadBytes();
-                case PackType.Null:
+                case PackStream.PackType.Null:
                     return ReadNull();
-                case PackType.Boolean:
+                case PackStream.PackType.Boolean:
                     return ReadBoolean();
-                case PackType.Integer:
+                case PackStream.PackType.Integer:
                     return ReadLong();
-                case PackType.Float:
+                case PackStream.PackType.Float:
                     return ReadDouble();
-                case PackType.String:
+                case PackStream.PackType.String:
                     return ReadString();
-                case PackType.Map:
+                case PackStream.PackType.Map:
                     return ReadMap();
-                case PackType.List:
+                case PackStream.PackType.List:
                     return ReadList();
-                case PackType.Struct:
+                case PackStream.PackType.Struct:
                     return ReadStruct();
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
             }
-            throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
         }
 
         public object ReadStruct()
@@ -114,7 +115,7 @@ namespace Neo4j.Driver.Internal.IO
 
             if (_structHandlers.TryGetValue(signature, out var handler))
             {
-                return handler.Read(this, size);
+                return handler.Read(this, signature, size);
             }
 
             throw new ProtocolException("Unknown structure type: " + signature);
@@ -123,7 +124,7 @@ namespace Neo4j.Driver.Internal.IO
         public object ReadNull()
         {
             byte markerByte = NextByte();
-            if (markerByte != Null)
+            if (markerByte != PackStream.Null)
             {
                 throw new ProtocolException(
                     $"Expected a null, but got: 0x{(markerByte & 0xFF):X2}");
@@ -136,9 +137,9 @@ namespace Neo4j.Driver.Internal.IO
             byte markerByte = NextByte();
             switch (markerByte)
             {
-                case True:
+                case PackStream.True:
                     return true;
-                case False:
+                case PackStream.False:
                     return false;
                 default:
                     throw new ProtocolException(
@@ -146,16 +147,39 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public long ReadLong()
+        public int ReadInteger()
         {
             byte markerByte = NextByte();
-            if ((sbyte)markerByte >= Minus2ToThe4)
+            if ((sbyte)markerByte >= PackStream.Minus2ToThe4)
             {
                 return (sbyte)markerByte;
             }
             switch (markerByte)
             {
-                case Int8:
+                case PackStream.Int8:
+                    return NextSByte();
+                case PackStream.Int16:
+                    return NextShort();
+                case PackStream.Int32:
+                    return NextInt();
+                case PackStream.Int64:
+                    throw new OverflowException($"Unexpectedly large Integer value unpacked {NextLong()}");
+                default:
+                    throw new ProtocolException(
+                        $"Expected an integer, but got: 0x{markerByte:X2}");
+            }
+        }
+
+        public long ReadLong()
+        {
+            byte markerByte = NextByte();
+            if ((sbyte)markerByte >= PackStream.Minus2ToThe4)
+            {
+                return (sbyte)markerByte;
+            }
+            switch (markerByte)
+            {
+                case PackStream.Int8:
                     return NextSByte();
                 case PackStream.Int16:
                     return NextShort();
@@ -172,7 +196,7 @@ namespace Neo4j.Driver.Internal.IO
         public double ReadDouble()
         {
             byte markerByte = NextByte();
-            if (markerByte == Float64)
+            if (markerByte == PackStream.Float64)
             {
                 return NextDouble();
             }
@@ -183,7 +207,7 @@ namespace Neo4j.Driver.Internal.IO
         public string ReadString()
         {
             var markerByte = NextByte();
-            if (markerByte == TinyString) // Note no mask, so we compare to 0x80.
+            if (markerByte == PackStream.TinyString) // Note no mask, so we compare to 0x80.
             {
                 return string.Empty;
             }
@@ -197,11 +221,11 @@ namespace Neo4j.Driver.Internal.IO
 
             switch (markerByte)
             {
-                case Bytes8:
+                case PackStream.Bytes8:
                     return ReadBytes(ReadUint8());
-                case Bytes16:
+                case PackStream.Bytes16:
                     return ReadBytes(ReadUint16());
-                case Bytes32:
+                case PackStream.Bytes32:
                 {
                     long size = ReadUint32();
                     if (size <= int.MaxValue)
@@ -237,17 +261,17 @@ namespace Neo4j.Driver.Internal.IO
             var markerHighNibble = (byte)(markerByte & 0xF0);
             var markerLowNibble = (byte)(markerByte & 0x0F);
 
-            if (markerHighNibble == TinyString)
+            if (markerHighNibble == PackStream.TinyString)
             {
                 return ReadBytes(markerLowNibble);
             }
             switch (markerByte)
             {
-                case String8:
+                case PackStream.String8:
                     return ReadBytes(ReadUint8());
-                case String16:
+                case PackStream.String16:
                     return ReadBytes(ReadUint16());
-                case String32:
+                case PackStream.String32:
                 {
                     var size = ReadUint32();
                     if (size <= int.MaxValue)
@@ -269,17 +293,17 @@ namespace Neo4j.Driver.Internal.IO
             var markerHighNibble = (byte)(markerByte & 0xF0);
             var markerLowNibble = (byte)(markerByte & 0x0F);
 
-            if (markerHighNibble == TinyMap)
+            if (markerHighNibble == PackStream.TinyMap)
             {
                 return markerLowNibble;
             }
             switch (markerByte)
             {
-                case Map8:
+                case PackStream.Map8:
                     return ReadUint8();
-                case Map16:
+                case PackStream.Map16:
                     return ReadUint16();
-                case Map32:
+                case PackStream.Map32:
                     return ReadUint32();
                 default:
                     throw new ProtocolException(
@@ -293,17 +317,17 @@ namespace Neo4j.Driver.Internal.IO
             var markerHighNibble = (byte)(markerByte & 0xF0);
             var markerLowNibble = (byte)(markerByte & 0x0F);
 
-            if (markerHighNibble == TinyList)
+            if (markerHighNibble == PackStream.TinyList)
             {
                 return markerLowNibble;
             }
             switch (markerByte)
             {
-                case List8:
+                case PackStream.List8:
                     return ReadUint8();
-                case List16:
+                case PackStream.List16:
                     return ReadUint16();
-                case List32:
+                case PackStream.List32:
                     return ReadUint32();
                 default:
                     throw new ProtocolException(
@@ -322,15 +346,15 @@ namespace Neo4j.Driver.Internal.IO
             var markerHighNibble = (byte)(markerByte & 0xF0);
             var markerLowNibble = (byte)(markerByte & 0x0F);
 
-            if (markerHighNibble == TinyStruct)
+            if (markerHighNibble == PackStream.TinyStruct)
             {
                 return markerLowNibble;
             }
             switch (markerByte)
             {
-                case Struct8:
+                case PackStream.Struct8:
                     return ReadUint8();
-                case Struct16:
+                case PackStream.Struct16:
                     return ReadUint16();
                 default:
                     throw new ProtocolException(
@@ -338,59 +362,59 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        public PackType PeekNextType()
+        public PackStream.PackType PeekNextType()
         {
             var markerByte = PeekByte();
             var markerHighNibble = (byte)(markerByte & 0xF0);
 
             switch (markerHighNibble)
             {
-                case TinyString:
-                    return PackType.String;
-                case TinyList:
-                    return PackType.List;
-                case TinyMap:
-                    return PackType.Map;
-                case TinyStruct:
-                    return PackType.Struct;
+                case PackStream.TinyString:
+                    return PackStream.PackType.String;
+                case PackStream.TinyList:
+                    return PackStream.PackType.List;
+                case PackStream.TinyMap:
+                    return PackStream.PackType.Map;
+                case PackStream.TinyStruct:
+                    return PackStream.PackType.Struct;
             }
 
-            if ((sbyte)markerByte >= Minus2ToThe4)
-                return PackType.Integer;
+            if ((sbyte)markerByte >= PackStream.Minus2ToThe4)
+                return PackStream.PackType.Integer;
 
             switch (markerByte)
             {
-                case Null:
-                    return PackType.Null;
-                case True:
-                case False:
-                    return PackType.Boolean;
-                case Float64:
-                    return PackType.Float;
-                case Bytes8:
-                case Bytes16:
-                case Bytes32:
-                    return PackType.Bytes;
-                case String8:
-                case String16:
-                case String32:
-                    return PackType.String;
-                case List8:
-                case List16:
-                case List32:
-                    return PackType.List;
-                case Map8:
-                case Map16:
-                case Map32:
-                    return PackType.Map;
-                case Struct8:
-                case Struct16:
-                    return PackType.Struct;
-                case Int8:
+                case PackStream.Null:
+                    return PackStream.PackType.Null;
+                case PackStream.True:
+                case PackStream.False:
+                    return PackStream.PackType.Boolean;
+                case PackStream.Float64:
+                    return PackStream.PackType.Float;
+                case PackStream.Bytes8:
+                case PackStream.Bytes16:
+                case PackStream.Bytes32:
+                    return PackStream.PackType.Bytes;
+                case PackStream.String8:
+                case PackStream.String16:
+                case PackStream.String32:
+                    return PackStream.PackType.String;
+                case PackStream.List8:
+                case PackStream.List16:
+                case PackStream.List32:
+                    return PackStream.PackType.List;
+                case PackStream.Map8:
+                case PackStream.Map16:
+                case PackStream.Map32:
+                    return PackStream.PackType.Map;
+                case PackStream.Struct8:
+                case PackStream.Struct16:
+                    return PackStream.PackType.Struct;
+                case PackStream.Int8:
                 case PackStream.Int16:
                 case PackStream.Int32:
                 case PackStream.Int64:
-                    return PackType.Integer;
+                    return PackStream.PackType.Integer;
                 default:
                     throw new ProtocolException(
                         $"Unknown type 0x{markerByte:X2}");

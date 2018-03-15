@@ -14,33 +14,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
-using Xunit;
 
-namespace Neo4j.Driver.Tests.IO
+namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    public class PackStreamWriterBytesIncompatibleTests: PackStreamWriterTests
+    internal class AckFailureMessageHandler : IPackStreamStructHandler
     {
+        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
 
-        [Fact]
-        public void ShouldThrowWhenBytesIsSent()
+        public IEnumerable<Type> WritableTypes => new[] {typeof(AckFailureMessage)};
+
+        public object Read(IPackStreamReader reader, byte signature, long size)
         {
-            var mocks = new WriterTests.Mocks();
-            var writer = new PackStreamWriterBytesIncompatible(mocks.OutputStream);
+            throw new ProtocolException($"It is not expected to receive AckFailure({string.Join(",", ReadableStructs)}) messages from the server.");
 
-            var ex = Record.Exception(() => writer.Write(new byte[10]));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
         }
 
+        public void Write(IPackStreamWriter writer, object value)
+        {
+            writer.WriteStructHeader(0, PackStream.MsgAckFailure);
+        }
     }
 }

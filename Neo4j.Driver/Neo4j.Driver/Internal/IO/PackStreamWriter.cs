@@ -27,56 +27,74 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamWriter: IPackStreamWriter
     {
+        private static readonly IDictionary<Type, IPackStreamStructHandler> NoHandlers = new Dictionary<Type, IPackStreamStructHandler>();
+
+        private readonly IDictionary<Type, IPackStreamStructHandler> _structHandlers;
         private readonly Stream _stream;
 
-        public PackStreamWriter(Stream stream)
+        public PackStreamWriter(Stream stream, IDictionary<Type, IPackStreamStructHandler> structHandlers)
         {
             Throw.ArgumentNullException.IfNull(stream, nameof(stream));
             Throw.ArgumentOutOfRangeException.IfFalse(stream.CanWrite, nameof(stream));
 
             _stream = stream;
+            _structHandlers = structHandlers ?? NoHandlers;
         }
 
         public void Write(object value)
         {
-            if (value == null)
+            switch (value)
             {
-                WriteNull();
+                case null:
+                    WriteNull();
+                    break;
+                case bool _:
+                    Write((bool)value);
+                    break;
+                case sbyte _:
+                case byte _:
+                case short _:
+                case int _:
+                case long _:
+                    Write(Convert.ToInt64(value));
+                    break;
+                case byte[] _:
+                    Write((byte[])value);
+                    break;
+                case float _:
+                case double _:
+                case decimal _:
+                    Write(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+                    break;
+                case char _:
+                    Write((char)value);
+                    break;
+                case string _:
+                    Write((string)value);
+                    break;
+                case IList _:
+                    Write((IList)value);
+                    break;
+                case IDictionary _:
+                    Write((IDictionary)value);
+                    break;
+                default:
+                    if (_structHandlers.TryGetValue(value.GetType(), out var structHandler))
+                    {
+                        structHandler.Write(this, value);
+                    }
+                    else
+                    {
+                        throw new ProtocolException(
+                            $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
+                    }
+                    break;
             }
-            else if (value is bool)
-            {
-                Write((bool)value);
-            }
+        }
 
-            else if (value is sbyte || value is byte || value is short || value is int || value is long)
-            {
-                Write(Convert.ToInt64(value));
-            }
-            else if (value is byte[])
-            {
-                Write((byte[])value);
-            }
-            else if (value is float || value is double || value is decimal)
-            {
-                Write(Convert.ToDouble(value, CultureInfo.InvariantCulture));
-            }
-            else if (value is char || value is string)
-            {
-                Write(value.ToString());
-            }
-            else if (value is IList)
-            {
-                Write((IList)value);
-            }
-            else if (value is IDictionary)
-            {
-                Write((IDictionary)value);
-            }
-            else
-            {
-                throw new ProtocolException(
-                    $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
-            }
+        public void Write(int value)
+        {
+            Write((long)value);
         }
 
         public void Write(long value)
@@ -118,17 +136,23 @@ namespace Neo4j.Driver.Internal.IO
             _stream.WriteByte(value ? True : False);
         }
 
+        public void Write(char value)
+        {
+            Write(value.ToString());
+        }
+
         public void Write(string value)
         {
             if (value == null)
             {
                 WriteNull();
-                return;
             }
-
-            var bytes = PackStreamBitConverter.GetBytes(value);
-            WriteStringHeader(bytes.Length);
-            _stream.Write(bytes);
+            else
+            {
+                var bytes = PackStreamBitConverter.GetBytes(value);
+                WriteStringHeader(bytes.Length);
+                _stream.Write(bytes);
+            }
         }
 
         public virtual void Write(byte[] values)
@@ -149,12 +173,14 @@ namespace Neo4j.Driver.Internal.IO
             if (value == null)
             {
                 WriteNull();
-                return;
             }
-            WriteListHeader(value.Count);
-            foreach (var item in value)
+            else
             {
-                Write(item);
+                WriteListHeader(value.Count);
+                foreach (var item in value)
+                {
+                    Write(item);
+                }
             }
         }
 
@@ -204,7 +230,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        internal void WriteListHeader(int size)
+        public void WriteListHeader(int size)
         {
             if (size < 0x10)
             {
@@ -228,7 +254,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        internal void WriteMapHeader(int size)
+        public void WriteMapHeader(int size)
         {
             if (size < 0x10)
             {
@@ -275,7 +301,7 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        internal void WriteStructHeader(int size, byte signature)
+        public void WriteStructHeader(int size, byte signature)
         {
             if (size < 0x10)
             {

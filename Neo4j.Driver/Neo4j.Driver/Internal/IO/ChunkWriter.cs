@@ -75,6 +75,7 @@ namespace Neo4j.Driver.Internal.IO
         public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
+            Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize, Constants.MinChunkSize, nameof(chunkSize));
             Throw.ArgumentOutOfRangeException.IfValueGreaterThan(chunkSize, Constants.MaxChunkSize, nameof(chunkSize));
 
@@ -142,7 +143,7 @@ namespace Neo4j.Driver.Internal.IO
 
             if (count > 0)
             {
-                byte[] chunkSize =
+                var chunkSize =
                     PackStreamBitConverter.GetBytes((ushort)count);
 
                 var previousPos = _chunkStream.Position;

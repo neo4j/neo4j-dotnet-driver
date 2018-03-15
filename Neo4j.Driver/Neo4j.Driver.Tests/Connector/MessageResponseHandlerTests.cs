@@ -207,7 +207,7 @@ namespace Neo4j.Driver.Tests
 
         public class HandleFailureMessageMethod
         {
-            [Theory, MemberData("ClientErrors")]
+            [Theory, MemberData(nameof(ClientErrors))]
             public void ShouldCreateClientExceptionWhenClassificationContainsClientError(string code)
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
@@ -219,7 +219,7 @@ namespace Neo4j.Driver.Tests
                 mrh.Error.Should().BeOfType<ClientException>();
             }
 
-            [Theory, MemberData("ProtocolErrors")]
+            [Theory, MemberData(nameof(ProtocolErrors))]
             public void ShouldCreateProtocolExceptionWhenClassificationContainsProtocolError(string code)
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
@@ -231,7 +231,7 @@ namespace Neo4j.Driver.Tests
                 mrh.Error.Should().BeOfType<ProtocolException>();
             }
 
-            [Theory, MemberData("AuthErrors")]
+            [Theory, MemberData(nameof(AuthErrors))]
             public void ShouldCreateAuthExceptionWhenClassificationContainsAuthError(string code)
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
@@ -243,7 +243,7 @@ namespace Neo4j.Driver.Tests
                 mrh.Error.Should().BeOfType<AuthenticationException>();
             }
 
-            [Theory, MemberData("TransientErrors")]
+            [Theory, MemberData(nameof(TransientErrors))]
             public void ShouldCreateTransientExceptionWhenClassificationContainsTransientError(string code)
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
@@ -255,7 +255,7 @@ namespace Neo4j.Driver.Tests
                 mrh.Error.Should().BeOfType<TransientException>();
             }
 
-            [Theory, MemberData("DatabaseErrors")]
+            [Theory, MemberData(nameof(DatabaseErrors))]
             public void ShouldCreateDatabaseExceptionWhenClassificationContainsDatabaseError(string code)
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
