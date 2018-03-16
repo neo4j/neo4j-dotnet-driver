@@ -254,7 +254,7 @@ namespace Neo4j.Driver.Internal.Connector
                 return _tcpSocketClient.DisconnectAsync();
             }
 
-            return TaskUtils.GetCompletedTask();
+            return TaskHelper.GetCompletedTask();
         }
 
         public void Dispose()

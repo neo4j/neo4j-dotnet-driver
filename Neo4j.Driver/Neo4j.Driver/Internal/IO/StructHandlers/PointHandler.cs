@@ -37,67 +37,61 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
-            var srId = 0;
-            var x = double.NaN;
-            var y = double.NaN;
-            var z = double.NaN;
-
             switch (signature)
             {
                 case Point2DStructType:
                 {
                     PackStream.EnsureStructSize("Point2D", Point2DStructSize, size);
-                    srId = reader.ReadInteger();
-                    x = reader.ReadDouble();
-                    y = reader.ReadDouble();
+                    var srId = reader.ReadInteger();
+                    var x = reader.ReadDouble();
+                    var y = reader.ReadDouble();
 
-                    break;
+                    return new Point(srId, x, y);
                 }
                 case Point3DStructType:
                 {
                     PackStream.EnsureStructSize("Point3D", Point3DStructSize, size);
-                    srId = reader.ReadInteger();
-                    x = reader.ReadDouble();
-                    y = reader.ReadDouble();
-                    z = reader.ReadDouble();
+                    var srId = reader.ReadInteger();
+                    var x = reader.ReadDouble();
+                    var y = reader.ReadDouble();
+                    var z = reader.ReadDouble();
 
-                    break;
+                    return new Point(srId, x, y, z);
                 }
                 default:
                     throw new ProtocolException(
                         $"Unsupported struct signature {signature} passed to {nameof(PointHandler)}!");
             }
-
-            return new Point(srId, x, y, z);
         }
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            switch (value)
+            var point = value.CastOrThrow<Point>();
+
+            switch (point.Dimension)
             {
-                case Point point:
+                case 2:
                 {
-                    if (double.IsNaN(point.Z))
-                    {
-                        writer.WriteStructHeader(Point2DStructSize, Point2DStructType);
-                        writer.Write(point.SrId);
-                        writer.Write(point.X);
-                        writer.Write(point.Y);
-                    }
-                    else
-                    {
-                        writer.WriteStructHeader(Point3DStructSize, Point3DStructType);
-                        writer.Write(point.SrId);
-                        writer.Write(point.X);
-                        writer.Write(point.Y);
-                        writer.Write(point.Z);
-                    }
+                    writer.WriteStructHeader(Point2DStructSize, Point2DStructType);
+                    writer.Write(point.SrId);
+                    writer.Write(point.X);
+                    writer.Write(point.Y);
+
+                    break;
+                }
+                case 3:
+                {
+                    writer.WriteStructHeader(Point3DStructSize, Point3DStructType);
+                    writer.Write(point.SrId);
+                    writer.Write(point.X);
+                    writer.Write(point.Y);
+                    writer.Write(point.Z);
 
                     break;
                 }
                 default:
                     throw new ProtocolException(
-                        $"Unsupported type {value.GetType().FullName} passed to {nameof(PointHandler)}");
+                        $"Dimension('{point.Dimension}') is not supported in {nameof(PointHandler)}");
             }
         }
     }

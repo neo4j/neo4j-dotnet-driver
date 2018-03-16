@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Internal.IO
             ReadNextChunkLoopAsync(
                 messageStream,
                 taskCompletionSource,
-                TaskUtils.GetCompletedTask());
+                TaskHelper.GetCompletedTask());
 
             return taskCompletionSource.Task;
         }
@@ -211,7 +211,7 @@ namespace Neo4j.Driver.Internal.IO
                                 {
                                     taskCompletionSource.SetCanceled();
 
-                                    return TaskUtils.GetCompletedTask();
+                                    return TaskHelper.GetCompletedTask();
                                 }
 
                                 // Is buffer processing faulted?
@@ -224,7 +224,7 @@ namespace Neo4j.Driver.Internal.IO
                                         taskCompletionSource.SetException(exc);
                                     }
 
-                                    return TaskUtils.GetCompletedTask();
+                                    return TaskHelper.GetCompletedTask();
                                 }
 
                                 // Could we read a whole message from what we have?
@@ -244,7 +244,7 @@ namespace Neo4j.Driver.Internal.IO
                                     // Mark the asynchronous task as completed.
                                     taskCompletionSource.SetResult(messages);
 
-                                    return TaskUtils.GetCompletedTask();
+                                    return TaskHelper.GetCompletedTask();
                                 }
 
                                 // We need some more data.
@@ -256,7 +256,7 @@ namespace Neo4j.Driver.Internal.IO
                     taskCompletionSource.SetException(exc);
                 }
 
-                return TaskUtils.GetCompletedTask();
+                return TaskHelper.GetCompletedTask();
             });
         }
 

@@ -293,7 +293,7 @@ namespace Neo4j.Driver.Internal
             public override Task CloseAsync()
             {
                 Close();
-                return TaskUtils.GetCompletedTask();
+                return TaskHelper.GetCompletedTask();
             }
 
             public override void OnError(Exception error)

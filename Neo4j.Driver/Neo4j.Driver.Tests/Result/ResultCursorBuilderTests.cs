@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Tests
                         builder.CollectRecord(new object[] {123 + i});
                     }
 
-                    return TaskUtils.GetCompletedTask();
+                    return TaskHelper.GetCompletedTask();
                 });
                 var result = await builder.PreBuildAsync();
 
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests
 
                     builder.DoneSuccess();
 
-                    return TaskUtils.GetCompletedTask();
+                    return TaskHelper.GetCompletedTask();
                 });
                 var result = await builder.PreBuildAsync();
 
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Tests
                         builder.CollectRecord(new object[] { 123 + i });
                     }
 
-                    return TaskUtils.GetCompletedTask();
+                    return TaskHelper.GetCompletedTask();
                 });
                 var result = await builder.PreBuildAsync();
 

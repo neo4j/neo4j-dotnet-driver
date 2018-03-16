@@ -593,7 +593,7 @@ namespace Neo4j.Driver.Tests
 
             public Task CloseAsync()
             {
-                return TaskUtils.GetCompletedTask();
+                return TaskHelper.GetCompletedTask();
             }
         }
     }

@@ -241,7 +241,7 @@ namespace Neo4j.Driver.Internal.Connector
                     _logger.Error($"Failed to close connection properly due to error: {cause.Message}", cause);
                 }
 
-                return TaskUtils.GetCompletedTask();
+                return TaskHelper.GetCompletedTask();
             }).Unwrap();
         }
 

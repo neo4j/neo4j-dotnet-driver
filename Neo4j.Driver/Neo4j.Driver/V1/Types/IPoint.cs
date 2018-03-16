@@ -16,6 +16,9 @@
 // limitations under the License.
 
 // ReSharper disable once CheckNamespace
+
+using System;
+
 namespace Neo4j.Driver.V1
 {
     /**

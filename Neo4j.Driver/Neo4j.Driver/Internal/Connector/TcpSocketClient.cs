@@ -280,7 +280,7 @@ namespace Neo4j.Driver.Internal.Connector
                                 _client = null;
                                 _stream = null;
 
-                                return TaskUtils.GetCompletedTask();
+                                return TaskHelper.GetCompletedTask();
                             }).Unwrap();
 #else
                     _client.Shutdown(SocketShutdown.Both);
@@ -293,7 +293,7 @@ namespace Neo4j.Driver.Internal.Connector
                 _stream = null;
             }
 
-            return TaskUtils.GetCompletedTask();
+            return TaskHelper.GetCompletedTask();
         }
 
         /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
