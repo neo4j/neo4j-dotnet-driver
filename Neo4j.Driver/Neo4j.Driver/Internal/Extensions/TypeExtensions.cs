@@ -23,7 +23,6 @@ namespace Neo4j.Driver.Internal
     {
 
         public static T CastOrThrow<T>(this object value)
-            where T : class
         {
             if (!(value is T castedValue))
             {

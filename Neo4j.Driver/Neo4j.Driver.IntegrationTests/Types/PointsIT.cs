@@ -50,16 +50,16 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 var point2 = record[1];
 
                 point1.Should().NotBeNull();
-                point1.Should().BeAssignableTo<IPoint>().Which.SrId.Should().Be(CartesianSrId);
-                point1.Should().BeAssignableTo<IPoint>().Which.X.Should().Be(39.111748);
-                point1.Should().BeAssignableTo<IPoint>().Which.Y.Should().Be(-76.775635);
-                point1.Should().BeAssignableTo<IPoint>().Which.Z.Should().Be(double.NaN);
+                point1.Should().BeOfType<Point>().Which.SrId.Should().Be(CartesianSrId);
+                point1.Should().BeOfType<Point>().Which.X.Should().Be(39.111748);
+                point1.Should().BeOfType<Point>().Which.Y.Should().Be(-76.775635);
+                point1.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
 
                 point2.Should().NotBeNull();
-                point2.Should().BeAssignableTo<IPoint>().Which.SrId.Should().Be(Cartesian3DSrId);
-                point2.Should().BeAssignableTo<IPoint>().Which.X.Should().Be(39.111748);
-                point2.Should().BeAssignableTo<IPoint>().Which.Y.Should().Be(-76.775635);
-                point2.Should().BeAssignableTo<IPoint>().Which.Z.Should().Be(35.120);
+                point2.Should().BeAssignableTo<Point>().Which.SrId.Should().Be(Cartesian3DSrId);
+                point2.Should().BeAssignableTo<Point>().Which.X.Should().Be(39.111748);
+                point2.Should().BeAssignableTo<Point>().Which.Y.Should().Be(-76.775635);
+                point2.Should().BeAssignableTo<Point>().Which.Z.Should().Be(35.120);
             }
         }
 

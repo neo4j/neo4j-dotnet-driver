@@ -16,19 +16,34 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Types
+namespace Neo4j.Driver.V1
 {
-    internal class Point: IPoint
+    /// <summary>
+    /// Represents a single three-dimensional point in a particular coordinate reference system.
+    /// </summary>
+    public struct Point: IValue, IEquatable<Point>
     {
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="Point" /> structure with two dimensions
+        /// </summary>
+        /// <param name="srId"><see cref="SrId" /></param>
+        /// <param name="x"><see cref="X" /></param>
+        /// <param name="y"><see cref="Y"/></param>
         public Point(int srId, double x, double y)
             : this(2, srId, x, y, double.NaN)
         {
 
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="Point" /> structure with three dimensions
+        /// </summary>
+        /// <param name="srId"><see cref="SrId" /></param>
+        /// <param name="x"><see cref="X" /></param>
+        /// <param name="y"><see cref="Y"/></param>
+        /// <param name="z"><see cref="Z"/></param>
         public Point(int srId, double x, double y, double z)
             : this(3, srId, x, y, z)
         {
@@ -44,13 +59,25 @@ namespace Neo4j.Driver.Internal.Types
             Z = z;
         }
 
-
         internal int Dimension { get; }
-        public int SrId { get; } 
+
+        /// <returns>The coordinate reference system identifier</returns>
+        public int SrId { get; }
+
+        /// <returns>X coordinate of the point</returns>
         public double X { get; }
+
+        /// <returns>Y coordinate of the point</returns>
         public double Y { get; }
+
+        /// <returns>Z coordinate of the point</returns>
         public double Z { get; }
 
+
+        /// <summary>
+        /// Converts the value of the current <see cref="Point"/> object to its equivalent string representation.
+        /// </summary>
+        /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
             switch (Dimension)
@@ -64,6 +91,10 @@ namespace Neo4j.Driver.Internal.Types
             }
         }
 
+        /// <summary>
+        /// Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -77,15 +108,27 @@ namespace Neo4j.Driver.Internal.Types
             }
         }
 
-        protected bool Equals(Point other)
+        /// <summary>
+        /// Returns a value indicating whether the value of this instance is equal to the 
+        /// value of the specified <see cref="Point"/> instance. 
+        /// </summary>
+        /// <param name="other">The object to compare to this instance.</param>
+        /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
+        /// this instance; otherwise, <code>false</code></returns>
+        public bool Equals(Point other)
         {
             return Dimension == other.Dimension && SrId == other.SrId && X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
         }
 
+        /// <summary>
+        /// Returns a value indicating whether this instance is equal to a specified object.
+        /// </summary>
+        /// <param name="other">The object to compare to this instance.</param>
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="Point"/> and 
+        /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
             return Equals((Point) obj);
         }
