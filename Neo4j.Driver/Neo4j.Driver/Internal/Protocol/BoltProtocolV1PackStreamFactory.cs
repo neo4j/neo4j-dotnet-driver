@@ -22,11 +22,8 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV1PackStreamFactory: PackStreamFactory
     {
-        public static readonly IPackStreamFactory V1 = new BoltProtocolV1PackStreamFactory(true);
 
-        public static readonly IPackStreamFactory V1NoByteArray = new BoltProtocolV1PackStreamFactory(false);
-
-        protected BoltProtocolV1PackStreamFactory(bool supportBytes)
+        internal BoltProtocolV1PackStreamFactory(bool supportBytes)
             : base(supportBytes)
         {
             // Request Message Types

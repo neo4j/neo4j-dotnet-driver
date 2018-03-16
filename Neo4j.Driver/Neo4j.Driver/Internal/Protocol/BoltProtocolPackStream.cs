@@ -16,18 +16,15 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.StructHandlers;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV2PackStreamFactory : BoltProtocolV1PackStreamFactory
+    internal static class BoltProtocolPackStream
     {
-        internal BoltProtocolV2PackStreamFactory()
-            : base(true)
-        {
-            // Add V2 Types
-            AddHandler<PointHandler>();
-        }
+        public static readonly IPackStreamFactory V1 = new BoltProtocolV1PackStreamFactory(true);
 
+        public static readonly IPackStreamFactory V1NoByteArray = new BoltProtocolV1PackStreamFactory(false);
+
+        public static readonly IPackStreamFactory V2 = new BoltProtocolV2PackStreamFactory();
     }
 }

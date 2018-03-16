@@ -41,6 +41,16 @@ namespace Neo4j.Driver.Tests.Connector
                 boltProtocol.Should().BeOfType<BoltProtocolV1>();
             }
 
+            [Fact]
+            public void ShouldCreateBoltProtocolV2()
+            {
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                var boltProtocol = BoltProtocolFactory.Create(2, connMock.Object, new BufferSettings(Config.DefaultConfig));
+                boltProtocol.Should().BeOfType<BoltProtocolV2>();
+            }
+
             [Theory]
             [InlineData(0, "The Neo4j server does not support any of the protocol versions supported by this client")]
             [InlineData(1024, "Protocol error, server suggested unexpected protocol version: 1024")]

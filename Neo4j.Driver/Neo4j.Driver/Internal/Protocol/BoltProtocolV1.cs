@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Internal.Protocol
             _tcpSocketClient = tcpSocketClient;
             _bufferSettings = bufferSettings;
             _logger = logger;
-            CreateReaderAndWriter(BoltProtocolV1PackStreamFactory.V1);
+            CreateReaderAndWriter(BoltProtocolPackStream.V1);
         }
 
         public bool ReconfigIfNecessary(string serverVersion)
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             // downgrade PackStream to not support byte array.
-            CreateReaderAndWriter(BoltProtocolV1PackStreamFactory.V1NoByteArray);
+            CreateReaderAndWriter(BoltProtocolPackStream.V1NoByteArray);
             return true;
         }
 

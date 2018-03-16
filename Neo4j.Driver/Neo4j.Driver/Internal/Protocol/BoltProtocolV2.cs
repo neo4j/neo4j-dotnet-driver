@@ -40,9 +40,9 @@ namespace Neo4j.Driver.Internal.Protocol
             _logger = logger;
 
             Reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
-                _bufferSettings.MaxReadBufferSize, _logger, BoltProtocolV2PackStreamFactory.V2);
+                _bufferSettings.MaxReadBufferSize, _logger, BoltProtocolPackStream.V2);
             Writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
-                _bufferSettings.MaxWriteBufferSize, _logger, BoltProtocolV2PackStreamFactory.V2);
+                _bufferSettings.MaxWriteBufferSize, _logger, BoltProtocolPackStream.V2);
         }
 
         public bool ReconfigIfNecessary(string serverVersion)
