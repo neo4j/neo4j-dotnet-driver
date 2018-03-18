@@ -24,6 +24,8 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public struct Point: IValue, IEquatable<Point>
     {
+        internal const int TwoD = 2;
+        internal const int ThreeD = 3;
 
         /// <summary>
         /// Initializes a new instance of <see cref="Point" /> structure with two dimensions
@@ -32,7 +34,7 @@ namespace Neo4j.Driver.V1
         /// <param name="x"><see cref="X" /></param>
         /// <param name="y"><see cref="Y"/></param>
         public Point(int srId, double x, double y)
-            : this(2, srId, x, y, double.NaN)
+            : this(TwoD, srId, x, y, double.NaN)
         {
 
         }
@@ -45,7 +47,7 @@ namespace Neo4j.Driver.V1
         /// <param name="y"><see cref="Y"/></param>
         /// <param name="z"><see cref="Z"/></param>
         public Point(int srId, double x, double y, double z)
-            : this(3, srId, x, y, z)
+            : this(ThreeD, srId, x, y, z)
         {
 
         }
@@ -82,9 +84,9 @@ namespace Neo4j.Driver.V1
         {
             switch (Dimension)
             {
-                case 2:
+                case TwoD:
                     return $"Point{{srId={SrId}, x={X}, y={Y}}}";
-                case 3:
+                case ThreeD:
                     return $"Point{{srId={SrId}, x={X}, y={Y}, z={Z}}}";
                 default:
                     return $"Point{{dimension={Dimension}, srId={SrId}, x={X}, y={Y}, z={Z}}}";

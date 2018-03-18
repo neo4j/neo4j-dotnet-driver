@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
             switch (point.Dimension)
             {
-                case 2:
+                case Point.TwoD:
                 {
                     writer.WriteStructHeader(Point2DStructSize, Point2DStructType);
                     writer.Write(point.SrId);
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
                     break;
                 }
-                case 3:
+                case Point.ThreeD:
                 {
                     writer.WriteStructHeader(Point3DStructSize, Point3DStructType);
                     writer.Write(point.SrId);
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
                 }
                 default:
                     throw new ProtocolException(
-                        $"Dimension('{point.Dimension}') is not supported in {nameof(PointHandler)}");
+                        $"{GetType().Name}: Dimension('{point.Dimension}') is not supported.");
             }
         }
     }
