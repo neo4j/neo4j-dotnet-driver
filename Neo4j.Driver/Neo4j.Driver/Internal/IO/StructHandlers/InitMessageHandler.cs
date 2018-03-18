@@ -23,18 +23,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class InitMessageHandler: IPackStreamStructHandler
+    internal class InitMessageHandler: WriteOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(InitMessage)};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(InitMessage)};
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
-        {
-            throw new ProtocolException($"It is not expected to receive Init({string.Join(",", ReadableStructs)}) messages from the server.");
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
+        public override void Write(IPackStreamWriter writer, object value)
         {
             var msg = value.CastOrThrow<InitMessage>();
 

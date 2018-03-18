@@ -24,13 +24,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class RecordMessageHandler : IPackStreamStructHandler
+    internal class RecordMessageHandler : ReadOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgRecord};
+        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgRecord};
 
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
+        public override object Read(IPackStreamReader reader, byte signature, long size)
         {
             var fieldCount = (int) reader.ReadListHeader();
             var fields = new object[fieldCount];
@@ -40,11 +38,6 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             }
 
             return new RecordMessage(fields);
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
-        {
-            throw new ProtocolException($"It is not allowed to send Record({string.Join(",", ReadableStructs)}) messages to the server.");
         }
     }
 }

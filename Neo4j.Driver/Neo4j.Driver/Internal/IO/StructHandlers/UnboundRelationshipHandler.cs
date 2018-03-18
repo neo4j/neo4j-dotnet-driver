@@ -25,24 +25,17 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class UnboundRelationshipHandler: IPackStreamStructHandler
+    internal class UnboundRelationshipHandler: ReadOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => new[] {PackStream.UnboundRelationship};
+        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.UnboundRelationship};
 
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
+        public override object Read(IPackStreamReader reader, byte signature, long size)
         {
             var urn = reader.ReadLong();
             var relType = reader.ReadString();
             var props = reader.ReadMap();
 
             return new Relationship(urn, -1, -1, relType, props);
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
-        {
-            throw new ProtocolException($"It is not allowed to send UnboundRelationship({string.Join(",", ReadableStructs)}) values to the server.");
         }
     }
 }

@@ -24,13 +24,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class NodeHandler : IPackStreamStructHandler
+    internal class NodeHandler : ReadOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => new[] {PackStream.Node};
+        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.Node};
 
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
+        public override object Read(IPackStreamReader reader, byte signature, long size)
         {
             var urn = reader.ReadLong();
 
@@ -49,11 +47,6 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             }
 
             return new Node(urn, labels, props);
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
-        {
-            throw new ProtocolException($"It is not allowed to send Node({string.Join(",", ReadableStructs)}) values to the server.");
         }
     }
 }

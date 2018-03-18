@@ -24,13 +24,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class RelationshipHandler : IPackStreamStructHandler
+    internal class RelationshipHandler : ReadOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => new[] {PackStream.Relationship};
+        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.Relationship};
 
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
+        public override object Read(IPackStreamReader reader, byte signature, long size)
         {
             var urn = reader.ReadLong();
             var startUrn = reader.ReadLong();
@@ -39,11 +37,6 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var props = reader.ReadMap();
 
             return new Relationship(urn, startUrn, endUrn, relType, props);
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
-        {
-            throw new ProtocolException($"It is not allowed to send Relationship({string.Join(",", ReadableStructs)}) values to the server.");
         }
     }
 }

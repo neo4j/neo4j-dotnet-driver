@@ -25,13 +25,11 @@ using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class PathHandler : IPackStreamStructHandler
+    internal class PathHandler : ReadOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => new[] {PackStream.Path};
+        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.Path};
 
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
+        public override object Read(IPackStreamReader reader, byte signature, long size)
         {
             // List of unique nodes
             var uniqNodes = new INode[(int) reader.ReadListHeader()];
@@ -89,11 +87,6 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             }
 
             return new Path(segments.ToList(), nodes.ToList(), rels.ToList());
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
-        {
-            throw new ProtocolException($"It is not allowed to send Path({string.Join(",", ReadableStructs)}) values to the server.");
         }
     }
 }

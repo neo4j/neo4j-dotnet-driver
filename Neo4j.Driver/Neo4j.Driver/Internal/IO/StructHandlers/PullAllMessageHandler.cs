@@ -24,18 +24,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class PullAllMessageHandler : IPackStreamStructHandler
+    internal class PullAllMessageHandler : WriteOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(PullAllMessage)};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(PullAllMessage)};
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
-        {
-            throw new ProtocolException($"It is not expected to receive PullAll({string.Join(",", ReadableStructs)}) messages from the server.");
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
+        public override void Write(IPackStreamWriter writer, object value)
         {
             writer.WriteStructHeader(0, PackStream.MsgPullAll);
         }

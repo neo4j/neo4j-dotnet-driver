@@ -123,7 +123,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
-        /// <param name="other">The object to compare to this instance.</param>
+        /// <param name="obj">The object to compare to this instance.</param>
         /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="Point"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)

@@ -23,18 +23,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class ResetMessageHandler : IPackStreamStructHandler
+    internal class ResetMessageHandler : WriteOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(ResetMessage)};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(ResetMessage)};
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
-        {
-            throw new ProtocolException($"It is not expected to receive Reset({string.Join(",", ReadableStructs)}) messages from the server.");
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
+        public override void Write(IPackStreamWriter writer, object value)
         {
             writer.WriteStructHeader(0, PackStream.MsgReset);
         }

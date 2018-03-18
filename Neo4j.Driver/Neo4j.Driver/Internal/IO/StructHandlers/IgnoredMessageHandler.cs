@@ -24,20 +24,13 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class IgnoredMessageHandler : IPackStreamStructHandler
+    internal class IgnoredMessageHandler : ReadOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgIgnored};
+        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgIgnored};
 
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
+        public override object Read(IPackStreamReader reader, byte signature, long size)
         {
             return new IgnoredMessage();
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
-        {
-            throw new ProtocolException($"It is not allowed to send Ignored({string.Join(",", ReadableStructs)}) messages to the server.");
         }
     }
 }

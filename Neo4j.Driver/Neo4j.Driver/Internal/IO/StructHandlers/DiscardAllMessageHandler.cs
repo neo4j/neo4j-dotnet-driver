@@ -23,18 +23,11 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class DiscardAllMessageHandler : IPackStreamStructHandler
+    internal class DiscardAllMessageHandler : WriteOnlyStructHandler
     {
-        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(DiscardAllMessage)};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(DiscardAllMessage)};
-
-        public object Read(IPackStreamReader reader, byte signature, long size)
-        {
-            throw new ProtocolException($"It is not expected to receive DiscardAll({string.Join(",", ReadableStructs)}) messages from the server.");
-        }
-
-        public void Write(IPackStreamWriter writer, object value)
+        public override void Write(IPackStreamWriter writer, object value)
         {
             writer.WriteStructHeader(0, PackStream.MsgDiscardAll);
         }
