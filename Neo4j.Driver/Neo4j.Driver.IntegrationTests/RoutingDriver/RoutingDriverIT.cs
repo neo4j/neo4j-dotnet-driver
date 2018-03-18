@@ -163,7 +163,7 @@ namespace Neo4j.Driver.IntegrationTests
                 st.Creating.Should().Be(0);
                 st.Closing.Should().Be(0);
                 st.InUse.Should().Be(0);
-                st.Idle.Should().Be((int) (st.Created - st.Closed));
+                st.Idle.Should().Be((int) (st.Created - st.Closed + st.FailedToCreate));
             }
 
             driver.Close();
