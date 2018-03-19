@@ -59,7 +59,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
 
             _commandRunner.RunCommand("neoctrl-create-user", HomeDir, "neo4j", Password);
-            UpdateSettings(new Dictionary<string, string> { {ListenAddr, Ipv6EnabledAddr} });
+            UpdateSettings(new Dictionary<string, string>
+            {
+                {ListenAddr, Ipv6EnabledAddr},
+                {MaxThreadPoolSize, Pool500}
+            });
         }
 
         public ISet<ISingleInstance> Start()

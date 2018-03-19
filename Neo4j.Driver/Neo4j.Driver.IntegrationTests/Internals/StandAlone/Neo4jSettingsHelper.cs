@@ -24,6 +24,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public const string ListenAddr = "dbms.connectors.default_listen_address"; // only valid for 3.1+
         public const string Ipv6EnabledAddr = "::";
 
+        public const string MaxThreadPoolSize = "dbms.connector.bolt.thread_pool_max_size";
+        public const string Pool500 = "500";
+
         /// <summary>
         ///     Updates the settings of the Neo4j server
         /// </summary>
