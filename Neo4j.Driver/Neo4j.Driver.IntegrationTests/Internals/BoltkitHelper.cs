@@ -18,6 +18,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using static System.Environment;
 using static Neo4j.Driver.Internal.Routing.ServerVersion;
 
@@ -25,7 +26,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public static class BoltkitHelper
     {
-        public static readonly string TargetDir = new DirectoryInfo("../../../../Target").FullName;
+        public static readonly string TargetDir = DiscoverTargetDirectory();
 
         public const string TestRequireBoltkit = "Test is skipped due to Boltkit not accessible";
         private const string TestRequireEnterprise = "Test is skipped due to enterprise server is not accessible";
@@ -144,6 +145,15 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             var strings = BoltkitArgs.Split(null);
             return strings.Contains("-e");
+        }
+
+        private static string DiscoverTargetDirectory()
+        {
+            var codeBase = typeof(BoltkitHelper).GetTypeInfo().Assembly.CodeBase;
+            var localPath = new Uri(codeBase).LocalPath;
+            var localFile = new FileInfo(localPath);
+            var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName, @"..\..\..\..\..\Target"));
+            return sourcePath.FullName;
         }
     }
 }
