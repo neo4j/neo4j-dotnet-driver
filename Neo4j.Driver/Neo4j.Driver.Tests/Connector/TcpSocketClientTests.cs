@@ -56,14 +56,19 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
-                var client = new TcpSocketClientWithDisposeDetection(
-                    new SocketSettings { ConnectionTimeout = TimeSpan.FromSeconds(0) });
+                using (var tcpServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    tcpServer.Bind(new IPEndPoint(IPAddress.Loopback, 9999));
 
-                var exception = await Record.ExceptionAsync(
-                    ()=>client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 9999));
-                exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
-                exception.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
-                client.DisposeCalled.Should().BeTrue();
+                    var client = new TcpSocketClientWithDisposeDetection(
+                        new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(0)});
+
+                    var exception = await Record.ExceptionAsync(
+                        () => client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 9999));
+                    exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
+                    exception.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
+                    client.DisposeCalled.Should().BeTrue();
+                }
             }
 
             [Fact]
