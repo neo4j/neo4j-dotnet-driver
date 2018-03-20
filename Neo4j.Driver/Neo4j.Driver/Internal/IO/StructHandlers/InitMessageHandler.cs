@@ -14,33 +14,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
-using Xunit;
 
-namespace Neo4j.Driver.Tests.IO
+namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    public class PackStreamWriterBytesIncompatibleTests: PackStreamWriterTests
+    internal class InitMessageHandler: WriteOnlyStructHandler
     {
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(InitMessage)};
 
-        [Fact]
-        public void ShouldThrowWhenBytesIsSent()
+        public override void Write(IPackStreamWriter writer, object value)
         {
-            var mocks = new WriterTests.Mocks();
-            var writer = new PackStreamWriterBytesIncompatible(mocks.OutputStream);
+            var msg = value.CastOrThrow<InitMessage>();
 
-            var ex = Record.Exception(() => writer.Write(new byte[10]));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            writer.WriteStructHeader(2, PackStream.MsgInit);
+            writer.Write(msg.ClientNameAndVersion);
+            writer.Write(msg.AuthToken ?? PackStream.EmptyDictionary);
         }
-
     }
 }

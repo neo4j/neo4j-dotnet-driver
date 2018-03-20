@@ -44,16 +44,16 @@ namespace Neo4j.Driver.Tests.Connector
             public override Task OnErrorAsync(Exception error)
             {
                 ErrorList.Add(error);
-                return TaskUtils.GetFailedTask(error);
+                return TaskHelper.GetFailedTask(error);
             }
         }
 
         public class TaskWithErrorHandlingMethod
         {
-            private static async Task FaultedTask()
+            private static Task FaultedTask()
             {
                 // as it is marked with async, therefore the result will be wrapped in task
-                throw new InvalidOperationException("Molly ate too much today!");
+                return TaskHelper.GetFailedTask(new InvalidOperationException("Molly ate too much today!"));
             }
 
             private static Task FaultedOutsideTask()

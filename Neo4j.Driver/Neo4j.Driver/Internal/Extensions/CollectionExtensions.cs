@@ -26,6 +26,8 @@ namespace Neo4j.Driver.Internal
 {
     internal static class CollectionExtensions
     {
+        private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
+
         public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key)
         {
             if (!dictionary.ContainsKey(key))
@@ -189,7 +191,14 @@ namespace Neo4j.Driver.Internal
                 return false;
             }
 
-            if (type.GetTypeInfo().IsValueType)
+            var typeInfo = type.GetTypeInfo();
+
+            if (typeInfo.IsValueType)
+            {
+                return false;
+            }
+
+            if (NeoValueTypeInfo.IsAssignableFrom(typeInfo))
             {
                 return false;
             }

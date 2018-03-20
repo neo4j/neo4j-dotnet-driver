@@ -23,5 +23,18 @@ namespace Neo4j.Driver.Internal.IO
     internal interface IPackStreamReader
     {
         object Read();
+        string ReadString();
+        double ReadDouble();
+        long ReadLong();
+        int ReadInteger();
+        bool ReadBoolean();
+        object ReadNull();
+        long ReadListHeader();
+        long ReadMapHeader();
+        long ReadStructHeader();
+        byte ReadStructSignature();
+        Dictionary<string, object> ReadMap();
+        byte[] ReadBytes();
+        PackStream.PackType PeekNextType();
     }
 }

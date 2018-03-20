@@ -19,29 +19,39 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FluentAssertions;
-using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
-using Xunit;
 
-namespace Neo4j.Driver.Tests.IO
+namespace Neo4j.Driver.Internal.Types
 {
-    public class PackStreamReaderBytesIncompatibleTests
+    internal class Node : INode
     {
+        public long Id { get; }
+        public IReadOnlyList<string> Labels { get; }
+        public IReadOnlyDictionary<string, object> Properties { get; }
+        public object this[string key] => Properties[key];
 
-        [Fact]
-        public void ShouldThrowWhenBytesIsSent()
+        public Node(long id, IReadOnlyList<string> lables, IReadOnlyDictionary<string, object> prop)
         {
-            var mockInput =
-                IOExtensions.CreateMockStream("CC 01 01".ToByteArray());
-            var reader = new PackStreamReaderBytesIncompatible(mockInput.Object, BoltReader.StructHandlers);
-
-            var ex = Record.Exception(() => reader.Read());
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            Id = id;
+            Labels = lables;
+            Properties = prop;
         }
 
+        public bool Equals(INode other)
+        {
+            if (other == null) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Equals(Id, other.Id);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as INode);
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
     }
 }

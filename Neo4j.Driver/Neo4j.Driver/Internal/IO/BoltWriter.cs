@@ -25,48 +25,37 @@ using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal class BoltWriter: IBoltWriter, IMessageRequestHandler
+    internal class BoltWriter: IBoltWriter
     {
-        private static readonly Dictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
-        private static readonly byte[] MessageBoundary = new byte[0];
-
         private readonly IChunkWriter _chunkWriter;
-        private readonly PackStreamWriter _packStreamWriter;
-        private readonly ILogger _logger;
-
-        public BoltWriter(Stream stream)
-            : this(stream, true)
+        private readonly IPackStreamWriter _packStreamWriter;
+        
+        public BoltWriter(Stream stream, IPackStreamFactory packStreamFactory)
+            : this(stream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, packStreamFactory)
         {
             
         }
 
-        public BoltWriter(Stream stream, bool supportBytes)
-            : this(stream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, supportBytes)
-        {
-            
-        }
-
-        public BoltWriter(Stream stream, int defaultBufferSize, int maxBufferSize, bool supportBytes)
-            : this(stream, defaultBufferSize, maxBufferSize, null, supportBytes)
+        public BoltWriter(Stream stream, int defaultBufferSize, int maxBufferSize, IPackStreamFactory packStreamFactory)
+            : this(stream, defaultBufferSize, maxBufferSize, null, packStreamFactory)
         {
 
         }
 
-        public BoltWriter(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, bool supportBytes)
+        public BoltWriter(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, IPackStreamFactory packStreamFactory)
         {
             Throw.ArgumentNullException.IfNull(stream, nameof(stream));
+            Throw.ArgumentOutOfRangeException.IfFalse(stream.CanWrite, nameof(stream));
+            Throw.ArgumentNullException.IfNull(packStreamFactory, nameof(packStreamFactory));
 
-            _logger = logger;
             _chunkWriter = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger);
-            _packStreamWriter = supportBytes ? new PackStreamWriter(_chunkWriter.ChunkerStream) : new PackStreamWriterBytesIncompatible(_chunkWriter.ChunkerStream);
+            _packStreamWriter = packStreamFactory.CreateWriter(_chunkWriter.ChunkerStream);
         }
 
         public void Write(IRequestMessage message)
         {
             _chunkWriter.OpenChunk();
-
-            message.Dispatch(this);
-
+            _packStreamWriter.Write(message);
             _chunkWriter.CloseChunk();
 
             // add message boundary
@@ -82,40 +71,6 @@ namespace Neo4j.Driver.Internal.IO
         public Task FlushAsync()
         {
             return _chunkWriter.SendAsync();
-        }
-        
-        public void HandleInitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
-        {
-            _packStreamWriter.WriteStructHeader(2, MsgInit);
-            _packStreamWriter.Write(clientNameAndVersion);
-            _packStreamWriter.Write(authToken ?? EmptyDictionary);
-        }
-
-        public void HandleRunMessage(string statement, IDictionary<string, object> parameters)
-        {
-            _packStreamWriter.WriteStructHeader(2, MsgRun);
-            _packStreamWriter.Write(statement);
-            _packStreamWriter.Write(parameters ?? EmptyDictionary);
-        }
-
-        public void HandlePullAllMessage()
-        {
-            _packStreamWriter.WriteStructHeader(0, MsgPullAll);
-        }
-
-        public void HandleDiscardAllMessage()
-        {
-            _packStreamWriter.WriteStructHeader(0, MsgDiscardAll);
-        }
-
-        public void HandleResetMessage()
-        {
-            _packStreamWriter.WriteStructHeader(0, MsgReset);
-        }
-
-        public void HandleAckFailureMessage()
-        {
-            _packStreamWriter.WriteStructHeader(0, MsgAckFailure);
         }
         
     }

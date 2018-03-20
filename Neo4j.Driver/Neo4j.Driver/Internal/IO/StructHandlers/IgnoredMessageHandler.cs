@@ -16,15 +16,19 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class IgnoredMessageHandler : IPackStreamStructHandler
+    internal class IgnoredMessageHandler : ReadOnlyStructHandler
     {
-        public object Read(PackStreamReader reader, long size)
+        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgIgnored};
+
+        public override object Read(IPackStreamReader reader, byte signature, long size)
         {
             return new IgnoredMessage();
         }

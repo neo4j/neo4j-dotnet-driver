@@ -26,6 +26,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
 using static Xunit.Record;

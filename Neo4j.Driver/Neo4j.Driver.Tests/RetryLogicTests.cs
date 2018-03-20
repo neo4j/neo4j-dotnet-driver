@@ -17,6 +17,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -31,10 +32,12 @@ namespace Neo4j.Driver.Tests
     public class RetryLogicTests
     {
         private readonly ITestOutputHelper _output;
+        private long _globalCounter;
 
         public RetryLogicTests(ITestOutputHelper output)
         {
             _output = output;
+            _globalCounter = 0;
         }
 
         [Theory]
@@ -48,7 +51,8 @@ namespace Neo4j.Driver.Tests
             var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
             Parallel.For(0, index, i => Retry(i, retryLogic));
 
-            mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.AtLeast(2 * index));
+            mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()),
+                Times.Exactly((int) Interlocked.Read(ref _globalCounter)));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
@@ -59,6 +63,7 @@ namespace Neo4j.Driver.Tests
             var e = Record.Exception(() => retryLogic.Retry<int>(() =>
             {
                 runCounter++;
+                Interlocked.Increment(ref _globalCounter);
                 var errorMessage = $"Thread {index} Failed at {timer.Elapsed}";
                 throw new SessionExpiredException(errorMessage);
             }));

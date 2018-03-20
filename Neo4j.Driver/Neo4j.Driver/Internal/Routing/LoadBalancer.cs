@@ -160,7 +160,7 @@ namespace Neo4j.Driver.Internal.Routing
                 return _clusterConnectionPool.CloseAsync();
             }
 
-            return TaskUtils.GetCompletedTask();
+            return TaskHelper.GetCompletedTask();
         }
 
         public void Dispose()

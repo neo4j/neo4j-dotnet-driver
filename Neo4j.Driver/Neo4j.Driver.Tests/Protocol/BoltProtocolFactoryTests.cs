@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -38,6 +39,16 @@ namespace Neo4j.Driver.Tests.Connector
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
                 var boltProtocol = BoltProtocolFactory.Create(1, connMock.Object, new BufferSettings(Config.DefaultConfig));
                 boltProtocol.Should().BeOfType<BoltProtocolV1>();
+            }
+
+            [Fact]
+            public void ShouldCreateBoltProtocolV2()
+            {
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                var boltProtocol = BoltProtocolFactory.Create(2, connMock.Object, new BufferSettings(Config.DefaultConfig));
+                boltProtocol.Should().BeOfType<BoltProtocolV2>();
             }
 
             [Theory]

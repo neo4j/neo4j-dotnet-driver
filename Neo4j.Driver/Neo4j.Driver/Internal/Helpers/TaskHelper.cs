@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
-    internal static class TaskUtils
+    internal static class TaskHelper
     {
 #if NET452
         private static readonly Task completedTask = Task.WhenAll();

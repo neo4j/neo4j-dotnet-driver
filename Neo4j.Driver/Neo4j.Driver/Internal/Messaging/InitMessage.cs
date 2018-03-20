@@ -21,20 +21,16 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class InitMessage : IRequestMessage
     {
-        private readonly IDictionary<string, object> _authToken;
 
         public InitMessage(string clientNameAndVersion, IDictionary<string, object> authToken)
         {
             ClientNameAndVersion = clientNameAndVersion;
-            _authToken = authToken;
+            AuthToken = authToken;
         }
 
         public string ClientNameAndVersion { get; }
 
-        public void Dispatch(IMessageRequestHandler messageRequestHandler)
-        {
-            messageRequestHandler.HandleInitMessage(ClientNameAndVersion, _authToken);
-        }
+        public IDictionary<string, object> AuthToken { get; }
 
         public override string ToString()
         {

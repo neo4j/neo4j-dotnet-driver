@@ -25,6 +25,18 @@ namespace Neo4j.Driver.Internal.IO
     {
 
         void Write(object value);
-
+        void Write(string value);
+        void Write(char value);
+        void Write(int value);
+        void Write(long value);
+        void Write(double value);
+        void Write(bool value);
+        void Write(byte[] value);
+        void WriteNull();
+        void Write(IDictionary value);
+        void Write(IList value);
+        void WriteListHeader(int size);
+        void WriteStructHeader(int size, byte signature);
+        void WriteMapHeader(int size);
     }
 }

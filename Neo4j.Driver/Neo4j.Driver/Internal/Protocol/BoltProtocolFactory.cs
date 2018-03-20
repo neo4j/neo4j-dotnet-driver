@@ -16,10 +16,11 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Protocol
 {
     internal static class BoltProtocolFactory
     {
@@ -27,12 +28,13 @@ namespace Neo4j.Driver.Internal.Connector
         {
             public const int NoVersion = 0;
             public const int Version1 = 1;
+            public const int Version2 = 2;
             public const int Http = 1213486160;
         }
 
         //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
         private const int BoltIdentifier = 0x6060B017;
-        private static readonly int[] SupportedVersions = {ProtocolVersion.Version1, 0, 0, 0};
+        private static readonly int[] SupportedVersions = {ProtocolVersion.Version2, ProtocolVersion.Version1, 0, 0};
 
         public static IBoltProtocol Create(int version, ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger = null)
         {
@@ -40,6 +42,8 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 case ProtocolVersion.Version1:
                     return new BoltProtocolV1(tcpSocketClient, bufferSettings, logger);
+                case ProtocolVersion.Version2:
+                    return new BoltProtocolV2(tcpSocketClient, bufferSettings, logger);
                 case ProtocolVersion.NoVersion:
                     throw new NotSupportedException(
                         "The Neo4j server does not support any of the protocol versions supported by this client. " +

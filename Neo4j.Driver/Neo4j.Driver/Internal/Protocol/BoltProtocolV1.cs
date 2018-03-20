@@ -15,14 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV1 : IBoltProtocol
     {
+
+
         private readonly ITcpSocketClient _tcpSocketClient;
         private readonly BufferSettings _bufferSettings;
         private readonly ILogger _logger;
@@ -35,7 +38,7 @@ namespace Neo4j.Driver.Internal.Connector
             _tcpSocketClient = tcpSocketClient;
             _bufferSettings = bufferSettings;
             _logger = logger;
-            CreateReaderAndWriter();
+            CreateReaderAndWriter(BoltProtocolPackStream.V1);
         }
 
         public bool ReconfigIfNecessary(string serverVersion)
@@ -47,16 +50,16 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             // downgrade PackStream to not support byte array.
-            CreateReaderAndWriter(false);
+            CreateReaderAndWriter(BoltProtocolPackStream.V1NoByteArray);
             return true;
         }
 
-        private void CreateReaderAndWriter(bool supportBytes = true)
+        private void CreateReaderAndWriter(IPackStreamFactory packStreamFactory)
         {
             Reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
-                _bufferSettings.MaxReadBufferSize, _logger, supportBytes);
+                _bufferSettings.MaxReadBufferSize, _logger, packStreamFactory);
             Writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
-                _bufferSettings.MaxWriteBufferSize, _logger, supportBytes);
+                _bufferSettings.MaxWriteBufferSize, _logger, packStreamFactory);
         }
     }
 }

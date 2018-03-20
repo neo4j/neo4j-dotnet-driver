@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -23,6 +24,12 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal interface IPackStreamStructHandler
     {
-        object Read(PackStreamReader reader, long size);
+        IEnumerable<byte> ReadableStructs { get; }
+
+        IEnumerable<Type> WritableTypes { get; }
+
+        object Read(IPackStreamReader reader, byte signature, long size);
+
+        void Write(IPackStreamWriter writer, object value);
     }
 }

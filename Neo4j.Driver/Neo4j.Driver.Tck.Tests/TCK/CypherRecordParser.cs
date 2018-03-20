@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Tck.Tests.TCK

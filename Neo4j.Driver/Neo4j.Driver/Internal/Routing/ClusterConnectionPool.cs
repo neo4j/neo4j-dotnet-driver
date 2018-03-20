@@ -164,7 +164,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 return pool.DeactivateAsync();
             }
-            return TaskUtils.GetCompletedTask();
+            return TaskHelper.GetCompletedTask();
         }
 
         public int NumberOfInUseConnections(Uri uri)
@@ -191,7 +191,7 @@ namespace Neo4j.Driver.Internal.Routing
                 return ClearAsync();
             }
 
-            return TaskUtils.GetCompletedTask();
+            return TaskHelper.GetCompletedTask();
         }
 
         private void Clear()
@@ -233,7 +233,7 @@ namespace Neo4j.Driver.Internal.Routing
                 return toRemove.CloseAsync();
             }
 
-            return TaskUtils.GetCompletedTask();
+            return TaskHelper.GetCompletedTask();
         }
 
         protected override void Dispose(bool disposing)
