@@ -29,9 +29,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class CypherDateHandlerTests : StructHandlerTests
+    public class DateHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new CypherDateHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new DateHandler();
 
         [Fact]
         public void ShouldWriteDate()
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(CypherDateHandler.StructSize, CypherDateHandler.StructType);
+            writer.WriteStructHeader(DateHandler.StructSize, DateHandler.StructType);
             writer.Write(6001);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());

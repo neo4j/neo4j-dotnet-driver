@@ -23,7 +23,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a time value with a UTC offset
     /// </summary>
-    public struct CypherTimeWithOffset : IEquatable<CypherTimeWithOffset>
+    public struct CypherTimeWithOffset : ICypherValue, IEquatable<CypherTimeWithOffset>
     {
         /// <summary>
         /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from individual time components

@@ -23,7 +23,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date value, without a time zone and time related components
     /// </summary>
-    public struct CypherDate: IEquatable<CypherDate>
+    public struct CypherDate : ICypherValue, IEquatable<CypherDate>
     {
 
         /// <summary>

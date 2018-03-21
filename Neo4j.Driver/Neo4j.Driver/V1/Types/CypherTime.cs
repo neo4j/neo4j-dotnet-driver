@@ -23,7 +23,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a local time value
     /// </summary>
-    public struct CypherTime: IEquatable<CypherTime>
+    public struct CypherTime : ICypherValue, IEquatable<CypherTime>
     {
         /// <summary>
         /// Initializes a new instance of <see cref="CypherTime"/> from individual time components

@@ -21,30 +21,30 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class CypherTimeHandler : IPackStreamStructHandler
+    internal class DateHandler : IPackStreamStructHandler
     {
-        public const byte StructType = (byte) 't';
+        public const byte StructType = (byte) 'D';
         public const int StructSize = 1;
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherTime)};
+        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherDate)};
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
-            PackStream.EnsureStructSize("LocalTime", StructSize, size);
+            PackStream.EnsureStructSize("Date", StructSize, size);
 
-            var nanosOfDay = reader.ReadLong();
+            var epochDays = reader.ReadLong();
 
-            return new CypherTime(nanosOfDay);
+            return new CypherDate(epochDays);
         }
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            var time = value.CastOrThrow<CypherTime>();
+            var date = value.CastOrThrow<CypherDate>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.NanosecondsOfDay);
+            writer.Write(date.EpochDays);
         }
     }
 }

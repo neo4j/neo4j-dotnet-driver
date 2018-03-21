@@ -29,13 +29,13 @@ namespace Neo4j.Driver.Internal.Protocol
             AddHandler<PointHandler>();
 
             // Add V2 Temporal Types
-            AddHandler<CypherDateHandler>();
-            AddHandler<CypherTimeHandler>();
-            AddHandler<CypherDateTimeHandler>();
-            AddHandler<CypherTimeWithOffsetHandler>();
-            AddHandler<CypherDateTimeWithOffsetHandler>();
-            AddHandler<CypherDateTimeWithZoneIdHandler>();
-            AddHandler<CypherDurationHandler>();
+            AddHandler<DateHandler>();
+            AddHandler<TimeHandler>();
+            AddHandler<DateTimeHandler>();
+            AddHandler<TimeWithOffsetHandler>();
+            AddHandler<DateTimeWithOffsetHandler>();
+            AddHandler<DateTimeWithZoneIdHandler>();
+            AddHandler<DurationHandler>();
         }
 
     }

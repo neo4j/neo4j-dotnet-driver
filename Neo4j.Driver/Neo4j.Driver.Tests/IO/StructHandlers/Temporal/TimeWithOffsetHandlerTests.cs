@@ -30,49 +30,46 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class CypherDateTimeWithZoneIdHandlerTests : StructHandlerTests
+    public class TimeWithOffsetHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new CypherDateTimeWithZoneIdHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new TimeWithOffsetHandler();
 
         [Fact]
-        public void ShouldWriteDateTimeWithZoneId()
+        public void ShouldWriteTimeWithOffset()
         {
-            var dateTime = new CypherDateTimeWithZoneId(1978, 12, 16, 12, 35, 59, 128000987, "Europe/Istanbul");
+            var time = new CypherTimeWithOffset(12, 35, 59, 128000987, (int)TimeSpan.FromMinutes(150).TotalSeconds);
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(dateTime);
+            writer.Write(time);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte) 'f');
-            reader.Read().Should().Be(dateTime.EpochSeconds);
-            reader.Read().Should().Be((long) dateTime.NanosOfSecond);
-            reader.Read().Should().Be("Europe/Istanbul");
+            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructSignature().Should().Be((byte) 'T');
+            reader.Read().Should().Be(time.NanosecondsOfDay);
+            reader.Read().Should().Be((long)time.OffsetSeconds);
         }
         
         [Fact]
-        public void ShouldReadDateTimeWithZoneId()
+        public void ShouldReadTimeWithOffset()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(CypherDateTimeWithZoneIdHandler.StructSize, CypherDateTimeWithZoneIdHandler.StructType);
-            writer.Write(1520919278);
-            writer.Write(128000987);
-            writer.Write("Europe/Istanbul");
+            writer.WriteStructHeader(TimeWithOffsetHandler.StructSize, TimeWithOffsetHandler.StructType);
+            writer.Write(45359128000987);
+            writer.Write((int)TimeSpan.FromMinutes(150).TotalSeconds);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.EpochSeconds.Should().Be(1520919278);
-            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.NanosOfSecond.Should().Be(128000987);
-            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.ZoneId.Should().Be("Europe/Istanbul");
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.NanosecondsOfDay.Should().Be(45359128000987);
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(150).TotalSeconds);
         }
         
     }

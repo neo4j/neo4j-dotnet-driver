@@ -29,9 +29,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class CypherDurationStructHandlerTests : StructHandlerTests
+    public class DurationStructHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new CypherDurationHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new DurationHandler();
 
         [Fact]
         public void ShouldWriteDuration()
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(CypherDurationHandler.StructSize, CypherDurationHandler.StructType);
+            writer.WriteStructHeader(DurationHandler.StructSize, DurationHandler.StructType);
             writer.Write(21L);
             writer.Write(8L);
             writer.Write(564L);

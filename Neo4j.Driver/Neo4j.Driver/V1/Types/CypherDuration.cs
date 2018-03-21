@@ -23,7 +23,7 @@ namespace Neo4j.Driver.V1
     /// Represents temporal amount containing months, days, seconds and nanoseconds. 
     /// <remarks>A duration can hold a negative value.</remarks>
     /// </summary>
-    public struct CypherDuration : IEquatable<CypherDuration>
+    public struct CypherDuration : ICypherValue, IEquatable<CypherDuration>
     {
 
         /// <summary>

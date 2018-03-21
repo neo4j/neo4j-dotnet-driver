@@ -21,34 +21,36 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class CypherDateTimeWithZoneIdHandler : IPackStreamStructHandler
+    internal class DurationHandler: IPackStreamStructHandler
     {
-        public const byte StructType = (byte) 'f';
-        public const int StructSize = 3;
+        public const byte StructType = (byte) 'E';
+        public const int StructSize = 4;
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherDateTimeWithZoneId)};
+        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherDuration)};
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
-            PackStream.EnsureStructSize("DateTimeWithZoneId", StructSize, size);
+            PackStream.EnsureStructSize("Duration", StructSize, size);
 
-            var epochSeconds = reader.ReadLong();
-            var nanosOfSecond = reader.ReadInteger();
-            var zoneId = reader.ReadString();
+            var months = reader.ReadLong();
+            var days = reader.ReadLong();
+            var seconds = reader.ReadLong();
+            var nanos = reader.ReadInteger();
 
-            return new CypherDateTimeWithZoneId(epochSeconds, nanosOfSecond, zoneId);
+            return new CypherDuration(months, days, seconds, nanos);
         }
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            var dateTime = value.CastOrThrow<CypherDateTimeWithZoneId>();
+            var duration = value.CastOrThrow<CypherDuration>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.EpochSeconds);
-            writer.Write(dateTime.NanosOfSecond);
-            writer.Write(dateTime.ZoneId);
+            writer.Write(duration.Months);
+            writer.Write(duration.Days);
+            writer.Write(duration.Seconds);
+            writer.Write(duration.Nanos);
         }
     }
 }

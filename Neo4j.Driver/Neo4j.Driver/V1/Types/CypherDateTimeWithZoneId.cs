@@ -23,7 +23,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date time value with a time zone, specified as a zone id
     /// </summary>
-    public struct CypherDateTimeWithZoneId : IEquatable<CypherDateTimeWithZoneId>
+    public struct CypherDateTimeWithZoneId : ICypherValue, IEquatable<CypherDateTimeWithZoneId>
     {
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from individual date time component values
