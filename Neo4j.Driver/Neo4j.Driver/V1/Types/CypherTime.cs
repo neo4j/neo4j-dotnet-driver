@@ -84,9 +84,10 @@ namespace Neo4j.Driver.V1
         /// Gets a <see cref="TimeSpan"/> copy of this time value.
         /// </summary>
         /// <returns>Equivalent <see cref="TimeSpan"/> value</returns>
+        /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
         public TimeSpan ToTimeSpan()
         {
-            return new TimeSpan(NanosecondsOfDay / 100);
+            return TemporalHelpers.TimeOf(NanosecondsOfDay, true);
         }
 
         /// <summary>

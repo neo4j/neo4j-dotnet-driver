@@ -95,9 +95,10 @@ namespace Neo4j.Driver.V1
         /// Gets a <see cref="DateTime"/> copy of this date value.
         /// </summary>
         /// <returns>Equivalent <see cref="DateTime"/> value</returns>
+        /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
         public DateTime ToDateTime()
         {
-            return TemporalHelpers.ComputeDateTime(EpochSeconds, NanosOfSecond);
+            return TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Local, true);
         }
 
         /// <summary>

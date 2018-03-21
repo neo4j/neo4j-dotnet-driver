@@ -54,27 +54,42 @@ namespace Neo4j.Driver.Internal
                      second * TimeSpan.TicksPerSecond) * NanosecondsPerTick) + nanoOfSecond;
         }
 
-        public static DateTime ComputeDate(long epochDays)
+        public static DateTime DateOf(long epochDays)
         {
             return Epoch.AddDays(epochDays);
         }
 
-        public static DateTime ComputeDateTime(long epochSeconds, int nanosOfSecond)
+        public static TimeSpan TimeOf(long nanosOfDay, bool throwOnTruncate = false)
         {
-            return Epoch.AddSeconds(epochSeconds).AddTicks(nanosOfSecond / 100);
+            if (throwOnTruncate && nanosOfDay % NanosecondsPerTick != 0)
+            {
+                throw new TruncationException(
+                    $"Conversion of the incoming data into TimeSpan will cause a truncation of ${nanosOfDay % NanosecondsPerTick}ns.");
+            }
+
+            return new TimeSpan(nanosOfDay / NanosecondsPerTick);
+        }
+
+        public static DateTime DateTimeOf(long epochSeconds, int nanosOfSecond, DateTimeKind kind = DateTimeKind.Local, bool throwOnTruncate = false)
+        {
+            if (throwOnTruncate && nanosOfSecond % NanosecondsPerTick != 0)
+            {
+                throw new TruncationException(
+                    $"Conversion of the incoming data into DateTime will cause a truncation of ${nanosOfSecond % NanosecondsPerTick}ns.");
+            }
+
+            var result = Epoch.AddSeconds(epochSeconds).AddTicks(nanosOfSecond / 100);
+            if (result.Kind != kind)
+            {
+                result = new DateTime(result.Ticks, kind);
+            }
+
+            return result;
         }
 
         public static TimeZoneInfo GetTimeZoneInfo(string zoneId)
         {
-            try
-            {
-                return TZConvert.GetTimeZoneInfo(zoneId);
-            }
-            catch (Exception exc)
-            {
-                throw new ProtocolException($"The given time zone identifier ({zoneId}) is not recognized.");
-            }
+            return TZConvert.GetTimeZoneInfo(zoneId);
         }
-
     }
 }

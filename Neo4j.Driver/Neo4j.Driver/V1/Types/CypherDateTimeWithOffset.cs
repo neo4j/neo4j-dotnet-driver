@@ -70,6 +70,16 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
+        /// Initializes a new instance of <see cref="CypherDateTimeWithOffset"/> from given <see cref="DateTimeOffset"/> value.
+        /// </summary>
+        /// <param name="dateTimeOffset"></param>
+        public CypherDateTimeWithOffset(DateTimeOffset dateTimeOffset)
+            : this(dateTimeOffset.DateTime, dateTimeOffset.Offset)
+        {
+
+        }
+
+        /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTimeWithOffset"/> from given <see cref="DateTime"/> value.
         /// </summary>
         /// <param name="dateTime"></param>
@@ -113,6 +123,18 @@ namespace Neo4j.Driver.V1
         /// Offset in seconds precision
         /// </summary>
         public int OffsetSeconds { get; }
+
+        /// <summary>
+        /// Gets a <see cref="DateTimeOffset"/> copy of this date value.
+        /// </summary>
+        /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
+        /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
+        public DateTimeOffset ToDateTimeOffset()
+        {
+            return new DateTimeOffset(
+                TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true),
+                TimeSpan.FromSeconds(OffsetSeconds));
+        }
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 

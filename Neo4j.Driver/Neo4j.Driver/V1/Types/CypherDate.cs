@@ -64,7 +64,7 @@ namespace Neo4j.Driver.V1
         /// <returns>Equivalent <see cref="DateTime"/> value</returns>
         public DateTime ToDateTime()
         {
-            return TemporalHelpers.ComputeDate(EpochDays);
+            return TemporalHelpers.DateOf(EpochDays);
         }
 
         /// <summary>

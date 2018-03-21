@@ -17,6 +17,7 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using TimeZoneConverter;
 
 namespace Neo4j.Driver.V1
 {
@@ -69,6 +70,18 @@ namespace Neo4j.Driver.V1
 
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTimeOffset"/> value
+        /// <remarks>Please note that <see cref="DateTimeOffset.Offset"/> is ignored with this constructor</remarks>
+        /// </summary>
+        /// <param name="dateTimeOffset"></param>
+        /// <param name="zoneId"></param>
+        public CypherDateTimeWithZoneId(DateTimeOffset dateTimeOffset, string zoneId)
+            : this(dateTimeOffset.DateTime, zoneId, TemporalHelpers.GetTimeZoneInfo(zoneId))
+        {
+
+        }
+
         private CypherDateTimeWithZoneId(DateTime dateTime, string zoneId, TimeZoneInfo zoneInfo)
             : this(dateTime.Ticks - zoneInfo.GetUtcOffset(dateTime).Ticks, zoneId)
         {
@@ -103,6 +116,19 @@ namespace Neo4j.Driver.V1
         /// Zone identifier
         /// </summary>
         public string ZoneId { get; }
+
+        /// <summary>
+        /// Gets a <see cref="DateTimeOffset"/> copy of this date value.
+        /// </summary>
+        /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
+        /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
+        public DateTimeOffset ToDateTimeOffset()
+        {
+            var zoneInfo = TemporalHelpers.GetTimeZoneInfo(ZoneId);
+            var dateTime = TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true);
+
+            return new DateTimeOffset(dateTime, zoneInfo.GetUtcOffset(dateTime));
+        }
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
