@@ -25,8 +25,17 @@ namespace Neo4j.Driver.Internal.Protocol
         internal BoltProtocolV2PackStreamFactory()
             : base(true)
         {
-            // Add V2 Types
+            // Add V2 Spatial Types
             AddHandler<PointHandler>();
+
+            // Add V2 Temporal Types
+            AddHandler<CypherDateHandler>();
+            AddHandler<CypherTimeHandler>();
+            AddHandler<CypherDateTimeHandler>();
+            AddHandler<CypherTimeWithOffsetHandler>();
+            AddHandler<CypherDateTimeWithOffsetHandler>();
+            AddHandler<CypherDateTimeWithZoneIdHandler>();
+            AddHandler<CypherDurationHandler>();
         }
 
     }
