@@ -27,28 +27,29 @@ namespace Neo4j.Driver.Internal
         public const int NanosecondsPerTick = 100;
 
         public static readonly DateTime Epoch = new DateTime(1970, 1, 1);
+        public static readonly long EpochSeconds = new DateTime(1970, 1, 1).Ticks / TimeSpan.TicksPerSecond;
 
-        public static long ComputeDaysSinceEpoch(this DateTime date)
+        public static long DaysSinceEpoch(this DateTime date)
         {
             return (long)date.Subtract(Epoch).TotalDays;
         }
 
-        public static long ComputeNanosOfDay(this TimeSpan time)
+        public static long NanosOf(this TimeSpan time)
         {
             return time.Ticks * NanosecondsPerTick;
         }
 
-        public static long ComputeSecondsSinceEpoch(long ticks)
+        public static long SecondsSinceEpoch(long ticks)
         {
-            return (ticks - Epoch.Ticks) / TimeSpan.TicksPerSecond;
+            return (ticks / TimeSpan.TicksPerSecond) - EpochSeconds;
         }
 
-        public static int ComputeNanosOfSecond(long ticks)
+        public static int NanosOfSecond(long ticks)
         {
-            return (int)((ticks - Epoch.Ticks) % TimeSpan.TicksPerSecond) * NanosecondsPerTick;
+            return (int)((ticks % TimeSpan.TicksPerSecond) * NanosecondsPerTick);
         }
 
-        public static long ComputeNanosOfDay(int hour, int minute, int second, int nanoOfSecond)
+        public static long NanosOf(int hour, int minute, int second, int nanoOfSecond)
         {
             return ((hour * TimeSpan.TicksPerHour + minute * TimeSpan.TicksPerMinute +
                      second * TimeSpan.TicksPerSecond) * NanosecondsPerTick) + nanoOfSecond;
@@ -85,6 +86,17 @@ namespace Neo4j.Driver.Internal
             }
 
             return result;
+        }
+
+        public static DateTime AddNanosOfSecond(this DateTime dateTime, int nanosOfSecond, bool throwOnTruncate = false)
+        {
+            if (throwOnTruncate && nanosOfSecond % NanosecondsPerTick != 0)
+            {
+                throw new TruncationException(
+                    $"Conversion of the incoming data into DateTime will cause a truncation of ${nanosOfSecond % NanosecondsPerTick}ns.");
+            }
+
+            return dateTime.AddTicks(nanosOfSecond / 100);
         }
 
         public static TimeZoneInfo GetTimeZoneInfo(string zoneId)

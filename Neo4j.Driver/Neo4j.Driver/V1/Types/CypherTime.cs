@@ -45,7 +45,7 @@ namespace Neo4j.Driver.V1
         /// <param name="second"></param>
         /// <param name="nanoOfSecond"></param>
         public CypherTime(int hour, int minute, int second, int nanoOfSecond)
-            : this(TemporalHelpers.ComputeNanosOfDay(hour, minute, second, nanoOfSecond))
+            : this(TemporalHelpers.NanosOf(hour, minute, second, nanoOfSecond))
         {
 
         }
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="time"></param>
         public CypherTime(TimeSpan time)
-            : this(time.ComputeNanosOfDay())
+            : this(time.NanosOf())
         {
 
         }

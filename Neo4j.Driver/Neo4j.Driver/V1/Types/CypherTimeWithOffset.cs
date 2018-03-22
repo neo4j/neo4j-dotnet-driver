@@ -47,7 +47,7 @@ namespace Neo4j.Driver.V1
         /// <param name="nanoOfSecond"></param>
         /// <param name="offsetSeconds"></param>
         public CypherTimeWithOffset(int hour, int minute, int second, int nanoOfSecond, int offsetSeconds)
-            : this(TemporalHelpers.ComputeNanosOfDay(hour, minute, second, nanoOfSecond), offsetSeconds)
+            : this(TemporalHelpers.NanosOf(hour, minute, second, nanoOfSecond), offsetSeconds)
         {
 
         }
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.V1
         /// <param name="time"></param>
         /// <param name="offsetSeconds"></param>
         private CypherTimeWithOffset(TimeSpan time, int offsetSeconds)
-            : this(time.ComputeNanosOfDay(), offsetSeconds)
+            : this(time.NanosOf(), offsetSeconds)
         {
 
         }
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.V1
         /// <param name="time"></param>
         /// <param name="offset"></param>
         public CypherTimeWithOffset(TimeSpan time, TimeSpan offset)
-            : this(time.ComputeNanosOfDay(), (int)offset.TotalSeconds)
+            : this(time.NanosOf(), (int)offset.TotalSeconds)
         {
 
         }
@@ -100,6 +100,16 @@ namespace Neo4j.Driver.V1
         /// Offset in seconds precision
         /// </summary>
         public int OffsetSeconds { get; }
+
+        /// <summary>
+        /// Gets a <see cref="TimeSpan"/> value that represents the time of this instance.
+        /// </summary>
+        public TimeSpan Time => TemporalHelpers.TimeOf(NanosecondsOfDay, true);
+
+        /// <summary>
+        /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
+        /// </summary>
+        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 

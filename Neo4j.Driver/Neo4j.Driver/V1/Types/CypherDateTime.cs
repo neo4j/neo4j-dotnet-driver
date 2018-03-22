@@ -53,9 +53,10 @@ namespace Neo4j.Driver.V1
         /// <param name="second"></param>
         /// <param name="nanosOfSecond"></param>
         public CypherDateTime(int year, int month, int day, int hour, int minute, int second, int nanosOfSecond)
-            : this(new DateTime(year, month, day, hour, minute, second, DateTimeKind.Local))
+            : this(TemporalHelpers.SecondsSinceEpoch(
+                new DateTime(year, month, day, hour, minute, second, DateTimeKind.Local).Ticks), nanosOfSecond)
         {
-            NanosOfSecond += nanosOfSecond;
+
         }
 
         /// <summary>
@@ -69,8 +70,8 @@ namespace Neo4j.Driver.V1
         }
 
         internal CypherDateTime(long ticks)
-            : this(TemporalHelpers.ComputeSecondsSinceEpoch(ticks),
-                TemporalHelpers.ComputeNanosOfSecond(ticks))
+            : this(TemporalHelpers.SecondsSinceEpoch(ticks),
+                TemporalHelpers.NanosOfSecond(ticks))
         {
 
         }

@@ -27,7 +27,15 @@ namespace Neo4j.Driver.Tests.Types
     {
 
         [Fact]
-        public void ShouldCreateDateWithDateTimeComponents()
+        public void ShouldCreateDateTimeWithDateTimeComponents()
+        {
+            var cypherDateTime = new CypherDateTime(1947, 12, 17, 23, 49, 54);
+
+            cypherDateTime.ToDateTime().Should().Be(new DateTime(1947, 12, 17, 23, 49, 54));
+        }
+
+        [Fact]
+        public void ShouldCreateDateTimeWithDateTimeComponentsWithNanoseconds()
         {
             var cypherDateTime = new CypherDateTime(1947, 12, 17, 23, 49, 54, 192794500);
 
@@ -35,7 +43,7 @@ namespace Neo4j.Driver.Tests.Types
         }
 
         [Fact]
-        public void ShouldCreateDateWithDateTime()
+        public void ShouldCreateDateTimeWithDateTime()
         {
             var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120);
             var cypherDateTime = new CypherDateTime(dateTime);
@@ -44,11 +52,11 @@ namespace Neo4j.Driver.Tests.Types
         }
 
         [Fact]
-        public void ShouldCreateDateWithRawValues()
+        public void ShouldCreateDateTimeWithRawValues()
         {
             var dateTime = new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945);
-            var cypherDateTime = new CypherDateTime(TemporalHelpers.ComputeSecondsSinceEpoch(dateTime.Ticks),
-                TemporalHelpers.ComputeNanosOfSecond(dateTime.Ticks));
+            var cypherDateTime = new CypherDateTime(TemporalHelpers.SecondsSinceEpoch(dateTime.Ticks),
+                TemporalHelpers.NanosOfSecond(dateTime.Ticks));
 
             cypherDateTime.ToDateTime().Should().Be(dateTime);
         }
@@ -62,6 +70,62 @@ namespace Neo4j.Driver.Tests.Types
             cypherDateTimeStr.Should()
                 .Be(
                     $"DateTime{{epochSeconds: {cypherDateTime.EpochSeconds}, nanosOfSecond: {cypherDateTime.NanosOfSecond}}}");
+        }
+
+        [Fact]
+        public void ShouldGenerateSameHashcode()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
+            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789));
+            var dateTime3 = new CypherDateTime(-695551679, 789000000);
+
+            dateTime1.GetHashCode().Should().Be(dateTime2.GetHashCode()).And.Be(dateTime3.GetHashCode());
+        }
+
+        [Fact]
+        public void ShouldGenerateDifferentHashcode()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
+            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 790));
+            var dateTime3 = new CypherDateTime(-695551678, 788000000);
+
+            dateTime1.GetHashCode().Should().NotBe(dateTime2.GetHashCode()).And.NotBe(dateTime3.GetHashCode());
+        }
+
+        [Fact]
+        public void ShouldBeEqual()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
+            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789));
+
+            dateTime1.Equals(dateTime2).Should().BeTrue();
+        }
+
+        [Fact]
+        public void ShouldNotBeEqual()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
+            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 788));
+
+            dateTime1.Equals(dateTime2).Should().BeFalse();
+        }
+
+        [Fact]
+        public void ShouldNotBeEqualToAnotherType()
+        {
+            var dateTime = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
+            var other = "some string";
+
+            dateTime.Equals(other).Should().BeFalse();
+        }
+
+        [Fact]
+        public void ShouldNotBeEqualToNull()
+        {
+            var dateTime = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
+            var other = (object)null;
+
+            dateTime.Equals(other).Should().BeFalse();
         }
     }
 }

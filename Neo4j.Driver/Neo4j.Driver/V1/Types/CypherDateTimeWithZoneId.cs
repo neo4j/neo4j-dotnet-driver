@@ -53,7 +53,8 @@ namespace Neo4j.Driver.V1
         /// <param name="second"></param>
         /// <param name="nanosOfSecond"></param>
         /// <param name="zoneId"></param>
-        public CypherDateTimeWithZoneId(int year, int month, int day, int hour, int minute, int second, int nanosOfSecond, string zoneId)
+        public CypherDateTimeWithZoneId(int year, int month, int day, int hour, int minute, int second,
+            int nanosOfSecond, string zoneId)
             : this(new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified), zoneId)
         {
             NanosOfSecond += nanosOfSecond;
@@ -65,7 +66,11 @@ namespace Neo4j.Driver.V1
         /// <param name="dateTime"></param>
         /// <param name="zoneId"></param>
         public CypherDateTimeWithZoneId(DateTime dateTime, string zoneId)
-            : this(dateTime.Kind == DateTimeKind.Unspecified ? dateTime : new DateTime(dateTime.Ticks, DateTimeKind.Unspecified), zoneId, TemporalHelpers.GetTimeZoneInfo(zoneId))
+            : this(
+                dateTime.Kind == DateTimeKind.Unspecified
+                    ? dateTime
+                    : new DateTime(dateTime.Ticks, DateTimeKind.Unspecified), zoneId,
+                TemporalHelpers.GetTimeZoneInfo(zoneId))
         {
 
         }
@@ -88,16 +93,17 @@ namespace Neo4j.Driver.V1
 
         }
 
-        private CypherDateTimeWithZoneId(long ticks, string zoneId)
-            : this(TemporalHelpers.ComputeSecondsSinceEpoch(ticks),
-                TemporalHelpers.ComputeNanosOfSecond(ticks), zoneId)
+        private CypherDateTimeWithZoneId(long ticksUtc, string zoneId)
+            : this(TemporalHelpers.SecondsSinceEpoch(ticksUtc),
+                TemporalHelpers.NanosOfSecond(ticksUtc), zoneId)
         {
 
         }
 
-        internal CypherDateTimeWithZoneId(long epochSeconds, int nanosOfSecond, string zoneId)
+        internal CypherDateTimeWithZoneId(long epochSecondsUtc, int nanosOfSecond, string zoneId)
         {
-            EpochSeconds = epochSeconds;
+            EpochSecondsUtc = epochSecondsUtc;
+            EpochSeconds = epochSecondsUtc;
             NanosOfSecond = nanosOfSecond;
             ZoneId = zoneId;
         }
@@ -106,6 +112,8 @@ namespace Neo4j.Driver.V1
         /// Seconds since Unix Epoch
         /// </summary>
         public long EpochSeconds { get; }
+
+        internal long EpochSecondsUtc { get; }
 
         /// <summary>
         /// Fraction of seconds in nanosecond precision
@@ -118,16 +126,25 @@ namespace Neo4j.Driver.V1
         public string ZoneId { get; }
 
         /// <summary>
+        /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
+        /// </summary>
+        public DateTime DateTime =>
+            TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true);
+
+        /// <summary>
+        /// Gets a <see cref="TimeSpan"/> value that represents the corresponding offset of the time 
+        /// zone at the date and time of this instance.
+        /// </summary>
+        public TimeSpan Offset => TemporalHelpers.GetTimeZoneInfo(ZoneId).GetUtcOffset(DateTime);
+
+        /// <summary>
         /// Gets a <see cref="DateTimeOffset"/> copy of this date value.
         /// </summary>
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
         /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
         public DateTimeOffset ToDateTimeOffset()
         {
-            var zoneInfo = TemporalHelpers.GetTimeZoneInfo(ZoneId);
-            var dateTime = TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true);
-
-            return new DateTimeOffset(dateTime, zoneInfo.GetUtcOffset(dateTime));
+            return new DateTimeOffset(DateTime, Offset);
         }
 
         /// <summary>
@@ -175,7 +192,7 @@ namespace Neo4j.Driver.V1
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return $"DateTimeWithOffset{{epochSeconds: {EpochSeconds}, nanosOfSecond: {NanosOfSecond}, zoneId: '{ZoneId}'}}";
+            return $"DateTimeWithZoneId{{epochSeconds: {EpochSeconds}, nanosOfSecond: {NanosOfSecond}, zoneId: '{ZoneId}'}}";
         }
 
     }

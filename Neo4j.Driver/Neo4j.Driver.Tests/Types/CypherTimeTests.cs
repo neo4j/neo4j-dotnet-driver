@@ -59,5 +59,73 @@ namespace Neo4j.Driver.Tests.Types
 
             cypherTimeStr.Should().Be($"Time{{nanosOfDay: {cypherTime.NanosecondsOfDay}}}");
         }
+
+        [Fact]
+        public void ShouldGenerateSameHashcode()
+        {
+            var time1 = new CypherTime(12, 49, 55, 123000000);
+            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 123));
+            var time4 = new CypherTime(46195123000000);
+
+            time1.GetHashCode().Should().Be(time2.GetHashCode()).And.Be(time3.GetHashCode()).And
+                .Be(time4.GetHashCode());
+        }
+
+        [Fact]
+        public void ShouldGenerateDifferentHashcode()
+        {
+            var time1 = new CypherTime(12, 49, 55, 123000001);
+            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 124));
+            var time4 = new CypherTime(46195123000020);
+
+            time1.GetHashCode().Should().NotBe(time2.GetHashCode()).And.NotBe(time3.GetHashCode()).And
+                .NotBe(time4.GetHashCode());
+        }
+
+        [Fact]
+        public void ShouldBeEqual()
+        {
+            var time1 = new CypherTime(12, 49, 55, 123000000);
+            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 123));
+            var time4 = new CypherTime(46195123000000);
+
+            time1.Equals(time2).Should().BeTrue();
+            time1.Equals(time3).Should().BeTrue();
+            time1.Equals(time4).Should().BeTrue();
+        }
+
+        [Fact]
+        public void ShouldNotBeEqual()
+        {
+            var time1 = new CypherTime(12, 49, 55, 123000001);
+            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 125));
+            var time4 = new CypherTime(46195123002000);
+
+            time1.Equals(time2).Should().BeFalse();
+            time1.Equals(time3).Should().BeFalse();
+            time1.Equals(time4).Should().BeFalse();
+        }
+
+        [Fact]
+        public void ShouldNotBeEqualToAnotherType()
+        {
+            var time = new CypherTime(12, 49, 55, 123000001);
+            var other = "some string";
+
+            time.Equals(other).Should().BeFalse();
+        }
+
+        [Fact]
+        public void ShouldNotBeEqualToNull()
+        {
+            var time = new CypherTime(12, 49, 55, 123000001);
+            var other = (object)null;
+
+            time.Equals(other).Should().BeFalse();
+        }
     }
 }

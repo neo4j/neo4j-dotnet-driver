@@ -34,11 +34,11 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
         {
             PackStream.EnsureStructSize("DateTimeWithOffset", StructSize, size);
 
-            var epochSeconds = reader.ReadLong();
+            var epochSecondsUtc = reader.ReadLong();
             var nanosOfSecond = reader.ReadInteger();
             var offsetSeconds = reader.ReadInteger();
 
-            return new CypherDateTimeWithOffset(epochSeconds, nanosOfSecond, offsetSeconds);
+            return new CypherDateTimeWithOffset(epochSecondsUtc, nanosOfSecond, offsetSeconds);
         }
 
         public void Write(IPackStreamWriter writer, object value)
@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var dateTime = value.CastOrThrow<CypherDateTimeWithOffset>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.EpochSeconds);
+            writer.Write(dateTime.EpochSecondsUtc);
             writer.Write(dateTime.NanosOfSecond);
             writer.Write(dateTime.OffsetSeconds);
         }

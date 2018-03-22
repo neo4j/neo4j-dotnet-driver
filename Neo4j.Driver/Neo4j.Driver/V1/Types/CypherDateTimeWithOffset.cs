@@ -93,18 +93,19 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTimeWithOffset"/> from ticks.
         /// </summary>
-        /// <param name="ticks"></param>
+        /// <param name="ticksUtc"></param>
         /// <param name="offsetSeconds"></param>
-        public CypherDateTimeWithOffset(long ticks, int offsetSeconds)
-            : this(TemporalHelpers.ComputeSecondsSinceEpoch(ticks),
-                TemporalHelpers.ComputeNanosOfSecond(ticks), offsetSeconds)
+        public CypherDateTimeWithOffset(long ticksUtc, int offsetSeconds)
+            : this(TemporalHelpers.SecondsSinceEpoch(ticksUtc),
+                TemporalHelpers.NanosOfSecond(ticksUtc), offsetSeconds)
         {
 
         }
 
-        internal CypherDateTimeWithOffset(long epochSeconds, int nanosOfSecond, int offsetSeconds)
+        internal CypherDateTimeWithOffset(long epochSecondsUtc, int nanosOfSecond, int offsetSeconds)
         {
-            EpochSeconds = epochSeconds;
+            EpochSecondsUtc = epochSecondsUtc;
+            EpochSeconds = epochSecondsUtc + offsetSeconds;
             NanosOfSecond = nanosOfSecond;
             OffsetSeconds = offsetSeconds;
         }
@@ -113,6 +114,8 @@ namespace Neo4j.Driver.V1
         /// Seconds since Unix Epoch
         /// </summary>
         public long EpochSeconds { get; }
+
+        internal long EpochSecondsUtc { get; }
 
         /// <summary>
         /// Fraction of seconds in nanosecond precision
@@ -125,15 +128,24 @@ namespace Neo4j.Driver.V1
         public int OffsetSeconds { get; }
 
         /// <summary>
-        /// Gets a <see cref="DateTimeOffset"/> copy of this date value.
+        /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
+        /// </summary>
+        public DateTime DateTime =>
+            TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true);
+
+        /// <summary>
+        /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
+        /// </summary>
+        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
+        
+        /// <summary>
+        /// Converts this instance to an equivalent <see cref="DateTimeOffset"/> value
         /// </summary>
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
         /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
         public DateTimeOffset ToDateTimeOffset()
         {
-            return new DateTimeOffset(
-                TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true),
-                TimeSpan.FromSeconds(OffsetSeconds));
+            return new DateTimeOffset(DateTime, Offset);
         }
 
         /// <summary>

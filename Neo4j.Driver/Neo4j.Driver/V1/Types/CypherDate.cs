@@ -43,7 +43,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <param name="date"></param>
         public CypherDate(DateTime date)
-            : this(date.ComputeDaysSinceEpoch())
+            : this(date.DaysSinceEpoch())
         {
 
         }
