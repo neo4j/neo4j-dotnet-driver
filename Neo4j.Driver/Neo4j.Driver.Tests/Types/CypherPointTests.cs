@@ -23,7 +23,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
-    public class PointTests
+    public class CypherPointTests
     {
 
         [Fact]
