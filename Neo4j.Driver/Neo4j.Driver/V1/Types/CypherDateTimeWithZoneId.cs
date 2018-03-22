@@ -102,6 +102,7 @@ namespace Neo4j.Driver.V1
 
         internal CypherDateTimeWithZoneId(long epochSecondsUtc, int nanosOfSecond, string zoneId)
         {
+            // TODO: Should be changed when UTC normalization is removed on the server
             EpochSecondsUtc = epochSecondsUtc;
             EpochSeconds = epochSecondsUtc;
             NanosOfSecond = nanosOfSecond;
@@ -129,7 +130,9 @@ namespace Neo4j.Driver.V1
         /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
         /// </summary>
         public DateTime DateTime =>
-            TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true);
+            TimeZoneInfo.ConvertTime(
+                TemporalHelpers.DateTimeOf(EpochSecondsUtc, NanosOfSecond, DateTimeKind.Utc, true),
+                TemporalHelpers.GetTimeZoneInfo(ZoneId));
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the corresponding offset of the time 
