@@ -23,7 +23,7 @@ namespace Neo4j.Driver.V1
     /// </summary>
     /// <remarks>This type is currently experimental, and can be removed on upcoming
     /// pre-release versions of the driver.</remarks>
-    public interface IValue
+    public interface ICypherValue
     {
         
     }
