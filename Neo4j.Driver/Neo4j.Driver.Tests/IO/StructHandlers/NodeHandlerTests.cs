@@ -29,7 +29,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class NodeStructHandlerTests : StructHandlerTests
+    public class NodeHandlerTests : StructHandlerTests
     {
         internal override IPackStreamStructHandler HandlerUnderTest => new NodeHandler();
 

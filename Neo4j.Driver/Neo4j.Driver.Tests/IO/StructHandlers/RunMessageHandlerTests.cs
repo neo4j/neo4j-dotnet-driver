@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
@@ -25,9 +26,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class ResetMessageStructHandlerTests : StructHandlerTests
+    public class RunMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new ResetMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new RunMessageHandler();
 
         [Fact]
         public void ShouldThrowOnRead()
@@ -35,7 +36,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgReset, 0));
+                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgRun, 2));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -47,14 +48,42 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new ResetMessage());
+            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object>
+            {
+                {"x", 1L}
+            }));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgReset);
+            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructSignature().Should().Be(PackStream.MsgRun);
+            reader.ReadString().Should().Be("RETURN $x");
+            reader.ReadMap().Should().HaveCount(1).And.Contain(
+                new[]
+                {
+                    new KeyValuePair<string, object>("x", 1L)
+                });
         }
+
+        [Fact]
+        public void ShouldWriteEmptyMapWhenParamsIsNull()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer();
+
+            writer.Write(new RunMessage("RETURN 1", null));
+
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+
+            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructSignature().Should().Be(PackStream.MsgRun);
+            reader.ReadString().Should().Be("RETURN 1");
+            reader.ReadMap().Should().NotBeNull().And.HaveCount(0);
+        }
+
     }
 }

@@ -25,35 +25,36 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class IgnoredMessageStructHandlerTests: StructHandlerTests
+    public class AckFailureMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new IgnoredMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new AckFailureMessageHandler();
 
         [Fact]
-        public void ShouldThrowOnWrite()
+        public void ShouldThrowOnRead()
         {
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Write(Mock.Of<IPackStreamWriter>(), new IgnoredMessage()));
+                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgAckFailure, 0));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
         }
 
         [Fact]
-        public void ShouldRead()
+        public void ShouldWrite()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(0, PackStream.MsgIgnored);
+            writer.Write(new AckFailureMessage());
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+            var reader = readerMachine.Reader();
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<IgnoredMessage>();
+            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.ReadStructHeader().Should().Be(0);
+            reader.ReadStructSignature().Should().Be(PackStream.MsgAckFailure);
         }
     }
 }

@@ -26,9 +26,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class RecordMessageStructHandlerTests : StructHandlerTests
+    public class SuccessMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new RecordMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new SuccessMessageHandler();
 
         [Fact]
         public void ShouldThrowOnWrite()
@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
 
             var ex = Record.Exception(() =>
                 handler.Write(Mock.Of<IPackStreamWriter>(),
-                    new RecordMessage(new object[] {"val1", 2, true})));
+                    new SuccessMessage(new Dictionary<string, object> {{"fields", 1}})));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -49,28 +49,22 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(1, PackStream.MsgRecord);
-            writer.WriteListHeader(6);
-            writer.WriteNull();
+            writer.WriteStructHeader(1, PackStream.MsgSuccess);
+            writer.WriteMapHeader(2);
+            writer.Write("fields");
+            writer.Write(1L);
+            writer.Write("statistics");
             writer.Write(true);
-            writer.Write(1);
-            writer.Write(1.2);
-            writer.Write('A');
-            writer.Write("value");
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<RecordMessage>().Which.Fields.Should()
-                .HaveCount(6).And
-                .Contain(new object[]
+            value.Should().BeOfType<SuccessMessage>().Which.Meta.Should()
+                .HaveCount(2).And
+                .Contain(new[]
                 {
-                    true,
-                    1L,
-                    1.2,
-                    "A",
-                    "value"
+                    new KeyValuePair<string, object>("fields", 1L), new KeyValuePair<string, object>("statistics", true)
                 });
         }
 

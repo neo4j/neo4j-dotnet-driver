@@ -28,9 +28,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class UnboundRelationshipStructHandlerTests : StructHandlerTests
+    public class RelationshipHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new UnboundRelationshipHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new RelationshipHandler();
 
         [Fact]
         public void ShouldThrowOnWrite()
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
 
             var ex = Record.Exception(() =>
                 handler.Write(Mock.Of<IPackStreamWriter>(),
-                    new Relationship(0, -1, -1, "RELATES_TO", new Dictionary<string, object>())));
+                    new Relationship(0, 1, 2, "RELATES_TO", new Dictionary<string, object>())));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -51,12 +51,12 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            WriteUnboundRelationship(writer);
+            WriteRelationship(writer);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
-            VerifyWrittenUnboundRelationship(value);
+            VerifyWrittenRelationship(value);
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writer = writerMachine.Writer();
 
             writer.WriteListHeader(1);
-            WriteUnboundRelationship(writer);
+            WriteRelationship(writer);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             value.Should().NotBeNull();
             value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
 
-            VerifyWrittenUnboundRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
+            VerifyWrittenRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
         }
 
         [Fact]
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
 
             writer.WriteMapHeader(1);
             writer.Write("x");
-            WriteUnboundRelationship(writer);
+            WriteRelationship(writer);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
@@ -94,13 +94,15 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             value.Should().BeAssignableTo<IDictionary<string, object>>().Which.Should().HaveCount(1).And
                 .ContainKey("x");
 
-            VerifyWrittenUnboundRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+            VerifyWrittenRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void WriteUnboundRelationship(IPackStreamWriter writer)
+        private static void WriteRelationship(IPackStreamWriter writer)
         {
-            writer.WriteStructHeader(3, PackStream.UnboundRelationship);
+            writer.WriteStructHeader(5, PackStream.Relationship);
             writer.Write(1);
+            writer.Write(2);
+            writer.Write(3);
             writer.Write("RELATES_TO");
             writer.Write(new Dictionary<string, object>
             {
@@ -110,12 +112,12 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             });
         }
 
-        private static void VerifyWrittenUnboundRelationship(object value)
+        private static void VerifyWrittenRelationship(object value)
         {
             value.Should().NotBeNull();
             value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
-            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(-1L);
-            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(-1L);
+            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(2L);
+            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(3L);
             value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
             value.Should().BeOfType<Relationship>().Which.Properties.Should().HaveCount(3).And.Contain(new[]
             {
@@ -124,6 +126,5 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
                 new KeyValuePair<string, object>("prop3", false),
             });
         }
-
     }
 }

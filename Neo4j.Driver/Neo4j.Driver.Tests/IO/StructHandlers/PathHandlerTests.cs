@@ -28,7 +28,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class PathStructHandlerTests : StructHandlerTests
+    public class PathHandlerTests : StructHandlerTests
     {
         internal override IPackStreamStructHandler HandlerUnderTest => new PathHandler();
 

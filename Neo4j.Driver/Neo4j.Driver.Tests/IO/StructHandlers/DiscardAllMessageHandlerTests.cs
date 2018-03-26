@@ -25,7 +25,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class DiscardAllMessageStructHandlerTests : StructHandlerTests
+    public class DiscardAllMessageHandlerTests : StructHandlerTests
     {
         internal override IPackStreamStructHandler HandlerUnderTest => new DiscardAllMessageHandler();
 

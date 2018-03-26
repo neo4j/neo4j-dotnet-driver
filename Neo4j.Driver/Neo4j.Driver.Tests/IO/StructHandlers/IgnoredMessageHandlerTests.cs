@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
@@ -26,9 +25,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class SuccessMessageStructHandlerTests: StructHandlerTests
+    public class IgnoredMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new SuccessMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new IgnoredMessageHandler();
 
         [Fact]
         public void ShouldThrowOnWrite()
@@ -36,8 +35,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Write(Mock.Of<IPackStreamWriter>(),
-                    new SuccessMessage(new Dictionary<string, object> {{"fields", 1}})));
+                handler.Write(Mock.Of<IPackStreamWriter>(), new IgnoredMessage()));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -49,24 +47,13 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(1, PackStream.MsgSuccess);
-            writer.WriteMapHeader(2);
-            writer.Write("fields");
-            writer.Write(1L);
-            writer.Write("statistics");
-            writer.Write(true);
+            writer.WriteStructHeader(0, PackStream.MsgIgnored);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<SuccessMessage>().Which.Meta.Should()
-                .HaveCount(2).And
-                .Contain(new[]
-                {
-                    new KeyValuePair<string, object>("fields", 1L), new KeyValuePair<string, object>("statistics", true)
-                });
+            value.Should().BeOfType<IgnoredMessage>();
         }
-
     }
 }
