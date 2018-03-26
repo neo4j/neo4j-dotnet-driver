@@ -15,75 +15,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
+using FluentAssertions.Primitives;
 using Moq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.V1;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class RunMessageStructHandlerTests : StructHandlerTests
+    public class TimeWithOffsetHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new RunMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new TimeWithOffsetHandler();
 
         [Fact]
-        public void ShouldThrowOnRead()
+        public void ShouldWriteTimeWithOffset()
         {
-            var handler = HandlerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgRun, 2));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
-
-        [Fact]
-        public void ShouldWrite()
-        {
+            var time = new CypherTimeWithOffset(12, 35, 59, 128000987, (int)TimeSpan.FromMinutes(150).TotalSeconds);
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object>
-            {
-                {"x", 1L}
-            }));
+            writer.Write(time);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgRun);
-            reader.ReadString().Should().Be("RETURN $x");
-            reader.ReadMap().Should().HaveCount(1).And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("x", 1L)
-                });
+            reader.ReadStructSignature().Should().Be((byte) 'T');
+            reader.Read().Should().Be(time.NanosecondsOfDay);
+            reader.Read().Should().Be((long)time.OffsetSeconds);
         }
-
+        
         [Fact]
-        public void ShouldWriteEmptyMapWhenParamsIsNull()
+        public void ShouldReadTimeWithOffset()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new RunMessage("RETURN 1", null));
+            writer.WriteStructHeader(TimeWithOffsetHandler.StructSize, TimeWithOffsetHandler.StructType);
+            writer.Write(45359128000987);
+            writer.Write((int)TimeSpan.FromMinutes(150).TotalSeconds);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
+            var value = reader.Read();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgRun);
-            reader.ReadString().Should().Be("RETURN 1");
-            reader.ReadMap().Should().NotBeNull().And.HaveCount(0);
+            value.Should().NotBeNull();
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.NanosecondsOfDay.Should().Be(45359128000987);
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(150).TotalSeconds);
         }
-
+        
     }
 }

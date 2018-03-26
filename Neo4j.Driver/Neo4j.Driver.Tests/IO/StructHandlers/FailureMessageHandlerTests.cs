@@ -26,9 +26,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class RecordMessageStructHandlerTests : StructHandlerTests
+    public class FailureMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new RecordMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new FailureMessageHandler();
 
         [Fact]
         public void ShouldThrowOnWrite()
@@ -36,8 +36,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Write(Mock.Of<IPackStreamWriter>(),
-                    new RecordMessage(new object[] {"val1", 2, true})));
+                handler.Write(Mock.Of<IPackStreamWriter>(), new FailureMessage("Code", "Message")));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -49,30 +48,19 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(1, PackStream.MsgRecord);
-            writer.WriteListHeader(6);
-            writer.WriteNull();
-            writer.Write(true);
-            writer.Write(1);
-            writer.Write(1.2);
-            writer.Write('A');
-            writer.Write("value");
+            writer.WriteStructHeader(1, PackStream.MsgFailure);
+            writer.WriteMapHeader(2);
+            writer.Write("code");
+            writer.Write("Neo.ClientError.Statement.SyntaxError");
+            writer.Write("message");
+            writer.Write("Invalid syntax.");
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<RecordMessage>().Which.Fields.Should()
-                .HaveCount(6).And
-                .Contain(new object[]
-                {
-                    true,
-                    1L,
-                    1.2,
-                    "A",
-                    "value"
-                });
+            value.Should().BeOfType<FailureMessage>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+            value.Should().BeOfType<FailureMessage>().Which.Message.Should().Be("Invalid syntax.");
         }
-
     }
 }

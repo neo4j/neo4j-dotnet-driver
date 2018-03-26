@@ -357,4 +357,22 @@ namespace Neo4j.Driver.V1
         {
         }
     }
+
+    /// <summary>
+    /// A value retrieved from the database needs to be truncated for this conversion to work, and will
+    /// cause working with a modified data.
+    /// </summary>
+    [DataContract]
+    public class TruncationException : ClientException
+    {
+
+        /// <summary>
+        /// Create a new <see cref="TruncationException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+
+        public TruncationException(string message) : base(message)
+        {
+        }
+    }
 }

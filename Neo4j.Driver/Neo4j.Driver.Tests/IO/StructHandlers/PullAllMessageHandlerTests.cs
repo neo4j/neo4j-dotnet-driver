@@ -25,9 +25,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class DiscardAllMessageStructHandlerTests : StructHandlerTests
+    public class PullAllMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new DiscardAllMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new PullAllMessageHandler();
 
         [Fact]
         public void ShouldThrowOnRead()
@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgDiscardAll, 0));
+                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgPullAll, 0));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -47,14 +47,14 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new DiscardAllMessage());
+            writer.Write(new PullAllMessage());
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgDiscardAll);
+            reader.ReadStructSignature().Should().Be(PackStream.MsgPullAll);
         }
     }
 }
