@@ -85,7 +85,7 @@ namespace Neo4j.Driver.V1
         /// <param name="dateTime"></param>
         /// <param name="offset"></param>
         public CypherDateTimeWithOffset(DateTime dateTime, TimeSpan offset)
-            : this((dateTime.Kind == DateTimeKind.Unspecified ? dateTime : new DateTime(dateTime.Ticks, DateTimeKind.Unspecified)).Ticks - offset.Ticks, (int)offset.TotalSeconds)
+            : this((dateTime.Kind == DateTimeKind.Unspecified ? dateTime : new DateTime(dateTime.Ticks, DateTimeKind.Unspecified)).Ticks, (int)offset.TotalSeconds)
         {
 
         }
@@ -93,19 +93,18 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTimeWithOffset"/> from ticks.
         /// </summary>
-        /// <param name="ticksUtc"></param>
+        /// <param name="ticks"></param>
         /// <param name="offsetSeconds"></param>
-        public CypherDateTimeWithOffset(long ticksUtc, int offsetSeconds)
-            : this(TemporalHelpers.SecondsSinceEpoch(ticksUtc),
-                TemporalHelpers.NanosOfSecond(ticksUtc), offsetSeconds)
+        public CypherDateTimeWithOffset(long ticks, int offsetSeconds)
+            : this(TemporalHelpers.SecondsSinceEpoch(ticks),
+                TemporalHelpers.NanosOfSecond(ticks), offsetSeconds)
         {
 
         }
 
-        internal CypherDateTimeWithOffset(long epochSecondsUtc, int nanosOfSecond, int offsetSeconds)
+        internal CypherDateTimeWithOffset(long epochSeconds, int nanosOfSecond, int offsetSeconds)
         {
-            EpochSecondsUtc = epochSecondsUtc;
-            EpochSeconds = epochSecondsUtc + offsetSeconds;
+            EpochSeconds = epochSeconds;
             NanosOfSecond = nanosOfSecond;
             OffsetSeconds = offsetSeconds;
         }
@@ -114,8 +113,6 @@ namespace Neo4j.Driver.V1
         /// Seconds since Unix Epoch
         /// </summary>
         public long EpochSeconds { get; }
-
-        internal long EpochSecondsUtc { get; }
 
         /// <summary>
         /// Fraction of seconds in nanosecond precision

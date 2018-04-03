@@ -67,10 +67,9 @@ namespace Neo4j.Driver.V1
         /// <param name="zoneId"></param>
         public CypherDateTimeWithZoneId(DateTime dateTime, string zoneId)
             : this(
-                dateTime.Kind == DateTimeKind.Unspecified
+                (dateTime.Kind == DateTimeKind.Unspecified
                     ? dateTime
-                    : new DateTime(dateTime.Ticks, DateTimeKind.Unspecified), zoneId,
-                TemporalHelpers.GetTimeZoneInfo(zoneId))
+                    : new DateTime(dateTime.Ticks, DateTimeKind.Unspecified)).Ticks, zoneId)
         {
 
         }
@@ -82,29 +81,21 @@ namespace Neo4j.Driver.V1
         /// <param name="dateTimeOffset"></param>
         /// <param name="zoneId"></param>
         public CypherDateTimeWithZoneId(DateTimeOffset dateTimeOffset, string zoneId)
-            : this(dateTimeOffset.DateTime, zoneId, TemporalHelpers.GetTimeZoneInfo(zoneId))
+            : this(dateTimeOffset.DateTime.Ticks, zoneId)
         {
 
         }
 
-        private CypherDateTimeWithZoneId(DateTime dateTime, string zoneId, TimeZoneInfo zoneInfo)
-            : this(dateTime.Ticks - zoneInfo.GetUtcOffset(dateTime).Ticks, zoneId)
+        private CypherDateTimeWithZoneId(long ticks, string zoneId)
+            : this(TemporalHelpers.SecondsSinceEpoch(ticks),
+                TemporalHelpers.NanosOfSecond(ticks), zoneId)
         {
 
         }
 
-        private CypherDateTimeWithZoneId(long ticksUtc, string zoneId)
-            : this(TemporalHelpers.SecondsSinceEpoch(ticksUtc),
-                TemporalHelpers.NanosOfSecond(ticksUtc), zoneId)
+        internal CypherDateTimeWithZoneId(long epochSeconds, int nanosOfSecond, string zoneId)
         {
-
-        }
-
-        internal CypherDateTimeWithZoneId(long epochSecondsUtc, int nanosOfSecond, string zoneId)
-        {
-            // TODO: Should be changed when UTC normalization is removed on the server
-            EpochSecondsUtc = epochSecondsUtc;
-            EpochSeconds = epochSecondsUtc;
+            EpochSeconds = epochSeconds;
             NanosOfSecond = nanosOfSecond;
             ZoneId = zoneId;
         }
@@ -113,8 +104,6 @@ namespace Neo4j.Driver.V1
         /// Seconds since Unix Epoch
         /// </summary>
         public long EpochSeconds { get; }
-
-        internal long EpochSecondsUtc { get; }
 
         /// <summary>
         /// Fraction of seconds in nanosecond precision
@@ -130,9 +119,7 @@ namespace Neo4j.Driver.V1
         /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
         /// </summary>
         public DateTime DateTime =>
-            TimeZoneInfo.ConvertTime(
-                TemporalHelpers.DateTimeOf(EpochSecondsUtc, NanosOfSecond, DateTimeKind.Utc, true),
-                TemporalHelpers.GetTimeZoneInfo(ZoneId));
+            TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true);
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the corresponding offset of the time 

@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var dateTime = value.CastOrThrow<CypherDateTimeWithZoneId>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.EpochSecondsUtc);
+            writer.Write(dateTime.EpochSeconds);
             writer.Write(dateTime.NanosOfSecond);
             writer.Write(dateTime.ZoneId);
         }

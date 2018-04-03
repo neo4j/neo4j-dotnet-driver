@@ -26,46 +26,48 @@ namespace Neo4j.Driver.Tests.Types
     public class CypherDateTimeWithZoneIdTests
     {
 
-//        Uncomment when server enforced UTC normalization is reverted.
-//        [Fact]
-//        public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponents()
-//        {
-//            var cypherDateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 23, 49, 54, "Europe/Rome");
-//
-//            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54));
-//            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(60));
-//            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
-//        }
-//
-//        [Fact]
-//        public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponentsWithNanoseconds()
-//        {
-//            var cypherDateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 23, 49, 54, 192794500, "Europe/Rome");
-//
-//            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945));
-//            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
-//        }
-//
-//        [Fact]
-//        public void ShouldCreateDateTimeWithZoneIdWithDateTime()
-//        {
-//            var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120);
-//            var cypherDateTime = new CypherDateTimeWithZoneId(dateTime, "Europe/Rome");
-//
-//            cypherDateTime.DateTime.Should().Be(dateTime);
-//            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
-//        }
-//
-//        [Fact]
-//        public void ShouldCreateDateWithRawValues()
-//        {
-//            var dateTime = new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945);
-//            var cypherDateTime = new CypherDateTimeWithZoneId(TemporalHelpers.ComputeSecondsSinceEpoch(dateTime.AddSeconds(-1500).Ticks),
-//                TemporalHelpers.ComputeNanosOfSecond(dateTime.AddSeconds(-1500).Ticks), "Europe/Rome");
-//
-//            cypherDateTime.DateTime.Should().Be(dateTime);
-//            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
-//        }
+        [Fact]
+        public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponents()
+        {
+            var cypherDateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 23, 49, 54, "Europe/Rome");
+
+            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54));
+            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
+            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
+        }
+
+        [Fact]
+        public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponentsWithNanoseconds()
+        {
+            var cypherDateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 23, 49, 54, 192794500, "Europe/Rome");
+
+            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945));
+            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
+            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
+        }
+
+        [Fact]
+        public void ShouldCreateDateTimeWithZoneIdWithDateTime()
+        {
+            var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120);
+            var cypherDateTime = new CypherDateTimeWithZoneId(dateTime, "Europe/Rome");
+
+            cypherDateTime.DateTime.Should().Be(dateTime);
+            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
+            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
+        }
+
+        [Fact]
+        public void ShouldCreateDateWithRawValues()
+        {
+            var dateTime = new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945);
+            var cypherDateTime = new CypherDateTimeWithZoneId(TemporalHelpers.SecondsSinceEpoch(dateTime.Ticks),
+                TemporalHelpers.NanosOfSecond(dateTime.Ticks), "Europe/Rome");
+
+            cypherDateTime.DateTime.Should().Be(dateTime);
+            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
+            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
+        }
 
         [Fact]
         public void ShouldGenerateCorrectString()
@@ -83,7 +85,7 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
             var dateTime2 = new CypherDateTimeWithZoneId(new DateTime(1947, 12, 17, 15, 12, 01, 789), "Europe/Rome");
-            var dateTime3 = new CypherDateTimeWithZoneId(-695555279, 789000000, "Europe/Rome");
+            var dateTime3 = new CypherDateTimeWithZoneId(-695551679, 789000000, "Europe/Rome");
 
             dateTime1.GetHashCode().Should().Be(dateTime2.GetHashCode()).And.Be(dateTime3.GetHashCode());
         }
@@ -103,10 +105,10 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
             var dateTime2 = new CypherDateTimeWithZoneId(new DateTime(1947, 12, 17, 15, 12, 01, 789), "Europe/Rome");
-            var dateTime3 = new CypherDateTimeWithZoneId(-695555279, 789000000, "Europe/Rome");
+            var dateTime3 = new CypherDateTimeWithZoneId(-695551679, 789000000, "Europe/Rome");
 
-            dateTime1.Equals(dateTime2).Should().BeTrue();
-            dateTime1.Equals(dateTime3).Should().BeTrue();
+            dateTime1.Should().Be(dateTime2);
+            dateTime1.Should().Be(dateTime3);
         }
 
         [Fact]
@@ -116,8 +118,8 @@ namespace Neo4j.Driver.Tests.Types
             var dateTime2 = new CypherDateTimeWithZoneId(new DateTime(1947, 12, 17, 15, 12, 01, 790), "Europe/Rome");
             var dateTime3 = new CypherDateTimeWithZoneId(-695555279, 789005000, "Europe/Rome");
 
-            dateTime1.Equals(dateTime2).Should().BeFalse();
-            dateTime1.Equals(dateTime3).Should().BeFalse();
+            dateTime1.Should().NotBe(dateTime2);
+            dateTime1.Should().NotBe(dateTime3);
         }
 
         [Fact]
