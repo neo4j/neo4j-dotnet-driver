@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte) 'F');
-            reader.Read().Should().Be(dateTime.EpochSecondsUtc);
+            reader.Read().Should().Be(dateTime.EpochSeconds);
             reader.Read().Should().Be((long) dateTime.NanosOfSecond);
             reader.Read().Should().Be((long) dateTime.OffsetSeconds);
         }
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.EpochSecondsUtc.Should().Be(1520919278);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.EpochSeconds.Should().Be(1520919278);
             value.Should().BeOfType<CypherDateTimeWithOffset>().Which.NanosOfSecond.Should().Be(128000987);
             value.Should().BeOfType<CypherDateTimeWithOffset>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
         }

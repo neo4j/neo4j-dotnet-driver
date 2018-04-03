@@ -77,8 +77,8 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldCreateDateWithRawValues()
         {
             var dateTime = new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945);
-            var cypherDateTime = new CypherDateTimeWithOffset(TemporalHelpers.SecondsSinceEpoch(dateTime.AddSeconds(-1500).Ticks),
-                TemporalHelpers.NanosOfSecond(dateTime.AddSeconds(-1500).Ticks), 1500);
+            var cypherDateTime = new CypherDateTimeWithOffset(TemporalHelpers.SecondsSinceEpoch(dateTime.Ticks),
+                TemporalHelpers.NanosOfSecond(dateTime.Ticks), 1500);
 
             cypherDateTime.DateTime.Should().Be(dateTime);
             cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithOffset(1947, 12, 17, 15, 12, 01, 789000000, 1800);
             var dateTime2 = new CypherDateTimeWithOffset(new DateTime(1947, 12, 17, 15, 12, 01, 789), 1800);
-            var dateTime3 = new CypherDateTimeWithOffset(-695553479, 789000000, 1800);
+            var dateTime3 = new CypherDateTimeWithOffset(-695551679, 789000000, 1800);
 
             dateTime1.GetHashCode().Should().Be(dateTime2.GetHashCode()).And.Be(dateTime3.GetHashCode());
         }
@@ -120,10 +120,10 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithOffset(1947, 12, 17, 15, 12, 01, 789000000, 1800);
             var dateTime2 = new CypherDateTimeWithOffset(new DateTime(1947, 12, 17, 15, 12, 01, 789), 1800);
-            var dateTime3 = new CypherDateTimeWithOffset(-695553479, 789000000, 1800);
+            var dateTime3 = new CypherDateTimeWithOffset(-695551679, 789000000, 1800);
 
-            dateTime1.Equals(dateTime2).Should().BeTrue();
-            dateTime1.Equals(dateTime3).Should().BeTrue();
+            dateTime1.Should().Be(dateTime2);
+            dateTime1.Should().Be(dateTime3);
         }
 
         [Fact]
@@ -133,8 +133,8 @@ namespace Neo4j.Driver.Tests.Types
             var dateTime2 = new CypherDateTimeWithOffset(new DateTime(1947, 12, 17, 15, 12, 01, 790), 1800);
             var dateTime3 = new CypherDateTimeWithOffset(-695553479, 789005000, 1800);
 
-            dateTime1.Equals(dateTime2).Should().BeFalse();
-            dateTime1.Equals(dateTime3).Should().BeFalse();
+            dateTime1.Should().NotBe(dateTime2);
+            dateTime1.Should().NotBe(dateTime3);
         }
 
         [Fact]
