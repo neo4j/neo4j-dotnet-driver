@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldCreateDateTimeWithDateTime()
         {
-            var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120);
+            var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120, DateTimeKind.Local);
             var cypherDateTime = new CypherDateTime(dateTime);
 
             cypherDateTime.ToDateTime().Should().Be(dateTime);
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldGenerateSameHashcode()
         {
             var dateTime1 = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
-            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789));
+            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789, DateTimeKind.Local));
             var dateTime3 = new CypherDateTime(-695551679, 789000000);
 
             dateTime1.GetHashCode().Should().Be(dateTime2.GetHashCode()).And.Be(dateTime3.GetHashCode());
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldBeEqual()
         {
             var dateTime1 = new CypherDateTime(1947, 12, 17, 15, 12, 01, 789000000);
-            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789));
+            var dateTime2 = new CypherDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789, DateTimeKind.Local));
 
             dateTime1.Equals(dateTime2).Should().BeTrue();
         }

@@ -60,13 +60,20 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTime"/> from given <see cref="DateTime"/> value
+        /// Initializes a new instance of <see cref="CypherDateTime"/> from given <see cref="DateTime"/> value.
+        /// The given <see cref="DateTime"/> value will be normalized to local time <see cref="DateTimeKind.Local"/>
+        /// before being used.
         /// </summary>
+        ///
+        /// <remarks>If the <see cref="DateTime"/> value was created with no <see cref="DateTimeKind"/> specified,
+        /// then <see cref="DateTimeKind.Unspecified"/> would be assigned by default.
+        /// Possible conversion from UTC to local time might happen when normalizing it to local time.
+        /// <seealso cref="DateTime.ToLocalTime"/>
+        /// </remarks>
         /// <param name="dateTime"></param>
         public CypherDateTime(DateTime dateTime)
             : this(dateTime.ToLocalTime().Ticks)
         {
-
         }
 
         internal CypherDateTime(long ticks)
