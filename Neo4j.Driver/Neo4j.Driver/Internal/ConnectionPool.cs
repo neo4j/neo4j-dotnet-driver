@@ -657,7 +657,7 @@ namespace Neo4j.Driver.Internal
 
         public override string ToString()
         {
-            return $"{nameof(_idleConnections)}: {{{_idleConnections.ValueToString()}}}, " +
+            return $"{nameof(_idleConnections)}: {{{_idleConnections.ToContentString()}}}, " +
                    $"{nameof(_inUseConnections)}: {{{_inUseConnections}}}";
         }
     }

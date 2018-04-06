@@ -19,6 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.IO.PackStream;
@@ -78,6 +79,9 @@ namespace Neo4j.Driver.Internal.IO
                 case IDictionary _:
                     Write((IDictionary)value);
                     break;
+                case IEnumerable _:
+                    Write((IEnumerable) value);
+                    break;
                 default:
                     if (_structHandlers.TryGetValue(value.GetType(), out var structHandler))
                     {
@@ -95,6 +99,16 @@ namespace Neo4j.Driver.Internal.IO
         public void Write(int value)
         {
             Write((long)value);
+        }
+
+        public void Write(IEnumerable value)
+        {
+            IList list = new List<object>();
+            foreach (var item in value)
+            {
+                list.Add(item);
+            }
+            Write(list);
         }
 
         public void Write(long value)

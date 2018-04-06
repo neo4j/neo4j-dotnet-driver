@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Messaging
 
         public override string ToString()
         {
-            return $"RUN `{Statement}` {StatementParameters.ValueToString()}";
+            return $"RUN `{Statement}` {StatementParameters.ToContentString()}";
         }
     }
 }
