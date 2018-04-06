@@ -197,7 +197,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 props.Count.Should().Be(1);
                 props.Keys.Contains("name").Should().BeTrue();
                 ((string)props["name"]).Should().Be("A");
-                CypherRecordParser.PathToString(actual).Should().Be("<([A] [[name, A]])>");
+                CypherRecordParser.PathToString(actual).Should().Be("<([A] [{name, A}])>");
             }
 
             [Fact]
@@ -224,7 +224,7 @@ namespace Neo4j.Driver.Tck.Tests.TCK
                 props.Keys.Contains("name").Should().BeTrue();
                 ((string)props["name"]).Should().Be("C");
 
-                CypherRecordParser.PathToString(actual).Should().Be("<([A] [[name, A]])-[KNOWS [[value, 1]]]->([B] [[name, B]])<-[KNOWS [[value, 2]]]-([C] [[name, C]])>");
+                CypherRecordParser.PathToString(actual).Should().Be("<([A] [{name, A}])-[KNOWS [{value, 1}]]->([B] [{name, B}])<-[KNOWS [{value, 2}]]-([C] [{name, C}])>");
             }
         }
 

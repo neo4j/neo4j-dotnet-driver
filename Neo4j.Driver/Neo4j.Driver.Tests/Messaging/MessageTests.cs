@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Tests
                         {"key1", 1},
                         {"key2", new[] {2, 4}}
                     }),
-                    "RUN `A statement` [{key1 : 1}, {key2 : [2, 4]}]"
+                    "RUN `A statement` [{key1, 1}, {key2, [2, 4]}]"
                 }
             };
 

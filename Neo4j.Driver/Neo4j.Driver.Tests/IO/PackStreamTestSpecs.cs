@@ -26,6 +26,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Tests.IO.Utils;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Tests.TestUtil.CollectionExtensionsTests;
 
 namespace Neo4j.Driver.Tests.IO
 {
@@ -776,6 +777,80 @@ namespace Neo4j.Driver.Tests.IO
             VerifyReadWriteThroughObjectOverload(PackStream.PackType.Integer, 123L);
             VerifyReadWriteThroughObjectOverload(PackStream.PackType.List, new object[] {1L, 2L, 3L}.ToList());
             VerifyReadWriteThroughObjectOverload(PackStream.PackType.Map, new Dictionary<string, object> {{"key", 1L}});
+        }
+
+        [Fact]
+        public void ShouldWriteGenericListCorrectly()
+        {
+            var list = new List<int>{1, 2, 3};
+
+            // Given
+            var writerMachine = CreateWriterMachine();
+
+            // When
+            var writer = writerMachine.Writer();
+
+            writer.Write((object)list);
+
+            // When
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+
+            reader.ReadStructSignature().Should().Be((byte)(PackStream.TinyList | list.Count));
+            reader.ReadLong().Should().Be(1);
+            reader.ReadLong().Should().Be(2);
+            reader.ReadLong().Should().Be(3);
+        }
+
+        [Fact]
+        public void ShouldWriteListOfEnumerableTypeCorrectly()
+        {
+            var nums = new MyCollection<int>(new[] {1, 2, 3});
+
+            // Given
+            var writerMachine = CreateWriterMachine();
+
+            // When
+            var writer = writerMachine.Writer();
+            writer.Write(nums);
+
+            // When
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+            reader.ReadStructSignature().Should().Be((byte)(PackStream.TinyList | nums.Count()));
+            reader.ReadLong().Should().Be(1);
+            reader.ReadLong().Should().Be(2);
+            reader.ReadLong().Should().Be(3);
+        }
+
+        [Fact]
+        public void ShouldWriteListOfEnumerableOfRandomTypeCorrectly()
+        {
+            var values = new MyCollection<object>(new object[]
+            {
+                1,
+                new[] {2, 3},
+                'a'
+            });
+
+            // Given
+            var writerMachine = CreateWriterMachine();
+
+            // When
+            var writer = writerMachine.Writer();
+            writer.Write(values);
+
+            // When
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+
+            reader.ReadStructSignature().Should().Be((byte) (PackStream.TinyList | values.Count()));
+            reader.ReadLong().Should().Be(1);
+            reader.ReadStructSignature().Should().Be((byte) (PackStream.TinyList | 2));
+            reader.ReadLong().Should().Be(2);
+            reader.ReadLong().Should().Be(3);
+            reader.ReadStructSignature().Should().Be(PackStream.TinyString | 1);
+            reader.ReadLong().Should().Be(97);
         }
 
         [Fact]
