@@ -17,14 +17,48 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Represents a time value with a UTC offset
     /// </summary>
-    public struct CypherTimeWithOffset : ICypherValue, IEquatable<CypherTimeWithOffset>
+    public struct CypherTimeWithOffset : ICypherValue, IEquatable<CypherTimeWithOffset>, IHasTimeComponents
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from time components of given <see cref="DateTime"/> value
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="offset"></param>
+        public CypherTimeWithOffset(DateTime time, TimeSpan offset)
+            : this(time.TimeOfDay, (int)offset.TotalSeconds)
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="offset"></param>
+        public CypherTimeWithOffset(TimeSpan time, TimeSpan offset)
+            : this(time, (int) offset.TotalSeconds)
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="offsetSeconds"></param>
+        private CypherTimeWithOffset(TimeSpan time, int offsetSeconds)
+            : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks), offsetSeconds)
+        {
+
+        }
+
         /// <summary>
         /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from individual time components
         /// </summary>
@@ -44,57 +78,48 @@ namespace Neo4j.Driver.V1
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="nanoOfSecond"></param>
+        /// <param name="nanosecond"></param>
         /// <param name="offsetSeconds"></param>
-        public CypherTimeWithOffset(int hour, int minute, int second, int nanoOfSecond, int offsetSeconds)
-            : this(TemporalHelpers.NanosOf(hour, minute, second, nanoOfSecond), offsetSeconds)
+        public CypherTimeWithOffset(int hour, int minute, int second, int nanosecond, int offsetSeconds)
         {
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(offsetSeconds, TemporalHelpers.MinOffset, TemporalHelpers.MaxOffset, nameof(offsetSeconds));
 
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
-        /// </summary>
-        /// <param name="time"></param>
-        /// <param name="offsetSeconds"></param>
-        private CypherTimeWithOffset(TimeSpan time, int offsetSeconds)
-            : this(time.NanosOf(), offsetSeconds)
-        {
-
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
-        /// </summary>
-        /// <param name="time"></param>
-        /// <param name="offset"></param>
-        public CypherTimeWithOffset(TimeSpan time, TimeSpan offset)
-            : this(time.NanosOf(), (int)offset.TotalSeconds)
-        {
-
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from time components of given <see cref="DateTime"/> value
-        /// </summary>
-        /// <param name="time"></param>
-        /// <param name="offset"></param>
-        public CypherTimeWithOffset(DateTime time, TimeSpan offset)
-            : this(time.TimeOfDay, (int)offset.TotalSeconds)
-        {
-
-        }
-
-        internal CypherTimeWithOffset(long nanosecondsOfDay, int offsetSeconds)
-        {
-            NanosecondsOfDay = nanosecondsOfDay;
+            Hour = hour;
+            Minute = minute;
+            Second = second;
+            Nanosecond = nanosecond;
             OffsetSeconds = offsetSeconds;
         }
 
+        internal CypherTimeWithOffset(IHasTimeComponents time, int offsetSeconds)
+            : this(time.Hour, time.Minute, time.Second, time.Nanosecond, offsetSeconds)
+        {
+
+        }
+
         /// <summary>
-        /// Nanoseconds since midnight
+        /// Gets the hour component of this instance.
         /// </summary>
-        public long NanosecondsOfDay { get; }
+        public int Hour { get; }
+
+        /// <summary>
+        /// Gets the minute component of this instance.
+        /// </summary>
+        public int Minute { get; }
+
+        /// <summary>
+        /// Gets the second component of this instance.
+        /// </summary>
+        public int Second { get; }
+
+        /// <summary>
+        /// Gets the nanosecond component of this instance.
+        /// </summary>
+        public int Nanosecond { get; }
 
         /// <summary>
         /// Offset in seconds precision
@@ -104,7 +129,16 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the time of this instance.
         /// </summary>
-        public TimeSpan Time => TemporalHelpers.TimeOf(NanosecondsOfDay, true);
+        public TimeSpan Time
+        {
+            get
+            {
+                TemporalHelpers.AssertNoTruncation(Nanosecond, nameof(TimeSpan));
+
+                return new TimeSpan(0, Hour, Minute, Second).Add(
+                    TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
+            }
+        }
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
@@ -120,7 +154,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(CypherTimeWithOffset other)
         {
-            return NanosecondsOfDay == other.NanosecondsOfDay && OffsetSeconds == other.OffsetSeconds;
+            return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
         }
 
         /// <summary>
@@ -143,7 +177,12 @@ namespace Neo4j.Driver.V1
         {
             unchecked
             {
-                return (NanosecondsOfDay.GetHashCode() * 397) ^ OffsetSeconds;
+                var hashCode = Hour;
+                hashCode = (hashCode * 397) ^ Minute;
+                hashCode = (hashCode * 397) ^ Second;
+                hashCode = (hashCode * 397) ^ Nanosecond;
+                hashCode = (hashCode * 397) ^ OffsetSeconds;
+                return hashCode;
             }
         }
         
@@ -153,7 +192,8 @@ namespace Neo4j.Driver.V1
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return $"TimeWithOffset{{nanosOfDay: {NanosecondsOfDay}, offsetSeconds: {OffsetSeconds}}}";
+            return TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond) +
+                   TemporalHelpers.ToIsoTimeZoneOffset(OffsetSeconds);
         }
     }
 }

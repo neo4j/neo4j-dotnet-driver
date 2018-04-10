@@ -42,22 +42,53 @@ namespace Neo4j.Driver.Tests.Types
             cypherDate.ToDateTime().Should().Be(date);
         }
 
-        [Fact]
-        public void ShouldCreateDateWithRawValues()
+        [Theory]
+        [InlineData(-1000000000)]
+        [InlineData(1000000000)]
+        public void ShouldThrowOnInvalidYear(int year)
         {
-            var date = new DateTime(1947, 12, 17);
-            var cypherDate = new CypherDate((long) date.Subtract(new DateTime(1970, 1, 1)).TotalDays);
+            var ex = Record.Exception(() => new CypherDate(year, 1, 1));
 
-            cypherDate.ToDateTime().Should().Be(date);
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
 
-        [Fact]
-        public void ShouldGenerateCorrectString()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(13)]
+        public void ShouldThrowOnInvalidMonth(int month)
         {
-            var cypherDate = new CypherDate(1947, 12, 17);
+            var ex = Record.Exception(() => new CypherDate(1990, month, 1));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(2018, 1, 0)]
+        [InlineData(2018, 1, 32)]
+        [InlineData(2018, 6, 31)]
+        [InlineData(2018, 2, 29)]
+        [InlineData(2018, 12, -1)]
+        public void ShouldThrowOnInvalidDay(int year, int month, int day)
+        {
+            var ex = Record.Exception(() => new CypherDate(year, month, day));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(1947, 12, 17, "1947-12-17")]
+        [InlineData(1947, 1, 1, "1947-01-01")]
+        [InlineData(1, 1, 1, "0001-01-01")]
+        [InlineData(9999, 1, 1, "9999-01-01")]
+        [InlineData(-9999, 1, 1, "-9999-01-01")]
+        [InlineData(999999, 1, 1, "999999-01-01")]
+        [InlineData(-999999, 1, 1, "-999999-01-01")]
+        public void ShouldGenerateCorrectString(int year, int month, int day, string expected)
+        {
+            var cypherDate = new CypherDate(year, month, day);
             var cypherDateStr = cypherDate.ToString();
 
-            cypherDateStr.Should().Be($"Date{{epochDays: {cypherDate.EpochDays}}}");
+            cypherDateStr.Should().Be(expected);
         }
 
         [Fact]
@@ -65,9 +96,8 @@ namespace Neo4j.Driver.Tests.Types
         {
             var date1 = new CypherDate(1947, 12, 17);
             var date2 = new CypherDate(new DateTime(1947, 12, 17));
-            var date3 = new CypherDate(-8051);
 
-            date1.GetHashCode().Should().Be(date2.GetHashCode()).And.Be(date3.GetHashCode());
+            date1.GetHashCode().Should().Be(date2.GetHashCode());
         }
 
         [Fact]
@@ -75,9 +105,8 @@ namespace Neo4j.Driver.Tests.Types
         {
             var date1 = new CypherDate(1947, 12, 18);
             var date2 = new CypherDate(new DateTime(1947, 12, 17));
-            var date3 = new CypherDate(-8052);
 
-            date1.GetHashCode().Should().NotBe(date2.GetHashCode()).And.NotBe(date3.GetHashCode());
+            date1.GetHashCode().Should().NotBe(date2.GetHashCode());
         }
 
         [Fact]

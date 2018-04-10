@@ -17,6 +17,7 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
 using TimeZoneConverter;
 
 namespace Neo4j.Driver.V1
@@ -24,8 +25,32 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date time value with a time zone, specified as a zone id
     /// </summary>
-    public struct CypherDateTimeWithZoneId : ICypherValue, IEquatable<CypherDateTimeWithZoneId>
+    public struct CypherDateTimeWithZoneId : ICypherValue, IEquatable<CypherDateTimeWithZoneId>, IHasDateTimeComponents
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTimeOffset"/> value
+        /// <remarks>Please note that <see cref="DateTimeOffset.Offset"/> is ignored with this constructor</remarks>
+        /// </summary>
+        /// <param name="dateTimeOffset"></param>
+        /// <param name="zoneId"></param>
+        public CypherDateTimeWithZoneId(DateTimeOffset dateTimeOffset, string zoneId)
+            : this(dateTimeOffset.DateTime, zoneId)
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTime"/> value
+        /// </summary>
+        /// <param name="dateTime"></param>
+        /// <param name="zoneId"></param>
+        public CypherDateTimeWithZoneId(DateTime dateTime, string zoneId)
+            : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
+                TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks), zoneId)
+        {
+
+        }
+
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from individual date time component values
         /// </summary>
@@ -51,64 +76,70 @@ namespace Neo4j.Driver.V1
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="nanosOfSecond"></param>
+        /// <param name="nanosecond"></param>
         /// <param name="zoneId"></param>
         public CypherDateTimeWithZoneId(int year, int month, int day, int hour, int minute, int second,
-            int nanosOfSecond, string zoneId)
-            : this(new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified), zoneId)
+            int nanosecond, string zoneId)
         {
-            NanosOfSecond += nanosOfSecond;
-        }
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear, nameof(year));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth, nameof(month));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay, TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
 
-        /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTime"/> value
-        /// </summary>
-        /// <param name="dateTime"></param>
-        /// <param name="zoneId"></param>
-        public CypherDateTimeWithZoneId(DateTime dateTime, string zoneId)
-            : this(
-                (dateTime.Kind == DateTimeKind.Unspecified
-                    ? dateTime
-                    : new DateTime(dateTime.Ticks, DateTimeKind.Unspecified)).Ticks, zoneId)
-        {
-
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTimeOffset"/> value
-        /// <remarks>Please note that <see cref="DateTimeOffset.Offset"/> is ignored with this constructor</remarks>
-        /// </summary>
-        /// <param name="dateTimeOffset"></param>
-        /// <param name="zoneId"></param>
-        public CypherDateTimeWithZoneId(DateTimeOffset dateTimeOffset, string zoneId)
-            : this(dateTimeOffset.DateTime.Ticks, zoneId)
-        {
-
-        }
-
-        private CypherDateTimeWithZoneId(long ticks, string zoneId)
-            : this(TemporalHelpers.SecondsSinceEpoch(ticks),
-                TemporalHelpers.NanosOfSecond(ticks), zoneId)
-        {
-
-        }
-
-        internal CypherDateTimeWithZoneId(long epochSeconds, int nanosOfSecond, string zoneId)
-        {
-            EpochSeconds = epochSeconds;
-            NanosOfSecond = nanosOfSecond;
+            Year = year;
+            Month = month;
+            Day = day;
+            Hour = hour;
+            Minute = minute;
+            Second = second;
+            Nanosecond = nanosecond;
             ZoneId = zoneId;
         }
 
-        /// <summary>
-        /// Seconds since Unix Epoch
-        /// </summary>
-        public long EpochSeconds { get; }
+        internal CypherDateTimeWithZoneId(IHasDateTimeComponents dateTime, string zoneId)
+            : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
+                dateTime.Nanosecond, zoneId)
+        {
+
+        }
 
         /// <summary>
-        /// Fraction of seconds in nanosecond precision
+        /// Gets the year component of this instance.
         /// </summary>
-        public int NanosOfSecond { get; }
+        public int Year { get; }
+
+        /// <summary>
+        /// Gets the month component of this instance.
+        /// </summary>
+        public int Month { get; }
+
+        /// <summary>
+        /// Gets the day of month component of this instance.
+        /// </summary>
+        public int Day { get; }
+
+        /// <summary>
+        /// Gets the hour component of this instance.
+        /// </summary>
+        public int Hour { get; }
+
+        /// <summary>
+        /// Gets the minute component of this instance.
+        /// </summary>
+        public int Minute { get; }
+
+        /// <summary>
+        /// Gets the second component of this instance.
+        /// </summary>
+        public int Second { get; }
+
+        /// <summary>
+        /// Gets the nanosecond component of this instance.
+        /// </summary>
+        public int Nanosecond { get; }
 
         /// <summary>
         /// Zone identifier
@@ -118,8 +149,16 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
         /// </summary>
-        public DateTime DateTime =>
-            TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Unspecified, true);
+        public DateTime DateTime
+        {
+            get
+            {
+                TemporalHelpers.AssertNoTruncation(Nanosecond, nameof(DateTime));
+
+                return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
+                    TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
+            }
+        }
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the corresponding offset of the time 
@@ -131,7 +170,7 @@ namespace Neo4j.Driver.V1
         /// Gets a <see cref="DateTimeOffset"/> copy of this date value.
         /// </summary>
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
-        /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
+        /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
         public DateTimeOffset ToDateTimeOffset()
         {
             return new DateTimeOffset(DateTime, Offset);
@@ -146,7 +185,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(CypherDateTimeWithZoneId other)
         {
-            return EpochSeconds == other.EpochSeconds && NanosOfSecond == other.NanosOfSecond && string.Equals(ZoneId, other.ZoneId);
+            return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond && string.Equals(ZoneId, other.ZoneId);
         }
 
         /// <summary>
@@ -169,8 +208,13 @@ namespace Neo4j.Driver.V1
         {
             unchecked
             {
-                var hashCode = EpochSeconds.GetHashCode();
-                hashCode = (hashCode * 397) ^ NanosOfSecond;
+                var hashCode = Year;
+                hashCode = (hashCode * 397) ^ Month;
+                hashCode = (hashCode * 397) ^ Day;
+                hashCode = (hashCode * 397) ^ Hour;
+                hashCode = (hashCode * 397) ^ Minute;
+                hashCode = (hashCode * 397) ^ Second;
+                hashCode = (hashCode * 397) ^ Nanosecond;
                 hashCode = (hashCode * 397) ^ (ZoneId != null ? ZoneId.GetHashCode() : 0);
                 return hashCode;
             }
@@ -182,7 +226,8 @@ namespace Neo4j.Driver.V1
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return $"DateTimeWithZoneId{{epochSeconds: {EpochSeconds}, nanosOfSecond: {NanosOfSecond}, zoneId: '{ZoneId}'}}";
+            return
+                $"{TemporalHelpers.ToIsoDateString(Year, Month, Day)}T{TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond)}[{ZoneId}]";
         }
 
     }

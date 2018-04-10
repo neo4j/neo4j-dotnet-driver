@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var nanosOfDay = reader.ReadLong();
             var offsetSeconds = reader.ReadInteger();
 
-            return new CypherTimeWithOffset(nanosOfDay, offsetSeconds);
+            return new CypherTimeWithOffset(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
         }
 
         public void Write(IPackStreamWriter writer, object value)
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var time = value.CastOrThrow<CypherTimeWithOffset>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.NanosecondsOfDay);
+            writer.Write(time.ToNanoOfDay());
             writer.Write(time.OffsetSeconds);
         }
     }

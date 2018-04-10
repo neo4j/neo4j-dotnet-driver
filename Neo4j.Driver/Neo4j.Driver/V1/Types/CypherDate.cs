@@ -17,14 +17,25 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Represents a date value, without a time zone and time related components
     /// </summary>
-    public struct CypherDate : ICypherValue, IEquatable<CypherDate>
+    public struct CypherDate : ICypherValue, IEquatable<CypherDate>, IHasDateComponents
     {
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherDate"/> from a date value
+        /// </summary>
+        /// <param name="date"></param>
+        public CypherDate(DateTime date)
+            : this(date.Year, date.Month, date.Day)
+        {
+
+        }
 
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDate"/> from individual date component values
@@ -33,30 +44,30 @@ namespace Neo4j.Driver.V1
         /// <param name="month"></param>
         /// <param name="day"></param>
         public CypherDate(int year, int month, int day)
-            : this(new DateTime(year, month, day))
         {
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear, nameof(year));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth, nameof(month));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay, TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
 
+            Year = year;
+            Month = month;
+            Day = day;
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDate"/> from a date value
+        /// Gets the year component of this instance.
         /// </summary>
-        /// <param name="date"></param>
-        public CypherDate(DateTime date)
-            : this(date.DaysSinceEpoch())
-        {
-
-        }
-
-        internal CypherDate(long epochDays)
-        {
-            EpochDays = epochDays;
-        }
+        public int Year { get; }
 
         /// <summary>
-        /// Days since Unix Epoch
+        /// Gets the month component of this instance.
         /// </summary>
-        public long EpochDays { get; }
+        public int Month { get; }
+
+        /// <summary>
+        /// Gets the day of month component of this instance.
+        /// </summary>
+        public int Day { get; }
 
         /// <summary>
         /// Gets a <see cref="DateTime"/> copy of this date value.
@@ -64,7 +75,12 @@ namespace Neo4j.Driver.V1
         /// <returns>Equivalent <see cref="DateTime"/> value</returns>
         public DateTime ToDateTime()
         {
-            return TemporalHelpers.DateOf(EpochDays);
+            if (Year > DateTime.MaxValue.Year || Year < DateTime.MinValue.Year)
+            {
+                throw new ValueOverflowException($"Year component ({Year}) of this instance is not between valid values for a DateTime.");
+            }
+
+            return new DateTime(Year, Month, Day);
         }
 
         /// <summary>
@@ -76,7 +92,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(CypherDate other)
         {
-            return EpochDays == other.EpochDays;
+            return Year == other.Year && Month == other.Month && Day == other.Day;
         }
 
         /// <summary>
@@ -97,7 +113,13 @@ namespace Neo4j.Driver.V1
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return EpochDays.GetHashCode();
+            unchecked
+            {
+                var hashCode = Year;
+                hashCode = (hashCode * 397) ^ Month;
+                hashCode = (hashCode * 397) ^ Day;
+                return hashCode;
+            }
         }
 
         /// <summary>
@@ -106,7 +128,7 @@ namespace Neo4j.Driver.V1
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return $"Date{{epochDays: {EpochDays}}}";
+            return TemporalHelpers.ToIsoDateString(Year, Month, Day);
         }
     }
 }

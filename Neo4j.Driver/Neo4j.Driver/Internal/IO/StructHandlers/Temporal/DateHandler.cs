@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
             var epochDays = reader.ReadLong();
 
-            return new CypherDate(epochDays);
+            return TemporalHelpers.EpochDaysToDate(epochDays);
         }
 
         public void Write(IPackStreamWriter writer, object value)
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var date = value.CastOrThrow<CypherDate>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(date.EpochDays);
+            writer.Write(date.ToEpochDays());
         }
     }
 }

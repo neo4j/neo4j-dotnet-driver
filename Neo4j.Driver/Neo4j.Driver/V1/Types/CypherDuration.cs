@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.V1
 {
@@ -142,7 +143,7 @@ namespace Neo4j.Driver.V1
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return $"Duration{{months: {Months}, days: {Days}, seconds: {Seconds}, nanos: {Nanos}}}";
+            return TemporalHelpers.ToIsoDurationString(Months, Days, Seconds, Nanos);
         }
     }
 }

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using FluentAssertions.Primitives;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
@@ -50,9 +51,9 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte) 'F');
-            reader.Read().Should().Be(dateTime.EpochSeconds);
-            reader.Read().Should().Be((long) dateTime.NanosOfSecond);
-            reader.Read().Should().Be((long) dateTime.OffsetSeconds);
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(128000987L);
+            reader.Read().Should().Be(-9000L);
         }
         
         [Fact]
@@ -62,17 +63,22 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writer = writerMachine.Writer();
 
             writer.WriteStructHeader(DateTimeWithOffsetHandler.StructSize, DateTimeWithOffsetHandler.StructType);
-            writer.Write(1520919278);
+            writer.Write(282659759);
             writer.Write(128000987);
-            writer.Write((int) TimeSpan.FromMinutes(-150).TotalSeconds);
+            writer.Write(-9000);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.EpochSeconds.Should().Be(1520919278);
-            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.NanosOfSecond.Should().Be(128000987);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<CypherDateTimeWithOffset>().Which.Nanosecond.Should().Be(128000987);
             value.Should().BeOfType<CypherDateTimeWithOffset>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
         }
         

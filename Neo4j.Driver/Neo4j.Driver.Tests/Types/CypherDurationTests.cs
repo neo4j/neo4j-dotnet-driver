@@ -69,13 +69,20 @@ namespace Neo4j.Driver.Tests.Types
             cypherDuration.Nanos.Should().Be(789215800);
         }
 
-        [Fact]
-        public void ShouldGenerateCorrectString()
+        [Theory]
+        [InlineData(15, 32, 785, 789215800, "P15M32DT785.789215800S")]
+        [InlineData(0, 32, 785, 789215800, "P0M32DT785.789215800S")]
+        [InlineData(0, 0, 785, 789215800, "P0M0DT785.789215800S")]
+        [InlineData(0, 0, 0, 789215800, "P0M0DT0.789215800S")]
+        [InlineData(0, 0, 0, 0, "P0M0DT0.000000000S")]
+        [InlineData(500, 0, 0, 0, "P500M0DT0.000000000S")]
+        [InlineData(0, 0, 0, 5, "P0M0DT0.000000005S")]
+        public void ShouldGenerateCorrectString(int months, int days, int seconds, int nanoseconds, string expected)
         {
-            var cypherDuration = new CypherDuration(15, 32, 785, 789215800);
+            var cypherDuration = new CypherDuration(months, days, seconds, nanoseconds);
             var cypherDurationStr = cypherDuration.ToString();
 
-            cypherDurationStr.Should().Be($"Duration{{months: 15, days: 32, seconds: 785, nanos: 789215800}}");
+            cypherDurationStr.Should().Be(expected);
         }
 
         [Fact]

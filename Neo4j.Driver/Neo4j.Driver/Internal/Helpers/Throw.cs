@@ -96,6 +96,13 @@ namespace Neo4j.Driver.Internal
                 if (!value)
                     throw new System.ArgumentOutOfRangeException($"Expecting {nameofValue} to be true, however the value is false");
             }
+
+            public static void IfValueNotBetween(long value, long minInclusive, long maxInclusive, string parameterName)
+            {
+                if (value < minInclusive || value > maxInclusive)
+                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) must be between {minInclusive} and {maxInclusive}.");
+            }
+
         }
     }
 }

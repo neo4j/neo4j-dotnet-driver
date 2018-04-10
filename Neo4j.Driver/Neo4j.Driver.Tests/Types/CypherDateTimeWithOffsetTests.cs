@@ -64,6 +64,91 @@ namespace Neo4j.Driver.Tests.Types
             cypherDateTime.Offset.Should().Be(dateTime.Offset);
         }
 
+        [Theory]
+        [InlineData(-1000000000)]
+        [InlineData(1000000000)]
+        public void ShouldThrowOnInvalidYear(int year)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(year, 1, 1, 0, 0, 0, 0));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(13)]
+        public void ShouldThrowOnInvalidMonth(int month)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(1990, month, 1, 0, 0, 0, 0));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(2018, 1, 0)]
+        [InlineData(2018, 1, 32)]
+        [InlineData(2018, 6, 31)]
+        [InlineData(2018, 2, 29)]
+        [InlineData(2018, 12, -1)]
+        public void ShouldThrowOnInvalidDay(int year, int month, int day)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(year, month, day, 0, 0, 0, 0));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(24)]
+        public void ShouldThrowOnInvalidHour(int hour)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(1990, 1, 1, hour, 0, 0, 0));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(60)]
+        [InlineData(61)]
+        public void ShouldThrowOnInvalidMinute(int minute)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(1990, 1, 1, 0, minute, 0, 0));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(60)]
+        [InlineData(61)]
+        public void ShouldThrowOnInvalidSecond(int second)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(1990, 1, 1, 0, 0, second, 0));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(999_999_999 + 1)]
+        public void ShouldThrowOnInvalidNanosecond(int nanosecond)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(1990, 1, 1, 0, 0, 0, nanosecond, 0));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(-64801)]
+        [InlineData(64801)]
+        public void ShouldThrowOnInvalidOffset(int offset)
+        {
+            var ex = Record.Exception(() => new CypherDateTimeWithOffset(1990, 1, 1, 0, 0, 0, 0, offset));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
         [Fact]
         public void ShouldConvertToDateTimeOffset()
         {
@@ -73,26 +158,23 @@ namespace Neo4j.Driver.Tests.Types
             cypherDateTime.ToDateTimeOffset().Should().Be(dateTime);
         }
 
-        [Fact]
-        public void ShouldCreateDateWithRawValues()
+        [Theory]
+        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1500, "1947-12-17T23:05:54.192794500+00:25")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1500, "1947-12-05T00:05:54.192794500-00:25")]
+        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1501, "1947-12-17T23:05:54.192794500+00:25:01")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1499, "1947-12-05T00:05:54.192794500-00:24:59")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 0, 1800, "1947-12-05T00:05:54.000000000+00:30")]
+        [InlineData(5, 1, 5, 0, 5, 54, 0, -1800, "0005-01-05T00:05:54.000000000-00:30")]
+        [InlineData(-5, 1, 5, 0, 5, 54, 1250, 0, "-0005-01-05T00:05:54.000001250Z")]
+        [InlineData(999999, 1, 1, 5, 1, 25, 1, 64800, "999999-01-01T05:01:25.000000001+18:00")]
+        [InlineData(-999999, 1, 1, 5, 1, 25, 1, -60000, "-999999-01-01T05:01:25.000000001-16:40")]
+        public void ShouldGenerateCorrectString(int year, int month, int day, int hour, int minute, int second, int nanosecond, int offsetSeconds, string expected)
         {
-            var dateTime = new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945);
-            var cypherDateTime = new CypherDateTimeWithOffset(TemporalHelpers.SecondsSinceEpoch(dateTime.Ticks),
-                TemporalHelpers.NanosOfSecond(dateTime.Ticks), 1500);
-
-            cypherDateTime.DateTime.Should().Be(dateTime);
-            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
-        }
-
-        [Fact]
-        public void ShouldGenerateCorrectString()
-        {
-            var cypherDateTime = new CypherDateTimeWithOffset(1947, 12, 17, 23, 49, 54, 192794500, 1500);
+            var cypherDateTime =
+                new CypherDateTimeWithOffset(year, month, day, hour, minute, second, nanosecond, offsetSeconds);
             var cypherDateTimeStr = cypherDateTime.ToString();
 
-            cypherDateTimeStr.Should()
-                .Be(
-                    $"DateTimeWithOffset{{epochSeconds: {cypherDateTime.EpochSeconds}, nanosOfSecond: {cypherDateTime.NanosOfSecond}, offsetSeconds: {cypherDateTime.OffsetSeconds}}}");
+            cypherDateTimeStr.Should().Be(expected);
         }
 
         [Fact]
@@ -100,9 +182,8 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithOffset(1947, 12, 17, 15, 12, 01, 789000000, 1800);
             var dateTime2 = new CypherDateTimeWithOffset(new DateTime(1947, 12, 17, 15, 12, 01, 789), 1800);
-            var dateTime3 = new CypherDateTimeWithOffset(-695551679, 789000000, 1800);
 
-            dateTime1.GetHashCode().Should().Be(dateTime2.GetHashCode()).And.Be(dateTime3.GetHashCode());
+            dateTime1.GetHashCode().Should().Be(dateTime2.GetHashCode());
         }
 
         [Fact]
@@ -110,9 +191,8 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithOffset(1947, 12, 17, 15, 12, 01, 789000000, 1801);
             var dateTime2 = new CypherDateTimeWithOffset(new DateTime(1947, 12, 17, 15, 12, 01, 790), 1800);
-            var dateTime3 = new CypherDateTimeWithOffset(-695553479, 789000200, 1800);
 
-            dateTime1.GetHashCode().Should().NotBe(dateTime2.GetHashCode()).And.NotBe(dateTime3.GetHashCode());
+            dateTime1.GetHashCode().Should().NotBe(dateTime2.GetHashCode());
         }
 
         [Fact]
@@ -120,10 +200,8 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithOffset(1947, 12, 17, 15, 12, 01, 789000000, 1800);
             var dateTime2 = new CypherDateTimeWithOffset(new DateTime(1947, 12, 17, 15, 12, 01, 789), 1800);
-            var dateTime3 = new CypherDateTimeWithOffset(-695551679, 789000000, 1800);
 
             dateTime1.Should().Be(dateTime2);
-            dateTime1.Should().Be(dateTime3);
         }
 
         [Fact]
@@ -131,10 +209,8 @@ namespace Neo4j.Driver.Tests.Types
         {
             var dateTime1 = new CypherDateTimeWithOffset(1947, 12, 17, 15, 12, 01, 789000000, 1801);
             var dateTime2 = new CypherDateTimeWithOffset(new DateTime(1947, 12, 17, 15, 12, 01, 790), 1800);
-            var dateTime3 = new CypherDateTimeWithOffset(-695553479, 789005000, 1800);
 
             dateTime1.Should().NotBe(dateTime2);
-            dateTime1.Should().NotBe(dateTime3);
         }
 
         [Fact]
