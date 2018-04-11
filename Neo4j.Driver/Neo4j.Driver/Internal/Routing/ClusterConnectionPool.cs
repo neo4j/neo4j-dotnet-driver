@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public override string ToString()
         {
-            return _pools.ValueToString();
+            return _pools.ToContentString();
         }
 
         private IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)

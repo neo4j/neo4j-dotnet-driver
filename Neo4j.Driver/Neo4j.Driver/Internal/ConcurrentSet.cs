@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Internal
 
         public override string ToString()
         {
-            return _dictionary.Keys.ValueToString();
+            return _dictionary.Keys.ToContentString();
         }
     }
 }

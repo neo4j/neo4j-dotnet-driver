@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(uris, connFactory, poolSettings, null);
 
                 pool.ToString().Should().Be(
-                    "[{bolt://123:456/ : _idleConnections: {[]}, _inUseConnections: {[]}}]");
+                    "[{bolt://123:456/, _idleConnections: {[]}, _inUseConnections: {[]}}]");
             }
         }
 

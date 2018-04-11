@@ -109,7 +109,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void UpdateSettings(IDictionary<string, string> keyValuePair)
         {
-            _commandRunner.Debug($"Updating server config to {keyValuePair.ValueToString()}");
+            _commandRunner.Debug($"Updating server config to {keyValuePair.ToContentString()}");
             Neo4jSettingsHelper.UpdateSettings(HomeDir, keyValuePair);
         }
 
