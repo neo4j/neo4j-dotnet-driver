@@ -72,12 +72,16 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="DateTime"/> copy of this date value.
         /// </summary>
-        /// <returns>Equivalent <see cref="DateTime"/> value</returns>
-        public DateTime ToDateTime()
+        /// <value>Equivalent <see cref="DateTime"/> value</value>
+        /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
+        public DateTime DateTime
         {
-            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
+            get
+            {
+                TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
 
-            return new DateTime(Year, Month, Day);
+                return new DateTime(Year, Month, Day);
+            }
         }
 
         /// <summary>

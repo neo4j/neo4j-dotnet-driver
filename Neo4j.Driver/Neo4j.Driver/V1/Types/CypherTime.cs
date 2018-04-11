@@ -101,14 +101,17 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> copy of this time value.
         /// </summary>
-        /// <returns>Equivalent <see cref="TimeSpan"/> value</returns>
+        /// <value>Equivalent <see cref="TimeSpan"/> value</value>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public TimeSpan ToTimeSpan()
+        public TimeSpan Time
         {
-            TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
+            get
+            {
+                TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
 
-            return new TimeSpan(0, Hour, Minute, Second).Add(
-                TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
+                return new TimeSpan(0, Hour, Minute, Second).Add(
+                    TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
+            }
         }
 
         /// <summary>

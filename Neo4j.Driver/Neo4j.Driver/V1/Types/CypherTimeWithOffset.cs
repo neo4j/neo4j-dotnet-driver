@@ -129,6 +129,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the time of this instance.
         /// </summary>
+        /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
         public TimeSpan Time
         {
             get

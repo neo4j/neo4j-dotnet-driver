@@ -156,6 +156,8 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
         /// </summary>
+        /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
+        /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
         public DateTime DateTime
         {
             get

@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Tests.Types
         {
             var cypherDateTime = new CypherDateTime(1947, 12, 17, 23, 49, 54);
 
-            cypherDateTime.ToDateTime().Should().Be(new DateTime(1947, 12, 17, 23, 49, 54));
+            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54));
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.Types
         {
             var cypherDateTime = new CypherDateTime(1947, 12, 17, 23, 49, 54, 192794500);
 
-            cypherDateTime.ToDateTime().Should().Be(new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945));
+            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945));
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.Types
             var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120, DateTimeKind.Local);
             var cypherDateTime = new CypherDateTime(dateTime);
 
-            cypherDateTime.ToDateTime().Should().Be(dateTime);
+            cypherDateTime.DateTime.Should().Be(dateTime);
         }
 
         [Theory]
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldThrowOnOverflow(int year)
         {
             var dateTime = new CypherDateTime(year, 1, 1, 0, 0, 0, 0);
-            var ex = Record.Exception(() => dateTime.ToDateTime());
+            var ex = Record.Exception(() => dateTime.DateTime);
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
         }
@@ -150,7 +150,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldThrowOnTruncation(int nanosecond)
         {
             var dateTime = new CypherDateTime(1, 1, 1, 0, 0, 0, nanosecond);
-            var ex = Record.Exception(() => dateTime.ToDateTime());
+            var ex = Record.Exception(() => dateTime.DateTime);
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }

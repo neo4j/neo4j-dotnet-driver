@@ -44,15 +44,15 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTime"/> from given <see cref="DateTime"/> value.
-        /// The given <see cref="DateTime"/> value will be normalized to local time <see cref="DateTimeKind.Local"/>
+        /// Initializes a new instance of <see cref="CypherDateTime"/> from given <see cref="System.DateTime"/> value.
+        /// The given <see cref="System.DateTime"/> value will be normalized to local time <see cref="DateTimeKind.Local"/>
         /// before being used.
         /// </summary>
         ///
-        /// <remarks>If the <see cref="DateTime"/> value was created with no <see cref="DateTimeKind"/> specified,
+        /// <remarks>If the <see cref="System.DateTime"/> value was created with no <see cref="DateTimeKind"/> specified,
         /// then <see cref="DateTimeKind.Unspecified"/> would be assigned by default.
         /// Possible conversion from UTC to local time might happen when normalizing it to local time.
-        /// <seealso cref="DateTime.ToLocalTime"/>
+        /// <seealso cref="System.DateTime.ToLocalTime"/>
         /// </remarks>
         /// <param name="dateTime"></param>
         public CypherDateTime(DateTime dateTime)
@@ -129,15 +129,19 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="DateTime"/> copy of this date value.
         /// </summary>
-        /// <returns>Equivalent <see cref="DateTime"/> value</returns>
+        /// <value>Equivalent <see cref="DateTime"/> value</value>
+        /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTime ToDateTime()
+        public DateTime DateTime
         {
-            TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
-            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
+            get
+            {
+                TemporalHelpers.AssertNoTruncation(this, nameof(System.DateTime));
+                TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
 
-            return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
-                TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
+                return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
+                    TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
+            }
         }
 
         /// <summary>
