@@ -25,7 +25,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date time value with a time zone, specified as a zone id
     /// </summary>
-    public struct CypherDateTimeWithZoneId : ICypherValue, IEquatable<CypherDateTimeWithZoneId>, IHasDateTimeComponents
+    public struct CypherDateTimeWithZoneId : IValue, IEquatable<CypherDateTimeWithZoneId>, IComparable, IComparable<CypherDateTimeWithZoneId>, IHasDateTimeComponents
     {
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTimeOffset"/> value
@@ -188,7 +188,9 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(CypherDateTimeWithZoneId other)
         {
-            return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond && string.Equals(ZoneId, other.ZoneId);
+            return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour &&
+                   Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond &&
+                   string.Equals(ZoneId, other.ZoneId);
         }
 
         /// <summary>
@@ -233,5 +235,82 @@ namespace Neo4j.Driver.V1
                 $"{TemporalHelpers.ToIsoDateString(Year, Month, Day)}T{TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond)}[{ZoneId}]";
         }
 
+        /// <summary>
+        /// Compares the value of this instance to a specified <see cref="CypherDateTimeWithZoneId"/> value and returns an integer 
+        /// that indicates whether this instance is earlier than, the same as, or later than the specified 
+        /// DateTime value.
+        /// </summary>
+        /// <param name="other">The object to compare to the current instance.</param>
+        /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
+        public int CompareTo(CypherDateTimeWithZoneId other)
+        {
+            var thisEpochSeconds = this.ToEpochSeconds() - (int)Offset.TotalSeconds;
+            var otherEpochSeconds = other.ToEpochSeconds() - (int)other.Offset.TotalSeconds;
+            var epochComparison = thisEpochSeconds.CompareTo(otherEpochSeconds);
+            if (epochComparison != 0) return epochComparison;
+            return Nanosecond.CompareTo(other.Nanosecond);
+        }
+
+        /// <summary>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherDateTimeWithZoneId"/>
+        /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
+        /// or later than the specified <see cref="CypherDateTimeWithZoneId"/> value.
+        /// </summary>
+        /// <param name="obj">The object to compare to the current instance.</param>
+        /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
+        public int CompareTo(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return 1;
+            if (!(obj is CypherDateTimeWithZoneId)) throw new ArgumentException($"Object must be of type {nameof(CypherDateTimeWithZoneId)}");
+            return CompareTo((CypherDateTimeWithZoneId) obj);
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> is earlier than another specified 
+        /// <see cref="CypherDateTimeWithZoneId"/>.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator <(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        {
+            return left.CompareTo(right) < 0;
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> is later than another specified 
+        /// <see cref="CypherDateTimeWithZoneId"/>.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator >(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        {
+            return left.CompareTo(right) > 0;
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> represents a duration that is the 
+        /// same as or later than the other specified <see cref="CypherDateTimeWithZoneId"/> 
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator <=(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        {
+            return left.CompareTo(right) <= 0;
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> represents a duration that is the 
+        /// same as or earlier than the other specified <see cref="CypherDateTimeWithZoneId"/> 
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator >=(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        {
+            return left.CompareTo(right) >= 0;
+        }
     }
 }

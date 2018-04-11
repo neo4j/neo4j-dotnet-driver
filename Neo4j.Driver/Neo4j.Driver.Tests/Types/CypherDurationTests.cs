@@ -138,5 +138,91 @@ namespace Neo4j.Driver.Tests.Types
 
             duration.Equals(other).Should().BeFalse();
         }
+
+        [Fact]
+        public void ShouldThrowOnCompareToOtherType()
+        {
+            var duration1 = new CypherDuration(0, 0, 0, 0);
+
+            var ex = Record.Exception(() => duration1.CompareTo(new DateTime(1947, 12, 17)));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentException>();
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareToNull()
+        {
+            var duration1 = new CypherDuration(0, 0, 0, 0);
+
+            var comp = duration1.CompareTo(null);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareTo()
+        {
+            var duration1 = new CypherDuration(1, 12, 500, 999999999);
+            var duration2 = new CypherDuration(1, 12, 500, 0);
+
+            var comp = duration1.CompareTo(duration2);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareToAbsolute()
+        {
+            var duration1 = new CypherDuration(0, 1, 0, 1);
+            var duration2 = new CypherDuration(0, 0, 86400, 0);
+
+            var comp = duration1.CompareTo(duration2);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportEqualOnCompareTo()
+        {
+            var duration1 = new CypherDuration(1, 12, 500, 999999999);
+            var duration2 = new CypherDuration(1, 12, 500, 999999999);
+
+            var comp = duration1.CompareTo(duration2);
+
+            comp.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldReportEqualOnCompareToAbsolute()
+        {
+            var duration1 = new CypherDuration(0, 1, 0, 999999999);
+            var duration2 = new CypherDuration(0, 0, 86400, 999999999);
+
+            var comp = duration1.CompareTo(duration2);
+
+            comp.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldReportSmallerOnCompareTo()
+        {
+            var duration1 = new CypherDuration(1, 12, 500, 999999999);
+            var duration2 = new CypherDuration(1, 12, 501, 0);
+
+            var comp = duration1.CompareTo(duration2);
+
+            comp.Should().BeLessThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportSmallerOnCompareToAbsolute()
+        {
+            var duration1 = new CypherDuration(0, 1, 0, 999999999);
+            var duration2 = new CypherDuration(0, 0, 86401, 999999999);
+
+            var comp = duration1.CompareTo(duration2);
+
+            comp.Should().BeLessThan(0);
+        }
     }
 }

@@ -196,5 +196,91 @@ namespace Neo4j.Driver.Tests.Types
 
             time.Equals(other).Should().BeFalse();
         }
+
+        [Fact]
+        public void ShouldThrowOnCompareToOtherType()
+        {
+            var time1 = new CypherTimeWithOffset(0, 0, 0, 0, 1800);
+
+            var ex = Record.Exception(() => time1.CompareTo(new DateTime(1947, 12, 17)));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentException>();
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareToNull()
+        {
+            var time1 = new CypherTimeWithOffset(0, 0, 0, 0, 1800);
+
+            var comp = time1.CompareTo(null);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareTo()
+        {
+            var time1 = new CypherTimeWithOffset(0, 0, 0, 0, 1800);
+            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+
+            var comp = time1.CompareTo(time2);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareToDiffOffset()
+        {
+            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1700);
+            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1750);
+
+            var comp = time1.CompareTo(time2);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportEqualOnCompareTo()
+        {
+            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+
+            var comp = time1.CompareTo(time2);
+
+            comp.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldReportEqualOnCompareToDiffOffset()
+        {
+            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+            var time2 = new CypherTimeWithOffset(0, 59, 59, 999999999, 5400);
+
+            var comp = time1.CompareTo(time2);
+
+            comp.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldReportSmallerOnCompareTo()
+        {
+            var time1 = new CypherTimeWithOffset(0, 59, 59, 999999999, 1800);
+            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+
+            var comp = time1.CompareTo(time2);
+
+            comp.Should().BeLessThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportSmallerOnCompareToDiffOffset()
+        {
+            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, -1799);
+
+            var comp = time1.CompareTo(time2);
+
+            comp.Should().BeLessThan(0);
+        }
     }
 }

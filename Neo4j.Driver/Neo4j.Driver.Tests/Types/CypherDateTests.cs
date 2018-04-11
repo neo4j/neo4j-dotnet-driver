@@ -158,5 +158,58 @@ namespace Neo4j.Driver.Tests.Types
 
             date.Equals(other).Should().BeFalse();
         }
+
+        [Fact]
+        public void ShouldThrowOnCompareToOtherType()
+        {
+            var date1 = new CypherDate(1947, 12, 17);
+
+            var ex = Record.Exception(() => date1.CompareTo(new DateTime(1947, 12, 17)));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentException>();
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareToNull()
+        {
+            var date1 = new CypherDate(1947, 12, 17);
+
+            var comp = date1.CompareTo(null);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareTo()
+        {
+            var date1 = new CypherDate(1947, 12, 17);
+            var date2 = new CypherDate(1947, 12, 16);
+
+            var comp = date1.CompareTo(date2);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportEqualOnCompareTo()
+        {
+            var date1 = new CypherDate(1947, 12, 17);
+            var date2 = new CypherDate(1947, 12, 17);
+
+            var comp = date1.CompareTo(date2);
+
+            comp.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldReportSmallerOnCompareTo()
+        {
+            var date1 = new CypherDate(1947, 12, 16);
+            var date2 = new CypherDate(1947, 12, 17);
+
+            var comp = date1.CompareTo(date2);
+
+            comp.Should().BeLessThan(0);
+        }
     }
 }

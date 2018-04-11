@@ -24,9 +24,8 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date value, without a time zone and time related components
     /// </summary>
-    public struct CypherDate : ICypherValue, IEquatable<CypherDate>, IHasDateComponents
+    public struct CypherDate : IValue, IEquatable<CypherDate>, IComparable, IComparable<CypherDate>, IHasDateComponents
     {
-
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDate"/> from a date value
         /// </summary>
@@ -130,6 +129,84 @@ namespace Neo4j.Driver.V1
         public override string ToString()
         {
             return TemporalHelpers.ToIsoDateString(Year, Month, Day);
+        }
+
+        /// <summary>
+        /// Compares the value of this instance to a specified <see cref="CypherDate"/> value and returns an integer 
+        /// that indicates whether this instance is earlier than, the same as, or later than the specified 
+        /// DateTime value.
+        /// </summary>
+        /// <param name="other">The object to compare to the current instance.</param>
+        /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
+        public int CompareTo(CypherDate other)
+        {
+            var yearComparison = Year.CompareTo(other.Year);
+            if (yearComparison != 0) return yearComparison;
+            var monthComparison = Month.CompareTo(other.Month);
+            if (monthComparison != 0) return monthComparison;
+            return Day.CompareTo(other.Day);
+        }
+
+        /// <summary>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherDate"/>
+        /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
+        /// or later than the specified <see cref="CypherDate"/> value.
+        /// </summary>
+        /// <param name="obj">The object to compare to the current instance.</param>
+        /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
+        public int CompareTo(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return 1;
+            if (!(obj is CypherDate)) throw new ArgumentException($"Object must be of type {nameof(CypherDate)}");
+            return CompareTo((CypherDate) obj);
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDate"/> is earlier than another specified 
+        /// <see cref="CypherDate"/>.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator <(CypherDate left, CypherDate right)
+        {
+            return left.CompareTo(right) < 0;
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDate"/> is later than another specified 
+        /// <see cref="CypherDate"/>.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator >(CypherDate left, CypherDate right)
+        {
+            return left.CompareTo(right) > 0;
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDate"/> represents a duration that is the 
+        /// same as or later than the other specified <see cref="CypherDate"/> 
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator <=(CypherDate left, CypherDate right)
+        {
+            return left.CompareTo(right) <= 0;
+        }
+
+        /// <summary>
+        /// Determines whether one specified <see cref="CypherDate"/> represents a duration that is the 
+        /// same as or earlier than the other specified <see cref="CypherDate"/> 
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns></returns>
+        public static bool operator >=(CypherDate left, CypherDate right)
+        {
+            return left.CompareTo(right) >= 0;
         }
     }
 }
