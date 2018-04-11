@@ -39,8 +39,8 @@
     <PresentationStyle>VS2013</PresentationStyle>
     <Preliminary>False</Preliminary>
     <NamingMethod>Guid</NamingMethod>
-    <HelpTitle>Neo4j .NET Driver</HelpTitle>
-    <CopyrightText>Copyright %28c%29 2002-2017 Neo4j</CopyrightText>
+    <HelpTitle>Neo4j Bolt Driver 1.6 for .NET</HelpTitle>
+    <CopyrightText>Copyright %28c%29 2002-2018 Neo4j</CopyrightText>
     <CopyrightHref>http://neo4j.com</CopyrightHref>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
     <NamespaceSummaries>
