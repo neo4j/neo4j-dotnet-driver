@@ -107,6 +107,21 @@ namespace Neo4j.Driver.Tests.Types
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(20)]
+        [InlineData(99)]
+        [InlineData(999000727)]
+        [InlineData(999000750)]
+        [InlineData(999000001)]
+        public void ShouldThrowOnTruncation(int nanosecond)
+        {
+            var time = new CypherTimeWithOffset(0, 0, 0, nanosecond, 0);
+            var ex = Record.Exception(() => time.Time);
+
+            ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
+        }
+
+        [Theory]
         [InlineData(13, 15, 59, 274000000, 1500, "13:15:59.274000000+00:25")]
         [InlineData(0, 1, 2, 000000000, 1501, "00:01:02.000000000+00:25:01")]
         [InlineData(0, 1, 2, 000000000, -1501, "00:01:02.000000000-00:25:01")]

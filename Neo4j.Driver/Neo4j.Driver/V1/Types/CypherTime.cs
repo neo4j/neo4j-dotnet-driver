@@ -105,7 +105,7 @@ namespace Neo4j.Driver.V1
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
         public TimeSpan ToTimeSpan()
         {
-            TemporalHelpers.AssertNoTruncation(Nanosecond, nameof(TimeSpan));
+            TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
 
             return new TimeSpan(0, Hour, Minute, Second).Add(
                 TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));

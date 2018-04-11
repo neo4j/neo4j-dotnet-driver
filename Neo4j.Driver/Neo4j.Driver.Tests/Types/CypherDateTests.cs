@@ -76,6 +76,20 @@ namespace Neo4j.Driver.Tests.Types
         }
 
         [Theory]
+        [InlineData(-9999)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(10000)]
+        [InlineData(9999999)]
+        public void ShouldThrowOnOverflow(int year)
+        {
+            var date = new CypherDate(year, 1, 1);
+            var ex = Record.Exception(() => date.ToDateTime());
+
+            ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
+        }
+
+        [Theory]
         [InlineData(1947, 12, 17, "1947-12-17")]
         [InlineData(1947, 1, 1, "1947-01-01")]
         [InlineData(1, 1, 1, "0001-01-01")]

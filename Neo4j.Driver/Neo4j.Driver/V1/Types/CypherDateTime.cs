@@ -133,7 +133,8 @@ namespace Neo4j.Driver.V1
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
         public DateTime ToDateTime()
         {
-            TemporalHelpers.AssertNoTruncation(Nanosecond, nameof(DateTime));
+            TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
+            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
 
             return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
                 TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));

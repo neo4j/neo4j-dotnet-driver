@@ -153,7 +153,8 @@ namespace Neo4j.Driver.V1
         {
             get
             {
-                TemporalHelpers.AssertNoTruncation(Nanosecond, nameof(DateTime));
+                TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
+                TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
 
                 return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
                     TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));

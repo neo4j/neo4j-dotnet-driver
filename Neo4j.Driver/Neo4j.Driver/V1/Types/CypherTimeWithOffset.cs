@@ -133,7 +133,7 @@ namespace Neo4j.Driver.V1
         {
             get
             {
-                TemporalHelpers.AssertNoTruncation(Nanosecond, nameof(TimeSpan));
+                TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
 
                 return new TimeSpan(0, Hour, Minute, Second).Add(
                     TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));

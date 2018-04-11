@@ -75,10 +75,7 @@ namespace Neo4j.Driver.V1
         /// <returns>Equivalent <see cref="DateTime"/> value</returns>
         public DateTime ToDateTime()
         {
-            if (Year > DateTime.MaxValue.Year || Year < DateTime.MinValue.Year)
-            {
-                throw new ValueOverflowException($"Year component ({Year}) of this instance is not between valid values for a DateTime.");
-            }
+            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
 
             return new DateTime(Year, Month, Day);
         }

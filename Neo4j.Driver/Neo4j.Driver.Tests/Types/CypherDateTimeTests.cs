@@ -127,6 +127,35 @@ namespace Neo4j.Driver.Tests.Types
         }
 
         [Theory]
+        [InlineData(-9999)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(10000)]
+        [InlineData(9999999)]
+        public void ShouldThrowOnOverflow(int year)
+        {
+            var dateTime = new CypherDateTime(year, 1, 1, 0, 0, 0, 0);
+            var ex = Record.Exception(() => dateTime.ToDateTime());
+
+            ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(20)]
+        [InlineData(99)]
+        [InlineData(999000727)]
+        [InlineData(999000750)]
+        [InlineData(999000001)]
+        public void ShouldThrowOnTruncation(int nanosecond)
+        {
+            var dateTime = new CypherDateTime(1, 1, 1, 0, 0, 0, nanosecond);
+            var ex = Record.Exception(() => dateTime.ToDateTime());
+
+            ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
+        }
+
+        [Theory]
         [InlineData(1947, 12, 17, 23, 5, 54, 192794500, "1947-12-17T23:05:54.192794500")]
         [InlineData(1947, 12, 5, 0, 5, 54, 192794500, "1947-12-05T00:05:54.192794500")]
         [InlineData(1947, 12, 5, 0, 5, 54, 0, "1947-12-05T00:05:54.000000000")]

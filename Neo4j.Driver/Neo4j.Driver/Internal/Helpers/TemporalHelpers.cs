@@ -201,12 +201,20 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public static void AssertNoTruncation(long nanosecond, string target)
+        public static void AssertNoOverflow(IHasDateComponents date, string target)
         {
-            if (nanosecond % NanosecondsPerTick > 0)
+            if (date.Year > DateTime.MaxValue.Year || date.Year < DateTime.MinValue.Year)
+            {
+                throw new ValueOverflowException($"Year component ({date.Year}) of this instance is not valid for a {target} instance.");
+            }
+        }
+
+        public static void AssertNoTruncation(IHasTimeComponents time, string target)
+        {
+            if (time.Nanosecond % NanosecondsPerTick > 0)
             {
                 throw new ValueTruncationException(
-                    $"Conversion of this instance into {target} will cause a truncation of ${nanosecond % TemporalHelpers.NanosecondsPerTick}ns.");
+                    $"Conversion of this instance into {target} will cause a truncation of ${time.Nanosecond % TemporalHelpers.NanosecondsPerTick}ns.");
             }
         }
 
