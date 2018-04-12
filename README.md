@@ -1,41 +1,120 @@
 # Neo4j .NET Driver
-This is the source code of the driver under development. To get the latest stable released driver, checkout [Nuget](https://www.nuget.org/packages/Neo4j.Driver/). To find changelogs, examples of how to use the driver and API documents of the driver, checkout our [wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki). 
+This is the official Neo4j .NET driver for connecting to Neo4j 3.0.0+ databases via in-house binary protocol Bolt.
 
-## Minimum viable snippet
+Resources to get you started:
+* [Nuget](https://www.nuget.org/packages/Neo4j.Driver/) for getting the latest driver.
+* [Driver Wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki) for changelogs, developer manual and API documents of this driver.
+* [Neo4j Docs](https://neo4j.com/docs/) for other important Neo4j documentations.
+* [Movies Example Application](https://github.com/neo4j-examples/movies-dotnet-bolt) a sample small project using the drive.r
+
+## For Application Developers
+This section targeting at application developers who would like to use this driver in appliation projects for connecting to a Neo4j instance or a Neo4j cluster.
+
+### Getting the Driver
+
+The Neo4j Driver is distributed exclusively via [Nuget](https://www.nuget.org/packages/Neo4j.Driver).
 
 Add the driver to your project using the Nuget Package Manager:
+```
+PM> Install-Package Neo4j.Driver
+```
+### Minimum Viable Snippet
 
-    PM> Install-Package Neo4j.Driver
+Connect to a Neo4j database
+```csharp
+IDriver driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"));
+using(ISession session = driver.Session())
+{
+    IStatementResult result = session.Run("CREATE (n) RETURN n");
+}
+driver.Dispose();
+```
+There are a few points that need to be highlighted when adding this driver into your project:
+* Each `IDriver` instance maintains a pool of connections inside, as a result, it is recommended to only use **one driver per application**.
+* It is considerably cheap to create new sessions and transactions,
+as sessions and transactions do not create new connections as long as there are free connections available in the connection pool.
+* The driver is thread-safe, while the session or the transaction is not thread-safe.
 
-Connect to a Neo4j 3.1.0+ database
+### Parsing Result Values
+#### Record Stream
+A cypher execution result is comprised of a stream records followed by a result summary.
+The records inside the result are accessible via `IEnumerable` interface on `IStatementResult`.
+Our recommended way to access these result records is to make use of `Linq` methods such as `Single`, `ToList`, `Select`.
 
-    using(var driver = GraphDatabase.Driver( "bolt://localhost:7687" ))
-    using(var session = driver.Session())
-    {
-        var result = session.Run("CREATE (n) RETURN n");
-    }
+Process result record using `Linq`:
+```csharp
+IStatementResult result = tx.Run("MATCH (a:Person) RETURN a.name as name");
+List<string> people = result.Select(record => record["name"].As<string>()).ToList();
+```
+The records are given as a record stream in the sense that:
+* A record is accessible once it arrives at the client. The record does not need to wait for the while result to complete before it can be visited.
+* Each record could only be visited (a.k.a. consumed) once.
 
-# Getting the Driver
+For example, given a record stream in a result:
 
-The Neo4j Driver is distributed exclusively via Nuget and can be added to your project via the Package Manager.
+| Keys | "name" |
+| -------: | :----- |
+| Record 0 | "Bruce Wayne" |
+| Record 1 | "Selina Kyle" |
 
-## Milestones
+Visiting the record stream:
+```csharp
+result.First(); // Bruce Wayne
+result.First(); // Selina Kyle as you already consumed the previous "first" record!
+```
 
-Available on [Nuget](https://www.nuget.org/packages/Neo4j.Driver)
+#### Value Types
 
-## Snapshots
+The driver currently exposes value types in the record all as `object`.
+The real types of the returned values are Cypher types.
+The mapping between Cypher types and the types used by this driver (to represent the same Cypher type) are listed in the table bellow.
 
-Snapshot builds are available at our [MyGet feed](https://www.myget.org/feed/neo4j-driver-snapshots/package/nuget/Neo4j.Driver), add the feed to your Nuget Sources
+| Cypher Type | Type used by this Driver
+| ---: | :--- |
+| *null* | null |
+| List | IList< object > |
+| Map  | IDictionary<string, object> |
+| Boolean| boolean |
+| Integer| long |
+| Float| float |
+| String| string |
+| ByteArray| byte[] |
+| Date| |
+| Time| |
+| LocalTime| |
+| DateTime| |
+| LocalDateTime| |
+| Duration| |
+| Point| |
+| Node| INode |
+| Relationship| IRelationship |
+| Path| IPath |
+
+To convert from `object` to the real local type, an helper method `ValueExtensions#As<T>` is available for this purpose:
+```csharp
+IRecord record = result.First();
+string name = record["name"].As<string>();
+```
+
+## For Driver Developers
+This section targets at people who would like to compile the source code on their own machine for the purpose of, for example,
+contributing a PR to this repository.
+Before contributing to this project, please take a few minutes and read our [Contributing Criteria](https://github.com/neo4j/neo4j-dotnet-driver/blob/1.6/CONTRIBUTING.md).
+
+
+### Snapshots
+
+Snapshot builds are available at our [MyGet feed](https://www.myget.org/feed/neo4j-driver-snapshots/package/nuget/Neo4j.Driver), add the feed to your Nuget Sources to access snapshot artifacts.
 
 * [https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json](https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json)
 
-# Building the source code
+### Building the Source Code
 
-## Visual Studio Version
+#### Visual Studio Version
 
 The driver is written in C# 7 so will require Visual Studio 2017 (community edition).
 
-## Integration Tests
+#### Integration Tests
 
 The integration tests will use [boltkit](https://github.com/neo4j-contrib/boltkit) to download and install a database instance on your local machine.
 They can fail for three main reasons:
@@ -47,7 +126,7 @@ They can fail for three main reasons:
 The database installation uses boltkit `neoctrl-install` command to install the database.
 The integration tests could pass parameters to this command by setting environment variable `NeoctrlArgs`.
 
-## Run tests
+#### Run tests
 The simplest way to run all tests from command line is to run `runTests.ps1` powershell script:
 
 	.\Neo4j.Driver\runTests.ps1
