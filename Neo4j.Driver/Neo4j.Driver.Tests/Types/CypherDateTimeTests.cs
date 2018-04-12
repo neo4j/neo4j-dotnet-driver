@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
@@ -276,6 +277,57 @@ namespace Neo4j.Driver.Tests.Types
             var comp = dateTime1.CompareTo(dateTime2);
 
             comp.Should().BeLessThan(0);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToDateTime()
+        {
+            var date = new DateTime(1947, 12, 16, 12, 15, 59, 660);
+            var date1 = new CypherDateTime(date);
+            var date2 = Convert.ToDateTime(date1);
+            var date3 = Convert.ChangeType(date1, typeof(DateTime));
+
+            date2.Should().Be(date);
+            date3.Should().Be(date);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToString()
+        {
+            var date = new CypherDateTime(1947, 12, 16, 12, 15, 59, 660000999);
+            var dateStr1 = Convert.ToString(date);
+            var dateStr2 = Convert.ChangeType(date, typeof(string));
+
+            dateStr1.Should().Be("1947-12-16T12:15:59.660000999");
+            dateStr2.Should().Be("1947-12-16T12:15:59.660000999");
+        }
+
+        [Fact]
+        public void ShouldThrowWhenConversionIsNotSupported()
+        {
+            var date = new CypherDateTime(1947, 12, 16, 12, 15, 59, 660000999);
+            var conversions = new Action[]
+            {
+                () => Convert.ToBoolean(date),
+                () => Convert.ToByte(date),
+                () => Convert.ToChar(date),
+                () => Convert.ToDecimal(date),
+                () => Convert.ToDouble(date),
+                () => Convert.ToInt16(date),
+                () => Convert.ToInt32(date),
+                () => Convert.ToInt64(date),
+                () => Convert.ToSByte(date),
+                () => Convert.ToUInt16(date),
+                () => Convert.ToUInt32(date),
+                () => Convert.ToUInt64(date),
+                () => Convert.ToSingle(date),
+                () => Convert.ChangeType(date, typeof(ArrayList))
+            };
+
+            foreach (var testAction in conversions)
+            {
+                testAction.ShouldThrow<InvalidCastException>();
+            }
         }
     }
 }

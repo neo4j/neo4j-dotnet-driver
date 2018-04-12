@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using FluentAssertions;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -222,6 +223,68 @@ namespace Neo4j.Driver.Tests.Types
             var comp = time1.CompareTo(time2);
 
             comp.Should().BeLessThan(0);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToDateTime()
+        {
+            var time = new TimeSpan(0, 12, 15, 59, 660);
+            var time1 = new CypherTime(DateTime.Today.Add(time));
+            var time2 = Convert.ToDateTime(time1);
+            var time3 = (DateTime)Convert.ChangeType(time1, typeof(DateTime));
+
+            time2.TimeOfDay.Should().Be(time);
+            time3.TimeOfDay.Should().Be(time);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToTimeSpan()
+        {
+            var time = new TimeSpan(0, 12, 15, 59, 660);
+            var date = DateTime.Today.Add(time);
+            var time1 = new CypherTime(date);
+            var time2 = (TimeSpan)Convert.ChangeType(time1, typeof(TimeSpan));
+
+            time2.Should().Be(time);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToString()
+        {
+            var time = new CypherTime(12, 15, 59, 660000999);
+            var timeStr1 = Convert.ToString(time);
+            var timeStr2 = Convert.ChangeType(time, typeof(string));
+
+            timeStr1.Should().Be("12:15:59.660000999");
+            timeStr2.Should().Be("12:15:59.660000999");
+        }
+
+        [Fact]
+        public void ShouldThrowWhenConversionIsNotSupported()
+        {
+            var time = new CypherTime(12, 15, 59, 660000999);
+            var conversions = new Action[]
+            {
+                () => Convert.ToBoolean(time),
+                () => Convert.ToByte(time),
+                () => Convert.ToChar(time),
+                () => Convert.ToDecimal(time),
+                () => Convert.ToDouble(time),
+                () => Convert.ToInt16(time),
+                () => Convert.ToInt32(time),
+                () => Convert.ToInt64(time),
+                () => Convert.ToSByte(time),
+                () => Convert.ToUInt16(time),
+                () => Convert.ToUInt32(time),
+                () => Convert.ToUInt64(time),
+                () => Convert.ToSingle(time),
+                () => Convert.ChangeType(time, typeof(ArrayList))
+            };
+
+            foreach (var testAction in conversions)
+            {
+                testAction.ShouldThrow<InvalidCastException>();
+            }
         }
     }
 }

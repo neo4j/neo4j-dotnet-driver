@@ -24,7 +24,8 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a time value with a UTC offset
     /// </summary>
-    public struct CypherTimeWithOffset : IValue, IEquatable<CypherTimeWithOffset>, IComparable, IComparable<CypherTimeWithOffset>, IHasTimeComponents
+    public struct CypherTimeWithOffset : IValue, IEquatable<CypherTimeWithOffset>, IComparable,
+        IComparable<CypherTimeWithOffset>, IConvertible, IHasTimeComponents
     {
         /// <summary>
         /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from time components of given <see cref="DateTime"/> value
@@ -32,7 +33,7 @@ namespace Neo4j.Driver.V1
         /// <param name="time"></param>
         /// <param name="offset"></param>
         public CypherTimeWithOffset(DateTime time, TimeSpan offset)
-            : this(time.TimeOfDay, (int)offset.TotalSeconds)
+            : this(time.TimeOfDay, (int) offset.TotalSeconds)
         {
 
         }
@@ -54,7 +55,8 @@ namespace Neo4j.Driver.V1
         /// <param name="time"></param>
         /// <param name="offsetSeconds"></param>
         private CypherTimeWithOffset(TimeSpan time, int offsetSeconds)
-            : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks), offsetSeconds)
+            : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks),
+                offsetSeconds)
         {
 
         }
@@ -82,11 +84,16 @@ namespace Neo4j.Driver.V1
         /// <param name="offsetSeconds"></param>
         public CypherTimeWithOffset(int hour, int minute, int second, int nanosecond, int offsetSeconds)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(offsetSeconds, TemporalHelpers.MinOffset, TemporalHelpers.MaxOffset, nameof(offsetSeconds));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour,
+                nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute,
+                TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond,
+                TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond,
+                TemporalHelpers.MaxNanosecond, nameof(nanosecond));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(offsetSeconds, TemporalHelpers.MinOffset,
+                TemporalHelpers.MaxOffset, nameof(offsetSeconds));
 
             Hour = hour;
             Minute = minute;
@@ -155,7 +162,8 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(CypherTimeWithOffset other)
         {
-            return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
+            return Hour == other.Hour && Minute == other.Minute && Second == other.Second &&
+                   Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
         }
 
         /// <summary>
@@ -186,7 +194,7 @@ namespace Neo4j.Driver.V1
                 return hashCode;
             }
         }
-        
+
         /// <summary>
         /// Converts the value of the current <see cref="CypherTimeWithOffset"/> object to its equivalent string representation.
         /// </summary>
@@ -232,7 +240,8 @@ namespace Neo4j.Driver.V1
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherTimeWithOffset)) throw new ArgumentException($"Object must be of type {nameof(CypherTimeWithOffset)}");
+            if (!(obj is CypherTimeWithOffset))
+                throw new ArgumentException($"Object must be of type {nameof(CypherTimeWithOffset)}");
             return CompareTo((CypherTimeWithOffset) obj);
         }
 
@@ -283,5 +292,99 @@ namespace Neo4j.Driver.V1
         {
             return left.CompareTo(right) >= 0;
         }
+
+        #region IConvertible Implementation
+
+        TypeCode IConvertible.GetTypeCode()
+        {
+            return TypeCode.Object;
+        }
+
+        bool IConvertible.ToBoolean(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
+        }
+
+        char IConvertible.ToChar(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
+        }
+
+        sbyte IConvertible.ToSByte(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
+        }
+
+        byte IConvertible.ToByte(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
+        }
+
+        short IConvertible.ToInt16(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
+        }
+
+        ushort IConvertible.ToUInt16(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
+        }
+
+        int IConvertible.ToInt32(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
+        }
+
+        uint IConvertible.ToUInt32(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
+        }
+
+        long IConvertible.ToInt64(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
+        }
+
+        ulong IConvertible.ToUInt64(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
+        }
+
+        float IConvertible.ToSingle(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
+        }
+
+        double IConvertible.ToDouble(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
+        }
+
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
+        }
+
+        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to DateTime is not supported.");
+        }
+
+        string IConvertible.ToString(IFormatProvider provider)
+        {
+            return ToString();
+        }
+
+        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+        {
+            if (conversionType == typeof(string))
+            {
+                return ToString();
+            }
+
+            throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
+        }
+
+        #endregion
     }
 }

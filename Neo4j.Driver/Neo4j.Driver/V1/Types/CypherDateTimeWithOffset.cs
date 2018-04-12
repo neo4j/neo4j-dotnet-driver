@@ -24,7 +24,8 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date time value with a time zone, specified as a UTC offset
     /// </summary>
-    public struct CypherDateTimeWithOffset : IValue, IEquatable<CypherDateTimeWithOffset>, IComparable, IComparable<CypherDateTimeWithOffset>, IHasDateTimeComponents
+    public struct CypherDateTimeWithOffset : IValue, IEquatable<CypherDateTimeWithOffset>, IComparable,
+        IComparable<CypherDateTimeWithOffset>, IConvertible, IHasDateTimeComponents
     {
         /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTimeWithOffset"/> from given <see cref="DateTimeOffset"/> value.
@@ -42,7 +43,7 @@ namespace Neo4j.Driver.V1
         /// <param name="dateTime"></param>
         /// <param name="offset"></param>
         public CypherDateTimeWithOffset(DateTime dateTime, TimeSpan offset)
-            : this(dateTime, (int)offset.TotalSeconds)
+            : this(dateTime, (int) offset.TotalSeconds)
         {
 
         }
@@ -53,7 +54,8 @@ namespace Neo4j.Driver.V1
         /// <param name="dateTime"></param>
         /// <param name="offsetSeconds"></param>
         public CypherDateTimeWithOffset(DateTime dateTime, int offsetSeconds)
-            : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks), offsetSeconds)
+            : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
+                TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks), offsetSeconds)
         {
 
         }
@@ -68,7 +70,8 @@ namespace Neo4j.Driver.V1
         /// <param name="minute"></param>
         /// <param name="second"></param>
         /// <param name="offsetSeconds"></param>
-        public CypherDateTimeWithOffset(int year, int month, int day, int hour, int minute, int second, int offsetSeconds)
+        public CypherDateTimeWithOffset(int year, int month, int day, int hour, int minute, int second,
+            int offsetSeconds)
             : this(year, month, day, hour, minute, second, 0, offsetSeconds)
         {
 
@@ -85,16 +88,25 @@ namespace Neo4j.Driver.V1
         /// <param name="second"></param>
         /// <param name="nanosecond"></param>
         /// <param name="offsetSeconds"></param>
-        public CypherDateTimeWithOffset(int year, int month, int day, int hour, int minute, int second, int nanosecond, int offsetSeconds)
+        public CypherDateTimeWithOffset(int year, int month, int day, int hour, int minute, int second, int nanosecond,
+            int offsetSeconds)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear, nameof(year));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth, nameof(month));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay, TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(offsetSeconds, TemporalHelpers.MinOffset, TemporalHelpers.MaxOffset, nameof(offsetSeconds));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear,
+                nameof(year));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth,
+                TemporalHelpers.MaxMonth, nameof(month));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay,
+                TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour,
+                nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute,
+                TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond,
+                TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond,
+                TemporalHelpers.MaxNanosecond, nameof(nanosecond));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(offsetSeconds, TemporalHelpers.MinOffset,
+                TemporalHelpers.MaxOffset, nameof(offsetSeconds));
 
             Year = year;
             Month = month;
@@ -174,16 +186,13 @@ namespace Neo4j.Driver.V1
         /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
         /// </summary>
         public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
-        
+
         /// <summary>
         /// Converts this instance to an equivalent <see cref="DateTimeOffset"/> value
         /// </summary>
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTimeOffset ToDateTimeOffset()
-        {
-            return new DateTimeOffset(DateTime, Offset);
-        }
+        public DateTimeOffset DateTimeOffset => new DateTimeOffset(DateTime, Offset);
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
@@ -267,7 +276,8 @@ namespace Neo4j.Driver.V1
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherDateTimeWithOffset)) throw new ArgumentException($"Object must be of type {nameof(CypherDateTimeWithOffset)}");
+            if (!(obj is CypherDateTimeWithOffset))
+                throw new ArgumentException($"Object must be of type {nameof(CypherDateTimeWithOffset)}");
             return CompareTo((CypherDateTimeWithOffset) obj);
         }
 
@@ -318,5 +328,109 @@ namespace Neo4j.Driver.V1
         {
             return left.CompareTo(right) >= 0;
         }
+
+        #region IConvertible Implementation
+
+        TypeCode IConvertible.GetTypeCode()
+        {
+            return TypeCode.Object;
+        }
+
+        bool IConvertible.ToBoolean(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
+        }
+
+        char IConvertible.ToChar(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
+        }
+
+        sbyte IConvertible.ToSByte(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
+        }
+
+        byte IConvertible.ToByte(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
+        }
+
+        short IConvertible.ToInt16(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
+        }
+
+        ushort IConvertible.ToUInt16(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
+        }
+
+        int IConvertible.ToInt32(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
+        }
+
+        uint IConvertible.ToUInt32(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
+        }
+
+        long IConvertible.ToInt64(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
+        }
+
+        ulong IConvertible.ToUInt64(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
+        }
+
+        float IConvertible.ToSingle(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
+        }
+
+        double IConvertible.ToDouble(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
+        }
+
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
+        {
+            throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
+        }
+
+        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        {
+            return DateTimeOffset.DateTime;
+        }
+
+        string IConvertible.ToString(IFormatProvider provider)
+        {
+            return ToString();
+        }
+
+        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+        {
+            if (conversionType == typeof(DateTime))
+            {
+                return DateTimeOffset.DateTime;
+            }
+
+            if (conversionType == typeof(string))
+            {
+                return ToString();
+            }
+
+            if (conversionType == typeof(DateTimeOffset))
+            {
+                return DateTimeOffset;
+            }
+
+            throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
+        }
+
+        #endregion
     }
 }
