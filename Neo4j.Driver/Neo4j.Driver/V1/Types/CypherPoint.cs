@@ -16,13 +16,14 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Represents a single three-dimensional point in a particular coordinate reference system.
     /// </summary>
-    public struct CypherPoint: ICypherValue, IEquatable<CypherPoint>
+    public struct CypherPoint: IValue, IEquatable<CypherPoint>
     {
         internal const int TwoD = 2;
         internal const int ThreeD = 3;

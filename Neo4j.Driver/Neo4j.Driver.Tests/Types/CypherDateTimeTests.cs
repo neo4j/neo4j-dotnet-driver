@@ -224,5 +224,58 @@ namespace Neo4j.Driver.Tests.Types
 
             dateTime.Equals(other).Should().BeFalse();
         }
+
+        [Fact]
+        public void ShouldThrowOnCompareToOtherType()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 17, 0, 0, 0, 0);
+
+            var ex = Record.Exception(() => dateTime1.CompareTo(new DateTime(1947, 12, 17)));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentException>();
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareToNull()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 17, 0, 0, 0, 0);
+
+            var comp = dateTime1.CompareTo(null);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportLargerOnCompareTo()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 17, 0, 0, 0, 0);
+            var dateTime2 = new CypherDateTime(1947, 12, 16, 23, 59, 59, 999999999);
+
+            var comp = dateTime1.CompareTo(dateTime2);
+
+            comp.Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public void ShouldReportEqualOnCompareTo()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 16, 23, 59, 59, 999999999);
+            var dateTime2 = new CypherDateTime(1947, 12, 16, 23, 59, 59, 999999999);
+
+            var comp = dateTime1.CompareTo(dateTime2);
+
+            comp.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldReportSmallerOnCompareTo()
+        {
+            var dateTime1 = new CypherDateTime(1947, 12, 16, 23, 59, 59, 999999999);
+            var dateTime2 = new CypherDateTime(1947, 12, 17, 0, 59, 59, 999999999);
+
+            var comp = dateTime1.CompareTo(dateTime2);
+
+            comp.Should().BeLessThan(0);
+        }
     }
 }

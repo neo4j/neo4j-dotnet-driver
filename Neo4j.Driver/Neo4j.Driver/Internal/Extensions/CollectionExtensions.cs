@@ -20,13 +20,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
     internal static class CollectionExtensions
     {
-        private static readonly TypeInfo NeoValueTypeInfo = typeof(ICypherValue).GetTypeInfo();
+        private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
         private const string DefalutItemSeparator = ", ";
 
         public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key)

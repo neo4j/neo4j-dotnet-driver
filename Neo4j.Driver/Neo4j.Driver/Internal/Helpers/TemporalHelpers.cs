@@ -44,21 +44,25 @@ namespace Neo4j.Driver.Internal
         public const int MinOffset = -64_800;
         public const int MaxOffset = 64_800;
 
+        public const long NanosPerSecond = 1_000_000_000;
+        public const long NanosPerDay = NanosPerHour * HoursPerDay;
+
         private const int HoursPerDay = 24;
         private const int MinutesPerHour = 60;
         private const int SecondsPerMinute = 60;
         private const int SecondsPerHour = SecondsPerMinute * MinutesPerHour;
         private const int SecondsPerDay = SecondsPerHour * HoursPerDay;
-        private const long NanosPerSecond = 1_000_000_000;
         private const long NanosPerMinute = NanosPerSecond * SecondsPerMinute;
         private const long NanosPerHour = NanosPerMinute * MinutesPerHour;
+
         private const long Days0000To1970 = (DaysPerCycle * 5L) - (30L * 365L + 7L);
         private const int DaysPerCycle = 146_097;
         private const int NanosecondsPerTick = 100;
 
         public static long ToNanoOfDay(this IHasTimeComponents time)
         {
-            return (time.Hour * NanosPerHour) + (time.Minute * NanosPerMinute) + (time.Second * NanosPerSecond) + time.Nanosecond;
+            return (time.Hour * NanosPerHour) + (time.Minute * NanosPerMinute) + (time.Second * NanosPerSecond) +
+                   time.Nanosecond;
         }
 
         public static long ToEpochSeconds(this IHasDateTimeComponents dateTime)
@@ -77,6 +81,13 @@ namespace Neo4j.Driver.Internal
         public static long ToEpochDays(this IHasDateComponents date)
         {
             return ComputeEpochDays(date.Year, date.Month, date.Day);
+        }
+
+        public static long ToNanos(this CypherDuration duration)
+        {
+            return (duration.Months * 30 * TemporalHelpers.NanosPerDay) +
+                   (duration.Days * TemporalHelpers.NanosPerDay) +
+                   (duration.Seconds * TemporalHelpers.NanosPerSecond) + duration.Nanos;
         }
 
         public static CypherTime NanoOfDayToTime(long nanoOfDay)

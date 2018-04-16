@@ -15,15 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.V1
+namespace Neo4j.Driver.Internal.Types
 {
-    /// <summary>
-    /// This is a marker interface that's currently used to identify Neo4j data
-    /// types that can be sent to the server.
-    /// </summary>
-    /// <remarks>This type is currently experimental, and can be removed on upcoming
-    /// pre-release versions of the driver.</remarks>
-    public interface ICypherValue
+    internal interface IValue
     {
         
     }
