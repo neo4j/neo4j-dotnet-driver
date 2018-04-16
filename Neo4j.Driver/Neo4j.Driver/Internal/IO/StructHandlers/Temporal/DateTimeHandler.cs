@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var epochSeconds = reader.ReadLong();
             var nanosOfSecond = reader.ReadInteger();
 
-            return new CypherDateTime(epochSeconds, nanosOfSecond);
+            return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
         }
 
         public void Write(IPackStreamWriter writer, object value)
@@ -45,8 +45,8 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var dateTime = value.CastOrThrow<CypherDateTime>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.EpochSeconds);
-            writer.Write(dateTime.NanosOfSecond);
+            writer.Write(dateTime.ToEpochSeconds());
+            writer.Write(dateTime.Nanosecond);
         }
     }
 }

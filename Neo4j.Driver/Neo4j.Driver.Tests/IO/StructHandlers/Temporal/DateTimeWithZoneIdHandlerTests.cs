@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using FluentAssertions.Primitives;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
@@ -49,8 +50,8 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte) 'f');
-            reader.Read().Should().Be(dateTime.EpochSeconds);
-            reader.Read().Should().Be((long) dateTime.NanosOfSecond);
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(128000987L);
             reader.Read().Should().Be("Europe/Istanbul");
         }
         
@@ -61,7 +62,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writer = writerMachine.Writer();
 
             writer.WriteStructHeader(DateTimeWithZoneIdHandler.StructSize, DateTimeWithZoneIdHandler.StructType);
-            writer.Write(1520919278);
+            writer.Write(282659759);
             writer.Write(128000987);
             writer.Write("Europe/Istanbul");
 
@@ -70,8 +71,13 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.EpochSeconds.Should().Be(1520919278);
-            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.NanosOfSecond.Should().Be(128000987);
+            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.Nanosecond.Should().Be(128000987);
             value.Should().BeOfType<CypherDateTimeWithZoneId>().Which.ZoneId.Should().Be("Europe/Istanbul");
         }
         

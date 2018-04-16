@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using FluentAssertions.Primitives;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
@@ -48,7 +49,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
             reader.ReadStructSignature().Should().Be((byte) 'D');
-            reader.Read().Should().Be(date.EpochDays);
+            reader.Read().Should().Be(-7063L);
         }
         
         [Fact]
@@ -58,14 +59,16 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writer = writerMachine.Writer();
 
             writer.WriteStructHeader(DateHandler.StructSize, DateHandler.StructType);
-            writer.Write(6001);
+            writer.Write(-7063L);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDate>().Which.EpochDays.Should().Be(6001L);
+            value.Should().BeOfType<CypherDate>().Which.Year.Should().Be(1950);
+            value.Should().BeOfType<CypherDate>().Which.Month.Should().Be(8);
+            value.Should().BeOfType<CypherDate>().Which.Day.Should().Be(31);
         }
         
     }

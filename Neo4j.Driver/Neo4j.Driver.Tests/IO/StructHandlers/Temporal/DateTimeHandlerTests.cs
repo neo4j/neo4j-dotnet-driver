@@ -48,8 +48,8 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
             reader.ReadStructSignature().Should().Be((byte) 'd');
-            reader.Read().Should().Be(dateTime.EpochSeconds);
-            reader.Read().Should().Be((long)dateTime.NanosOfSecond);
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(128000987L);
         }
         
         [Fact]
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writer = writerMachine.Writer();
 
             writer.WriteStructHeader(DateTimeHandler.StructSize, DateTimeHandler.StructType);
-            writer.Write(1520919278);
+            writer.Write(282659759);
             writer.Write(128000987);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -67,8 +67,13 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDateTime>().Which.EpochSeconds.Should().Be(1520919278);
-            value.Should().BeOfType<CypherDateTime>().Which.NanosOfSecond.Should().Be(128000987);
+            value.Should().BeOfType<CypherDateTime>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<CypherDateTime>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<CypherDateTime>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<CypherDateTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<CypherDateTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<CypherDateTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<CypherDateTime>().Which.Nanosecond.Should().Be(128000987);
         }
         
     }

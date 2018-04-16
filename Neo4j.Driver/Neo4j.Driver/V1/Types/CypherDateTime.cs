@@ -17,13 +17,14 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Represents a local date time value, without a time zone
     /// </summary>
-    public struct CypherDateTime : ICypherValue, IEquatable<CypherDateTime>
+    public struct CypherDateTime : ICypherValue, IEquatable<CypherDateTime>, IHasDateTimeComponents
     {
 
         /// <summary>
@@ -43,6 +44,25 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
+        /// Initializes a new instance of <see cref="CypherDateTime"/> from given <see cref="System.DateTime"/> value.
+        /// The given <see cref="System.DateTime"/> value will be normalized to local time <see cref="DateTimeKind.Local"/>
+        /// before being used.
+        /// </summary>
+        ///
+        /// <remarks>If the <see cref="System.DateTime"/> value was created with no <see cref="DateTimeKind"/> specified,
+        /// then <see cref="DateTimeKind.Unspecified"/> would be assigned by default.
+        /// Possible conversion from UTC to local time might happen when normalizing it to local time.
+        /// <seealso cref="System.DateTime.ToLocalTime"/>
+        /// </remarks>
+        /// <param name="dateTime"></param>
+        public CypherDateTime(DateTime dateTime)
+            : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
+                TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks))
+        {
+
+        }
+
+        /// <summary>
         /// Initializes a new instance of <see cref="CypherDateTime"/> from individual date time
         /// </summary>
         /// <param name="year"></param>
@@ -51,62 +71,77 @@ namespace Neo4j.Driver.V1
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="nanosOfSecond"></param>
-        public CypherDateTime(int year, int month, int day, int hour, int minute, int second, int nanosOfSecond)
-            : this(TemporalHelpers.SecondsSinceEpoch(
-                new DateTime(year, month, day, hour, minute, second, DateTimeKind.Local).Ticks), nanosOfSecond)
+        /// <param name="nanosecond"></param>
+        public CypherDateTime(int year, int month, int day, int hour, int minute, int second, int nanosecond)
         {
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear, nameof(year));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth, nameof(month));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay, TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
 
+            Year = year;
+            Month = month;
+            Day = day;
+            Hour = hour;
+            Minute = minute;
+            Second = second;
+            Nanosecond = nanosecond;
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTime"/> from given <see cref="DateTime"/> value.
-        /// The given <see cref="DateTime"/> value will be normalized to local time <see cref="DateTimeKind.Local"/>
-        /// before being used.
+        /// Gets the year component of this instance.
         /// </summary>
-        ///
-        /// <remarks>If the <see cref="DateTime"/> value was created with no <see cref="DateTimeKind"/> specified,
-        /// then <see cref="DateTimeKind.Unspecified"/> would be assigned by default.
-        /// Possible conversion from UTC to local time might happen when normalizing it to local time.
-        /// <seealso cref="DateTime.ToLocalTime"/>
-        /// </remarks>
-        /// <param name="dateTime"></param>
-        public CypherDateTime(DateTime dateTime)
-            : this(dateTime.ToLocalTime().Ticks)
-        {
-        }
-
-        internal CypherDateTime(long ticks)
-            : this(TemporalHelpers.SecondsSinceEpoch(ticks),
-                TemporalHelpers.NanosOfSecond(ticks))
-        {
-
-        }
-
-        internal CypherDateTime(long epochSeconds, int nanosOfSecond)
-        {
-            EpochSeconds = epochSeconds;
-            NanosOfSecond = nanosOfSecond;
-        }
+        public int Year { get; }
 
         /// <summary>
-        /// Seconds since Unix Epoch
+        /// Gets the month component of this instance.
         /// </summary>
-        public long EpochSeconds { get; }
+        public int Month { get; }
 
         /// <summary>
-        /// Fraction of seconds in nanosecond precision
+        /// Gets the day of month component of this instance.
         /// </summary>
-        public int NanosOfSecond { get; }
+        public int Day { get; }
+
+        /// <summary>
+        /// Gets the hour component of this instance.
+        /// </summary>
+        public int Hour { get; }
+
+        /// <summary>
+        /// Gets the minute component of this instance.
+        /// </summary>
+        public int Minute { get; }
+
+        /// <summary>
+        /// Gets the second component of this instance.
+        /// </summary>
+        public int Second { get; }
+
+        /// <summary>
+        /// Gets the nanosecond component of this instance.
+        /// </summary>
+        public int Nanosecond { get; }
 
         /// <summary>
         /// Gets a <see cref="DateTime"/> copy of this date value.
         /// </summary>
-        /// <returns>Equivalent <see cref="DateTime"/> value</returns>
-        /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
-        public DateTime ToDateTime()
+        /// <value>Equivalent <see cref="DateTime"/> value</value>
+        /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
+        /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
+        public DateTime DateTime
         {
-            return TemporalHelpers.DateTimeOf(EpochSeconds, NanosOfSecond, DateTimeKind.Local, true);
+            get
+            {
+                TemporalHelpers.AssertNoTruncation(this, nameof(System.DateTime));
+                TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
+
+                return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
+                    TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
+            }
         }
 
         /// <summary>
@@ -118,7 +153,8 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(CypherDateTime other)
         {
-            return EpochSeconds == other.EpochSeconds && NanosOfSecond == other.NanosOfSecond;
+            return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour &&
+                   Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
         }
 
         /// <summary>
@@ -141,7 +177,14 @@ namespace Neo4j.Driver.V1
         {
             unchecked
             {
-                return (EpochSeconds.GetHashCode() * 397) ^ NanosOfSecond;
+                var hashCode = Year;
+                hashCode = (hashCode * 397) ^ Month;
+                hashCode = (hashCode * 397) ^ Day;
+                hashCode = (hashCode * 397) ^ Hour;
+                hashCode = (hashCode * 397) ^ Minute;
+                hashCode = (hashCode * 397) ^ Second;
+                hashCode = (hashCode * 397) ^ Nanosecond;
+                return hashCode;
             }
         }
 
@@ -151,7 +194,8 @@ namespace Neo4j.Driver.V1
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return $"DateTime{{epochSeconds: {EpochSeconds}, nanosOfSecond: {NanosOfSecond}}}";
+            return
+                $"{TemporalHelpers.ToIsoDateString(Year, Month, Day)}T{TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond)}";
         }
     }
 }

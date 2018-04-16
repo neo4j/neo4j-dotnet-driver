@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using FluentAssertions.Primitives;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
@@ -49,7 +50,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
             reader.ReadStructSignature().Should().Be((byte) 'T');
-            reader.Read().Should().Be(time.NanosecondsOfDay);
+            reader.Read().Should().Be(45359128000987L);
             reader.Read().Should().Be((long)time.OffsetSeconds);
         }
         
@@ -68,7 +69,10 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherTimeWithOffset>().Which.NanosecondsOfDay.Should().Be(45359128000987);
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<CypherTimeWithOffset>().Which.Nanosecond.Should().Be(128000987);
             value.Should().BeOfType<CypherTimeWithOffset>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(150).TotalSeconds);
         }
         

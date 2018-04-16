@@ -363,15 +363,33 @@ namespace Neo4j.Driver.V1
     /// cause working with a modified data.
     /// </summary>
     [DataContract]
-    public class TruncationException : ClientException
+    public class ValueTruncationException : ClientException
     {
 
         /// <summary>
-        /// Create a new <see cref="TruncationException"/> with an error message.
+        /// Create a new <see cref="ValueTruncationException"/> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
 
-        public TruncationException(string message) : base(message)
+        public ValueTruncationException(string message) : base(message)
+        {
+        }
+    }
+
+    /// <summary>
+    /// A value retrieved from the database cannot be represented with the type to be converted, and will
+    /// cause working with a modified data.
+    /// </summary>
+    [DataContract]
+    public class ValueOverflowException : ClientException
+    {
+
+        /// <summary>
+        /// Create a new <see cref="ValueTruncationException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+
+        public ValueOverflowException(string message) : base(message)
         {
         }
     }

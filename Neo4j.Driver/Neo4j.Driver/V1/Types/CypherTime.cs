@@ -17,14 +17,35 @@
 
 using System;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Represents a local time value
     /// </summary>
-    public struct CypherTime : ICypherValue, IEquatable<CypherTime>
+    public struct CypherTime : ICypherValue, IEquatable<CypherTime>, IHasTimeComponents
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherTime"/> from time components of given <see cref="DateTime"/>
+        /// </summary>
+        /// <param name="time"></param>
+        public CypherTime(DateTime time)
+            : this(time.TimeOfDay)
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="CypherTime"/> from given <see cref="TimeSpan"/> value
+        /// </summary>
+        /// <param name="time"></param>
+        public CypherTime(TimeSpan time)
+            : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks))
+        {
+
+        }
+
         /// <summary>
         /// Initializes a new instance of <see cref="CypherTime"/> from individual time components
         /// </summary>
@@ -43,51 +64,54 @@ namespace Neo4j.Driver.V1
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="nanoOfSecond"></param>
-        public CypherTime(int hour, int minute, int second, int nanoOfSecond)
-            : this(TemporalHelpers.NanosOf(hour, minute, second, nanoOfSecond))
+        /// <param name="nanosecond"></param>
+        public CypherTime(int hour, int minute, int second, int nanosecond)
         {
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
 
+            Hour = hour;
+            Minute = minute;
+            Second = second;
+            Nanosecond = nanosecond;
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from given <see cref="TimeSpan"/> value
+        /// Gets the hour component of this instance.
         /// </summary>
-        /// <param name="time"></param>
-        public CypherTime(TimeSpan time)
-            : this(time.NanosOf())
-        {
-
-        }
+        public int Hour { get; }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from time components of given <see cref="DateTime"/>
+        /// Gets the minute component of this instance.
         /// </summary>
-        /// <param name="time"></param>
-        public CypherTime(DateTime time)
-            : this(time.TimeOfDay)
-        {
-
-        }
-
-        internal CypherTime(long nanosecondsOfDay)
-        {
-            NanosecondsOfDay = nanosecondsOfDay;
-        }
+        public int Minute { get; }
 
         /// <summary>
-        /// Nanoseconds since midnight
+        /// Gets the second component of this instance.
         /// </summary>
-        public long NanosecondsOfDay { get; }
+        public int Second { get; }
+
+        /// <summary>
+        /// Gets the nanosecond component of this instance.
+        /// </summary>
+        public int Nanosecond { get; }
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> copy of this time value.
         /// </summary>
-        /// <returns>Equivalent <see cref="TimeSpan"/> value</returns>
-        /// <exception cref="TruncationException">If a truncation occurs during conversion</exception>
-        public TimeSpan ToTimeSpan()
+        /// <value>Equivalent <see cref="TimeSpan"/> value</value>
+        /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
+        public TimeSpan Time
         {
-            return TemporalHelpers.TimeOf(NanosecondsOfDay, true);
+            get
+            {
+                TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
+
+                return new TimeSpan(0, Hour, Minute, Second).Add(
+                    TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
+            }
         }
 
         /// <summary>
@@ -99,7 +123,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(CypherTime other)
         {
-            return NanosecondsOfDay == other.NanosecondsOfDay;
+            return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
         }
 
         /// <summary>
@@ -111,7 +135,7 @@ namespace Neo4j.Driver.V1
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is CypherTime && Equals((CypherTime)obj);
+            return obj is CypherTime && Equals((CypherTime) obj);
         }
 
         /// <summary>
@@ -120,7 +144,14 @@ namespace Neo4j.Driver.V1
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return NanosecondsOfDay.GetHashCode();
+            unchecked
+            {
+                var hashCode = Hour;
+                hashCode = (hashCode * 397) ^ Minute;
+                hashCode = (hashCode * 397) ^ Second;
+                hashCode = (hashCode * 397) ^ Nanosecond;
+                return hashCode;
+            }
         }
 
         /// <summary>
@@ -129,7 +160,7 @@ namespace Neo4j.Driver.V1
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return $"Time{{nanosOfDay: {NanosecondsOfDay}}}";
+            return TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond);
         }
 
     }
