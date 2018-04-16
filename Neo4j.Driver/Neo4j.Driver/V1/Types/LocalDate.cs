@@ -24,7 +24,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date value, without a time zone and time related components
     /// </summary>
-    public sealed class LocalDate : IValue, IEquatable<LocalDate>, IComparable, IComparable<LocalDate>, IConvertible, IHasDateComponents
+    public sealed class LocalDate : TemporalValue, IEquatable<LocalDate>, IComparable, IComparable<LocalDate>, IHasDateComponents
     {
         /// <summary>
         /// Initializes a new instance of <see cref="LocalDate"/> from a date value
@@ -214,104 +214,17 @@ namespace Neo4j.Driver.V1
         {
             return left.CompareTo(right) >= 0;
         }
-
-        #region IConvertible Implementation
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
-        }
-
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
-        }
-
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
-        }
-
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
-        }
-
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
-        }
-
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
-        }
-
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        
+        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
+        protected override DateTime ToDateTime()
         {
             return DateTime;
         }
 
-        string IConvertible.ToString(IFormatProvider provider)
+        /// <inheritdoc cref="TemporalValue.ToDateTimeOffset"/>
+        protected override DateTimeOffset ToDateTimeOffset()
         {
-            return ToString();
+            return new DateTimeOffset(DateTime);
         }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
-        {
-            if (conversionType == typeof(DateTime))
-            {
-                return DateTime;
-            }
-
-            if (conversionType == typeof(string))
-            {
-                return ToString();
-            }
-
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
-        }
-
-        #endregion
     }
 }
