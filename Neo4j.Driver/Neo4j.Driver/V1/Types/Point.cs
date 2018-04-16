@@ -120,6 +120,8 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(Point other)
         {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
             return Dimension == other.Dimension && SrId == other.SrId && X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
         }
 
@@ -132,8 +134,8 @@ namespace Neo4j.Driver.V1
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((Point) obj);
+            if (ReferenceEquals(this, obj)) return true;
+            return obj is Point && Equals((Point) obj);
         }
     }
 }

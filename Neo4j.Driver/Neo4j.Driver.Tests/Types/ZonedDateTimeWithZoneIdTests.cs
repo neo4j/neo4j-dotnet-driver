@@ -354,7 +354,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowWhenConversionIsNotSupported()
         {
-            var date = new ZonedDateTime(1947, 12, 16, 12, 15, 59, 660000999, Zone.Of(""));
+            var date = new ZonedDateTime(1947, 12, 16, 12, 15, 59, 660000999, Zone.Of("America/Dominica"));
             var conversions = new Action[]
             {
                 () => Convert.ToBoolean(date),

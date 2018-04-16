@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -195,7 +196,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Returns the offset from UTC of this instance at the time it represents.
         /// </summary>
-        public int OffsetSeconds => Zone.OffsetSecondsAt(DateTime);
+        public int OffsetSeconds => Zone.OffsetSecondsAt(new DateTime(Year, Month, Day, Hour, Minute, Second));
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
@@ -275,6 +276,8 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(ZonedDateTime other)
         {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
             var thisEpochSeconds = this.ToEpochSeconds() - OffsetSeconds;
             var otherEpochSeconds = other.ToEpochSeconds() - other.OffsetSeconds;
             var epochComparison = thisEpochSeconds.CompareTo(otherEpochSeconds);
@@ -292,6 +295,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
+            if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is ZonedDateTime))
                 throw new ArgumentException($"Object must be of type {nameof(ZonedDateTime)}");
             return CompareTo((ZonedDateTime) obj);

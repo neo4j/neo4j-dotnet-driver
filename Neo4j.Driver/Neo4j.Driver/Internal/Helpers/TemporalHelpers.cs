@@ -225,7 +225,7 @@ namespace Neo4j.Driver.Internal
             if (time.Nanosecond % NanosecondsPerTick > 0)
             {
                 throw new ValueTruncationException(
-                    $"Conversion of this instance into {target} will cause a truncation of ${time.Nanosecond % TemporalHelpers.NanosecondsPerTick}ns.");
+                    $"Conversion of this instance into {target} will cause a truncation of {time.Nanosecond % TemporalHelpers.NanosecondsPerTick}ns.");
             }
         }
 

@@ -162,8 +162,9 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(OffsetTime other)
         {
-            return Hour == other.Hour && Minute == other.Minute && Second == other.Second &&
-                   Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
         }
 
         /// <summary>
@@ -175,6 +176,7 @@ namespace Neo4j.Driver.V1
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
             return obj is OffsetTime && Equals((OffsetTime) obj);
         }
 
@@ -214,6 +216,9 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(OffsetTime other)
         {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
+
             var thisNanoOfDay = this.ToNanoOfDay() - (OffsetSeconds * TemporalHelpers.NanosPerSecond);
             var otherNanoOfDay = other.ToNanoOfDay() - (other.OffsetSeconds * TemporalHelpers.NanosPerSecond);
 
@@ -240,6 +245,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
+            if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is OffsetTime))
                 throw new ArgumentException($"Object must be of type {nameof(OffsetTime)}");
             return CompareTo((OffsetTime) obj);
