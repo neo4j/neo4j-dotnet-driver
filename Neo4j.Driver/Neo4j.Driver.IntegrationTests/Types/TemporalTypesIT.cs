@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             TestReceiveData(
                 "RETURN datetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999999, timezone:'+02:30' })",
-                new CypherDateTimeWithOffset(1859, 5, 31, 23, 49, 59, 999999999, (int)TimeSpan.FromMinutes(150).TotalSeconds));
+                new ZonedDateTime(1859, 5, 31, 23, 49, 59, 999999999, Zone.Of((int)TimeSpan.FromMinutes(150).TotalSeconds)));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             TestReceiveData(
                 "RETURN datetime({ year: 1959, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999999, timezone:'Europe/London' })",
-                new CypherDateTimeWithZoneId(1959, 5, 31, 23, 49, 59, 999999999, "Europe/London"));
+                new ZonedDateTime(1959, 5, 31, 23, 49, 59, 999999999, Zone.Of("Europe/London")));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
@@ -189,7 +189,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveDateTimeWithOffset()
         {
-            var data = new CypherDateTimeWithOffset(1976, 6, 13, 12, 34, 56, 789012587, (int)TimeSpan.FromMinutes(-90).TotalSeconds);
+            var data = new ZonedDateTime(1976, 6, 13, 12, 34, 56, 789012587, Zone.Of((int)TimeSpan.FromMinutes(-90).TotalSeconds));
 
             TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.year, x.month, x.day, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond, x.offset",
@@ -213,7 +213,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveDateTimeWithZoneId()
         {
-            var data = new CypherDateTimeWithZoneId(1959, 5, 31, 23, 49, 59, 999999999, "US/Pacific");
+            var data = new ZonedDateTime(1959, 5, 31, 23, 49, 59, 999999999, Zone.Of("US/Pacific"));
 
             TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.year, x.month, x.day, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond, x.timezone",

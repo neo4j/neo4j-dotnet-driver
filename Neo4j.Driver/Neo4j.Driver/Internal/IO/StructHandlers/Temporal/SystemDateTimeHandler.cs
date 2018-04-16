@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
                     writer.Write(new LocalDateTime(dateTime));
                     break;
                 case DateTimeKind.Utc:
-                    writer.Write(new CypherDateTimeWithOffset(dateTime, 0));
+                    writer.Write(new ZonedDateTime(dateTime, 0));
                     break;
                 default:
                     throw new ProtocolException(

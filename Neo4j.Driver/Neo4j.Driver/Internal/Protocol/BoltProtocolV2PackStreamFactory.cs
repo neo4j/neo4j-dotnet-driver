@@ -33,8 +33,7 @@ namespace Neo4j.Driver.Internal.Protocol
             AddHandler<LocalTimeHandler>();
             AddHandler<LocalDateTimeHandler>();
             AddHandler<OffsetTimeHandler>();
-            AddHandler<DateTimeWithOffsetHandler>();
-            AddHandler<DateTimeWithZoneIdHandler>();
+            AddHandler<ZonedDateTimeHandler>();
             AddHandler<DurationHandler>();
 
             // Add BCL Handlers

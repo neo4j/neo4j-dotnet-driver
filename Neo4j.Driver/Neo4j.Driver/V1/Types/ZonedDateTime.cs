@@ -18,41 +18,62 @@
 using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
-using TimeZoneConverter;
 
 namespace Neo4j.Driver.V1
 {
     /// <summary>
-    /// Represents a date time value with a time zone, specified as a zone id
+    /// Represents a date time value with a time zone, specified as a UTC offset
     /// </summary>
-    public struct CypherDateTimeWithZoneId : IValue, IEquatable<CypherDateTimeWithZoneId>, IComparable, IComparable<CypherDateTimeWithZoneId>, IConvertible, IHasDateTimeComponents
+    public class ZonedDateTime : IValue, IEquatable<ZonedDateTime>, IComparable,
+        IComparable<ZonedDateTime>, IConvertible, IHasDateTimeComponents
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTimeOffset"/> value
-        /// <remarks>Please note that <see cref="DateTimeOffset.Offset"/> is ignored with this constructor</remarks>
+        /// Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTimeOffset"/> value.
         /// </summary>
         /// <param name="dateTimeOffset"></param>
-        /// <param name="zoneId"></param>
-        public CypherDateTimeWithZoneId(DateTimeOffset dateTimeOffset, string zoneId)
-            : this(dateTimeOffset.DateTime, zoneId)
+        public ZonedDateTime(DateTimeOffset dateTimeOffset)
+            : this(dateTimeOffset.DateTime, dateTimeOffset.Offset)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from given <see cref="DateTime"/> value
+        /// Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.
+        /// </summary>
+        /// <param name="dateTime"></param>
+        /// <param name="offset"></param>
+        public ZonedDateTime(DateTime dateTime, TimeSpan offset)
+            : this(dateTime, (int) offset.TotalSeconds)
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.
+        /// </summary>
+        /// <param name="dateTime"></param>
+        /// <param name="offsetSeconds"></param>
+        public ZonedDateTime(DateTime dateTime, int offsetSeconds)
+            : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
+                TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks), Zone.Of(offsetSeconds))
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.
         /// </summary>
         /// <param name="dateTime"></param>
         /// <param name="zoneId"></param>
-        public CypherDateTimeWithZoneId(DateTime dateTime, string zoneId)
+        public ZonedDateTime(DateTime dateTime, string zoneId)
             : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
-                TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks), zoneId)
+                TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks), Zone.Of(zoneId))
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from individual date time component values
+        /// Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values
         /// </summary>
         /// <param name="year"></param>
         /// <param name="month"></param>
@@ -60,15 +81,15 @@ namespace Neo4j.Driver.V1
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="zoneId"></param>
-        public CypherDateTimeWithZoneId(int year, int month, int day, int hour, int minute, int second, string zoneId)
-            : this(year, month, day, hour, minute, second, 0, zoneId)
+        /// <param name="zone"></param>
+        public ZonedDateTime(int year, int month, int day, int hour, int minute, int second, Zone zone)
+            : this(year, month, day, hour, minute, second, 0, zone)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDateTimeWithZoneId"/> from individual date time component values
+        /// Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values
         /// </summary>
         /// <param name="year"></param>
         /// <param name="month"></param>
@@ -77,17 +98,25 @@ namespace Neo4j.Driver.V1
         /// <param name="minute"></param>
         /// <param name="second"></param>
         /// <param name="nanosecond"></param>
-        /// <param name="zoneId"></param>
-        public CypherDateTimeWithZoneId(int year, int month, int day, int hour, int minute, int second,
-            int nanosecond, string zoneId)
+        /// <param name="zone"></param>
+        public ZonedDateTime(int year, int month, int day, int hour, int minute, int second, int nanosecond,
+            Zone zone)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear, nameof(year));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth, nameof(month));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay, TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear,
+                nameof(year));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth,
+                TemporalHelpers.MaxMonth, nameof(month));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay,
+                TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour,
+                nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute,
+                TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond,
+                TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond,
+                TemporalHelpers.MaxNanosecond, nameof(nanosecond));
+            Throw.ArgumentNullException.IfNull(zone, nameof(zone));
 
             Year = year;
             Month = month;
@@ -96,12 +125,12 @@ namespace Neo4j.Driver.V1
             Minute = minute;
             Second = second;
             Nanosecond = nanosecond;
-            ZoneId = zoneId;
+            Zone = zone;
         }
 
-        internal CypherDateTimeWithZoneId(IHasDateTimeComponents dateTime, string zoneId)
+        internal ZonedDateTime(IHasDateTimeComponents dateTime, Zone zone)
             : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
-                dateTime.Nanosecond, zoneId)
+                dateTime.Nanosecond, zone)
         {
 
         }
@@ -142,9 +171,9 @@ namespace Neo4j.Driver.V1
         public int Nanosecond { get; }
 
         /// <summary>
-        /// Zone identifier
+        /// The time zone that this instance represents.
         /// </summary>
-        public string ZoneId { get; }
+        public Zone Zone { get; }
 
         /// <summary>
         /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
@@ -164,13 +193,17 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Gets a <see cref="TimeSpan"/> value that represents the corresponding offset of the time 
-        /// zone at the date and time of this instance.
+        /// Returns the offset from UTC of this instance at the time it represents.
         /// </summary>
-        public TimeSpan Offset => TemporalHelpers.GetTimeZoneInfo(ZoneId).GetUtcOffset(DateTime);
+        public int OffsetSeconds => Zone.OffsetSecondsAt(DateTime);
 
         /// <summary>
-        /// Gets a <see cref="DateTimeOffset"/> copy of this date value.
+        /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
+        /// </summary>
+        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
+
+        /// <summary>
+        /// Converts this instance to an equivalent <see cref="DateTimeOffset"/> value
         /// </summary>
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
@@ -178,28 +211,30 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="CypherDateTimeWithZoneId"/> instance. 
+        /// value of the specified <see cref="ZonedDateTime"/> instance. 
         /// </summary>
         /// <param name="other">The object to compare to this instance.</param>
         /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
         /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(CypherDateTimeWithZoneId other)
+        public bool Equals(ZonedDateTime other)
         {
-            return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour &&
-                   Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond &&
-                   string.Equals(ZoneId, other.ZoneId);
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour && Second == other.Second && Nanosecond == other.Nanosecond && Equals(Zone, other.Zone);
         }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="CypherDateTimeWithZoneId"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="ZonedDateTime"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is CypherDateTimeWithZoneId && Equals((CypherDateTimeWithZoneId) obj);
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((ZonedDateTime) obj);
         }
 
         /// <summary>
@@ -214,102 +249,101 @@ namespace Neo4j.Driver.V1
                 hashCode = (hashCode * 397) ^ Month;
                 hashCode = (hashCode * 397) ^ Day;
                 hashCode = (hashCode * 397) ^ Hour;
-                hashCode = (hashCode * 397) ^ Minute;
                 hashCode = (hashCode * 397) ^ Second;
                 hashCode = (hashCode * 397) ^ Nanosecond;
-                hashCode = (hashCode * 397) ^ (ZoneId != null ? ZoneId.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Zone != null ? Zone.GetHashCode() : 0);
                 return hashCode;
             }
         }
 
         /// <summary>
-        /// Converts the value of the current <see cref="CypherDateTimeWithZoneId"/> object to its equivalent string representation.
+        /// Converts the value of the current <see cref="ZonedDateTime"/> object to its equivalent string representation.
         /// </summary>
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
             return
-                $"{TemporalHelpers.ToIsoDateString(Year, Month, Day)}T{TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond)}[{ZoneId}]";
+                $"{TemporalHelpers.ToIsoDateString(Year, Month, Day)}T{TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond)}{Zone}";
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified <see cref="CypherDateTimeWithZoneId"/> value and returns an integer 
+        /// Compares the value of this instance to a specified <see cref="ZonedDateTime"/> value and returns an integer 
         /// that indicates whether this instance is earlier than, the same as, or later than the specified 
         /// DateTime value.
         /// </summary>
         /// <param name="other">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-        public int CompareTo(CypherDateTimeWithZoneId other)
+        public int CompareTo(ZonedDateTime other)
         {
-            var thisEpochSeconds = this.ToEpochSeconds() - (int)Offset.TotalSeconds;
-            var otherEpochSeconds = other.ToEpochSeconds() - (int)other.Offset.TotalSeconds;
+            var thisEpochSeconds = this.ToEpochSeconds() - OffsetSeconds;
+            var otherEpochSeconds = other.ToEpochSeconds() - other.OffsetSeconds;
             var epochComparison = thisEpochSeconds.CompareTo(otherEpochSeconds);
             if (epochComparison != 0) return epochComparison;
             return Nanosecond.CompareTo(other.Nanosecond);
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherDateTimeWithZoneId"/>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="ZonedDateTime"/>
         /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
-        /// or later than the specified <see cref="CypherDateTimeWithZoneId"/> value.
+        /// or later than the specified <see cref="ZonedDateTime"/> value.
         /// </summary>
         /// <param name="obj">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherDateTimeWithZoneId)) throw new ArgumentException($"Object must be of type {nameof(CypherDateTimeWithZoneId)}");
-            return CompareTo((CypherDateTimeWithZoneId) obj);
+            if (!(obj is ZonedDateTime))
+                throw new ArgumentException($"Object must be of type {nameof(ZonedDateTime)}");
+            return CompareTo((ZonedDateTime) obj);
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> is earlier than another specified 
-        /// <see cref="CypherDateTimeWithZoneId"/>.
+        /// Determines whether one specified <see cref="ZonedDateTime"/> is earlier than another specified 
+        /// <see cref="ZonedDateTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        public static bool operator <(ZonedDateTime left, ZonedDateTime right)
         {
             return left.CompareTo(right) < 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> is later than another specified 
-        /// <see cref="CypherDateTimeWithZoneId"/>.
+        /// Determines whether one specified <see cref="ZonedDateTime"/> is later than another specified 
+        /// <see cref="ZonedDateTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        public static bool operator >(ZonedDateTime left, ZonedDateTime right)
         {
             return left.CompareTo(right) > 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> represents a duration that is the 
-        /// same as or later than the other specified <see cref="CypherDateTimeWithZoneId"/> 
+        /// Determines whether one specified <see cref="ZonedDateTime"/> represents a duration that is the 
+        /// same as or later than the other specified <see cref="ZonedDateTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <=(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        public static bool operator <=(ZonedDateTime left, ZonedDateTime right)
         {
             return left.CompareTo(right) <= 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDateTimeWithZoneId"/> represents a duration that is the 
-        /// same as or earlier than the other specified <see cref="CypherDateTimeWithZoneId"/> 
+        /// Determines whether one specified <see cref="ZonedDateTime"/> represents a duration that is the 
+        /// same as or earlier than the other specified <see cref="ZonedDateTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >=(CypherDateTimeWithZoneId left, CypherDateTimeWithZoneId right)
+        public static bool operator >=(ZonedDateTime left, ZonedDateTime right)
         {
             return left.CompareTo(right) >= 0;
         }
-
 
         #region IConvertible Implementation
 

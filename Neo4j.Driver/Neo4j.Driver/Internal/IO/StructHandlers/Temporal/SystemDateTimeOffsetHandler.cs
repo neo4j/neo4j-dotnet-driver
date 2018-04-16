@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
         {
             var dateTime = value.CastOrThrow<DateTimeOffset>();
 
-            writer.Write(new CypherDateTimeWithOffset(dateTime));
+            writer.Write(new ZonedDateTime(dateTime));
         }
     }
 }
