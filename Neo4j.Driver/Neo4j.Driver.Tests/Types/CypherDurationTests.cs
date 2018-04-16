@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using FluentAssertions;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -223,6 +224,46 @@ namespace Neo4j.Driver.Tests.Types
             var comp = duration1.CompareTo(duration2);
 
             comp.Should().BeLessThan(0);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToString()
+        {
+            var duration = new CypherDuration(12, 15, 59, 660000999);
+            var durationStr1 = Convert.ToString(duration);
+            var durationStr2 = Convert.ChangeType(duration, typeof(string));
+
+            durationStr1.Should().Be("P12M15DT59.660000999S");
+            durationStr2.Should().Be("P12M15DT59.660000999S");
+        }
+
+        [Fact]
+        public void ShouldThrowWhenConversionIsNotSupported()
+        {
+            var duration = new CypherDuration(12, 15, 59, 660000999);
+            var conversions = new Action[]
+            {
+                () => Convert.ToDateTime(duration),
+                () => Convert.ToBoolean(duration),
+                () => Convert.ToByte(duration),
+                () => Convert.ToChar(duration),
+                () => Convert.ToDecimal(duration),
+                () => Convert.ToDouble(duration),
+                () => Convert.ToInt16(duration),
+                () => Convert.ToInt32(duration),
+                () => Convert.ToInt64(duration),
+                () => Convert.ToSByte(duration),
+                () => Convert.ToUInt16(duration),
+                () => Convert.ToUInt32(duration),
+                () => Convert.ToUInt64(duration),
+                () => Convert.ToSingle(duration),
+                () => Convert.ChangeType(duration, typeof(ArrayList))
+            };
+
+            foreach (var testAction in conversions)
+            {
+                testAction.ShouldThrow<InvalidCastException>();
+            }
         }
     }
 }

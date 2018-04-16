@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
@@ -155,7 +156,7 @@ namespace Neo4j.Driver.Tests.Types
             var dateTime = new DateTimeOffset(1947, 12, 17, 23, 49, 54, 120, TimeSpan.FromSeconds(1500));
             var cypherDateTime = new CypherDateTimeWithOffset(dateTime);
 
-            cypherDateTime.ToDateTimeOffset().Should().Be(dateTime);
+            cypherDateTime.DateTimeOffset.Should().Be(dateTime);
         }
 
         [Theory]
@@ -344,6 +345,67 @@ namespace Neo4j.Driver.Tests.Types
             var comp = dateTime1.CompareTo(dateTime2);
 
             comp.Should().BeLessThan(0);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToDateTime()
+        {
+            var date = new DateTime(1947, 12, 16, 12, 15, 59, 660);
+            var date1 = new CypherDateTimeWithOffset(date, 3600);
+            var date2 = Convert.ToDateTime(date1);
+            var date3 = Convert.ChangeType(date1, typeof(DateTime));
+
+            date2.Should().Be(date);
+            date3.Should().Be(date);
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToDateTimeOffset()
+        {
+            var date = new DateTime(1947, 12, 16, 12, 15, 59, 660);
+            var date1 = new CypherDateTimeWithOffset(date, 3600);
+            var date2 = Convert.ChangeType(date1, typeof(DateTimeOffset));
+
+            date2.Should().Be(new DateTimeOffset(date, TimeSpan.FromSeconds(3600)));
+        }
+
+        [Fact]
+        public void ShouldBeConvertableToString()
+        {
+            var date = new CypherDateTimeWithOffset(1947, 12, 16, 12, 15, 59, 660000999, 3600);
+            var dateStr1 = Convert.ToString(date);
+            var dateStr2 = Convert.ChangeType(date, typeof(string));
+
+            dateStr1.Should().Be("1947-12-16T12:15:59.660000999+01:00");
+            dateStr2.Should().Be("1947-12-16T12:15:59.660000999+01:00");
+        }
+
+        [Fact]
+        public void ShouldThrowWhenConversionIsNotSupported()
+        {
+            var date = new CypherDateTimeWithOffset(1947, 12, 16, 12, 15, 59, 660000999, 3600);
+            var conversions = new Action[]
+            {
+                () => Convert.ToBoolean(date),
+                () => Convert.ToByte(date),
+                () => Convert.ToChar(date),
+                () => Convert.ToDecimal(date),
+                () => Convert.ToDouble(date),
+                () => Convert.ToInt16(date),
+                () => Convert.ToInt32(date),
+                () => Convert.ToInt64(date),
+                () => Convert.ToSByte(date),
+                () => Convert.ToUInt16(date),
+                () => Convert.ToUInt32(date),
+                () => Convert.ToUInt64(date),
+                () => Convert.ToSingle(date),
+                () => Convert.ChangeType(date, typeof(ArrayList))
+            };
+
+            foreach (var testAction in conversions)
+            {
+                testAction.ShouldThrow<InvalidCastException>();
+            }
         }
     }
 }
