@@ -22,120 +22,89 @@ using Neo4j.Driver.Internal.Types;
 namespace Neo4j.Driver.V1
 {
     /// <summary>
-    /// Represents a local time value
+    /// Represents a date value, without a time zone and time related components
     /// </summary>
-    public struct CypherTime : IValue, IEquatable<CypherTime>, IComparable, IComparable<CypherTime>, IConvertible, IHasTimeComponents
+    public sealed class LocalDate : IValue, IEquatable<LocalDate>, IComparable, IComparable<LocalDate>, IConvertible, IHasDateComponents
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from time components of given <see cref="DateTime"/>
+        /// Initializes a new instance of <see cref="LocalDate"/> from a date value
         /// </summary>
-        /// <param name="time"></param>
-        public CypherTime(DateTime time)
-            : this(time.TimeOfDay)
+        /// <param name="date"></param>
+        public LocalDate(DateTime date)
+            : this(date.Year, date.Month, date.Day)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from given <see cref="TimeSpan"/> value
+        /// Initializes a new instance of <see cref="LocalDate"/> from individual date component values
         /// </summary>
-        /// <param name="time"></param>
-        public CypherTime(TimeSpan time)
-            : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks))
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
+        public LocalDate(int year, int month, int day)
         {
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(year, TemporalHelpers.MinYear, TemporalHelpers.MaxYear, nameof(year));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(month, TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth, nameof(month));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(day, TemporalHelpers.MinDay, TemporalHelpers.MaxDayOfMonth(year, month), nameof(day));
 
+            Year = year;
+            Month = month;
+            Day = day;
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from individual time components
+        /// Gets the year component of this instance.
         /// </summary>
-        /// <param name="hour"></param>
-        /// <param name="minute"></param>
-        /// <param name="second"></param>
-        public CypherTime(int hour, int minute, int second)
-            : this(hour, minute, second, 0)
-        {
-
-        }
+        public int Year { get; }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from individual time components
+        /// Gets the month component of this instance.
         /// </summary>
-        /// <param name="hour"></param>
-        /// <param name="minute"></param>
-        /// <param name="second"></param>
-        /// <param name="nanosecond"></param>
-        public CypherTime(int hour, int minute, int second, int nanosecond)
-        {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
-
-            Hour = hour;
-            Minute = minute;
-            Second = second;
-            Nanosecond = nanosecond;
-        }
+        public int Month { get; }
 
         /// <summary>
-        /// Gets the hour component of this instance.
+        /// Gets the day of month component of this instance.
         /// </summary>
-        public int Hour { get; }
+        public int Day { get; }
 
         /// <summary>
-        /// Gets the minute component of this instance.
+        /// Gets a <see cref="DateTime"/> copy of this date value.
         /// </summary>
-        public int Minute { get; }
-
-        /// <summary>
-        /// Gets the second component of this instance.
-        /// </summary>
-        public int Second { get; }
-
-        /// <summary>
-        /// Gets the nanosecond component of this instance.
-        /// </summary>
-        public int Nanosecond { get; }
-
-        /// <summary>
-        /// Gets a <see cref="TimeSpan"/> copy of this time value.
-        /// </summary>
-        /// <value>Equivalent <see cref="TimeSpan"/> value</value>
-        /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public TimeSpan Time
+        /// <value>Equivalent <see cref="DateTime"/> value</value>
+        /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
+        public DateTime DateTime
         {
             get
             {
-                TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
+                TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
 
-                return new TimeSpan(0, Hour, Minute, Second).Add(
-                    TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
+                return new DateTime(Year, Month, Day);
             }
         }
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="CypherTime" /> instance. 
+        /// value of the specified <see cref="LocalDate"/> instance. 
         /// </summary>
         /// <param name="other">The object to compare to this instance.</param>
         /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
         /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(CypherTime other)
+        public bool Equals(LocalDate other)
         {
-            return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
+            return Year == other.Year && Month == other.Month && Day == other.Day;
         }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="CypherTime"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="LocalDate"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is CypherTime && Equals((CypherTime) obj);
+            return obj is LocalDate && Equals((LocalDate) obj);
         }
 
         /// <summary>
@@ -146,99 +115,96 @@ namespace Neo4j.Driver.V1
         {
             unchecked
             {
-                var hashCode = Hour;
-                hashCode = (hashCode * 397) ^ Minute;
-                hashCode = (hashCode * 397) ^ Second;
-                hashCode = (hashCode * 397) ^ Nanosecond;
+                var hashCode = Year;
+                hashCode = (hashCode * 397) ^ Month;
+                hashCode = (hashCode * 397) ^ Day;
                 return hashCode;
             }
         }
 
         /// <summary>
-        /// Converts the value of the current <see cref="CypherTime"/> object to its equivalent string representation.
+        /// Converts the value of the current <see cref="LocalDate"/> object to its equivalent string representation.
         /// </summary>
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond);
+            return TemporalHelpers.ToIsoDateString(Year, Month, Day);
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified <see cref="CypherTime"/> value and returns an integer 
+        /// Compares the value of this instance to a specified <see cref="LocalDate"/> value and returns an integer 
         /// that indicates whether this instance is earlier than, the same as, or later than the specified 
         /// DateTime value.
         /// </summary>
         /// <param name="other">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-        public int CompareTo(CypherTime other)
+        public int CompareTo(LocalDate other)
         {
-            var hourComparison = Hour.CompareTo(other.Hour);
-            if (hourComparison != 0) return hourComparison;
-            var minuteComparison = Minute.CompareTo(other.Minute);
-            if (minuteComparison != 0) return minuteComparison;
-            var secondComparison = Second.CompareTo(other.Second);
-            if (secondComparison != 0) return secondComparison;
-            return Nanosecond.CompareTo(other.Nanosecond);
+            var yearComparison = Year.CompareTo(other.Year);
+            if (yearComparison != 0) return yearComparison;
+            var monthComparison = Month.CompareTo(other.Month);
+            if (monthComparison != 0) return monthComparison;
+            return Day.CompareTo(other.Day);
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherTime"/>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="LocalDate"/>
         /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
-        /// or later than the specified <see cref="CypherTime"/> value.
+        /// or later than the specified <see cref="LocalDate"/> value.
         /// </summary>
         /// <param name="obj">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherTime)) throw new ArgumentException($"Object must be of type {nameof(CypherTime)}");
-            return CompareTo((CypherTime) obj);
+            if (!(obj is LocalDate)) throw new ArgumentException($"Object must be of type {nameof(LocalDate)}");
+            return CompareTo((LocalDate) obj);
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> is earlier than another specified 
-        /// <see cref="CypherTime"/>.
+        /// Determines whether one specified <see cref="LocalDate"/> is earlier than another specified 
+        /// <see cref="LocalDate"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <(CypherTime left, CypherTime right)
+        public static bool operator <(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) < 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> is later than another specified 
-        /// <see cref="CypherTime"/>.
+        /// Determines whether one specified <see cref="LocalDate"/> is later than another specified 
+        /// <see cref="LocalDate"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >(CypherTime left, CypherTime right)
+        public static bool operator >(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) > 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> represents a duration that is the 
-        /// same as or later than the other specified <see cref="CypherTime"/> 
+        /// Determines whether one specified <see cref="LocalDate"/> represents a duration that is the 
+        /// same as or later than the other specified <see cref="LocalDate"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <=(CypherTime left, CypherTime right)
+        public static bool operator <=(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) <= 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> represents a duration that is the 
-        /// same as or earlier than the other specified <see cref="CypherTime"/> 
+        /// Determines whether one specified <see cref="LocalDate"/> represents a duration that is the 
+        /// same as or earlier than the other specified <see cref="LocalDate"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >=(CypherTime left, CypherTime right)
+        public static bool operator >=(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) >= 0;
         }
@@ -317,7 +283,7 @@ namespace Neo4j.Driver.V1
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            return DateTime.Today.Add(Time);
+            return DateTime;
         }
 
         string IConvertible.ToString(IFormatProvider provider)
@@ -327,14 +293,9 @@ namespace Neo4j.Driver.V1
 
         object IConvertible.ToType(Type conversionType, IFormatProvider provider)
         {
-            if (conversionType == typeof(TimeSpan))
-            {
-                return Time;
-            }
-
             if (conversionType == typeof(DateTime))
             {
-                return DateTime.Today.Add(Time);
+                return DateTime;
             }
 
             if (conversionType == typeof(string))

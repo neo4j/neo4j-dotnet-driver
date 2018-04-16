@@ -23,13 +23,13 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
-    public class CypherDateTests
+    public class LocalDateTests
     {
 
         [Fact]
         public void ShouldCreateDateWithDateTimeComponents()
         {
-            var cypherDate = new CypherDate(1947, 12, 17);
+            var cypherDate = new LocalDate(1947, 12, 17);
 
             cypherDate.DateTime.Should().Be(new DateTime(1947, 12, 17));
         }
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldCreateDateWithDateTime()
         {
             var date = new DateTime(1947, 12, 17);
-            var cypherDate = new CypherDate(date);
+            var cypherDate = new LocalDate(date);
 
             cypherDate.DateTime.Should().Be(date);
         }
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(1000000000)]
         public void ShouldThrowOnInvalidYear(int year)
         {
-            var ex = Record.Exception(() => new CypherDate(year, 1, 1));
+            var ex = Record.Exception(() => new LocalDate(year, 1, 1));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(13)]
         public void ShouldThrowOnInvalidMonth(int month)
         {
-            var ex = Record.Exception(() => new CypherDate(1990, month, 1));
+            var ex = Record.Exception(() => new LocalDate(1990, month, 1));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(2018, 12, -1)]
         public void ShouldThrowOnInvalidDay(int year, int month, int day)
         {
-            var ex = Record.Exception(() => new CypherDate(year, month, day));
+            var ex = Record.Exception(() => new LocalDate(year, month, day));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -84,7 +84,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(9999999)]
         public void ShouldThrowOnOverflow(int year)
         {
-            var date = new CypherDate(year, 1, 1);
+            var date = new LocalDate(year, 1, 1);
             var ex = Record.Exception(() => date.DateTime);
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(-999999, 1, 1, "-999999-01-01")]
         public void ShouldGenerateCorrectString(int year, int month, int day, string expected)
         {
-            var cypherDate = new CypherDate(year, month, day);
+            var cypherDate = new LocalDate(year, month, day);
             var cypherDateStr = cypherDate.ToString();
 
             cypherDateStr.Should().Be(expected);
@@ -109,8 +109,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateSameHashcode()
         {
-            var date1 = new CypherDate(1947, 12, 17);
-            var date2 = new CypherDate(new DateTime(1947, 12, 17));
+            var date1 = new LocalDate(1947, 12, 17);
+            var date2 = new LocalDate(new DateTime(1947, 12, 17));
 
             date1.GetHashCode().Should().Be(date2.GetHashCode());
         }
@@ -118,8 +118,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateDifferentHashcode()
         {
-            var date1 = new CypherDate(1947, 12, 18);
-            var date2 = new CypherDate(new DateTime(1947, 12, 17));
+            var date1 = new LocalDate(1947, 12, 18);
+            var date2 = new LocalDate(new DateTime(1947, 12, 17));
 
             date1.GetHashCode().Should().NotBe(date2.GetHashCode());
         }
@@ -127,8 +127,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeEqual()
         {
-            var date1 = new CypherDate(1947, 12, 17);
-            var date2 = new CypherDate(new DateTime(1947, 12, 17));
+            var date1 = new LocalDate(1947, 12, 17);
+            var date2 = new LocalDate(new DateTime(1947, 12, 17));
 
             date1.Equals(date2).Should().BeTrue();
         }
@@ -136,8 +136,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqual()
         {
-            var date1 = new CypherDate(1947, 12, 17);
-            var date2 = new CypherDate(new DateTime(1947, 12, 18));
+            var date1 = new LocalDate(1947, 12, 17);
+            var date2 = new LocalDate(new DateTime(1947, 12, 18));
 
             date1.Equals(date2).Should().BeFalse();
         }
@@ -145,7 +145,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToAnotherType()
         {
-            var date = new CypherDate(1947, 12, 17);
+            var date = new LocalDate(1947, 12, 17);
             var other = "some string";
 
             date.Equals(other).Should().BeFalse();
@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToNull()
         {
-            var date = new CypherDate(1947, 12, 17);
+            var date = new LocalDate(1947, 12, 17);
             var other = (object) null;
 
             date.Equals(other).Should().BeFalse();
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowOnCompareToOtherType()
         {
-            var date1 = new CypherDate(1947, 12, 17);
+            var date1 = new LocalDate(1947, 12, 17);
 
             var ex = Record.Exception(() => date1.CompareTo(new DateTime(1947, 12, 17)));
 
@@ -173,7 +173,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToNull()
         {
-            var date1 = new CypherDate(1947, 12, 17);
+            var date1 = new LocalDate(1947, 12, 17);
 
             var comp = date1.CompareTo(null);
 
@@ -183,8 +183,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareTo()
         {
-            var date1 = new CypherDate(1947, 12, 17);
-            var date2 = new CypherDate(1947, 12, 16);
+            var date1 = new LocalDate(1947, 12, 17);
+            var date2 = new LocalDate(1947, 12, 16);
 
             var comp = date1.CompareTo(date2);
 
@@ -194,8 +194,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareTo()
         {
-            var date1 = new CypherDate(1947, 12, 17);
-            var date2 = new CypherDate(1947, 12, 17);
+            var date1 = new LocalDate(1947, 12, 17);
+            var date2 = new LocalDate(1947, 12, 17);
 
             var comp = date1.CompareTo(date2);
 
@@ -205,8 +205,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareTo()
         {
-            var date1 = new CypherDate(1947, 12, 16);
-            var date2 = new CypherDate(1947, 12, 17);
+            var date1 = new LocalDate(1947, 12, 16);
+            var date2 = new LocalDate(1947, 12, 17);
 
             var comp = date1.CompareTo(date2);
 
@@ -217,7 +217,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldBeConvertableToDateTime()
         {
             var date = new DateTime(1947, 12, 16);
-            var date1 = new CypherDate(date);
+            var date1 = new LocalDate(date);
             var date2 = Convert.ToDateTime(date1);
             var date3 = Convert.ChangeType(date1, typeof(DateTime));
 
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeConvertableToString()
         {
-            var date = new CypherDate(1947, 12, 16);
+            var date = new LocalDate(1947, 12, 16);
             var dateStr1 = Convert.ToString(date);
             var dateStr2 = Convert.ChangeType(date, typeof(string));
 
@@ -239,7 +239,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowWhenConversionIsNotSupported()
         {
-            var date = new CypherDate(1947, 12, 16);
+            var date = new LocalDate(1947, 12, 16);
             var conversions = new Action[]
             {
                 () => Convert.ToBoolean(date),

@@ -50,16 +50,16 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 var point2 = record[1];
 
                 point1.Should().NotBeNull();
-                point1.Should().BeOfType<CypherPoint>().Which.SrId.Should().Be(CartesianSrId);
-                point1.Should().BeOfType<CypherPoint>().Which.X.Should().Be(39.111748);
-                point1.Should().BeOfType<CypherPoint>().Which.Y.Should().Be(-76.775635);
-                point1.Should().BeOfType<CypherPoint>().Which.Z.Should().Be(double.NaN);
+                point1.Should().BeOfType<Point>().Which.SrId.Should().Be(CartesianSrId);
+                point1.Should().BeOfType<Point>().Which.X.Should().Be(39.111748);
+                point1.Should().BeOfType<Point>().Which.Y.Should().Be(-76.775635);
+                point1.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
 
                 point2.Should().NotBeNull();
-                point2.Should().BeAssignableTo<CypherPoint>().Which.SrId.Should().Be(Cartesian3DSrId);
-                point2.Should().BeAssignableTo<CypherPoint>().Which.X.Should().Be(39.111748);
-                point2.Should().BeAssignableTo<CypherPoint>().Which.Y.Should().Be(-76.775635);
-                point2.Should().BeAssignableTo<CypherPoint>().Which.Z.Should().Be(35.120);
+                point2.Should().BeAssignableTo<Point>().Which.SrId.Should().Be(Cartesian3DSrId);
+                point2.Should().BeAssignableTo<Point>().Which.X.Should().Be(39.111748);
+                point2.Should().BeAssignableTo<Point>().Which.Y.Should().Be(-76.775635);
+                point2.Should().BeAssignableTo<Point>().Which.Z.Should().Be(35.120);
             }
         }
 
@@ -68,8 +68,8 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             using (var session = Server.Driver.Session(AccessMode.Read))
             {
-                var point1 = new CypherPoint(WGS84SrId, 51.5044585, -0.105658);
-                var point2 = new CypherPoint(WGS843DSrId, 51.5044585, -0.105658, 35.120);
+                var point1 = new Point(WGS84SrId, 51.5044585, -0.105658);
+                var point2 = new Point(WGS843DSrId, 51.5044585, -0.105658, 35.120);
                 var created = session.Run("CREATE (n:Node { location1: $point1, location2: $point2 }) RETURN 1", new {point1, point2}).Single();
 
                 created[0].Should().Be(1L);
@@ -84,10 +84,10 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceive()
         {
-            TestSendAndReceive(new CypherPoint(WGS84SrId, 51.24923585, 0.92723724));
-            TestSendAndReceive(new CypherPoint(WGS843DSrId, 22.86211019, 171.61820439, 0.1230987));
-            TestSendAndReceive(new CypherPoint(CartesianSrId, 39.111748, -76.775635));
-            TestSendAndReceive(new CypherPoint(Cartesian3DSrId, 39.111748, -76.775635, 19.2937302840));
+            TestSendAndReceive(new Point(WGS84SrId, 51.24923585, 0.92723724));
+            TestSendAndReceive(new Point(WGS843DSrId, 22.86211019, 171.61820439, 0.1230987));
+            TestSendAndReceive(new Point(CartesianSrId, 39.111748, -76.775635));
+            TestSendAndReceive(new Point(Cartesian3DSrId, 39.111748, -76.775635, 19.2937302840));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             randomPointLists.ForEach(TestSendAndReceiveList);
         }
 
-        private void TestSendAndReceive(CypherPoint point)
+        private void TestSendAndReceive(Point point)
         {
             using (var session = Server.Driver.Session(AccessMode.Read))
             {
@@ -117,7 +117,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             }
         }
 
-        private void TestSendAndReceiveList(IEnumerable<CypherPoint> points)
+        private void TestSendAndReceiveList(IEnumerable<Point> points)
         {
             using (var session = Server.Driver.Session(AccessMode.Read))
             {
@@ -128,24 +128,24 @@ namespace Neo4j.Driver.IntegrationTests.Types
             }
         }
 
-        private IEnumerable<CypherPoint> GenerateRandomPointList(int sequence, int count)
+        private IEnumerable<Point> GenerateRandomPointList(int sequence, int count)
         {
             return Enumerable.Range(0, count).Select(i => GenerateRandomPoint(sequence)).ToList();
         }
 
-        private CypherPoint GenerateRandomPoint(int sequence)
+        private Point GenerateRandomPoint(int sequence)
         {
             switch (sequence % 4)
             {
                 case 0:
-                    return new CypherPoint(WGS84SrId, GenerateRandomDouble(), GenerateRandomDouble());
+                    return new Point(WGS84SrId, GenerateRandomDouble(), GenerateRandomDouble());
                 case 1:
-                    return new CypherPoint(WGS843DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
+                    return new Point(WGS843DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
                         GenerateRandomDouble());
                 case 2:
-                    return new CypherPoint(CartesianSrId, GenerateRandomDouble(), GenerateRandomDouble());
+                    return new Point(CartesianSrId, GenerateRandomDouble(), GenerateRandomDouble());
                 case 3:
-                    return new CypherPoint(Cartesian3DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
+                    return new Point(Cartesian3DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
                         GenerateRandomDouble());
                 default:
                     throw new ArgumentOutOfRangeException();

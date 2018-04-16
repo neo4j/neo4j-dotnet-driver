@@ -22,90 +22,60 @@ using Neo4j.Driver.Internal.Types;
 namespace Neo4j.Driver.V1
 {
     /// <summary>
-    /// Represents a time value with a UTC offset
+    /// Represents a local time value
     /// </summary>
-    public struct CypherTimeWithOffset : IValue, IEquatable<CypherTimeWithOffset>, IComparable,
-        IComparable<CypherTimeWithOffset>, IConvertible, IHasTimeComponents
+    public sealed class LocalTime : IValue, IEquatable<LocalTime>, IComparable, IComparable<LocalTime>, IConvertible, IHasTimeComponents
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from time components of given <see cref="DateTime"/> value
+        /// Initializes a new instance of <see cref="LocalTime"/> from time components of given <see cref="DateTime"/>
         /// </summary>
         /// <param name="time"></param>
-        /// <param name="offset"></param>
-        public CypherTimeWithOffset(DateTime time, TimeSpan offset)
-            : this(time.TimeOfDay, (int) offset.TotalSeconds)
+        public LocalTime(DateTime time)
+            : this(time.TimeOfDay)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
+        /// Initializes a new instance of <see cref="LocalTime"/> from given <see cref="TimeSpan"/> value
         /// </summary>
         /// <param name="time"></param>
-        /// <param name="offset"></param>
-        public CypherTimeWithOffset(TimeSpan time, TimeSpan offset)
-            : this(time, (int) offset.TotalSeconds)
+        public LocalTime(TimeSpan time)
+            : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks))
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
-        /// </summary>
-        /// <param name="time"></param>
-        /// <param name="offsetSeconds"></param>
-        private CypherTimeWithOffset(TimeSpan time, int offsetSeconds)
-            : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks),
-                offsetSeconds)
-        {
-
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from individual time components
+        /// Initializes a new instance of <see cref="LocalTime"/> from individual time components
         /// </summary>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="offsetSeconds"></param>
-        public CypherTimeWithOffset(int hour, int minute, int second, int offsetSeconds)
-            : this(hour, minute, second, 0, offsetSeconds)
+        public LocalTime(int hour, int minute, int second)
+            : this(hour, minute, second, 0)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from individual time components
+        /// Initializes a new instance of <see cref="LocalTime"/> from individual time components
         /// </summary>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
         /// <param name="nanosecond"></param>
-        /// <param name="offsetSeconds"></param>
-        public CypherTimeWithOffset(int hour, int minute, int second, int nanosecond, int offsetSeconds)
+        public LocalTime(int hour, int minute, int second, int nanosecond)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour,
-                nameof(hour));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute,
-                TemporalHelpers.MaxMinute, nameof(minute));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond,
-                TemporalHelpers.MaxSecond, nameof(second));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond,
-                TemporalHelpers.MaxNanosecond, nameof(nanosecond));
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(offsetSeconds, TemporalHelpers.MinOffset,
-                TemporalHelpers.MaxOffset, nameof(offsetSeconds));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(second, TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond, nameof(second));
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond, nameof(nanosecond));
 
             Hour = hour;
             Minute = minute;
             Second = second;
             Nanosecond = nanosecond;
-            OffsetSeconds = offsetSeconds;
-        }
-
-        internal CypherTimeWithOffset(IHasTimeComponents time, int offsetSeconds)
-            : this(time.Hour, time.Minute, time.Second, time.Nanosecond, offsetSeconds)
-        {
-
         }
 
         /// <summary>
@@ -129,13 +99,9 @@ namespace Neo4j.Driver.V1
         public int Nanosecond { get; }
 
         /// <summary>
-        /// Offset in seconds precision
+        /// Gets a <see cref="TimeSpan"/> copy of this time value.
         /// </summary>
-        public int OffsetSeconds { get; }
-
-        /// <summary>
-        /// Gets a <see cref="TimeSpan"/> value that represents the time of this instance.
-        /// </summary>
+        /// <value>Equivalent <see cref="TimeSpan"/> value</value>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
         public TimeSpan Time
         {
@@ -149,33 +115,27 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
-        /// </summary>
-        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
-
-        /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="CypherTimeWithOffset" /> instance. 
+        /// value of the specified <see cref="LocalTime" /> instance. 
         /// </summary>
         /// <param name="other">The object to compare to this instance.</param>
         /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
         /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(CypherTimeWithOffset other)
+        public bool Equals(LocalTime other)
         {
-            return Hour == other.Hour && Minute == other.Minute && Second == other.Second &&
-                   Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
+            return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
         }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="CypherTimeWithOffset"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="LocalTime"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is CypherTimeWithOffset && Equals((CypherTimeWithOffset) obj);
+            return obj is LocalTime && Equals((LocalTime) obj);
         }
 
         /// <summary>
@@ -190,105 +150,95 @@ namespace Neo4j.Driver.V1
                 hashCode = (hashCode * 397) ^ Minute;
                 hashCode = (hashCode * 397) ^ Second;
                 hashCode = (hashCode * 397) ^ Nanosecond;
-                hashCode = (hashCode * 397) ^ OffsetSeconds;
                 return hashCode;
             }
         }
 
         /// <summary>
-        /// Converts the value of the current <see cref="CypherTimeWithOffset"/> object to its equivalent string representation.
+        /// Converts the value of the current <see cref="LocalTime"/> object to its equivalent string representation.
         /// </summary>
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
-            return TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond) +
-                   TemporalHelpers.ToIsoTimeZoneOffset(OffsetSeconds);
+            return TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond);
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified <see cref="CypherTimeWithOffset"/> value and returns an integer 
+        /// Compares the value of this instance to a specified <see cref="LocalTime"/> value and returns an integer 
         /// that indicates whether this instance is earlier than, the same as, or later than the specified 
         /// DateTime value.
         /// </summary>
         /// <param name="other">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-        public int CompareTo(CypherTimeWithOffset other)
+        public int CompareTo(LocalTime other)
         {
-            var thisNanoOfDay = this.ToNanoOfDay() - (OffsetSeconds * TemporalHelpers.NanosPerSecond);
-            var otherNanoOfDay = other.ToNanoOfDay() - (other.OffsetSeconds * TemporalHelpers.NanosPerSecond);
-
-            if (thisNanoOfDay < 0)
-            {
-                thisNanoOfDay = TemporalHelpers.NanosPerDay + thisNanoOfDay;
-            }
-
-            if (otherNanoOfDay < 0)
-            {
-                otherNanoOfDay = TemporalHelpers.NanosPerDay + otherNanoOfDay;
-            }
-
-            return thisNanoOfDay.CompareTo(otherNanoOfDay);
+            var hourComparison = Hour.CompareTo(other.Hour);
+            if (hourComparison != 0) return hourComparison;
+            var minuteComparison = Minute.CompareTo(other.Minute);
+            if (minuteComparison != 0) return minuteComparison;
+            var secondComparison = Second.CompareTo(other.Second);
+            if (secondComparison != 0) return secondComparison;
+            return Nanosecond.CompareTo(other.Nanosecond);
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherTimeWithOffset"/>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="LocalTime"/>
         /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
-        /// or later than the specified <see cref="CypherTimeWithOffset"/> value.
+        /// or later than the specified <see cref="LocalTime"/> value.
         /// </summary>
         /// <param name="obj">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherTimeWithOffset))
-                throw new ArgumentException($"Object must be of type {nameof(CypherTimeWithOffset)}");
-            return CompareTo((CypherTimeWithOffset) obj);
+            if (!(obj is LocalTime)) throw new ArgumentException($"Object must be of type {nameof(LocalTime)}");
+            return CompareTo((LocalTime) obj);
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> is earlier than another specified 
-        /// <see cref="CypherTimeWithOffset"/>.
+        /// Determines whether one specified <see cref="LocalTime"/> is earlier than another specified 
+        /// <see cref="LocalTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator <(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) < 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> is later than another specified 
-        /// <see cref="CypherTimeWithOffset"/>.
+        /// Determines whether one specified <see cref="LocalTime"/> is later than another specified 
+        /// <see cref="LocalTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator >(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) > 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> represents a duration that is the 
-        /// same as or later than the other specified <see cref="CypherTimeWithOffset"/> 
+        /// Determines whether one specified <see cref="LocalTime"/> represents a duration that is the 
+        /// same as or later than the other specified <see cref="LocalTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <=(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator <=(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) <= 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> represents a duration that is the 
-        /// same as or earlier than the other specified <see cref="CypherTimeWithOffset"/> 
+        /// Determines whether one specified <see cref="LocalTime"/> represents a duration that is the 
+        /// same as or earlier than the other specified <see cref="LocalTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >=(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator >=(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) >= 0;
         }
@@ -367,7 +317,7 @@ namespace Neo4j.Driver.V1
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to DateTime is not supported.");
+            return DateTime.Today.Add(Time);
         }
 
         string IConvertible.ToString(IFormatProvider provider)
@@ -377,6 +327,16 @@ namespace Neo4j.Driver.V1
 
         object IConvertible.ToType(Type conversionType, IFormatProvider provider)
         {
+            if (conversionType == typeof(TimeSpan))
+            {
+                return Time;
+            }
+
+            if (conversionType == typeof(DateTime))
+            {
+                return DateTime.Today.Add(Time);
+            }
+
             if (conversionType == typeof(string))
             {
                 return ToString();

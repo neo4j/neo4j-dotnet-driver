@@ -23,37 +23,37 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a single three-dimensional point in a particular coordinate reference system.
     /// </summary>
-    public struct CypherPoint: IValue, IEquatable<CypherPoint>
+    public sealed class Point : IValue, IEquatable<Point>
     {
         internal const int TwoD = 2;
         internal const int ThreeD = 3;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherPoint" /> structure with two dimensions
+        /// Initializes a new instance of <see cref="Point" /> structure with two dimensions
         /// </summary>
         /// <param name="srId"><see cref="SrId" /></param>
         /// <param name="x"><see cref="X" /></param>
         /// <param name="y"><see cref="Y"/></param>
-        public CypherPoint(int srId, double x, double y)
+        public Point(int srId, double x, double y)
             : this(TwoD, srId, x, y, double.NaN)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherPoint" /> structure with three dimensions
+        /// Initializes a new instance of <see cref="Point" /> structure with three dimensions
         /// </summary>
         /// <param name="srId"><see cref="SrId" /></param>
         /// <param name="x"><see cref="X" /></param>
         /// <param name="y"><see cref="Y"/></param>
         /// <param name="z"><see cref="Z"/></param>
-        public CypherPoint(int srId, double x, double y, double z)
+        public Point(int srId, double x, double y, double z)
             : this(ThreeD, srId, x, y, z)
         {
 
         }
 
-        private CypherPoint(int dimension, int srId, double x, double y, double z)
+        private Point(int dimension, int srId, double x, double y, double z)
         {
             Dimension = dimension;
             SrId = srId;
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.V1
 
 
         /// <summary>
-        /// Converts the value of the current <see cref="CypherPoint"/> object to its equivalent string representation.
+        /// Converts the value of the current <see cref="Point"/> object to its equivalent string representation.
         /// </summary>
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
@@ -113,12 +113,12 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="CypherPoint"/> instance. 
+        /// value of the specified <see cref="Point"/> instance. 
         /// </summary>
         /// <param name="other">The object to compare to this instance.</param>
         /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
         /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(CypherPoint other)
+        public bool Equals(Point other)
         {
             return Dimension == other.Dimension && SrId == other.SrId && X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
         }
@@ -127,13 +127,13 @@ namespace Neo4j.Driver.V1
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="CypherPoint"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="Point"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (obj.GetType() != GetType()) return false;
-            return Equals((CypherPoint) obj);
+            return Equals((Point) obj);
         }
     }
 }

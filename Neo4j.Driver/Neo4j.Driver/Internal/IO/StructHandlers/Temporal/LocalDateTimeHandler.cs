@@ -21,14 +21,14 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class DateTimeHandler: IPackStreamStructHandler
+    internal class LocalDateTimeHandler: IPackStreamStructHandler
     {
         public const byte StructType = (byte) 'd';
         public const int StructSize = 2;
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherDateTime)};
+        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDateTime)};
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            var dateTime = value.CastOrThrow<CypherDateTime>();
+            var dateTime = value.CastOrThrow<LocalDateTime>();
 
             writer.WriteStructHeader(StructSize, StructType);
             writer.Write(dateTime.ToEpochSeconds());

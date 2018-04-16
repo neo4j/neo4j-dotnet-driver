@@ -83,28 +83,28 @@ namespace Neo4j.Driver.Internal
             return ComputeEpochDays(date.Year, date.Month, date.Day);
         }
 
-        public static long ToNanos(this CypherDuration duration)
+        public static long ToNanos(this Duration duration)
         {
             return (duration.Months * 30 * TemporalHelpers.NanosPerDay) +
                    (duration.Days * TemporalHelpers.NanosPerDay) +
                    (duration.Seconds * TemporalHelpers.NanosPerSecond) + duration.Nanos;
         }
 
-        public static CypherTime NanoOfDayToTime(long nanoOfDay)
+        public static LocalTime NanoOfDayToTime(long nanoOfDay)
         {
             ComponentsOfNanoOfDay(nanoOfDay, out var hour, out var minute, out var second, out var nanosecond);
 
-            return new CypherTime(hour, minute, second, nanosecond);
+            return new LocalTime(hour, minute, second, nanosecond);
         }
 
-        public static CypherDate EpochDaysToDate(long epochDays)
+        public static LocalDate EpochDaysToDate(long epochDays)
         {
             ComponentsOfEpochDays(epochDays, out var year, out var month, out var day);
 
-            return new CypherDate(year, month, day);
+            return new LocalDate(year, month, day);
         }
 
-        public static CypherDateTime EpochSecondsAndNanoToDateTime(long epochSeconds, int nano)
+        public static LocalDateTime EpochSecondsAndNanoToDateTime(long epochSeconds, int nano)
         {
             var epochDay = FloorDiv(epochSeconds, SecondsPerDay);
             var secondsOfDay = FloorMod(epochSeconds, SecondsPerDay);
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Internal
             ComponentsOfEpochDays(epochDay, out var year, out var month, out var day);
             ComponentsOfNanoOfDay(nanoOfDay, out var hour, out var minute, out var second, out var nanosecond);
 
-            return new CypherDateTime(year, month, day, hour, minute, second, nanosecond);
+            return new LocalDateTime(year, month, day, hour, minute, second, nanosecond);
         }
 
         private static long ComputeEpochDays(int year, int month, int day)
@@ -242,6 +242,11 @@ namespace Neo4j.Driver.Internal
         public static string ToIsoTimeString(int hour, int minute, int second, int nanosecond)
         {
             return $"{hour:D2}:{minute:D2}:{second:D2}.{nanosecond:D9}";
+        }
+
+        public static string ToIsoTimeZoneId(string id)
+        {
+            return $"[{id}]";
         }
 
         public static string ToIsoTimeZoneOffset(int offsetSeconds)

@@ -15,11 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
 using FluentAssertions.Primitives;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
@@ -29,51 +31,49 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class DateTimeHandlerTests : StructHandlerTests
+    public class OffsetTimeHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new DateTimeHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new OffsetTimeHandler();
 
         [Fact]
-        public void ShouldWriteDateTime()
+        public void ShouldWriteTimeWithOffset()
         {
-            var dateTime = new CypherDateTime(1978, 12, 16, 12, 35, 59, 128000987);
+            var time = new OffsetTime(12, 35, 59, 128000987, (int)TimeSpan.FromMinutes(150).TotalSeconds);
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(dateTime);
+            writer.Write(time);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be((byte) 'd');
-            reader.Read().Should().Be(282659759L);
-            reader.Read().Should().Be(128000987L);
+            reader.ReadStructSignature().Should().Be((byte) 'T');
+            reader.Read().Should().Be(45359128000987L);
+            reader.Read().Should().Be((long)time.OffsetSeconds);
         }
         
         [Fact]
-        public void ShouldReadDateTime()
+        public void ShouldReadTimeWithOffset()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(DateTimeHandler.StructSize, DateTimeHandler.StructType);
-            writer.Write(282659759);
-            writer.Write(128000987);
+            writer.WriteStructHeader(OffsetTimeHandler.StructSize, OffsetTimeHandler.StructType);
+            writer.Write(45359128000987);
+            writer.Write((int)TimeSpan.FromMinutes(150).TotalSeconds);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDateTime>().Which.Year.Should().Be(1978);
-            value.Should().BeOfType<CypherDateTime>().Which.Month.Should().Be(12);
-            value.Should().BeOfType<CypherDateTime>().Which.Day.Should().Be(16);
-            value.Should().BeOfType<CypherDateTime>().Which.Hour.Should().Be(12);
-            value.Should().BeOfType<CypherDateTime>().Which.Minute.Should().Be(35);
-            value.Should().BeOfType<CypherDateTime>().Which.Second.Should().Be(59);
-            value.Should().BeOfType<CypherDateTime>().Which.Nanosecond.Should().Be(128000987);
+            value.Should().BeOfType<OffsetTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<OffsetTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<OffsetTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<OffsetTime>().Which.Nanosecond.Should().Be(128000987);
+            value.Should().BeOfType<OffsetTime>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(150).TotalSeconds);
         }
         
     }

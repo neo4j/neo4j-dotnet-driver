@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
                     $"TimeSpan instance ({time}) passed to {nameof(SystemDateTimeHandler)} is not a valid time of day!");
             }
 
-            writer.Write(new CypherTime(time));
+            writer.Write(new LocalTime(time));
         }
     }
 }

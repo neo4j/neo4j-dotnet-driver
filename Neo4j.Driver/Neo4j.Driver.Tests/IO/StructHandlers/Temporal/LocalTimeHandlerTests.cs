@@ -30,14 +30,14 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class TimeHandlerTests : StructHandlerTests
+    public class LocalTimeHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new TimeHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new LocalTimeHandler();
 
         [Fact]
         public void ShouldWriteTime()
         {
-            var time = new CypherTime(12, 35, 59, 128000987);
+            var time = new LocalTime(12, 35, 59, 128000987);
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(TimeHandler.StructSize, TimeHandler.StructType);
+            writer.WriteStructHeader(LocalTimeHandler.StructSize, LocalTimeHandler.StructType);
             writer.Write(45359128000987);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -66,10 +66,10 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherTime>().Which.Hour.Should().Be(12);
-            value.Should().BeOfType<CypherTime>().Which.Minute.Should().Be(35);
-            value.Should().BeOfType<CypherTime>().Which.Second.Should().Be(59);
-            value.Should().BeOfType<CypherTime>().Which.Nanosecond.Should().Be(128000987);
+            value.Should().BeOfType<LocalTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<LocalTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<LocalTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<LocalTime>().Which.Nanosecond.Should().Be(128000987);
         }
         
     }

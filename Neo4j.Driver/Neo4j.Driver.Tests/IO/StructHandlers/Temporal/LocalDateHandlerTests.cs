@@ -30,14 +30,14 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class DateHandlerTests : StructHandlerTests
+    public class LocalDateHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new DateHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new LocalDateHandler();
 
         [Fact]
         public void ShouldWriteDate()
         {
-            var date = new CypherDate(1950, 8, 31);
+            var date = new LocalDate(1950, 8, 31);
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(DateHandler.StructSize, DateHandler.StructType);
+            writer.WriteStructHeader(LocalDateHandler.StructSize, LocalDateHandler.StructType);
             writer.Write(-7063L);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -66,9 +66,9 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDate>().Which.Year.Should().Be(1950);
-            value.Should().BeOfType<CypherDate>().Which.Month.Should().Be(8);
-            value.Should().BeOfType<CypherDate>().Which.Day.Should().Be(31);
+            value.Should().BeOfType<LocalDate>().Which.Year.Should().Be(1950);
+            value.Should().BeOfType<LocalDate>().Which.Month.Should().Be(8);
+            value.Should().BeOfType<LocalDate>().Which.Day.Should().Be(31);
         }
         
     }

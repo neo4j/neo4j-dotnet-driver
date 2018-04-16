@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             {
                 case DateTimeKind.Local:
                 case DateTimeKind.Unspecified:
-                    writer.Write(new CypherDateTime(dateTime));
+                    writer.Write(new LocalDateTime(dateTime));
                     break;
                 case DateTimeKind.Utc:
                     writer.Write(new CypherDateTimeWithOffset(dateTime, 0));

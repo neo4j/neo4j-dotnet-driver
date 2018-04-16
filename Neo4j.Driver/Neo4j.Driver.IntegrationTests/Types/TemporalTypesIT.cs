@@ -36,21 +36,21 @@ namespace Neo4j.Driver.IntegrationTests.Types
         public void ShouldReceiveDuration()
         {
             TestReceiveData("RETURN duration({ months: 16, days: 45, seconds: 120, nanoseconds: 187309812 })",
-                new CypherDuration(16, 45, 120, 187309812));
+                new Duration(16, 45, 120, 187309812));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldReceiveDate()
         {
             TestReceiveData("RETURN date({ year: 1994, month: 11, day: 15 })",
-                new CypherDate(1994, 11, 15));
+                new LocalDate(1994, 11, 15));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldReceiveTime()
         {
             TestReceiveData("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999999 })",
-                new CypherTime(23, 49, 59, 999999999));
+                new LocalTime(23, 49, 59, 999999999));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             TestReceiveData(
                 "RETURN time({ hour: 23, minute: 49, second: 59, nanosecond: 999999999, timezone:'+03:00' })",
-                new CypherTimeWithOffset(23, 49, 59, 999999999, (int)TimeSpan.FromHours(3).TotalSeconds));
+                new OffsetTime(23, 49, 59, 999999999, (int)TimeSpan.FromHours(3).TotalSeconds));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             TestReceiveData(
                 "RETURN localdatetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999999 })",
-                new CypherDateTime(1859, 5, 31, 23, 49, 59, 999999999));
+                new LocalDateTime(1859, 5, 31, 23, 49, 59, 999999999));
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveDuration()
         {
-            var data = new CypherDuration(14, 35, 75, 789012587);
+            var data = new Duration(14, 35, 75, 789012587);
 
             TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.months, x.days, x.seconds, x.millisecondsOfSecond, x.microsecondsOfSecond, x.nanosecondsOfSecond",
@@ -108,7 +108,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveDate()
         {
-            var data = new CypherDate(1976, 6, 13);
+            var data = new LocalDate(1976, 6, 13);
 
             TestSendAndReceiveData(
                 "CYPHER runtime = interpreted WITH $x AS x RETURN x, x.year, x.month, x.day",
@@ -125,7 +125,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveTime()
         {
-            var data = new CypherTime(12, 34, 56, 789012587);
+            var data = new LocalTime(12, 34, 56, 789012587);
 
             TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond",
@@ -145,7 +145,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveTimeWithOffset()
         {
-            var data = new CypherTimeWithOffset(12, 34, 56, 789012587, (int)TimeSpan.FromMinutes(90).TotalSeconds);
+            var data = new OffsetTime(12, 34, 56, 789012587, (int)TimeSpan.FromMinutes(90).TotalSeconds);
 
             TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond, x.offset",
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveDateTime()
         {
-            var data = new CypherDateTime(1976, 6, 13, 12, 34, 56, 789012587);
+            var data = new LocalDateTime(1976, 6, 13, 12, 34, 56, 789012587);
 
             TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.year, x.month, x.day, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond",
