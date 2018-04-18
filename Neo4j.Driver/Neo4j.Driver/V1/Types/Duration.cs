@@ -77,7 +77,7 @@ namespace Neo4j.Driver.V1
         /// <param name="nanos"><see cref="Nanos"/></param>
         public Duration(long months, long days, long seconds, int nanos)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanos, TemporalHelpers.MinNanosecond,
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanos, -TemporalHelpers.MaxNanosecond,
                 TemporalHelpers.MaxNanosecond, nameof(nanos));
 
             Months = months;
