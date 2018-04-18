@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -26,6 +27,11 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public sealed class LocalDate : TemporalValue, IEquatable<LocalDate>, IComparable, IComparable<LocalDate>, IHasDateComponents
     {
+        /// <summary>
+        /// Default comparer for <see cref="LocalDate"/> values.
+        /// </summary>
+        public static readonly IComparer<LocalDate> Comparer = new TemporalValueComparer<LocalDate>();
+
         /// <summary>
         /// Initializes a new instance of <see cref="LocalDate"/> from a date value
         /// </summary>

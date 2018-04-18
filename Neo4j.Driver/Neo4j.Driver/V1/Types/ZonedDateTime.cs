@@ -28,6 +28,11 @@ namespace Neo4j.Driver.V1
     public class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IComparable, IComparable<ZonedDateTime>, IHasDateTimeComponents
     {
         /// <summary>
+        /// Default comparer for <see cref="ZonedDateTime"/> values.
+        /// </summary>
+        public static readonly IComparer<ZonedDateTime> Comparer = new TemporalValueComparer<ZonedDateTime>();
+
+        /// <summary>
         /// Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTimeOffset"/> value.
         /// </summary>
         /// <param name="dateTimeOffset"></param>

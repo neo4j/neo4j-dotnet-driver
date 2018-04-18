@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.V1
@@ -164,6 +165,18 @@ namespace Neo4j.Driver.V1
             }
 
             throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
+        }
+
+        internal class TemporalValueComparer<T> : IComparer<T>
+        where T: TemporalValue, IComparable<T>
+        {
+            public int Compare(T x, T y)
+            {
+                if (ReferenceEquals(x, y)) return 0;
+                if (ReferenceEquals(null, y)) return 1;
+                if (ReferenceEquals(null, x)) return -1;
+                return x.CompareTo(y);
+            }
         }
 
     }

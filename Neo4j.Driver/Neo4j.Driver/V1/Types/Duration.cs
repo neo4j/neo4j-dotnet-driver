@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -27,6 +28,10 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable, IComparable<Duration>
     {
+        /// <summary>
+        /// Default comparer for <see cref="Duration"/> values.
+        /// </summary>
+        public static readonly IComparer<Duration> Comparer = new TemporalValueComparer<Duration>();
 
         /// <summary>
         /// Initializes a new instance of <see cref="Duration" /> in terms of <see cref="Seconds"/>

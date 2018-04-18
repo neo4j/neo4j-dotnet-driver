@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -26,22 +27,10 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public sealed class LocalDateTime : TemporalValue, IEquatable<LocalDateTime>, IComparable, IComparable<LocalDateTime>, IHasDateTimeComponents
     {
-
         /// <summary>
-        /// Initializes a new instance of <see cref="LocalDateTime"/> from individual date time
-        /// component values
+        /// Default comparer for <see cref="LocalDateTime"/> values.
         /// </summary>
-        /// <param name="year"></param>
-        /// <param name="month"></param>
-        /// <param name="day"></param>
-        /// <param name="hour"></param>
-        /// <param name="minute"></param>
-        /// <param name="second"></param>
-        public LocalDateTime(int year, int month, int day, int hour, int minute, int second)
-            : this(year, month, day, hour, minute, second, 0)
-        {
-
-        }
+        public static readonly IComparer<LocalDateTime> Comparer = new TemporalValueComparer<LocalDateTime>();
 
         /// <summary>
         /// Initializes a new instance of <see cref="LocalDateTime"/> from given <see cref="System.DateTime"/> value.
@@ -58,6 +47,22 @@ namespace Neo4j.Driver.V1
         public LocalDateTime(DateTime dateTime)
             : this(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second,
                 TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks))
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="LocalDateTime"/> from individual date time
+        /// component values
+        /// </summary>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
+        /// <param name="hour"></param>
+        /// <param name="minute"></param>
+        /// <param name="second"></param>
+        public LocalDateTime(int year, int month, int day, int hour, int minute, int second)
+            : this(year, month, day, hour, minute, second, 0)
         {
 
         }

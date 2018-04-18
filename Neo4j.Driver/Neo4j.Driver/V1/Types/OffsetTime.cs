@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -26,6 +27,11 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public sealed class OffsetTime : TemporalValue, IEquatable<OffsetTime>, IComparable, IComparable<OffsetTime>, IHasTimeComponents
     {
+        /// <summary>
+        /// Default comparer for <see cref="OffsetTime"/> values.
+        /// </summary>
+        public static readonly IComparer<OffsetTime> Comparer = new TemporalValueComparer<OffsetTime>();
+
         /// <summary>
         /// Initializes a new instance of <see cref="OffsetTime"/> from time components of given <see cref="DateTime"/> value
         /// </summary>
