@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -24,48 +25,53 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a local time value
     /// </summary>
-    public struct CypherTime : IValue, IEquatable<CypherTime>, IComparable, IComparable<CypherTime>, IConvertible, IHasTimeComponents
+    public sealed class LocalTime : TemporalValue, IEquatable<LocalTime>, IComparable, IComparable<LocalTime>, IHasTimeComponents
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from time components of given <see cref="DateTime"/>
+        /// Default comparer for <see cref="LocalTime"/> values.
+        /// </summary>
+        public static readonly IComparer<LocalTime> Comparer = new TemporalValueComparer<LocalTime>();
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="LocalTime"/> from time components of given <see cref="DateTime"/>
         /// </summary>
         /// <param name="time"></param>
-        public CypherTime(DateTime time)
+        public LocalTime(DateTime time)
             : this(time.TimeOfDay)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from given <see cref="TimeSpan"/> value
+        /// Initializes a new instance of <see cref="LocalTime"/> from given <see cref="TimeSpan"/> value
         /// </summary>
         /// <param name="time"></param>
-        public CypherTime(TimeSpan time)
+        public LocalTime(TimeSpan time)
             : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks))
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from individual time components
+        /// Initializes a new instance of <see cref="LocalTime"/> from individual time components
         /// </summary>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        public CypherTime(int hour, int minute, int second)
+        public LocalTime(int hour, int minute, int second)
             : this(hour, minute, second, 0)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTime"/> from individual time components
+        /// Initializes a new instance of <see cref="LocalTime"/> from individual time components
         /// </summary>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
         /// <param name="nanosecond"></param>
-        public CypherTime(int hour, int minute, int second, int nanosecond)
+        public LocalTime(int hour, int minute, int second, int nanosecond)
         {
             Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour, nameof(hour));
             Throw.ArgumentOutOfRangeException.IfValueNotBetween(minute, TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute, nameof(minute));
@@ -116,13 +122,15 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="CypherTime" /> instance. 
+        /// value of the specified <see cref="LocalTime" /> instance. 
         /// </summary>
         /// <param name="other">The object to compare to this instance.</param>
         /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
         /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(CypherTime other)
+        public bool Equals(LocalTime other)
         {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
             return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
         }
 
@@ -130,12 +138,13 @@ namespace Neo4j.Driver.V1
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="CypherTime"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="LocalTime"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is CypherTime && Equals((CypherTime) obj);
+            if (ReferenceEquals(this, obj)) return true;
+            return obj is LocalTime && Equals((LocalTime) obj);
         }
 
         /// <summary>
@@ -155,7 +164,7 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Converts the value of the current <see cref="CypherTime"/> object to its equivalent string representation.
+        /// Converts the value of the current <see cref="LocalTime"/> object to its equivalent string representation.
         /// </summary>
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
@@ -164,14 +173,16 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified <see cref="CypherTime"/> value and returns an integer 
+        /// Compares the value of this instance to a specified <see cref="LocalTime"/> value and returns an integer 
         /// that indicates whether this instance is earlier than, the same as, or later than the specified 
         /// DateTime value.
         /// </summary>
         /// <param name="other">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-        public int CompareTo(CypherTime other)
+        public int CompareTo(LocalTime other)
         {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
             var hourComparison = Hour.CompareTo(other.Hour);
             if (hourComparison != 0) return hourComparison;
             var minuteComparison = Minute.CompareTo(other.Minute);
@@ -182,169 +193,78 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherTime"/>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="LocalTime"/>
         /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
-        /// or later than the specified <see cref="CypherTime"/> value.
+        /// or later than the specified <see cref="LocalTime"/> value.
         /// </summary>
         /// <param name="obj">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherTime)) throw new ArgumentException($"Object must be of type {nameof(CypherTime)}");
-            return CompareTo((CypherTime) obj);
+            if (ReferenceEquals(this, obj)) return 0;
+            if (!(obj is LocalTime)) throw new ArgumentException($"Object must be of type {nameof(LocalTime)}");
+            return CompareTo((LocalTime) obj);
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> is earlier than another specified 
-        /// <see cref="CypherTime"/>.
+        /// Determines whether one specified <see cref="LocalTime"/> is earlier than another specified 
+        /// <see cref="LocalTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <(CypherTime left, CypherTime right)
+        public static bool operator <(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) < 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> is later than another specified 
-        /// <see cref="CypherTime"/>.
+        /// Determines whether one specified <see cref="LocalTime"/> is later than another specified 
+        /// <see cref="LocalTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >(CypherTime left, CypherTime right)
+        public static bool operator >(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) > 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> represents a duration that is the 
-        /// same as or later than the other specified <see cref="CypherTime"/> 
+        /// Determines whether one specified <see cref="LocalTime"/> represents a duration that is the 
+        /// same as or later than the other specified <see cref="LocalTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <=(CypherTime left, CypherTime right)
+        public static bool operator <=(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) <= 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTime"/> represents a duration that is the 
-        /// same as or earlier than the other specified <see cref="CypherTime"/> 
+        /// Determines whether one specified <see cref="LocalTime"/> represents a duration that is the 
+        /// same as or earlier than the other specified <see cref="LocalTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >=(CypherTime left, CypherTime right)
+        public static bool operator >=(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) >= 0;
         }
 
-        #region IConvertible Implementation
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
-        }
-
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
-        }
-
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
-        }
-
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
-        }
-
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
-        }
-
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
-        }
-
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
+        protected override DateTime ToDateTime()
         {
             return DateTime.Today.Add(Time);
         }
 
-        string IConvertible.ToString(IFormatProvider provider)
+        /// <inheritdoc cref="TemporalValue.ToTimeSpan"/>
+        protected override TimeSpan ToTimeSpan()
         {
-            return ToString();
+            return Time;
         }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
-        {
-            if (conversionType == typeof(TimeSpan))
-            {
-                return Time;
-            }
-
-            if (conversionType == typeof(DateTime))
-            {
-                return DateTime.Today.Add(Time);
-            }
-
-            if (conversionType == typeof(string))
-            {
-                return ToString();
-            }
-
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
-        }
-
-        #endregion
     }
 }

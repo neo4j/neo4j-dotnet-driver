@@ -23,13 +23,13 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
-    public class CypherTimeTests
+    public class LocalTimeTests
     {
 
         [Fact]
         public void ShouldCreateTimeWithTimeComponents()
         {
-            var cypherTime = new CypherTime(13, 15, 59);
+            var cypherTime = new LocalTime(13, 15, 59);
 
             cypherTime.Time.Should().Be(new TimeSpan(13, 15, 59));
         }
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldCreateTimeWithTimeSpan()
         {
             var time = new TimeSpan(0, 13, 59, 59, 255);
-            var cypherTime = new CypherTime(time);
+            var cypherTime = new LocalTime(time);
 
             cypherTime.Time.Should().Be(time);
         }
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(24)]
         public void ShouldThrowOnInvalidHour(int hour)
         {
-            var ex = Record.Exception(() => new CypherTime(hour, 0, 0, 0));
+            var ex = Record.Exception(() => new LocalTime(hour, 0, 0, 0));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(61)]
         public void ShouldThrowOnInvalidMinute(int minute)
         {
-            var ex = Record.Exception(() => new CypherTime(0, minute, 0, 0));
+            var ex = Record.Exception(() => new LocalTime(0, minute, 0, 0));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(61)]
         public void ShouldThrowOnInvalidSecond(int second)
         {
-            var ex = Record.Exception(() => new CypherTime(0, 0, second, 0));
+            var ex = Record.Exception(() => new LocalTime(0, 0, second, 0));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999_999_999 + 1)]
         public void ShouldThrowOnInvalidNanosecond(int nanosecond)
         {
-            var ex = Record.Exception(() => new CypherTime(0, 0, 0, nanosecond));
+            var ex = Record.Exception(() => new LocalTime(0, 0, 0, nanosecond));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999000001)]
         public void ShouldThrowOnTruncation(int nanosecond)
         {
-            var time = new CypherTime(0, 0, 0, nanosecond);
+            var time = new LocalTime(0, 0, 0, nanosecond);
             var ex = Record.Exception(() => time.Time);
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(0, 1, 2, 5001, "00:01:02.000005001")]
         public void ShouldGenerateCorrectString(int hour, int minute, int second, int nanosecond, string expected)
         {
-            var cypherTime = new CypherTime(hour, minute, second, nanosecond);
+            var cypherTime = new LocalTime(hour, minute, second, nanosecond);
             var cypherTimeStr = cypherTime.ToString();
 
             cypherTimeStr.Should().Be(expected);
@@ -115,9 +115,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateSameHashcode()
         {
-            var time1 = new CypherTime(12, 49, 55, 123000000);
-            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
-            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 123));
+            var time1 = new LocalTime(12, 49, 55, 123000000);
+            var time2 = new LocalTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new LocalTime(new TimeSpan(0, 12, 49, 55, 123));
 
             time1.GetHashCode().Should().Be(time2.GetHashCode()).And.Be(time3.GetHashCode());
         }
@@ -125,9 +125,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateDifferentHashcode()
         {
-            var time1 = new CypherTime(12, 49, 55, 123000001);
-            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
-            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 124));
+            var time1 = new LocalTime(12, 49, 55, 123000001);
+            var time2 = new LocalTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new LocalTime(new TimeSpan(0, 12, 49, 55, 124));
 
             time1.GetHashCode().Should().NotBe(time2.GetHashCode()).And.NotBe(time3.GetHashCode());
         }
@@ -135,9 +135,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeEqual()
         {
-            var time1 = new CypherTime(12, 49, 55, 123000000);
-            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
-            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 123));
+            var time1 = new LocalTime(12, 49, 55, 123000000);
+            var time2 = new LocalTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new LocalTime(new TimeSpan(0, 12, 49, 55, 123));
 
             time1.Equals(time2).Should().BeTrue();
             time1.Equals(time3).Should().BeTrue();
@@ -146,9 +146,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqual()
         {
-            var time1 = new CypherTime(12, 49, 55, 123000001);
-            var time2 = new CypherTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
-            var time3 = new CypherTime(new TimeSpan(0, 12, 49, 55, 125));
+            var time1 = new LocalTime(12, 49, 55, 123000001);
+            var time2 = new LocalTime(new DateTime(2017, 1, 1, 12, 49, 55, 123));
+            var time3 = new LocalTime(new TimeSpan(0, 12, 49, 55, 125));
 
             time1.Equals(time2).Should().BeFalse();
             time1.Equals(time3).Should().BeFalse();
@@ -157,7 +157,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToAnotherType()
         {
-            var time = new CypherTime(12, 49, 55, 123000001);
+            var time = new LocalTime(12, 49, 55, 123000001);
             var other = "some string";
 
             time.Equals(other).Should().BeFalse();
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToNull()
         {
-            var time = new CypherTime(12, 49, 55, 123000001);
+            var time = new LocalTime(12, 49, 55, 123000001);
             var other = (object)null;
 
             time.Equals(other).Should().BeFalse();
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowOnCompareToOtherType()
         {
-            var time1 = new CypherTime(0, 0, 0, 0);
+            var time1 = new LocalTime(0, 0, 0, 0);
 
             var ex = Record.Exception(() => time1.CompareTo(new DateTime(1947, 12, 17)));
 
@@ -185,7 +185,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToNull()
         {
-            var time1 = new CypherTime(0, 0, 0, 0);
+            var time1 = new LocalTime(0, 0, 0, 0);
 
             var comp = time1.CompareTo(null);
 
@@ -195,8 +195,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareTo()
         {
-            var time1 = new CypherTime(23, 59, 59, 999999999);
-            var time2 = new CypherTime(23, 59, 59, 0);
+            var time1 = new LocalTime(23, 59, 59, 999999999);
+            var time2 = new LocalTime(23, 59, 59, 0);
 
             var comp = time1.CompareTo(time2);
 
@@ -206,8 +206,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareTo()
         {
-            var time1 = new CypherTime(23, 59, 59, 999999999);
-            var time2 = new CypherTime(23, 59, 59, 999999999);
+            var time1 = new LocalTime(23, 59, 59, 999999999);
+            var time2 = new LocalTime(23, 59, 59, 999999999);
 
             var comp = time1.CompareTo(time2);
 
@@ -217,8 +217,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareTo()
         {
-            var time1 = new CypherTime(0, 59, 59, 999999999);
-            var time2 = new CypherTime(23, 59, 59, 999999999);
+            var time1 = new LocalTime(0, 59, 59, 999999999);
+            var time2 = new LocalTime(23, 59, 59, 999999999);
 
             var comp = time1.CompareTo(time2);
 
@@ -229,7 +229,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldBeConvertableToDateTime()
         {
             var time = new TimeSpan(0, 12, 15, 59, 660);
-            var time1 = new CypherTime(DateTime.Today.Add(time));
+            var time1 = new LocalTime(DateTime.Today.Add(time));
             var time2 = Convert.ToDateTime(time1);
             var time3 = (DateTime)Convert.ChangeType(time1, typeof(DateTime));
 
@@ -242,7 +242,7 @@ namespace Neo4j.Driver.Tests.Types
         {
             var time = new TimeSpan(0, 12, 15, 59, 660);
             var date = DateTime.Today.Add(time);
-            var time1 = new CypherTime(date);
+            var time1 = new LocalTime(date);
             var time2 = (TimeSpan)Convert.ChangeType(time1, typeof(TimeSpan));
 
             time2.Should().Be(time);
@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeConvertableToString()
         {
-            var time = new CypherTime(12, 15, 59, 660000999);
+            var time = new LocalTime(12, 15, 59, 660000999);
             var timeStr1 = Convert.ToString(time);
             var timeStr2 = Convert.ChangeType(time, typeof(string));
 
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowWhenConversionIsNotSupported()
         {
-            var time = new CypherTime(12, 15, 59, 660000999);
+            var time = new LocalTime(12, 15, 59, 660000999);
             var conversions = new Action[]
             {
                 () => Convert.ToBoolean(time),

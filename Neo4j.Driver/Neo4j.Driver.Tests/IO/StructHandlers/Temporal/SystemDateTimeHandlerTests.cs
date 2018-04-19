@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
 
         internal override IEnumerable<IPackStreamStructHandler> HandlersNeeded => new IPackStreamStructHandler[]
         {
-            new DateTimeHandler(), new DateTimeWithOffsetHandler()
+            new LocalDateTimeHandler(), new ZonedDateTimeHandler()
         };
 
         [Fact]

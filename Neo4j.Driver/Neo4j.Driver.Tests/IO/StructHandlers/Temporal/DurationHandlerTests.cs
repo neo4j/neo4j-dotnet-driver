@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new CypherDuration(10, 4, 300, 120));
+            writer.Write(new Duration(10, 4, 300, 120));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -70,10 +70,10 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDuration>().Which.Months.Should().Be(21L);
-            value.Should().BeOfType<CypherDuration>().Which.Days.Should().Be(8L);
-            value.Should().BeOfType<CypherDuration>().Which.Seconds.Should().Be(564L);
-            value.Should().BeOfType<CypherDuration>().Which.Nanos.Should().Be(865);
+            value.Should().BeOfType<Duration>().Which.Months.Should().Be(21L);
+            value.Should().BeOfType<Duration>().Which.Days.Should().Be(8L);
+            value.Should().BeOfType<Duration>().Which.Seconds.Should().Be(564L);
+            value.Should().BeOfType<Duration>().Which.Nanos.Should().Be(865);
         }
         
     }

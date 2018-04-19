@@ -23,13 +23,13 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
-    public class CypherDurationTests
+    public class DurationTests
     {
 
         [Fact]
         public void ShouldCreateDuration()
         {
-            var cypherDuration = new CypherDuration(15, 32, 785, 789215800);
+            var cypherDuration = new Duration(15, 32, 785, 789215800);
 
             cypherDuration.Months.Should().Be(15);
             cypherDuration.Days.Should().Be(32);
@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldCreateDurationWithSecondsOnly()
         {
-            var cypherDuration = new CypherDuration(785);
+            var cypherDuration = new Duration(785);
 
             cypherDuration.Months.Should().Be(0);
             cypherDuration.Days.Should().Be(0);
@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldCreateDurationWithSecondsAndNanoseconds()
         {
-            var cypherDuration = new CypherDuration(785, 789215800);
+            var cypherDuration = new Duration(785, 789215800);
 
             cypherDuration.Months.Should().Be(0);
             cypherDuration.Days.Should().Be(0);
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldCreateDurationWithDaysSecondsAndNanoseconds()
         {
-            var cypherDuration = new CypherDuration(45, 785, 789215800);
+            var cypherDuration = new Duration(45, 785, 789215800);
 
             cypherDuration.Months.Should().Be(0);
             cypherDuration.Days.Should().Be(45);
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(0, 0, 0, 5, "P0M0DT0.000000005S")]
         public void ShouldGenerateCorrectString(int months, int days, int seconds, int nanoseconds, string expected)
         {
-            var cypherDuration = new CypherDuration(months, days, seconds, nanoseconds);
+            var cypherDuration = new Duration(months, days, seconds, nanoseconds);
             var cypherDurationStr = cypherDuration.ToString();
 
             cypherDurationStr.Should().Be(expected);
@@ -89,8 +89,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateSameHashcode()
         {
-            var duration1 = new CypherDuration(15, 32, 785, 789215800);
-            var duration2 = new CypherDuration(15, 32, 785, 789215800);
+            var duration1 = new Duration(15, 32, 785, 789215800);
+            var duration2 = new Duration(15, 32, 785, 789215800);
 
             duration1.GetHashCode().Should().Be(duration2.GetHashCode());
         }
@@ -98,8 +98,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateDifferentHashcode()
         {
-            var duration1 = new CypherDuration(15, 32, 785, 789215800);
-            var duration2 = new CypherDuration(15, 32, 785, 789215801);
+            var duration1 = new Duration(15, 32, 785, 789215800);
+            var duration2 = new Duration(15, 32, 785, 789215801);
 
             duration1.GetHashCode().Should().NotBe(duration2.GetHashCode());
         }
@@ -107,8 +107,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeEqual()
         {
-            var duration1 = new CypherDuration(15, 32, 785, 789215800);
-            var duration2 = new CypherDuration(15, 32, 785, 789215800);
+            var duration1 = new Duration(15, 32, 785, 789215800);
+            var duration2 = new Duration(15, 32, 785, 789215800);
 
             duration1.Equals(duration2).Should().BeTrue();
         }
@@ -116,8 +116,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqual()
         {
-            var duration1 = new CypherDuration(15, 32, 785, 789215800);
-            var duration2 = new CypherDuration(15, 32, 786, 789215800);
+            var duration1 = new Duration(15, 32, 785, 789215800);
+            var duration2 = new Duration(15, 32, 786, 789215800);
 
             duration1.Equals(duration2).Should().BeFalse();
         }
@@ -125,7 +125,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToAnotherType()
         {
-            var duration = new CypherDuration(15, 32, 785, 789215800);
+            var duration = new Duration(15, 32, 785, 789215800);
             var other = "some string";
 
             duration.Equals(other).Should().BeFalse();
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToNull()
         {
-            var duration = new CypherDuration(15, 32, 785, 789215800);
+            var duration = new Duration(15, 32, 785, 789215800);
             var other = (object) null;
 
             duration.Equals(other).Should().BeFalse();
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowOnCompareToOtherType()
         {
-            var duration1 = new CypherDuration(0, 0, 0, 0);
+            var duration1 = new Duration(0, 0, 0, 0);
 
             var ex = Record.Exception(() => duration1.CompareTo(new DateTime(1947, 12, 17)));
 
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToNull()
         {
-            var duration1 = new CypherDuration(0, 0, 0, 0);
+            var duration1 = new Duration(0, 0, 0, 0);
 
             var comp = duration1.CompareTo(null);
 
@@ -163,8 +163,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareTo()
         {
-            var duration1 = new CypherDuration(1, 12, 500, 999999999);
-            var duration2 = new CypherDuration(1, 12, 500, 0);
+            var duration1 = new Duration(1, 12, 500, 999999999);
+            var duration2 = new Duration(1, 12, 500, 0);
 
             var comp = duration1.CompareTo(duration2);
 
@@ -174,8 +174,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToAbsolute()
         {
-            var duration1 = new CypherDuration(0, 1, 0, 1);
-            var duration2 = new CypherDuration(0, 0, 86400, 0);
+            var duration1 = new Duration(0, 1, 0, 1);
+            var duration2 = new Duration(0, 0, 86400, 0);
 
             var comp = duration1.CompareTo(duration2);
 
@@ -185,8 +185,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareTo()
         {
-            var duration1 = new CypherDuration(1, 12, 500, 999999999);
-            var duration2 = new CypherDuration(1, 12, 500, 999999999);
+            var duration1 = new Duration(1, 12, 500, 999999999);
+            var duration2 = new Duration(1, 12, 500, 999999999);
 
             var comp = duration1.CompareTo(duration2);
 
@@ -196,8 +196,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareToAbsolute()
         {
-            var duration1 = new CypherDuration(0, 1, 0, 999999999);
-            var duration2 = new CypherDuration(0, 0, 86400, 999999999);
+            var duration1 = new Duration(0, 1, 0, 999999999);
+            var duration2 = new Duration(0, 0, 86400, 999999999);
 
             var comp = duration1.CompareTo(duration2);
 
@@ -207,8 +207,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareTo()
         {
-            var duration1 = new CypherDuration(1, 12, 500, 999999999);
-            var duration2 = new CypherDuration(1, 12, 501, 0);
+            var duration1 = new Duration(1, 12, 500, 999999999);
+            var duration2 = new Duration(1, 12, 501, 0);
 
             var comp = duration1.CompareTo(duration2);
 
@@ -218,8 +218,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareToAbsolute()
         {
-            var duration1 = new CypherDuration(0, 1, 0, 999999999);
-            var duration2 = new CypherDuration(0, 0, 86401, 999999999);
+            var duration1 = new Duration(0, 1, 0, 999999999);
+            var duration2 = new Duration(0, 0, 86401, 999999999);
 
             var comp = duration1.CompareTo(duration2);
 
@@ -229,7 +229,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeConvertableToString()
         {
-            var duration = new CypherDuration(12, 15, 59, 660000999);
+            var duration = new Duration(12, 15, 59, 660000999);
             var durationStr1 = Convert.ToString(duration);
             var durationStr2 = Convert.ChangeType(duration, typeof(string));
 
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowWhenConversionIsNotSupported()
         {
-            var duration = new CypherDuration(12, 15, 59, 660000999);
+            var duration = new Duration(12, 15, 59, 660000999);
             var conversions = new Action[]
             {
                 () => Convert.ToDateTime(duration),

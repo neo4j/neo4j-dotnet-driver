@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -25,54 +26,58 @@ namespace Neo4j.Driver.V1
     /// Represents temporal amount containing months, days, seconds and nanoseconds. 
     /// <remarks>A duration can hold a negative value.</remarks>
     /// </summary>
-    public struct CypherDuration : IValue, IEquatable<CypherDuration>, IComparable, IComparable<CypherDuration>, IConvertible
+    public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable, IComparable<Duration>
     {
+        /// <summary>
+        /// Default comparer for <see cref="Duration"/> values.
+        /// </summary>
+        public static readonly IComparer<Duration> Comparer = new TemporalValueComparer<Duration>();
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDuration" /> in terms of <see cref="Seconds"/>
+        /// Initializes a new instance of <see cref="Duration" /> in terms of <see cref="Seconds"/>
         /// </summary>
         /// <param name="seconds"><see cref="Seconds"/></param>
-        public CypherDuration(long seconds)
+        public Duration(long seconds)
             : this(seconds, 0)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDuration" /> in terms of <see cref="Seconds"/> 
+        /// Initializes a new instance of <see cref="Duration" /> in terms of <see cref="Seconds"/> 
         /// and <see cref="Nanos"/>
         /// </summary>
         /// <param name="seconds"><see cref="Seconds"/></param>
         /// <param name="nanos"><see cref="Nanos"/></param>
-        public CypherDuration(long seconds, int nanos)
+        public Duration(long seconds, int nanos)
             : this(0, seconds, nanos)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDuration" /> in terms of <see cref="Days"/>, 
+        /// Initializes a new instance of <see cref="Duration" /> in terms of <see cref="Days"/>, 
         /// <see cref="Seconds"/> and <see cref="Nanos"/>
         /// </summary>
         /// <param name="days"><see cref="Days"/></param>
         /// <param name="seconds"><see cref="Seconds"/></param>
         /// <param name="nanos"><see cref="Nanos"/></param>
-        public CypherDuration(long days, long seconds, int nanos)
+        public Duration(long days, long seconds, int nanos)
             : this(0, days, seconds, nanos)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherDuration" /> with all supported temporal fields
+        /// Initializes a new instance of <see cref="Duration" /> with all supported temporal fields
         /// </summary>
         /// <param name="months"><see cref="Months"/></param>
         /// <param name="days"><see cref="Days"/></param>
         /// <param name="seconds"><see cref="Seconds"/></param>
         /// <param name="nanos"><see cref="Nanos"/></param>
-        public CypherDuration(long months, long days, long seconds, int nanos)
+        public Duration(long months, long days, long seconds, int nanos)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanos, TemporalHelpers.MinNanosecond,
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanos, -TemporalHelpers.MaxNanosecond,
                 TemporalHelpers.MaxNanosecond, nameof(nanos));
 
             Months = months;
@@ -103,13 +108,15 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="CypherDuration"/> instance. 
+        /// value of the specified <see cref="Duration"/> instance. 
         /// </summary>
         /// <param name="other">The object to compare to this instance.</param>
         /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
         /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(CypherDuration other)
+        public bool Equals(Duration other)
         {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
             return Months == other.Months && Days == other.Days && Seconds == other.Seconds && Nanos == other.Nanos;
         }
 
@@ -117,12 +124,13 @@ namespace Neo4j.Driver.V1
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="CypherDuration"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="Duration"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is CypherDuration && Equals((CypherDuration) obj);
+            if (ReferenceEquals(this, obj)) return true;
+            return obj is Duration && Equals((Duration) obj);
         }
 
         /// <summary>
@@ -142,7 +150,7 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Converts the value of the current <see cref="CypherDuration"/> object to its equivalent string representation.
+        /// Converts the value of the current <see cref="Duration"/> object to its equivalent string representation.
         /// </summary>
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
@@ -151,173 +159,82 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified <see cref="CypherDuration"/> value and returns an integer 
+        /// Compares the value of this instance to a specified <see cref="Duration"/> value and returns an integer 
         /// that indicates whether this instance is earlier than, the same as, or later than the specified 
         /// DateTime value.
         /// </summary>
         /// <param name="other">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-        public int CompareTo(CypherDuration other)
+        public int CompareTo(Duration other)
         {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
             var thisNanos = this.ToNanos();
             var otherNanos = other.ToNanos();
             return thisNanos.CompareTo(otherNanos);
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherDuration"/>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="Duration"/>
         /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
-        /// or later than the specified <see cref="CypherDuration"/> value.
+        /// or later than the specified <see cref="Duration"/> value.
         /// </summary>
         /// <param name="obj">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherDuration)) throw new ArgumentException($"Object must be of type {nameof(CypherDuration)}");
-            return CompareTo((CypherDuration) obj);
+            if (ReferenceEquals(this, obj)) return 0;
+            if (!(obj is Duration)) throw new ArgumentException($"Object must be of type {nameof(Duration)}");
+            return CompareTo((Duration) obj);
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDuration"/> is less than another specified 
-        /// <see cref="CypherDuration"/>.
+        /// Determines whether one specified <see cref="Duration"/> is less than another specified 
+        /// <see cref="Duration"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <(CypherDuration left, CypherDuration right)
+        public static bool operator <(Duration left, Duration right)
         {
             return left.CompareTo(right) < 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDuration"/> is more than another specified 
-        /// <see cref="CypherDuration"/>.
+        /// Determines whether one specified <see cref="Duration"/> is more than another specified 
+        /// <see cref="Duration"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >(CypherDuration left, CypherDuration right)
+        public static bool operator >(Duration left, Duration right)
         {
             return left.CompareTo(right) > 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDuration"/> represents a duration that is the 
-        /// same as or more than the other specified <see cref="CypherDuration"/> 
+        /// Determines whether one specified <see cref="Duration"/> represents a duration that is the 
+        /// same as or more than the other specified <see cref="Duration"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <=(CypherDuration left, CypherDuration right)
+        public static bool operator <=(Duration left, Duration right)
         {
             return left.CompareTo(right) <= 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherDuration"/> represents a duration that is the 
-        /// same as or less than the other specified <see cref="CypherDuration"/> 
+        /// Determines whether one specified <see cref="Duration"/> represents a duration that is the 
+        /// same as or less than the other specified <see cref="Duration"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >=(CypherDuration left, CypherDuration right)
+        public static bool operator >=(Duration left, Duration right)
         {
             return left.CompareTo(right) >= 0;
         }
-
-        #region IConvertible Implementation
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
-        }
-
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
-        }
-
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
-        }
-
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
-        }
-
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
-        }
-
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
-        }
-
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to DateTime is not supported.");
-        }
-
-        string IConvertible.ToString(IFormatProvider provider)
-        {
-            return ToString();
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
-        {
-            if (conversionType == typeof(string))
-            {
-                return ToString();
-            }
-
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
-        }
-
-        #endregion
     }
 }

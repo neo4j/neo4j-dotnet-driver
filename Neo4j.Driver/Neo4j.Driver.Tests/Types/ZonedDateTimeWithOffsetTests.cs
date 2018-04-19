@@ -24,38 +24,45 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
-    public class CypherDateTimeWithZoneIdTests
+    public class ZonedDateTimeWithOffsetTests
     {
 
         [Fact]
-        public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponents()
+        public void ShouldCreateDateTimeWithOffsetWithDateTimeComponents()
         {
-            var cypherDateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 23, 49, 54, "Europe/Rome");
+            var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, Zone.Of(1500));
 
             cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54));
-            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
-            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
+            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
         }
 
         [Fact]
-        public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponentsWithNanoseconds()
+        public void ShouldCreateDateTimeWithOffsetWithDateTimeComponentsWithNanoseconds()
         {
-            var cypherDateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 23, 49, 54, 192794500, "Europe/Rome");
+            var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, 192794500, Zone.Of(1500));
 
             cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945));
-            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
-            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
+            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
         }
 
         [Fact]
-        public void ShouldCreateDateTimeWithZoneIdWithDateTime()
+        public void ShouldCreateDateTimeWithOffsetWithDateTime()
         {
             var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120);
-            var cypherDateTime = new CypherDateTimeWithZoneId(dateTime, "Europe/Rome");
+            var cypherDateTime = new ZonedDateTime(dateTime, TimeSpan.FromSeconds(1500));
 
             cypherDateTime.DateTime.Should().Be(dateTime);
-            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
-            cypherDateTime.ZoneId.Should().Be("Europe/Rome");
+            cypherDateTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
+        }
+
+        [Fact]
+        public void ShouldCreateDateTimeWithOffsetWithDateTimeOffset()
+        {
+            var dateTime = new DateTimeOffset(1947, 12, 17, 23, 49, 54, 120, TimeSpan.FromSeconds(1500));
+            var cypherDateTime = new ZonedDateTime(dateTime);
+
+            cypherDateTime.DateTime.Should().Be(dateTime.DateTime);
+            cypherDateTime.Offset.Should().Be(dateTime.Offset);
         }
 
         [Theory]
@@ -63,7 +70,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(1000000000)]
         public void ShouldThrowOnInvalidYear(int year)
         {
-            var ex = Record.Exception(() => new CypherDateTimeWithZoneId(year, 1, 1, 0, 0, 0, "Europe/Amsterdam"));
+            var ex = Record.Exception(() => new ZonedDateTime(year, 1, 1, 0, 0, 0, Zone.Of(0)));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -73,7 +80,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(13)]
         public void ShouldThrowOnInvalidMonth(int month)
         {
-            var ex = Record.Exception(() => new CypherDateTimeWithZoneId(1990, month, 1, 0, 0, 0, "Europe/Istanbul"));
+            var ex = Record.Exception(() => new ZonedDateTime(1990, month, 1, 0, 0, 0, Zone.Of(0)));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -86,7 +93,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(2018, 12, -1)]
         public void ShouldThrowOnInvalidDay(int year, int month, int day)
         {
-            var ex = Record.Exception(() => new CypherDateTimeWithZoneId(year, month, day, 0, 0, 0, "Europe/Istanbul"));
+            var ex = Record.Exception(() => new ZonedDateTime(year, month, day, 0, 0, 0, Zone.Of(0)));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -96,7 +103,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(24)]
         public void ShouldThrowOnInvalidHour(int hour)
         {
-            var ex = Record.Exception(() => new CypherDateTimeWithZoneId(1990, 1, 1, hour, 0, 0, "Europe/Istanbul"));
+            var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, hour, 0, 0, Zone.Of(0)));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -107,7 +114,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(61)]
         public void ShouldThrowOnInvalidMinute(int minute)
         {
-            var ex = Record.Exception(() => new CypherDateTimeWithZoneId(1990, 1, 1, 0, minute, 0, "Europe/Paris"));
+            var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, minute, 0, Zone.Of(0)));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -118,7 +125,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(61)]
         public void ShouldThrowOnInvalidSecond(int second)
         {
-            var ex = Record.Exception(() => new CypherDateTimeWithZoneId(1990, 1, 1, 0, 0, second, "Europe/Rome"));
+            var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, second, Zone.Of(0)));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -128,9 +135,28 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999_999_999 + 1)]
         public void ShouldThrowOnInvalidNanosecond(int nanosecond)
         {
-            var ex = Record.Exception(() => new CypherDateTimeWithZoneId(1990, 1, 1, 0, 0, 0, nanosecond, "Europe/Athens"));
+            var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, 0, nanosecond, Zone.Of(0)));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
+        [InlineData(-64801)]
+        [InlineData(64801)]
+        public void ShouldThrowOnInvalidOffset(int offset)
+        {
+            var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, 0, 0, Zone.Of(offset)));
+
+            ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Fact]
+        public void ShouldConvertToDateTimeOffset()
+        {
+            var dateTime = new DateTimeOffset(1947, 12, 17, 23, 49, 54, 120, TimeSpan.FromSeconds(1500));
+            var cypherDateTime = new ZonedDateTime(dateTime);
+
+            cypherDateTime.DateTimeOffset.Should().Be(dateTime);
         }
 
         [Theory]
@@ -141,7 +167,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(9999999)]
         public void ShouldThrowOnOverflow(int year)
         {
-            var dateTime = new CypherDateTimeWithZoneId(year, 1, 1, 0, 0, 0, 0, "Europe/London");
+            var dateTime = new ZonedDateTime(year, 1, 1, 0, 0, 0, 0, Zone.Of(0));
             var ex = Record.Exception(() => dateTime.DateTime);
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
@@ -156,23 +182,26 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999000001)]
         public void ShouldThrowOnTruncation(int nanosecond)
         {
-            var dateTime = new CypherDateTimeWithZoneId(1, 1, 1, 0, 0, 0, nanosecond, "Europe/London");
+            var dateTime = new ZonedDateTime(1, 1, 1, 0, 0, 0, nanosecond, Zone.Of(0));
             var ex = Record.Exception(() => dateTime.DateTime);
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }
 
         [Theory]
-        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, "Europe/Rome", "1947-12-17T23:05:54.192794500[Europe/Rome]")]
-        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, "Europe/Amsterdam", "1947-12-05T00:05:54.192794500[Europe/Amsterdam]")]
-        [InlineData(1947, 12, 5, 0, 5, 54, 0, "Europe/Istanbul", "1947-12-05T00:05:54.000000000[Europe/Istanbul]")]
-        [InlineData(5, 1, 5, 0, 5, 54, 0, "Africa/Nairobi", "0005-01-05T00:05:54.000000000[Africa/Nairobi]")]
-        [InlineData(-5, 1, 5, 0, 5, 54, 1250, "America/Halifax", "-0005-01-05T00:05:54.000001250[America/Halifax]")]
-        [InlineData(999999, 1, 1, 5, 1, 25, 1, "America/New_York", "999999-01-01T05:01:25.000000001[America/New_York]")]
-        [InlineData(-999999, 1, 1, 5, 1, 25, 1, "Asia/Seoul", "-999999-01-01T05:01:25.000000001[Asia/Seoul]")]
-        public void ShouldGenerateCorrectString(int year, int month, int day, int hour, int minute, int second, int nanosecond, string zoneId, string expected)
+        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1500, "1947-12-17T23:05:54.192794500+00:25")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1500, "1947-12-05T00:05:54.192794500-00:25")]
+        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1501, "1947-12-17T23:05:54.192794500+00:25:01")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1499, "1947-12-05T00:05:54.192794500-00:24:59")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 0, 1800, "1947-12-05T00:05:54.000000000+00:30")]
+        [InlineData(5, 1, 5, 0, 5, 54, 0, -1800, "0005-01-05T00:05:54.000000000-00:30")]
+        [InlineData(-5, 1, 5, 0, 5, 54, 1250, 0, "-0005-01-05T00:05:54.000001250Z")]
+        [InlineData(999999, 1, 1, 5, 1, 25, 1, 64800, "999999-01-01T05:01:25.000000001+18:00")]
+        [InlineData(-999999, 1, 1, 5, 1, 25, 1, -60000, "-999999-01-01T05:01:25.000000001-16:40")]
+        public void ShouldGenerateCorrectString(int year, int month, int day, int hour, int minute, int second, int nanosecond, int offsetSeconds, string expected)
         {
-            var cypherDateTime = new CypherDateTimeWithZoneId(year, month, day, hour, minute, second, nanosecond, zoneId);
+            var cypherDateTime =
+                new ZonedDateTime(year, month, day, hour, minute, second, nanosecond, Zone.Of(offsetSeconds));
             var cypherDateTimeStr = cypherDateTime.ToString();
 
             cypherDateTimeStr.Should().Be(expected);
@@ -181,8 +210,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateSameHashcode()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
-            var dateTime2 = new CypherDateTimeWithZoneId(new DateTime(1947, 12, 17, 15, 12, 01, 789), "Europe/Rome");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 15, 12, 01, 789000000, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789), 1800);
 
             dateTime1.GetHashCode().Should().Be(dateTime2.GetHashCode());
         }
@@ -190,8 +219,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateDifferentHashcode()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
-            var dateTime2 = new CypherDateTimeWithZoneId(new DateTime(1947, 12, 17, 15, 12, 01, 790), "Europe/Rome");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 15, 12, 01, 789000000, Zone.Of(1801));
+            var dateTime2 = new ZonedDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 790), 1800);
 
             dateTime1.GetHashCode().Should().NotBe(dateTime2.GetHashCode());
         }
@@ -199,8 +228,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeEqual()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
-            var dateTime2 = new CypherDateTimeWithZoneId(new DateTime(1947, 12, 17, 15, 12, 01, 789), "Europe/Rome");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 15, 12, 01, 789000000, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 789), 1800);
 
             dateTime1.Should().Be(dateTime2);
         }
@@ -208,8 +237,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqual()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
-            var dateTime2 = new CypherDateTimeWithZoneId(new DateTime(1947, 12, 17, 15, 12, 01, 790), "Europe/Rome");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 15, 12, 01, 789000000, Zone.Of(1801));
+            var dateTime2 = new ZonedDateTime(new DateTime(1947, 12, 17, 15, 12, 01, 790), 1800);
 
             dateTime1.Should().NotBe(dateTime2);
         }
@@ -217,7 +246,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToAnotherType()
         {
-            var dateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
+            var dateTime = new ZonedDateTime(1947, 12, 17, 15, 12, 01, 789000000, Zone.Of(1800));
             var other = "some string";
 
             dateTime.Equals(other).Should().BeFalse();
@@ -226,7 +255,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToNull()
         {
-            var dateTime = new CypherDateTimeWithZoneId(1947, 12, 17, 15, 12, 01, 789000000, "Europe/Rome");
+            var dateTime = new ZonedDateTime(1947, 12, 17, 15, 12, 01, 789000000, Zone.Of(1800));
             var other = (object)null;
 
             dateTime.Equals(other).Should().BeFalse();
@@ -235,7 +264,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowOnCompareToOtherType()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 0, 0, 0, 0, "Europe/Amsterdam");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 0, 0, 0, 0, Zone.Of(1800));
 
             var ex = Record.Exception(() => dateTime1.CompareTo(new DateTime(1947, 12, 17)));
 
@@ -245,7 +274,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToNull()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 0, 0, 0, 0, "Europe/Amsterdam");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 0, 0, 0, 0, Zone.Of(1800));
 
             var comp = dateTime1.CompareTo(null);
 
@@ -255,8 +284,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareTo()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 0, 0, 0, 0, "Europe/Amsterdam");
-            var dateTime2 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/Amsterdam");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 0, 0, 0, 0, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(1800));
 
             var comp = dateTime1.CompareTo(dateTime2);
 
@@ -266,8 +295,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToDiffOffset()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 17, 23, 59, 59, 999999900, "Europe/Amsterdam");
-            var dateTime2 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/London");
+            var dateTime1 = new ZonedDateTime(1947, 12, 17, 23, 59, 59, 999999999, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(1750));
 
             var comp = dateTime1.CompareTo(dateTime2);
 
@@ -277,8 +306,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareTo()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/Amsterdam");
-            var dateTime2 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/Amsterdam");
+            var dateTime1 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(1800));
 
             var comp = dateTime1.CompareTo(dateTime2);
 
@@ -288,8 +317,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareToDiffOffset()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/London");
-            var dateTime2 = new CypherDateTimeWithZoneId(1947, 12, 17, 0, 59, 59, 999999900, "Europe/Amsterdam");
+            var dateTime1 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(1947, 12, 17, 0, 59, 59, 999999999, Zone.Of(5400));
 
             var comp = dateTime1.CompareTo(dateTime2);
 
@@ -299,8 +328,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareTo()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/Amsterdam");
-            var dateTime2 = new CypherDateTimeWithZoneId(1947, 12, 17, 0, 59, 59, 999999900, "Europe/Amsterdam");
+            var dateTime1 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(1947, 12, 17, 0, 59, 59, 999999999, Zone.Of(1800));
 
             var comp = dateTime1.CompareTo(dateTime2);
 
@@ -310,8 +339,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareToDiffOffset()
         {
-            var dateTime1 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/Amsterdam");
-            var dateTime2 = new CypherDateTimeWithZoneId(1947, 12, 16, 23, 59, 59, 999999900, "Europe/London");
+            var dateTime1 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(1800));
+            var dateTime2 = new ZonedDateTime(1947, 12, 16, 23, 59, 59, 999999999, Zone.Of(-1799));
 
             var comp = dateTime1.CompareTo(dateTime2);
 
@@ -322,7 +351,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldBeConvertableToDateTime()
         {
             var date = new DateTime(1947, 12, 16, 12, 15, 59, 660);
-            var date1 = new CypherDateTimeWithZoneId(date, "Europe/Rome");
+            var date1 = new ZonedDateTime(date, 3600);
             var date2 = Convert.ToDateTime(date1);
             var date3 = Convert.ChangeType(date1, typeof(DateTime));
 
@@ -334,7 +363,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldBeConvertableToDateTimeOffset()
         {
             var date = new DateTime(1947, 12, 16, 12, 15, 59, 660);
-            var date1 = new CypherDateTimeWithZoneId(date, "Europe/Rome");
+            var date1 = new ZonedDateTime(date, 3600);
             var date2 = Convert.ChangeType(date1, typeof(DateTimeOffset));
 
             date2.Should().Be(new DateTimeOffset(date, TimeSpan.FromSeconds(3600)));
@@ -343,7 +372,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeConvertableToString()
         {
-            var date = new CypherDateTimeWithOffset(1947, 12, 16, 12, 15, 59, 660000999, 3600);
+            var date = new ZonedDateTime(1947, 12, 16, 12, 15, 59, 660000999, Zone.Of(3600));
             var dateStr1 = Convert.ToString(date);
             var dateStr2 = Convert.ChangeType(date, typeof(string));
 
@@ -354,7 +383,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowWhenConversionIsNotSupported()
         {
-            var date = new CypherDateTimeWithZoneId(1947, 12, 16, 12, 15, 59, 660000999, "");
+            var date = new ZonedDateTime(1947, 12, 16, 12, 15, 59, 660000999, Zone.Of(3600));
             var conversions = new Action[]
             {
                 () => Convert.ToBoolean(date),

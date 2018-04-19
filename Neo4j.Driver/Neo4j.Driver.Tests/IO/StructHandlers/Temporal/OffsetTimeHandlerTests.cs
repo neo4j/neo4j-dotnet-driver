@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
@@ -30,45 +31,49 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.StructHandlers
 {
-    public class DateHandlerTests : StructHandlerTests
+    public class OffsetTimeHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new DateHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new OffsetTimeHandler();
 
         [Fact]
-        public void ShouldWriteDate()
+        public void ShouldWriteTimeWithOffset()
         {
-            var date = new CypherDate(1950, 8, 31);
+            var time = new OffsetTime(12, 35, 59, 128000987, (int)TimeSpan.FromMinutes(150).TotalSeconds);
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(date);
+            writer.Write(time);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be((byte) 'D');
-            reader.Read().Should().Be(-7063L);
+            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructSignature().Should().Be((byte) 'T');
+            reader.Read().Should().Be(45359128000987L);
+            reader.Read().Should().Be((long)time.OffsetSeconds);
         }
         
         [Fact]
-        public void ShouldReadDate()
+        public void ShouldReadTimeWithOffset()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(DateHandler.StructSize, DateHandler.StructType);
-            writer.Write(-7063L);
+            writer.WriteStructHeader(OffsetTimeHandler.StructSize, OffsetTimeHandler.StructType);
+            writer.Write(45359128000987);
+            writer.Write((int)TimeSpan.FromMinutes(150).TotalSeconds);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherDate>().Which.Year.Should().Be(1950);
-            value.Should().BeOfType<CypherDate>().Which.Month.Should().Be(8);
-            value.Should().BeOfType<CypherDate>().Which.Day.Should().Be(31);
+            value.Should().BeOfType<OffsetTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<OffsetTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<OffsetTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<OffsetTime>().Which.Nanosecond.Should().Be(128000987);
+            value.Should().BeOfType<OffsetTime>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(150).TotalSeconds);
         }
         
     }

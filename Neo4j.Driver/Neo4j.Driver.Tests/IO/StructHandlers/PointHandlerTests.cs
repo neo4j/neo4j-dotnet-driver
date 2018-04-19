@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new CypherPoint(7203, 51.5044585, -0.105658));
+            writer.Write(new Point(7203, 51.5044585, -0.105658));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new CypherPoint(7203, 51.5044585, -0.105658, 35.25));
+            writer.Write(new Point(7203, 51.5044585, -0.105658, 35.25));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -88,10 +88,10 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherPoint>().Which.SrId.Should().Be(7203);
-            value.Should().BeOfType<CypherPoint>().Which.X.Should().Be(51.5044585);
-            value.Should().BeOfType<CypherPoint>().Which.Y.Should().Be(-0.105658);
-            value.Should().BeOfType<CypherPoint>().Which.Z.Should().Be(double.NaN);
+            value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
+            value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
+            value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
+            value.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
         }
 
         [Fact]
@@ -111,10 +111,10 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var value = reader.Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<CypherPoint>().Which.SrId.Should().Be(7203);
-            value.Should().BeOfType<CypherPoint>().Which.X.Should().Be(51.5044585);
-            value.Should().BeOfType<CypherPoint>().Which.Y.Should().Be(-0.105658);
-            value.Should().BeOfType<CypherPoint>().Which.Z.Should().Be(35.25);
+            value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
+            value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
+            value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
+            value.Should().BeOfType<Point>().Which.Z.Should().Be(35.25);
         }
     }
 }

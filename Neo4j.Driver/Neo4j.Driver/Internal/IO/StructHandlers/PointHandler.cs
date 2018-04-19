@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
         public IEnumerable<byte> ReadableStructs => new[] {Point2DStructType, Point3DStructType};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherPoint)};
+        public IEnumerable<Type> WritableTypes => new[] {typeof(Point)};
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
                     var x = reader.ReadDouble();
                     var y = reader.ReadDouble();
 
-                    return new CypherPoint(srId, x, y);
+                    return new Point(srId, x, y);
                 }
                 case Point3DStructType:
                 {
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
                     var y = reader.ReadDouble();
                     var z = reader.ReadDouble();
 
-                    return new CypherPoint(srId, x, y, z);
+                    return new Point(srId, x, y, z);
                 }
                 default:
                     throw new ProtocolException(
@@ -66,11 +66,11 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            var point = value.CastOrThrow<CypherPoint>();
+            var point = value.CastOrThrow<Point>();
 
             switch (point.Dimension)
             {
-                case CypherPoint.TwoD:
+                case Point.TwoD:
                 {
                     writer.WriteStructHeader(Point2DStructSize, Point2DStructType);
                     writer.Write(point.SrId);
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
                     break;
                 }
-                case CypherPoint.ThreeD:
+                case Point.ThreeD:
                 {
                     writer.WriteStructHeader(Point3DStructSize, Point3DStructType);
                     writer.Write(point.SrId);

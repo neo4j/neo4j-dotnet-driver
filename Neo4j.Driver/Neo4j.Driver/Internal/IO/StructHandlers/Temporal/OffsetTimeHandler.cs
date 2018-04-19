@@ -21,35 +21,32 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class DateTimeWithOffsetHandler : IPackStreamStructHandler
+    internal class OffsetTimeHandler : IPackStreamStructHandler
     {
-        public const byte StructType = (byte) 'F';
-        public const int StructSize = 3;
+        public const byte StructType = (byte) 'T';
+        public const int StructSize = 2;
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherDateTimeWithOffset)};
+        public IEnumerable<Type> WritableTypes => new[] {typeof(OffsetTime)};
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
-            PackStream.EnsureStructSize("DateTimeWithOffset", StructSize, size);
+            PackStream.EnsureStructSize("Time", StructSize, size);
 
-            var epochSecondsUtc = reader.ReadLong();
-            var nanosOfSecond = reader.ReadInteger();
+            var nanosOfDay = reader.ReadLong();
             var offsetSeconds = reader.ReadInteger();
 
-            return new CypherDateTimeWithOffset(
-                TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond), offsetSeconds);
+            return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
         }
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            var dateTime = value.CastOrThrow<CypherDateTimeWithOffset>();
+            var time = value.CastOrThrow<OffsetTime>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.ToEpochSeconds());
-            writer.Write(dateTime.Nanosecond);
-            writer.Write(dateTime.OffsetSeconds);
+            writer.Write(time.ToNanoOfDay());
+            writer.Write(time.OffsetSeconds);
         }
     }
 }

@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherDuration)};
+        public IEnumerable<Type> WritableTypes => new[] {typeof(Duration)};
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
@@ -39,12 +39,12 @@ namespace Neo4j.Driver.Internal.IO.StructHandlers
             var seconds = reader.ReadLong();
             var nanos = reader.ReadInteger();
 
-            return new CypherDuration(months, days, seconds, nanos);
+            return new Duration(months, days, seconds, nanos);
         }
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            var duration = value.CastOrThrow<CypherDuration>();
+            var duration = value.CastOrThrow<Duration>();
 
             writer.WriteStructHeader(StructSize, StructType);
             writer.Write(duration.Months);

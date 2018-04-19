@@ -23,13 +23,13 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
-    public class CypherTimeWithOffsetTests
+    public class OffsetTimeTests
     {
 
         [Fact]
         public void ShouldCreateTimeWithOffsetWithTimeComponents()
         {
-            var cypherTime = new CypherTimeWithOffset(13, 15, 59, 1500);
+            var cypherTime = new OffsetTime(13, 15, 59, 1500);
 
             cypherTime.Time.Should().Be(new TimeSpan(13, 15, 59));
             cypherTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldCreateTimeWithOffsetWithTimeSpan()
         {
             var time = new TimeSpan(0, 13, 59, 59, 255);
-            var cypherTime = new CypherTimeWithOffset(time, TimeSpan.FromSeconds(1500));
+            var cypherTime = new OffsetTime(time, TimeSpan.FromSeconds(1500));
 
             cypherTime.Time.Should().Be(time);
             cypherTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldCreateTimeWithOffsetWithDateTime()
         {
             var time = new DateTime(1, 1, 1, 13, 59, 59, 25);
-            var cypherTime = new CypherTimeWithOffset(time, TimeSpan.FromSeconds(1500));
+            var cypherTime = new OffsetTime(time, TimeSpan.FromSeconds(1500));
 
             cypherTime.Time.Should().Be(time.TimeOfDay);
             cypherTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(24)]
         public void ShouldThrowOnInvalidHour(int hour)
         {
-            var ex = Record.Exception(() => new CypherTimeWithOffset(hour, 0, 0, 0));
+            var ex = Record.Exception(() => new OffsetTime(hour, 0, 0, 0));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(61)]
         public void ShouldThrowOnInvalidMinute(int minute)
         {
-            var ex = Record.Exception(() => new CypherTimeWithOffset(0, minute, 0, 0));
+            var ex = Record.Exception(() => new OffsetTime(0, minute, 0, 0));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(61)]
         public void ShouldThrowOnInvalidSecond(int second)
         {
-            var ex = Record.Exception(() => new CypherTimeWithOffset(0, 0, second, 0));
+            var ex = Record.Exception(() => new OffsetTime(0, 0, second, 0));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -92,7 +92,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999_999_999 + 1)]
         public void ShouldThrowOnInvalidNanosecond(int nanosecond)
         {
-            var ex = Record.Exception(() => new CypherTimeWithOffset(0, 0, 0, nanosecond, 0));
+            var ex = Record.Exception(() => new OffsetTime(0, 0, 0, nanosecond, 0));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(64801)]
         public void ShouldThrowOnInvalidOffset(int offset)
         {
-            var ex = Record.Exception(() => new CypherTimeWithOffset(0, 0, 0, 0, offset));
+            var ex = Record.Exception(() => new OffsetTime(0, 0, 0, 0, offset));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999000001)]
         public void ShouldThrowOnTruncation(int nanosecond)
         {
-            var time = new CypherTimeWithOffset(0, 0, 0, nanosecond, 0);
+            var time = new OffsetTime(0, 0, 0, nanosecond, 0);
             var ex = Record.Exception(() => time.Time);
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(0, 1, 2, 750000000, 0, "00:01:02.750000000Z")]
         public void ShouldGenerateCorrectString(int hour, int minute, int second, int nanosecond, int offsetSeconds, string expected)
         {
-            var cypherTime = new CypherTimeWithOffset(hour, minute, second, nanosecond, offsetSeconds);
+            var cypherTime = new OffsetTime(hour, minute, second, nanosecond, offsetSeconds);
             var cypherTimeStr = cypherTime.ToString();
 
             cypherTimeStr.Should().Be(expected);
@@ -141,9 +141,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateSameHashcode()
         {
-            var time1 = new CypherTimeWithOffset(12, 49, 55, 123000000, 1500);
-            var time2 = new CypherTimeWithOffset(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
-            var time3 = new CypherTimeWithOffset(new TimeSpan(0, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
+            var time1 = new OffsetTime(12, 49, 55, 123000000, 1500);
+            var time2 = new OffsetTime(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
+            var time3 = new OffsetTime(new TimeSpan(0, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
 
             time1.GetHashCode().Should().Be(time2.GetHashCode()).And.Be(time3.GetHashCode());
         }
@@ -151,9 +151,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldGenerateDifferentHashcode()
         {
-            var time1 = new CypherTimeWithOffset(12, 49, 55, 123000000, 1500);
-            var time2 = new CypherTimeWithOffset(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1800));
-            var time3 = new CypherTimeWithOffset(new TimeSpan(0, 12, 49, 55, 125), TimeSpan.FromSeconds(1500));
+            var time1 = new OffsetTime(12, 49, 55, 123000000, 1500);
+            var time2 = new OffsetTime(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1800));
+            var time3 = new OffsetTime(new TimeSpan(0, 12, 49, 55, 125), TimeSpan.FromSeconds(1500));
 
             time1.GetHashCode().Should().NotBe(time2.GetHashCode()).And.NotBe(time3.GetHashCode());
         }
@@ -161,9 +161,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeEqual()
         {
-            var time1 = new CypherTimeWithOffset(12, 49, 55, 123000000, 1500);
-            var time2 = new CypherTimeWithOffset(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
-            var time3 = new CypherTimeWithOffset(new TimeSpan(0, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
+            var time1 = new OffsetTime(12, 49, 55, 123000000, 1500);
+            var time2 = new OffsetTime(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
+            var time3 = new OffsetTime(new TimeSpan(0, 12, 49, 55, 123), TimeSpan.FromSeconds(1500));
 
             time1.Equals(time2).Should().BeTrue();
             time1.Equals(time3).Should().BeTrue();
@@ -172,9 +172,9 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqual()
         {
-            var time1 = new CypherTimeWithOffset(12, 49, 55, 123000000, 1800);
-            var time2 = new CypherTimeWithOffset(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1200));
-            var time3 = new CypherTimeWithOffset(new TimeSpan(0, 12, 49, 55, 125), TimeSpan.FromSeconds(1500));
+            var time1 = new OffsetTime(12, 49, 55, 123000000, 1800);
+            var time2 = new OffsetTime(new DateTime(2017, 1, 1, 12, 49, 55, 123), TimeSpan.FromSeconds(1200));
+            var time3 = new OffsetTime(new TimeSpan(0, 12, 49, 55, 125), TimeSpan.FromSeconds(1500));
 
             time1.Equals(time2).Should().BeFalse();
             time1.Equals(time3).Should().BeFalse();
@@ -183,7 +183,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToAnotherType()
         {
-            var time = new CypherTimeWithOffset(12, 49, 55, 123000000, 1800);
+            var time = new OffsetTime(12, 49, 55, 123000000, 1800);
             var other = "some string";
 
             time.Equals(other).Should().BeFalse();
@@ -192,7 +192,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldNotBeEqualToNull()
         {
-            var time = new CypherTimeWithOffset(12, 49, 55, 123000000, 1800);
+            var time = new OffsetTime(12, 49, 55, 123000000, 1800);
             var other = (object)null;
 
             time.Equals(other).Should().BeFalse();
@@ -201,7 +201,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowOnCompareToOtherType()
         {
-            var time1 = new CypherTimeWithOffset(0, 0, 0, 0, 1800);
+            var time1 = new OffsetTime(0, 0, 0, 0, 1800);
 
             var ex = Record.Exception(() => time1.CompareTo(new DateTime(1947, 12, 17)));
 
@@ -211,7 +211,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToNull()
         {
-            var time1 = new CypherTimeWithOffset(0, 0, 0, 0, 1800);
+            var time1 = new OffsetTime(0, 0, 0, 0, 1800);
 
             var comp = time1.CompareTo(null);
 
@@ -221,8 +221,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareTo()
         {
-            var time1 = new CypherTimeWithOffset(0, 0, 0, 0, 1800);
-            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+            var time1 = new OffsetTime(0, 0, 0, 0, 1800);
+            var time2 = new OffsetTime(23, 59, 59, 999999999, 1800);
 
             var comp = time1.CompareTo(time2);
 
@@ -232,8 +232,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportLargerOnCompareToDiffOffset()
         {
-            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1700);
-            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1750);
+            var time1 = new OffsetTime(23, 59, 59, 999999999, 1700);
+            var time2 = new OffsetTime(23, 59, 59, 999999999, 1750);
 
             var comp = time1.CompareTo(time2);
 
@@ -243,8 +243,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareTo()
         {
-            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
-            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+            var time1 = new OffsetTime(23, 59, 59, 999999999, 1800);
+            var time2 = new OffsetTime(23, 59, 59, 999999999, 1800);
 
             var comp = time1.CompareTo(time2);
 
@@ -254,8 +254,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportEqualOnCompareToDiffOffset()
         {
-            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
-            var time2 = new CypherTimeWithOffset(0, 59, 59, 999999999, 5400);
+            var time1 = new OffsetTime(23, 59, 59, 999999999, 1800);
+            var time2 = new OffsetTime(0, 59, 59, 999999999, 5400);
 
             var comp = time1.CompareTo(time2);
 
@@ -265,8 +265,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareTo()
         {
-            var time1 = new CypherTimeWithOffset(0, 59, 59, 999999999, 1800);
-            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
+            var time1 = new OffsetTime(0, 59, 59, 999999999, 1800);
+            var time2 = new OffsetTime(23, 59, 59, 999999999, 1800);
 
             var comp = time1.CompareTo(time2);
 
@@ -276,8 +276,8 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldReportSmallerOnCompareToDiffOffset()
         {
-            var time1 = new CypherTimeWithOffset(23, 59, 59, 999999999, 1800);
-            var time2 = new CypherTimeWithOffset(23, 59, 59, 999999999, -1799);
+            var time1 = new OffsetTime(23, 59, 59, 999999999, 1800);
+            var time2 = new OffsetTime(23, 59, 59, 999999999, -1799);
 
             var comp = time1.CompareTo(time2);
 
@@ -287,7 +287,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldBeConvertableToString()
         {
-            var time = new CypherTimeWithOffset(12, 15, 59, 660000999, 1800);
+            var time = new OffsetTime(12, 15, 59, 660000999, 1800);
             var timeStr1 = Convert.ToString(time);
             var timeStr2 = Convert.ChangeType(time, typeof(string));
 
@@ -298,7 +298,7 @@ namespace Neo4j.Driver.Tests.Types
         [Fact]
         public void ShouldThrowWhenConversionIsNotSupported()
         {
-            var time = new CypherTimeWithOffset(12, 15, 59, 660000999, 1800);
+            var time = new OffsetTime(12, 15, 59, 660000999, 1800);
             var conversions = new Action[]
             {
                 () => Convert.ToDateTime(time),

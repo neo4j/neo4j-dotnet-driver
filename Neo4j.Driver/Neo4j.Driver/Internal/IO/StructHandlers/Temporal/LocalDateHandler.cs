@@ -21,35 +21,30 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.IO.StructHandlers
 {
-    internal class DateTimeWithZoneIdHandler : IPackStreamStructHandler
+    internal class LocalDateHandler : IPackStreamStructHandler
     {
-        public const byte StructType = (byte) 'f';
-        public const int StructSize = 3;
+        public const byte StructType = (byte) 'D';
+        public const int StructSize = 1;
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(CypherDateTimeWithZoneId)};
+        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate)};
 
         public object Read(IPackStreamReader reader, byte signature, long size)
         {
-            PackStream.EnsureStructSize("DateTimeWithZoneId", StructSize, size);
+            PackStream.EnsureStructSize("Date", StructSize, size);
 
-            var epochSecondsUtc = reader.ReadLong();
-            var nanosOfSecond = reader.ReadInteger();
-            var zoneId = reader.ReadString();
+            var epochDays = reader.ReadLong();
 
-            return new CypherDateTimeWithZoneId(
-                TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond), zoneId);
+            return TemporalHelpers.EpochDaysToDate(epochDays);
         }
 
         public void Write(IPackStreamWriter writer, object value)
         {
-            var dateTime = value.CastOrThrow<CypherDateTimeWithZoneId>();
+            var date = value.CastOrThrow<LocalDate>();
 
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.ToEpochSeconds());
-            writer.Write(dateTime.Nanosecond);
-            writer.Write(dateTime.ZoneId);
+            writer.Write(date.ToEpochDays());
         }
     }
 }

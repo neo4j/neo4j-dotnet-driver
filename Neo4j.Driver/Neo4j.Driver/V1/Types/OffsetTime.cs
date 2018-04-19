@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
 
@@ -24,37 +25,41 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a time value with a UTC offset
     /// </summary>
-    public struct CypherTimeWithOffset : IValue, IEquatable<CypherTimeWithOffset>, IComparable,
-        IComparable<CypherTimeWithOffset>, IConvertible, IHasTimeComponents
+    public sealed class OffsetTime : TemporalValue, IEquatable<OffsetTime>, IComparable, IComparable<OffsetTime>, IHasTimeComponents
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from time components of given <see cref="DateTime"/> value
+        /// Default comparer for <see cref="OffsetTime"/> values.
+        /// </summary>
+        public static readonly IComparer<OffsetTime> Comparer = new TemporalValueComparer<OffsetTime>();
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="OffsetTime"/> from time components of given <see cref="DateTime"/> value
         /// </summary>
         /// <param name="time"></param>
         /// <param name="offset"></param>
-        public CypherTimeWithOffset(DateTime time, TimeSpan offset)
+        public OffsetTime(DateTime time, TimeSpan offset)
             : this(time.TimeOfDay, (int) offset.TotalSeconds)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
+        /// Initializes a new instance of <see cref="OffsetTime"/> from given <see cref="TimeSpan"/> value
         /// </summary>
         /// <param name="time"></param>
         /// <param name="offset"></param>
-        public CypherTimeWithOffset(TimeSpan time, TimeSpan offset)
+        public OffsetTime(TimeSpan time, TimeSpan offset)
             : this(time, (int) offset.TotalSeconds)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from given <see cref="TimeSpan"/> value
+        /// Initializes a new instance of <see cref="OffsetTime"/> from given <see cref="TimeSpan"/> value
         /// </summary>
         /// <param name="time"></param>
         /// <param name="offsetSeconds"></param>
-        private CypherTimeWithOffset(TimeSpan time, int offsetSeconds)
+        private OffsetTime(TimeSpan time, int offsetSeconds)
             : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks),
                 offsetSeconds)
         {
@@ -62,27 +67,27 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from individual time components
+        /// Initializes a new instance of <see cref="OffsetTime"/> from individual time components
         /// </summary>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
         /// <param name="offsetSeconds"></param>
-        public CypherTimeWithOffset(int hour, int minute, int second, int offsetSeconds)
+        public OffsetTime(int hour, int minute, int second, int offsetSeconds)
             : this(hour, minute, second, 0, offsetSeconds)
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="CypherTimeWithOffset"/> from individual time components
+        /// Initializes a new instance of <see cref="OffsetTime"/> from individual time components
         /// </summary>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
         /// <param name="nanosecond"></param>
         /// <param name="offsetSeconds"></param>
-        public CypherTimeWithOffset(int hour, int minute, int second, int nanosecond, int offsetSeconds)
+        public OffsetTime(int hour, int minute, int second, int nanosecond, int offsetSeconds)
         {
             Throw.ArgumentOutOfRangeException.IfValueNotBetween(hour, TemporalHelpers.MinHour, TemporalHelpers.MaxHour,
                 nameof(hour));
@@ -102,7 +107,7 @@ namespace Neo4j.Driver.V1
             OffsetSeconds = offsetSeconds;
         }
 
-        internal CypherTimeWithOffset(IHasTimeComponents time, int offsetSeconds)
+        internal OffsetTime(IHasTimeComponents time, int offsetSeconds)
             : this(time.Hour, time.Minute, time.Second, time.Nanosecond, offsetSeconds)
         {
 
@@ -155,27 +160,29 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="CypherTimeWithOffset" /> instance. 
+        /// value of the specified <see cref="OffsetTime" /> instance. 
         /// </summary>
         /// <param name="other">The object to compare to this instance.</param>
         /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
         /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(CypherTimeWithOffset other)
+        public bool Equals(OffsetTime other)
         {
-            return Hour == other.Hour && Minute == other.Minute && Second == other.Second &&
-                   Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond && OffsetSeconds == other.OffsetSeconds;
         }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="CypherTimeWithOffset"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="OffsetTime"/> and 
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is CypherTimeWithOffset && Equals((CypherTimeWithOffset) obj);
+            if (ReferenceEquals(this, obj)) return true;
+            return obj is OffsetTime && Equals((OffsetTime) obj);
         }
 
         /// <summary>
@@ -196,7 +203,7 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Converts the value of the current <see cref="CypherTimeWithOffset"/> object to its equivalent string representation.
+        /// Converts the value of the current <see cref="OffsetTime"/> object to its equivalent string representation.
         /// </summary>
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
@@ -206,14 +213,17 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified <see cref="CypherTimeWithOffset"/> value and returns an integer 
+        /// Compares the value of this instance to a specified <see cref="OffsetTime"/> value and returns an integer 
         /// that indicates whether this instance is earlier than, the same as, or later than the specified 
         /// DateTime value.
         /// </summary>
         /// <param name="other">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-        public int CompareTo(CypherTimeWithOffset other)
+        public int CompareTo(OffsetTime other)
         {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
+
             var thisNanoOfDay = this.ToNanoOfDay() - (OffsetSeconds * TemporalHelpers.NanosPerSecond);
             var otherNanoOfDay = other.ToNanoOfDay() - (other.OffsetSeconds * TemporalHelpers.NanosPerSecond);
 
@@ -231,160 +241,67 @@ namespace Neo4j.Driver.V1
         }
 
         /// <summary>
-        /// Compares the value of this instance to a specified object which is expected to be a <see cref="CypherTimeWithOffset"/>
+        /// Compares the value of this instance to a specified object which is expected to be a <see cref="OffsetTime"/>
         /// value, and returns an integer that indicates whether this instance is earlier than, the same as, 
-        /// or later than the specified <see cref="CypherTimeWithOffset"/> value.
+        /// or later than the specified <see cref="OffsetTime"/> value.
         /// </summary>
         /// <param name="obj">The object to compare to the current instance.</param>
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
             if (ReferenceEquals(null, obj)) return 1;
-            if (!(obj is CypherTimeWithOffset))
-                throw new ArgumentException($"Object must be of type {nameof(CypherTimeWithOffset)}");
-            return CompareTo((CypherTimeWithOffset) obj);
+            if (ReferenceEquals(this, obj)) return 0;
+            if (!(obj is OffsetTime))
+                throw new ArgumentException($"Object must be of type {nameof(OffsetTime)}");
+            return CompareTo((OffsetTime) obj);
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> is earlier than another specified 
-        /// <see cref="CypherTimeWithOffset"/>.
+        /// Determines whether one specified <see cref="OffsetTime"/> is earlier than another specified 
+        /// <see cref="OffsetTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator <(OffsetTime left, OffsetTime right)
         {
             return left.CompareTo(right) < 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> is later than another specified 
-        /// <see cref="CypherTimeWithOffset"/>.
+        /// Determines whether one specified <see cref="OffsetTime"/> is later than another specified 
+        /// <see cref="OffsetTime"/>.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator >(OffsetTime left, OffsetTime right)
         {
             return left.CompareTo(right) > 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> represents a duration that is the 
-        /// same as or later than the other specified <see cref="CypherTimeWithOffset"/> 
+        /// Determines whether one specified <see cref="OffsetTime"/> represents a duration that is the 
+        /// same as or later than the other specified <see cref="OffsetTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator <=(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator <=(OffsetTime left, OffsetTime right)
         {
             return left.CompareTo(right) <= 0;
         }
 
         /// <summary>
-        /// Determines whether one specified <see cref="CypherTimeWithOffset"/> represents a duration that is the 
-        /// same as or earlier than the other specified <see cref="CypherTimeWithOffset"/> 
+        /// Determines whether one specified <see cref="OffsetTime"/> represents a duration that is the 
+        /// same as or earlier than the other specified <see cref="OffsetTime"/> 
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns></returns>
-        public static bool operator >=(CypherTimeWithOffset left, CypherTimeWithOffset right)
+        public static bool operator >=(OffsetTime left, OffsetTime right)
         {
             return left.CompareTo(right) >= 0;
         }
-
-        #region IConvertible Implementation
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
-        }
-
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
-        }
-
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
-        }
-
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
-        }
-
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
-        }
-
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
-        }
-
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to DateTime is not supported.");
-        }
-
-        string IConvertible.ToString(IFormatProvider provider)
-        {
-            return ToString();
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
-        {
-            if (conversionType == typeof(string))
-            {
-                return ToString();
-            }
-
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
-        }
-
-        #endregion
     }
 }
