@@ -5,7 +5,7 @@ Resources to get you started:
 * [Nuget](https://www.nuget.org/packages/Neo4j.Driver/) for getting the latest driver.
 * [Driver Wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki) for changelogs, developer manual and API documents of this driver.
 * [Neo4j Docs](https://neo4j.com/docs/) for other important Neo4j documentations.
-* [Movies Example Application](https://github.com/neo4j-examples/movies-dotnet-bolt) a sample small project using the drive.r
+* [Movies Example Application](https://github.com/neo4j-examples/movies-dotnet-bolt) a sample small project using the driver.
 
 ## For Application Developers
 This section targeting at application developers who would like to use this driver in appliation projects for connecting to a Neo4j instance or a Neo4j cluster.
@@ -67,9 +67,10 @@ result.First(); // Selina Kyle as you already consumed the previous "first" reco
 
 The driver currently exposes value types in the record all as `object`.
 The real types of the returned values are Cypher types.
-The mapping between Cypher types and the types used by this driver (to represent the same Cypher type) are listed in the table bellow.
 
-| Cypher Type | Type used by this Driver
+The mapping between Cypher types and the types used by this driver (to represent the Cypher type):
+
+| Cypher Type | Driver Type
 | ---: | :--- |
 | *null* | null |
 | List | IList< object > |
@@ -79,13 +80,7 @@ The mapping between Cypher types and the types used by this driver (to represent
 | Float| float |
 | String| string |
 | ByteArray| byte[] |
-| Date| |
-| Time| |
-| LocalTime| |
-| DateTime| |
-| LocalDateTime| |
-| Duration| |
-| Point| |
+| Point| Point |
 | Node| INode |
 | Relationship| IRelationship |
 | Path| IPath |
@@ -95,6 +90,44 @@ To convert from `object` to the real local type, an helper method `ValueExtensio
 IRecord record = result.First();
 string name = record["name"].As<string>();
 ```
+
+#### Temporal Types - Date and Time
+
+Since 1.6 series, the driver start to support the new temporal Cypher types introduced in Neo4j 3.4 series. 
+
+The mapping among the Cypher temporal types, driver types, and driver type convertable C# built-in types:
+
+| Cypher Type | Driver Type | Convertable C# Type |
+| :----------: | :-----------: | :-------: |
+| Date | LocalDate | DateTime |
+| Time | OffsetTime | --- |
+| LocalTime| LocalTime | TimeSpan, DateTime |
+| DateTime | ZonedDateTime | DateTimeOffset |
+| LocalDateTime | LocalDateTime | DateTime |
+| Duration | Duration | --- |
+
+
+Receiving a temporal value:
+```csharp
+IRecord record = result.Single();
+ZonedDateTime datetime = record["datetime"].As<ZonedDateTime>();
+```
+
+Convert to C# built-in temporal type:
+```csharp
+object record = result.Single()["datetime"];
+
+DateTimeOffset datetime = record["datetime"].As<DateTimeOffset>();
+// which is equivalent to
+// ZonedDateTime cyDatetime = record["datetime"].As<ZonedDateTime>();
+// DateTimeOffset datetime = Convert.ToDateTimeOffset(cyDatetime)
+```
+
+Note:
+* The conversion to C# System types is possible only when the driver temporal value could fit in the range of the targeting System type.
+* The Cypher temporal types (excluding `Date`) provide nanosecond precision. However C# types could only give 100 nanosecond precision.
+So a temporal type created via Cypher might not be able to convert to a C# type.     
+
 
 ## For Driver Developers
 This section targets at people who would like to compile the source code on their own machine for the purpose of, for example,
