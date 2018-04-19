@@ -353,12 +353,6 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
 
-        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
-        protected override DateTime ToDateTime()
-        {
-            return DateTimeOffset.DateTime;
-        }
-
         /// <inheritdoc cref="TemporalValue.ToDateTimeOffset"/>
         protected override DateTimeOffset ToDateTimeOffset()
         {
