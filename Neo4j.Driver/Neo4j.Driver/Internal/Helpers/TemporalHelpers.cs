@@ -220,12 +220,29 @@ namespace Neo4j.Driver.Internal
             }
         }
 
+        public static void AssertNoOverflow(TimeSpan offset, string target)
+        {
+            if (Math.Abs(offset.TotalHours) > 14)
+            {
+                throw new ValueOverflowException($"{target} expects Offset values to be in range [-14, 14] hours.");
+            }
+        }
+
         public static void AssertNoTruncation(IHasTimeComponents time, string target)
         {
             if (time.Nanosecond % NanosecondsPerTick > 0)
             {
                 throw new ValueTruncationException(
-                    $"Conversion of this instance into {target} will cause a truncation of {time.Nanosecond % TemporalHelpers.NanosecondsPerTick}ns.");
+                    $"Conversion of this instance ({time}) into {target} will cause a truncation of {time.Nanosecond % TemporalHelpers.NanosecondsPerTick}ns.");
+            }
+        }
+
+        public static void AssertNoTruncation(TimeSpan offset, string target)
+        {
+            if (offset.Ticks % TimeSpan.TicksPerMinute != 0)
+            {
+                throw new ValueTruncationException(
+                    $"{target} expects Offset values to be in minutes precision. Use of this instance ({offset}) as an offset will cause a truncation of {offset.Ticks % TimeSpan.TicksPerMinute}ns.");
             }
         }
 

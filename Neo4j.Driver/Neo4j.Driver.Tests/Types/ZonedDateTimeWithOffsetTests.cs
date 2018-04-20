@@ -346,19 +346,7 @@ namespace Neo4j.Driver.Tests.Types
 
             comp.Should().BeLessThan(0);
         }
-
-        [Fact]
-        public void ShouldBeConvertableToDateTime()
-        {
-            var date = new DateTime(1947, 12, 16, 12, 15, 59, 660);
-            var date1 = new ZonedDateTime(date, 3600);
-            var date2 = Convert.ToDateTime(date1);
-            var date3 = Convert.ChangeType(date1, typeof(DateTime));
-
-            date2.Should().Be(date);
-            date3.Should().Be(date);
-        }
-
+        
         [Fact]
         public void ShouldBeConvertableToDateTimeOffset()
         {
@@ -387,6 +375,7 @@ namespace Neo4j.Driver.Tests.Types
             var conversions = new Action[]
             {
                 () => Convert.ToBoolean(date),
+                () => Convert.ToDateTime(date),
                 () => Convert.ToByte(date),
                 () => Convert.ToChar(date),
                 () => Convert.ToDecimal(date),

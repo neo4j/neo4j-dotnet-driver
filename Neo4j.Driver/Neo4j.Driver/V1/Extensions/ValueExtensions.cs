@@ -28,6 +28,9 @@ namespace Neo4j.Driver.V1
     /// </summary>
     public static class ValueExtensions
     {
+        private static readonly TypeInfo EnumerableTypeInfo = typeof(IEnumerable).GetTypeInfo();
+        private static readonly TypeInfo DictionaryTypeInfo = typeof(IDictionary).GetTypeInfo();
+
         /// <summary>
         /// A helper method to explicitly cast the value streamed back via Bolt to a local type.
         /// </summary>
@@ -67,9 +70,9 @@ namespace Neo4j.Driver.V1
                 throw new InvalidCastException($"Unable to cast `null` to `{typeof(T)}`.");
             }
 
-            if (value is T)
+            if (value is T returnValue)
             {
-                return (T) value;
+                return returnValue;
             }
 
             // if the user want to force cast
@@ -127,66 +130,64 @@ namespace Neo4j.Driver.V1
             {
                 return Convert.ToBoolean(value).AsItIs<T>();
             }
+            if (value is IConvertible)
+            {
+                return Convert.ChangeType(value, targetType).AsItIs<T>();
+            }
 
             // force to cast to a dict or list
             var typeInfo = targetType.GetTypeInfo();
-            if (typeInfo.ImplementedInterfaces.Contains(typeof(IDictionary)) && typeInfo.IsGenericType && value is IDictionary)
+            if (DictionaryTypeInfo.IsAssignableFrom(typeInfo) && typeInfo.IsGenericType && value is IDictionary dictionary)
             {
-                return value.AsDictionary<T>(typeInfo);
+                return AsDictionary<T>(dictionary, typeInfo);
             }
-            if (typeInfo.ImplementedInterfaces.Contains(typeof(IList)) && typeInfo.IsGenericType && value is IList)
+            if (EnumerableTypeInfo.IsAssignableFrom(typeInfo) && typeInfo.IsGenericType && value is IEnumerable enumerable)
             {
-                return AsList<T>(value, typeInfo);
+                return AsList<T>(enumerable, typeInfo);
             }
 
             throw new InvalidCastException($"Unable to cast object of type `{sourceType}` to type `{typeof(T)}`.");
         }
 
-        private static T AsDictionary<T>(this object value, TypeInfo typeInfo)
+        internal static T ValueAs<T>(this object value)
         {
-            var dictionary = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments));
-            foreach (var kvp in (IDictionary<string, object>)value)
+            return As<T>(value);
+        }
+
+        private static T AsDictionary<T>(this IDictionary dict, TypeInfo typeInfo)
+        {
+            var typeArguments = typeInfo.GenericTypeArguments;
+            var dictionary =
+                (IDictionary) Activator.CreateInstance(
+                    typeof(Dictionary<,>).MakeGenericType(typeArguments));
+            var asMethodForKey = GetInvocableAsMethod(typeArguments[0]);
+            var asMethodForVal = GetInvocableAsMethod(typeArguments[1]);
+
+            var enumerator = dict.GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                dictionary.InvokeAddOnDictionary(kvp, typeInfo.GenericTypeArguments);
+                dictionary.Add(asMethodForKey.InvokeStatic(enumerator.Key), asMethodForVal.InvokeStatic(enumerator.Value));
             }
+
             return dictionary.AsItIs<T>();
         }
 
-        private static void InvokeAddOnDictionary(this object dict, KeyValuePair<string, object> toAdd, Type[] genericParameters)
+        private static T AsList<T>(this IEnumerable value, TypeInfo typeInfo)
         {
-            if (!(dict is IDictionary))
-                throw new InvalidOperationException("Unable to call 'Add' on something that's not a Dictionary.");
+            var typeArguments = typeInfo.GenericTypeArguments;
+            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(typeArguments));
+            var asMethodForElement = GetInvocableAsMethod(typeArguments[0]);
 
-            var methodKey = GetInvocableAsMethod(genericParameters[0]);
-            var methodVal = GetInvocableAsMethod(genericParameters[1]);
-
-            dict.GetType().GetRuntimeMethod("Add", genericParameters).Invoke(dict, new[] { methodKey.InvokeStatic(toAdd.Key), methodVal.InvokeStatic(toAdd.Value) });
-        }
-
-        private static T AsList<T>(this object value, TypeInfo typeInfo)
-        {
-            var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(typeInfo.GenericTypeArguments));
-
-            foreach (var o in (IList)value)
+            foreach (var o in value)
             {
-                list.InvokeAddOnList(o, typeInfo.GenericTypeArguments);
+                list.Add(asMethodForElement.InvokeStatic(o));
             }
 
             return list.AsItIs<T>();
         }
 
-        private static void InvokeAddOnList(this object list, object toAdd, Type[] genericParameters)
-        {
-            if (!(list is IList))
-            {
-                throw new InvalidOperationException("Unable to call 'Add' on something that's not a list.");
-            }
-
-            var method = GetInvocableAsMethod(genericParameters);
-            list.GetType().GetRuntimeMethod("Add", genericParameters).Invoke(list, new[] { method.InvokeStatic(toAdd) });
-        }
-
         #region Helper Methods
+
         private static object InvokeStatic(this MethodInfo method, params object[] parameters)
         {
             return method.Invoke(null, parameters);
@@ -199,17 +200,14 @@ namespace Neo4j.Driver.V1
 
         private static T AsItIs<T>(this object value)
         {
-            if (value is T)
+            if (value is T result)
             {
-                return (T)value;
+                return result;
             }
             throw new InvalidOperationException($"The expected value `{typeof(T)}` is different from the actual value `{value.GetType()}`");
         }
+        
         #endregion Helper Methods
 
-        internal static T ValueAs<T>(this object value)
-        {
-            return As<T>(value);
-        }
     }
 }

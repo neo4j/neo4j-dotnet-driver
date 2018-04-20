@@ -211,8 +211,20 @@ namespace Neo4j.Driver.V1
         /// Converts this instance to an equivalent <see cref="DateTimeOffset"/> value
         /// </summary>
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
+        /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTimeOffset</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTimeOffset DateTimeOffset => new DateTimeOffset(DateTime, Offset);
+        public DateTimeOffset DateTimeOffset
+        {
+            get
+            {
+                var offset = Offset;
+
+                TemporalHelpers.AssertNoTruncation(offset, nameof(DateTimeOffset));
+                TemporalHelpers.AssertNoOverflow(offset, nameof(DateTimeOffset));
+
+                return new DateTimeOffset(DateTime, offset);
+            }
+        }
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
