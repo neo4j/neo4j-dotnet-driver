@@ -21,6 +21,7 @@ using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Types
@@ -43,6 +44,8 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
 
         }
+
+        #region Receive Only Tests
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldReceiveDuration()
@@ -96,6 +99,10 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 "RETURN datetime({ year: 1959, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999999, timezone:'Europe/London' })",
                 new ZonedDateTime(1959, 5, 31, 23, 49, 59, 999999999, Zone.Of("Europe/London")));
         }
+
+        #endregion
+
+        #region Send and Receive Tests
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveDuration()
@@ -246,6 +253,10 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 });
         }
 
+        #endregion
+
+        #region Randomized Send and Receive Tests
+
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveRandomDuration()
         {
@@ -294,6 +305,10 @@ namespace Neo4j.Driver.IntegrationTests.Types
             Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomZonedDateTime()).AsParallel()
                 .ForAll(TestSendAndReceive);
         }
+
+        #endregion
+
+        #region Randomized Send And Receive Array Tests
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
         public void ShouldSendAndReceiveArrayOfDuration()
@@ -344,12 +359,185 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 .Select(i => RandomZonedDateTime()));
         }
 
+        #endregion
+
+        #region Receive System Types through As Methods
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveDateAsDateTime()
+        {
+            TestReceiveDataWithType("RETURN date({ year: 1994, month: 11, day: 15 })", new DateTime(1994, 11, 15));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveLocalTimeAsDateTimeMilliseconds()
+        {
+            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
+                DateTime.Today.Add(new TimeSpan(0, 23, 49, 59, 999)));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveLocalTimeAsDateTimeTicks()
+        {
+            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
+                DateTime.Today.Add(new TimeSpan(0, 23, 49, 59, 0).Add(TimeSpan.FromTicks(9999999))));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveLocalDateTimeAsDateTimeMilliseconds()
+        {
+            TestReceiveDataWithType(
+                "RETURN localdatetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
+                new DateTime(1859, 5, 31, 23, 49, 59, 999));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveLocalDateTimeAsDateTimeTicks()
+        {
+            TestReceiveDataWithType(
+                "RETURN localdatetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
+                new DateTime(1859, 5, 31, 23, 49, 59, 0).AddTicks(9999999));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveLocalTimeAsTimeSpanMilliseconds()
+        {
+            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
+                new TimeSpan(0, 23, 49, 59, 999));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveLocalTimeAsTimeSpanTicks()
+        {
+            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
+                new TimeSpan(0, 23, 49, 59, 0).Add(TimeSpan.FromTicks(9999999)));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveDateTimeAsDateTimeOffsetMilliseconds()
+        {
+            TestReceiveDataWithType(
+                "RETURN datetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999000000, timezone:'+01:30' })",
+                new DateTimeOffset(new DateTime(1859, 5, 31, 23, 49, 59, 999), TimeSpan.FromMinutes(90)));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldReceiveDateTimeAsDateTimeOffsetTicks()
+        {
+            TestReceiveDataWithType(
+                "RETURN datetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999900,  timezone:'-02:30' })",
+                new DateTimeOffset(new DateTime(1859, 5, 31, 23, 49, 59, 0).AddTicks(9999999),
+                    TimeSpan.FromMinutes(-150)));
+        }
+
+        #endregion
+
+        #region Send and Receive System Types
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveSystemDateTimeMilliseconds()
+        {
+            var data = new DateTime(1979, 2, 15, 7, 5, 25, 748);
+
+            TestSendAndReceiveWithType(data, new LocalDateTime(data));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveSystemDateTimeNanoseconds()
+        {
+            var data = new DateTime(1979, 2, 15, 7, 5, 25).AddTicks(748999900);
+
+            TestSendAndReceiveWithType(data, new LocalDateTime(data));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveSystemDateTimeOffsetMilliseconds()
+        {
+            var data = new DateTimeOffset(new DateTime(1979, 2, 15, 7, 5, 25, 748), TimeSpan.FromMinutes(90));
+
+            TestSendAndReceiveWithType(data, new ZonedDateTime(data));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveSystemDateTimeOffsetNanoseconds()
+        {
+            var data = new DateTimeOffset(new DateTime(1979, 2, 15, 7, 5, 25).AddTicks(748999900),
+                TimeSpan.FromMinutes(-150));
+
+            TestSendAndReceiveWithType(data, new ZonedDateTime(data));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveSystemTimeSpanMilliseconds()
+        {
+            var data = new TimeSpan(0, 7, 5, 25, 748);
+
+            TestSendAndReceiveWithType(data, new LocalTime(data));
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveSystemTimeSpanNanoseconds()
+        {
+            var data = new TimeSpan(0, 7, 5, 25).Add(TimeSpan.FromTicks(748999900));
+
+            TestSendAndReceiveWithType(data, new LocalTime(data));
+        }
+
+        #endregion
+
+        #region Send and Receive Arrays Of System Types
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveArrayOfSystemDateTime()
+        {
+            var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+                .Select(i => RandomSystemDateTime()).ToList();
+            var actual = array.Select(v => new LocalDateTime(v)).ToList();
+
+            TestSendAndReceiveArrayWithType(array, actual);
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveArrayOfSystemDateTimeOffset()
+        {
+            var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+                .Select(i => RandomSystemDateTimeOffset()).ToList();
+            var actual = array.Select(v => new ZonedDateTime(v)).ToList();
+
+            TestSendAndReceiveArrayWithType(array, actual);
+        }
+
+        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        public void ShouldSendAndReceiveArrayOfSystemTimeSpan()
+        {
+            var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+                .Select(i => RandomSystemTime()).ToList();
+            var actual = array.Select(v => new LocalTime(v)).ToList();
+
+            TestSendAndReceiveArrayWithType(array, actual);
+        }
+
+        #endregion
+
+        #region Helper Methods
+
         private void TestReceiveData(string query, object expected)
         {
             using (var session = Server.Driver.Session(AccessMode.Read))
             {
                 var record = session.Run(query).Single();
                 var received = record[0];
+
+                received.Should().Be(expected);
+            }
+        }
+
+        private void TestReceiveDataWithType<T>(string query, T expected)
+        {
+            using (var session = Server.Driver.Session(AccessMode.Read))
+            {
+                var record = session.Run(query).Single();
+                var received = record[0].ValueAs<T>();
 
                 received.Should().Be(expected);
             }
@@ -380,6 +568,18 @@ namespace Neo4j.Driver.IntegrationTests.Types
             }
         }
 
+        private void TestSendAndReceiveWithType<TSent, TRecv>(TSent value, TRecv actual)
+        {
+            using (var session = Server.Driver.Session(AccessMode.Read))
+            {
+                var record = session.Run("CREATE (n:Node {value: $value}) RETURN n.value", new { value }).Single();
+
+                record.Keys.Should().HaveCount(1);
+                record[0].Should().Be(actual);
+                record[0].ValueAs<TSent>().Should().Be(value);
+            }
+        }
+
         private void TestSendAndReceiveArray(IEnumerable<object> array)
         {
             var list = array.ToList();
@@ -392,6 +592,23 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 record[0].Should().BeAssignableTo<IEnumerable<object>>().Which.Should().BeEquivalentTo(list);
             }
         }
+
+        private void TestSendAndReceiveArrayWithType<TSent, TRecv>(IEnumerable<TSent> value, IEnumerable<TRecv> actual)
+        {
+            var valueAsList = value.ToList();
+            var actualAsList = actual.ToList();
+
+            using (var session = Server.Driver.Session(AccessMode.Read))
+            {
+                var record = session.Run("CREATE (n:Node {value: $value}) RETURN n.value", new { value = valueAsList }).Single();
+
+                record.Keys.Should().HaveCount(1);
+                record[0].ShouldBeEquivalentTo(actualAsList);
+                record[0].ValueAs<IList<TSent>>().Should().BeEquivalentTo(valueAsList);
+            }
+        }
+
+        #endregion
 
         #region Random Temporal Value Generation
 
@@ -416,6 +633,15 @@ namespace Neo4j.Driver.IntegrationTests.Types
             );
         }
 
+        private DateTime RandomSystemDate()
+        {
+            return new DateTime(
+                _random.Next(DateTime.MinValue.Year, DateTime.MaxValue.Year),
+                _random.Next(TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth),
+                _random.Next(TemporalHelpers.MinDay, 28)
+            );
+        }
+
         private LocalDateTime RandomLocalDateTime(bool tzSafe = false)
         {
             return new LocalDateTime(
@@ -433,6 +659,11 @@ namespace Neo4j.Driver.IntegrationTests.Types
             );
         }
 
+        private DateTime RandomSystemDateTime()
+        {
+            return RandomSystemDate().Add(RandomSystemTime());
+        }
+
         private LocalTime RandomLocalTime()
         {
             return new LocalTime(
@@ -441,6 +672,16 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 _random.Next(TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond),
                 _random.Next(TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond)
             );
+        }
+
+        private TimeSpan RandomSystemTime()
+        {
+            return new LocalTime(
+                _random.Next(TemporalHelpers.MinHour, TemporalHelpers.MaxHour),
+                _random.Next(TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute),
+                _random.Next(TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond),
+                (int)(_random.Next(TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond) / 100) * 100
+            ).Time;
         }
 
         private OffsetTime RandomOffsetTime()
@@ -456,6 +697,14 @@ namespace Neo4j.Driver.IntegrationTests.Types
             return new ZonedDateTime(
                 RandomLocalDateTime(true),
                 Zone.Of(_random.Next(TemporalHelpers.MinOffset, TemporalHelpers.MaxOffset))
+            );
+        }
+
+        private DateTimeOffset RandomSystemDateTimeOffset()
+        {
+            return new DateTimeOffset(
+                RandomSystemDateTime(),
+                TimeSpan.FromMinutes(_random.Next(-14, 14) * 60)
             );
         }
 
