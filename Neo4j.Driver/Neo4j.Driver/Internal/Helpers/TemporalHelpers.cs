@@ -19,9 +19,9 @@ using System;
 using HdrHistogram;
 using HdrHistogram.Utilities;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Temporal;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.V1;
-using TimeZoneConverter;
 
 namespace Neo4j.Driver.Internal
 {
@@ -270,7 +270,7 @@ namespace Neo4j.Driver.Internal
 
         public static TimeZoneInfo GetTimeZoneInfo(string zoneId)
         {
-            return TZConvert.GetTimeZoneInfo(zoneId);
+            return TimeZoneMapping.Get(zoneId);
         }
 
         private static bool IsLeapYear(long year)
