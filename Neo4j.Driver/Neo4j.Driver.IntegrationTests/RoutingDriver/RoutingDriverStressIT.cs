@@ -125,7 +125,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var config = new Config
             {
-                DriverMetricsEnabled = true,
+                MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 50,
@@ -149,8 +149,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 while (!_cancellationTokenSource.IsCancellationRequested)
                 {
-                    IPooledConnection conn = null;
-                    if (_connections.Count > minimalConnCount && _connections.TryDequeue(out conn))
+                    if (_connections.Count > minimalConnCount && _connections.TryDequeue(out var conn))
                     {
                         conn.Destroy();
                         Output.WriteLine($"Terminator killed a connection towards server {conn.Server}");
@@ -169,8 +168,7 @@ namespace Neo4j.Driver.IntegrationTests
             const int minimalConnCount = 3;
             while (!_cancellationTokenSource.IsCancellationRequested)
             {
-                IPooledConnection conn = null;
-                if (_connections.Count > minimalConnCount && _connections.TryDequeue(out conn))
+                if (_connections.Count > minimalConnCount && _connections.TryDequeue(out var conn))
                 {
                     await conn.DestroyAsync();
                     Output.WriteLine($"Terminator killed connection {conn.Id} towards server {conn.Server}");

@@ -17,9 +17,24 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
+
+    /// <summary>
+    /// The factory interface to create <see cref="IMetrics"/> instances
+    /// </summary>
+    internal interface IMetricsFactory
+    {
+        /// <summary>
+        /// Creates an <see cref="IMetrics"/> instance for the driver with the specified <see cref="Config"/>
+        /// </summary>
+        /// <param name="config"></param>
+        /// <returns></returns>
+        IMetrics CreateMetrics(Config config);
+    }
+
     /// <summary>
     /// The driver metrics
     /// </summary>
@@ -34,6 +49,10 @@ namespace Neo4j.Driver.Internal.Metrics
         /// The connection metrics.
         /// </summary>
         IDictionary<string, IConnectionMetrics> ConnectionMetrics { get; }
+
+        IConnectionListener CreateConnectionListener(Uri uri);
+
+        IConnectionPoolListener CreateConnectionPoolListener(Uri uri, IConnectionPool pool);
     }
 
     internal interface IConnectionMetrics

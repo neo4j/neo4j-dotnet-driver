@@ -16,6 +16,7 @@
     <DotNetCliToolReference Include="dotnet-xunit" Version="$(XunitVersion)" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj" />
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.0'">

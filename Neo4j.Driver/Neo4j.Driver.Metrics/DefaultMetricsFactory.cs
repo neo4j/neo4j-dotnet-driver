@@ -15,21 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.IO.StructHandlers
+namespace Neo4j.Driver.Internal.Metrics
 {
-    internal class PullAllMessageHandler : WriteOnlyStructHandler
+    internal class DefaultMetricsFactory: IMetricsFactory
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(PullAllMessage)};
-
-        public override void Write(IPackStreamWriter writer, object value)
+        public IMetrics CreateMetrics(Config config)
         {
-            writer.WriteStructHeader(0, PackStream.MsgPullAll);
+            return new DefaultMetrics(config);
         }
     }
 }

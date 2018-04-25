@@ -23,20 +23,20 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
-    internal class Metrics : IMetrics
+    internal class DefaultMetrics : IMetrics
     {
         private readonly ConcurrentDictionary<string, IConnectionPoolMetrics> _poolMetrics;
         private readonly ConcurrentDictionary<string, IConnectionMetrics> _connMetrics;
         private readonly Config _config;
 
-        public Metrics(Config config)
+        public DefaultMetrics(Config config)
         {
             _config = config;
             _poolMetrics = new ConcurrentDictionary<string, IConnectionPoolMetrics>();
             _connMetrics = new ConcurrentDictionary<string, IConnectionMetrics>();
         }
 
-        public ConnectionPoolMetrics AddPoolMetrics(Uri poolUri, IConnectionPool pool)
+        public IConnectionPoolListener CreateConnectionPoolListener(Uri poolUri, IConnectionPool pool)
         {
             var acquisitionTimeout = _config.ConnectionAcquisitionTimeout;
             var poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.Metrics
             return poolMetrics;
         }
 
-        public ConnectionMetrics AddConnMetrics(Uri poolUri)
+        public IConnectionListener CreateConnectionListener(Uri poolUri)
         {
             var connectionTimeout = _config.ConnectionTimeout;
             var connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);

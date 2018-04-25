@@ -32,4 +32,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
 
-[assembly: InternalsVisibleTo("Neo4j.Driver.Tests"), InternalsVisibleTo("Neo4j.Driver.IntegrationTests"), InternalsVisibleTo("Neo4j.Driver.Tck.Tests"), InternalsVisibleTo("DynamicProxyGenAssembly2"), InternalsVisibleTo("Neo4j.Driver.Benchmark.NBench.Akka"), InternalsVisibleTo("Neo4j.Driver.Simple.Test")]
+[assembly: InternalsVisibleTo("Neo4j.Driver.Metrics"), InternalsVisibleTo("Neo4j.Driver.Tests"), InternalsVisibleTo("Neo4j.Driver.IntegrationTests"), InternalsVisibleTo("Neo4j.Driver.Tck.Tests"), InternalsVisibleTo("DynamicProxyGenAssembly2"), InternalsVisibleTo("Neo4j.Driver.Benchmark.NBench.Akka"), InternalsVisibleTo("Neo4j.Driver.Simple.Test")]

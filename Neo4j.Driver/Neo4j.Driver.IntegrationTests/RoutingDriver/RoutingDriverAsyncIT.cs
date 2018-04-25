@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -138,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
             {
-                DriverMetricsEnabled = true,
+                MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted,
                 MaxIdleConnectionPoolSize = 50,
