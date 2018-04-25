@@ -100,18 +100,24 @@ namespace Neo4j.Driver.Tests.Connector
         public class ConnectAsyncMethod
         {
             [Fact]
-            public async Task ShouldThrowIOExceptionIfConnTimedOut()
+            public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
-                var client = new TcpSocketClient(new SocketSettings{ConnectionTimeout = TimeSpan.FromSeconds(0)});
-                var exception = await Record.ExceptionAsync(
-                    ()=>client.ConnectAsync(new Uri("bolt://127.0.0.1:9999")));
-                exception.Should().BeOfType<IOException>();
-                exception.Message.Should().Be(
-                    "Failed to connect to server 'bolt://127.0.0.1:9999/' via IP addresses'[127.0.0.1]' at port '9999'.");
+                using (var tcpServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    tcpServer.Bind(new IPEndPoint(IPAddress.Loopback, 9999));
 
-                var baseException = exception.GetBaseException();
-                baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
-                baseException.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
+                    var client = new TcpSocketClient(new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(0)});
+
+                    var exception = await Record.ExceptionAsync(
+                        () => client.ConnectAsync(new Uri("bolt://127.0.0.1:9999")));
+                    exception.Should().BeOfType<IOException>();
+                    exception.Message.Should().Be(
+                        "Failed to connect to server 'bolt://127.0.0.1:9999/' via IP addresses'[127.0.0.1]' at port '9999'.");
+
+                    var baseException = exception.GetBaseException();
+                    baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
+                    baseException.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
+                }
             }
         }
         
