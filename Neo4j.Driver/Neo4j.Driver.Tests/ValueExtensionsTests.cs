@@ -198,7 +198,7 @@ namespace Neo4j.Driver.Tests
                 object value = 10;
                 var ex = Record.Exception(() => value.ValueAs<List<int>>());
                 ex.Should().BeOfType<InvalidCastException>();
-                ex.Message.Should().Be("Unable to cast object of type `System.Int32` to type `System.Collections.Generic.List`1[System.Int32]`.");
+                ex.Message.Should().StartWith("Invalid cast from 'System.Int32' to 'System.Collections.Generic.List`1[[System.Int32");
             }
             [Fact]
             public void ShouldThrowExceptionWhenCastFromListToInt()

@@ -32,16 +32,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
 
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.6.*")]
-[assembly: AssemblyVersion("1.6.0.0")]
-[assembly: AssemblyFileVersion("1.6.0.0")]
-[assembly: InternalsVisibleTo("Neo4j.Driver.Tests"), InternalsVisibleTo("Neo4j.Driver.Metrics"), InternalsVisibleTo("Neo4j.Driver.IntegrationTests"), InternalsVisibleTo("Neo4j.Driver.Tck.Tests"), InternalsVisibleTo("DynamicProxyGenAssembly2"), InternalsVisibleTo("Neo4j.Driver.Benchmark.NBench.Akka"), InternalsVisibleTo("Neo4j.Driver.Simple.Test")]
+[assembly: InternalsVisibleTo("Neo4j.Driver.Metrics"), InternalsVisibleTo("Neo4j.Driver.Tests"), InternalsVisibleTo("Neo4j.Driver.IntegrationTests"), InternalsVisibleTo("Neo4j.Driver.Tck.Tests"), InternalsVisibleTo("DynamicProxyGenAssembly2"), InternalsVisibleTo("Neo4j.Driver.Benchmark.NBench.Akka"), InternalsVisibleTo("Neo4j.Driver.Simple.Test")]

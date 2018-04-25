@@ -299,11 +299,5 @@ namespace Neo4j.Driver.V1
         {
             return DateTime;
         }
-
-        /// <inheritdoc cref="TemporalValue.ToDateTimeOffset"/>
-        protected override DateTimeOffset ToDateTimeOffset()
-        {
-            return new DateTimeOffset(DateTime);
-        }
     }
 }
