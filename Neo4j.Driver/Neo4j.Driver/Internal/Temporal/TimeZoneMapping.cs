@@ -95,14 +95,14 @@ namespace Neo4j.Driver.Internal.Temporal
         private static string GetCurrentTerritory()
         {
             var currentCulture = CultureInfo.CurrentCulture;
-            var name = currentCulture.Name;
+            var regionInfo = new RegionInfo(currentCulture.Name);
 
-            if (currentCulture.IsNeutralCulture || name.IndexOf("/", StringComparison.Ordinal) < 0)
+            if (currentCulture.IsNeutralCulture)
             {
                 return "001";
             }
 
-            return name.Split('/')[1];
+            return regionInfo.TwoLetterISORegionName;
         }
 
         private static void Load(Stream source, out IDictionary<string, string> ianaToWindows,
