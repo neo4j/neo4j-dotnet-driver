@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -130,7 +131,7 @@ namespace Neo4j.Driver.IntegrationTests
             // Given
             using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config
             {
-                DriverMetricsEnabled = true,
+                MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionIdleTimeout = TimeSpan.Zero // enable but always timeout idle connections
             }))
             {
@@ -163,7 +164,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
             {
-                DriverMetricsEnabled = true,
+                MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted
             });
@@ -208,7 +209,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, new Config
             {
-                DriverMetricsEnabled = true,
+                MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 500,
                 EncryptionLevel = EncryptionLevel.Encrypted,

@@ -45,7 +45,4 @@
   <ItemGroup>
     <EmbeddedResource Include="Internal\Temporal\windowsZones.xml" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="HdrHistogram" Version="2.5.0" />
-  </ItemGroup>
 </Project>

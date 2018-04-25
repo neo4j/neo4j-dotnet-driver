@@ -16,8 +16,6 @@
 // limitations under the License.
 
 using System;
-using HdrHistogram;
-using HdrHistogram.Utilities;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Temporal;
 using Neo4j.Driver.Internal.Types;

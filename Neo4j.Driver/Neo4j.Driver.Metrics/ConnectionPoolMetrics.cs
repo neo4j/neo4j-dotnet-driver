@@ -44,7 +44,6 @@ namespace Neo4j.Driver.Internal.Metrics
         public long Acquired => _acquired;
         public long TimedOutToAcquire => _timedOutToAcquire;
 
-
         public string UniqueName { get; }
 
         private IConnectionPool _pool;

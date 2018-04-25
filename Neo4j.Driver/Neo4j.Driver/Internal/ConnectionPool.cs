@@ -63,8 +63,8 @@ namespace Neo4j.Driver.Internal
         private readonly BlockingCollection<IPooledConnection> _idleConnections = new BlockingCollection<IPooledConnection>();
         private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
 
-        private IDriverMetricsManager _metricsManager;
-        private IConnectionPoolListener _poolMetricsListener;
+        private readonly IConnectionPoolListener _poolMetricsListener;
+        private readonly IConnectionListener _connectionMetricsListener;
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
         public int NumberOfIdleConnections => _idleConnections.Count;
@@ -94,7 +94,9 @@ namespace Neo4j.Driver.Internal
             var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
             _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
 
-            SetupMetrics(connectionPoolSettings.Metrics);
+            var metrics = connectionPoolSettings.Metrics;
+            _poolMetricsListener = metrics?.CreateConnectionPoolListener(uri, this);
+            _connectionMetricsListener = metrics?.CreateConnectionListener(uri);
         }
 
         internal ConnectionPool(
@@ -170,7 +172,7 @@ namespace Neo4j.Driver.Internal
         {
             if (TryIncrementPoolSize())
             {
-                return _connectionFactory.Create(_uri, this, _metricsManager.ConnectionMetricsListener);
+                return _connectionFactory.Create(_uri, this, _connectionMetricsListener);
             }
             return null;
         }
@@ -549,7 +551,6 @@ namespace Neo4j.Driver.Internal
                     }
 
                     TerminateIdleConnections();
-                    _metricsManager.Dispose();
                 });
             }
         }
@@ -570,7 +571,6 @@ namespace Neo4j.Driver.Internal
                 }
 
                 allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
-                _metricsManager.Dispose();
 
                 return Task.WhenAll(allCloseTasks);
             }
@@ -640,21 +640,7 @@ namespace Neo4j.Driver.Internal
             // a.k.a. do nothing but return the original value
             return Interlocked.CompareExchange(ref value, Active, Active);
         }
-
-        private void SetupMetrics(Metrics.Metrics metrics)
-        {
-            if ( metrics == null)
-            {
-                _metricsManager = new DevNullDriverMetricsManager();
-            }
-            else
-            {
-                _metricsManager = new DriverMetricsManager(metrics, _uri,
-                    this);
-            }
-            _poolMetricsListener = _metricsManager.PoolMetricsListener;
-        }
-
+        
         public override string ToString()
         {
             return $"{nameof(_idleConnections)}: {{{_idleConnections.ToContentString()}}}, " +

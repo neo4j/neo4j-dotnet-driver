@@ -229,10 +229,10 @@ namespace Neo4j.Driver.V1
         public LoadBalancingStrategy LoadBalancingStrategy { get; set; } = LoadBalancingStrategy.LeastConnected;
 
         /// <summary>
-        /// Gets or sets the option to enable driver metrics.
+        /// Gets or sets the metrics factory implementation to enable driver level metrics.
         /// Internally used for testing and experimenting.
         /// </summary>
-        internal bool DriverMetricsEnabled { get; set; }
+        internal IMetricsFactory MetricsFactory { get; set; }
 
         /// <summary>
         /// Gets or sets the default read buffer size which the driver allocates for its internal buffers.
