@@ -79,9 +79,9 @@ namespace Neo4j.Driver.Internal.Temporal
                 }
             }
 
-            // Try with windows to IANA with territory first and 001 as a fallback
-            if (WindowsToIANA.TryGetValue($"{zoneId}_{GetCurrentTerritory()}", out var ianaId) ||
-                WindowsToIANA.TryGetValue($"{zoneId}_001", out ianaId))
+            // Try with windows to IANA with territory first
+            var territory = GetCurrentTerritory() ?? "001";
+            if (WindowsToIANA.TryGetValue($"{zoneId}_{territory}", out var ianaId))
             {
                 if (SystemToTZInfo.TryGetValue(ianaId, out tzInfo))
                 {
@@ -89,20 +89,36 @@ namespace Neo4j.Driver.Internal.Temporal
                 }
             }
 
+            // Try with windows to IANA with 001, if we did not already
+            if (!territory.Equals("001") && WindowsToIANA.TryGetValue($"{zoneId}_001", out ianaId))
+            {
+                if (SystemToTZInfo.TryGetValue(ianaId, out tzInfo))
+                {
+                    return tzInfo;
+                }
+            }
+
+            // This is solely to get an exception of 'TimeZoneNotFoundException'
             return TimeZoneInfo.FindSystemTimeZoneById(zoneId);
         }
 
         private static string GetCurrentTerritory()
         {
             var currentCulture = CultureInfo.CurrentCulture;
-            var regionInfo = new RegionInfo(currentCulture.Name);
-
-            if (currentCulture.IsNeutralCulture)
+            if (string.IsNullOrEmpty(currentCulture.Name) || currentCulture.IsNeutralCulture)
             {
-                return "001";
+                return null;
             }
 
-            return regionInfo.TwoLetterISORegionName;
+            try
+            {
+                var regionInfo = new RegionInfo(currentCulture.Name);
+                return regionInfo.TwoLetterISORegionName;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static void Load(Stream source, out IDictionary<string, string> ianaToWindows,
