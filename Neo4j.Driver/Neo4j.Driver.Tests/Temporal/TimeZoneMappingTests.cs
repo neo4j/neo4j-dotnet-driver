@@ -46,7 +46,6 @@ namespace Neo4j.Driver.Tests.Temporal
             tzInfo.Should().NotBeNull();
             tzInfo.Id.Should().Be(expectedWindowsId);
         }
-
         
         [UnixTheory]
         [InlineData("America/Vancouver")]
@@ -70,10 +69,13 @@ namespace Neo4j.Driver.Tests.Temporal
         [UnixTheory]
         [InlineData("Pacific Standard Time", "en-CA", "America/Vancouver")]
         [InlineData("US Mountain Standard Time", null, "America/Phoenix")]
+        [InlineData("US Mountain Standard Time", "", "America/Phoenix")]
         [InlineData("Central Standard Time", "en-US", "America/Chicago")]
         [InlineData("UTC", null, "UTC")]
         [InlineData("South Africa Standard Time", "en-ZA", "Africa/Johannesburg")]
-        [InlineData("Turkey Standard Time", "tr-TR", "Europe/Istanbul")]        
+        [InlineData("Turkey Standard Time", "tr-TR", "Europe/Istanbul")]
+        [InlineData("Turkey Standard Time", "", "Europe/Istanbul")]
+        [InlineData("Turkey Standard Time", null, "Europe/Istanbul")]
         public void ShouldFindIanaFromWindows(string windowsId, string cultureName, string ianaId)
         {
             ExecuteWithCulture(cultureName, () =>
@@ -85,9 +87,23 @@ namespace Neo4j.Driver.Tests.Temporal
             });
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("tr-TR")]
+        public void ShouldThrowExceptionWhenNonExistent(string culture)
+        {
+            var exc = Record.Exception(() =>
+                ExecuteWithCulture(culture, () => TimeZoneMapping.Get("Some non-existent time zone id")));
+
+            // System.TimeZoneNotFoundException is not public in .net standard 1.3
+            exc.Should().NotBeNull();
+            exc.GetType().Name.Should().Be("TimeZoneNotFoundException");
+        }
+
         private static void ExecuteWithCulture(string cultureName, Action action)
         {
-            var cInfo = string.IsNullOrWhiteSpace(cultureName)
+            var cInfo = cultureName == null
                 ? CultureInfo.CurrentCulture
                 : new CultureInfo(cultureName);
             var original = CultureInfo.CurrentCulture;
