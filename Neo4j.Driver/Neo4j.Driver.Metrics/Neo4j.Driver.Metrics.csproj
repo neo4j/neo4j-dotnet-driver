@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\common.props" />
   <PropertyGroup>
     <TargetFrameworks>net452;netstandard1.3</TargetFrameworks>
     <AssemblyName>Neo4j.Driver.Metrics</AssemblyName>
@@ -16,6 +17,7 @@
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <Version>1.6.0</Version>
     <RootNamespace>Neo4j.Driver.‌Internal.Metrics</RootNamespace>
+    <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="HdrHistogram" Version="2.5.0" />

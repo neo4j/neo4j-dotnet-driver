@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\common.props" />
   <PropertyGroup>
     <TargetFrameworks>net452;netstandard1.3</TargetFrameworks>
     <AssemblyName>Neo4j.Driver</AssemblyName>
-    <PackageId>Neo4j.Driver</PackageId>
+    <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
     <PackageLicenseUrl>https://github.com/neo4j/neo4j-dotnet-driver/blob/1.6/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
@@ -24,14 +25,24 @@
     <AssemblyFileVersion>1.6.0.0</AssemblyFileVersion>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <Version>0.0.0</Version>
+    <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard1.3|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard1.3\Neo4j.Driver.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='DebugDelaySigned|netstandard1.3|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard1.3\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard1.3|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard1.3\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='ReleaseSigned|netstandard1.3|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard1.3\Neo4j.Driver.xml</DocumentationFile>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net452|AnyCPU'">
+    <DocumentationFile>bin\Release\net452\Neo4j.Driver.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='ReleaseSigned|net452|AnyCPU'">
     <DocumentationFile>bin\Release\net452\Neo4j.Driver.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">

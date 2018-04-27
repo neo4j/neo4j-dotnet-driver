@@ -1,6 +1,21 @@
 <Project>
-	<PropertyGroup>
-		<XunitVersion>2.3.1</XunitVersion>
-		<MSTestVersion>15.3.0</MSTestVersion>
-	</PropertyGroup>
+  <PropertyGroup>
+    <XunitVersion>2.3.1</XunitVersion>
+    <MSTestVersion>15.3.0</MSTestVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned' OR '$(Configuration)'=='ReleaseSigned'">
+    <PackageIdSuffix>.Signed</PackageIdSuffix>
+    <DefineConstants>$(DefineConstants);STRONGNAMED</DefineConstants>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\IdentityPubKey.snk</AssemblyOriginatorKeyFile>
+    <SignatureFile></SignatureFile>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='ReleaseSigned'">
+    <GetFrameworkSdkPath>
+      <Output TaskParameter="Path" PropertyName="WindowsSdkPath" />
+    </GetFrameworkSdkPath>
+    <Exec Command="&quot;$(SDK40ToolsPath)sn.exe&quot; -R &quot;$(TargetPath)&quot; &quot;$(SignatureFile)&quot;" />
+  </Target>
 </Project>

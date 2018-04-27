@@ -1,42 +1,54 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <Import Project="..\common.props" />
+  <Import Project="..\common.props" />
+  <PropertyGroup>
+    <TargetFrameworks>net452;netcoreapp1.1</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <AssemblyVersion>1.6.0.0</AssemblyVersion>
+    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+    <AssemblyFileVersion>1.6.0.0</AssemblyFileVersion>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+    <Version>0.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="App.config" />
+    <PackageReference Include="Castle.Core" Version="4.1.1" />
+    <PackageReference Include="FluentAssertions" Version="4.19.4" />
+    <PackageReference Include="Moq" Version="4.7.99" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MSTestVersion)" />
+    <PackageReference Include="xunit" Version="$(XunitVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="$(XunitVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj" />
+    <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+  </ItemGroup>
 
-    <PropertyGroup>
-        <TargetFrameworks>net452;netcoreapp1.1</TargetFrameworks>
-        <IsPackable>false</IsPackable>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <GenerateProgramFile>false</GenerateProgramFile>
-    </PropertyGroup>
-    <ItemGroup>
-		<Content Include="App.config" />
-        <PackageReference Include="Castle.Core" Version="4.1.1" />
-        <PackageReference Include="FluentAssertions" Version="4.19.4" />
-        <PackageReference Include="Moq" Version="4.7.99" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MSTestVersion)" />
-        <PackageReference Include="xunit" Version="$(XunitVersion)" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />
-		<DotNetCliToolReference Include="dotnet-xunit" Version="$(XunitVersion)" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj" />
-        <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-        <None Include="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-        <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-        <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
-        <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-        <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
-        <PackageReference Include="System.Net.Security" Version="4.3.1" />
-        <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
-        <PackageReference Include="System.Threading.Tasks" Version="4.3.0" />
-        <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
-        <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    </ItemGroup>
-	<ItemGroup>
-		<Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
-	</ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
+    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
+    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
+    <PackageReference Include="System.Net.Security" Version="4.3.1" />
+    <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Tasks" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+  </ItemGroup>
 </Project>
