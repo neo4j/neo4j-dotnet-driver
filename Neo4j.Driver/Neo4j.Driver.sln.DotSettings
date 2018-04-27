@@ -2,8 +2,7 @@
 	<s:String x:Key="/Default/CodeStyle/CodeCleanup/Profiles/=Add_0020Header/@EntryIndexedValue">&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Profile name="Add Header"&gt;&lt;CSUpdateFileHeader&gt;True&lt;/CSUpdateFileHeader&gt;&lt;/Profile&gt;</s:String>
 	
 	
-	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">Copyright (c) 2002-$CURRENT_YEAR$ "Neo Technology,"&#xD;
-Network Engine for Objects in Lund AB [http://neotechnology.com]&#xD;
+	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">Copyright (c) 2002-$CURRENT_YEAR$ Neo4j Sweden AB [http://neo4j.com]&#xD;
 &#xD;
 This file is part of Neo4j.&#xD;
 &#xD;
