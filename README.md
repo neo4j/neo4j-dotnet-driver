@@ -127,7 +127,7 @@ object record = result.Single()["datetime"];
 DateTimeOffset datetime = record["datetime"].As<DateTimeOffset>();
 // which is equivalent to
 // ZonedDateTime cyDatetime = record["datetime"].As<ZonedDateTime>();
-// DateTimeOffset datetime = cyDatetime.DateTimeOffset;
+// DateTimeOffset datetime = cyDatetime.ToDateTimeOffset();
 ```
 
 Note:
