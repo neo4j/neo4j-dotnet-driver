@@ -41,8 +41,7 @@ namespace Neo4j.Driver.Internal.Metrics
             var poolMetrics = new ConnectionPoolMetrics(poolUri, pool, acquisitionTimeout);
             var key = poolMetrics.UniqueName;
 
-            _poolMetrics.AddOrUpdate(key, poolMetrics, (oldKey, oldValue) => poolMetrics);
-            return poolMetrics;
+            return (IConnectionPoolListener) _poolMetrics.GetOrAdd(key, poolMetrics);
         }
 
         public IConnectionListener CreateConnectionListener(Uri poolUri)
@@ -51,8 +50,7 @@ namespace Neo4j.Driver.Internal.Metrics
             var connMetrics = new ConnectionMetrics(poolUri, connectionTimeout);
             var key = connMetrics.UniqueName;
 
-            _connMetrics.AddOrUpdate(key, connMetrics, (oldKey, oldValue) => connMetrics);
-            return connMetrics;
+            return (IConnectionListener) _connMetrics.GetOrAdd(key, connMetrics);
         }
 
         public IDictionary<string, IConnectionPoolMetrics> ConnectionPoolMetrics => new ReadOnlyDictionary<string, IConnectionPoolMetrics>(_poolMetrics);
