@@ -114,7 +114,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(Duration other)
         {
-            if (ReferenceEquals(null, other)) return false;
+            if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return Months == other.Months && Days == other.Days && Seconds == other.Seconds && Nanos == other.Nanos;
         }
@@ -127,7 +127,7 @@ namespace Neo4j.Driver.V1
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
             return obj is Duration && Equals((Duration) obj);
         }
@@ -167,7 +167,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(Duration other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var thisNanos = this.ToNanos();
             var otherNanos = other.ToNanos();
             return thisNanos.CompareTo(otherNanos);
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
-            if (ReferenceEquals(null, obj)) return 1;
+            if (obj is null) return 1;
             if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is Duration)) throw new ArgumentException($"Object must be of type {nameof(Duration)}");
             return CompareTo((Duration) obj);

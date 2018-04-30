@@ -154,7 +154,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(LocalDateTime other)
         {
-            if (ReferenceEquals(null, other)) return false;
+            if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
         }
@@ -167,7 +167,7 @@ namespace Neo4j.Driver.V1
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
             return obj is LocalDateTime && Equals((LocalDateTime) obj);
         }
@@ -211,7 +211,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(LocalDateTime other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var yearComparison = Year.CompareTo(other.Year);
             if (yearComparison != 0) return yearComparison;
             var monthComparison = Month.CompareTo(other.Month);
@@ -236,7 +236,7 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
-            if (ReferenceEquals(null, obj)) return 1;
+            if (obj is null) return 1;
             if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is LocalDateTime)) throw new ArgumentException($"Object must be of type {nameof(LocalDateTime)}");
             return CompareTo((LocalDateTime) obj);
