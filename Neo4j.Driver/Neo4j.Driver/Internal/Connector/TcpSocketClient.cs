@@ -274,7 +274,7 @@ namespace Neo4j.Driver.Internal.Connector
                             t =>
                             {
                                 _client.Dispose();
-                                _stream.Dispose();
+                                _stream?.Dispose();
 
                                 _client = null;
                                 _stream = null;
