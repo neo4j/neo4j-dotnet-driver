@@ -134,7 +134,7 @@ namespace Neo4j.Driver.V1
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is Point && Equals((Point) obj);
+            return obj is Point point && Equals(point);
         }
     }
 }

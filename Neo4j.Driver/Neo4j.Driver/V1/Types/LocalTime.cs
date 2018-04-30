@@ -140,7 +140,7 @@ namespace Neo4j.Driver.V1
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is LocalTime && Equals((LocalTime) obj);
+            return obj is LocalTime time && Equals(time);
         }
 
         /// <summary>

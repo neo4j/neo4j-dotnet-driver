@@ -161,7 +161,7 @@ namespace Neo4j.Driver.V1
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is OffsetTime && Equals((OffsetTime) obj);
+            return obj is OffsetTime time && Equals(time);
         }
 
         /// <summary>

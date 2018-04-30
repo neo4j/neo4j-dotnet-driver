@@ -129,7 +129,7 @@ namespace Neo4j.Driver.V1
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is Duration && Equals((Duration) obj);
+            return obj is Duration duration && Equals(duration);
         }
 
         /// <summary>

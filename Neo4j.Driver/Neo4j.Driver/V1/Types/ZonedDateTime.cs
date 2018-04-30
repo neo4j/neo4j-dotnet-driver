@@ -24,7 +24,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date time value with a time zone, specified as a UTC offset
     /// </summary>
-    public class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IComparable, IComparable<ZonedDateTime>, IHasDateTimeComponents
+    public sealed class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IComparable, IComparable<ZonedDateTime>, IHasDateTimeComponents
     {
         /// <summary>
         /// Default comparer for <see cref="ZonedDateTime"/> values.
@@ -248,8 +248,7 @@ namespace Neo4j.Driver.V1
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((ZonedDateTime) obj);
+            return obj is ZonedDateTime dateTime && Equals(dateTime);
         }
 
         /// <summary>

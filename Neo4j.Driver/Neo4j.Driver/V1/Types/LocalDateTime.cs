@@ -33,14 +33,11 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Initializes a new instance of <see cref="LocalDateTime"/> from given <see cref="System.DateTime"/> value.
-        /// The given <see cref="System.DateTime"/> value will be normalized to local time <see cref="DateTimeKind.Local"/>
-        /// before being used.
         /// </summary>
         ///
-        /// <remarks>If the <see cref="System.DateTime"/> value was created with no <see cref="DateTimeKind"/> specified,
-        /// then <see cref="DateTimeKind.Unspecified"/> would be assigned by default.
-        /// Possible conversion from UTC to local time might happen when normalizing it to local time.
-        /// <seealso cref="System.DateTime.ToLocalTime"/>
+        /// <remarks>
+        /// The value of <see cref="DateTime.Kind"/> has no effect. Date and time component values will be used without any
+        /// explicit conversions (i.e. we treat <see cref="DateTime.Kind"/> as if <see cref="DateTimeKind.Local"/>).
         /// </remarks>
         /// <param name="dateTime"></param>
         public LocalDateTime(DateTime dateTime)
@@ -169,7 +166,7 @@ namespace Neo4j.Driver.V1
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is LocalDateTime && Equals((LocalDateTime) obj);
+            return obj is LocalDateTime time && Equals(time);
         }
 
         /// <summary>
