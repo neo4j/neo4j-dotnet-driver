@@ -104,19 +104,16 @@ namespace Neo4j.Driver.V1
         public int Nanosecond { get; }
 
         /// <summary>
-        /// Gets a <see cref="TimeSpan"/> copy of this time value.
+        /// Converts this time value to a <see cref="TimeSpan"/> instance.
         /// </summary>
         /// <value>Equivalent <see cref="TimeSpan"/> value</value>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public TimeSpan Time
+        public TimeSpan ToTimeSpan()
         {
-            get
-            {
-                TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
+            TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
 
-                return new TimeSpan(0, Hour, Minute, Second).Add(
-                    TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
-            }
+            return new TimeSpan(0, Hour, Minute, Second).Add(
+                TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
         }
 
         /// <summary>
@@ -254,16 +251,16 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
 
-        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
-        protected override DateTime ToDateTime()
+        /// <inheritdoc cref="TemporalValue.ConvertToDateTime"/>
+        protected override DateTime ConvertToDateTime()
         {
-            return DateTime.Today.Add(Time);
+            return DateTime.Today.Add(ToTimeSpan());
         }
 
-        /// <inheritdoc cref="TemporalValue.ToTimeSpan"/>
-        protected override TimeSpan ToTimeSpan()
+        /// <inheritdoc cref="TemporalValue.ConvertToTimeSpan"/>
+        protected override TimeSpan ConvertToTimeSpan()
         {
-            return Time;
+            return ToTimeSpan();
         }
     }
 }

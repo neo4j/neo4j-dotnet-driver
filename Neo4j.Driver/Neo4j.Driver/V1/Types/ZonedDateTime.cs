@@ -184,7 +184,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTime DateTime
+        private DateTime DateTime
         {
             get
             {
@@ -204,7 +204,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
         /// </summary>
-        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
+        private TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
 
         /// <summary>
         /// Converts this instance to an equivalent <see cref="DateTimeOffset"/> value
@@ -212,17 +212,16 @@ namespace Neo4j.Driver.V1
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTimeOffset</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTimeOffset DateTimeOffset
+        public DateTimeOffset ToDateTimeOffset()
         {
-            get
-            {
-                var offset = Offset;
+            // we first get DateTime instance to force Truncation / Overflow checks
+            var dateTime = DateTime;
+            var offset = Offset;
 
-                TemporalHelpers.AssertNoTruncation(offset, nameof(DateTimeOffset));
-                TemporalHelpers.AssertNoOverflow(offset, nameof(DateTimeOffset));
+            TemporalHelpers.AssertNoTruncation(offset, nameof(DateTimeOffset));
+            TemporalHelpers.AssertNoOverflow(offset, nameof(DateTimeOffset));
 
-                return new DateTimeOffset(DateTime, offset);
-            }
+            return new DateTimeOffset(dateTime, offset);
         }
 
         /// <summary>
@@ -364,10 +363,10 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
 
-        /// <inheritdoc cref="TemporalValue.ToDateTimeOffset"/>
-        protected override DateTimeOffset ToDateTimeOffset()
+        /// <inheritdoc cref="TemporalValue.ConvertToDateTimeOffset"/>
+        protected override DateTimeOffset ConvertToDateTimeOffset()
         {
-            return DateTimeOffset;
+            return ToDateTimeOffset();
         }
     }
 }

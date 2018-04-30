@@ -131,21 +131,18 @@ namespace Neo4j.Driver.V1
         public int Nanosecond { get; }
 
         /// <summary>
-        /// Gets a <see cref="DateTime"/> copy of this date value.
+        /// Converts this date value to a <see cref="DateTime"/> instance.
         /// </summary>
         /// <value>Equivalent <see cref="DateTime"/> value</value>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTime DateTime
+        public DateTime ToDateTime()
         {
-            get
-            {
-                TemporalHelpers.AssertNoTruncation(this, nameof(System.DateTime));
-                TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
+            TemporalHelpers.AssertNoTruncation(this, nameof(System.DateTime));
+            TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
 
-                return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
-                    TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
-            }
+            return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
+                TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
         }
 
         /// <summary>
@@ -293,10 +290,10 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
 
-        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
-        protected override DateTime ToDateTime()
+        /// <inheritdoc cref="TemporalValue.ConvertToDateTime"/>
+        protected override DateTime ConvertToDateTime()
         {
-            return DateTime;
+            return ToDateTime();
         }
     }
 }

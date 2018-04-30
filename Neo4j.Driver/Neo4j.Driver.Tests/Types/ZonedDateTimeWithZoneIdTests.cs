@@ -31,8 +31,14 @@ namespace Neo4j.Driver.Tests.Types
         {
             var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, Zone.Of("Europe/Rome"));
 
-            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54));
-            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
+            cypherDateTime.Year.Should().Be(1947);
+            cypherDateTime.Month.Should().Be(12);
+            cypherDateTime.Day.Should().Be(17);
+            cypherDateTime.Hour.Should().Be(23);
+            cypherDateTime.Minute.Should().Be(49);
+            cypherDateTime.Second.Should().Be(54);
+            cypherDateTime.Nanosecond.Should().Be(0);
+            cypherDateTime.OffsetSeconds.Should().Be(60 * 60);
             cypherDateTime.Zone.Should().Be(Zone.Of("Europe/Rome"));
         }
 
@@ -41,8 +47,14 @@ namespace Neo4j.Driver.Tests.Types
         {
             var cypherDateTime = new ZonedDateTime(1947, 12, 17, 23, 49, 54, 192794500, Zone.Of("Europe/Rome"));
 
-            cypherDateTime.DateTime.Should().Be(new DateTime(1947, 12, 17, 23, 49, 54).AddTicks(1927945));
-            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
+            cypherDateTime.Year.Should().Be(1947);
+            cypherDateTime.Month.Should().Be(12);
+            cypherDateTime.Day.Should().Be(17);
+            cypherDateTime.Hour.Should().Be(23);
+            cypherDateTime.Minute.Should().Be(49);
+            cypherDateTime.Second.Should().Be(54);
+            cypherDateTime.Nanosecond.Should().Be(192794500);
+            cypherDateTime.OffsetSeconds.Should().Be(60 * 60);
             cypherDateTime.Zone.Should().Be(Zone.Of("Europe/Rome"));
         }
 
@@ -52,8 +64,14 @@ namespace Neo4j.Driver.Tests.Types
             var dateTime = new DateTime(1947, 12, 17, 23, 49, 54, 120);
             var cypherDateTime = new ZonedDateTime(dateTime, "Europe/Rome");
 
-            cypherDateTime.DateTime.Should().Be(dateTime);
-            cypherDateTime.Offset.Should().Be(TimeSpan.FromHours(1));
+            cypherDateTime.Year.Should().Be(1947);
+            cypherDateTime.Month.Should().Be(12);
+            cypherDateTime.Day.Should().Be(17);
+            cypherDateTime.Hour.Should().Be(23);
+            cypherDateTime.Minute.Should().Be(49);
+            cypherDateTime.Second.Should().Be(54);
+            cypherDateTime.Nanosecond.Should().Be(120000000);
+            cypherDateTime.OffsetSeconds.Should().Be(60 * 60);
             cypherDateTime.Zone.Should().Be(Zone.Of("Europe/Rome"));
         }
 
@@ -141,7 +159,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldThrowOnOverflow(int year)
         {
             var dateTime = new ZonedDateTime(year, 1, 1, 0, 0, 0, 0, Zone.Of("Europe/London"));
-            var ex = Record.Exception(() => dateTime.DateTime);
+            var ex = Record.Exception(() => dateTime.ToDateTimeOffset());
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
         }
@@ -156,7 +174,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldThrowOnTruncation(int nanosecond)
         {
             var dateTime = new ZonedDateTime(1, 1, 1, 0, 0, 0, nanosecond, Zone.Of("Europe/London"));
-            var ex = Record.Exception(() => dateTime.DateTime);
+            var ex = Record.Exception(() => dateTime.ToDateTimeOffset());
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }

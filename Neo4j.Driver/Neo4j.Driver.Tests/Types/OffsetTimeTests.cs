@@ -30,8 +30,11 @@ namespace Neo4j.Driver.Tests.Types
         {
             var cypherTime = new OffsetTime(13, 15, 59, 1500);
 
-            cypherTime.Time.Should().Be(new TimeSpan(13, 15, 59));
-            cypherTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
+            cypherTime.Hour.Should().Be(13);
+            cypherTime.Minute.Should().Be(15);
+            cypherTime.Second.Should().Be(59);
+            cypherTime.Nanosecond.Should().Be(0);
+            cypherTime.OffsetSeconds.Should().Be(1500);
         }
 
         [Fact]
@@ -40,8 +43,11 @@ namespace Neo4j.Driver.Tests.Types
             var time = new TimeSpan(0, 13, 59, 59, 255);
             var cypherTime = new OffsetTime(time, TimeSpan.FromSeconds(1500));
 
-            cypherTime.Time.Should().Be(time);
-            cypherTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
+            cypherTime.Hour.Should().Be(13);
+            cypherTime.Minute.Should().Be(59);
+            cypherTime.Second.Should().Be(59);
+            cypherTime.Nanosecond.Should().Be(255000000);
+            cypherTime.OffsetSeconds.Should().Be(1500);
         }
 
         [Fact]
@@ -50,8 +56,11 @@ namespace Neo4j.Driver.Tests.Types
             var time = new DateTime(1, 1, 1, 13, 59, 59, 25);
             var cypherTime = new OffsetTime(time, TimeSpan.FromSeconds(1500));
 
-            cypherTime.Time.Should().Be(time.TimeOfDay);
-            cypherTime.Offset.Should().Be(TimeSpan.FromSeconds(1500));
+            cypherTime.Hour.Should().Be(13);
+            cypherTime.Minute.Should().Be(59);
+            cypherTime.Second.Should().Be(59);
+            cypherTime.Nanosecond.Should().Be(25000000);
+            cypherTime.OffsetSeconds.Should().Be(1500);
         }
 
         [Theory]
@@ -104,21 +113,6 @@ namespace Neo4j.Driver.Tests.Types
             var ex = Record.Exception(() => new OffsetTime(0, 0, 0, 0, offset));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
-        }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(20)]
-        [InlineData(99)]
-        [InlineData(999000727)]
-        [InlineData(999000750)]
-        [InlineData(999000001)]
-        public void ShouldThrowOnTruncation(int nanosecond)
-        {
-            var time = new OffsetTime(0, 0, 0, nanosecond, 0);
-            var ex = Record.Exception(() => time.Time);
-
-            ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }
 
         [Theory]

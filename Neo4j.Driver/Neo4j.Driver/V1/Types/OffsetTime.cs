@@ -138,26 +138,6 @@ namespace Neo4j.Driver.V1
         public int OffsetSeconds { get; }
 
         /// <summary>
-        /// Gets a <see cref="TimeSpan"/> value that represents the time of this instance.
-        /// </summary>
-        /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public TimeSpan Time
-        {
-            get
-            {
-                TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
-
-                return new TimeSpan(0, Hour, Minute, Second).Add(
-                    TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
-            }
-        }
-
-        /// <summary>
-        /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
-        /// </summary>
-        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
-
-        /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
         /// value of the specified <see cref="OffsetTime" /> instance. 
         /// </summary>
