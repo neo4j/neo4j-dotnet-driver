@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.Types
         {
             var cypherTime = new LocalTime(13, 15, 59);
 
-            cypherTime.Time.Should().Be(new TimeSpan(13, 15, 59));
+            cypherTime.ToTimeSpan().Should().Be(new TimeSpan(13, 15, 59));
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.Types
             var time = new TimeSpan(0, 13, 59, 59, 255);
             var cypherTime = new LocalTime(time);
 
-            cypherTime.Time.Should().Be(time);
+            cypherTime.ToTimeSpan().Should().Be(time);
         }
 
         [Theory]
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldThrowOnTruncation(int nanosecond)
         {
             var time = new LocalTime(0, 0, 0, nanosecond);
-            var ex = Record.Exception(() => time.Time);
+            var ex = Record.Exception(() => time.ToTimeSpan());
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }

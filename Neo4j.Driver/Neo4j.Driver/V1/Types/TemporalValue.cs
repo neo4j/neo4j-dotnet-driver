@@ -32,7 +32,7 @@ namespace Neo4j.Driver.V1
         /// <exception cref="InvalidCastException">If conversion is not possible</exception>
         /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
         /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
-        protected virtual DateTime ToDateTime()
+        protected virtual DateTime ConvertToDateTime()
         {
             throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTime)} is not supported.");
         }
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.V1
         /// <exception cref="InvalidCastException">If conversion is not possible</exception>
         /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
         /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
-        protected virtual DateTimeOffset ToDateTimeOffset()
+        protected virtual DateTimeOffset ConvertToDateTimeOffset()
         {
             throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTimeOffset)} is not supported.");
         }
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.V1
         /// <exception cref="InvalidCastException">If conversion is not possible</exception>
         /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
         /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
-        protected virtual TimeSpan ToTimeSpan()
+        protected virtual TimeSpan ConvertToTimeSpan()
         {
             throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(TimeSpan)} is not supported.");
         }
@@ -133,7 +133,7 @@ namespace Neo4j.Driver.V1
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            return ToDateTime();
+            return ConvertToDateTime();
         }
 
         string IConvertible.ToString(IFormatProvider provider)
@@ -145,17 +145,17 @@ namespace Neo4j.Driver.V1
         {
             if (conversionType == typeof(DateTime))
             {
-                return ToDateTime();
+                return ConvertToDateTime();
             }
 
             if (conversionType == typeof(DateTimeOffset))
             {
-                return ToDateTimeOffset();
+                return ConvertToDateTimeOffset();
             }
 
             if (conversionType == typeof(TimeSpan))
             {
-                return ToTimeSpan();
+                return ConvertToTimeSpan();
             }
 
             if (conversionType == typeof(string))
@@ -172,8 +172,8 @@ namespace Neo4j.Driver.V1
             public int Compare(T x, T y)
             {
                 if (ReferenceEquals(x, y)) return 0;
-                if (ReferenceEquals(null, y)) return 1;
-                if (ReferenceEquals(null, x)) return -1;
+                if (y is null) return 1;
+                if (x is null) return -1;
                 return x.CompareTo(y);
             }
         }

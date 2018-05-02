@@ -680,7 +680,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 _random.Next(TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute),
                 _random.Next(TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond),
                 (int)(_random.Next(TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond) / 100) * 100
-            ).Time;
+            ).ToTimeSpan();
         }
 
         private OffsetTime RandomOffsetTime()

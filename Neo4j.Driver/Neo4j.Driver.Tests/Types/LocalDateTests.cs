@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.Types
         {
             var cypherDate = new LocalDate(1947, 12, 17);
 
-            cypherDate.DateTime.Should().Be(new DateTime(1947, 12, 17));
+            cypherDate.ToDateTime().Should().Be(new DateTime(1947, 12, 17));
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.Types
             var date = new DateTime(1947, 12, 17);
             var cypherDate = new LocalDate(date);
 
-            cypherDate.DateTime.Should().Be(date);
+            cypherDate.ToDateTime().Should().Be(date);
         }
 
         [Theory]
@@ -84,7 +84,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldThrowOnOverflow(int year)
         {
             var date = new LocalDate(year, 1, 1);
-            var ex = Record.Exception(() => date.DateTime);
+            var ex = Record.Exception(() => date.ToDateTime());
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
         }

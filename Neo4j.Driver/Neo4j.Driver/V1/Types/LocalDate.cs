@@ -74,18 +74,15 @@ namespace Neo4j.Driver.V1
         public int Day { get; }
 
         /// <summary>
-        /// Gets a <see cref="DateTime"/> copy of this date value.
+        /// Converts this date value to a <see cref="DateTime"/> instance.
         /// </summary>
         /// <value>Equivalent <see cref="DateTime"/> value</value>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
-        public DateTime DateTime
+        public DateTime ToDateTime()
         {
-            get
-            {
-                TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
+            TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
 
-                return new DateTime(Year, Month, Day);
-            }
+            return new DateTime(Year, Month, Day);
         }
 
         /// <summary>
@@ -97,7 +94,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(LocalDate other)
         {
-            if (ReferenceEquals(null, other)) return false;
+            if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return Year == other.Year && Month == other.Month && Day == other.Day;
         }
@@ -110,9 +107,9 @@ namespace Neo4j.Driver.V1
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is LocalDate && Equals((LocalDate) obj);
+            return obj is LocalDate date && Equals(date);
         }
 
         /// <summary>
@@ -149,7 +146,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(LocalDate other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var yearComparison = Year.CompareTo(other.Year);
             if (yearComparison != 0) return yearComparison;
             var monthComparison = Month.CompareTo(other.Month);
@@ -166,7 +163,7 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
-            if (ReferenceEquals(null, obj)) return 1;
+            if (obj is null) return 1;
             if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is LocalDate)) throw new ArgumentException($"Object must be of type {nameof(LocalDate)}");
             return CompareTo((LocalDate) obj);
@@ -220,10 +217,10 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
         
-        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
-        protected override DateTime ToDateTime()
+        /// <inheritdoc cref="TemporalValue.ConvertToDateTime"/>
+        protected override DateTime ConvertToDateTime()
         {
-            return DateTime;
+            return ToDateTime();
         }
     }
 }

@@ -33,14 +33,11 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Initializes a new instance of <see cref="LocalDateTime"/> from given <see cref="System.DateTime"/> value.
-        /// The given <see cref="System.DateTime"/> value will be normalized to local time <see cref="DateTimeKind.Local"/>
-        /// before being used.
         /// </summary>
         ///
-        /// <remarks>If the <see cref="System.DateTime"/> value was created with no <see cref="DateTimeKind"/> specified,
-        /// then <see cref="DateTimeKind.Unspecified"/> would be assigned by default.
-        /// Possible conversion from UTC to local time might happen when normalizing it to local time.
-        /// <seealso cref="System.DateTime.ToLocalTime"/>
+        /// <remarks>
+        /// The value of <see cref="DateTime.Kind"/> has no effect. Date and time component values will be used without any
+        /// explicit conversions (i.e. we treat <see cref="DateTime.Kind"/> as if <see cref="DateTimeKind.Local"/>).
         /// </remarks>
         /// <param name="dateTime"></param>
         public LocalDateTime(DateTime dateTime)
@@ -131,21 +128,18 @@ namespace Neo4j.Driver.V1
         public int Nanosecond { get; }
 
         /// <summary>
-        /// Gets a <see cref="DateTime"/> copy of this date value.
+        /// Converts this date value to a <see cref="DateTime"/> instance.
         /// </summary>
         /// <value>Equivalent <see cref="DateTime"/> value</value>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTime DateTime
+        public DateTime ToDateTime()
         {
-            get
-            {
-                TemporalHelpers.AssertNoTruncation(this, nameof(System.DateTime));
-                TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
+            TemporalHelpers.AssertNoTruncation(this, nameof(System.DateTime));
+            TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
 
-                return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
-                    TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
-            }
+            return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
+                TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
         }
 
         /// <summary>
@@ -157,7 +151,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(LocalDateTime other)
         {
-            if (ReferenceEquals(null, other)) return false;
+            if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
         }
@@ -170,9 +164,9 @@ namespace Neo4j.Driver.V1
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is LocalDateTime && Equals((LocalDateTime) obj);
+            return obj is LocalDateTime time && Equals(time);
         }
 
         /// <summary>
@@ -214,7 +208,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(LocalDateTime other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var yearComparison = Year.CompareTo(other.Year);
             if (yearComparison != 0) return yearComparison;
             var monthComparison = Month.CompareTo(other.Month);
@@ -239,7 +233,7 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
-            if (ReferenceEquals(null, obj)) return 1;
+            if (obj is null) return 1;
             if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is LocalDateTime)) throw new ArgumentException($"Object must be of type {nameof(LocalDateTime)}");
             return CompareTo((LocalDateTime) obj);
@@ -293,10 +287,10 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
 
-        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
-        protected override DateTime ToDateTime()
+        /// <inheritdoc cref="TemporalValue.ConvertToDateTime"/>
+        protected override DateTime ConvertToDateTime()
         {
-            return DateTime;
+            return ToDateTime();
         }
     }
 }

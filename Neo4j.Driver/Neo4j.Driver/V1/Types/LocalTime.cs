@@ -104,19 +104,16 @@ namespace Neo4j.Driver.V1
         public int Nanosecond { get; }
 
         /// <summary>
-        /// Gets a <see cref="TimeSpan"/> copy of this time value.
+        /// Converts this time value to a <see cref="TimeSpan"/> instance.
         /// </summary>
         /// <value>Equivalent <see cref="TimeSpan"/> value</value>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public TimeSpan Time
+        public TimeSpan ToTimeSpan()
         {
-            get
-            {
-                TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
+            TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
 
-                return new TimeSpan(0, Hour, Minute, Second).Add(
-                    TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
-            }
+            return new TimeSpan(0, Hour, Minute, Second).Add(
+                TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
         }
 
         /// <summary>
@@ -128,7 +125,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(LocalTime other)
         {
-            if (ReferenceEquals(null, other)) return false;
+            if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return Hour == other.Hour && Minute == other.Minute && Second == other.Second && Nanosecond == other.Nanosecond;
         }
@@ -141,9 +138,9 @@ namespace Neo4j.Driver.V1
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj is LocalTime && Equals((LocalTime) obj);
+            return obj is LocalTime time && Equals(time);
         }
 
         /// <summary>
@@ -181,7 +178,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(LocalTime other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var hourComparison = Hour.CompareTo(other.Hour);
             if (hourComparison != 0) return hourComparison;
             var minuteComparison = Minute.CompareTo(other.Minute);
@@ -200,7 +197,7 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
-            if (ReferenceEquals(null, obj)) return 1;
+            if (obj is null) return 1;
             if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is LocalTime)) throw new ArgumentException($"Object must be of type {nameof(LocalTime)}");
             return CompareTo((LocalTime) obj);
@@ -254,16 +251,16 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
 
-        /// <inheritdoc cref="TemporalValue.ToDateTime"/>
-        protected override DateTime ToDateTime()
+        /// <inheritdoc cref="TemporalValue.ConvertToDateTime"/>
+        protected override DateTime ConvertToDateTime()
         {
-            return DateTime.Today.Add(Time);
+            return DateTime.Today.Add(ToTimeSpan());
         }
 
-        /// <inheritdoc cref="TemporalValue.ToTimeSpan"/>
-        protected override TimeSpan ToTimeSpan()
+        /// <inheritdoc cref="TemporalValue.ConvertToTimeSpan"/>
+        protected override TimeSpan ConvertToTimeSpan()
         {
-            return Time;
+            return ToTimeSpan();
         }
     }
 }

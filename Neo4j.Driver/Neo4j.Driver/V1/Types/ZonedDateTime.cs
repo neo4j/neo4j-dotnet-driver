@@ -24,7 +24,7 @@ namespace Neo4j.Driver.V1
     /// <summary>
     /// Represents a date time value with a time zone, specified as a UTC offset
     /// </summary>
-    public class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IComparable, IComparable<ZonedDateTime>, IHasDateTimeComponents
+    public sealed class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IComparable, IComparable<ZonedDateTime>, IHasDateTimeComponents
     {
         /// <summary>
         /// Default comparer for <see cref="ZonedDateTime"/> values.
@@ -184,7 +184,7 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTime DateTime
+        private DateTime DateTime
         {
             get
             {
@@ -204,7 +204,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
         /// </summary>
-        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
+        private TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
 
         /// <summary>
         /// Converts this instance to an equivalent <see cref="DateTimeOffset"/> value
@@ -212,17 +212,16 @@ namespace Neo4j.Driver.V1
         /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTimeOffset</exception>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-        public DateTimeOffset DateTimeOffset
+        public DateTimeOffset ToDateTimeOffset()
         {
-            get
-            {
-                var offset = Offset;
+            // we first get DateTime instance to force Truncation / Overflow checks
+            var dateTime = DateTime;
+            var offset = Offset;
 
-                TemporalHelpers.AssertNoTruncation(offset, nameof(DateTimeOffset));
-                TemporalHelpers.AssertNoOverflow(offset, nameof(DateTimeOffset));
+            TemporalHelpers.AssertNoTruncation(offset, nameof(DateTimeOffset));
+            TemporalHelpers.AssertNoOverflow(offset, nameof(DateTimeOffset));
 
-                return new DateTimeOffset(DateTime, offset);
-            }
+            return new DateTimeOffset(dateTime, offset);
         }
 
         /// <summary>
@@ -234,7 +233,7 @@ namespace Neo4j.Driver.V1
         /// this instance; otherwise, <code>false</code></returns>
         public bool Equals(ZonedDateTime other)
         {
-            if (ReferenceEquals(null, other)) return false;
+            if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return Year == other.Year && Month == other.Month && Day == other.Day && Hour == other.Hour && Second == other.Second && Nanosecond == other.Nanosecond && Equals(Zone, other.Zone);
         }
@@ -247,10 +246,9 @@ namespace Neo4j.Driver.V1
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((ZonedDateTime) obj);
+            return obj is ZonedDateTime dateTime && Equals(dateTime);
         }
 
         /// <summary>
@@ -292,7 +290,7 @@ namespace Neo4j.Driver.V1
         public int CompareTo(ZonedDateTime other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var thisEpochSeconds = this.ToEpochSeconds() - OffsetSeconds;
             var otherEpochSeconds = other.ToEpochSeconds() - other.OffsetSeconds;
             var epochComparison = thisEpochSeconds.CompareTo(otherEpochSeconds);
@@ -309,7 +307,7 @@ namespace Neo4j.Driver.V1
         /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
         public int CompareTo(object obj)
         {
-            if (ReferenceEquals(null, obj)) return 1;
+            if (obj is null) return 1;
             if (ReferenceEquals(this, obj)) return 0;
             if (!(obj is ZonedDateTime))
                 throw new ArgumentException($"Object must be of type {nameof(ZonedDateTime)}");
@@ -364,10 +362,10 @@ namespace Neo4j.Driver.V1
             return left.CompareTo(right) >= 0;
         }
 
-        /// <inheritdoc cref="TemporalValue.ToDateTimeOffset"/>
-        protected override DateTimeOffset ToDateTimeOffset()
+        /// <inheritdoc cref="TemporalValue.ConvertToDateTimeOffset"/>
+        protected override DateTimeOffset ConvertToDateTimeOffset()
         {
-            return DateTimeOffset;
+            return ToDateTimeOffset();
         }
     }
 }
