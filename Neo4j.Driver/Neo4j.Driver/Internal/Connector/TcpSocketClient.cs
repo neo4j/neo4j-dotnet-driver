@@ -212,38 +212,31 @@ namespace Neo4j.Driver.Internal.Connector
         {
             InitClient();
 
-            var tcs = new TaskCompletionSource<bool>();
-            using (var cts = new CancellationTokenSource(_connectionTimeout))
-            {
-                using (cts.Token.Register(() => tcs.SetResult(true)))
-                {
 #if NET452
-                    var connectTask = Task.Factory.FromAsync(_client.BeginConnect, _client.EndConnect, address, port, null);
+            var connectTask = Task.Factory.FromAsync(_client.BeginConnect, _client.EndConnect, address, port, null);
 #else
-                    var connectTask = _client.ConnectAsync(address, port);
+            var connectTask = _client.ConnectAsync(address, port);
 #endif
-                    var finishedTask = await Task.WhenAny(connectTask, tcs.Task).ConfigureAwait(false);
-                    if (connectTask != finishedTask) // timed out
-                    {
-                        try
-                        {
-                            // close client immediately when failed to connect within timeout
-                            await DisconnectAsync().ConfigureAwait(false);
-                        }
-                        catch (Exception e)
-                        {
-                            _logger?.Error($"Failed to close connect to the server {address}:{port}" +
-                                           $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms" +
-                                           $" due to error: {e.Message}.", e);
-                        }
-                        
-                        throw new OperationCanceledException(
-                            $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.", cts.Token);
-                    }
-
-                    await connectTask.ConfigureAwait(false);
+            var finishedTask = await Task.WhenAny(connectTask, Task.Delay(_connectionTimeout)).ConfigureAwait(false);
+            if (connectTask != finishedTask) // timed out
+            {
+                try
+                {
+                    // close client immediately when failed to connect within timeout
+                    await DisconnectAsync().ConfigureAwait(false);
                 }
+                catch (Exception e)
+                {
+                    _logger?.Error($"Failed to close connect to the server {address}:{port}" +
+                                   $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms" +
+                                   $" due to error: {e.Message}.", e);
+                }
+                
+                throw new OperationCanceledException(
+                    $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
             }
+
+            await connectTask.ConfigureAwait(false);
         }
 
         public virtual void Disconnect()
@@ -274,7 +267,7 @@ namespace Neo4j.Driver.Internal.Connector
                             t =>
                             {
                                 _client.Dispose();
-                                _stream.Dispose();
+                                _stream?.Dispose();
 
                                 _client = null;
                                 _stream = null;

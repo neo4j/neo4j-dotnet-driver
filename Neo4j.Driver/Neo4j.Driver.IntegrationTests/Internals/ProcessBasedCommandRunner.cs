@@ -24,7 +24,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class ProcessBasedCommandRunner : ShellCommandRunner
     {
-        private const int DefaultTimeOut = 2 * 60 * 1000; // 2 minutes
+        private const int DefaultTimeOut = 4 * 60 * 1000; // 4 minutes
 
         private List<string> _stdOut;
         private StringBuilder _stdErr;

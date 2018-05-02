@@ -11,7 +11,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{622A94AD-BC4D-4162-AE43-A5CA055F24FC}"
 	ProjectSection(SolutionItems) = preProject
 		..\LICENSE = ..\LICENSE
-		Neo4j.Driver.nuspec = Neo4j.Driver.nuspec
 		..\NOTICE = ..\NOTICE
 		..\README.md = ..\README.md
 	EndProjectSection

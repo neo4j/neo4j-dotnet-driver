@@ -33,15 +33,15 @@ namespace Neo4j.Driver.Internal.Metrics
         private long _timedOutToAcquire;
 
         public int Creating => _creating;
-        public long Created => _created;
-        public long FailedToCreate => _failedToCreate;
+        public long Created => Interlocked.Read(ref _created);
+        public long FailedToCreate => Interlocked.Read(ref _failedToCreate);
 
         public int Closing => _closing;
-        public long Closed => _closed;
+        public long Closed => Interlocked.Read(ref _closed);
 
         public int Acquiring => _acquiring;
-        public long Acquired => _acquired;
-        public long TimedOutToAcquire => _timedOutToAcquire;
+        public long Acquired => Interlocked.Read(ref _acquired);
+        public long TimedOutToAcquire => Interlocked.Read(ref _timedOutToAcquire);
 
         public string UniqueName { get; }
 

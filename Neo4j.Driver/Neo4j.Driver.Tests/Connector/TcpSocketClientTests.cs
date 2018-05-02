@@ -55,19 +55,18 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
-                using (var tcpServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-                {
-                    tcpServer.Bind(new IPEndPoint(IPAddress.Loopback, 9999));
+                var client = new TcpSocketClientWithDisposeDetection(
+                    new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(1)});
 
-                    var client = new TcpSocketClientWithDisposeDetection(
-                        new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(0)});
-
-                    var exception = await Record.ExceptionAsync(
-                        () => client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 9999));
-                    exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
-                    exception.Message.Should().Be("Failed to connect to server 127.0.0.1:9999 within 0ms.");
-                    client.DisposeCalled.Should().BeTrue();
-                }
+                // ReSharper disable once PossibleNullReferenceException
+                // use non-routable IP address to mimic a connect timeout
+                // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
+                var exception = await Record.ExceptionAsync(
+                    () => client.ConnectSocketAsync(IPAddress.Parse("192.168.0.0"), 9999));
+                exception.Should().NotBeNull();
+                exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
+                exception.Message.Should().Be("Failed to connect to server 192.168.0.0:9999 within 1000ms.");
+                client.DisposeCalled.Should().BeTrue();
             }
 
             [Fact]
@@ -77,6 +76,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var client = new TcpSocketClient(socketSettings);
 
                 // We fail to connect the first time as there is no server to connect to
+                // ReSharper disable once PossibleNullReferenceException
                 var exception = await Record.ExceptionAsync(
                     async()=> await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 20003));
                 // start a server on port 20003
@@ -101,22 +101,21 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
-                using (var tcpServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-                {
-                    tcpServer.Bind(new IPEndPoint(IPAddress.Loopback, 9998));
+                var client = new TcpSocketClient(new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(1)});
 
-                    var client = new TcpSocketClient(new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(0)});
+                // ReSharper disable once PossibleNullReferenceException
+                // use non-routable IP address to mimic a connect timeout
+                // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
+                var exception = await Record.ExceptionAsync(
+                    () => client.ConnectAsync(new Uri("bolt://192.168.0.0:9998")));
+                exception.Should().NotBeNull();
+                exception.Should().BeOfType<IOException>();
+                exception.Message.Should().Be(
+                    "Failed to connect to server 'bolt://192.168.0.0:9998/' via IP addresses'[192.168.0.0]' at port '9998'.");
 
-                    var exception = await Record.ExceptionAsync(
-                        () => client.ConnectAsync(new Uri("bolt://127.0.0.1:9998")));
-                    exception.Should().BeOfType<IOException>();
-                    exception.Message.Should().Be(
-                        "Failed to connect to server 'bolt://127.0.0.1:9998/' via IP addresses'[127.0.0.1]' at port '9998'.");
-
-                    var baseException = exception.GetBaseException();
-                    baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
-                    baseException.Message.Should().Be("Failed to connect to server 127.0.0.1:9998 within 0ms.");
-                }
+                var baseException = exception.GetBaseException();
+                baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
+                baseException.Message.Should().Be("Failed to connect to server 192.168.0.0:9998 within 1000ms.");
             }
         }
         
