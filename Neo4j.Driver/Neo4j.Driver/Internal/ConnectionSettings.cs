@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
@@ -45,16 +47,15 @@ namespace Neo4j.Driver.Internal
             AuthToken = authToken;
             UserAgent = userAgent ?? DefaultUserAgent;
 
-#if NET452
-            var resolver = new DefaultHostResolver(new SystemHostResolver(), ipv6Enabled);
-#else
-            var resolver =
-                new DefaultHostResolver(new SystemNetCoreHostResolver(), ipv6Enabled);
-#endif
+            IHostResolver systemResolver = new SystemHostResolver();
+            if (RuntimeHelper.IsDotnetCore())
+            {
+                systemResolver = new SystemNetCoreHostResolver(systemResolver);
+            }
             
             SocketSettings = new SocketSettings
             {
-                HostResolver = resolver,
+                HostResolver = new DefaultHostResolver(systemResolver, ipv6Enabled),
                 EncryptionManager =  encryptionManager,
                 ConnectionTimeout = connectionTimeout,
                 SocketKeepAliveEnabled = socketKeepAlive,
