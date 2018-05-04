@@ -31,6 +31,7 @@ namespace Neo4j.Driver.Internal.Connector
         private Socket _client;
         private Stream _stream;
 
+        private readonly IHostResolver _resolver;
         private readonly bool _ipv6Enabled;
         private readonly EncryptionManager _encryptionManager;
         private readonly TimeSpan _connectionTimeout;
@@ -43,6 +44,7 @@ namespace Neo4j.Driver.Internal.Connector
         public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
         {
             _logger = logger;
+            _resolver = socketSettings.HostResolver;
             _encryptionManager = socketSettings.EncryptionManager;
             _ipv6Enabled = socketSettings.Ipv6Enabled;
             _connectionTimeout = socketSettings.ConnectionTimeout;
@@ -66,7 +68,8 @@ namespace Neo4j.Driver.Internal.Connector
 #if NET452
                     secureStream.AuthenticateAsClient(uri.Host, null, Tls12, false);
 #else
-                    secureStream.AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false).GetAwaiter().GetResult();
+                    secureStream.AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false)
+                        .GetAwaiter().GetResult();
 #endif
 
                     _stream = secureStream;
@@ -104,7 +107,7 @@ namespace Neo4j.Driver.Internal.Connector
         private void ConnectSocket(Uri uri)
         {
             var innerErrors = new List<Exception>();
-            var addresses = uri.Resolve(_ipv6Enabled);
+            var addresses = _resolver.Resolve(uri.Host);
                         
             foreach (var address in addresses)
             {
@@ -137,7 +140,7 @@ namespace Neo4j.Driver.Internal.Connector
         private async Task ConnectSocketAsync(Uri uri)
         {
             var innerErrors = new List<Exception>();
-            var addresses = await uri.ResolveAsync(_ipv6Enabled).ConfigureAwait(false);
+            var addresses = await _resolver.ResolveAsync(uri.Host).ConfigureAwait(false);
                         
             foreach (var address in addresses)
             {

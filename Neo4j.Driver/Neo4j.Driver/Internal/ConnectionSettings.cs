@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
 
@@ -21,6 +22,7 @@ namespace Neo4j.Driver.Internal
 {
     internal class ConnectionSettings
     {
+        internal const int DefaultDnsTtl = 30 * 1000;
         internal const string DefaultUserAgent = "neo4j-dotnet/1.6";
 
         public IAuthToken AuthToken { get; }
@@ -33,7 +35,7 @@ namespace Neo4j.Driver.Internal
         {
         }
 
-        private ConnectionSettings(IAuthToken authToken, 
+        private ConnectionSettings(IAuthToken authToken,
             EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
             bool socketKeepAlive, bool ipv6Enabled, string userAgent = null)
         {
@@ -43,8 +45,16 @@ namespace Neo4j.Driver.Internal
             AuthToken = authToken;
             UserAgent = userAgent ?? DefaultUserAgent;
 
+#if NET452
+            var resolver = new DefaultHostResolver(new SystemHostResolver(), ipv6Enabled);
+#else
+            var resolver =
+                new DefaultHostResolver(new SystemNetCoreHostResolver(), ipv6Enabled);
+#endif
+            
             SocketSettings = new SocketSettings
             {
+                HostResolver = resolver,
                 EncryptionManager =  encryptionManager,
                 ConnectionTimeout = connectionTimeout,
                 SocketKeepAliveEnabled = socketKeepAlive,
@@ -54,6 +64,7 @@ namespace Neo4j.Driver.Internal
     }
     internal class SocketSettings
     {
+        public IHostResolver HostResolver { get; set; }
         public EncryptionManager EncryptionManager { get; set; }
         public TimeSpan ConnectionTimeout { get; set; }
         public bool SocketKeepAliveEnabled { get; set; }
