@@ -248,21 +248,26 @@ namespace Neo4j.Driver.Internal
 
         public static string ToIsoDurationString(long months, long days, long seconds, int nanoseconds)
         {
-            string timePart;
+            var timePart = string.Empty;
 
             if (seconds < 0 && nanoseconds > 0)
-            { 
+            {
                 seconds = seconds + 1;
                 nanoseconds = (int)NanosPerSecond - nanoseconds;
+
+                if (seconds == 0)
+                {
+                    timePart = "-";
+                }
             }
 
             if (nanoseconds == 0)
             {
-                timePart = $"{seconds}";
+                timePart = $"{timePart}{seconds}";
             }
             else
             {
-                timePart = $"{seconds}.{nanoseconds:D9}";
+                timePart = $"{timePart}{seconds}.{nanoseconds:D9}";
             }
 
             return $"P{months}M{days}DT{timePart}S";
