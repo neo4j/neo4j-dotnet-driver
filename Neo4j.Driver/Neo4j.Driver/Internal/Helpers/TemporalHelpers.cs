@@ -80,11 +80,14 @@ namespace Neo4j.Driver.Internal
             return ComputeEpochDays(date.Year, date.Month, date.Day);
         }
 
-        public static long ToNanos(this Duration duration)
+        public static long GetDays(this Duration duration)
         {
-            return (duration.Months * 30 * TemporalHelpers.NanosPerDay) +
-                   (duration.Days * TemporalHelpers.NanosPerDay) +
-                   (duration.Seconds * TemporalHelpers.NanosPerSecond) + duration.Nanos;
+            return (duration.Months * 30) + duration.Days + FloorDiv(duration.Seconds, SecondsPerDay);
+        }
+
+        public static long GetNanos(this Duration duration)
+        {
+            return FloorMod(duration.Seconds, SecondsPerDay) * TemporalHelpers.NanosPerSecond + duration.Nanos;
         }
 
         public static LocalTime NanoOfDayToTime(long nanoOfDay)
@@ -245,7 +248,24 @@ namespace Neo4j.Driver.Internal
 
         public static string ToIsoDurationString(long months, long days, long seconds, int nanoseconds)
         {
-            return $"P{months}M{days}DT{seconds}.{nanoseconds:D9}S";
+            string timePart;
+
+            if (seconds < 0 && nanoseconds > 0)
+            { 
+                seconds = seconds + 1;
+                nanoseconds = (int)NanosPerSecond - nanoseconds;
+            }
+
+            if (nanoseconds == 0)
+            {
+                timePart = $"{seconds}";
+            }
+            else
+            {
+                timePart = $"{seconds}.{nanoseconds:D9}";
+            }
+
+            return $"P{months}M{days}DT{timePart}S";
         }
 
         public static string ToIsoDateString(int year, int month, int day)
@@ -255,7 +275,13 @@ namespace Neo4j.Driver.Internal
 
         public static string ToIsoTimeString(int hour, int minute, int second, int nanosecond)
         {
-            return $"{hour:D2}:{minute:D2}:{second:D2}.{nanosecond:D9}";
+            var nanosecondPart = string.Empty;
+            if (nanosecond > 0)
+            {
+                nanosecondPart = $".{nanosecond:D9}";
+            }
+
+            return $"{hour:D2}:{minute:D2}:{second:D2}{nanosecondPart}";
         }
 
         public static string ToIsoTimeZoneId(string id)

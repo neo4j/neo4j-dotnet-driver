@@ -74,8 +74,11 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(0, 32, 785, 789215800, "P0M32DT785.789215800S")]
         [InlineData(0, 0, 785, 789215800, "P0M0DT785.789215800S")]
         [InlineData(0, 0, 0, 789215800, "P0M0DT0.789215800S")]
-        [InlineData(0, 0, 0, 0, "P0M0DT0.000000000S")]
-        [InlineData(500, 0, 0, 0, "P500M0DT0.000000000S")]
+        [InlineData(0, 0, -1, 0, "P0M0DT-1S")]
+        [InlineData(0, 0, 0, 999999999, "P0M0DT0.999999999S")]
+        [InlineData(0, 0, -1, 5, "P0M0DT0.999999995S")]
+        [InlineData(0, 0, -1, 999999999, "P0M0DT0.000000001S")]
+        [InlineData(500, 0, 0, 0, "P500M0DT0S")]
         [InlineData(0, 0, 0, 5, "P0M0DT0.000000005S")]
         public void ShouldGenerateCorrectString(int months, int days, int seconds, int nanoseconds, string expected)
         {

@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests.Types
 
         [Theory]
         [InlineData(13, 15, 59, 274000000, "13:15:59.274000000")]
-        [InlineData(0, 1, 2, 000000000, "00:01:02.000000000")]
+        [InlineData(0, 1, 2, 000000000, "00:01:02")]
         [InlineData(0, 1, 2, 5001, "00:01:02.000005001")]
         public void ShouldGenerateCorrectString(int hour, int minute, int second, int nanosecond, string expected)
         {
