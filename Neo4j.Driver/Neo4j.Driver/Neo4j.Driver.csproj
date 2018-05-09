@@ -5,7 +5,7 @@
     <AssemblyName>Neo4j.Driver</AssemblyName>
     <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
-    <PackageLicenseUrl>https://github.com/neo4j/neo4j-dotnet-driver/blob/1.6/LICENSE</PackageLicenseUrl>
+    <PackageLicenseUrl>https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>The official .NET driver for the Neo4j Graph Database over the Bolt protocol.</Description>
@@ -20,9 +20,9 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
-    <AssemblyVersion>1.6.0.0</AssemblyVersion>
+    <AssemblyVersion>1.7.0.0</AssemblyVersion>
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
-    <AssemblyFileVersion>1.6.0.0</AssemblyFileVersion>
+    <AssemblyFileVersion>1.7.0.0</AssemblyFileVersion>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <Version>0.0.0</Version>
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
