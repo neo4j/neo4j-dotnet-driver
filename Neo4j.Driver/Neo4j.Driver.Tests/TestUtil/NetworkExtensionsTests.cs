@@ -28,66 +28,6 @@ namespace Neo4j.Driver.Tests
 {
     public class NetworkExtensionsTests
     {
-        public class IpAddressResolveAsyncMethod
-        {
-            [Fact]
-            public async Task ShouldParseLocalhostCorrectly()
-            {
-                var uri = new Uri("bolt+routing://LocALhosT:123");
-                var ipAddresses = await uri.ResolveAsync(true);                
-#if NET452
-                ipAddresses.Should().Contain(IPAddress.IPv6Loopback);
-                ipAddresses.Should().Contain(IPAddress.Loopback);
-                ipAddresses.Should().Contain(IPAddress.Parse("[::1]"));
-#endif
-                ipAddresses.Should().Contain(IPAddress.Parse("127.0.0.1"));
-            }
-
-            [Fact]
-            public async void ShouldOnlyGiveIpv6AddressWhenIpv6IsProvided()
-            {
-                var url = new Uri("bolt://[::1]");
-                var ips = await url.ResolveAsync(false);
-                ips.Length.Should().Be(1);
-                ips[0].ToString().Should().Be("::1");
-            }
-
-            [Fact]
-            public void ShouldSortIPv6AddrInFront()
-            {
-                var ipAddresses = new List<IPAddress>
-                {
-                    IPAddress.Parse("10.0.0.1"),
-                    IPAddress.Parse("192.168.0.11"),
-                    IPAddress.Parse("[::1]")
-                };
-                var addresses = ipAddresses.OrderBy(x => x, new AddressComparer(AddressFamily.InterNetworkV6)).ToArray();
-                addresses.Length.Should().Be(3);
-                addresses[0].ToString().Should().Be("::1");
-                addresses[1].ToString().Should().Be("10.0.0.1");
-                addresses[2].ToString().Should().Be("192.168.0.11");
-            }
-
-            [Fact]
-            public async void ShouldOnlyGiveIpv4AddressWhenIpv6IsNotEnabled()
-            {
-                var url = new Uri("bolt://127.0.0.1");
-                var ips = await url.ResolveAsync(false);
-                ips.Length.Should().Be(1);
-                ips[0].ToString().Should().Be("127.0.0.1");
-            }
-
-            [Fact]
-            public async void ShouldGiveIpv4Ipv6AddressWhenIpv6IsEnabled()
-            {
-                var url = new Uri("bolt://127.0.0.1");
-                var ips = await url.ResolveAsync(true);
-                ips.Length.Should().Be(2);
-                ips[0].ToString().Should().Be("::1");
-                ips[1].ToString().Should().Be("127.0.0.1");
-            }
-        }
-
         public class ParseRoutingContextMethod
         {
             [Theory]
