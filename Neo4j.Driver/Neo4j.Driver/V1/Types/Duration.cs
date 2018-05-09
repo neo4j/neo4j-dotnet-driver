@@ -76,7 +76,7 @@ namespace Neo4j.Driver.V1
         /// <param name="nanos"><see cref="Nanos"/></param>
         public Duration(long months, long days, long seconds, int nanos)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanos, -TemporalHelpers.MaxNanosecond,
+            Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanos, TemporalHelpers.MinNanosecond,
                 TemporalHelpers.MaxNanosecond, nameof(nanos));
 
             Months = months;
@@ -168,9 +168,17 @@ namespace Neo4j.Driver.V1
         {
             if (ReferenceEquals(this, other)) return 0;
             if (other is null) return 1;
-            var thisNanos = this.ToNanos();
-            var otherNanos = other.ToNanos();
-            return thisNanos.CompareTo(otherNanos);
+            var thisDays = this.GetDays();
+            var otherDays = other.GetDays();
+            var comparison = thisDays.CompareTo(otherDays);
+            if (comparison == 0)
+            {
+                var thisNanos = this.GetNanos();
+                var otherNanos = other.GetNanos();
+
+                comparison = thisNanos.CompareTo(otherNanos);
+            }
+            return comparison;
         }
 
         /// <summary>

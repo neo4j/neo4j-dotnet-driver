@@ -151,7 +151,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             var codeBase = typeof(BoltkitHelper).GetTypeInfo().Assembly.CodeBase;
             var localPath = new Uri(codeBase).LocalPath;
             var localFile = new FileInfo(localPath);
-            var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName, @"..\..\..\..\..\Target"));
+            var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName, string.Format("..{0}..{0}..{0}..{0}..{0}Target", Path.DirectorySeparatorChar)));
             return sourcePath.FullName;
         }
     }
