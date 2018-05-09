@@ -619,7 +619,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 sign * _random.Next(0, int.MaxValue),
                 sign * _random.Next(0, int.MaxValue),
                 sign * _random.Next(0, int.MaxValue),
-                sign * _random.Next(TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond)
+                _random.Next(TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond)
             );
         }
 
