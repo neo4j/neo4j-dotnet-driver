@@ -43,6 +43,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
         {
+            Throw.ArgumentNullException.IfNull(socketSettings, nameof(socketSettings));
+            Throw.ArgumentNullException.IfNull(socketSettings.HostResolver, nameof(SocketSettings.HostResolver));
+            Throw.ArgumentNullException.IfNull(socketSettings.EncryptionManager, nameof(SocketSettings.EncryptionManager));
+
             _logger = logger;
             _resolver = socketSettings.HostResolver;
             _encryptionManager = socketSettings.EncryptionManager;
