@@ -38,21 +38,27 @@ namespace Neo4j.Driver.Internal.Connector
         }
         public bool ValidateServerCertificate(Uri uri, X509Certificate certificate, SslPolicyErrors sslPolicyErrors)
         {
-            switch (sslPolicyErrors)
+            var trust = true;
+
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
             {
-                case SslPolicyErrors.RemoteCertificateNameMismatch:
-                    _logger?.Error("Server name mismatch.");
-                    return false;
-                case SslPolicyErrors.RemoteCertificateNotAvailable:
-                    _logger?.Error("Certificate not available.");
-                    return false;
-                case SslPolicyErrors.RemoteCertificateChainErrors:
-                    _logger?.Error("Certificate validation failed.");
-                    return false;
+                _logger?.Error("Certificate not available.");
+                trust = false;
             }
 
-            _logger?.Debug("Authentication succeeded.");
-            return true;
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors))
+            {
+                _logger?.Error("Certificate validation failed.");
+                trust = false;
+            }
+
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
+            {
+                _logger?.Error("Server name mismatch.");
+                trust = false;
+            }
+            
+            return trust;
         }
     }
 
@@ -67,13 +73,12 @@ namespace Neo4j.Driver.Internal.Connector
             
         public bool ValidateServerCertificate(Uri uri, X509Certificate certificate, SslPolicyErrors sslPolicyErrors)
         {
-            switch (sslPolicyErrors)
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
             {
-                case SslPolicyErrors.RemoteCertificateNotAvailable:
-                    _logger?.Error("Certificate not available.");
-                    return false;
+                _logger?.Error("Certificate not available.");
+                return false;
             }
-            _logger?.Debug("Authentication succeeded");
+
             return true;
         }
     }
