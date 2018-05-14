@@ -43,22 +43,25 @@ namespace Neo4j.Driver.Internal.Connector
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
             {
                 _logger?.Error("Certificate not available.");
+                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                 trust = false;
             }
 
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors))
             {
                 _logger?.Error("Certificate validation failed.");
+                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors;
                 trust = false;
             }
 
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
             {
                 _logger?.Error("Server name mismatch.");
+                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNameMismatch;
                 trust = false;
             }
-            
-            return trust;
+
+            return trust && sslPolicyErrors == SslPolicyErrors.None;
         }
     }
 
