@@ -56,7 +56,13 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
                 var client = new TcpSocketClientWithDisposeDetection(
-                    new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(1)});
+                    new SocketSettings
+                    {
+                        ConnectionTimeout = TimeSpan.FromSeconds(1),
+                        HostResolver = new SystemHostResolver(),
+                        EncryptionManager =
+                            new EncryptionManager(EncryptionLevel.None, TrustStrategy.TrustAllCertificates, null)
+                    });
 
                 // ReSharper disable once PossibleNullReferenceException
                 // use non-routable IP address to mimic a connect timeout
@@ -72,7 +78,13 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldBeAbleToConnectAgainIfFirstFailed()
             {
-                var socketSettings = new SocketSettings{ConnectionTimeout = TimeSpan.FromSeconds(10)};
+                var socketSettings = new SocketSettings
+                {
+                    ConnectionTimeout = TimeSpan.FromSeconds(10),
+                    HostResolver = new SystemHostResolver(),
+                    EncryptionManager =
+                        new EncryptionManager(EncryptionLevel.None, TrustStrategy.TrustAllCertificates, null)
+                };
                 var client = new TcpSocketClient(socketSettings);
 
                 // We fail to connect the first time as there is no server to connect to
@@ -101,7 +113,12 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
-                var client = new TcpSocketClient(new SocketSettings {ConnectionTimeout = TimeSpan.FromSeconds(1)});
+                var client = new TcpSocketClient(new SocketSettings
+                {
+                    ConnectionTimeout = TimeSpan.FromSeconds(1),
+                    HostResolver = new SystemHostResolver(),
+                    EncryptionManager = new EncryptionManager(EncryptionLevel.None, TrustStrategy.TrustAllCertificates, null)
+                });
 
                 // ReSharper disable once PossibleNullReferenceException
                 // use non-routable IP address to mimic a connect timeout
