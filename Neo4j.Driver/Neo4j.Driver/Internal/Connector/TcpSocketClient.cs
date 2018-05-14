@@ -330,6 +330,12 @@ namespace Neo4j.Driver.Internal.Connector
             return new SslStream(_stream, true,
                 (sender, certificate, chain, errors) =>
                 {
+                    if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
+                    {
+                        _logger?.Error($"{GetType().Name}: Certificate not available.");
+                        return false;
+                    }
+
                     var trust = _encryptionManager.TrustManager.ValidateServerCertificate(uri,
                         new X509Certificate2(certificate.Export(X509ContentType.Cert)), chain, errors);
 
