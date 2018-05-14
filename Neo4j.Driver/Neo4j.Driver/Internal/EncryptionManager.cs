@@ -29,23 +29,30 @@ namespace Neo4j.Driver.Internal
 
         public EncryptionManager(){} // for test
 
-        public EncryptionManager(EncryptionLevel level, TrustStrategy strategy, ILogger logger)
+        public EncryptionManager(EncryptionLevel level, TrustStrategy strategy, TrustManager trustManager, ILogger logger)
         {
             _encryptionLevel = level;
 
             if (_encryptionLevel == EncryptionLevel.Encrypted)
             {
-                switch (strategy)
+                if (trustManager == null)
                 {
-                    case V1.TrustStrategy.TrustAllCertificates:
-                        TrustStrategy = new TrustAllCertificates(logger);
-                        break;
-                    case V1.TrustStrategy.TrustSystemCaSignedCertificates:
-                        TrustStrategy = new TrustSystemCaSignedCertificates(logger);
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Unknown trust strategy: {strategy}");
+                    switch (strategy)
+                    {
+                        case V1.TrustStrategy.TrustAllCertificates:
+                            trustManager = TrustManager.CreateInsecure(false);
+                            break;
+                        case V1.TrustStrategy.TrustSystemCaSignedCertificates:
+                            trustManager = TrustManager.CreateChainTrust(true);
+                            break;
+                        default:
+                            throw new InvalidOperationException($"Unknown trust strategy: {strategy}");
+                    }
                 }
+
+                trustManager.Logger = logger;
+
+                TrustManager = trustManager;
             }
         }
 
@@ -65,6 +72,6 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public ITrustStrategy TrustStrategy { get; }
+        public TrustManager TrustManager { get; }
     }
 }

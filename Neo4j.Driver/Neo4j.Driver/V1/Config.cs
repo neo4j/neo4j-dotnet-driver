@@ -136,7 +136,14 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets or sets how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
         /// </summary>
+        [Obsolete("Please use TrustManager instead.")]
         public TrustStrategy TrustStrategy { get; set; } = TrustStrategy.TrustAllCertificates;
+
+        /// <summary>
+        /// Gets or sets which <see cref="TrustManager"/> implementation should be used while establishing trust via TLS.
+        /// This setting has precedence over <see cref="TrustStrategy"/>.
+        /// </summary>
+        public TrustManager TrustManager { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
@@ -279,6 +286,12 @@ namespace Neo4j.Driver.V1
                 return this;
             }
 
+            public IConfigBuilder WithTrustManager(TrustManager manager)
+            {
+                _config.TrustManager = manager;
+                return this;
+            }
+
             public IConfigBuilder WithLogger(ILogger logger)
             {
                 _config.Logger = logger;
@@ -409,7 +422,17 @@ namespace Neo4j.Driver.V1
         /// <param name="strategy">See <see cref="TrustStrategy"/> for available strategies.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        [Obsolete("Please use WithTrustManager instead.")]
         IConfigBuilder WithTrustStrategy(TrustStrategy strategy);
+
+        /// <summary>
+        /// Sets the <see cref="TrustManager"/> to use while establishing trust via TLS.
+        /// The <paramref name="manager"/> will not take effect if <see cref="Config.EncryptionLevel"/> decides to use no TLS
+        /// encryption on the connections. This setting has precedence over <see cref="WithTrustStrategy"/>.
+        /// </summary>
+        /// <param name="manager">A <see cref="TrustManager"/> instance.</param>
+        /// <returns></returns>
+        IConfigBuilder WithTrustManager(TrustManager manager);
 
         /// <summary>
         /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
@@ -547,5 +570,6 @@ namespace Neo4j.Driver.V1
         /// <remarks>If writing large values and experiencing too much garbage collection 
         /// consider increasing this size to a reasonable amount depending on your data.</remarks>
         IConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize);
+
     }
 }

@@ -20,6 +20,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
@@ -66,8 +67,8 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 try
                 {
-                    var secureStream = NewSecureStream(uri);
-
+                    var secureStream = CreateSecureStream(uri);
+                    
 #if NET452
                     secureStream.AuthenticateAsClient(uri.Host, null, Tls12, false);
 #else
@@ -93,7 +94,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 try
                 {
-                    _stream = NewSecureStream(uri);
+                    _stream = CreateSecureStream(uri);
 
                     await ((SslStream)_stream)
                         .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
@@ -311,8 +312,10 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (_ipv6Enabled)
             {
-                _client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-                _client.DualMode = true;
+                _client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
+                {
+                    DualMode = true
+                };
             }
             else
             {
@@ -322,12 +325,13 @@ namespace Neo4j.Driver.Internal.Connector
             _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
         }
 
-        private SslStream NewSecureStream(Uri uri)
+        private SslStream CreateSecureStream(Uri uri)
         {
             return new SslStream(_stream, true,
                 (sender, certificate, chain, errors) =>
                 {
-                    var trust = _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors);
+                    var trust = _encryptionManager.TrustManager.ValidateServerCertificate(uri,
+                        new X509Certificate2(certificate.Export(X509ContentType.Cert)), chain, errors);
 
                     if (trust)
                     {
@@ -341,5 +345,6 @@ namespace Neo4j.Driver.Internal.Connector
                     return trust;
                 });
         }
+
     }
 }
