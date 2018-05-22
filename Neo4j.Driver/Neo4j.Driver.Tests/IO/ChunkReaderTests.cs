@@ -201,6 +201,24 @@ namespace Neo4j.Driver.Tests.IO
                 count.Should().Be(1);
                 logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.AtLeast(size / Constants.ChunkBufferSize));
             }
+
+            [Fact]
+            public void ShouldResetBufferStreamPosition()
+            {
+                var data = IOExtensions.GenerateBoltMessages(1000, 128 * 1024);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var bufferStream = new MemoryStream();
+                bufferStream.Write(IOExtensions.GenerateBoltMessage(1035));
+
+                var bufferPosition = bufferStream.Position;
+
+                var count = reader.ReadNextMessages(bufferStream);
+
+                bufferStream.Position.Should().Be(bufferPosition);
+            }
             
         }
 
@@ -326,6 +344,24 @@ namespace Neo4j.Driver.Tests.IO
 
                 count.Should().Be(1);
                 logger.Verify(l => l.Trace(It.IsRegex("^\\d+ bytes left in chunk buffer.*compacting\\.$"), It.IsAny<object[]>()), Times.AtLeast(size / Constants.ChunkBufferSize));
+            }
+
+            [Fact]
+            public async void ShouldResetBufferStreamPosition()
+            {
+                var data = IOExtensions.GenerateBoltMessages(1000, 128 * 1024);
+
+                var logger = new Mock<ILogger>();
+                var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+                var bufferStream = new MemoryStream();
+                bufferStream.Write(IOExtensions.GenerateBoltMessage(1035));
+
+                var bufferPosition = bufferStream.Position;
+
+                var count = await reader.ReadNextMessagesAsync(bufferStream);
+
+                bufferStream.Position.Should().Be(bufferPosition);
             }
 
         }

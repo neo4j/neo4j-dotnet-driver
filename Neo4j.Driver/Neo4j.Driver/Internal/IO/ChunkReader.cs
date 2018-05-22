@@ -16,8 +16,10 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.V1;
 
@@ -150,10 +152,6 @@ namespace Neo4j.Driver.Internal.IO
 
             // Track and manage target stream's positions.
             var previousPosition = messageStream.Position;
-            taskCompletionSource.Task.ContinueWith(t =>
-            {
-                messageStream.Position = previousPosition;
-            }, TaskContinuationOptions.ExecuteSynchronously);
             messageStream.Position = messageStream.Length;
 
             ReadNextChunkLoopAsync(
@@ -161,7 +159,12 @@ namespace Neo4j.Driver.Internal.IO
                 taskCompletionSource,
                 TaskExtensions.GetCompletedTask());
 
-            return taskCompletionSource.Task;
+            return taskCompletionSource.Task.ContinueWith(t =>
+            {
+                messageStream.Position = previousPosition;
+
+                return t;
+            }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
         }
 
         private Task ReadNextChunkLoopAsync(Stream messageStream, TaskCompletionSource<int> taskCompletionSource,
