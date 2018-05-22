@@ -1,14 +1,14 @@
 ﻿// Copyright (c) 2002-2018 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
-// 
+//
 // This file is part of Neo4j.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -290,6 +290,24 @@ namespace Neo4j.Driver.Tests.IO
             count.Should().Be(1);
             logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.AtLeast(size / Constants.ChunkBufferSize));
         }
+        
+        [Fact]
+        public void ShouldResetBufferStreamPosition()
+        {
+            var data = GenerateMessages(1000, 128 * 1024);
+
+            var logger = new Mock<ILogger>();
+            var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+            var bufferStream = new MemoryStream();
+            bufferStream.Write(GenerateMessageChunk(1035));
+
+            var bufferPosition = bufferStream.Position;
+
+            var count = reader.ReadNextMessages(bufferStream);
+
+            bufferStream.Position.Should().Be(bufferPosition);
+        }
 
         [Fact]
         public async void ShouldThrowCancellationWhenReadAsyncIsCancelled()
@@ -335,6 +353,24 @@ namespace Neo4j.Driver.Tests.IO
 
             ex.Should().NotBeNull();
             ex.Should().BeAssignableTo<IOException>().Which.Message.Should().StartWith("Unexpected end of stream, read returned");
+        }
+
+        [Fact]
+        public async void ShouldResetBufferStreamPositionAsync()
+        {
+            var data = GenerateMessages(1000, 128 * 1024);
+
+            var logger = new Mock<ILogger>();
+            var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+
+            var bufferStream = new MemoryStream();
+            bufferStream.Write(GenerateMessageChunk(1035));
+
+            var bufferPosition = bufferStream.Position;
+
+            var count = await reader.ReadNextMessagesAsync(bufferStream);
+
+            bufferStream.Position.Should().Be(bufferPosition);
         }
 
 

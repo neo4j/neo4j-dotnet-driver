@@ -66,9 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 try
                 {
-                    var secureStream = new SslStream(_stream, true,
-                        (sender, certificate, chain, errors) =>
-                            _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
+                    var secureStream = NewSecureStream(uri);
 
 #if NET452
                     secureStream.AuthenticateAsClient(uri.Host, null, Tls12, false);
@@ -85,7 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
                 }
             }
         }
-        
+
         public async Task ConnectAsync(Uri uri)
         {
             await ConnectSocketAsync(uri).ConfigureAwait(false);
@@ -95,9 +93,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 try
                 {
-                    _stream = new SslStream(_stream, true,
-                        (sender, certificate, chain, errors) =>
-                            _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors));
+                    _stream = NewSecureStream(uri);
 
                     await ((SslStream)_stream)
                         .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
@@ -325,6 +321,25 @@ namespace Neo4j.Driver.Internal.Connector
             _client.NoDelay = true;
             _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
         }
-        
+
+        private SslStream NewSecureStream(Uri uri)
+        {
+            return new SslStream(_stream, true,
+                (sender, certificate, chain, errors) =>
+                {
+                    var trust = _encryptionManager.TrustStrategy.ValidateServerCertificate(uri, certificate, errors);
+
+                    if (trust)
+                    {
+                        _logger?.Debug("Trust is established, resuming connection.");
+                    }
+                    else
+                    {
+                        _logger?.Error("Trust not established, aborting communication.");
+                    }
+
+                    return trust;
+                });
+        }
     }
 }
