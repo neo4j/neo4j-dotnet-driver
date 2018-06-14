@@ -38,7 +38,6 @@
     <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />

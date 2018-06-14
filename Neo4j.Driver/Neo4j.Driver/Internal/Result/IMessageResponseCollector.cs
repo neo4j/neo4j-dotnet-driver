@@ -53,20 +53,6 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
-    internal class ResetCollector : NoOperationCollector
-    {
-        private readonly Action _successCallbackAction;
-        public ResetCollector(Action successCallBackAction = null)
-        {
-            _successCallbackAction = successCallBackAction ?? (() => { });
-        }
-
-        public override void DoneSuccess()
-        {
-            _successCallbackAction.Invoke();
-        }
-    }
-
     internal class InitCollector : NoOperationCollector
     {
         public string Server { private set; get; }
