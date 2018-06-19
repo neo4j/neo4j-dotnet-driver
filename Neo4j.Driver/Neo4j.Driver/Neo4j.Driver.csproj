@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
-    <TargetFrameworks>net452;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3;net452</TargetFrameworks>
     <AssemblyName>Neo4j.Driver</AssemblyName>
     <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
