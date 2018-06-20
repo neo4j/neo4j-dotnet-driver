@@ -1,4 +1,4 @@
-﻿!: AUTO INIT
+!: AUTO INIT
 !: AUTO PULL_ALL
 
 S: SUCCESS {"server": "Neo4j/3.5.0"}
