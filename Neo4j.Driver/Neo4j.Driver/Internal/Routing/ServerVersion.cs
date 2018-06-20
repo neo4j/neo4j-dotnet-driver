@@ -26,6 +26,9 @@ namespace Neo4j.Driver.Internal.Routing
         public int Minor { get; }
         public int Patch { get; }
 
+        private const string InDevVersionString = "Neo4j/dev";
+        public static readonly ServerVersion VInDev = new ServerVersion(Int32.MaxValue, Int32.MaxValue, Int32.MaxValue);
+        public static readonly ServerVersion VUnknown = new ServerVersion(0, 0, 0);
         public static readonly ServerVersion V3_1_0 = new ServerVersion(3, 1, 0);
         public static readonly ServerVersion V3_2_0 = new ServerVersion(3, 2, 0);
         public static readonly ServerVersion V3_3_0 = new ServerVersion(3, 3, 0);
@@ -44,7 +47,11 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (version == null)
             {
-                return null;
+                return VUnknown;
+            }
+            else if (version.Equals(InDevVersionString))
+            {
+                return VInDev;
             }
             var match = VersionRegex.Match(version);
             if (match.Success)
@@ -59,7 +66,7 @@ namespace Neo4j.Driver.Internal.Routing
                 }
                 return new ServerVersion(major, minor, patch);
             }
-            return null;
+            return VUnknown;
         }
 
         private static int Compare(ServerVersion v1, ServerVersion v2)

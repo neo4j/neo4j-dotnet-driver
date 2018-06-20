@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
@@ -45,6 +46,28 @@ namespace Neo4j.Driver.Tests.Routing
             serverVersion.Major.Should().Be(3);
             serverVersion.Minor.Should().Be(2);
             serverVersion.Patch.Should().Be(1);
+        }
+
+        [Fact]
+        public void ShouldHandleDevVersion()
+        {
+            var version = "Neo4j/dev";
+            var serverVersion = ServerVersion.Version(version);
+            serverVersion.Major.Should().Be(Int32.MaxValue);
+            serverVersion.Minor.Should().Be(Int32.MaxValue);
+            serverVersion.Patch.Should().Be(Int32.MaxValue);
+        }
+
+        [Theory]
+        [InlineData("Neo4j/illegal")]
+        [InlineData("")]
+        [InlineData(null)]
+        public void ShouldDefaultToUnknownVersion(string version)
+        {
+            var serverVersion = ServerVersion.Version(version);
+            serverVersion.Major.Should().Be(0);
+            serverVersion.Minor.Should().Be(0);
+            serverVersion.Patch.Should().Be(0);
         }
     }
 }
