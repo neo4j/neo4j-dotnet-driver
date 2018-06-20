@@ -192,7 +192,7 @@ namespace Neo4j.Driver.IntegrationTests
             m.Creating.Should().Be(0);
             m.Closing.Should().Be(0);
             m.InUse.Should().Be(0);
-            m.Idle.Should().Be((int) (m.Created - m.Closed));
+            m.Idle.Should().Be((int) (m.Created - m.Closed + m.FailedToCreate));
 
             driver.Close();
         }
@@ -235,7 +235,7 @@ namespace Neo4j.Driver.IntegrationTests
             m.Creating.Should().Be(0);
             m.Closing.Should().Be(0);
             m.InUse.Should().Be(0);
-            m.Idle.Should().Be((int) (m.Created - m.Closed));
+            m.Idle.Should().Be((int) (m.Created - m.Closed + m.FailedToCreate));
 
             await driver.CloseAsync();
         }

@@ -24,6 +24,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Neo4j.Driver.V1;
 using AuthenticationException = System.Security.Authentication.AuthenticationException;
 
@@ -33,6 +34,7 @@ namespace Neo4j.Driver.Tests.Connector.Trust
     {
         private IPEndPoint _listeningEndPoint = null;
         private readonly CountdownEvent _listeningEvent = new CountdownEvent(1);
+        private readonly CountdownEvent _closingEvent = new CountdownEvent(1);
         private readonly Uri _uri;
         private readonly X509Certificate2 _certificate;
         private readonly TrustManager _trustManager;
@@ -46,55 +48,81 @@ namespace Neo4j.Driver.Tests.Connector.Trust
 
         public bool Perform()
         {
+            var result = false;
             var serverTask = Task.Run(() => StartServer());
 
-            _listeningEvent.Wait();
-
-            var result = false;
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            try
             {
-                client.Connect(_listeningEndPoint);
+                _listeningEvent.Wait();
 
-                var clientStream = new NetworkStream(client);
-                var sslStream = new SslStream(clientStream, false, (sender, x509Certificate, chain, errors) =>
+                using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    client.Connect(_listeningEndPoint);
+
+                    var clientStream = new NetworkStream(client);
+                    var sslStream = new SslStream(clientStream, false, (sender, x509Certificate, chain, errors) =>
                     {
-                        result = _trustManager.ValidateServerCertificate(_uri, (X509Certificate2)x509Certificate, chain, errors);
+                        result = _trustManager.ValidateServerCertificate(_uri, (X509Certificate2) x509Certificate,
+                            chain, errors);
                         return result;
                     });
 
-                try
-                {
-                    sslStream.AuthenticateAsClientAsync(_uri.Host, null, SslProtocols.Tls12, false).GetAwaiter()
-                        .GetResult();
-                }
-                catch
-                {
-                    result = false;
+                    try
+                    {
+                        sslStream.AuthenticateAsClientAsync(_uri.Host, null, SslProtocols.Tls12, false).GetAwaiter()
+                            .GetResult();
+
+                        var data = sslStream.ReadByte();
+                        data.Should().Be(0xFF);
+                    }
+                    catch (AuthenticationException)
+                    {
+                        result = false;
+                    }
+                    finally
+                    {
+                        _closingEvent.Signal();
+                    }
                 }
             }
-
-            serverTask.Wait();
+            finally
+            {
+                serverTask.Wait();
+            }
 
             return result;
         }
 
         private void StartServer()
         {
-            using (var serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            try
             {
-                serverSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                serverSocket.Listen(5);
+                using (var serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    serverSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    serverSocket.Listen(5);
 
-                _listeningEndPoint = (IPEndPoint)serverSocket.LocalEndPoint;
-                _listeningEvent.Signal();
+                    _listeningEndPoint = (IPEndPoint) serverSocket.LocalEndPoint;
+                    _listeningEvent.Signal();
 
-                var accepted = serverSocket.Accept();
-                var acceptedStream = new NetworkStream(accepted);
-                var sslStream = new SslStream(acceptedStream, false);
+                    var accepted = serverSocket.Accept();
+                    using (var acceptedStream = new NetworkStream(accepted))
+                    {
+                        using (var sslStream = new SslStream(acceptedStream, false))
+                        {
+                            sslStream.AuthenticateAsServerAsync(_certificate, false, SslProtocols.Tls12, false)
+                                .GetAwaiter()
+                                .GetResult();
+                            sslStream.Write(new byte[] {0xFF});
 
-                sslStream.AuthenticateAsServerAsync(_certificate, false, SslProtocols.Tls12, false).GetAwaiter()
-                    .GetResult();
-                sslStream.Dispose();
+                            _closingEvent.Wait();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // we don't care about the errors occuring here, it should also affect client side
             }
         }
 

@@ -48,7 +48,7 @@ namespace Neo4j.Driver.V1
         /// Creates an insecure trust manager that trusts any certificate it is presented, but does hostname verification.
         /// </summary>
         /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateInsecure() => CreateInsecure(false);
+        public static TrustManager CreateInsecure() => CreateInsecure(true);
 
         /// <summary>
         /// Creates an insecure trust manager that trusts any certificate it is presented with configurable hostname verification.
