@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -42,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 session.LastBookmark.Should().BeNull();
 
-                CreateNodeInTx(session);
+                CreateNodeInTx(session, 1);
 
                 session.LastBookmark.Should().NotBeNull();
                 session.LastBookmark.Should().StartWith("neo4j:bookmark:v1:tx");
@@ -54,7 +55,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var session = Driver.Session())
             {
-                CreateNodeInTx(session);
+                CreateNodeInTx(session, 1);
                 var bookmark = session.LastBookmark;
                 bookmark.Should().NotBeNullOrEmpty();
 
@@ -72,7 +73,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var session = Driver.Session())
             {
-                CreateNodeInTx(session);
+                CreateNodeInTx(session, 1);
                 var bookmark = session.LastBookmark;
                 bookmark.Should().NotBeNullOrEmpty();
 
@@ -105,7 +106,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var session = (Session)Driver.Session())
             {
-                CreateNodeInTx(session);
+                CreateNodeInTx(session, 1);
 
                 // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
                 var exception = Record.Exception(() => session.BeginTransaction(session.LastBookmark + "0"));
@@ -122,36 +123,25 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 // get a bookmark
                 session.LastBookmark.Should().BeNull();
-                CreateNodeInTx(session);
+                CreateNodeInTx(session, 1);
 
                 session.LastBookmark.Should().NotBeNull();
                 session.LastBookmark.Should().StartWith(BookmarkHeader);
                 var lastBookmarkNum = BookmarkNum(session.LastBookmark);
 
-                var queue = new ConcurrentQueue<long>();
-                // start a thread to create lastBookmark + 1 tx
+                // start a thread to create lastBookmark + 1 tx 
                 Task.Factory.StartNew(() =>
                 {
-                    Thread.Sleep(100);
+                    Thread.Sleep(500);
                     using (var anotherSession = Driver.Session())
                     {
-                        CreateNodeInTx(anotherSession);
-                        queue.Enqueue(BookmarkNum(anotherSession.LastBookmark));
+                        CreateNodeInTx(anotherSession, 2);
                     }
                 });
 
-                // wait for lastBookmark + 1 and create lastBookmark + 2
+                // wait for lastBookmark + 1
                 var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
-                CreateNodeInTx(session, waitForBookmark);
-
-                queue.Enqueue(BookmarkNum(session.LastBookmark));
-
-                queue.Count.Should().Be(2);
-                long value;
-                queue.TryDequeue(out value).Should().BeTrue();
-                value.Should().Be(lastBookmarkNum + 1);
-                queue.TryDequeue(out value).Should().BeTrue();
-                value.Should().Be(lastBookmarkNum + 2);
+                CountNodeInTx(session, 2, waitForBookmark).Should().Be(1);
             }
         }
 
@@ -162,12 +152,22 @@ namespace Neo4j.Driver.IntegrationTests
             return Convert.ToInt64(bookmark.Substring(BookmarkHeader.Length));
         }
 
-        private static void CreateNodeInTx(ISession session, string bookmark = null)
+        private static void CreateNodeInTx(ISession session, int id, string bookmark = null)
         {
             using (var tx = ((Session)session).BeginTransaction(bookmark))
             {
-                tx.Run("CREATE (a:Person)");
+                tx.Run("CREATE (a:Person {id: $id})", new {id});
                 tx.Success();
+            }
+        }
+
+        private static int CountNodeInTx(ISession session, int id, string bookmark = null)
+        {
+            using (var tx = ((Session)session).BeginTransaction(bookmark))
+            {
+                var result = tx.Run("MATCH (a:Person {id: $id}) RETURN a", new { id });
+                tx.Success();
+                return result.Count();
             }
         }
     }

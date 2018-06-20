@@ -128,7 +128,7 @@ namespace Neo4j.Driver.IntegrationTests
                 MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
                 ConnectionTimeout = Config.InfiniteInterval,
-                MaxConnectionPoolSize = 50,
+                MaxConnectionPoolSize = 100,
                 Logger = new TestLogger(Output)
             };
 
@@ -189,6 +189,12 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            _driver?.Close();
+        }
 
         private class MonitoredPooledConnectionFactory : IPooledConnectionFactory
         {

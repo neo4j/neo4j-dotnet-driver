@@ -165,7 +165,8 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
-                EncryptionLevel = EncryptionLevel.Encrypted
+                EncryptionLevel = EncryptionLevel.Encrypted,
+                MaxConnectionPoolSize = 100
             });
 
 
@@ -175,12 +176,7 @@ namespace Neo4j.Driver.IntegrationTests
             var metrics = ((Internal.Driver) driver).GetMetrics();
             var workItem = new SoakRunWorkItem(driver, metrics, Output);
 
-            var tasks = new List<Task>();
-            for (var i = 0; i < threadCount; i++)
-            {
-                tasks.Add(workItem.Run());
-            }
-            Task.WaitAll(tasks.ToArray());
+            Parallel.For(0, threadCount, workItem.Run);
 
             var m = metrics.ConnectionPoolMetrics.Single().Value;
             var cm = metrics.ConnectionMetrics.Single().Value;
@@ -210,7 +206,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
-                MaxConnectionPoolSize = 500,
+                MaxConnectionPoolSize = 100,
                 EncryptionLevel = EncryptionLevel.Encrypted,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
             });

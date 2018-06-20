@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
         public int NumberOfIdleConnections => _idleConnections.Count;
-        internal int PoolSize => _poolSize;
+        internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
 
         public ConnectionPoolStatus Status
         {
@@ -222,12 +222,12 @@ namespace Neo4j.Driver.Internal
         /// <returns>true if pool size is successfully increased, otherwise false.</returns>
         private bool TryIncrementPoolSize()
         {
-            var currentPoolSize = Interlocked.Increment(ref _poolSize);
-            if (_maxPoolSize != Config.Infinite && currentPoolSize > _maxPoolSize)
+            if (_maxPoolSize != Config.Infinite && PoolSize >= _maxPoolSize)
             {
-                DecrementPoolSize();
                 return false;
             }
+
+            Interlocked.Increment(ref _poolSize);
 
             return true;
         }

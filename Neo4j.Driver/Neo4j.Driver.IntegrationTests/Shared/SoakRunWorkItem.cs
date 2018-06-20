@@ -50,38 +50,32 @@ namespace Neo4j.Driver.IntegrationTests
             this._output = output;
         }
 
-        public Task Run(int times = 1)
+        public void Run(int threadIndex)
         {
-            return Task.Run(() =>
+            var currentIteration = Interlocked.Increment(ref _counter);
+            var query = queries[currentIteration % queries.Length];
+            var accessMode = accessModes[currentIteration % accessModes.Length];
+
+            using (var session = _driver.Session(accessMode))
             {
-                for (var i = 0; i < times; i++)
+                try
                 {
-                    var currentIteration = Interlocked.Increment(ref _counter);
-                    var query = queries[currentIteration % queries.Length];
-                    var accessMode = accessModes[currentIteration % accessModes.Length];
-
-                    using (var session = _driver.Session(accessMode))
+                    var result = session.Run(query);
+                    if (currentIteration % 1000 == 0)
                     {
-                        try
-                        {
-                            var result = session.Run(query);
-                            if (currentIteration % 1000 == 0)
-                            {
-                                _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
-                            }
-
-                            result.Consume();
-                        }
-                        catch (Exception e)
-                        {
-                            _output.WriteLine(
-                                $"[{DateTime.Now:HH:mm:ss.ffffff}] " +
-                                $"Iteration {currentIteration} failed to run query {query} due to {e.Message}");
-                            _output.WriteLine(e.StackTrace);
-                        }
+                        _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
                     }
+
+                    result.Consume();
                 }
-            });
+                catch (Exception e)
+                {
+                    _output.WriteLine(
+                        $"[{DateTime.Now:HH:mm:ss.ffffff}] " +
+                        $"Iteration {currentIteration} failed to run query {query} due to {e.Message}");
+                    _output.WriteLine(e.StackTrace);
+                }
+            }
         }
 
         public async Task RunAsync()
