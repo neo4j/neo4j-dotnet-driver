@@ -134,40 +134,39 @@ namespace Neo4j.Driver.IntegrationTests
                 MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
                 EncryptionLevel = EncryptionLevel.Encrypted,
-                MaxIdleConnectionPoolSize = 20,
-                MaxConnectionPoolSize = 50,
+                MaxConnectionPoolSize = 100,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
             });
-            var startTime = DateTime.Now;
-            Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
-
-            var metrics = ((Internal.Driver) driver).GetMetrics();
-            var workItem = new SoakRunWorkItem(driver, metrics, Output);
-
-            var tasks = new List<Task>();
-            for (var i = 0; i < threadCount; i++)
+            try
             {
-                tasks.Add(workItem.Run());
+                var startTime = DateTime.Now;
+                Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
+
+                var metrics = ((Internal.Driver) driver).GetMetrics();
+                var workItem = new SoakRunWorkItem(driver, metrics, Output);
+
+                Parallel.For(0, threadCount, workItem.Run);
+
+                var poolMetrics = metrics.ConnectionPoolMetrics;
+                Output.WriteLine(poolMetrics.ToContentString());
+                var endTime = DateTime.Now;
+                Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
+                Output.WriteLine($"Total time spent: {endTime - startTime}");
+
+                foreach (var value in poolMetrics)
+                {
+                    var st = value.Value;
+
+                    st.Creating.Should().Be(0);
+                    st.Closing.Should().Be(0);
+                    st.InUse.Should().Be(0);
+                    st.Idle.Should().Be((int) (st.Created - st.Closed + st.FailedToCreate));
+                }
             }
-            Task.WaitAll(tasks.ToArray());
-
-            var poolMetrics = metrics.ConnectionPoolMetrics;
-            Output.WriteLine(poolMetrics.ToContentString());
-            var endTime = DateTime.Now;
-            Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
-            Output.WriteLine($"Total time spent: {endTime - startTime}");
-
-            foreach (var value in poolMetrics)
+            finally
             {
-                var st = value.Value;
-
-                st.Creating.Should().Be(0);
-                st.Closing.Should().Be(0);
-                st.InUse.Should().Be(0);
-                st.Idle.Should().Be((int) (st.Created - st.Closed + st.FailedToCreate));
+                driver.Close();
             }
-
-            driver.Close();
         }
     }
 }

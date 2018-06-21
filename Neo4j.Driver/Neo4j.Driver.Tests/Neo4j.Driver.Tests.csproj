@@ -22,6 +22,7 @@
     <PackageReference Include="FluentAssertions" Version="4.19.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MSTestVersion)" />
     <PackageReference Include="Moq" Version="4.7.99" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
     <PackageReference Include="xunit" Version="$(XunitVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />

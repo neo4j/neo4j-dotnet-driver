@@ -46,7 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     return _boltkitArgs;
                 }
                 // User could always overwrite the env var
-                var envVar = GetEnvironmentVariable("NeoctrlArgs");
+                var envVar = GetEnvironmentVariable("NEOCTRLARGS");
                 if (envVar != null)
                 {
                     _boltkitArgs = envVar;

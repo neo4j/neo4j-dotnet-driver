@@ -84,7 +84,7 @@ namespace Neo4j.Driver.Tests
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(2);
-                timer.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(1000);
+                timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(1, 0.1);
             }
 
             [Fact]
@@ -448,7 +448,7 @@ namespace Neo4j.Driver.Tests
 
                 var exception = Record.Exception(() => pool.Acquire());
 
-                stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10);
+                stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10, 0.1);
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
                 exception.Should().BeOfType<ClientException>();
 
@@ -491,7 +491,7 @@ namespace Neo4j.Driver.Tests
                 var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
                 stopWatch.Stop();
-                stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10);
+                stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10, 0.1);
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
             }

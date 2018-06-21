@@ -40,7 +40,7 @@ namespace Neo4j.Driver.IntegrationTests
             AuthToken = Cluster.AuthToken;
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             // put some code that you want to run after each unit test
         }
