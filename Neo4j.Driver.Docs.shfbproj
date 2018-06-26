@@ -1,4 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <!-- The configuration and platform will be used to determine which assemblies to include from solution and
@@ -19,7 +20,8 @@
     <Language>en-US</Language>
     <DocumentationSources>
       <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\net452\Neo4j.Driver.dll" />
-<DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\net452\Neo4j.Driver.xml" /></DocumentationSources>
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\net452\Neo4j.Driver.xml" />
+    </DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <HelpFileFormat>Website</HelpFileFormat>
     <IndentHtml>False</IndentHtml>
@@ -30,7 +32,8 @@
     <ApiFilter>
     </ApiFilter>
     <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected, ProtectedInternalAsProtected</VisibleItems>
-    <HelpFileVersion>1.5.0.0</HelpFileVersion>
+    <DriverVersion Condition="'$(DriverVersion)' == ''">1.7</DriverVersion>
+    <HelpFileVersion>$(DriverVersion).0.0</HelpFileVersion>
     <MaximumGroupParts>2</MaximumGroupParts>
     <NamespaceGrouping>False</NamespaceGrouping>
     <SyntaxFilters>Standard</SyntaxFilters>
@@ -39,7 +42,7 @@
     <PresentationStyle>VS2013</PresentationStyle>
     <Preliminary>False</Preliminary>
     <NamingMethod>Guid</NamingMethod>
-    <HelpTitle>Neo4j Bolt Driver 1.7 for .NET</HelpTitle>
+    <HelpTitle>Neo4j Bolt Driver $(DriverVersion) for .NET</HelpTitle>
     <CopyrightText>Copyright %28c%29 2002-2018 Neo4j</CopyrightText>
     <CopyrightHref>http://neo4j.com</CopyrightHref>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
@@ -56,12 +59,25 @@
           </ignoreIfUnresolved>
         </configuration>
       </PlugInConfig>
-<PlugInConfig id="Additional Content Only" enabled="False"><configuration /></PlugInConfig>
-<PlugInConfig id="Additional Reference Links" enabled="False"><configuration /></PlugInConfig>
-<PlugInConfig id="AjaxDoc Builder" enabled="False"><configuration /></PlugInConfig>
-<PlugInConfig id="Bibliography Support" enabled="False"><configuration /></PlugInConfig>
-<PlugInConfig id="Output Deployment" enabled="False"><configuration /></PlugInConfig>
-<PlugInConfig id="Table of Contents Exclusion" enabled="True"><configuration /></PlugInConfig></PlugInConfigurations>
+      <PlugInConfig id="Additional Content Only" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Additional Reference Links" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="AjaxDoc Builder" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Bibliography Support" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Output Deployment" enabled="False">
+        <configuration />
+      </PlugInConfig>
+      <PlugInConfig id="Table of Contents Exclusion" enabled="True">
+        <configuration />
+      </PlugInConfig>
+    </PlugInConfigurations>
   </PropertyGroup>
   <!-- There are no properties for these groups.  AnyCPU needs to appear in order for Visual Studio to perform
 			 the build.  The others are optional common platform types that may appear. -->
