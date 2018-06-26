@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
-    <TargetFrameworks>net452;netcoreapp1.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp1.1;net452</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
