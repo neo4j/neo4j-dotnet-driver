@@ -19,12 +19,6 @@
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <Version>0.0.0</Version>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DelaySign>false</DelaySign>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DelaySign>false</DelaySign>
-  </PropertyGroup>
   <ItemGroup>
     <Content Include="App.config" />
     <PackageReference Include="Castle.Core" Version="4.1.1" />
