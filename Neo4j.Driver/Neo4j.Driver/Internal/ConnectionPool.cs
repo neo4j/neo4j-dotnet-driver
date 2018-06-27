@@ -118,7 +118,6 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection CreateNewPooledConnection()
         {
-            _poolMetricsListener?.ConnectionCreating();
             IPooledConnection conn = null;
             try
             {
@@ -144,7 +143,6 @@ namespace Neo4j.Driver.Internal
 
         private async Task<IPooledConnection> CreateNewPooledConnectionAsync()
         {
-            _poolMetricsListener?.ConnectionCreating();
             IPooledConnection conn = null;
             try
             {
@@ -172,6 +170,8 @@ namespace Neo4j.Driver.Internal
         {
             if (TryIncrementPoolSize())
             {
+                _poolMetricsListener?.ConnectionCreating();
+
                 return _connectionFactory.Create(_uri, this, _connectionMetricsListener);
             }
             return null;
