@@ -83,5 +83,26 @@ namespace Neo4j.Driver.IntegrationTests
                 }
             }
         }
+
+        [RequireBoltStubServerFact]
+        public void ShouldCloseConnectionWhenFailingToReset()
+        {
+            var uri = new Uri("bolt://127.0.0.1:9001");
+            using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+            {
+                using (BoltStubServer.Start("fail_to_reset", 9001))
+                using (var session = driver.Session())
+                {
+                    session.Run("MATCH (n) RETURN n.name AS name").Consume();
+                }
+
+                // Then we immediately run another one, we shall not reuse the previous connection
+                using (BoltStubServer.Start("session_run", 9001))
+                using (var session = driver.Session())
+                {
+                    session.Run("MATCH (n) RETURN n.name AS name").Consume();
+                }
+            }
+        }
     }
 }

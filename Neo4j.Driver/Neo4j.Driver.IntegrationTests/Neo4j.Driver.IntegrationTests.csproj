@@ -34,11 +34,10 @@
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Include="Resources\get_routing_table.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
@@ -53,6 +52,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\fail_to_reset.script">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\session_run.script">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
