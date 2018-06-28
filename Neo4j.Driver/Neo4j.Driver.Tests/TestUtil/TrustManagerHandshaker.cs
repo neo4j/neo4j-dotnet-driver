@@ -46,9 +46,8 @@ namespace Neo4j.Driver.Tests.Connector.Trust
             _trustManager = trustManager;
         }
 
-        public bool Perform()
+        public void Perform()
         {
-            var result = false;
             var serverTask = Task.Run(() => StartServer());
 
             try
@@ -60,12 +59,8 @@ namespace Neo4j.Driver.Tests.Connector.Trust
                     client.Connect(_listeningEndPoint);
 
                     var clientStream = new NetworkStream(client);
-                    var sslStream = new SslStream(clientStream, false, (sender, x509Certificate, chain, errors) =>
-                    {
-                        result = _trustManager.ValidateServerCertificate(_uri, (X509Certificate2) x509Certificate,
-                            chain, errors);
-                        return result;
-                    });
+                    var sslStream = new SslStream(clientStream, false, (sender, x509Certificate, chain, errors) => _trustManager.ValidateServerCertificate(_uri, (X509Certificate2) x509Certificate,
+                        chain, errors));
 
                     try
                     {
@@ -74,10 +69,6 @@ namespace Neo4j.Driver.Tests.Connector.Trust
 
                         var data = sslStream.ReadByte();
                         data.Should().Be(0xFF);
-                    }
-                    catch (AuthenticationException)
-                    {
-                        result = false;
                     }
                     finally
                     {
@@ -89,8 +80,6 @@ namespace Neo4j.Driver.Tests.Connector.Trust
             {
                 serverTask.Wait();
             }
-
-            return result;
         }
 
         private void StartServer()
@@ -114,6 +103,7 @@ namespace Neo4j.Driver.Tests.Connector.Trust
                                 .GetAwaiter()
                                 .GetResult();
                             sslStream.Write(new byte[] {0xFF});
+                            sslStream.Flush();
 
                             _closingEvent.Wait();
                         }

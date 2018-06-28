@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Security.Authentication;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Tests.TestUtil;
@@ -34,9 +35,7 @@ namespace Neo4j.Driver.Tests.Connector.Trust
             var cert = X509TestUtils.ToDotnetCertificate(pkcs12);
             var trustManager = new InsecureTrustManager(true);
 
-            var result = new TrustManagerHandshaker(new Uri("bolt://localhost"), cert, trustManager).Perform();
-
-            result.Should().BeTrue();
+            new TrustManagerHandshaker(new Uri("bolt://localhost"), cert, trustManager).Perform();
         }
 
         [Fact]
@@ -47,9 +46,10 @@ namespace Neo4j.Driver.Tests.Connector.Trust
             var cert = X509TestUtils.ToDotnetCertificate(pkcs12);
             var trustManager = new InsecureTrustManager(true);
 
-            var result = new TrustManagerHandshaker(new Uri("bolt://localhost2"), cert, trustManager).Perform();
+            var ex = Record.Exception(() =>
+                new TrustManagerHandshaker(new Uri("bolt://localhost2"), cert, trustManager).Perform());
 
-            result.Should().BeFalse();
+            ex.Should().NotBeNull().And.BeOfType<AuthenticationException>();
         }
 
         [Fact]
@@ -60,9 +60,7 @@ namespace Neo4j.Driver.Tests.Connector.Trust
             var cert = X509TestUtils.ToDotnetCertificate(pkcs12);
             var trustManager = new InsecureTrustManager(false);
 
-            var result = new TrustManagerHandshaker(new Uri("bolt://localhost2"), cert, trustManager).Perform();
-
-            result.Should().BeTrue();
+            new TrustManagerHandshaker(new Uri("bolt://localhost2"), cert, trustManager).Perform();
         }
     }
 }
