@@ -24,21 +24,19 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV1 : IBoltProtocol
     {
-
-
         private readonly ITcpSocketClient _tcpSocketClient;
         private readonly BufferSettings _bufferSettings;
         private readonly ILogger _logger;
 
-        public IBoltReader Reader { get; private set; }
-        public IBoltWriter Writer { get; private set; }
+        public IMessageReader Reader { get; private set; }
+        public IMessageWriter Writer { get; private set; }
 
         public BoltProtocolV1(ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger=null)
         {
             _tcpSocketClient = tcpSocketClient;
             _bufferSettings = bufferSettings;
             _logger = logger;
-            CreateReaderAndWriter(BoltProtocolPackStream.V1);
+            CreateReaderAndWriter(BoltProtocolMessageFormat.V1);
         }
 
         public bool ReconfigIfNecessary(string serverVersion)
@@ -50,16 +48,16 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             // downgrade PackStream to not support byte array.
-            CreateReaderAndWriter(BoltProtocolPackStream.V1NoByteArray);
+            CreateReaderAndWriter(BoltProtocolMessageFormat.V1NoByteArray);
             return true;
         }
 
-        private void CreateReaderAndWriter(IPackStreamFactory packStreamFactory)
+        private void CreateReaderAndWriter(IMessageFormat messageFormat)
         {
-            Reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
-                _bufferSettings.MaxReadBufferSize, _logger, packStreamFactory);
-            Writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
-                _bufferSettings.MaxWriteBufferSize, _logger, packStreamFactory);
+            Reader = new MessageReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
+                _bufferSettings.MaxReadBufferSize, _logger, messageFormat);
+            Writer = new MessageWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
+                _bufferSettings.MaxWriteBufferSize, _logger, messageFormat);
         }
     }
 }

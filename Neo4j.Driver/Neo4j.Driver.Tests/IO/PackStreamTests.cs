@@ -153,12 +153,12 @@ namespace Neo4j.Driver.Tests.IO
         {
             internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
             {
-                return new PackStreamReaderMachine(bytes, stream => BoltProtocolPackStream.V1.CreateReader(stream));
+                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V1.CreateReader(stream));
             }
 
             internal override PackStreamWriterMachine CreateWriterMachine()
             {
-                return new PackStreamWriterMachine(stream => BoltProtocolPackStream.V1.CreateWriter(stream));
+                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V1.CreateWriter(stream));
             }
         }
 
@@ -166,12 +166,12 @@ namespace Neo4j.Driver.Tests.IO
         {
             internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
             {
-                return new PackStreamReaderMachine(bytes, stream => BoltProtocolPackStream.V1NoByteArray.CreateReader(stream));
+                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V1NoByteArray.CreateReader(stream));
             }
 
             internal override PackStreamWriterMachine CreateWriterMachine()
             {
-                return new PackStreamWriterMachine(stream => BoltProtocolPackStream.V1NoByteArray.CreateWriter(stream));
+                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V1NoByteArray.CreateWriter(stream));
             }
 
             [Fact(Skip = "Doesn't support byte arrays")]
@@ -239,12 +239,12 @@ namespace Neo4j.Driver.Tests.IO
         {
             internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
             {
-                return new PackStreamReaderMachine(bytes, stream => BoltProtocolPackStream.V2.CreateReader(stream));
+                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V2.CreateReader(stream));
             }
 
             internal override PackStreamWriterMachine CreateWriterMachine()
             {
-                return new PackStreamWriterMachine(stream => BoltProtocolPackStream.V2.CreateWriter(stream));
+                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V2.CreateWriter(stream));
             }
         }
 

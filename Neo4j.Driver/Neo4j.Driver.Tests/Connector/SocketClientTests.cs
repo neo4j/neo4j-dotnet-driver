@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var writerMock = new Mock<IBoltWriter>();
+                var writerMock = new Mock<IMessageWriter>();
                 protocolMock.Setup(x => x.Writer).Returns(writerMock.Object);
 
                 var m1 = new RunMessage("Run message 1");
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var writerMock = new Mock<IBoltWriter>();
+                var writerMock = new Mock<IMessageWriter>();
                 protocolMock.Setup(x => x.Writer).Returns(writerMock.Object);
 
                 var m1 = new RunMessage("Run message 1");
@@ -164,7 +164,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
+                var readerMock = new Mock<IMessageReader>();
                 protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
 
                 var client = new SocketClient(protocolMock.Object);
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
+                var readerMock = new Mock<IMessageReader>();
                 protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
 
                 var client = new SocketClient(protocolMock.Object);
@@ -200,7 +200,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
+                var readerMock = new Mock<IMessageReader>();
                 protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
                 var connMock = new Mock<ITcpSocketClient>();
 
@@ -224,7 +224,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
+                var readerMock = new Mock<IMessageReader>();
                 protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
                 var connMock = new Mock<ITcpSocketClient>();
 
@@ -248,7 +248,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
+                var readerMock = new Mock<IMessageReader>();
                 protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
                 var connMock = new Mock<ITcpSocketClient>();
 
@@ -273,7 +273,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
+                var readerMock = new Mock<IMessageReader>();
                 protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
                 var connMock = new Mock<ITcpSocketClient>();
 

@@ -18,7 +18,6 @@
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.StructHandlers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;

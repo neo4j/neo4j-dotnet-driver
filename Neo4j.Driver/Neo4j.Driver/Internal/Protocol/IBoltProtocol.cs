@@ -21,8 +21,8 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal interface IBoltProtocol
     {
-        IBoltReader Reader { get; }
-        IBoltWriter Writer { get; }
+        IMessageReader Reader { get; }
+        IMessageWriter Writer { get; }
         /// <summary>
         /// Reconfig protocol if necessary.
         /// </summary>

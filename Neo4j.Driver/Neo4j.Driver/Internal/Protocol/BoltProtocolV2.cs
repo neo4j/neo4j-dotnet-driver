@@ -30,8 +30,8 @@ namespace Neo4j.Driver.Internal.Protocol
         private readonly BufferSettings _bufferSettings;
         private readonly ILogger _logger;
 
-        public IBoltReader Reader { get; private set; }
-        public IBoltWriter Writer { get; private set; }
+        public IMessageReader Reader { get; private set; }
+        public IMessageWriter Writer { get; private set; }
 
         public BoltProtocolV2(ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger=null)
         {
@@ -39,10 +39,10 @@ namespace Neo4j.Driver.Internal.Protocol
             _bufferSettings = bufferSettings;
             _logger = logger;
 
-            Reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
-                _bufferSettings.MaxReadBufferSize, _logger, BoltProtocolPackStream.V2);
-            Writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
-                _bufferSettings.MaxWriteBufferSize, _logger, BoltProtocolPackStream.V2);
+            Reader = new MessageReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
+                _bufferSettings.MaxReadBufferSize, _logger, BoltProtocolMessageFormat.V2);
+            Writer = new MessageWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
+                _bufferSettings.MaxWriteBufferSize, _logger, BoltProtocolMessageFormat.V2);
         }
 
         public bool ReconfigIfNecessary(string serverVersion)
