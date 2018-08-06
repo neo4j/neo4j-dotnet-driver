@@ -24,11 +24,11 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
-    public class SuccessMessageHandlerTests : StructHandlerTests
+    public class RecordMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new SuccessMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new RecordMessageHandler();
 
         [Fact]
         public void ShouldThrowOnWrite()
@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
 
             var ex = Record.Exception(() =>
                 handler.Write(Mock.Of<IPackStreamWriter>(),
-                    new SuccessMessage(new Dictionary<string, object> {{"fields", 1}})));
+                    new RecordMessage(new object[] {"val1", 2, true})));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -49,22 +49,28 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(1, PackStream.MsgSuccess);
-            writer.WriteMapHeader(2);
-            writer.Write("fields");
-            writer.Write(1L);
-            writer.Write("statistics");
+            writer.WriteStructHeader(1, PackStream.MsgRecord);
+            writer.WriteListHeader(6);
+            writer.WriteNull();
             writer.Write(true);
+            writer.Write(1);
+            writer.Write(1.2);
+            writer.Write('A');
+            writer.Write("value");
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<SuccessMessage>().Which.Meta.Should()
-                .HaveCount(2).And
-                .Contain(new[]
+            value.Should().BeOfType<RecordMessage>().Which.Fields.Should()
+                .HaveCount(6).And
+                .Contain(new object[]
                 {
-                    new KeyValuePair<string, object>("fields", 1L), new KeyValuePair<string, object>("statistics", true)
+                    true,
+                    1L,
+                    1.2,
+                    "A",
+                    "value"
                 });
         }
 

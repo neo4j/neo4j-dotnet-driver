@@ -15,45 +15,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
-    public class ResetMessageHandlerTests : StructHandlerTests
+    public class SuccessMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new ResetMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new SuccessMessageHandler();
 
         [Fact]
-        public void ShouldThrowOnRead()
+        public void ShouldThrowOnWrite()
         {
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgReset, 0));
+                handler.Write(Mock.Of<IPackStreamWriter>(),
+                    new SuccessMessage(new Dictionary<string, object> {{"fields", 1}})));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
         }
 
         [Fact]
-        public void ShouldWrite()
+        public void ShouldRead()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new ResetMessage());
+            writer.WriteStructHeader(1, PackStream.MsgSuccess);
+            writer.WriteMapHeader(2);
+            writer.Write("fields");
+            writer.Write(1L);
+            writer.Write("statistics");
+            writer.Write(true);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+            var value = readerMachine.Reader().Read();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgReset);
+            value.Should().NotBeNull();
+            value.Should().BeOfType<SuccessMessage>().Which.Meta.Should()
+                .HaveCount(2).And
+                .Contain(new[]
+                {
+                    new KeyValuePair<string, object>("fields", 1L), new KeyValuePair<string, object>("statistics", true)
+                });
         }
+
     }
 }

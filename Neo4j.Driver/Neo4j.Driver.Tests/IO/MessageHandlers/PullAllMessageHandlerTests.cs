@@ -15,63 +15,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
-    public class RecordMessageHandlerTests : StructHandlerTests
+    public class PullAllMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new RecordMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new PullAllMessageHandler();
 
         [Fact]
-        public void ShouldThrowOnWrite()
+        public void ShouldThrowOnRead()
         {
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Write(Mock.Of<IPackStreamWriter>(),
-                    new RecordMessage(new object[] {"val1", 2, true})));
+                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgPullAll, 0));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
         }
 
         [Fact]
-        public void ShouldRead()
+        public void ShouldWrite()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(1, PackStream.MsgRecord);
-            writer.WriteListHeader(6);
-            writer.WriteNull();
-            writer.Write(true);
-            writer.Write(1);
-            writer.Write(1.2);
-            writer.Write('A');
-            writer.Write("value");
+            writer.Write(new PullAllMessage());
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+            var reader = readerMachine.Reader();
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<RecordMessage>().Which.Fields.Should()
-                .HaveCount(6).And
-                .Contain(new object[]
-                {
-                    true,
-                    1L,
-                    1.2,
-                    "A",
-                    "value"
-                });
+            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.ReadStructHeader().Should().Be(0);
+            reader.ReadStructSignature().Should().Be(PackStream.MsgPullAll);
         }
-
     }
 }

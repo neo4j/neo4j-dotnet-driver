@@ -106,11 +106,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public override void OnError(Exception error)
         {
-            if (error.IsRecoverableError())
-            {
-                Delegate.AckFailure();
-            }
-            else
+            if (!error.IsRecoverableError())
             {
                 HasUnrecoverableError = true;
             }

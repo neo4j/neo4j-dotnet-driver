@@ -18,15 +18,17 @@
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Tests.IO.MessageHandlers;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.ValueHandlers
 {
-    public class AckFailureMessageHandlerTests : StructHandlerTests
+    public class ResetMessageHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new AckFailureMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new ResetMessageHandler();
 
         [Fact]
         public void ShouldThrowOnRead()
@@ -34,7 +36,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgAckFailure, 0));
+                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgReset, 0));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -46,14 +48,14 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new AckFailureMessage());
+            writer.Write(new ResetMessage());
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgAckFailure);
+            reader.ReadStructSignature().Should().Be(PackStream.MsgReset);
         }
     }
 }

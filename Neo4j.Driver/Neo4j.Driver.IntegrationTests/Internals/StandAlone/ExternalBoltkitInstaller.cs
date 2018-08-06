@@ -51,7 +51,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 var args = new List<string>();
                 args.AddRange(BoltkitHelper.BoltkitArgs.Split(null));
-                args.Add(BoltkitHelper.TargetDir);
+                args.Add($"\"{BoltkitHelper.TargetDir}\"");
                 var tempHomeDir = _commandRunner.RunCommand("neoctrl-install", args.ToArray()).Single();
                 _commandRunner.Debug($"Downloaded server at `{tempHomeDir}`, now renaming to `{HomeDir}`.");
 
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 _commandRunner.Debug($"Installed server at `{HomeDir}`.");
             }
 
-            _commandRunner.RunCommand("neoctrl-create-user", HomeDir, "neo4j", Password);
+            _commandRunner.RunCommand("neoctrl-create-user", $"\"{HomeDir}\"", "neo4j", Password);
             UpdateSettings(new Dictionary<string, string>
             {
                 {ListenAddr, Ipv6EnabledAddr}
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public ISet<ISingleInstance> Start()
         {
             _commandRunner.Debug("Starting server...");
-            _commandRunner.RunCommand("neoctrl-start", HomeDir);
+            _commandRunner.RunCommand("neoctrl-start", $"\"{HomeDir}\"");
             _commandRunner.Debug("Server started.");
             return new HashSet<ISingleInstance> { new SingleInstance(HttpUri, BoltUri, HomeDir, Password) };
         }
@@ -89,14 +89,14 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public void Stop()
         {
             _commandRunner.Debug("Stopping server...");
-            _commandRunner.RunCommand("neoctrl-stop", HomeDir);
+            _commandRunner.RunCommand("neoctrl-stop", $"\"{HomeDir}\"");
             _commandRunner.Debug("Server stopped.");
         }
 
         public void Kill()
         {
             _commandRunner.Debug("Killing server...");
-            _commandRunner.RunCommand("neoctrl-stop", "-k", HomeDir);
+            _commandRunner.RunCommand("neoctrl-stop", "-k", $"\"{HomeDir}\"");
             _commandRunner.Debug("Server killed.");
         }
 

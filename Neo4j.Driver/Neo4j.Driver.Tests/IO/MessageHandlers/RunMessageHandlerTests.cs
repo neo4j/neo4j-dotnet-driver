@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
     public class RunMessageHandlerTests : StructHandlerTests
     {

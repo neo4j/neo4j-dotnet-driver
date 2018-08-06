@@ -132,18 +132,6 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public void AckFailure()
-        {
-            try
-            {
-                Delegate.AckFailure();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
         public virtual bool IsOpen => Delegate.IsOpen;
 
         public IServerInfo Server => Delegate.Server;

@@ -18,20 +18,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
-using FluentAssertions.Primitives;
 using Moq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.ValueHandlers;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Tests.IO.MessageHandlers;
 using Neo4j.Driver.V1;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.ValueHandlers
 {
-    public class NodeHandlerTests : StructHandlerTests
+    public class RelationshipHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new NodeHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new RelationshipHandler();
 
         [Fact]
         public void ShouldThrowOnWrite()
@@ -40,7 +39,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
 
             var ex = Record.Exception(() =>
                 handler.Write(Mock.Of<IPackStreamWriter>(),
-                    new Node(0, new List<string> {"Label"}, new Dictionary<string, object>())));
+                    new Relationship(0, 1, 2, "RELATES_TO", new Dictionary<string, object>())));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -52,12 +51,12 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            WriteNode(writer);
+            WriteRelationship(writer);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
-            VerifyWrittenNode(value);
+            VerifyWrittenRelationship(value);
         }
 
         [Fact]
@@ -67,7 +66,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             var writer = writerMachine.Writer();
 
             writer.WriteListHeader(1);
-            WriteNode(writer);
+            WriteRelationship(writer);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
@@ -75,7 +74,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             value.Should().NotBeNull();
             value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
 
-            VerifyWrittenNode(value.Should().BeAssignableTo<IList>().Which[0]);
+            VerifyWrittenRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
         }
 
         [Fact]
@@ -86,7 +85,7 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
 
             writer.WriteMapHeader(1);
             writer.Write("x");
-            WriteNode(writer);
+            WriteRelationship(writer);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
@@ -95,32 +94,36 @@ namespace Neo4j.Driver.Tests.IO.StructHandlers
             value.Should().BeAssignableTo<IDictionary<string, object>>().Which.Should().HaveCount(1).And
                 .ContainKey("x");
 
-            VerifyWrittenNode(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+            VerifyWrittenRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void WriteNode(IPackStreamWriter writer)
+        private static void WriteRelationship(IPackStreamWriter writer)
         {
-            writer.WriteStructHeader(3, PackStream.Node);
+            writer.WriteStructHeader(5, PackStream.Relationship);
             writer.Write(1);
-            writer.Write(new List<string> {"Label1", "Label2"});
+            writer.Write(2);
+            writer.Write(3);
+            writer.Write("RELATES_TO");
             writer.Write(new Dictionary<string, object>
             {
                 {"prop1", "something"},
-                {"prop2", 15},
-                {"prop3", true}
+                {"prop2", 2.0},
+                {"prop3", false}
             });
         }
 
-        private static void VerifyWrittenNode(object value)
+        private static void VerifyWrittenRelationship(object value)
         {
             value.Should().NotBeNull();
-            value.Should().BeOfType<Node>().Which.Id.Should().Be(1L);
-            value.Should().BeOfType<Node>().Which.Labels.Should().Equal(new[] { "Label1", "Label2" });
-            value.Should().BeOfType<Node>().Which.Properties.Should().HaveCount(3).And.Contain(new[]
+            value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
+            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(2L);
+            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(3L);
+            value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
+            value.Should().BeOfType<Relationship>().Which.Properties.Should().HaveCount(3).And.Contain(new[]
             {
                 new KeyValuePair<string, object>("prop1", "something"),
-                new KeyValuePair<string, object>("prop2", 15L),
-                new KeyValuePair<string, object>("prop3", true),
+                new KeyValuePair<string, object>("prop2", 2.0),
+                new KeyValuePair<string, object>("prop3", false),
             });
         }
     }

@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Tests.IO.Utils;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
     public abstract class StructHandlerTests
     {

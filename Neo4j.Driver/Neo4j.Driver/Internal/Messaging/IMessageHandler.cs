@@ -34,6 +34,5 @@ namespace Neo4j.Driver.Internal.Messaging
 
         void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null);
         int UnhandledMessageSize { get; }
-        IMessageResponseCollector CurrentResponseCollector { get; }
     }
 }

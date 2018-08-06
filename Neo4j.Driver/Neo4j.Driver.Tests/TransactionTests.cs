@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -26,6 +27,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
 using static Neo4j.Driver.Tests.SessionTests;
+using static Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
@@ -158,7 +160,7 @@ namespace Neo4j.Driver.Tests
                     // Fine, the state is set to failed now.
                 }
 
-                var error = Xunit.Record.Exception(()=>tx.Run("ttt"));
+                var error = Exception(()=>tx.Run("ttt"));
                 error.Should().BeOfType<ClientException>();
             }
 
@@ -171,7 +173,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true))
                         .Throws<Neo4jException>();
 
-                var error = Xunit.Record.Exception(() => tx.Run("ttt"));
+                var error = Exception(() => tx.Run("ttt"));
                 error.Should().BeOfType<Neo4jException>();
             }
 
@@ -224,7 +226,7 @@ namespace Neo4j.Driver.Tests
                     // Fine, the state is set to failed now.
                 }
 
-                var error = await Xunit.Record.ExceptionAsync(() => tx.RunAsync("ttt"));
+                var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
                 error.Should().BeOfType<ClientException>();
             }
 
@@ -243,7 +245,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.Run(It.IsAny<string>(), new Dictionary<string, object>(), It.IsAny<ResultCursorBuilder>(), true))
                     .Throws<Neo4jException>();
 
-                var error = await Xunit.Record.ExceptionAsync(() => tx.RunAsync("ttt"));
+                var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
                 error.Should().BeOfType<Neo4jException>();
             }
 
@@ -393,14 +395,14 @@ namespace Neo4j.Driver.Tests
         public class MarkToClosedMethod
         {
             [Fact]
-            public void ShouldNotAllowMoreMessagesAfterMarkToClosed()
+            public void ShouldNotEnqueueMoreMessagesAfterMarkToClosed()
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
                 mockConn.ResetCalls();
 
                 tx.MarkToClose();
-
+                tx.Dispose();
                 mockConn.Verify(RunRollback, Times.Never);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }
@@ -414,10 +416,36 @@ namespace Neo4j.Driver.Tests
 
                 tx.MarkToClose();
 
-                var exception = Xunit.Record.Exception(()=>tx.Run("should not run"));
+                var exception = Exception(()=>tx.Run("should not run"));
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Cannot run more statements in this transaction");
 
+                mockConn.Verify(RunRollback, Times.Never);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInCommitAsync()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+                mockConn.ResetCalls();
+
+                tx.MarkToClose();
+                await tx.CommitAsync();
+                mockConn.Verify(RunRollback, Times.Never);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInRollbackAsync()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new Transaction(mockConn.Object);
+                mockConn.ResetCalls();
+
+                tx.MarkToClose();
+                await tx.RollbackAsync();
                 mockConn.Verify(RunRollback, Times.Never);
                 mockConn.Verify(x => x.Sync(), Times.Never);
             }

@@ -198,12 +198,6 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new ResetMessage());
         }
 
-        public void AckFailure()
-        {
-
-            Enqueue(new AckFailureMessage());
-        }
-
         public bool IsOpen => _client.IsOpen;
         public IServerInfo Server { get; }
 
@@ -255,7 +249,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
+        public void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
             IRequestMessage requestStreamingMessage = null)
         {
 

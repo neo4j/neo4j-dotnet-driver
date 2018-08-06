@@ -15,46 +15,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageHandlers;
-using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.V1;
+using Neo4j.Driver.Internal.IO.ValueHandlers;
+using Neo4j.Driver.Tests.IO.MessageHandlers;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.IO.StructHandlers
+namespace Neo4j.Driver.Tests.IO.ValueHandlers
 {
-    public class DiscardAllMessageHandlerTests : StructHandlerTests
+    public class SystemDateTimeOffsetHandlerTests : StructHandlerTests
     {
-        internal override IPackStreamStructHandler HandlerUnderTest => new DiscardAllMessageHandler();
+        internal override IPackStreamStructHandler HandlerUnderTest => new SystemDateTimeOffsetHandler();
 
-        [Fact]
-        public void ShouldThrowOnRead()
+        internal override IEnumerable<IPackStreamStructHandler> HandlersNeeded => new IPackStreamStructHandler[]
         {
-            var handler = HandlerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgDiscardAll, 0));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
-
+            new ZonedDateTimeHandler()
+        };
+        
         [Fact]
-        public void ShouldWrite()
+        public void ShouldWriteDateTimeOffset()
         {
+            var dateTime = new DateTimeOffset(1978, 12, 16, 12, 35, 59, 999, TimeSpan.FromSeconds(3060));
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new DiscardAllMessage());
+            writer.Write(dateTime);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgDiscardAll);
+            reader.ReadStructHeader().Should().Be(3);
+            reader.ReadStructSignature().Should().Be((byte)'F');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(999000000L);
+            reader.Read().Should().Be(3060L);
         }
+
     }
 }

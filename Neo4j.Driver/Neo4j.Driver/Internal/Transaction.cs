@@ -78,24 +78,7 @@ namespace Neo4j.Driver.Internal
             {
                 if (_state == State.MarkedSuccess)
                 {
-                    try
-                    {
-                        CommitTx();
-                    }
-                    catch (Exception)
-                    {
-                        // if we ever failed to commit, then we rollback the tx
-                        try
-                        {
-                            RollbackTx();
-                        }
-                        catch (Exception)
-                        {
-                            // ignored
-                        }
-
-                        throw;
-                    }
+                    CommitTx();
                 }
                 else if (_state == State.MarkedFailed || _state == State.Active)
                 {
@@ -120,23 +103,7 @@ namespace Neo4j.Driver.Internal
             {
                 if (_state == State.MarkedSuccess)
                 {
-                    try
-                    {
-                        await CommitTxAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        // if we ever failed to commit, then we rollback the tx
-                        try
-                        {
-                            await RollbackTxAsync().ConfigureAwait(false);
-                        }
-                        catch (Exception)
-                        {
-                            // ignored
-                        }
-                        throw;
-                    }
+                    await CommitTxAsync().ConfigureAwait(false);
                 }
                 else if (_state == State.MarkedFailed || _state == State.Active)
                 {
@@ -152,34 +119,6 @@ namespace Neo4j.Driver.Internal
                     _resourceHandler = null;
                 }
             }
-        }
-
-        private void CommitTx()
-        {
-            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
-            _connection.Sync();
-            _state = State.Succeeded;
-        }
-
-        private async Task CommitTxAsync()
-        {
-            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
-            await _connection.SyncAsync().ConfigureAwait(false);
-            _state = State.Succeeded;
-        }
-
-        private void RollbackTx()
-        {
-            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
-            _connection.Sync();
-            _state = State.RolledBack;
-        }
-
-        private async Task RollbackTxAsync()
-        {
-            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
-            await _connection.SyncAsync().ConfigureAwait(false);
-            _state = State.RolledBack;
         }
 
         public void SyncBookmark(Bookmark bookmark)
@@ -202,7 +141,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecute(() =>
             {
-                EnsureNotFailed();
+                EnsureCanRunMoreStatements();
 
                 var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOne(),
                     _connection.Server);
@@ -217,7 +156,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecuteAsync(async () =>
             {
-                EnsureNotFailed();
+                EnsureCanRunMoreStatements();
 
                 var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(),
                     _connection.Server);
@@ -226,18 +165,6 @@ namespace Neo4j.Driver.Internal
 
                 return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
             });
-        }
-
-        private void EnsureNotFailed()
-        {
-            if (_state == State.Failed || _state == State.MarkedFailed || _state == State.RolledBack)
-            {
-                throw new ClientException(
-                    "Cannot run more statements in this transaction, because previous statements in the " +
-                    "transaction has failed and the transaction has been rolled back. Please start a new" +
-                    " transaction to run another statement."
-                );
-            }
         }
 
         public void Success()
@@ -273,6 +200,59 @@ namespace Neo4j.Driver.Internal
             return CloseAsync();
         }
 
+        private void CommitTx()
+        {
+            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
+            _connection.Sync();
+            _state = State.Succeeded;
+        }
+
+        private async Task CommitTxAsync()
+        {
+            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
+            await _connection.SyncAsync().ConfigureAwait(false);
+            _state = State.Succeeded;
+        }
+
+        private void RollbackTx()
+        {
+            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
+            _connection.Sync();
+            _state = State.RolledBack;
+        }
+
+        private async Task RollbackTxAsync()
+        {
+            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
+            await _connection.SyncAsync().ConfigureAwait(false);
+            _state = State.RolledBack;
+        }
+
+        private void EnsureCanRunMoreStatements()
+        {
+            if (_state == State.RolledBack)
+            {
+                throw new ClientException(
+                    "Cannot run more statements in this transaction, because previous statements in the " +
+                    "transaction has failed and the transaction has been rolled back. Please start a new" +
+                    " transaction to run another statement."
+                );
+            }
+            else if (_state == State.Succeeded)
+            {
+                throw new ClientException("Cannot run more sattements in this transaction, because the transaction has already been committed successfuly. " +
+                                          "Please start a new transaction to run another statement.");
+            }
+            else if (_state == State.Failed || _state == State.MarkedFailed)
+            {
+                throw new ClientException(
+                    "Cannot run more statements in this transaction, because previous statements in the " +
+                    "transaction has failed and the transaction could only be rolled back. Please start a new" +
+                    " transaction to run another statement."
+                );
+            }
+        }
+
         private class TransactionConnection : DelegatedConnection
         {
             private Transaction _transaction;
@@ -298,14 +278,7 @@ namespace Neo4j.Driver.Internal
 
             public override void OnError(Exception error)
             {
-                if (Delegate.IsOpen)
-                {
-                    _transaction.Failure();
-                }
-                else
-                {
-                    _transaction.MarkToClose();
-                }
+                _transaction.MarkToClose();
                 throw error;
             }
         }
