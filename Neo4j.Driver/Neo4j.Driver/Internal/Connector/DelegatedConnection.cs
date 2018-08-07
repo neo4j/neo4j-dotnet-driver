@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -120,6 +122,18 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
+        public void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null)
+        {
+            try
+            {
+                Delegate.Enqueue(message1, responseCollector, message2);
+            }
+            catch (Exception e)
+            {
+                OnError(e);
+            }
+        }
+
         public void Reset()
         {
             try
@@ -135,6 +149,7 @@ namespace Neo4j.Driver.Internal.Connector
         public virtual bool IsOpen => Delegate.IsOpen;
 
         public IServerInfo Server => Delegate.Server;
+        public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
 
         public virtual void Destroy()
         {

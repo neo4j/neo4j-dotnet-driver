@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -29,6 +30,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class SocketConnection : IConnection
     {
         private readonly ISocketClient _client;
+        private IBoltProtocol _boltProtocol;
         private readonly IAuthToken _authToken;
         private readonly string _userAgent;
         private readonly IMessageResponseHandler _responseHandler;
@@ -67,8 +69,8 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                _client.Start();
-                Init(_authToken);
+                _boltProtocol = _client.Connect();
+                _boltProtocol.InitializeConnection(this, _userAgent, _authToken);
             }
             catch (AggregateException e)
             {
@@ -79,18 +81,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task InitAsync()
         {
-            await _client.StartAsync().ConfigureAwait(false);
+            await _client.ConnectAsync().ConfigureAwait(false);
             await InitAsync(_authToken).ConfigureAwait(false);
         }
 
-        private void Init(IAuthToken authToken)
-        {
-            var initCollector = new InitCollector();
-            Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
-            Sync();
-            ((ServerInfo)Server).Version = initCollector.Server;
-            _client.UpdateBoltProtocol(initCollector.Server);
-        }
 
         private async Task InitAsync(IAuthToken authToken)
         {
@@ -98,7 +92,6 @@ namespace Neo4j.Driver.Internal.Connector
             Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
             await SyncAsync().ConfigureAwait(false);
             ((ServerInfo)Server).Version = initCollector.Server;
-            _client.UpdateBoltProtocol(initCollector.Server);
         }
 
         public void Sync()
@@ -199,7 +192,8 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public bool IsOpen => _client.IsOpen;
-        public IServerInfo Server { get; }
+        public IServerInfo Server { get; set; }
+        public IBoltProtocol BoltProtocol => _boltProtocol;
 
         public void Destroy()
         {

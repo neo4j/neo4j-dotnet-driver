@@ -23,7 +23,6 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV1MessageFormat: MessageFormat
     {
-
         internal BoltProtocolV1MessageFormat(bool supportBytes)
             : base(supportBytes)
         {

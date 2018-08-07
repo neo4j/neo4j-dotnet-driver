@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.Create(1, connMock.Object, new BufferSettings(Config.DefaultConfig));
+                var boltProtocol = BoltProtocolFactory.ForVersion(1);
                 boltProtocol.Should().BeOfType<BoltProtocolV1>();
             }
 
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.Create(2, connMock.Object, new BufferSettings(Config.DefaultConfig));
+                var boltProtocol = BoltProtocolFactory.ForVersion(2);
                 boltProtocol.Should().BeOfType<BoltProtocolV2>();
             }
 
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests.Connector
             [InlineData(1213486160 /*HTTP*/, "Server responded HTTP.")]
             public void ShouldThrowExceptionIfVersionIsNotSupported(int version, string errorMessage)
             {
-                var exception = Record.Exception(() => BoltProtocolFactory.Create(version, null, null));
+                var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
                 exception.Should().BeOfType<NotSupportedException>();
                 exception.Message.Should().StartWith(errorMessage);
             }

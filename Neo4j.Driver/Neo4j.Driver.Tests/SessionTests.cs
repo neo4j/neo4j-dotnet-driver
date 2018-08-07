@@ -22,6 +22,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -36,6 +37,22 @@ namespace Neo4j.Driver.Tests
             return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, Bookmark.From(bookmark));
         }
 
+        internal static Session NewSession(IBoltProtocol protocol, ILogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        {
+            var mockConn = new Mock<IConnection>();
+            mockConn.Setup(x => x.IsOpen).Returns(true);
+            mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
+            return new Session(new TestConnectionProvider(mockConn.Object), logger, retryLogic, mode, Bookmark.From(bookmark));
+        }
+
+        internal static Mock<IConnection> NewMockedConnection()
+        {
+            var mockConn = new Mock<IConnection>();
+            mockConn.Setup(x => x.IsOpen).Returns(true);
+            mockConn.Setup(x => x.BoltProtocol).Returns(new Mock<IBoltProtocol>().Object);
+            return mockConn;
+        }
+
         internal static string FakeABookmark(int num)
         {
             return $"{Bookmark.BookmarkPrefix}{num}";
@@ -44,26 +61,13 @@ namespace Neo4j.Driver.Tests
         public class RunMethod
         {
             [Fact]
-            public void ShouldSendOnRun()
+            public void ShouldDelegateToProtocolRunAutoCommitTx()
             {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object);
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var session = NewSession(mockProtocol.Object);
                 session.Run("lalalal");
 
-                mockConn.Verify(x => x.Run("lalalal", new Dictionary<string, object>(), It.IsAny<ResultBuilder>(), true), Times.Once);
-                mockConn.Verify(x => x.Send());
-            }
-
-            [Fact]
-            public void ResultBuilderShouldObtainServerInfoFromConnection()
-            {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
-                var session = NewSession(mockConn.Object);
-                session.Run("lalalal");
-
-                mockConn.Verify(x => x.Server, Times.Once);
+                mockProtocol.Verify(x => x.RunInAutoCommitTransaction(It.IsAny<IConnection>(), It.IsAny<Statement>(), session), Times.Once);
             }
         }
 
@@ -176,8 +180,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
             {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var mockConn = NewMockedConnection();
                 var session = NewSession(mockConn.Object);
                 var tx = session.BeginTransaction();
                 tx.Dispose();
@@ -188,7 +191,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldClosePreviousRunConnectionWhenRunMoreStatements()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewMockedConnection();
                 var session = NewSession(mockConn.Object);
                 session.Run("lalal");
 
@@ -199,8 +202,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldClosePreviousRunConnectionWhenRunMoreTransactions()
             {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(false);
+                var mockConn = NewMockedConnection();
                 var session = NewSession(mockConn.Object);
                 session.Run("lala");
 
@@ -212,8 +214,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldDisposeConnectionOnRunIfBeginTxFailed()
             {
                 // Given
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var mockConn = NewMockedConnection();
                 mockConn.Setup(x => x.Run("BEGIN", null, null, true))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
@@ -430,8 +431,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldDisposeConnectionOnDispose()
             {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var mockConn = NewMockedConnection();
                 var session = NewSession(mockConn.Object);
                 session.Run("lalal");
                 session.Dispose();
@@ -444,8 +444,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldAllowDisposeMultipleTimes()
             {
                 // Given
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.IsOpen).Returns(true);
+                var mockConn = NewMockedConnection();
                 var session = NewSession(mockConn.Object);
                 session.Run("lalal");
 

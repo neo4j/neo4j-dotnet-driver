@@ -15,49 +15,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV1 : IBoltProtocol
     {
-        private readonly ITcpSocketClient _tcpSocketClient;
-        private readonly BufferSettings _bufferSettings;
-        private readonly ILogger _logger;
+        public static readonly BoltProtocolV1 BoltV1 = new BoltProtocolV1();
 
-        public IMessageReader Reader { get; private set; }
-        public IMessageWriter Writer { get; private set; }
-
-        public BoltProtocolV1(ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger=null)
+        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger=null)
         {
-            _tcpSocketClient = tcpSocketClient;
-            _bufferSettings = bufferSettings;
-            _logger = logger;
-            CreateReaderAndWriter(BoltProtocolMessageFormat.V1);
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
+                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V1);
         }
 
-        public bool ReconfigIfNecessary(string serverVersion)
+        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null)
         {
-            var version = ServerVersion.Version(serverVersion);
-            if ( version >= ServerVersion.V3_2_0 )
-            {
-                return false;
-            }
-
-            // downgrade PackStream to not support byte array.
-            CreateReaderAndWriter(BoltProtocolMessageFormat.V1NoByteArray);
-            return true;
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
+                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V1);
+        }
+        
+        public void InitializeConnection(IConnection connection, string userAgent, IAuthToken authToken)
+        {
+            var initCollector = new InitCollector();
+            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
+            connection.Sync();
+            ((ServerInfo)connection.Server).Version = initCollector.Server;
         }
 
-        private void CreateReaderAndWriter(IMessageFormat messageFormat)
+        public void BeginTransaction(IConnection connection, IConnectionContext context)
         {
-            Reader = new MessageReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
-                _bufferSettings.MaxReadBufferSize, _logger, messageFormat);
-            Writer = new MessageWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
-                _bufferSettings.MaxWriteBufferSize, _logger, messageFormat);
+        }
+
+        public Bookmark CommitTransaction(IConnection connection, IConnectionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void RollbackTransaction(IConnection connection, IConnectionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement, IResultResourceHandler resultResourceHandler)
+        {
+            var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
+                connection.ReceiveOne, connection.Server, resultResourceHandler);
+            connection.Enqueue(new RunMessage(statement), resultBuilder, new PullAllMessage());
+            connection.Send();
+            return resultBuilder.PreBuild();
+        }
+
+        public IStatementResult RunInExplicitTransaction(IConnection connection, IConnectionContext context)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

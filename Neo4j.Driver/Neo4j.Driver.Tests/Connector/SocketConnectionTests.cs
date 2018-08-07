@@ -23,6 +23,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
@@ -75,36 +76,20 @@ namespace Neo4j.Driver.Tests
         public class InitMethod
         {
             [Fact]
-            public void ShouldStartClient()
+            public void ShouldConnectClient()
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockClient.Setup(x => x.Connect()).Returns(mockProtocol.Object);
                 var conn = NewSocketConnection(mockClient.Object);
 
                 // When
                 conn.Init();
 
                 // Then
-                mockClient.Verify(c => c.Start(), Times.Once);
-            }
-
-            [Fact]
-            public void ShouldSyncInitMessageImmediately()
-            {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                var mockHandler = new Mock<IMessageResponseHandler>();
-                mockHandler.Setup(x => x.UnhandledMessageSize).Returns(1);
-                var conn = NewSocketConnection(mockClient.Object, mockHandler.Object);
-
-                // When
-                conn.Init();
-
-                // Then
-                mockHandler.Verify(h => h.EnqueueMessage(It.IsAny<InitMessage>(), It.IsAny<InitCollector>()));
-
-                mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
-                mockClient.Verify(c => c.Receive(mockHandler.Object), Times.Once);
+                mockClient.Verify(c => c.Connect(), Times.Once);
+                mockProtocol.Verify(p=>p.InitializeConnection(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
             }
 
             [Fact]
@@ -112,7 +97,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.Start()).Throws(new IOException("I will stop socket conn from initialization"));
+                mockClient.Setup(x => x.Connect()).Throws(new IOException("I will stop socket conn from initialization"));
                 // ReSharper disable once ObjectCreationAsStatement
                 var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
                 // When

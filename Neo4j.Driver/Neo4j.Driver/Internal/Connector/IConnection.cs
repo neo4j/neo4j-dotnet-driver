@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -46,7 +48,7 @@ namespace Neo4j.Driver.Internal.Connector
         // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
         void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true);
 
-//        void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null);
+        void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null);
 
         // Enqueue a reset message
         void Reset();
@@ -77,5 +79,10 @@ namespace Neo4j.Driver.Internal.Connector
         /// The info of the server the connection connected to.
         /// </summary>
         IServerInfo Server { get; }
+
+        /// <summary>
+        /// The Bolt protocol that the connection is talking with.
+        /// </summary>
+        IBoltProtocol BoltProtocol { get; }
     }
 }

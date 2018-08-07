@@ -19,20 +19,20 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Connector
 {
     internal interface ISocketClient : IDisposable
     {
-        void Start();
-        Task StartAsync();
+        IBoltProtocol Connect();
+        Task<IBoltProtocol> ConnectAsync();
         void Send(IEnumerable<IRequestMessage> messages);
         Task SendAsync(IEnumerable<IRequestMessage> messages);
         void Receive(IMessageResponseHandler responseHandler);
         Task ReceiveAsync(IMessageResponseHandler responseHandler);
         void ReceiveOne(IMessageResponseHandler responseHandler);
         Task ReceiveOneAsync(IMessageResponseHandler responseHandler);
-        void UpdateBoltProtocol(string serverVersion);
         bool IsOpen { get; }
         void Stop();
         Task StopAsync();

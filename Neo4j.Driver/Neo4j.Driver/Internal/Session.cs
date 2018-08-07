@@ -58,14 +58,9 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
-
                 _connection = _connectionProvider.Acquire(_defaultMode);
-                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
-                    () => _connection.ReceiveOne(), _connection.Server, this);
-                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
-                _connection.Send();
-
-                return resultBuilder.PreBuild();
+                var protocol = _connection.BoltProtocol;
+                return protocol.RunInAutoCommitTransaction( _connection, statement, this);
             });
         }
 
