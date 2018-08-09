@@ -15,17 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
 using static Neo4j.Driver.Tests.SessionTests;
@@ -49,8 +44,9 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSaveBookmark()
             {
+                var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From(FakeABookmark(123));
-                var tx = new Transaction(null, null, null, bookmark);
+                var tx = new Transaction(mockConn.Object, null, null, bookmark);
                 tx.Bookmark.Should().Be(bookmark);
             }
         }
@@ -97,27 +93,14 @@ namespace Neo4j.Driver.Tests
                 tx.Run(statment);
 
                 protocol.Verify(x => x.RunInExplicitTransaction(It.IsAny<IConnection>(), statment), Times.Once);
-                mockConn.Verify(x => x.Send(), Times.Once);
             }
 
             [Fact]
             public void ShouldThrowExceptionIfPreviousTxFailed()
             {
-                var protocol = new Mock<IBoltProtocol>();
-                var mockConn = NewMockedConnection(protocol.Object);
+                var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
-                var statement = new Statement("lala");
-
-                protocol.Setup(x => x.RunInExplicitTransaction(It.IsAny<IConnection>(), statement))
-                    .Throws<Neo4jException>();
-                try
-                {
-                    tx.Run(statement);
-                }
-                catch (Neo4jException)
-                {
-                    // Fine, the state is set to failed now.
-                }
+                tx.MarkToClose();
 
                 var error = Exception(()=>tx.Run("ttt"));
                 error.Should().BeOfType<ClientException>();
@@ -152,27 +135,14 @@ namespace Neo4j.Driver.Tests
                 await tx.RunAsync(statement);
 
                 protocol.Verify(x=>x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement));
-                mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
 
             [Fact]
             public async void ShouldThrowExceptionIfPreviousTxFailed()
             {
-                var protocol = new Mock<IBoltProtocol>();
-                var mockConn = NewMockedConnection(protocol.Object);
+                var mockConn = new Mock<IConnection>();
                 var tx = new Transaction(mockConn.Object);
-                var statement = new Statement("lala");
-
-                protocol.Setup(x => x.RunInExplicitTransaction(It.IsAny<IConnection>(), statement))
-                    .Throws<Neo4jException>();
-                try
-                {
-                    await tx.RunAsync(statement);
-                }
-                catch (Neo4jException)
-                {
-                    // Fine, the state is set to failed now.
-                }
+                tx.MarkToClose();
 
                 var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
                 error.Should().BeOfType<ClientException>();
@@ -186,7 +156,7 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object);
                 var statement = new Statement("lala");
 
-                protocol.Setup(x => x.RunInExplicitTransaction(It.IsAny<IConnection>(), statement))
+                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement))
                     .Throws<Neo4jException>();
 
                 var error = await ExceptionAsync(() => tx.RunAsync(statement));
@@ -247,7 +217,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldNotReturnConnectionToPoolTwice()
             {
-                var mockConn = new Mock<IConnection>();
+                var protocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(protocol.Object);
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, mockHandler.Object);
 
@@ -285,7 +256,7 @@ namespace Neo4j.Driver.Tests
 
                 mockConn.ResetCalls();
                 await tx.RollbackAsync();
-                protocol.Verify(x=>x.CommitTransactionAsync(It.IsAny<IConnection>()));
+                protocol.Verify(x=>x.RollbackTransactionAsync(It.IsAny<IConnection>()));
                 mockHandler.Verify(x => x.OnTransactionDisposeAsync(), Times.Once);
             }
 
@@ -301,14 +272,15 @@ namespace Neo4j.Driver.Tests
                 await tx.CommitAsync();
                 await tx.RollbackAsync();
                 protocol.Verify(x=>x.CommitTransactionAsync(It.IsAny<IConnection>()));
-                protocol.Verify(x=>x.RollbackTransactionAsync(It.IsAny<IConnection>()));
+                protocol.Verify(x=>x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Never);
                 mockHandler.Verify(x => x.OnTransactionDisposeAsync(), Times.Once);
             }
 
             [Fact]
             public async void ShouldNotDisposeIfAlreadyClosed()
             {
-                var mockConn = new Mock<IConnection>();
+                var protocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(protocol.Object);
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, mockHandler.Object);
 

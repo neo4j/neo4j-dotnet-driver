@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
-using FluentAssertions.Collections;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
@@ -38,8 +38,8 @@ namespace Neo4j.Driver.Tests.Connector
             public void ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
-                var mockAuth = new Mock<IAuthToken>();
-                BoltV1.InitializeConnection(mockConn.Object, "user-zhen", mockAuth.Object);
+                mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
+                BoltV1.InitializeConnection(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync());
@@ -52,8 +52,8 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
-                var mockAuth = new Mock<IAuthToken>();
-                await BoltV1.InitializeConnectionAsync(mockConn.Object, "user-zhen", mockAuth.Object);
+                mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
+                await BoltV1.InitializeConnectionAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
@@ -277,19 +277,19 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldRunPullAllSync()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = MockedConnectionWithSuccessResponse();
                 var statment = new Statement("lalala");
 
                 await BoltV1.RunInExplicitTransactionAsync(mockConn.Object, statment);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
 
             [Fact]
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = MockedConnectionWithSuccessResponse();
                 var statment = new Statement("lalala");
 
                 await BoltV1.RunInExplicitTransactionAsync(mockConn.Object, statment);
@@ -297,5 +297,21 @@ namespace Neo4j.Driver.Tests.Connector
             }
         }
 
+        internal static Mock<IConnection> MockedConnectionWithSuccessResponse()
+        {
+            var mockConn = new Mock<IConnection>();
+            // Whenever you enqueue any message, you immediately receives a response
+            mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
+                .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
+                    (msg1, h, msg2) =>
+                    {
+                        h?.DoneSuccess();
+                        if (msg1 != null)
+                        {
+                            h?.DoneSuccess();
+                        }
+                    });
+            return mockConn;
+        }
     }
 }

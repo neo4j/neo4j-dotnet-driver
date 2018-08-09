@@ -197,8 +197,9 @@ namespace Neo4j.Driver.Internal
             EnsureCanRunMoreStatements();
 
             _connection = _connectionProvider.Acquire(mode);
-            _transaction = new Transaction(_connection, this, Logger, _bookmark);
-            _transaction.BeginTransaction();
+            var tx = new Transaction(_connection, this, Logger, _bookmark);
+            tx.BeginTransaction();
+            _transaction = tx;
             return _transaction;
         }
 
@@ -207,8 +208,9 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            _transaction = new Transaction(_connection, this, Logger, _bookmark);
-            await _transaction.BeginTransactionAsync().ConfigureAwait(false);
+            var tx = new Transaction(_connection, this, Logger, _bookmark);
+            await tx.BeginTransactionAsync().ConfigureAwait(false);
+            _transaction = tx;
             return _transaction;
         }
     }

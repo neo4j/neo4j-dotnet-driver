@@ -208,19 +208,18 @@ namespace Neo4j.Driver.Tests
         public class ResetMethod
         {
             [Fact]
-            public void ShouldNotClearMessagesResponseHandlerAndEnqueueResetMessage()
+            public void ShouldDelegateToBoltProtocol()
             {
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = NewSocketConnection(handler: mockResponseHandler.Object);
+                var mockClient = new Mock<ISocketClient>();
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockClient.Setup(x => x.Connect()).Returns(mockProtocol.Object);
 
-                con.Enqueue(new RunMessage("bula"));
+                var con = NewSocketConnection(mockClient.Object);
+
+                con.Init(); // to assign protocol to connection
+
                 con.Reset();
-                var messages = con.Messages;
-                messages.Count.Should().Be(2);
-                messages[0].Should().BeOfType<RunMessage>();
-                messages[1].Should().BeOfType<ResetMessage>();
-                mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<RunMessage>(), null), Times.Once);
-                mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<ResetMessage>(), null), Times.Once);
+                mockProtocol.Verify(x => x.Reset(con), Times.Once);
             }
         }
     }
