@@ -71,13 +71,8 @@ namespace Neo4j.Driver.Internal
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
-                var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
-                    () => _connection.ReceiveOneAsync(), _connection.Server, this);
-                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
-
-                await _connection.SendAsync().ConfigureAwait(false);
-
-                return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
+                var protocol = _connection.BoltProtocol;
+                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this).ConfigureAwait(false);
             });
         }
 
@@ -97,9 +92,8 @@ namespace Neo4j.Driver.Internal
             EnsureCanRunMoreStatements();
 
             _connection = _connectionProvider.Acquire(mode);
-            var tx = new Transaction(_connection, this, Logger, _bookmark);
-            tx.SyncBookmark(_bookmark);
-            _transaction = tx;
+            _transaction = new Transaction(_connection, this, Logger, _bookmark);
+            _transaction.BeginTransaction();
             return _transaction;
         }
 
@@ -163,9 +157,8 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            var tx = new Transaction(_connection, this, Logger, _bookmark);
-            await tx.SyncBookmarkAsync(_bookmark).ConfigureAwait(false);
-            _transaction = tx;
+            _transaction = new Transaction(_connection, this, Logger, _bookmark);
+            await _transaction.BeginTransactionAsync().ConfigureAwait(false);
             return _transaction;
         }
 

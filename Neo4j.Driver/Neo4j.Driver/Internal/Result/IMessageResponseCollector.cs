@@ -37,33 +37,15 @@ namespace Neo4j.Driver.Internal.Result
 
     internal class BookmarkCollector : NoOperationCollector
     {
-        private readonly Action<string> _setBookmarkCallbackAction;
-        public BookmarkCollector(Action<string> bookmarkCallbackAction)
-        {
-            _setBookmarkCallbackAction = bookmarkCallbackAction;
-        }
+        public Bookmark Bookmark { private set; get; }
 
         public override void CollectBookmark(IDictionary<string, object> meta)
         {
             if (meta.ContainsKey(Bookmark.BookmarkKey))
             {
-                var bookmark = meta[Bookmark.BookmarkKey].As<string>();
-                _setBookmarkCallbackAction.Invoke(bookmark);
+                var str = meta[Bookmark.BookmarkKey].As<string>();
+                Bookmark = Bookmark.From(str);
             }
-        }
-    }
-
-    internal class ResetCollector : NoOperationCollector
-    {
-        private readonly Action _successCallbackAction;
-        public ResetCollector(Action successCallBackAction = null)
-        {
-            _successCallbackAction = successCallBackAction ?? (() => { });
-        }
-
-        public override void DoneSuccess()
-        {
-            _successCallbackAction.Invoke();
         }
     }
 

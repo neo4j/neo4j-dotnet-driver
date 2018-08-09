@@ -81,17 +81,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task InitAsync()
         {
-            await _client.ConnectAsync().ConfigureAwait(false);
-            await InitAsync(_authToken).ConfigureAwait(false);
-        }
-
-
-        private async Task InitAsync(IAuthToken authToken)
-        {
-            var initCollector = new InitCollector();
-            Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
-            await SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)Server).Version = initCollector.Server;
+            _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
+            await _boltProtocol.InitializeConnectionAsync(this, _userAgent, _authToken).ConfigureAwait(false);
         }
 
         public void Sync()
@@ -160,7 +151,6 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-
         public void ReceiveOne()
         {
             _client.ReceiveOne(_responseHandler);
@@ -174,21 +164,9 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
-        {
-            if (pullAll)
-            {
-                Enqueue(new RunMessage(statement, parameters), resultBuilder, new PullAllMessage());
-            }
-            else
-            {
-                Enqueue(new RunMessage(statement, parameters), resultBuilder, new DiscardAllMessage());
-            }
-        }
-
         public void Reset()
         {
-            Enqueue(new ResetMessage());
+            _boltProtocol.Reset(this);
         }
 
         public bool IsOpen => _client.IsOpen;

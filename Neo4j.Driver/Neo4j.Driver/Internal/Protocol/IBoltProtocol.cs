@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.IO;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
@@ -24,19 +25,30 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal interface IBoltProtocol
     {
-        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger=null);
-        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger=null);
-        
-        void BeginTransaction(IConnection connection, IConnectionContext context);
-        Bookmark CommitTransaction(IConnection connection, IConnectionContext context);
-        void RollbackTransaction(IConnection connection, IConnectionContext context);
-        IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement, IResultResourceHandler resultResourceHandler);
-        IStatementResult RunInExplicitTransaction(IConnection connection, IConnectionContext context);
-        void InitializeConnection(IConnection connection, string userAgent, IAuthToken authToken);
-        
-    }
+        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null);
+        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null);
 
-    internal interface IConnectionContext
-    {
+        void InitializeConnection(IConnection connection, string userAgent, IAuthToken authToken);
+        Task InitializeConnectionAsync(IConnection connection, string userAgent, IAuthToken authToken);
+
+        IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
+            IResultResourceHandler resultResourceHandler);
+
+        Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
+            IResultResourceHandler resultResourceHandler);
+
+        void BeginTransaction(IConnection connection, Bookmark bookmark);
+        Task BeginTransactionAsync(IConnection connection, Bookmark bookmark);
+
+        IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement);
+        Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement);
+
+        Bookmark CommitTransaction(IConnection connection);
+        Task<Bookmark> CommitTransactionAsync(IConnection connection);
+
+        void RollbackTransaction(IConnection connection);
+        Task RollbackTransactionAsync(IConnection connection);
+
+        void Reset(IConnection connection);
     }
 }

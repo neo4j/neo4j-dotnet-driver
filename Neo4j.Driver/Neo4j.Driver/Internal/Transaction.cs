@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -26,13 +27,10 @@ namespace Neo4j.Driver.Internal
     internal class Transaction : StatementRunner, ITransaction
     {
         private readonly TransactionConnection _connection;
+        private readonly IBoltProtocol _protocol;
         private ITransactionResourceHandler _resourceHandler;
 
         internal Bookmark Bookmark { get; private set; }
-
-        private const string Begin = "BEGIN";
-        private const string Commit = "COMMIT";
-        private const string Rollback = "ROLLBACK";
 
         private State _state = State.Active;
 
@@ -63,9 +61,70 @@ namespace Neo4j.Driver.Internal
         public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
         {
             _connection = new TransactionConnection(this, connection);
+            _protocol = _connection.BoltProtocol;
             _resourceHandler = resourceHandler;
-            IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            _connection.Run(Begin, parameters);
+            Bookmark = bookmark;
+        }
+
+        public void BeginTransaction()
+        {
+            _protocol.BeginTransaction(_connection, Bookmark);
+        }
+
+        public Task BeginTransactionAsync()
+        {
+            return _protocol.BeginTransactionAsync(_connection, Bookmark);
+        }
+
+        public override IStatementResult Run(Statement statement)
+        {
+            return TryExecute(() =>
+            {
+                EnsureCanRunMoreStatements();
+                return _protocol.RunInExplicitTransaction(_connection, statement);
+            });
+        }
+
+        public override Task<IStatementResultCursor> RunAsync(Statement statement)
+        {
+            return TryExecuteAsync(() =>
+            {
+                EnsureCanRunMoreStatements();
+                return _protocol.RunInExplicitTransactionAsync(_connection, statement);
+            });
+        }
+
+        public void Success()
+        {
+            if (_state == State.Active)
+            {
+                _state = State.MarkedSuccess;
+            }
+        }
+
+        public void Failure()
+        {
+            if (_state == State.Active || _state == State.MarkedSuccess)
+            {
+                _state = State.MarkedFailed;
+            }
+        }
+
+        public Task CommitAsync()
+        {
+            Success();
+            return CloseAsync();
+        }
+
+        public Task RollbackAsync()
+        {
+            Failure();
+            return CloseAsync();
+        }
+
+        public void MarkToClose()
+        {
+            _state = State.Failed;
         }
 
         protected override void Dispose(bool isDisposing)
@@ -121,110 +180,27 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public void SyncBookmark(Bookmark bookmark)
-        {
-            if (bookmark != null && !bookmark.IsEmpty())
-            {
-                _connection.Sync();
-            }
-        }
-
-        public async Task SyncBookmarkAsync(Bookmark bookmark)
-        {
-            if (bookmark!=null && !bookmark.IsEmpty())
-            {
-                await _connection.SyncAsync().ConfigureAwait(false);
-            }
-        }
-
-        public override IStatementResult Run(Statement statement)
-        {
-            return TryExecute(() =>
-            {
-                EnsureCanRunMoreStatements();
-
-                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOne(),
-                    _connection.Server);
-                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
-                _connection.Send();
-
-                return resultBuilder.PreBuild();
-            });
-        }
-
-        public override Task<IStatementResultCursor> RunAsync(Statement statement)
-        {
-            return TryExecuteAsync(async () =>
-            {
-                EnsureCanRunMoreStatements();
-
-                var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, () => _connection.ReceiveOneAsync(),
-                    _connection.Server);
-                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
-                await _connection.SendAsync().ConfigureAwait(false);
-
-                return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
-            });
-        }
-
-        public void Success()
-        {
-            if (_state == State.Active)
-            {
-                _state = State.MarkedSuccess;
-            }
-        }
-
-        public void Failure()
-        {
-            if (_state == State.Active || _state == State.MarkedSuccess)
-            {
-                _state = State.MarkedFailed;
-            }
-        }
-
-        public void MarkToClose()
-        {
-            _state = State.Failed;
-        }
-
-        public Task CommitAsync()
-        {
-            Success();
-            return CloseAsync();
-        }
-
-        public Task RollbackAsync()
-        {
-            Failure();
-            return CloseAsync();
-        }
-
         private void CommitTx()
         {
-            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
-            _connection.Sync();
+            Bookmark = _protocol.CommitTransaction(_connection);
             _state = State.Succeeded;
         }
 
         private async Task CommitTxAsync()
         {
-            _connection.Run(Commit, null, new BookmarkCollector(s => Bookmark = Bookmark.From(s)));
-            await _connection.SyncAsync().ConfigureAwait(false);
+            Bookmark = await _protocol.CommitTransactionAsync(_connection).ConfigureAwait(false);
             _state = State.Succeeded;
         }
 
         private void RollbackTx()
         {
-            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
-            _connection.Sync();
+            _protocol.RollbackTransaction(_connection);
             _state = State.RolledBack;
         }
 
         private async Task RollbackTxAsync()
         {
-            _connection.Run(Rollback, null, null, false/*DiscardAll*/);
-            await _connection.SyncAsync().ConfigureAwait(false);
+            await _protocol.RollbackTransactionAsync(_connection).ConfigureAwait(false);
             _state = State.RolledBack;
         }
 

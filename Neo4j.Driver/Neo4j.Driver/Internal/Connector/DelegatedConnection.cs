@@ -109,19 +109,6 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskWithErrorHandling(()=>Delegate.InitAsync());
         }
 
-        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
-            bool pullAll = true)
-        {
-            try
-            {
-                Delegate.Run(statement, parameters, resultBuilder, pullAll);
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
         public void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null)
         {
             try
