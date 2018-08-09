@@ -18,6 +18,9 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
+using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
+using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
+using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 
 namespace Neo4j.Driver.Tests
 {
@@ -30,15 +33,15 @@ namespace Neo4j.Driver.Tests
                 new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
                 new object[] {new InitMessage("mydriver", new Dictionary<string, object>()), "INIT `mydriver`"},
                 new object[] {new SuccessMessage(new Dictionary<string, object>()), "SUCCESS []"},
-                new object[] {new DiscardAllMessage(), "DISCARDALL"},
-                new object[] {new IgnoredMessage(), "IGNORED"},
-                new object[] {new PullAllMessage(), "PULLALL"},
+                new object[] {DiscardAll, "DISCARDALL"},
+                new object[] {Ignored, "IGNORED"},
+                new object[] {PullAll, "PULLALL"},
                 new object[]
                 {
                     new RecordMessage(new object[] {1, "a string", new[] {3, 4}}),
                     "RECORD [1, a string, [3, 4]]"
                 },
-                new object[] {new ResetMessage(), "RESET"},
+                new object[] {ResetMessage.Reset, "RESET"},
                 new object[]
                 {
                     new RunMessage("A statement", new Dictionary<string, object>

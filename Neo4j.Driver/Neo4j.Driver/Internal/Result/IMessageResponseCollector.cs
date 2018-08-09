@@ -61,8 +61,9 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
-    internal abstract class NoOperationCollector : IMessageResponseCollector
+    internal class NoOperationCollector : IMessageResponseCollector
     {
+        public static readonly NoOperationCollector NoOpResponseCollector = new NoOperationCollector();
         public virtual void CollectFields(IDictionary<string, object> meta)
         {
             // left empty

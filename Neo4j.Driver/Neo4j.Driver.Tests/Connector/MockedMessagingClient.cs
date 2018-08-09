@@ -116,11 +116,6 @@ namespace Neo4j.Driver.Tests.Routing
                 : new SuccessMessage(new Dictionary<string, object> {{"fields", fileds}});
         }
 
-        internal static PullAllMessage PullAllMessage()
-        {
-            return new PullAllMessage();
-        }
-
         internal static Tuple<IRequestMessage, IResponseMessage> MessagePair(IRequestMessage request,
             IResponseMessage response)
         {

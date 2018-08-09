@@ -33,8 +33,8 @@ namespace Neo4j.Driver.Internal.Protocol
         public static readonly BoltProtocolV1 BoltV1 = new BoltProtocolV1();
         
         private const string Begin = "BEGIN";
-        private static readonly IRequestMessage Commit = new RunMessage("COMMIT");
-        private static readonly IRequestMessage Rollback = new RunMessage("ROLLBACK");
+        public static readonly IRequestMessage Commit = new RunMessage("COMMIT");
+        public static readonly IRequestMessage Rollback = new RunMessage("ROLLBACK");
 
         public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger=null)
         {

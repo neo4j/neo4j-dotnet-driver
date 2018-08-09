@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
 
 namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
@@ -35,7 +36,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Write(Mock.Of<IPackStreamWriter>(), new IgnoredMessage()));
+                handler.Write(Mock.Of<IPackStreamWriter>(), Ignored));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();

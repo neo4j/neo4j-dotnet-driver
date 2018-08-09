@@ -16,7 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging;
+using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
 
 namespace Neo4j.Driver.Internal.IO.MessageHandlers
 {
@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO.MessageHandlers
 
         public override object Read(IPackStreamReader reader, byte signature, long size)
         {
-            return new IgnoredMessage();
+            return Ignored;
         }
     }
 }

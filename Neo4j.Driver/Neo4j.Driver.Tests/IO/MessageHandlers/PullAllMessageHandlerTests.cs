@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new PullAllMessage());
+            writer.Write(PullAllMessage.PullAll);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();

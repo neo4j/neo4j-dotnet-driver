@@ -14,19 +14,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading.Tasks;
+using FluentAssertions.Collections;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
+using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1;
+using static Neo4j.Driver.Tests.SessionTests;
 
 namespace Neo4j.Driver.Tests.Connector
 {
     public class BoltProtocolV1Tests
     {
+        public class InitializeConnectionMethod
+        {
+            [Fact]
+            public void ShouldEnqueueInitAndSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockAuth = new Mock<IAuthToken>();
+                BoltV1.InitializeConnection(mockConn.Object, "user-zhen", mockAuth.Object);
+
+                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
+                mockConn.Verify(x => x.Sync());
+            }
+        }
+
+        public class InitializeConnectionAsyncMethod
+        {
+            [Fact]
+            public async Task ShouldEnqueueInitAndSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockAuth = new Mock<IAuthToken>();
+                await BoltV1.InitializeConnectionAsync(mockConn.Object, "user-zhen", mockAuth.Object);
+
+                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
+                mockConn.Verify(x => x.SyncAsync());
+            }
+        }
+
         public class RunInAutoCommitTransactionMethod
         {        
             [Fact]
@@ -35,9 +68,9 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                BoltProtocolV1.BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
+                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultBuilder>(), It.IsAny<PullAllMessage>()), Times.Once);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Send());
             }
 
@@ -47,24 +80,222 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                BoltProtocolV1.BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
+                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
         }
 
-        public class InitializeConnectionMethod
+        public class RunInAutoCommitTransactionAsyncMethod
         {
             [Fact]
-            public void ShouldEnqueueInitAndSync()
+            public async Task ShouldEnqueueRunAndPullAllAndSend()
             {
                 var mockConn = new Mock<IConnection>();
-                var mockAuth = new Mock<IAuthToken>();
-                BoltProtocolV1.BoltV1.InitializeConnection(mockConn.Object, "user-zhen", mockAuth.Object);
+                var statement = new Statement("A cypher query");
+                var mockHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
-                mockConn.Verify(x => x.Sync());
+                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
+                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
+                    (msg1, h, msg2) =>
+                    {
+                        h?.DoneSuccess();
+                    });
+
+                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.SendAsync());
+            }
+
+            [Fact]
+            public async Task ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                var statement = new Statement("A cypher query");
+                var mockHandler = new Mock<IResultResourceHandler>();
+                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll))
+                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
+                        (msg1, h, msg2) =>
+                        {
+                            h?.DoneSuccess();
+                        });
+                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object);
+
+                mockConn.Verify(x => x.Server, Times.Once);
             }
         }
+
+        public class BeginTransactionMethod
+        {
+            [Fact]
+            public void ShouldNotSyncIfBookmarkIsNull()
+            {
+                var mockConn = new Mock<IConnection>();
+                BoltV1.BeginTransaction(mockConn.Object, null);
+
+                mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldNotSyncIfInvalidBookmarkGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From((string)null);
+                BoltV1.BeginTransaction(mockConn.Object, bookmark);
+
+                mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Never);
+            }
+
+            [Fact]
+            public void ShouldSyncIfValidBookmarkGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From(FakeABookmark(234));
+                BoltV1.BeginTransaction(mockConn.Object, bookmark);
+
+                mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
+            }
+        }
+
+        public class BeginTransactionAsyncMethod
+        {
+            [Fact]
+            public async Task ShouldNotSyncIfBookmarkIsNull()
+            {
+                var mockConn = new Mock<IConnection>();
+                await BoltV1.BeginTransactionAsync(mockConn.Object, null);
+
+                mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldNotSyncIfInvalidBookmarkGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From((string)null);
+                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark);
+
+                mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldSyncIfValidBookmarkGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var bookmark = Bookmark.From(FakeABookmark(234));
+                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark);
+
+                mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+            }
+        }
+
+        public class CommitTransactionMethod
+        {
+            [Fact]
+            public void EnqueueCommitAndSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                BoltV1.CommitTransaction(mockConn.Object);
+
+                mockConn.Verify(x=>x.Enqueue(Commit, It.IsAny<BookmarkCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
+            }
+        }
+
+        public class CommitTransactionAsyncMethod
+        {
+            [Fact]
+            public async Task EnqueueCommitAndSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                await BoltV1.CommitTransactionAsync(mockConn.Object);
+
+                mockConn.Verify(x=>x.Enqueue(Commit, It.IsAny<BookmarkCollector>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+            }
+        }
+
+        public class RollbacTransactionkMethod
+        {
+            [Fact]
+            public void ShouldEnqueueRollbackAndSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                BoltV1.RollbackTransaction(mockConn.Object);
+
+                mockConn.Verify(x=>x.Enqueue(Rollback, It.IsAny<BookmarkCollector>(), DiscardAll), Times.Once);
+                mockConn.Verify(x => x.Sync(), Times.Once);
+            }
+        }
+
+        public class RollbacTransactionAsynckMethod
+        {
+            [Fact]
+            public void ShouldEnqueueRollbackAndSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                BoltV1.RollbackTransactionAsync(mockConn.Object);
+
+                mockConn.Verify(x=>x.Enqueue(Rollback, It.IsAny<BookmarkCollector>(), DiscardAll), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+            }
+        }
+
+        public class RunInExplicitTransactionMethod
+        {
+            [Fact]
+            public void ShouldRunPullAllSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                var statment = new Statement("lalala");
+
+                BoltV1.RunInExplicitTransaction(mockConn.Object, statment);
+
+                mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.Send(), Times.Once);
+            }
+
+            [Fact]
+            public void ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                var statment = new Statement("lalala");
+
+                BoltV1.RunInExplicitTransaction(mockConn.Object, statment);
+                mockConn.Verify(x => x.Server, Times.Once);
+            }
+        }
+
+        public class RunInExplicitTransactionAsyncMethod
+        {
+            [Fact]
+            public async Task ShouldRunPullAllSync()
+            {
+                var mockConn = new Mock<IConnection>();
+                var statment = new Statement("lalala");
+
+                await BoltV1.RunInExplicitTransactionAsync(mockConn.Object, statment);
+
+                mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async Task ResultBuilderShouldObtainServerInfoFromConnection()
+            {
+                var mockConn = new Mock<IConnection>();
+                var statment = new Statement("lalala");
+
+                await BoltV1.RunInExplicitTransactionAsync(mockConn.Object, statment);
+                mockConn.Verify(x => x.Server, Times.Once);
+            }
+        }
+
     }
 }

@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.IO.ValueHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new ResetMessage());
+            writer.Write(ResetMessage.Reset);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();

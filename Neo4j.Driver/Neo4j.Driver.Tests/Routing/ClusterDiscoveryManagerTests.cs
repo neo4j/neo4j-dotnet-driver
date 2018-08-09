@@ -27,6 +27,8 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
+using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using static Neo4j.Driver.Tests.Routing.MockedMessagingClient;
 using Record = Xunit.Record;
 
@@ -152,7 +154,7 @@ namespace Neo4j.Driver.Tests.Routing
                 {
                     MessagePair(new RunMessage("CALL dbms.cluster.routing.getServers", new Dictionary<string, object>()),
                         new FailureMessage("Neo.ClientError.Procedure.ProcedureNotFound", "not found")),
-                    MessagePair(PullAllMessage(), new IgnoredMessage())
+                    MessagePair(PullAll, Ignored)
                 };
 
                 var connMock = new MockedConnection(pairs).MockConn;
@@ -343,7 +345,7 @@ namespace Neo4j.Driver.Tests.Routing
                         new Dictionary<string, object> {{"context", routingContext}}),
                     SuccessMessage(new List<object> {"ttl", "servers"})),
                 MessagePair(new RecordMessage(recordFields)),
-                MessagePair(PullAllMessage(), SuccessMessage())
+                MessagePair(PullAll, SuccessMessage())
             };
 
             var serverInfo = new ServerInfo(new Uri("bolt://123:456")) {Version = "Neo4j/3.2.2"};
@@ -363,7 +365,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 pairs.Add(MessagePair(new RecordMessage(recordFields)));
             }
-            pairs.Add(MessagePair(PullAllMessage(), SuccessMessage()));
+            pairs.Add(MessagePair(PullAll, SuccessMessage()));
 
             return new MockedConnection(pairs).MockConn;
         }
