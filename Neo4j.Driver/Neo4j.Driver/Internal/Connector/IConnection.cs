@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -43,14 +45,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         Task ReceiveOneAsync();
 
-        // Enqueue a run message, and a pull_all message if pullAll=true, otherwise a discard_all message 
-        void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true);
+        void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null);
 
         // Enqueue a reset message
         void Reset();
-
-        // Enqueue a ackFailure message
-        void AckFailure();
 
         /// <summary>
         /// Close and release related resources
@@ -78,5 +76,15 @@ namespace Neo4j.Driver.Internal.Connector
         /// The info of the server the connection connected to.
         /// </summary>
         IServerInfo Server { get; }
+
+        /// <summary>
+        /// The Bolt protocol that the connection is talking with.
+        /// </summary>
+        IBoltProtocol BoltProtocol { get; }
+
+        /// <summary>
+        /// Downgrade message reader and writer to not be able to read and write byte array
+        /// </summary>
+        void ResetMessageReaderAndWriterForServerV3_1();
     }
 }

@@ -33,8 +33,9 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Uri _uri;
         private readonly BufferSettings _bufferSettings;
 
+        public IMessageReader Reader { get; private set; }
+        public IMessageWriter Writer { get; private set; }
         private readonly ITcpSocketClient _tcpSocketClient;
-        private IBoltProtocol _boltProtocol;
 
         private int _closedMarker = -1;
 
@@ -58,17 +59,17 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         // For testing only
-        internal SocketClient(IBoltProtocol boltProtocol, ITcpSocketClient socketClient = null)
+        internal SocketClient(IMessageReader reader, IMessageWriter writer, ITcpSocketClient socketClient = null)
         {
-            _boltProtocol = boltProtocol;
+            Reader = reader;
+            Writer = writer;
             _tcpSocketClient = socketClient;
         }
 
         public bool IsOpen => _closedMarker == 0;
-
         private bool IsClosed => _closedMarker > 0;
 
-        public void Start()
+        public IBoltProtocol Connect()
         {
             _connMetricsListener?.ConnectionConnecting(_connEvent);
             _tcpSocketClient.Connect(_uri);
@@ -78,19 +79,17 @@ namespace Neo4j.Driver.Internal.Connector
             _connMetricsListener?.ConnectionConnected(_connEvent);
 
             var version = DoHandshake();
-            _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
+            return SelectBoltProtocol(version);
         }
 
-        public Task StartAsync()
+        public Task<IBoltProtocol> ConnectAsync()
         {
-            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
+            TaskCompletionSource<IBoltProtocol> tcs = new TaskCompletionSource<IBoltProtocol>();
 
             _connMetricsListener?.ConnectionConnecting(_connEvent);
             _tcpSocketClient.ConnectAsync(_uri)
                 .ContinueWith(t =>
                     {
-
-
                         if (t.IsFaulted)
                         {
                             tcs.SetException(t.Exception.GetBaseException());
@@ -106,7 +105,6 @@ namespace Neo4j.Driver.Internal.Connector
                             _connMetricsListener?.ConnectionConnected(_connEvent);
                             return DoHandshakeAsync();
                         }
-
                         return Task.FromResult(-1);
                     }, TaskContinuationOptions.ExecuteSynchronously).Unwrap()
                 .ContinueWith(t =>
@@ -117,8 +115,7 @@ namespace Neo4j.Driver.Internal.Connector
                     {
                         try
                         {
-                            _boltProtocol = BoltProtocolFactory.Create(version, _tcpSocketClient, _bufferSettings, _logger);
-                            tcs.SetResult(null);
+                            tcs.SetResult(SelectBoltProtocol(version));
                         }
                         catch (AggregateException exc)
                         {
@@ -140,10 +137,10 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 foreach (var message in messages)
                 {
-                    _boltProtocol.Writer.Write(message);
+                    Writer.Write(message);
                     _logger?.Debug("C: ", message);
                 }
-                _boltProtocol.Writer.Flush();
+                Writer.Flush();
             }
             catch (Exception ex)
             {
@@ -159,10 +156,10 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 foreach (var message in messages)
                 {
-                    _boltProtocol.Writer.Write(message);
+                    Writer.Write(message);
                     _logger?.Debug("C: ", message);
                 }
-                await _boltProtocol.Writer.FlushAsync().ConfigureAwait(false);
+                await Writer.FlushAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -192,7 +189,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                _boltProtocol.Reader.Read(responseHandler);
+                Reader.Read(responseHandler);
             }
             catch (Exception ex)
             {
@@ -212,7 +209,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await _boltProtocol.Reader.ReadAsync(responseHandler).ConfigureAwait(false);
+                await Reader.ReadAsync(responseHandler).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -227,11 +224,6 @@ namespace Neo4j.Driver.Internal.Connector
                 throw responseHandler.Error;
             }
        }
-
-        public void UpdateBoltProtocol(string serverVersion)
-        {
-            _boltProtocol.ReconfigIfNecessary(serverVersion);
-        }
 
         internal void SetOpened()
         {
@@ -255,6 +247,12 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             return TaskHelper.GetCompletedTask();
+        }
+
+        public void ResetMessageReaderAndWriterForServerV3_1(IBoltProtocol boltProtocol)
+        {
+            Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger, false);
+            Writer = boltProtocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger, false);
         }
 
         public void Dispose()
@@ -302,6 +300,14 @@ namespace Neo4j.Driver.Internal.Connector
             var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
             _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
             return agreedVersion;
+        }
+
+        private IBoltProtocol SelectBoltProtocol(int version)
+        {
+            var boltProtocol = BoltProtocolFactory.ForVersion(version);
+            Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger);
+            Writer = boltProtocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger);
+            return boltProtocol;
         }
     }
 }

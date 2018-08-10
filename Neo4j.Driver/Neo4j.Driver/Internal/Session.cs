@@ -58,14 +58,9 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
-
                 _connection = _connectionProvider.Acquire(_defaultMode);
-                var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
-                    () => _connection.ReceiveOne(), _connection.Server, this);
-                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
-                _connection.Send();
-
-                return resultBuilder.PreBuild();
+                var protocol = _connection.BoltProtocol;
+                return protocol.RunInAutoCommitTransaction( _connection, statement, this);
             });
         }
 
@@ -74,15 +69,9 @@ namespace Neo4j.Driver.Internal
             return TryExecuteAsync(async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
-
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
-                var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
-                    () => _connection.ReceiveOneAsync(), _connection.Server, this);
-                _connection.Run(statement.Text, statement.Parameters, resultBuilder);
-
-                await _connection.SendAsync().ConfigureAwait(false);
-
-                return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
+                var protocol = _connection.BoltProtocol;
+                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this).ConfigureAwait(false);
             });
         }
 
@@ -91,26 +80,15 @@ namespace Neo4j.Driver.Internal
             return TryExecute(() => BeginTransactionWithoutLogging(_defaultMode));
         }
 
+        public Task<ITransaction> BeginTransactionAsync()
+        {
+            return TryExecuteAsync(() => BeginTransactionWithoutLoggingAsync(_defaultMode));
+        }
+
         public ITransaction BeginTransaction(string bookmark)
         {
             UpdateBookmark(Bookmark.From(bookmark, Logger));
             return BeginTransaction();
-        }
-
-        private ITransaction BeginTransactionWithoutLogging(AccessMode mode)
-        {
-            EnsureCanRunMoreStatements();
-
-            _connection = _connectionProvider.Acquire(mode);
-            var tx = new Transaction(_connection, this, Logger, _bookmark);
-            tx.SyncBookmark(_bookmark);
-            _transaction = tx;
-            return _transaction;
-        }
-
-        public T ReadTransaction<T>(Func<ITransaction, T> work)
-        {
-            return RunTransaction(AccessMode.Read, work);
         }
 
         public void ReadTransaction(Action<ITransaction> work)
@@ -118,14 +96,39 @@ namespace Neo4j.Driver.Internal
             RunTransaction(AccessMode.Read, work);
         }
 
-        public T WriteTransaction<T>(Func<ITransaction, T> work)
+        public Task ReadTransactionAsync(Func<ITransaction, Task> work)
         {
-            return RunTransaction(AccessMode.Write, work);
+            return RunTransactionAsync(AccessMode.Read, work);
+        }
+
+        public T ReadTransaction<T>(Func<ITransaction, T> work)
+        {
+            return RunTransaction(AccessMode.Read, work);
+        }
+
+        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work)
+        {
+            return RunTransactionAsync(AccessMode.Read, work);
         }
 
         public void WriteTransaction(Action<ITransaction> work)
         {
             RunTransaction(AccessMode.Write, work);
+        }
+
+        public Task WriteTransactionAsync(Func<ITransaction, Task> work)
+        {
+            return RunTransactionAsync(AccessMode.Write, work);
+        }
+
+        public T WriteTransaction<T>(Func<ITransaction, T> work)
+        {
+            return RunTransaction(AccessMode.Write, work);
+        }
+
+        public Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work)
+        {
+            return RunTransactionAsync(AccessMode.Write, work);
         }
 
         private void RunTransaction(AccessMode mode, Action<ITransaction> work)
@@ -158,42 +161,6 @@ namespace Neo4j.Driver.Internal
             }));
         }
 
-        public Task<ITransaction> BeginTransactionAsync()
-        {
-            return TryExecuteAsync(() => BeginTransactionWithoutLoggingAsync(_defaultMode));
-        }
-
-        private async Task<ITransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode)
-        {
-            await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
-
-            _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            var tx = new Transaction(_connection, this, Logger, _bookmark);
-            await tx.SyncBookmarkAsync(_bookmark).ConfigureAwait(false);
-            _transaction = tx;
-            return _transaction;
-        }
-
-        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work)
-        {
-            return RunTransactionAsync(AccessMode.Read, work);
-        }
-
-        public Task ReadTransactionAsync(Func<ITransaction, Task> work)
-        {
-            return RunTransactionAsync(AccessMode.Read, work);
-        }
-
-        public Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work)
-        {
-            return RunTransactionAsync(AccessMode.Write, work);
-        }
-
-        public Task WriteTransactionAsync(Func<ITransaction, Task> work)
-        {
-            return RunTransactionAsync(AccessMode.Write, work);
-        }
-
         private Task RunTransactionAsync(AccessMode mode, Func<ITransaction, Task> work)
         {
             return RunTransactionAsync(mode, async tx =>
@@ -223,6 +190,28 @@ namespace Neo4j.Driver.Internal
                     }
                 }
             }).ConfigureAwait(false));
+        }
+
+        private ITransaction BeginTransactionWithoutLogging(AccessMode mode)
+        {
+            EnsureCanRunMoreStatements();
+
+            _connection = _connectionProvider.Acquire(mode);
+            var tx = new Transaction(_connection, this, Logger, _bookmark);
+            tx.BeginTransaction();
+            _transaction = tx;
+            return _transaction;
+        }
+
+        private async Task<ITransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode)
+        {
+            await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
+
+            _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
+            var tx = new Transaction(_connection, this, Logger, _bookmark);
+            await tx.BeginTransactionAsync().ConfigureAwait(false);
+            _transaction = tx;
+            return _transaction;
         }
     }
 }

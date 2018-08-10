@@ -20,6 +20,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.ErrorExtensions;
+using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -90,7 +91,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             DequeueMessage();
             CurrentResponseCollector?.DoneIgnored();
-            _logger?.Debug("S: ", new IgnoredMessage());
+            _logger?.Debug("S: ", Ignored);
         }
 
         public void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null)

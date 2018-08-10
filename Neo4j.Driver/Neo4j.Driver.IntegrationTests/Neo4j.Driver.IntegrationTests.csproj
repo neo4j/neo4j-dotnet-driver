@@ -34,9 +34,10 @@
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Update="Resources\get_routing_table.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Update="Resources\rollback_error.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">

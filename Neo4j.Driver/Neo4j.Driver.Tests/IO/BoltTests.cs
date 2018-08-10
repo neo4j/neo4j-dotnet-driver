@@ -23,7 +23,8 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.StructHandlers;
+using Neo4j.Driver.Internal.IO.MessageHandlers;
+using Neo4j.Driver.Internal.IO.ValueHandlers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Tests.IO.Utils;
 using Neo4j.Driver.V1;
@@ -38,7 +39,7 @@ namespace Neo4j.Driver.Tests.IO
         [Fact]
         public void ShouldThrowWhenWriterIsConstructedUsingNullStream()
         {
-            var ex = Record.Exception(() => new BoltWriter(null, CreatePackStreamFactory()));
+            var ex = Record.Exception(() => new MessageWriter(null, CreatePackStreamFactory()));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentNullException>();
@@ -47,7 +48,7 @@ namespace Neo4j.Driver.Tests.IO
         [Fact]
         public void ShouldThrowWhenWriterIsConstructedUsingNullPackStreamFactory()
         {
-            var ex = Record.Exception(() => new BoltWriter(new MemoryStream(), null));
+            var ex = Record.Exception(() => new MessageWriter(new MemoryStream(), null));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentNullException>();
@@ -59,7 +60,7 @@ namespace Neo4j.Driver.Tests.IO
             var stream = new Mock<Stream>();
             stream.Setup(l => l.CanRead).Returns(false);
 
-            var ex = Record.Exception(() => new BoltWriter(stream.Object, CreatePackStreamFactory()));
+            var ex = Record.Exception(() => new MessageWriter(stream.Object, CreatePackStreamFactory()));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -69,7 +70,7 @@ namespace Neo4j.Driver.Tests.IO
         public void ShouldNotWriteToStreamUntilFlushed()
         {
             var stream = new MemoryStream();
-            var writer = new BoltWriter(stream, CreatePackStreamFactory());
+            var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> { { "x", 1L } }));
 
@@ -80,7 +81,7 @@ namespace Neo4j.Driver.Tests.IO
         public void ShouldWriteToStreamWhenFlushed()
         {
             var stream = new MemoryStream();
-            var writer = new BoltWriter(stream, CreatePackStreamFactory());
+            var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> {{"x", 1L}}));
 
@@ -93,7 +94,7 @@ namespace Neo4j.Driver.Tests.IO
         public async void ShouldWriteToStreamWhenFlushedAsync()
         {
             var stream = new MemoryStream();
-            var writer = new BoltWriter(stream, CreatePackStreamFactory());
+            var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> { { "x", 1L } }));
 
@@ -106,7 +107,7 @@ namespace Neo4j.Driver.Tests.IO
         public void ShouldPropogateErrorOnUnsupportedRequestMessage()
         {
             var stream = new MemoryStream();
-            var writer = new BoltWriter(stream, CreatePackStreamFactory());
+            var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             var ex = Record.Exception(() => writer.Write(new UnsupportedRequestMessage()));
 
@@ -118,7 +119,7 @@ namespace Neo4j.Driver.Tests.IO
         public void ShouldAppendEoMMarkerOnWrite()
         {
             var stream = new MemoryStream();
-            var writer = new BoltWriter(stream, CreatePackStreamFactory());
+            var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> { { "x", 1L } }));
 
@@ -130,7 +131,7 @@ namespace Neo4j.Driver.Tests.IO
         [Fact]
         public void ShouldThrowWhenReaderIsConstructedUsingNullStream()
         {
-            var ex = Record.Exception(() => new BoltReader(null, CreatePackStreamFactory()));
+            var ex = Record.Exception(() => new MessageReader(null, CreatePackStreamFactory()));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentNullException>();
@@ -139,7 +140,7 @@ namespace Neo4j.Driver.Tests.IO
         [Fact]
         public void ShouldThrowWhenReaderIsConstructedUsingNullPackStreamFactory()
         {
-            var ex = Record.Exception(() => new BoltReader(new MemoryStream(), null));
+            var ex = Record.Exception(() => new MessageReader(new MemoryStream(), null));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentNullException>();
@@ -150,7 +151,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var responseHandler = new Mock<IMessageResponseHandler>();
 
-            var reader = new BoltReader(new MemoryStream(CreateNodeMessage()), CreatePackStreamFactory());
+            var reader = new MessageReader(new MemoryStream(CreateNodeMessage()), CreatePackStreamFactory());
 
             var ex = Record.Exception(() => reader.Read(responseHandler.Object));
 
@@ -163,7 +164,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var responseHandler = new Mock<IMessageResponseHandler>();
 
-            var reader = new BoltReader(new MemoryStream(CreateNodeMessage()), CreatePackStreamFactory());
+            var reader = new MessageReader(new MemoryStream(CreateNodeMessage()), CreatePackStreamFactory());
 
             var ex = await Record.ExceptionAsync(() => reader.ReadAsync(responseHandler.Object));
 
@@ -176,7 +177,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var responseHandler = new Mock<IMessageResponseHandler>();
 
-            var reader = new BoltReader(new MemoryStream(CreateSuccessMessage()), CreatePackStreamFactory());
+            var reader = new MessageReader(new MemoryStream(CreateSuccessMessage()), CreatePackStreamFactory());
             reader.Read(responseHandler.Object);
 
             responseHandler.Verify(
@@ -189,7 +190,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var responseHandler = new Mock<IMessageResponseHandler>();
 
-            var reader = new BoltReader(new MemoryStream(CreateSuccessMessage()), CreatePackStreamFactory());
+            var reader = new MessageReader(new MemoryStream(CreateSuccessMessage()), CreatePackStreamFactory());
             await reader.ReadAsync(responseHandler.Object);
 
             responseHandler.Verify(
@@ -208,7 +209,7 @@ namespace Neo4j.Driver.Tests.IO
                 stream.Write(CreateSuccessMessage());
             }
 
-            var reader = new BoltReader(new MemoryStream(stream.ToArray()), CreatePackStreamFactory());
+            var reader = new MessageReader(new MemoryStream(stream.ToArray()), CreatePackStreamFactory());
             reader.Read(responseHandler.Object);
 
             responseHandler.Verify(
@@ -227,7 +228,7 @@ namespace Neo4j.Driver.Tests.IO
                 stream.Write(CreateSuccessMessage());
             }
 
-            var reader = new BoltReader(new MemoryStream(stream.ToArray()), CreatePackStreamFactory());
+            var reader = new MessageReader(new MemoryStream(stream.ToArray()), CreatePackStreamFactory());
             await reader.ReadAsync(responseHandler.Object);
 
             responseHandler.Verify(
@@ -235,9 +236,9 @@ namespace Neo4j.Driver.Tests.IO
                     It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))), Times.Exactly(5));
         }
 
-        private static IPackStreamFactory CreatePackStreamFactory()
+        private static IMessageFormat CreatePackStreamFactory()
         {
-            var factory = new Mock<IPackStreamFactory>();
+            var factory = new Mock<IMessageFormat>();
 
             factory.Setup(x => x.CreateReader(It.IsAny<Stream>()))
                 .Returns((Stream stream) => new PackStreamReader(stream, CreateReaderHandlers()));

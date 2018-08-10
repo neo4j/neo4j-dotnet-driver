@@ -23,7 +23,6 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal interface IPackStreamWriter
     {
-
         void Write(object value);
         void Write(string value);
         void Write(char value);

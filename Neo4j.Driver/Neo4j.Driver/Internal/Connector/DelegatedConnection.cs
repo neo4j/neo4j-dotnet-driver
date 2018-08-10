@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -107,12 +109,11 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskWithErrorHandling(()=>Delegate.InitAsync());
         }
 
-        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null,
-            bool pullAll = true)
+        public void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null)
         {
             try
             {
-                Delegate.Run(statement, parameters, resultBuilder, pullAll);
+                Delegate.Enqueue(message1, responseCollector, message2);
             }
             catch (Exception e)
             {
@@ -132,21 +133,14 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public void AckFailure()
-        {
-            try
-            {
-                Delegate.AckFailure();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
         public virtual bool IsOpen => Delegate.IsOpen;
 
         public IServerInfo Server => Delegate.Server;
+        public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
+        public void ResetMessageReaderAndWriterForServerV3_1()
+        {
+            Delegate.ResetMessageReaderAndWriterForServerV3_1();
+        }
 
         public virtual void Destroy()
         {

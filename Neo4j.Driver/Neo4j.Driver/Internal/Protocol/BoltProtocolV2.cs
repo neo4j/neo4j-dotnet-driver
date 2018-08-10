@@ -15,40 +15,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Connector;
+using System.IO;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV2 : IBoltProtocol
+    internal class BoltProtocolV2 : BoltProtocolV1
     {
+        public static readonly BoltProtocolV2 BoltV2 = new BoltProtocolV2();
 
-
-        private readonly ITcpSocketClient _tcpSocketClient;
-        private readonly BufferSettings _bufferSettings;
-        private readonly ILogger _logger;
-
-        public IBoltReader Reader { get; private set; }
-        public IBoltWriter Writer { get; private set; }
-
-        public BoltProtocolV2(ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger=null)
+        public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
+            ILogger logger = null, bool ignored = true)
         {
-            _tcpSocketClient = tcpSocketClient;
-            _bufferSettings = bufferSettings;
-            _logger = logger;
-
-            Reader = new BoltReader(_tcpSocketClient.ReadStream, _bufferSettings.DefaultReadBufferSize,
-                _bufferSettings.MaxReadBufferSize, _logger, BoltProtocolPackStream.V2);
-            Writer = new BoltWriter(_tcpSocketClient.WriteStream, _bufferSettings.DefaultWriteBufferSize,
-                _bufferSettings.MaxWriteBufferSize, _logger, BoltProtocolPackStream.V2);
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
+                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V2);
         }
 
-        public bool ReconfigIfNecessary(string serverVersion)
+        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null,
+            bool ignored = true)
         {
-            return false;
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
+                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V2);
         }
-
     }
 }

@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
 
                 var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
-                client.Start();
+                client.Connect();
 
                 // Then
                 connMock.Verify(x=>x.Connect(FakeUri), Times.Once);
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Tests
 
                 var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
-                await client.StartAsync();
+                await client.ConnectAsync();
 
                 // Then
                 connMock.Verify(x=>x.ConnectAsync(FakeUri), Times.Once);
@@ -80,14 +80,12 @@ namespace Neo4j.Driver.Tests
             public void ShouldSendAllMessages()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var writerMock = new Mock<IBoltWriter>();
-                protocolMock.Setup(x => x.Writer).Returns(writerMock.Object);
+                var writerMock = new Mock<IMessageWriter>();
 
                 var m1 = new RunMessage("Run message 1");
                 var m2 = new RunMessage("Run message 2");
                 var messages = new IRequestMessage[] {m1, m2};
-                var client = new SocketClient(protocolMock.Object);
+                var client = new SocketClient(null, writerMock.Object);
 
                 // When
                 client.Send(messages);
@@ -102,14 +100,12 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldSendAllMessagesAsync()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var writerMock = new Mock<IBoltWriter>();
-                protocolMock.Setup(x => x.Writer).Returns(writerMock.Object);
+                var writerMock = new Mock<IMessageWriter>();
 
                 var m1 = new RunMessage("Run message 1");
                 var m2 = new RunMessage("Run message 2");
                 var messages = new IRequestMessage[] {m1, m2};
-                var client = new SocketClient(protocolMock.Object);
+                var client = new SocketClient(null, writerMock.Object);
 
                 // When
                 await client.SendAsync(messages);
@@ -124,10 +120,9 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseConnectionIfError()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
                 var connMock = new Mock<ITcpSocketClient>();
 
-                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                var client = new SocketClient(null, null, connMock.Object);
                 client.SetOpened();
 
                 // When
@@ -142,10 +137,9 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCloseConnectionIfErrorAsync()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
                 var connMock = new Mock<ITcpSocketClient>();
 
-                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                var client = new SocketClient(null, null, connMock.Object);
                 client.SetOpened();
 
                 // When
@@ -163,11 +157,9 @@ namespace Neo4j.Driver.Tests
             public void ShouldReadMessage()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
-                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var readerMock = new Mock<IMessageReader>();
 
-                var client = new SocketClient(protocolMock.Object);
+                var client = new SocketClient(readerMock.Object, null);
                 var handlerMock = new Mock<IMessageResponseHandler>();
 
                 // When
@@ -181,11 +173,9 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReadMessageAsync()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
-                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var readerMock = new Mock<IMessageReader>();
 
-                var client = new SocketClient(protocolMock.Object);
+                var client = new SocketClient(readerMock.Object, null);
                 var handlerMock = new Mock<IMessageResponseHandler>();
 
                 // When
@@ -199,12 +189,10 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseConnectionIfError()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
-                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var readerMock = new Mock<IMessageReader>();
                 var connMock = new Mock<ITcpSocketClient>();
 
-                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                var client = new SocketClient(readerMock.Object, null, connMock.Object);
                 client.SetOpened();
 
                 var handlerMock = new Mock<IMessageResponseHandler>();
@@ -223,12 +211,10 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCloseConnectionIfErrorAsync()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
-                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var readerMock = new Mock<IMessageReader>();
                 var connMock = new Mock<ITcpSocketClient>();
 
-                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                var client = new SocketClient(readerMock.Object, null, connMock.Object);
                 client.SetOpened();
 
                 var handlerMock = new Mock<IMessageResponseHandler>();
@@ -247,12 +233,10 @@ namespace Neo4j.Driver.Tests
             public void ShouldCloseConnectionIfServerError()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
-                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var readerMock = new Mock<IMessageReader>();
                 var connMock = new Mock<ITcpSocketClient>();
 
-                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                var client = new SocketClient(readerMock.Object, null, connMock.Object);
                 client.SetOpened();
 
                 var handlerMock = new Mock<IMessageResponseHandler>();
@@ -272,12 +256,10 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCloseConnectionIfServerErrorAsync()
             {
                 // Given
-                var protocolMock = new Mock<IBoltProtocol>();
-                var readerMock = new Mock<IBoltReader>();
-                protocolMock.Setup(x => x.Reader).Returns(readerMock.Object);
+                var readerMock = new Mock<IMessageReader>();
                 var connMock = new Mock<ITcpSocketClient>();
 
-                var client = new SocketClient(protocolMock.Object, connMock.Object);
+                var client = new SocketClient(readerMock.Object, null, connMock.Object);
                 client.SetOpened();
 
                 var handlerMock = new Mock<IMessageResponseHandler>();
@@ -301,7 +283,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCallDisconnectOnTheTcpSocketClientWhenDisposed()
             {
                 var connMock = new Mock<ITcpSocketClient>();
-                var client = new SocketClient(null, connMock.Object);
+                var client = new SocketClient(null, null, connMock.Object);
                 client.SetOpened();
 
                 // When
@@ -316,7 +298,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCallDisconnectOnTheTcpSocketClientWhenStopped()
             {
                 var connMock = new Mock<ITcpSocketClient>();
-                var client = new SocketClient(null, connMock.Object);
+                var client = new SocketClient(null, null, connMock.Object);
                 client.SetOpened();
 
                 // When
@@ -331,7 +313,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
             {
                 var connMock = new Mock<ITcpSocketClient>();
-                var client = new SocketClient(null, connMock.Object);
+                var client = new SocketClient(null, null, connMock.Object);
                 client.SetOpened();
 
                 // When

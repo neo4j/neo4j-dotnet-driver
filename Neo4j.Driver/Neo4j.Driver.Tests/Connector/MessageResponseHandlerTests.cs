@@ -24,6 +24,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 
 namespace Neo4j.Driver.Tests
 {
@@ -37,7 +38,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
                 mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleRecordMessage(new object[] { "x" });
@@ -51,7 +52,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
 
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> {{"fields", new List<object> {"x"}}});
                 mrh.HandleRecordMessage(new object[] {"x"});
 
@@ -65,7 +66,7 @@ namespace Neo4j.Driver.Tests
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> {{"fields", new List<object> {"x"}}});
 
                 mockLogger.ResetCalls();
@@ -83,7 +84,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
                 mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
@@ -97,7 +98,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
                 mockResultBuilder.Verify(x=> x.CollectFields(It.IsAny<IDictionary<string, object>>()), Times.Once);
             }
@@ -108,7 +109,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
                 mockResultBuilder.Verify(x => x.DoneSuccess(), Times.Once);
             }
@@ -119,7 +120,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "summary", new List<object> { "x" } } });
                 mockResultBuilder.Verify(x => x.CollectSummary(It.IsAny<IDictionary<string, object>>()), Times.Once);
             }
@@ -131,7 +132,7 @@ namespace Neo4j.Driver.Tests
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
 
                 mockLogger.Verify(x => x.Debug(It.Is<string>(actual => actual.StartsWith("S: ")), It.Is<object[]>(actual => actual.First() is SuccessMessage)), Times.Once);
@@ -141,8 +142,8 @@ namespace Neo4j.Driver.Tests
             public void ShouldSuccessMessageNotClearErrorState()
             {
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage());
-                mrh.EnqueueMessage(new PullAllMessage());
+                mrh.EnqueueMessage(PullAll);
+                mrh.EnqueueMessage(PullAll);
 
                 mrh.HandleFailureMessage("Neo.ClientError.General.ReadOnly", "message");
                 mrh.HasError.Should().BeTrue();
@@ -163,7 +164,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
                 mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleIgnoredMessage();
@@ -177,7 +178,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
 
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleIgnoredMessage();
 
                 mockResultBuilder.Verify(x => x.DoneIgnored(), Times.Once);
@@ -187,7 +188,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNoNPEIfCurrentResultBuilderIsNull()
             {
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage());
+                mrh.EnqueueMessage(PullAll);
                 mrh.HandleIgnoredMessage();
             }
 
@@ -198,7 +199,7 @@ namespace Neo4j.Driver.Tests
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleIgnoredMessage();
 
                 mockLogger.Verify(x => x.Debug(It.Is<string>(actual => actual.StartsWith("S: ")), It.Is<object[]>(actual => actual.First() is IgnoredMessage)), Times.Once);
@@ -212,7 +213,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
 
                 mrh.HandleFailureMessage(code, "message");
                 mrh.HasError.Should().BeTrue();
@@ -224,7 +225,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
 
                 mrh.HandleFailureMessage(code, "message");
                 mrh.HasError.Should().BeTrue();
@@ -236,7 +237,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
 
                 mrh.HandleFailureMessage(code, "message");
                 mrh.HasError.Should().BeTrue();
@@ -248,7 +249,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
 
                 mrh.HandleFailureMessage(code, "message");
                 mrh.HasError.Should().BeTrue();
@@ -260,7 +261,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
 
                 mrh.HandleFailureMessage(code, "message");
                 mrh.HasError.Should().BeTrue();
@@ -273,7 +274,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
                 var mrh = new MessageResponseHandler();
 
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.SentMessages.Should().HaveCount(1);
                 mrh.CurrentResponseCollector.Should().BeNull();
                 mrh.HandleFailureMessage("code.error", "message");
@@ -287,7 +288,7 @@ namespace Neo4j.Driver.Tests
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
 
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleFailureMessage("code.error", "message");
 
                 mockResultBuilder.Verify(x => x.DoneFailure(), Times.Once);
@@ -297,7 +298,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNoNPEIfCurrentResultBuilderIsNull()
             {
                 var mrh = new MessageResponseHandler();
-                mrh.EnqueueMessage(new PullAllMessage());
+                mrh.EnqueueMessage(PullAll);
                 mrh.HandleFailureMessage("code.error", "message");
             }
 
@@ -308,7 +309,7 @@ namespace Neo4j.Driver.Tests
                 var mockLogger = new Mock<ILogger>();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleFailureMessage("code.error", "message");
 
                 mockLogger.Verify(x => x.Debug(It.Is<string>(actual => actual.StartsWith("S: ")), It.Is<object[]>(actual => actual.First() is FailureMessage)), Times.Once);
@@ -409,12 +410,12 @@ namespace Neo4j.Driver.Tests
 
                 var mrh = new MessageResponseHandler();
                 mrh.EnqueueMessage(new RunMessage("run something"), mockResultBuilder.Object);
-                mrh.EnqueueMessage(new PullAllMessage(), mockResultBuilder.Object);
+                mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
                 mrh.HandleSuccessMessage(new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
                 mrh.HandleRecordMessage(new object[] { "x" });
                 mrh.CurrentResponseCollector.Should().NotBeNull();
 
-                mrh.EnqueueMessage(new ResetMessage());
+                mrh.EnqueueMessage(ResetMessage.Reset);
                 mrh.CurrentResponseCollector.Should().NotBeNull();
 
                 mrh.HandleRecordMessage(new object[] { "x" });

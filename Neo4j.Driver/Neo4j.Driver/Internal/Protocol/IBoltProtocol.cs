@@ -15,19 +15,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
     internal interface IBoltProtocol
     {
-        IBoltReader Reader { get; }
-        IBoltWriter Writer { get; }
-        /// <summary>
-        /// Reconfig protocol if necessary.
-        /// </summary>
-        /// <param name="serverVersion"></param>
-        /// <returns>true if reconfigured, otherwise false.</returns>
-        bool ReconfigIfNecessary(string serverVersion);
+        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled = true);
+        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled = true);
+
+        void Authenticate(IConnection connection, string userAgent, IAuthToken authToken);
+        Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken);
+
+        IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
+            IResultResourceHandler resultResourceHandler);
+
+        Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
+            IResultResourceHandler resultResourceHandler);
+
+        void BeginTransaction(IConnection connection, Bookmark bookmark);
+        Task BeginTransactionAsync(IConnection connection, Bookmark bookmark);
+
+        IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement);
+        Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement);
+
+        Bookmark CommitTransaction(IConnection connection);
+        Task<Bookmark> CommitTransactionAsync(IConnection connection);
+
+        void RollbackTransaction(IConnection connection);
+        Task RollbackTransactionAsync(IConnection connection);
+
+        void Reset(IConnection connection);
     }
 }

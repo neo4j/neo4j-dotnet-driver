@@ -36,14 +36,14 @@ namespace Neo4j.Driver.Internal.Protocol
         private const int BoltIdentifier = 0x6060B017;
         private static readonly int[] SupportedVersions = {ProtocolVersion.Version2, ProtocolVersion.Version1, 0, 0};
 
-        public static IBoltProtocol Create(int version, ITcpSocketClient tcpSocketClient, BufferSettings bufferSettings, ILogger logger = null)
+        public static IBoltProtocol ForVersion(int version)
         {
             switch (version)
             {
                 case ProtocolVersion.Version1:
-                    return new BoltProtocolV1(tcpSocketClient, bufferSettings, logger);
+                    return BoltProtocolV1.BoltV1;
                 case ProtocolVersion.Version2:
-                    return new BoltProtocolV2(tcpSocketClient, bufferSettings, logger);
+                    return BoltProtocolV2.BoltV2;
                 case ProtocolVersion.NoVersion:
                     throw new NotSupportedException(
                         "The Neo4j server does not support any of the protocol versions supported by this client. " +

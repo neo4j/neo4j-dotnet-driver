@@ -19,6 +19,7 @@ using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.V1;
+using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -80,6 +81,24 @@ namespace Neo4j.Driver.IntegrationTests
                         tx.Success();
                     }
                     session.LastBookmark.Should().Be("neo4j:bookmark:v1:tx95");
+                }
+            }
+        }
+
+        [RequireBoltStubServerFact]
+        public void ShouldOnlyResetAfterError()
+        {
+            using (BoltStubServer.Start("rollback_error", 9001))
+            {
+                var uri = new Uri("bolt://127.0.0.1:9001");
+                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                using (var session = driver.Session())
+                {
+                    var tx = session.BeginTransaction();
+                    var result = tx.Run("CREATE (n {name:'Alice'}) RETURN n.name AS name");
+                    var exception = Record.Exception(() => result.Consume());
+                    exception.Should().BeOfType<TransientException>();
+                    tx.Dispose();
                 }
             }
         }

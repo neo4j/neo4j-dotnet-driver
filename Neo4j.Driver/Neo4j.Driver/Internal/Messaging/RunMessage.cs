@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
@@ -25,6 +26,12 @@ namespace Neo4j.Driver.Internal.Messaging
         {
             Statement = statement;
             StatementParameters = statementParameters;
+        }
+
+        public RunMessage(Statement statement)
+        {
+            Statement = statement.Text;
+            StatementParameters = statement.Parameters;
         }
 
         public string Statement { get; }

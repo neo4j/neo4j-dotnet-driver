@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 
@@ -29,6 +30,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class SocketConnection : IConnection
     {
         private readonly ISocketClient _client;
+        private IBoltProtocol _boltProtocol;
         private readonly IAuthToken _authToken;
         private readonly string _userAgent;
         private readonly IMessageResponseHandler _responseHandler;
@@ -67,8 +69,8 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                _client.Start();
-                Init(_authToken);
+                _boltProtocol = _client.Connect();
+                _boltProtocol.Authenticate(this, _userAgent, _authToken);
             }
             catch (AggregateException e)
             {
@@ -79,26 +81,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task InitAsync()
         {
-            await _client.StartAsync().ConfigureAwait(false);
-            await InitAsync(_authToken).ConfigureAwait(false);
-        }
-
-        private void Init(IAuthToken authToken)
-        {
-            var initCollector = new InitCollector();
-            Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
-            Sync();
-            ((ServerInfo)Server).Version = initCollector.Server;
-            _client.UpdateBoltProtocol(initCollector.Server);
-        }
-
-        private async Task InitAsync(IAuthToken authToken)
-        {
-            var initCollector = new InitCollector();
-            Enqueue(new InitMessage(_userAgent, authToken.AsDictionary()), initCollector);
-            await SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)Server).Version = initCollector.Server;
-            _client.UpdateBoltProtocol(initCollector.Server);
+            _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
+            await _boltProtocol.AuthenticateAsync(this, _userAgent, _authToken).ConfigureAwait(false);
         }
 
         public void Sync()
@@ -167,7 +151,6 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-
         public void ReceiveOne()
         {
             _client.ReceiveOne(_responseHandler);
@@ -181,31 +164,18 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Run(string statement, IDictionary<string, object> parameters = null, IMessageResponseCollector resultBuilder = null, bool pullAll = true)
-        {
-            if (pullAll)
-            {
-                Enqueue(new RunMessage(statement, parameters), resultBuilder, new PullAllMessage());
-            }
-            else
-            {
-                Enqueue(new RunMessage(statement, parameters), resultBuilder, new DiscardAllMessage());
-            }
-        }
-
         public void Reset()
         {
-            Enqueue(new ResetMessage());
-        }
-
-        public void AckFailure()
-        {
-
-            Enqueue(new AckFailureMessage());
+            _boltProtocol.Reset(this);
         }
 
         public bool IsOpen => _client.IsOpen;
-        public IServerInfo Server { get; }
+        public IServerInfo Server { get; set; }
+        public IBoltProtocol BoltProtocol => _boltProtocol;
+        public void ResetMessageReaderAndWriterForServerV3_1()
+        {
+            _client.ResetMessageReaderAndWriterForServerV3_1(_boltProtocol);
+        }
 
         public void Destroy()
         {
@@ -255,7 +225,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
+        public void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
             IRequestMessage requestStreamingMessage = null)
         {
 

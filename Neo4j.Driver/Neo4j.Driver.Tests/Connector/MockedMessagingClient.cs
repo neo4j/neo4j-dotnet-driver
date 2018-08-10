@@ -21,6 +21,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Tests.Routing
@@ -74,6 +75,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             ClientMock = clientMock ?? new Mock<ISocketClient>();
+            ClientMock.Setup(x => x.Connect()).Returns(new Mock<IBoltProtocol>().Object);
             ClientMock.Setup(x => x.Send(It.IsAny<IEnumerable<IRequestMessage>>()))
                 .Callback<IEnumerable<IRequestMessage>>(msg =>
                 {
@@ -112,11 +114,6 @@ namespace Neo4j.Driver.Tests.Routing
             return fileds == null
                 ? new SuccessMessage(new Dictionary<string, object>())
                 : new SuccessMessage(new Dictionary<string, object> {{"fields", fileds}});
-        }
-
-        internal static PullAllMessage PullAllMessage()
-        {
-            return new PullAllMessage();
         }
 
         internal static Tuple<IRequestMessage, IResponseMessage> MessagePair(IRequestMessage request,

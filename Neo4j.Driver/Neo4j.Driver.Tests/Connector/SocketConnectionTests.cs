@@ -23,9 +23,12 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
+using static Neo4j.Driver.Internal.Result.NoOperationCollector;
 using static Xunit.Record;
 
 namespace Neo4j.Driver.Tests
@@ -75,36 +78,20 @@ namespace Neo4j.Driver.Tests
         public class InitMethod
         {
             [Fact]
-            public void ShouldStartClient()
+            public void ShouldConnectClient()
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockClient.Setup(x => x.Connect()).Returns(mockProtocol.Object);
                 var conn = NewSocketConnection(mockClient.Object);
 
                 // When
                 conn.Init();
 
                 // Then
-                mockClient.Verify(c => c.Start(), Times.Once);
-            }
-
-            [Fact]
-            public void ShouldSyncInitMessageImmediately()
-            {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                var mockHandler = new Mock<IMessageResponseHandler>();
-                mockHandler.Setup(x => x.UnhandledMessageSize).Returns(1);
-                var conn = NewSocketConnection(mockClient.Object, mockHandler.Object);
-
-                // When
-                conn.Init();
-
-                // Then
-                mockHandler.Verify(h => h.EnqueueMessage(It.IsAny<InitMessage>(), It.IsAny<InitCollector>()));
-
-                mockClient.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
-                mockClient.Verify(c => c.Receive(mockHandler.Object), Times.Once);
+                mockClient.Verify(c => c.Connect(), Times.Once);
+                mockProtocol.Verify(p=>p.Authenticate(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
             }
 
             [Fact]
@@ -112,7 +99,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.Start()).Throws(new IOException("I will stop socket conn from initialization"));
+                mockClient.Setup(x => x.Connect()).Throws(new IOException("I will stop socket conn from initialization"));
                 // ReSharper disable once ObjectCreationAsStatement
                 var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
                 // When
@@ -154,7 +141,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<ISocketClient>();
                 var con = NewSocketConnection(mock.Object);
-                con.Run("A statement");
+                con.Enqueue(new RunMessage("A statement"));
 
                 con.Sync();
                 mock.Verify(c => c.Send(It.IsAny<IEnumerable<IRequestMessage>>()),
@@ -163,21 +150,20 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class RunMethod
+        public class EnqueueMethod
         {
             [Fact]
-            public void ShouldEnqueueRunMessageAndDiscardAllMessage()
+            public void ShouldEnqueueOneMessage()
             {
                 // Given
                 var con = NewSocketConnection();
 
                 // When
-                con.Run("a statement", null, new ResultBuilder(null, () => { }, null, null), false);
+                con.Enqueue(new RunMessage("a statement"), NoOpResponseCollector);
 
                 // Then
-                con.Messages.Count.Should().Be(2); // Run + DiscardAll
+                con.Messages.Count.Should().Be(1); // Run
                 con.Messages[0].Should().BeAssignableTo<RunMessage>();
-                con.Messages[1].Should().BeAssignableTo<DiscardAllMessage>();
             }
 
             [Fact]
@@ -186,21 +172,19 @@ namespace Neo4j.Driver.Tests
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 var con = NewSocketConnection(handler:mockResponseHandler.Object);
 
-                var rb = new ResultBuilder(null, () => { }, null, null);
-                con.Run("statement", null, rb, false);
+                con.Enqueue(new RunMessage("statement"), NoOpResponseCollector);
 
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), rb), Times.Once);
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<DiscardAllMessage>(), rb), Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector), Times.Once);
             }
 
             [Fact]
-            public void ShouldEnqueueRunMessageAndPullAllMessage()
+            public void ShouldEnqueueTwoMessages()
             {
                 // Given
                 var con = NewSocketConnection();
 
                 // When
-                con.Run("a statement", null, new ResultBuilder(null, () => { }, null, null), true);
+                con.Enqueue(new RunMessage("a statement"), NoOpResponseCollector, PullAll);
 
                 // Then
                 con.Messages.Count.Should().Be(2); // Run + PullAll
@@ -214,32 +198,28 @@ namespace Neo4j.Driver.Tests
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
                 var con = NewSocketConnection(handler: mockResponseHandler.Object);
 
-                var rb = new ResultBuilder(null, () => { }, null, null);
-                con.Run("statement", null, rb, true);
+                con.Enqueue(new RunMessage("statement"), NoOpResponseCollector, PullAll);
 
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), rb), Times.Once);
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<PullAllMessage>(), rb), Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector), Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<PullAllMessage>(), NoOpResponseCollector), Times.Once);
             }
         }
 
         public class ResetMethod
         {
             [Fact]
-            public void ShouldNotClearMessagesResponseHandlerAndEnqueueResetMessage()
+            public void ShouldDelegateToBoltProtocol()
             {
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = NewSocketConnection(handler: mockResponseHandler.Object);
+                var mockClient = new Mock<ISocketClient>();
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockClient.Setup(x => x.Connect()).Returns(mockProtocol.Object);
 
-                con.Run("bula", null, null, false);
+                var con = NewSocketConnection(mockClient.Object);
+
+                con.Init(); // to assign protocol to connection
+
                 con.Reset();
-                var messages = con.Messages;
-                messages.Count.Should().Be(3);
-                messages[0].Should().BeOfType<RunMessage>();
-                messages[1].Should().BeOfType<DiscardAllMessage>();
-                messages[2].Should().BeOfType<ResetMessage>();
-                mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<RunMessage>(), null), Times.Once);
-                mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<DiscardAllMessage>(), null), Times.Once);
-                mockResponseHandler.Verify(x => x.EnqueueMessage(It.IsAny<ResetMessage>(), null), Times.Once);
+                mockProtocol.Verify(x => x.Reset(con), Times.Once);
             }
         }
     }
