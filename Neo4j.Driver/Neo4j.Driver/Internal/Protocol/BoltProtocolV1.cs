@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, messageFormat);
         }
 
-        public void InitializeConnection(IConnection connection, string userAgent, IAuthToken authToken)
+        public void Authenticate(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var initCollector = new InitCollector();
             connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public async Task InitializeConnectionAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public async Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var initCollector = new InitCollector();
             connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public void BeginTransaction(IConnection connection, Bookmark bookmark)
         {
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll); //TODO Not null handler
+            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 connection.Sync();
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark)
         {
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll); //TODO Not null handler
+            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
@@ -158,13 +158,13 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public void RollbackTransaction(IConnection connection)
         {
-            connection.Enqueue(Rollback, null, DiscardAll); // TODO Not null handler
+            connection.Enqueue(Rollback, null, DiscardAll);
             connection.Sync();
         }
 
         public Task RollbackTransactionAsync(IConnection connection)
         {
-            connection.Enqueue(Rollback, null, DiscardAll); // TODO Not null handler
+            connection.Enqueue(Rollback, null, DiscardAll);
             return connection.SyncAsync();
         }
 

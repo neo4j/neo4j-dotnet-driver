@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 mockClient.Verify(c => c.Connect(), Times.Once);
-                mockProtocol.Verify(p=>p.InitializeConnection(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
+                mockProtocol.Verify(p=>p.Authenticate(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
             }
 
             [Fact]

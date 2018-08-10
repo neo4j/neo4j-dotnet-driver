@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.Connector
             try
             {
                 _boltProtocol = _client.Connect();
-                _boltProtocol.InitializeConnection(this, _userAgent, _authToken);
+                _boltProtocol.Authenticate(this, _userAgent, _authToken);
             }
             catch (AggregateException e)
             {
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.Connector
         public async Task InitAsync()
         {
             _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
-            await _boltProtocol.InitializeConnectionAsync(this, _userAgent, _authToken).ConfigureAwait(false);
+            await _boltProtocol.AuthenticateAsync(this, _userAgent, _authToken).ConfigureAwait(false);
         }
 
         public void Sync()

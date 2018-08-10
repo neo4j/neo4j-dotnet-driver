@@ -32,28 +32,28 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class BoltProtocolV1Tests
     {
-        public class InitializeConnectionMethod
+        public class AuthenticateMethod
         {
             [Fact]
             public void ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                BoltV1.InitializeConnection(mockConn.Object, "user-zhen", AuthTokens.None);
+                BoltV1.Authenticate(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync());
             }
         }
 
-        public class InitializeConnectionAsyncMethod
+        public class AuthenticateAsyncMethod
         {
             [Fact]
             public async Task ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                await BoltV1.InitializeConnectionAsync(mockConn.Object, "user-zhen", AuthTokens.None);
+                await BoltV1.AuthenticateAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
@@ -221,7 +221,7 @@ namespace Neo4j.Driver.Tests.Connector
             }
         }
 
-        public class RollbacTransactionkMethod
+        public class RollbackTransactionkMethod
         {
             [Fact]
             public void ShouldEnqueueRollbackAndSync()
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.Tests.Connector
             }
         }
 
-        public class RollbacTransactionAsynckMethod
+        public class RollbackTransactionAsynckMethod
         {
             [Fact]
             public void ShouldEnqueueRollbackAndSync()
