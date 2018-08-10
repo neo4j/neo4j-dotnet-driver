@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
@@ -36,24 +37,39 @@ namespace Neo4j.Driver.Internal.Protocol
         public static readonly IRequestMessage Commit = new RunMessage("COMMIT");
         public static readonly IRequestMessage Rollback = new RunMessage("ROLLBACK");
 
-        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger=null)
+        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger=null, bool byteArraySupportEnabled = true)
         {
+            var messageFormat = BoltProtocolMessageFormat.V1;
+            if (!byteArraySupportEnabled)
+            {
+                messageFormat = BoltProtocolMessageFormat.V1NoByteArray;
+            }
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
-                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V1);
+                bufferSettings.MaxWriteBufferSize, logger, messageFormat);
         }
 
-        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null)
+        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled=true)
         {
+            var messageFormat = BoltProtocolMessageFormat.V1;
+            if (!byteArraySupportEnabled)
+            {
+                messageFormat = BoltProtocolMessageFormat.V1NoByteArray;
+            }
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
-                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V1);
+                bufferSettings.MaxReadBufferSize, logger, messageFormat);
         }
-        
+
         public void InitializeConnection(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var initCollector = new InitCollector();
             connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
             connection.Sync();
             ((ServerInfo)connection.Server).Version = initCollector.Server;
+
+            if (!(ServerVersion.Version(initCollector.Server) >= ServerVersion.V3_2_0))
+            {
+                connection.ResetMessageReaderAndWriterForServerV3_1();
+            }
         }
 
         public async Task InitializeConnectionAsync(IConnection connection, string userAgent, IAuthToken authToken)

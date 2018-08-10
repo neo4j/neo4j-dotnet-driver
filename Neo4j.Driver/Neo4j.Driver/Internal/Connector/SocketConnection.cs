@@ -172,6 +172,10 @@ namespace Neo4j.Driver.Internal.Connector
         public bool IsOpen => _client.IsOpen;
         public IServerInfo Server { get; set; }
         public IBoltProtocol BoltProtocol => _boltProtocol;
+        public void ResetMessageReaderAndWriterForServerV3_1()
+        {
+            _client.ResetMessageReaderAndWriterForServerV3_1(_boltProtocol);
+        }
 
         public void Destroy()
         {

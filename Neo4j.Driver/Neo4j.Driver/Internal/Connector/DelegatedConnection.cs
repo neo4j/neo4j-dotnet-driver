@@ -137,6 +137,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         public IServerInfo Server => Delegate.Server;
         public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
+        public void ResetMessageReaderAndWriterForServerV3_1()
+        {
+            Delegate.ResetMessageReaderAndWriterForServerV3_1();
+        }
 
         public virtual void Destroy()
         {

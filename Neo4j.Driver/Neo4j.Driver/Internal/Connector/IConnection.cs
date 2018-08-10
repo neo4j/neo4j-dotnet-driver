@@ -81,5 +81,10 @@ namespace Neo4j.Driver.Internal.Connector
         /// The Bolt protocol that the connection is talking with.
         /// </summary>
         IBoltProtocol BoltProtocol { get; }
+
+        /// <summary>
+        /// Downgrade message reader and writer to not be able to read and write byte array
+        /// </summary>
+        void ResetMessageReaderAndWriterForServerV3_1();
     }
 }
