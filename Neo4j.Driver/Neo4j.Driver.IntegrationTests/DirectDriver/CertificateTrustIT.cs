@@ -29,6 +29,8 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
+    [TestCaseOrderer("Neo4j.Driver.IntegrationTests.Internals.AlphabeticalTestCaseOrderer",
+        "Neo4j.Driver.IntegrationTests")]
     public class CertificateTrustIT : DirectDriverTestBase
     {
         public CertificateTrustIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output,
@@ -129,6 +131,15 @@ namespace Neo4j.Driver.IntegrationTests
             Server.RestartServerWithCertificate(pkcs12);
 
             VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false));
+        }
+
+        // This is a quite dirty fix to have a test to execute last in this class that will reset
+        // the server to use default auto-generated certificates.
+        // Test cases are ordered by alphabetical order (that's why we have Z_)
+        [Fact]
+        public void Z_RestoreServerToDefaultCertificate()
+        {
+            Server.RestartServerWithCertificate(null);
         }
 
         private void VerifyFailure(Uri target, TrustManager trustManager)

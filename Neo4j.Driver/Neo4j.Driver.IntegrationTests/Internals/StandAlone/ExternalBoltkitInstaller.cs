@@ -132,10 +132,21 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void EnsureCertificate(Pkcs12Store store)
         {
+            var certFile = Path.Combine(HomeDir, "certificates", "neo4j.cert");
+            var keyFile = Path.Combine(HomeDir, "certificates", "neo4j.key");
+            
             Stop();
 
-            CertificateUtils.DumpPem(store.GetCertificate(), Path.Combine(HomeDir, "certificates", "neo4j.cert"));
-            CertificateUtils.DumpPem(store.GetKey(), Path.Combine(HomeDir, "certificates", "neo4j.key"));
+            if (store == null)
+            {
+                File.Delete(certFile);
+                File.Delete(keyFile);
+            }
+            else
+            {
+                CertificateUtils.DumpPem(store.GetCertificate(), certFile);
+                CertificateUtils.DumpPem(store.GetKey(), keyFile);
+            }
             
             Start();
         }
