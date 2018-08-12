@@ -25,6 +25,7 @@
     <PackageReference Include="FluentAssertions" Version="4.19.4" />
     <PackageReference Include="Moq" Version="4.7.99" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MSTestVersion)" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
     <PackageReference Include="xunit" Version="$(XunitVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="$(XunitVersion)" />
@@ -39,7 +40,6 @@
     <None Update="Resources\get_routing_table.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Update="Resources\rollback_error.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />

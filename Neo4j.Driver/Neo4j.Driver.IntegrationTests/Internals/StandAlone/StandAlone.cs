@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using System.Linq;
 using Neo4j.Driver.V1;
+using Org.BouncyCastle.Pkcs;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
@@ -94,6 +95,25 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             try
             {
                 _installer.EnsureProcedures(sourceProcedureJarPath);
+            }
+            catch
+            {
+                try { Dispose(); } catch { /*Do nothing*/ }
+                throw;
+            }
+            NewBoltDriver();
+        }
+        
+        /// <summary>
+        /// This method will always restart the server with the updated certificates
+        /// </summary>
+        /// <param name="sourceProcedureJarPath"></param>
+        public void RestartServerWithCertificate(Pkcs12Store store)
+        {
+            DisposeBoltDriver();
+            try
+            {
+                _installer.EnsureCertificate(store);
             }
             catch
             {

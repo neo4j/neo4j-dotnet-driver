@@ -20,22 +20,23 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Operators;
 using Org.BouncyCastle.Math;
+using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using X509Certificate = Org.BouncyCastle.X509.X509Certificate;
 
-namespace Neo4j.Driver.Tests.TestUtil
+namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public static class X509TestUtils
+    public static class CertificateUtils
     {
-
         public static Pkcs12Store CreateCert(string commonName, DateTime notBefore, DateTime notAfter,
             IEnumerable<string> dnsAltNames, IEnumerable<string> ipAddressAltNames, Pkcs12Store signBy)
         {
@@ -43,7 +44,7 @@ namespace Neo4j.Driver.Tests.TestUtil
             keyPairGen.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
 
             var keyPair = keyPairGen.GenerateKeyPair();
-            
+
             var certGenerator = new X509V3CertificateGenerator();
             certGenerator.SetSubjectDN(new X509Name("CN=" + commonName));
             if (signBy == null)
@@ -52,8 +53,9 @@ namespace Neo4j.Driver.Tests.TestUtil
             }
             else
             {
-                certGenerator.SetIssuerDN(GetCert(signBy).SubjectDN);
+                certGenerator.SetIssuerDN(signBy.GetCertificate().SubjectDN);
             }
+
             certGenerator.SetSerialNumber(BigInteger.ProbablePrime(64, new Random()));
             certGenerator.SetNotBefore(notBefore);
             certGenerator.SetNotAfter(notAfter);
@@ -67,7 +69,6 @@ namespace Neo4j.Driver.Tests.TestUtil
                 alternativeNames.AddRange(ipAddressAltNames?.Select(ip => new GeneralName(GeneralName.IPAddress, ip)) ??
                                           Enumerable.Empty<Asn1Encodable>());
 
-
                 certGenerator.AddExtension(
                     X509Extensions.SubjectAlternativeName,
                     false,
@@ -76,7 +77,7 @@ namespace Neo4j.Driver.Tests.TestUtil
             }
 
             var signatureKeyPair = signBy != null
-                ? new AsymmetricCipherKeyPair(GetCert(signBy).GetPublicKey(), GetKey(signBy))
+                ? new AsymmetricCipherKeyPair(signBy.GetCertificate().GetPublicKey(), signBy.GetKey())
                 : keyPair;
             var signer = new Asn1SignatureFactory("SHA256WITHRSA", signatureKeyPair.Private);
             var certificate = certGenerator.Generate(signer);
@@ -92,23 +93,11 @@ namespace Neo4j.Driver.Tests.TestUtil
 
             pkcs12Store.SetCertificateEntry(certificateAlias, certificateEntry);
             pkcs12Store.SetKeyEntry(certificate.SubjectDN.ToString(), new AsymmetricKeyEntry(privateKey),
-                new[] { certificateEntry });
+                new[] {certificateEntry});
             return pkcs12Store;
         }
 
-        public static X509Certificate2 ToDotnetCertificate(Pkcs12Store store)
-        {
-            var stream = new MemoryStream();
-            var password = "password";
-
-            store.Save(stream, password.ToCharArray(), SecureRandom.GetInstance("SHA256PRNG"));
-
-            var dotnetCertificate = new X509Certificate2(stream.ToArray(), password,
-                X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
-            return dotnetCertificate;
-        }
-
-        public static X509Certificate GetCert(Pkcs12Store store)
+        public static X509Certificate GetCertificate(this Pkcs12Store store)
         {
             foreach (string alias in store.Aliases)
             {
@@ -122,7 +111,19 @@ namespace Neo4j.Driver.Tests.TestUtil
             throw new ArgumentException("Invalid store.");
         }
 
-        public static AsymmetricKeyParameter GetKey(Pkcs12Store store)
+        public static X509Certificate2 GetDotnetCertificate(this Pkcs12Store store)
+        {
+            var stream = new MemoryStream();
+            var password = "password";
+
+            store.Save(stream, password.ToCharArray(), SecureRandom.GetInstance("SHA256PRNG"));
+
+            var dotnetCertificate = new X509Certificate2(stream.ToArray(), password,
+                X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+            return dotnetCertificate;
+        }
+
+        public static AsymmetricKeyParameter GetKey(this Pkcs12Store store)
         {
             foreach (string alias in store.Aliases)
             {
@@ -134,6 +135,18 @@ namespace Neo4j.Driver.Tests.TestUtil
             }
 
             throw new ArgumentException("Invalid store.");
+        }
+
+        public static void DumpPem(object value, string target)
+        {
+            using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
+            {
+                using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
+                {
+                    var pemWriter = new PemWriter(targetWriter);
+                    pemWriter.WriteObject(new MiscPemGenerator(value));
+                }
+            }
         }
     }
 }
