@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
+using Org.BouncyCastle.Pkcs;
 using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;
 using Path = System.IO.Path;
 
@@ -127,6 +128,27 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 File.Copy(sourceProcedureJarPath, destProcedureJarPath);
                 Start();
             }
+        }
+
+        public void EnsureCertificate(Pkcs12Store store)
+        {
+            var certFile = Path.Combine(HomeDir, "certificates", "neo4j.cert");
+            var keyFile = Path.Combine(HomeDir, "certificates", "neo4j.key");
+            
+            Stop();
+
+            if (store == null)
+            {
+                File.Delete(certFile);
+                File.Delete(keyFile);
+            }
+            else
+            {
+                CertificateUtils.DumpPem(store.GetCertificate(), certFile);
+                CertificateUtils.DumpPem(store.GetKey(), keyFile);
+            }
+            
+            Start();
         }
     }
 }
