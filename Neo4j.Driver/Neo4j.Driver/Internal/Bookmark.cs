@@ -53,16 +53,10 @@ namespace Neo4j.Driver.Internal
             return new Bookmark(values, logger);
         }
 
-        public string MaxBookmark()
-        {
-            return _maxBookmark;
-        }
+        public string MaxBookmark => _maxBookmark;
 
-        public IEnumerable<string> Bookmarks()
-        {
-            return _values;
-        }
-
+        public IEnumerable<string> Bookmarks => _values;
+        
         public bool IsEmpty()
         {
             return _values == null || _maxBookmark == null;

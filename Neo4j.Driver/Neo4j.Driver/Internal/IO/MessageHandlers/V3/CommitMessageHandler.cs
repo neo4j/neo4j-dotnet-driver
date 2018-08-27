@@ -1,5 +1,4 @@
-﻿// Copyright (c) 2002-2018 "Neo4j,"
-// Neo4j Sweden AB [http://neo4j.com]
+// Copyright (c) 2002-2018 Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -15,19 +14,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging
+using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Messaging.V3;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
+
+namespace Neo4j.Driver.Internal.IO.MessageHandlers.V3
 {
-    internal class ResetMessage : IRequestMessage
+    internal class CommitMessageHandler: WriteOnlyStructHandler
     {
-        public static readonly ResetMessage Reset = new ResetMessage();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(CommitMessage)};
 
-        private ResetMessage()
+        public override void Write(IPackStreamWriter writer, object value)
         {
-        }
-
-        public override string ToString()
-        {
-            return "RESET";
+            writer.WriteStructHeader(0, MsgCommit);
         }
     }
 }

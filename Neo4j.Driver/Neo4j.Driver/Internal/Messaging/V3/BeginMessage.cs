@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2018 "Neo4j,"
+// Copyright (c) 2002-2018 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,19 +15,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging
-{
-    internal class ResetMessage : IRequestMessage
-    {
-        public static readonly ResetMessage Reset = new ResetMessage();
+using System;
+using System.Collections.Generic;
+using Neo4j.Driver.V1;
 
-        private ResetMessage()
+namespace Neo4j.Driver.Internal.Messaging.V3
+{
+    internal class BeginMessage : TransactionStartingMessage
+    {
+        public BeginMessage(Bookmark bookmark, TimeSpan txTimeout, IDictionary<string, object> txMetadata) : base(bookmark, txTimeout, txMetadata)
         {
         }
 
+        public BeginMessage(Bookmark bookmark, TransactionConfig txConfig) : base(bookmark, txConfig)
+        {
+        }
+        
         public override string ToString()
         {
-            return "RESET";
+            return $"BEGIN {MetaData.ToContentString()}";
         }
     }
 }

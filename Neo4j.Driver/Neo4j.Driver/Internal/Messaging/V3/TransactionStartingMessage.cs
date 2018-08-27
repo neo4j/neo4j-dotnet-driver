@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
             if (bookmarksPresent)
             {
-                result.Add(Bookmark.BookmarksKey, bookmark.Bookmarks());
+                result.Add(Bookmark.BookmarksKey, bookmark.Bookmarks);
             }
 
             if (txTimeoutPresent)

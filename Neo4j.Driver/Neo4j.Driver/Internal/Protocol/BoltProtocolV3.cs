@@ -18,6 +18,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
@@ -78,49 +79,74 @@ namespace Neo4j.Driver.Internal.Protocol
             return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
         }
 
-        public void BeginTransaction(IConnection connection, Bookmark bookmark)
+        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            throw new System.NotImplementedException();
+            connection.Enqueue(new BeginMessage(bookmark, txConfig), null);
+            if (bookmark != null && !bookmark.IsEmpty())
+            {
+                connection.Sync();
+            }
         }
 
-        public Task BeginTransactionAsync(IConnection connection, Bookmark bookmark)
+        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            throw new System.NotImplementedException();
+            connection.Enqueue(new BeginMessage(bookmark, txConfig), null, PullAll);
+            if (bookmark != null && !bookmark.IsEmpty())
+            {
+                await connection.SyncAsync().ConfigureAwait(false);
+            }
         }
 
         public IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement)
         {
-            throw new System.NotImplementedException();
+            var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, connection.ReceiveOne,
+                connection.Server);
+            connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, PullAll);
+            connection.Send();
+            return resultBuilder.PreBuild();
         }
 
-        public Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement)
+        public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement)
         {
-            throw new System.NotImplementedException();
+            var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, connection.ReceiveOneAsync,
+                connection.Server);
+            connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, PullAll);
+            await connection.SendAsync().ConfigureAwait(false);
+
+            return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
         }
 
         public Bookmark CommitTransaction(IConnection connection)
         {
-            throw new System.NotImplementedException();
+            var bookmarkCollector = new BookmarkCollector();
+            connection.Enqueue(CommitMessage.Commit, bookmarkCollector);
+            connection.Sync();
+            return bookmarkCollector.Bookmark;
         }
 
-        public Task<Bookmark> CommitTransactionAsync(IConnection connection)
+        public async Task<Bookmark> CommitTransactionAsync(IConnection connection)
         {
-            throw new System.NotImplementedException();
+            var bookmarkCollector = new BookmarkCollector();
+            connection.Enqueue(CommitMessage.Commit, bookmarkCollector);
+            await connection.SyncAsync().ConfigureAwait(false);
+            return bookmarkCollector.Bookmark;
         }
 
         public void RollbackTransaction(IConnection connection)
         {
-            throw new System.NotImplementedException();
+            connection.Enqueue(RollbackMessage.Rollback, null);
+            connection.Sync();
         }
 
         public Task RollbackTransactionAsync(IConnection connection)
         {
-            throw new System.NotImplementedException();
+            connection.Enqueue(RollbackMessage.Rollback, null);
+            return connection.SyncAsync();
         }
 
         public void Reset(IConnection connection)
         {
-            throw new System.NotImplementedException();
+            connection.Enqueue(ResetMessage.Reset, null);
         }
     }
 }

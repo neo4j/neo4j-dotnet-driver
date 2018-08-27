@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2018 "Neo4j,"
+// Copyright (c) 2002-2018 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,32 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using Neo4j.Driver.V1;
-
 namespace Neo4j.Driver.Internal.Messaging.V3
 {
-    internal class RunWithMetadataMessage : TransactionStartingMessage
+    internal class CommitMessage : IRequestMessage
     {
-        public RunWithMetadataMessage(Statement statement, Bookmark bookmark, TimeSpan txTimeout,
-            IDictionary<string, object> txMetadata)
-            : base(bookmark, txTimeout, txMetadata)
-        {
-            Statement = statement;
-        }
+        public static readonly CommitMessage Commit = new CommitMessage();
 
-        public RunWithMetadataMessage(Statement statement, Bookmark bookmark, TransactionConfig txConfig)
-            : base(bookmark, txConfig)
+        private CommitMessage()
         {
-            Statement = statement;
         }
-
-        public Statement Statement { get; }
 
         public override string ToString()
         {
-            return $"RUN {Statement} {MetaData.ToContentString()}";
+            return "COMMIT";
         }
     }
 }

@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Internal.Protocol
             return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
         }
 
-        public void BeginTransaction(IConnection connection, Bookmark bookmark)
+        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig ignored)
         {
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
             connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark)
+        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig ignored)
         {
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
             connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);

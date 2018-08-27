@@ -66,14 +66,14 @@ namespace Neo4j.Driver.Internal
             Bookmark = bookmark;
         }
 
-        public void BeginTransaction()
+        public void BeginTransaction(TransactionConfig txConfig)
         {
-            _protocol.BeginTransaction(_connection, Bookmark);
+            _protocol.BeginTransaction(_connection, Bookmark, txConfig);
         }
 
-        public Task BeginTransactionAsync()
+        public Task BeginTransactionAsync(TransactionConfig txConfig)
         {
-            return _protocol.BeginTransactionAsync(_connection, Bookmark);
+            return _protocol.BeginTransactionAsync(_connection, Bookmark, txConfig);
         }
 
         public override IStatementResult Run(Statement statement)
