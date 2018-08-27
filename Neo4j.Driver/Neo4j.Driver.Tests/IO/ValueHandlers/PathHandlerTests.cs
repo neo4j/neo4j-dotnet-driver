@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Tests.IO.ValueHandlers
 
         private static void WritePath(IPackStreamWriter writer, bool reverse = false)
         {
-            writer.WriteStructHeader(3, PackStream.Path);
+            writer.WriteStructHeader(3, PathHandler.Path);
             
             writer.WriteListHeader(3);
             for (var i = 0; i < 3; i++)
@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Tests.IO.ValueHandlers
 
         private static void WriteNode(IPackStreamWriter writer, int id)
         {
-            writer.WriteStructHeader(3, PackStream.Node);
+            writer.WriteStructHeader(3, NodeHandler.Node);
             writer.Write(id);
             writer.Write(new List<string> {$"Label{id}"});
             writer.Write(new Dictionary<string, object>
@@ -151,7 +151,7 @@ namespace Neo4j.Driver.Tests.IO.ValueHandlers
 
         private static void WriteUnboundedRelationship(IPackStreamWriter writer, int id)
         {
-            writer.WriteStructHeader(3, PackStream.UnboundRelationship);
+            writer.WriteStructHeader(3, UnboundRelationshipHandler.UnboundRelationship);
             writer.Write(id);
             writer.Write($"RELATES_TO_{id}");
             writer.Write(new Dictionary<string, object>

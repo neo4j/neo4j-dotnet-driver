@@ -29,6 +29,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public const int NoVersion = 0;
             public const int Version1 = 1;
             public const int Version2 = 2;
+            public const int Version3 = 3;
             public const int Http = 1213486160;
         }
 
@@ -44,6 +45,8 @@ namespace Neo4j.Driver.Internal.Protocol
                     return BoltProtocolV1.BoltV1;
                 case ProtocolVersion.Version2:
                     return BoltProtocolV2.BoltV2;
+                case ProtocolVersion.Version3:
+                    return BoltProtocolV3.BoltV3;
                 case ProtocolVersion.NoVersion:
                     throw new NotSupportedException(
                         "The Neo4j server does not support any of the protocol versions supported by this client. " +

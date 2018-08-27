@@ -17,23 +17,23 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging.V3;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.IO.MessageHandlers.V3
 {
-    internal class PullAllMessage : IRequestMessage
+    internal class RunWithMetadataMessageHandler : WriteOnlyStructHandler
     {
-        public static readonly PullAllMessage PullAll = new PullAllMessage();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(RunWithMetadataMessage)};
 
-        private PullAllMessage()
+        public override void Write(IPackStreamWriter writer, object value)
         {
-        }
+            var msg = value.CastOrThrow<RunWithMetadataMessage>();
 
-        public override string ToString()
-        {
-            return "PULLALL";
+            writer.WriteStructHeader(3, MsgRun);
+            writer.Write(msg.Statement.Text);
+            writer.Write(msg.Statement.Parameters);
+            writer.Write(msg.MetaData);
         }
     }
 }

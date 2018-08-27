@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
@@ -24,8 +25,15 @@ namespace Neo4j.Driver.Internal
     /// </summary>
     internal class AuthToken : IAuthToken
     {
+        public const string SchemeKey = "scheme";
+        public const string PrincipalKey = "principal";
+        public const string CredentialsKey = "credentials";
+        public const string RealmKey = "realm";
+        public const string ParametersKey = "parameters";
+        
         public AuthToken(IDictionary<string, object> content)
         {
+            Throw.ArgumentNullException.IfNull(content, nameof(content));
             Content = content;
         }
 

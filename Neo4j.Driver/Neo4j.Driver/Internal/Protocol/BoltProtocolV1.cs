@@ -61,12 +61,12 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public void Authenticate(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            var initCollector = new InitCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
+            var serverVersionCollector = new ServerVersionCollector();
+            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
             connection.Sync();
-            ((ServerInfo)connection.Server).Version = initCollector.Server;
+            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
 
-            if (!(ServerVersion.Version(initCollector.Server) >= ServerVersion.V3_2_0))
+            if (!(ServerVersion.Version(serverVersionCollector.Server) >= ServerVersion.V3_2_0))
             {
                 connection.ResetMessageReaderAndWriterForServerV3_1();
             }
@@ -74,13 +74,14 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            var initCollector = new InitCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
+            var serverVersionCollector = new ServerVersionCollector();
+            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
             await connection.SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)connection.Server).Version = initCollector.Server;
+            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
         }
 
-        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement, IResultResourceHandler resultResourceHandler)
+        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
+            IResultResourceHandler resultResourceHandler, Bookmark ignored1, TransactionConfig ignored2)
         {
             var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
                 connection.ReceiveOne, connection.Server, resultResourceHandler);
@@ -91,7 +92,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement,
-            IResultResourceHandler resultResourceHandler)
+            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
         {
             var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
                 connection.ReceiveOneAsync, connection.Server, resultResourceHandler);

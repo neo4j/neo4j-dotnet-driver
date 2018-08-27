@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Result;
@@ -39,7 +40,7 @@ namespace Neo4j.Driver.Internal
         private bool _isOpen = true;
 
         private Bookmark _bookmark;
-        public string LastBookmark => _bookmark?.MaxBookmarkAsString();
+        public string LastBookmark => _bookmark?.MaxBookmark();
 
         public Guid Id { get; } = Guid.NewGuid();
 
@@ -53,26 +54,55 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(bookmark);
         }
 
-        public override IStatementResult Run(Statement statement)
+        public IStatementResult Run(Statement statement, TransactionConfig txConfig)
         {
             return TryExecute(() =>
             {
                 EnsureCanRunMoreStatements();
                 _connection = _connectionProvider.Acquire(_defaultMode);
                 var protocol = _connection.BoltProtocol;
-                return protocol.RunInAutoCommitTransaction( _connection, statement, this);
+                return protocol.RunInAutoCommitTransaction( _connection, statement, this, _bookmark, txConfig);
             });
         }
 
-        public override Task<IStatementResultCursor> RunAsync(Statement statement)
+        public Task<IStatementResultCursor> RunAsync(Statement statement, TransactionConfig txConfig)
         {
             return TryExecuteAsync(async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
-                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this).ConfigureAwait(false);
+                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this, _bookmark, txConfig).ConfigureAwait(false);
             });
+        }
+        
+        public IStatementResult Run(string statement, TransactionConfig txConfig)
+        {
+            return Run(new Statement(statement), txConfig);
+        }
+
+        public Task<IStatementResultCursor> RunAsync(string statement, TransactionConfig txConfig)
+        {
+            return RunAsync(new Statement(statement), txConfig);
+        }
+
+        public IStatementResult Run(string statement, IDictionary<string, object> parameters, TransactionConfig txConfig)
+        {
+            return Run(new Statement(statement, parameters), txConfig);
+        }
+
+        public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters, TransactionConfig txConfig)
+        {
+            return RunAsync(new Statement(statement, parameters), txConfig);
+        }
+        
+        public override IStatementResult Run(Statement statement)
+        {
+            return Run(statement, TransactionConfig.Empty);
+        }
+        public override Task<IStatementResultCursor> RunAsync(Statement statement)
+        {
+            return RunAsync(statement, TransactionConfig.Empty);
         }
 
         public ITransaction BeginTransaction()

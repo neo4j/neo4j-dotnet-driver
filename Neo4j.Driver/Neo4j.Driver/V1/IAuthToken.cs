@@ -16,6 +16,7 @@
 // limitations under the License.
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
+using static Neo4j.Driver.Internal.AuthToken;
 
 namespace Neo4j.Driver.V1
 {
@@ -47,7 +48,7 @@ namespace Neo4j.Driver.V1
         /// <remarks>
         ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
         /// </remarks>
-        public static IAuthToken None => new AuthToken(new Dictionary<string, object> {{"scheme", "none"}});
+        public static IAuthToken None => new AuthToken(new Dictionary<string, object> {{SchemeKey, "none"}});
 
         /// <summary>
         ///     The basic authentication scheme, using a username and a password.
@@ -77,13 +78,13 @@ namespace Neo4j.Driver.V1
         {
             var token = new Dictionary<string, object>
             {
-                {"scheme", "basic"},
-                {"principal", username},
-                {"credentials", password}
+                {SchemeKey, "basic"},
+                {PrincipalKey, username},
+                {CredentialsKey, password}
             };
             if (realm != null)
             {
-                token.Add("realm", realm);
+                token.Add(RealmKey, realm);
             }
             return new AuthToken(token);
         }
@@ -100,9 +101,9 @@ namespace Neo4j.Driver.V1
         {
             var token = new Dictionary<string, object>
             {
-                {"scheme", "kerberos"},
-                {"principal", ""}, //This empty string is required for backwards compatibility.
-                {"credentials", base64EncodedTicket}
+                {SchemeKey, "kerberos"},
+                {PrincipalKey, ""}, //This empty string is required for backwards compatibility.
+                {CredentialsKey, base64EncodedTicket}
             };
             return new AuthToken(token);
         }
@@ -143,14 +144,14 @@ namespace Neo4j.Driver.V1
         {
             var token = new Dictionary<string, object>
             {
-                {"scheme", scheme},
-                {"principal", principal},
-                {"credentials", credentials},
-                {"realm", realm}
+                {SchemeKey, scheme},
+                {PrincipalKey, principal},
+                {CredentialsKey, credentials},
+                {RealmKey, realm}
             };
             if (parameters != null)
             {
-                token.Add("parameters", parameters);
+                token.Add(ParametersKey, parameters);
             }
             return new AuthToken(token);
         }

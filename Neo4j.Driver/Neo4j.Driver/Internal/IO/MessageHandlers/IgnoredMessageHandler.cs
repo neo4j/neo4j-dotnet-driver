@@ -17,12 +17,13 @@
 
 using System.Collections.Generic;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
 namespace Neo4j.Driver.Internal.IO.MessageHandlers
 {
     internal class IgnoredMessageHandler : ReadOnlyStructHandler
     {
-        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgIgnored};
+        public override IEnumerable<byte> ReadableStructs => new[] {MsgIgnored};
 
         public override object Read(IPackStreamReader reader, byte signature, long size)
         {

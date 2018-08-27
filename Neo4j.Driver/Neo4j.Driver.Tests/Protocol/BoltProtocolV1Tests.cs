@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests.Connector
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
                 BoltV1.Authenticate(mockConn.Object, "user-zhen", AuthTokens.None);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync());
             }
         }
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Tests.Connector
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
                 await BoltV1.AuthenticateAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
             }
         }
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
+                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Send());
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
+                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Tests.Connector
                         h?.DoneSuccess();
                     });
 
-                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object);
+                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null, null);
                 mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
             }
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Tests.Connector
                         {
                             h?.DoneSuccess();
                         });
-                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object);
+                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }

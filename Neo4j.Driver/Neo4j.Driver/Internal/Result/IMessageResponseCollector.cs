@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
-    internal class InitCollector : NoOperationCollector
+    internal class ServerVersionCollector : NoOperationCollector
     {
         public string Server { private set; get; }
         public override void CollectSummary(IDictionary<string, object> meta)
