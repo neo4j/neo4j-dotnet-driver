@@ -60,9 +60,9 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new Transaction(mockConn.Object);
 
-                tx.BeginTransaction();
+                tx.BeginTransaction(TransactionConfig.Empty);
 
-                protocol.Verify(x=>x.BeginTransaction(It.IsAny<IConnection>(), It.IsAny<Bookmark>()), Times.Once);
+                protocol.Verify(x=>x.BeginTransaction(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
 
@@ -75,8 +75,8 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new Transaction(mockConn.Object);
 
-                tx.BeginTransactionAsync();
-                protocol.Verify(x=>x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>()), Times.Once);
+                tx.BeginTransactionAsync(TransactionConfig.Empty);
+                protocol.Verify(x=>x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
 

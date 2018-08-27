@@ -23,7 +23,7 @@ namespace Neo4j.Driver.V1
 {
     public class TransactionConfig
     {
-        public static TransactionConfig Empty = new TransactionConfig();
+        public static readonly TransactionConfig Empty = new TransactionConfig();
         private IDictionary<string, object> _metadata = PackStream.EmptyDictionary;
         private TimeSpan _timeout = TimeSpan.Zero;
 

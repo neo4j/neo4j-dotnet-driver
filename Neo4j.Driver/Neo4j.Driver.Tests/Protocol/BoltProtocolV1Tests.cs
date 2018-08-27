@@ -131,7 +131,7 @@ namespace Neo4j.Driver.Tests.Connector
             public void ShouldNotSyncIfBookmarkIsNull()
             {
                 var mockConn = new Mock<IConnection>();
-                BoltV1.BeginTransaction(mockConn.Object, null);
+                BoltV1.BeginTransaction(mockConn.Object, null, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From((string)null);
-                BoltV1.BeginTransaction(mockConn.Object, bookmark);
+                BoltV1.BeginTransaction(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From(FakeABookmark(234));
-                BoltV1.BeginTransaction(mockConn.Object, bookmark);
+                BoltV1.BeginTransaction(mockConn.Object, bookmark,null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldNotSyncIfBookmarkIsNull()
             {
                 var mockConn = new Mock<IConnection>();
-                await BoltV1.BeginTransactionAsync(mockConn.Object, null);
+                await BoltV1.BeginTransactionAsync(mockConn.Object, null, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -177,7 +177,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From((string)null);
-                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark);
+                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -188,7 +188,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From(FakeABookmark(234));
-                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark);
+                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
