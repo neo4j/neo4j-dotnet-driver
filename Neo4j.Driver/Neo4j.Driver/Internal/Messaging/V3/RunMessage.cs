@@ -17,23 +17,30 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging.V3
 {
-    internal class PullAllMessage : IRequestMessage
+    internal class RunWithMetadataMessage : TransactionStartingMessage
     {
-        public static readonly PullAllMessage PullAll = new PullAllMessage();
-
-        private PullAllMessage()
+        public RunWithMetadataMessage(Statement statement, Bookmark bookmark, TimeSpan txTimeout,
+            IDictionary<string, object> txMetadata)
+            : base(bookmark, txTimeout, txMetadata)
         {
+            Statement = statement;
         }
+
+        public RunWithMetadataMessage(Statement statement, Bookmark bookmark, TransactionConfig txConfig)
+            : base(bookmark, txConfig)
+        {
+            Statement = statement;
+        }
+
+        public Statement Statement { get; }
 
         public override string ToString()
         {
-            return "PULLALL";
+            return $"RUN {Statement} {MetaData.ToContentString()}";
         }
     }
 }

@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests.IO.ValueHandlers
 
         private static void WriteUnboundRelationship(IPackStreamWriter writer)
         {
-            writer.WriteStructHeader(3, PackStream.UnboundRelationship);
+            writer.WriteStructHeader(3, UnboundRelationshipHandler.UnboundRelationship);
             writer.Write(1);
             writer.Write("RELATES_TO");
             writer.Write(new Dictionary<string, object>

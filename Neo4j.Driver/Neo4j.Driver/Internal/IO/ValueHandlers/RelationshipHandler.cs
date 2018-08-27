@@ -16,13 +16,15 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.IO.ValueHandlers
 {
     internal class RelationshipHandler : ReadOnlyStructHandler
     {
-        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.Relationship};
+        public const byte Relationship = (byte)'R';
+        public override IEnumerable<byte> ReadableStructs => new[] {Relationship};
 
         public override object Read(IPackStreamReader reader, byte signature, long size)
         {

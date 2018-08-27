@@ -71,7 +71,8 @@ namespace Neo4j.Driver.Tests
                 var session = NewSession(mockProtocol.Object);
                 session.Run("lalalal");
 
-                mockProtocol.Verify(x => x.RunInAutoCommitTransaction(It.IsAny<IConnection>(), It.IsAny<Statement>(), session), Times.Once);
+                mockProtocol.Verify(
+                    x => x.RunInAutoCommitTransaction(It.IsAny<IConnection>(), It.IsAny<Statement>(), session, It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
 
@@ -84,7 +85,9 @@ namespace Neo4j.Driver.Tests
                 var session = NewSession(mockProtocol.Object);
                 await session.RunAsync("lalalal");
 
-                mockProtocol.Verify(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), session), Times.Once);
+                mockProtocol.Verify(
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), session,
+                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
 

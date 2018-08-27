@@ -1,5 +1,4 @@
-﻿// Copyright (c) 2002-2018 "Neo4j,"
-// Neo4j Sweden AB [http://neo4j.com]
+// Copyright (c) 2002-2018 Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -17,15 +16,16 @@
 
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageHandlers;
+using Neo4j.Driver.Internal.IO.MessageHandlers.V3;
 using Neo4j.Driver.Internal.IO.ValueHandlers;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV1MessageFormat: MessageFormat
+    internal class BoltProtocolV3MessageFormat: MessageFormat
     {
         #region Message Constants
 
-        public const byte MsgInit = 0x01;
+        public const byte MsgHello = 0x01;
         public const byte MsgAckFailure = 0x0E;
         public const byte MsgReset = 0x0F;
         public const byte MsgRun = 0x10;
@@ -38,13 +38,13 @@ namespace Neo4j.Driver.Internal.Protocol
         public const byte MsgFailure = 0x7F;
 
         #endregion Consts
-
-        internal BoltProtocolV1MessageFormat(bool supportBytes)
-            : base(supportBytes)
+        
+        internal BoltProtocolV3MessageFormat()
+            : base(true)
         {
-            // Request Message Types
-            AddHandler<InitMessageHandler>();
-            AddHandler<RunMessageHandler>();
+            // BoltV3 Request Message Types
+            AddHandler<HelloMessageHandler>();
+            AddHandler<RunWithMetadataMessageHandler>();
             AddHandler<PullAllMessageHandler>();
             AddHandler<DiscardAllMessageHandler>();
             AddHandler<ResetMessageHandler>();
@@ -60,6 +60,22 @@ namespace Neo4j.Driver.Internal.Protocol
             AddHandler<RelationshipHandler>();
             AddHandler<UnboundRelationshipHandler>();
             AddHandler<PathHandler>();
+            
+            // Add V2 Spatial Types
+            AddHandler<PointHandler>();
+
+            // Add V2 Temporal Types
+            AddHandler<LocalDateHandler>();
+            AddHandler<LocalTimeHandler>();
+            AddHandler<LocalDateTimeHandler>();
+            AddHandler<OffsetTimeHandler>();
+            AddHandler<ZonedDateTimeHandler>();
+            AddHandler<DurationHandler>();
+
+            // Add BCL Handlers
+            AddHandler<SystemDateTimeHandler>();
+            AddHandler<SystemDateTimeOffsetHandler>();
+            AddHandler<SystemTimeSpanHandler>();
         }
     }
 }

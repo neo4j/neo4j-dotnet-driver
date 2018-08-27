@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.ValueHandlers;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Tests.IO.MessageHandlers;
 using Neo4j.Driver.V1;
@@ -99,7 +100,7 @@ namespace Neo4j.Driver.Tests.IO.ValueHandlers
 
         private static void WriteNode(IPackStreamWriter writer)
         {
-            writer.WriteStructHeader(3, PackStream.Node);
+            writer.WriteStructHeader(3, NodeHandler.Node);
             writer.Write(1);
             writer.Write(new List<string> {"Label1", "Label2"});
             writer.Write(new Dictionary<string, object>

@@ -142,6 +142,86 @@ namespace Neo4j.Driver.V1
         /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
         string LastBookmark { get; }
+        
+        /// <summary>
+        /// 
+        /// Run a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. 
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A stream of result values and associated metadata.</returns>
+        IStatementResult Run(string statement, TransactionConfig txConfig);
+
+        /// <summary>
+        /// 
+        /// Asynchronously run a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IStatementResultCursor> RunAsync(string statement, TransactionConfig txConfig);
+
+        /// <summary>
+        /// 
+        /// Run a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="parameters">Input parameters for the statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A stream of result values and associated metadata.</returns>
+        IStatementResult Run(string statement, IDictionary<string, object> parameters, TransactionConfig txConfig);
+
+        /// <summary>
+        /// 
+        /// Asynchronously run a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="parameters">Input parameters for the statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters, TransactionConfig txConfig);
+
+        /// <summary>
+        ///
+        /// Execute a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A stream of result values and associated metadata.</returns>
+        IStatementResult Run(Statement statement, TransactionConfig txConfig);
+
+        /// <summary>
+        ///
+        /// Asynchronously execute a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IStatementResultCursor> RunAsync(Statement statement, TransactionConfig txConfig);
     }
 
     /// <summary>

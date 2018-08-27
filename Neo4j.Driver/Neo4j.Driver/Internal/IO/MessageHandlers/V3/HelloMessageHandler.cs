@@ -1,5 +1,4 @@
-﻿// Copyright (c) 2002-2018 "Neo4j,"
-// Neo4j Sweden AB [http://neo4j.com]
+// Copyright (c) 2002-2018 Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -17,23 +16,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Messaging.V3;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.IO.MessageHandlers.V3
 {
-    internal class PullAllMessage : IRequestMessage
+    internal class HelloMessageHandler: WriteOnlyStructHandler
     {
-        public static readonly PullAllMessage PullAll = new PullAllMessage();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(HelloMessage)};
 
-        private PullAllMessage()
+        public override void Write(IPackStreamWriter writer, object value)
         {
-        }
+            var msg = value.CastOrThrow<HelloMessage>();
 
-        public override string ToString()
-        {
-            return "PULLALL";
+            writer.WriteStructHeader(1, MsgHello);
+            writer.Write(msg.MetaData);
         }
     }
 }

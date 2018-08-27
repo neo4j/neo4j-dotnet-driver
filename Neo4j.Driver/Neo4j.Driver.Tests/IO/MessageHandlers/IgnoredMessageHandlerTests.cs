@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
 namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
@@ -48,7 +49,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(0, PackStream.MsgIgnored);
+            writer.WriteStructHeader(0, MsgIgnored);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
