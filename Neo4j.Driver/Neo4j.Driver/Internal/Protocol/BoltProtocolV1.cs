@@ -81,8 +81,9 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
-            IResultResourceHandler resultResourceHandler, Bookmark ignored1, TransactionConfig ignored2)
+            IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
         {
+            AssertNullOrEmptyTransactionConfig(txConfig);
             var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
                 connection.ReceiveOne, connection.Server, resultResourceHandler);
             connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
@@ -91,9 +92,9 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement,
-            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
+            Statement statement, IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
         {
+            AssertNullOrEmptyTransactionConfig(txConfig);
             var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
                 connection.ReceiveOneAsync, connection.Server, resultResourceHandler);
             connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
@@ -101,8 +102,9 @@ namespace Neo4j.Driver.Internal.Protocol
             return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
         }
 
-        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig ignored)
+        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
+            AssertNullOrEmptyTransactionConfig(txConfig);
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
             connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
             if (bookmark != null && !bookmark.IsEmpty())
@@ -111,8 +113,9 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig ignored)
+        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
+            AssertNullOrEmptyTransactionConfig(txConfig);
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
             connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
             if (bookmark != null && !bookmark.IsEmpty())
@@ -173,5 +176,18 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             connection.Enqueue(ResetMessage.Reset, null);
         }
+        
+        private void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig)
+        {
+            if ( txConfig != null && !txConfig.IsEmpty() )
+            {
+                throw new ClientException(
+                    "Driver is connected to the database that does not support transaction configuration. " +
+                    "Please upgrade to neo4j 3.5.0 or later in order to use this functionality");
+            }
+
+        }
+
+
     }
 }

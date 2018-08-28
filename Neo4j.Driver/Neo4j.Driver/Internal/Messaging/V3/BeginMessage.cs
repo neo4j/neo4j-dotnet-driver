@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
         
         public override string ToString()
         {
-            return $"BEGIN {MetaData.ToContentString()}";
+            return $"BEGIN {Metadata.ToContentString()}";
         }
     }
 }

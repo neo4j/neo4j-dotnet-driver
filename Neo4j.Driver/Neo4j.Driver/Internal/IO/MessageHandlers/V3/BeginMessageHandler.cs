@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.IO.MessageHandlers.V3
             var msg = value.CastOrThrow<BeginMessage>();
 
             writer.WriteStructHeader(1, MsgBegin);
-            writer.Write(msg.MetaData);
+            writer.Write(msg.Metadata);
         }
     }
 }

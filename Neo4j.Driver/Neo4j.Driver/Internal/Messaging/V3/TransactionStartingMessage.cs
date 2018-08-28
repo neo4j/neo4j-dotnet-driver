@@ -25,17 +25,17 @@ namespace Neo4j.Driver.Internal.Messaging.V3
         private const string TxTimeoutMetadataKey = "tx_timeout";
         private const string TxMetadataMetadataKey = "tx_metadata";
 
-        public IDictionary<string, object> MetaData { get; }
+        public IDictionary<string, object> Metadata { get; }
 
         protected TransactionStartingMessage(Bookmark bookmark, TimeSpan txTimeout,
             IDictionary<string, object> txMetadata)
         {
-            MetaData = BuildMetadata(bookmark, txTimeout, txMetadata);
+            Metadata = BuildMetadata(bookmark, txTimeout, txMetadata);
         }
 
         protected TransactionStartingMessage(Bookmark bookmark, TransactionConfig txConfig)
         {
-            MetaData = BuildMetadata(bookmark, txConfig.Timeout, txConfig.Metadata);
+            Metadata = BuildMetadata(bookmark, txConfig?.Timeout ?? TimeSpan.Zero, txConfig?.Metadata);
         }
 
         private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan txTimeout,
@@ -54,7 +54,8 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
             if (txTimeoutPresent)
             {
-                result.Add(TxTimeoutMetadataKey, txTimeout.TotalMilliseconds);
+                var txTimeoutInMs = Math.Max(0L, (long)txTimeout.TotalMilliseconds);
+                result.Add(TxTimeoutMetadataKey, txTimeoutInMs);
             }
 
             if (txMetadataPresent)

@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.MessageHandlers.V3
             writer.WriteStructHeader(3, MsgRun);
             writer.Write(msg.Statement.Text);
             writer.Write(msg.Statement.Parameters);
-            writer.Write(msg.MetaData);
+            writer.Write(msg.Metadata);
         }
     }
 }
