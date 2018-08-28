@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            connection.Enqueue(new BeginMessage(bookmark, txConfig), null, PullAll);
+            connection.Enqueue(new BeginMessage(bookmark, txConfig), null);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);

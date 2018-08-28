@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.Messaging.V3
 {
@@ -24,7 +25,14 @@ namespace Neo4j.Driver.Internal.Messaging.V3
             
         public HelloMessage(string userAgent, IDictionary<string, object> authToken)
         {
-            MetaData = new Dictionary<string, object>(authToken) {{UserAgentMetadataKey, userAgent}};
+            if (authToken == null || authToken.Count == 0)
+            {
+                MetaData = new Dictionary<string, object>{{UserAgentMetadataKey, userAgent}};
+            }
+            else
+            {
+                MetaData = new Dictionary<string, object>(authToken) {{UserAgentMetadataKey, userAgent}};
+            }
         }
 
         public IDictionary<string, object> MetaData { get; }

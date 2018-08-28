@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
         public override string ToString()
         {
-            return $"RUN {Statement} {MetaData.ToContentString()}";
+            return $"RUN {Statement} {Metadata.ToContentString()}";
         }
     }
 }
