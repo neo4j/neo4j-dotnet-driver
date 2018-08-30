@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
         private const int BoltIdentifier = 0x6060B017;
-        private static readonly int[] SupportedVersions = {ProtocolVersion.Version2, ProtocolVersion.Version1, 0, 0};
+        private static readonly int[] SupportedVersions = {ProtocolVersion.Version3, ProtocolVersion.Version2, ProtocolVersion.Version1, 0};
 
         public static IBoltProtocol ForVersion(int version)
         {

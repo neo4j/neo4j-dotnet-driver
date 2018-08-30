@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests
     {
         private static ResultCursorBuilder GenerateBuilder(IDictionary<string, object> meta = null)
         {
-            var builder = new ResultCursorBuilder();
+            var builder = new ResultCursorBuilder(new SummaryCollector(null, null), null);
             builder.CollectFields(meta ?? new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
             return builder;
         }

@@ -63,7 +63,8 @@ namespace Neo4j.Driver.Internal.Protocol
         public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
             IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
         {
-            var resultBuilder = new ResultBuilder(statement, connection.ReceiveOne, connection.Server, resultResourceHandler);
+            var resultBuilder = new ResultBuilder(NewSummaryCollector(statement, connection.Server),
+                connection.ReceiveOne, resultResourceHandler);
             connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, PullAll);
             connection.Send();
             return resultBuilder.PreBuild();
@@ -72,8 +73,8 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
             IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
         {
-            var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
-                connection.ReceiveOneAsync, connection.Server, resultResourceHandler);
+            var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
+                connection.ReceiveOneAsync, resultResourceHandler);
             connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
             return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
@@ -99,8 +100,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement)
         {
-            var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, connection.ReceiveOne,
-                connection.Server);
+            var resultBuilder = new ResultBuilder(
+                NewSummaryCollector(statement, connection.Server), connection.ReceiveOne);
             connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, PullAll);
             connection.Send();
             return resultBuilder.PreBuild();
@@ -108,8 +109,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement)
         {
-            var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, connection.ReceiveOneAsync,
-                connection.Server);
+            var resultBuilder = new ResultCursorBuilder(
+                NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
             connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
 
@@ -147,6 +148,11 @@ namespace Neo4j.Driver.Internal.Protocol
         public void Reset(IConnection connection)
         {
             connection.Enqueue(ResetMessage.Reset, null);
+        }
+        
+        private SummaryCollector NewSummaryCollector(Statement statement, IServerInfo serverInfo)
+        {
+            return new SummaryCollectorV3(statement, serverInfo);
         }
     }
 }
