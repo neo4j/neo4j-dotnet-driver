@@ -26,9 +26,9 @@ namespace Neo4j.Driver.Internal.Result
         protected List<string> Keys { get; } = new List<string>();
         protected SummaryCollector SummaryCollector { get; }
 
-        protected ResultBuilderBase(Statement statement, IServerInfo server)
+        protected ResultBuilderBase(SummaryCollector summaryCollector)
         {
-            SummaryCollector = new SummaryCollector(statement, server);
+            SummaryCollector = summaryCollector;
         }
 
         public void CollectFields(IDictionary<string, object> meta)

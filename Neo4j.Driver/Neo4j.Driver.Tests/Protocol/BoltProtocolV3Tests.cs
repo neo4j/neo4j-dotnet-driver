@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.Connector
             metadata["bookmarks"].CastOrThrow<string[]>().Should().HaveCount(1).And.Contain("neo4j:bookmark:v1:tx123");
             metadata["tx_timeout"].Should().Be(60000L);
             var txMeta = metadata["tx_metadata"].CastOrThrow<Dictionary<string, object>>();
-            txMeta.Should().HaveCount(1).And.ContainValues(new KeyValuePair<string, object>("key1", "value1"));
+            txMeta.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key1", "value1"));
         }
         
         public class AuthenticateMethod
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
+                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), It.IsAny<IRequestMessage>()))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                     (msg1, h, msg2) =>
                     {
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll))
+                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                         (msg1, h, msg2) =>
                         {
@@ -166,27 +166,24 @@ namespace Neo4j.Driver.Tests.Connector
                 mockConn.Verify(x => x.Server, Times.Once);
             }
             
-            //[Fact]
+            [Fact]
             public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
             {
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultBuilder>(), PullAll))
+                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                         (m0, h, m1) =>
                         {
                             h?.DoneSuccess();
-                            if (m0 is RunWithMetadataMessage msg)
-                            {
-                                VerifyMetadata(msg.Metadata);
-                            }
+                            VerifyMetadata(m0.CastOrThrow<RunWithMetadataMessage>().Metadata);
                         });
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object,
                     Bookmark, TxConfig);
                 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
             }
         }
 

@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.Result
     internal class SummaryCollector
     {
         private readonly SummaryBuilder _summaryBuilder;
+        public SummaryBuilder SummaryBuilder => _summaryBuilder;
 
         public SummaryCollector(Statement statement, IServerInfo server)
         {
@@ -32,7 +33,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectWithFields(IDictionary<string, object> meta)
         {
-            CollectResultAvailableAfter(meta, "result_available_after");
+            CollectResultAvailableAfter(meta);
         }
 
         public void Collect(IDictionary<string, object> meta)
@@ -42,7 +43,7 @@ namespace Neo4j.Driver.Internal.Result
             CollectPlan(meta, "plan");
             CollectProfile(meta, "profile");
             CollectNotifications(meta, "notifications");
-            CollectResultConsumedAfter(meta, "result_consumed_after");
+            CollectResultConsumedAfter(meta);
         }
 
         public IResultSummary Build()
@@ -169,8 +170,9 @@ namespace Neo4j.Driver.Internal.Result
             _summaryBuilder.Notifications = notifications;
         }
 
-        private void CollectResultAvailableAfter(IDictionary<string, object> meta, string name)
+        protected virtual void CollectResultAvailableAfter(IDictionary<string, object> meta)
         {
+            var name = "result_available_after";
             if (!meta.ContainsKey(name))
             {
                 return;
@@ -178,8 +180,9 @@ namespace Neo4j.Driver.Internal.Result
             _summaryBuilder.ResultAvailableAfter = meta[name].As<long>();
         }
 
-        private void CollectResultConsumedAfter(IDictionary<string, object> meta, string name)
+        protected virtual void CollectResultConsumedAfter(IDictionary<string, object> meta)
         {
+            var name = "result_consumed_after";
             if (!meta.ContainsKey(name))
             {
                 return;
