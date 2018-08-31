@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public const string TestRequireBoltkit = "Test is skipped due to Boltkit not accessible";
         private const string TestRequireEnterprise = "Test is skipped due to enterprise server is not accessible";
 
-        private static readonly string DefaultServerVersion = "3.4.1";
+        private static readonly string DefaultServerVersion = "3.4.6";
         private static string _boltkitArgs;
         private static BoltkitStatus _boltkitAvailable = BoltkitStatus.Unknown;
         private static Tuple<bool, string> _isClusterSupported;

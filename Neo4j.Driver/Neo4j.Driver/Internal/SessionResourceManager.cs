@@ -60,38 +60,40 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         ///  This method will be called back by <see cref="ResultBuilder"/> after it consumed result
         /// </summary>
-        public void OnResultConsumed()
+        public void OnResultConsumed(Bookmark bookmark)
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+            UpdateBookmark(bookmark);
             DisposeConnection();
         }
 
-        public Task OnResultConsumedAsync()
+        public Task OnResultConsumedAsync(Bookmark bookmark)
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+            UpdateBookmark(bookmark);
             return DisposeConnectionAsync();
         }
 
         /// <summary>
         /// Called back in <see cref="Transaction.Dispose"/>
         /// </summary>
-        public void OnTransactionDispose()
+        public void OnTransactionDispose(Bookmark bookmark)
         {
             Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
 
-            UpdateBookmark(_transaction.Bookmark);
+            UpdateBookmark(bookmark);
             _transaction = null;
 
             DisposeConnection();
         }
 
-        public Task OnTransactionDisposeAsync()
+        public Task OnTransactionDisposeAsync(Bookmark bookmark)
         {
             Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
 
-            UpdateBookmark(_transaction.Bookmark);
+            UpdateBookmark(bookmark);
             _transaction = null;
 
             return DisposeConnectionAsync();

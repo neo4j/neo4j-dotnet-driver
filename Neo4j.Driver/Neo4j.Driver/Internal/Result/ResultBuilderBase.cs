@@ -25,6 +25,7 @@ namespace Neo4j.Driver.Internal.Result
         protected bool StatementProcessed { get; set; } = false;
         protected List<string> Keys { get; } = new List<string>();
         protected SummaryCollector SummaryCollector { get; }
+        protected Bookmark Bookmark { get; private set; }
 
         protected ResultBuilderBase(SummaryCollector summaryCollector)
         {
@@ -44,8 +45,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectBookmark(IDictionary<string, object> meta)
         {
-            throw new NotSupportedException(
-                $"Should not get a bookmark on a result. bookmark = {meta[Bookmark.BookmarkKey].As<string>()}");
+            Bookmark = SummaryCollector.CollectBookmark(meta);
         }
 
         public void CollectRecord(object[] fields)

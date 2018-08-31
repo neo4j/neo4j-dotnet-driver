@@ -38,13 +38,14 @@ namespace Neo4j.Driver.IntegrationTests
             var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
 
             // When
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
-            using (var session = driver.Session())
+            using (var session = Server.Driver.Session())
             {
                 var result = session.Run("CALL dbms.listTransactions()", txConfig);
                 // Then
                 var value = result.Single()["metaData"].ValueAs<IDictionary<string, object>>();
                 value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
+                result.Summary.ToString().Should().Contain("ResultAvailableAfter");
+                result.Summary.ToString().Should().Contain("ResultConsumedAfter");
             }
         }
 
@@ -55,8 +56,7 @@ namespace Neo4j.Driver.IntegrationTests
             var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
 
             // When
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
-            using (var session = driver.Session())
+            using (var session = Server.Driver.Session())
             {
                 var result = await session.RunAsync("CALL dbms.listTransactions()", txConfig);
                 // Then
@@ -68,32 +68,29 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
         public void ShouldRunWithTxTimeout()
         {
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
+            // Given
+            using (var session = Server.Driver.Session())
             {
-                // Given
-                using (var session = driver.Session())
-                {
-                    session.Run("CREATE (:Node)").Consume();
-                }
+                session.Run("CREATE (:Node)").Consume();
+            }
 
-                using (var otherSession = driver.Session())
+            using (var otherSession = Server.Driver.Session())
+            {
+                using (var otherTx = otherSession.BeginTransaction())
                 {
-                    using (var otherTx = otherSession.BeginTransaction())
+                    // lock dummy node but keep the transaction open
+                    otherTx.Run("MATCH (n:Node) SET n.prop = 1").Consume();
+
+                    // When
+                    // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
+                    var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
+                    using (var session = Server.Driver.Session())
                     {
-                        // lock dummy node but keep the transaction open
-                        otherTx.Run("MATCH (n:Node) SET n.prop = 1").Consume();
-
-                        // When
-                        // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                        var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
-                        using (var session = driver.Session())
-                        {
-                            var error = Xunit.Record.Exception(() =>
-                                session.Run("MATCH (n:Node) SET n.prop = 2", txConfig).Consume());
-                            // Then
-                            error.Should().BeOfType<ClientException>();
-                            error.Message.Should().Contain("terminated");
-                        }
+                        var error = Xunit.Record.Exception(() =>
+                            session.Run("MATCH (n:Node) SET n.prop = 2", txConfig).Consume());
+                        // Then
+                        error.Should().BeOfType<TransientException>();
+                        error.Message.Should().Contain("terminated");
                     }
                 }
             }
@@ -102,32 +99,28 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
         public async Task ShouldRunWithTxTimeoutAsync()
         {
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
+            // Given
+            using (var session = Server.Driver.Session())
             {
-                // Given
-                using (var session = driver.Session())
-                {
-                    session.Run("CREATE (:Node)").Consume();
-                }
+                session.Run("CREATE (:Node)").Consume();
+            }
 
-                using (var otherSession = driver.Session())
+            using (var otherSession = Server.Driver.Session())
+            {
+                using (var otherTx = otherSession.BeginTransaction())
                 {
-                    using (var otherTx = otherSession.BeginTransaction())
+                    // lock dummy node but keep the transaction open
+                    otherTx.Run("MATCH (n:Node) SET n.prop = 1").Consume();
+
+                    // When
+                    // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
+                    var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
+                    using (var session = Server.Driver.Session())
                     {
-                        // lock dummy node but keep the transaction open
-                        otherTx.Run("MATCH (n:Node) SET n.prop = 1").Consume();
-
-                        // When
-                        // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                        var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
-                        using (var session = driver.Session())
-                        {
-                            var resultCursor = await session.RunAsync("MATCH (n:Node) SET n.prop = 2", txConfig);
-                            var error = await Xunit.Record.ExceptionAsync(() => resultCursor.ConsumeAsync());
-                            // Then
-                            error.Should().BeOfType<ClientException>();
-                            error.Message.Should().Contain("terminated");
-                        }
+                        var error = await Xunit.Record.ExceptionAsync(() => session.RunAsync("MATCH (n:Node) SET n.prop = 2", txConfig));
+                        // Then
+                        error.Should().BeOfType<TransientException>();
+                        error.Message.Should().Contain("terminated");
                     }
                 }
             }
@@ -163,8 +156,7 @@ namespace Neo4j.Driver.IntegrationTests
             var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
 
             // When
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
-            using (var session = driver.Session())
+            using (var session = Server.Driver.Session())
             {
                 var result = read
                     ? session.ReadTransaction(tx => tx.Run("CALL dbms.listTransactions()"), txConfig)
@@ -181,8 +173,7 @@ namespace Neo4j.Driver.IntegrationTests
             var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
 
             // When
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
-            using (var session = driver.Session())
+            using (var session = Server.Driver.Session())
             {
                 var result = read
                     ? await session.ReadTransactionAsync(tx => tx.RunAsync("CALL dbms.listTransactions()"), txConfig)

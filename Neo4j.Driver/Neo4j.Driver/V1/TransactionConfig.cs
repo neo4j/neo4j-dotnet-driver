@@ -115,7 +115,7 @@ namespace Neo4j.Driver.V1
         /// <returns>The content of the transaction config in a string.</returns>
         public override string ToString()
         {
-            return $"Metadata: {Metadata.ToContentString()}, Timeout: {Timeout}";
+            return $"{GetType().Name}{{{nameof(Metadata)}={Metadata.ToContentString()}, {nameof(Timeout)}={Timeout}}}";
         }
         
         /// <summary>
