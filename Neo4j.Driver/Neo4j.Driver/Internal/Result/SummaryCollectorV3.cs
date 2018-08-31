@@ -26,6 +26,11 @@ namespace Neo4j.Driver.Internal.Result
         {
         }
         
+        public override Bookmark CollectBookmark(IDictionary<string, object> meta)
+        {
+            return BookmarkCollector.CollectBookmarkFromMetadata(meta);
+        }
+
         protected override void CollectResultAvailableAfter(IDictionary<string, object> meta)
         {
             var name = "t_first";
@@ -45,6 +50,5 @@ namespace Neo4j.Driver.Internal.Result
             }
             SummaryBuilder.ResultConsumedAfter = meta[name].As<long>();
         }
-
     }
 }

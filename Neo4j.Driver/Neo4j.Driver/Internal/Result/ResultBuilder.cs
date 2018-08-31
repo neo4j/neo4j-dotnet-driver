@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Internal.Result
                 {
                     // The last message received is a reply to pull_all,
                     // we are good to do a reset and return the connection to pool
-                    _resourceHandler?.OnResultConsumed();
+                    _resourceHandler?.OnResultConsumed(Bookmark);
                 }
             };
         }

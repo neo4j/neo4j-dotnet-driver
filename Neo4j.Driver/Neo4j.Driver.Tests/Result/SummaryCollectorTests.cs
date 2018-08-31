@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -21,6 +23,7 @@ using Moq;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
 using Xunit;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
@@ -33,7 +36,7 @@ namespace Neo4j.Driver.Tests
             return new SummaryCollector(new Statement(null), new Mock<IServerInfo>().Object);
         }
 
-        public class CollectWithFileds
+        public class CollectWithFields
         {
             [Fact]
             public void ShouldCollectAllItems()
@@ -61,6 +64,19 @@ namespace Neo4j.Driver.Tests
                 mock.Verify(x=>x.ContainsKey("profile"), Times.Once);
                 mock.Verify(x=>x.ContainsKey("notifications"), Times.Once);
                 mock.Verify(x=>x.ContainsKey("result_consumed_after"), Times.Once);
+            }
+        }
+
+        public class CollectBookmarkMethod
+        {
+            [Fact]
+            public void ShouldThrowExceptionWhenTryingToCollectBookmark()
+            {
+                var collector = NewSummaryCollector();
+                var error = Record.Exception(() =>
+                    collector.CollectBookmark(new Dictionary<string, object> {{"bookmark", "I shall not be here"}}));
+                error.Should().BeOfType<NotSupportedException>();
+                error.Message.Should().Contain("not get a bookmark on a result");
             }
         }
 

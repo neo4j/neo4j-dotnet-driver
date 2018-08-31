@@ -41,11 +41,18 @@ namespace Neo4j.Driver.Internal.Result
 
         public override void CollectBookmark(IDictionary<string, object> meta)
         {
+            Bookmark = CollectBookmarkFromMetadata(meta);
+        }
+
+        public static Bookmark CollectBookmarkFromMetadata(IDictionary<string, object> meta)
+        {
             if (meta.ContainsKey(Bookmark.BookmarkKey))
             {
                 var str = meta[Bookmark.BookmarkKey].As<string>();
-                Bookmark = Bookmark.From(str);
+                return Bookmark.From(str);
             }
+
+            return null;
         }
     }
 
