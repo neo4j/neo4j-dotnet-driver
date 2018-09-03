@@ -29,7 +29,7 @@ namespace Neo4j.Driver.IntegrationTests
         private static readonly string[] queries = new[]
         {
             "RETURN 1295 + 42",
-            "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)",
+            "CREATE (n) DELETE n RETURN n",
         };
 
         private static readonly AccessMode[] accessModes = new[]
