@@ -66,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var session = driver.Session();
                 try
                 {
-                    var result = await session.RunAsync("UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)");
+                    var result = await session.RunAsync("UNWIND range(1,10000) AS x RETURN sum(x)");
                     var read = await result.FetchAsync();
                     read.Should().BeTrue();
                     result.Current[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
