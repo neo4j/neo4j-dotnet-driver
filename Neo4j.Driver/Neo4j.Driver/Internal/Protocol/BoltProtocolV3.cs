@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
         }
 
-        public void Authenticate(IConnection connection, string userAgent, IAuthToken authToken)
+        public void Login(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var serverVersionCollector = new ServerVersionCollector();
             connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Internal.Protocol
             ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
         }
 
-        public async Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var serverVersionCollector = new ServerVersionCollector();
             connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
@@ -149,7 +149,19 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             connection.Enqueue(ResetMessage.Reset, null);
         }
-        
+
+        public void Logout(IConnection connection)
+        {
+            connection.Enqueue(GoodbyeMessage.Goodbye, null);
+            connection.Send();
+        }
+
+        public Task LogoutAsync(IConnection connection)
+        {
+            connection.Enqueue(GoodbyeMessage.Goodbye, null);
+            return connection.SendAsync();
+        }
+
         private SummaryCollector NewSummaryCollector(Statement statement, IServerInfo serverInfo)
         {
             return new SummaryCollectorV3(statement, serverInfo);

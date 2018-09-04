@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal.Protocol
         #region Message Constants
 
         public const byte MsgHello = 0x01;
+        public const byte MsgGoodbye = 0x02;
         public const byte MsgBegin = 0x11;
         public const byte MsgCommit = 0x12;
         public const byte MsgRollback = 0x13;

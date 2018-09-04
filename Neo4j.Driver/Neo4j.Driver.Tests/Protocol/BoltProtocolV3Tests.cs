@@ -54,31 +54,57 @@ namespace Neo4j.Driver.Tests.Connector
             txMeta.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key1", "value1"));
         }
         
-        public class AuthenticateMethod
+        public class LoginMethod
         {
             [Fact]
-            public void ShouldEnqueueInitAndSync()
+            public void ShouldEnqueueHelloAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                BoltV3.Authenticate(mockConn.Object, "user-zhen", AuthTokens.None);
+                BoltV3.Login(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<HelloMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync());
             }
         }
 
-        public class AuthenticateAsyncMethod
+        public class LoginAsyncMethod
         {
             [Fact]
-            public async Task ShouldEnqueueInitAndSync()
+            public async Task ShouldEnqueueHelloAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                await BoltV3.AuthenticateAsync(mockConn.Object, "user-zhen", AuthTokens.None);
+                await BoltV3.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<HelloMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
+            }
+        }
+        
+        public class LogoutMethod
+        {
+            [Fact]
+            public void ShouldEnqueueGoodbyeAndSend()
+            {
+                var mockConn = new Mock<IConnection>();
+                BoltV3.Logout(mockConn.Object);
+
+                mockConn.Verify(x => x.Enqueue(It.IsAny<GoodbyeMessage>(), null, null), Times.Once);
+                mockConn.Verify(x => x.Send());
+            }
+        }
+
+        public class LogoutAsyncMethod
+        {
+            [Fact]
+            public async Task ShouldEnqueueGoodbyeAndSend()
+            {
+                var mockConn = new Mock<IConnection>();
+                await BoltV3.LogoutAsync(mockConn.Object);
+
+                mockConn.Verify(x => x.Enqueue(It.IsAny<GoodbyeMessage>(), null, null), Times.Once);
+                mockConn.Verify(x => x.SendAsync());
             }
         }
 
