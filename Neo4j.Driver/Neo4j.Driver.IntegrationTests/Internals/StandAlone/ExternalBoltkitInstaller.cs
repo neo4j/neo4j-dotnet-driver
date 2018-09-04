@@ -139,8 +139,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void UpdateCertificate(Pkcs12Store store)
         {
-            var certFile = Path.Combine(HomeDir, "certificates", "neo4j.cert");
-            var keyFile = Path.Combine(HomeDir, "certificates", "neo4j.key");
+            var certDir = Path.Combine(HomeDir, "certificates");
+            Directory.CreateDirectory(certDir);
+            
+            var certFile = Path.Combine(certDir, "neo4j.cert");
+            var keyFile = Path.Combine(certDir, "neo4j.key");
             if (store == null)
             {
                 File.Delete(certFile);
