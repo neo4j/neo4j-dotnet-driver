@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class PullAllMessage : IRequestMessage
     {
-        public static PullAllMessage PullAll = new PullAllMessage();
+        public static readonly PullAllMessage PullAll = new PullAllMessage();
 
         private PullAllMessage()
         {

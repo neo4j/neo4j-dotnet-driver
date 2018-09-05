@@ -15,7 +15,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
@@ -32,30 +34,30 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class BoltProtocolV1Tests
     {
-        public class AuthenticateMethod
+        public class LoginMethod
         {
             [Fact]
             public void ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                BoltV1.Authenticate(mockConn.Object, "user-zhen", AuthTokens.None);
+                BoltV1.Login(mockConn.Object, "user-zhen", AuthTokens.None);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync());
             }
         }
 
-        public class AuthenticateAsyncMethod
+        public class LoginAsyncMethod
         {
             [Fact]
             public async Task ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                await BoltV1.AuthenticateAsync(mockConn.Object, "user-zhen", AuthTokens.None);
+                await BoltV1.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<InitCollector>(), null), Times.Once);
+                mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
             }
         }
@@ -68,7 +70,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
+                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Send());
@@ -80,9 +82,26 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object);
+                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
+            }
+            
+            [Fact]
+            public void ShouldThrowExceptionWhenTxConfigIsUsed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var statement = new Statement("A cypher query");
+                var mockHandler = new Mock<IResultResourceHandler>();
+                var txConfig = new TransactionConfig
+                {
+                    Timeout = TimeSpan.FromMinutes(1),
+                    Metadata = new Dictionary<string, object> {{"key1", "value1"}}
+                };
+                var e = Xunit.Record.Exception(() =>
+                    BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, txConfig));
+                e.Should().BeOfType<ClientException>();
+                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
             }
         }
 
@@ -102,7 +121,7 @@ namespace Neo4j.Driver.Tests.Connector
                         h?.DoneSuccess();
                     });
 
-                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object);
+                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null, null);
                 mockConn.Verify(x => x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
             }
@@ -119,9 +138,26 @@ namespace Neo4j.Driver.Tests.Connector
                         {
                             h?.DoneSuccess();
                         });
-                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object);
+                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
+            }
+            
+            [Fact]
+            public async Task ShouldThrowExceptionWhenTxConfigIsUsed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var statement = new Statement("A cypher query");
+                var mockHandler = new Mock<IResultResourceHandler>();
+                var txConfig = new TransactionConfig
+                {
+                    Timeout = TimeSpan.FromMinutes(1),
+                    Metadata = new Dictionary<string, object> {{"key1", "value1"}}
+                };
+                var e = await Xunit.Record.ExceptionAsync(() =>
+                    BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null, txConfig));
+                e.Should().BeOfType<ClientException>();
+                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
             }
         }
 
@@ -131,7 +167,7 @@ namespace Neo4j.Driver.Tests.Connector
             public void ShouldNotSyncIfBookmarkIsNull()
             {
                 var mockConn = new Mock<IConnection>();
-                BoltV1.BeginTransaction(mockConn.Object, null);
+                BoltV1.BeginTransaction(mockConn.Object, null, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
@@ -142,7 +178,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From((string)null);
-                BoltV1.BeginTransaction(mockConn.Object, bookmark);
+                BoltV1.BeginTransaction(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Never);
@@ -153,10 +189,24 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From(FakeABookmark(234));
-                BoltV1.BeginTransaction(mockConn.Object, bookmark);
+                BoltV1.BeginTransaction(mockConn.Object, bookmark,null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
+            }
+            
+            [Fact]
+            public void ShouldThrowExceptionWhenTxConfigIsUsed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var txConfig = new TransactionConfig
+                {
+                    Timeout = TimeSpan.FromMinutes(1),
+                    Metadata = new Dictionary<string, object> {{"key1", "value1"}}
+                };
+                var e = Xunit.Record.Exception(()=>BoltV1.BeginTransaction(mockConn.Object, null, txConfig));
+                e.Should().BeOfType<ClientException>();
+                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
             }
         }
 
@@ -166,7 +216,7 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldNotSyncIfBookmarkIsNull()
             {
                 var mockConn = new Mock<IConnection>();
-                await BoltV1.BeginTransactionAsync(mockConn.Object, null);
+                await BoltV1.BeginTransactionAsync(mockConn.Object, null, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -177,7 +227,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From((string)null);
-                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark);
+                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -188,10 +238,24 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
                 var bookmark = Bookmark.From(FakeABookmark(234));
-                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark);
+                await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<RunMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
+            }
+            
+            [Fact]
+            public async Task ShouldThrowExceptionIfTxConfigIsGiven()
+            {
+                var mockConn = new Mock<IConnection>();
+                var txConfig = new TransactionConfig
+                {
+                    Timeout = TimeSpan.FromMinutes(1),
+                    Metadata = new Dictionary<string, object> {{"key1", "value1"}}
+                };
+                var e = await Xunit.Record.ExceptionAsync(()=>BoltV1.BeginTransactionAsync(mockConn.Object, null, txConfig));
+                e.Should().BeOfType<ClientException>();
+                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
             }
         }
 
@@ -221,7 +285,7 @@ namespace Neo4j.Driver.Tests.Connector
             }
         }
 
-        public class RollbackTransactionkMethod
+        public class RollbackTransactionMethod
         {
             [Fact]
             public void ShouldEnqueueRollbackAndSync()
@@ -234,7 +298,7 @@ namespace Neo4j.Driver.Tests.Connector
             }
         }
 
-        public class RollbackTransactionAsynckMethod
+        public class RollbackTransactionAsyncMethod
         {
             [Fact]
             public void ShouldEnqueueRollbackAndSync()
@@ -295,23 +359,6 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV1.RunInExplicitTransactionAsync(mockConn.Object, statment);
                 mockConn.Verify(x => x.Server, Times.Once);
             }
-        }
-
-        internal static Mock<IConnection> MockedConnectionWithSuccessResponse()
-        {
-            var mockConn = new Mock<IConnection>();
-            // Whenever you enqueue any message, you immediately receives a response
-            mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
-                .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                    (msg1, h, msg2) =>
-                    {
-                        h?.DoneSuccess();
-                        if (msg1 != null)
-                        {
-                            h?.DoneSuccess();
-                        }
-                    });
-            return mockConn;
         }
     }
 }

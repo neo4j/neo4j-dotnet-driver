@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 mockClient.Verify(c => c.Connect(), Times.Once);
-                mockProtocol.Verify(p=>p.Authenticate(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
+                mockProtocol.Verify(p=>p.Login(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
             }
 
             [Fact]
@@ -220,6 +220,123 @@ namespace Neo4j.Driver.Tests
 
                 con.Reset();
                 mockProtocol.Verify(x => x.Reset(con), Times.Once);
+            }
+        }
+
+        public class CloseMethod
+        {
+            [Fact]
+            public void ShouldLogoutAndStop()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object);
+
+                var mockProtocol = new Mock<IBoltProtocol>();
+                conn.BoltProtocol = mockProtocol.Object;
+
+                // When
+                conn.Close();
+
+                // Then
+                mockProtocol.Verify(p=>p.Logout(conn));
+                mockClient.Verify(c => c.Stop());
+            }
+
+            [Fact]
+            public void ShouldStopEvenIfFailedToLogout()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object);
+
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockProtocol.Setup(x => x.Logout(It.IsAny<SocketConnection>())).Throws<InvalidOperationException>();
+                conn.BoltProtocol = mockProtocol.Object;
+
+                // When
+                conn.Close();
+
+                // Then
+                mockClient.Verify(c => c.Stop());
+            }
+
+            [Fact]
+            public void ShouldNotThrowException()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                mockClient.Setup(x => x.Stop()).Throws<InvalidOperationException>();
+                
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockProtocol.Setup(x => x.Logout(It.IsAny<SocketConnection>())).Throws<InvalidOperationException>();
+
+                var conn = NewSocketConnection(mockClient.Object);
+                conn.BoltProtocol = mockProtocol.Object;
+
+                // When
+                conn.Close();
+
+                // Then
+                mockClient.Verify(c => c.Stop());
+                mockProtocol.Verify(c => c.Logout(It.IsAny<SocketConnection>()));
+            }
+
+            [Fact]
+            public async Task ShouldLogoutAndStopAsync()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object);
+
+                var mockProtocol = new Mock<IBoltProtocol>();
+                conn.BoltProtocol = mockProtocol.Object;
+
+                // When
+                await conn.CloseAsync();
+
+                // Then
+                mockProtocol.Verify(p=>p.LogoutAsync(conn));
+                mockClient.Verify(c => c.StopAsync());
+            }
+
+            [Fact]
+            public async Task ShouldStopEvenIfFailedToLogoutAsync()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object);
+
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>())).Throws<InvalidOperationException>();
+                conn.BoltProtocol = mockProtocol.Object;
+
+                // When
+                await conn.CloseAsync();
+
+                // Then
+                mockClient.Verify(c => c.StopAsync());
+            }
+
+            [Fact]
+            public async Task ShouldNotThrowExceptionAsync()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                mockClient.Setup(x => x.StopAsync()).Throws<InvalidOperationException>();
+
+                var mockProtocol = new Mock<IBoltProtocol>();
+                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>())).Throws<InvalidOperationException>();
+
+                var conn = NewSocketConnection(mockClient.Object);
+                conn.BoltProtocol = mockProtocol.Object;
+
+                // When
+                await conn.CloseAsync();
+
+                // Then
+                mockClient.Verify(c => c.StopAsync());
+                mockProtocol.Verify(c => c.LogoutAsync(It.IsAny<SocketConnection>()));
             }
         }
     }

@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal
     internal class Bookmark
     {
         internal const string BookmarkKey = "bookmark";
-        private const string BookmarksKey = "bookmarks";
+        internal const string BookmarksKey = "bookmarks";
 
         private const long UnknownBookmarkValue = -1;
         internal const string BookmarkPrefix = "neo4j:bookmark:v1:tx";
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal
         {
             _logger = logger;
             _values = values;
-            _maxBookmark = MaxBookmark(values);
+            _maxBookmark = ComputeMaxBookmark(values);
         }
 
         public static Bookmark From(string bookmark, ILogger logger = null)
@@ -53,11 +53,10 @@ namespace Neo4j.Driver.Internal
             return new Bookmark(values, logger);
         }
 
-        public string MaxBookmarkAsString()
-        {
-            return _maxBookmark;
-        }
+        public string MaxBookmark => _maxBookmark;
 
+        public IEnumerable<string> Bookmarks => _values;
+        
         public bool IsEmpty()
         {
             return _values == null || _maxBookmark == null;
@@ -75,7 +74,7 @@ namespace Neo4j.Driver.Internal
             };
         }
 
-        private string MaxBookmark(IEnumerable<string> values)
+        private string ComputeMaxBookmark(IEnumerable<string> values)
         {
             if (values == null)
             {

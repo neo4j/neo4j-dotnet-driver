@@ -55,7 +55,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
             using (var session = driver.Session())
             {
-                var result = session.Run("UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n RETURN sum(x)");
+                var result = session.Run("UNWIND range(1,10000) AS x RETURN sum(x)");
                 result.Single()[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
             }
         }

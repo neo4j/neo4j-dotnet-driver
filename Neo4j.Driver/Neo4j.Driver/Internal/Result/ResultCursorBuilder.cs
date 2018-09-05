@@ -28,21 +28,12 @@ namespace Neo4j.Driver.Internal.Result
         private readonly IResultResourceHandler _resourceHandler;
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
-        public ResultCursorBuilder() : this(null, null, null, null, null)
-        {
-        }
 
-        public ResultCursorBuilder(Statement statement, Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler = null)
-            : base(statement, server)
+        public ResultCursorBuilder(SummaryCollector summaryCollector, Func<Task> receiveOneFunc, IResultResourceHandler resourceHandler = null)
+            : base(summaryCollector)
         {
             SetReceiveOneFunc(receiveOneFunc);
             _resourceHandler = resourceHandler;
-        }
-
-        public ResultCursorBuilder(string statement, IDictionary<string, object> parameters,
-            Func<Task> receiveOneFunc, IServerInfo server, IResultResourceHandler resourceHandler= null)
-            : this(new Statement(statement, parameters), receiveOneFunc, server, resourceHandler)
-        {
         }
 
         public async Task<IStatementResultCursor> PreBuildAsync()
@@ -101,7 +92,7 @@ namespace Neo4j.Driver.Internal.Result
                 {
                     // The last message received is a reply to pull_all,
                     // we are good to do a reset and return the connection to pool
-                    await _resourceHandler.OnResultConsumedAsync().ConfigureAwait(false);
+                    await _resourceHandler.OnResultConsumedAsync(Bookmark).ConfigureAwait(false);
                 }
             };
         }

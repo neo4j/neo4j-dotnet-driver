@@ -17,12 +17,13 @@
 
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
 namespace Neo4j.Driver.Internal.IO.MessageHandlers
 {
     internal class SuccessMessageHandler : ReadOnlyStructHandler
     {
-        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.MsgSuccess};
+        public override IEnumerable<byte> ReadableStructs => new[] {MsgSuccess};
 
         public override object Read(IPackStreamReader reader, byte signature, long size)
         {

@@ -17,6 +17,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.V1;
 
@@ -24,7 +25,8 @@ namespace Neo4j.Driver.Internal.IO.ValueHandlers
 {
     internal class PathHandler : ReadOnlyStructHandler
     {
-        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.Path};
+        public const byte Path = (byte)'P';
+        public override IEnumerable<byte> ReadableStructs => new[] {Path};
 
         public override object Read(IPackStreamReader reader, byte signature, long size)
         {

@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests.IO.ValueHandlers
 
         private static void WriteRelationship(IPackStreamWriter writer)
         {
-            writer.WriteStructHeader(5, PackStream.Relationship);
+            writer.WriteStructHeader(5, RelationshipHandler.Relationship);
             writer.Write(1);
             writer.Write(2);
             writer.Write(3);

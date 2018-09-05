@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests
                 bool isEmpty)
             {
                 var bookmark = Bookmark.From(bookmarks);
-                bookmark.MaxBookmarkAsString().Should().Be(maxBookmark);
+                bookmark.MaxBookmark.Should().Be(maxBookmark);
                 bookmark.IsEmpty().Should().Be(isEmpty);
                 var parameters = bookmark.AsBeginTransactionParameters();
                 if (isEmpty)
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldCreateFromSingleBookmark(string aBookmark, string maxBookmark, bool isEmpty)
             {
                 var bookmark = Bookmark.From(aBookmark);
-                bookmark.MaxBookmarkAsString().Should().Be(maxBookmark);
+                bookmark.MaxBookmark.Should().Be(maxBookmark);
                 bookmark.IsEmpty().Should().Be(isEmpty);
                 var parameters = bookmark.AsBeginTransactionParameters();
                 if (isEmpty)

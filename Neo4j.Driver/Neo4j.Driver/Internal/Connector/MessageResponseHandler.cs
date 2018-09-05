@@ -54,14 +54,15 @@ namespace Neo4j.Driver.Internal.Connector
         public void HandleSuccessMessage(IDictionary<string, object> meta)
         {
             DequeueMessage();
+            if (meta.ContainsKey(Bookmark.BookmarkKey))
+            {
+                CurrentResponseCollector?.CollectBookmark(meta);
+            }
+
             if (meta.ContainsKey("fields"))
             {
                 // first success
                 CurrentResponseCollector?.CollectFields(meta);
-            }
-            else if (meta.ContainsKey(Bookmark.BookmarkKey))
-            {
-                CurrentResponseCollector?.CollectBookmark(meta);
             }
             else
             {

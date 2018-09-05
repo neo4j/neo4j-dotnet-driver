@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Neo4j.Driver.V1.StatementType;
@@ -24,6 +26,7 @@ namespace Neo4j.Driver.Internal.Result
     internal class SummaryCollector
     {
         private readonly SummaryBuilder _summaryBuilder;
+        public SummaryBuilder SummaryBuilder => _summaryBuilder;
 
         public SummaryCollector(Statement statement, IServerInfo server)
         {
@@ -32,22 +35,48 @@ namespace Neo4j.Driver.Internal.Result
 
         public void CollectWithFields(IDictionary<string, object> meta)
         {
-            CollectResultAvailableAfter(meta, "result_available_after");
+            CollectResultAvailableAfter(meta);
         }
 
         public void Collect(IDictionary<string, object> meta)
         {
+            CollectResultConsumedAfter(meta);
             CollectType(meta, "type");
             CollectCounters(meta, "stats");
             CollectPlan(meta, "plan");
             CollectProfile(meta, "profile");
             CollectNotifications(meta, "notifications");
-            CollectResultConsumedAfter(meta, "result_consumed_after");
         }
 
         public IResultSummary Build()
         {
             return _summaryBuilder.Build();
+        }
+
+        public virtual Bookmark CollectBookmark(IDictionary<string, object> meta)
+        {
+            throw new NotSupportedException(
+                $"Should not get a bookmark on a result. bookmark = {meta[Bookmark.BookmarkKey].As<string>()}");
+        }
+
+        protected virtual void CollectResultAvailableAfter(IDictionary<string, object> meta)
+        {
+            var name = "result_available_after";
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            _summaryBuilder.ResultAvailableAfter = meta[name].As<long>();
+        }
+
+        protected virtual void CollectResultConsumedAfter(IDictionary<string, object> meta)
+        {
+            var name = "result_consumed_after";
+            if (!meta.ContainsKey(name))
+            {
+                return;
+            }
+            _summaryBuilder.ResultConsumedAfter = meta[name].As<long>();
         }
 
         private void CollectType(IDictionary<string, object> meta, string name)
@@ -167,24 +196,6 @@ namespace Neo4j.Driver.Internal.Result
                 notifications.Add(new Notification(code, title, description, position, severity));
             }
             _summaryBuilder.Notifications = notifications;
-        }
-
-        private void CollectResultAvailableAfter(IDictionary<string, object> meta, string name)
-        {
-            if (!meta.ContainsKey(name))
-            {
-                return;
-            }
-            _summaryBuilder.ResultAvailableAfter = meta[name].As<long>();
-        }
-
-        private void CollectResultConsumedAfter(IDictionary<string, object> meta, string name)
-        {
-            if (!meta.ContainsKey(name))
-            {
-                return;
-            }
-            _summaryBuilder.ResultConsumedAfter = meta[name].As<long>();
         }
 
         private static int CountersValue(IDictionary<string, object> counters, string name)

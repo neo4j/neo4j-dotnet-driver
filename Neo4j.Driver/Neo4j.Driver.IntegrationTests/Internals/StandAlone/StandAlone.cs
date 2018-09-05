@@ -51,6 +51,22 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             NewBoltDriver();
         }
 
+        public StandAlone(Pkcs12Store store)
+        {
+            try
+            {
+                _installer.Install();
+                UpdateCertificate(store);
+                _delegator = _installer.Start().Single();
+            }
+            catch
+            {
+                try { Dispose(); } catch { /*Do nothing*/ }
+                throw;
+            }
+            NewBoltDriver();
+        }
+
         private void NewBoltDriver()
         {
             var config = Config.DefaultConfig;
@@ -63,64 +79,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private void DisposeBoltDriver()
         {
             Driver?.Dispose();
-        }
-
-        /// <summary>
-        /// This method will always restart the server no matter if the setting is the same or not,
-        /// so do not call this method unless really necessary
-        /// </summary>
-        /// <param name="keyValuePair"></param>
-        public void RestartServerWithUpdatedSettings(IDictionary<string, string> keyValuePair)
-        {
-            DisposeBoltDriver();
-            try
-            {
-                _installer.EnsureRunningWithSettings(keyValuePair);
-            }
-            catch
-            {
-                try { Dispose(); } catch { /*Do nothing*/ }
-                throw;
-            }
-            NewBoltDriver();
-        }
-
-        /// <summary>
-        /// This method will not restart the server if the file already exist in path
-        /// </summary>
-        /// <param name="sourceProcedureJarPath"></param>
-        public void RestartServerWithProcedures(string sourceProcedureJarPath)
-        {
-            DisposeBoltDriver();
-            try
-            {
-                _installer.EnsureProcedures(sourceProcedureJarPath);
-            }
-            catch
-            {
-                try { Dispose(); } catch { /*Do nothing*/ }
-                throw;
-            }
-            NewBoltDriver();
-        }
-        
-        /// <summary>
-        /// This method will always restart the server with the updated certificates
-        /// </summary>
-        /// <param name="sourceProcedureJarPath"></param>
-        public void RestartServerWithCertificate(Pkcs12Store store)
-        {
-            DisposeBoltDriver();
-            try
-            {
-                _installer.EnsureCertificate(store);
-            }
-            catch
-            {
-                try { Dispose(); } catch { /*Do nothing*/ }
-                throw;
-            }
-            NewBoltDriver();
         }
 
         public void Dispose()
@@ -146,6 +104,29 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public override string ToString()
         {
             return _delegator?.ToString() ?? "No server found";
+        }
+        
+        /// This method will always restart the server with the updated certificates
+        /// </summary>
+        /// <param name="sourceProcedureJarPath"></param>
+        public void RestartServerWithCertificate(Pkcs12Store store)
+        {
+            DisposeBoltDriver();
+            try
+            {
+                _installer.EnsureCertificate(store);
+            }
+            catch
+            {
+                try { Dispose(); } catch { /*Do nothing*/ }
+                throw;
+            }
+            NewBoltDriver();
+        }
+
+        public void UpdateCertificate(Pkcs12Store store)
+        {
+            _installer.UpdateCertificate(store);
         }
     }
 }

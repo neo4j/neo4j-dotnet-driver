@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
 namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
@@ -36,7 +37,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgRun, 2));
+                handler.Read(Mock.Of<IPackStreamReader>(), MsgRun, 2));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -58,7 +59,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgRun);
+            reader.ReadStructSignature().Should().Be(MsgRun);
             reader.ReadString().Should().Be("RETURN $x");
             reader.ReadMap().Should().HaveCount(1).And.Contain(
                 new[]
@@ -73,14 +74,14 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new RunMessage("RETURN 1", null));
+            writer.Write(new RunMessage("RETURN 1"));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgRun);
+            reader.ReadStructSignature().Should().Be(MsgRun);
             reader.ReadString().Should().Be("RETURN 1");
             reader.ReadMap().Should().NotBeNull().And.HaveCount(0);
         }

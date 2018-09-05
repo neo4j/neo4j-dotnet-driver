@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.Connector
             try
             {
                 _boltProtocol = _client.Connect();
-                _boltProtocol.Authenticate(this, _userAgent, _authToken);
+                _boltProtocol.Login(this, _userAgent, _authToken);
             }
             catch (AggregateException e)
             {
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.Connector
         public async Task InitAsync()
         {
             _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
-            await _boltProtocol.AuthenticateAsync(this, _userAgent, _authToken).ConfigureAwait(false);
+            await _boltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
         }
 
         public void Sync()
@@ -171,7 +171,13 @@ namespace Neo4j.Driver.Internal.Connector
 
         public bool IsOpen => _client.IsOpen;
         public IServerInfo Server { get; set; }
-        public IBoltProtocol BoltProtocol => _boltProtocol;
+
+        public IBoltProtocol BoltProtocol
+        {
+            get => _boltProtocol;
+            set => _boltProtocol = value;
+        }
+
         public void ResetMessageReaderAndWriterForServerV3_1()
         {
             _client.ResetMessageReaderAndWriterForServerV3_1(_boltProtocol);
@@ -191,6 +197,14 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
+                try
+                {
+                    _boltProtocol.Logout(this);
+                }
+                catch (Exception e)
+                {
+                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}", e);
+                }
                 _client.Stop();
             }
             catch (Exception e)
@@ -200,19 +214,25 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public Task CloseAsync()
+        public async Task CloseAsync()
         {
-            return _client.StopAsync().ContinueWith(t =>
+            try
             {
-                if (t.IsFaulted)
+                try
                 {
-                    var cause = t.Exception.GetBaseException();
-                    // only log the exception if failed to close connection
-                    _logger.Error($"Failed to close connection properly due to error: {cause.Message}", cause);
+                    await _boltProtocol.LogoutAsync(this);
                 }
-
-                return TaskHelper.GetCompletedTask();
-            }).Unwrap();
+                catch (Exception e)
+                {
+                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}", e);
+                }
+                await _client.StopAsync();
+            }
+            catch (Exception e)
+            {
+                // only log the exception if failed to close connection
+                _logger.Error($"Failed to close connection properly due to error: {e.Message}", e);
+            }
         }
 
         private void AssertNoServerFailure()

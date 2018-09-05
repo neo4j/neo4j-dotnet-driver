@@ -28,17 +28,17 @@ namespace Neo4j.Driver.Internal.Protocol
         IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled = true);
         IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled = true);
 
-        void Authenticate(IConnection connection, string userAgent, IAuthToken authToken);
-        Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken);
+        void Login(IConnection connection, string userAgent, IAuthToken authToken);
+        Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
         IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
-            IResultResourceHandler resultResourceHandler);
+            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig);
 
         Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
-            IResultResourceHandler resultResourceHandler);
+            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig);
 
-        void BeginTransaction(IConnection connection, Bookmark bookmark);
-        Task BeginTransactionAsync(IConnection connection, Bookmark bookmark);
+        void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig);
+        Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig);
 
         IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement);
         Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement);
@@ -50,5 +50,8 @@ namespace Neo4j.Driver.Internal.Protocol
         Task RollbackTransactionAsync(IConnection connection);
 
         void Reset(IConnection connection);
+
+        void Logout(IConnection connection);
+        Task LogoutAsync(IConnection connection);
     }
 }

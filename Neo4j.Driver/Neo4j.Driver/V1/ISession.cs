@@ -47,16 +47,10 @@ namespace Neo4j.Driver.V1
         /// method.
         ///
         /// </summary>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A new transaction.</returns>
-        ITransaction BeginTransaction();
-
-        /// <summary>
-        /// This method is deprecated.
-        /// </summary>
-        /// <param name="bookmark">A bookmark.</param>
-        /// <returns>A new transaction.</returns>
-        [Obsolete("Pass in bookmark at session instead.")]
-        ITransaction BeginTransaction(string bookmark);
+        ITransaction BeginTransaction(TransactionConfig txConfig=null);
 
         /// <summary>
         /// Asynchronously begin a new transaction in this session. A session can have at most one transaction running at a time, if you
@@ -69,66 +63,92 @@ namespace Neo4j.Driver.V1
         /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
         /// method.
         /// </summary>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task of a new transaction.</returns>
-        Task<ITransaction> BeginTransactionAsync();
+        Task<ITransaction> BeginTransactionAsync(TransactionConfig txConfig=null);
+
+        /// <summary>
+        /// This method is deprecated.
+        /// </summary>
+        /// <param name="bookmark">A bookmark.</param>
+        /// <returns>A new transaction.</returns>
+        [Obsolete("Pass in bookmark at session instead.")]
+        ITransaction BeginTransaction(string bookmark);
         
         /// <summary>
         /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A result as returned by the given unit of work.</returns>
-        T ReadTransaction<T>(Func<ITransaction, T> work);
+        T ReadTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig=null);
 
         /// <summary>
         /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new read transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work);
+        Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig=null);
 
         /// <summary>
         /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Action{T}"/> to be applied to a new read transaction.</param>
-        void ReadTransaction(Action<ITransaction> work);
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
+        void ReadTransaction(Action<ITransaction> work, TransactionConfig txConfig=null);
 
         /// <summary>
         /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
-        Task ReadTransactionAsync(Func<ITransaction, Task> work);
+        Task ReadTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig=null);
         
         /// <summary>
         ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A result as returned by the given unit of work.</returns>
-        T WriteTransaction<T>(Func<ITransaction, T> work);
+        T WriteTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig=null);
 
         /// <summary>
         ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new write transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work);
+        Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig=null);
 
         /// <summary>
         ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Action{T}"/> to be applied to a new write transaction.</param>
-        void WriteTransaction(Action<ITransaction> work);
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
+        void WriteTransaction(Action<ITransaction> work, TransactionConfig txConfig=null);
 
         /// <summary>
         ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
-        Task WriteTransactionAsync(Func<ITransaction, Task> work);
+        Task WriteTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig=null);
 
         /// <summary>
         /// Close all resources used in this Session. If any transaction is left open in this session without commit or rollback,
@@ -142,6 +162,86 @@ namespace Neo4j.Driver.V1
         /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
         string LastBookmark { get; }
+        
+        /// <summary>
+        /// 
+        /// Run a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. 
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A stream of result values and associated metadata.</returns>
+        IStatementResult Run(string statement, TransactionConfig txConfig);
+
+        /// <summary>
+        /// 
+        /// Asynchronously run a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IStatementResultCursor> RunAsync(string statement, TransactionConfig txConfig);
+
+        /// <summary>
+        /// 
+        /// Run a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="parameters">Input parameters for the statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A stream of result values and associated metadata.</returns>
+        IStatementResult Run(string statement, IDictionary<string, object> parameters, TransactionConfig txConfig);
+
+        /// <summary>
+        /// 
+        /// Asynchronously run a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// This method accepts a String representing a Cypher statement which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// statement multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object statement by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="parameters">Input parameters for the statement.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters, TransactionConfig txConfig);
+
+        /// <summary>
+        ///
+        /// Execute a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A stream of result values and associated metadata.</returns>
+        IStatementResult Run(Statement statement, TransactionConfig txConfig);
+
+        /// <summary>
+        ///
+        /// Asynchronously execute a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// </summary>
+        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
+        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IStatementResultCursor> RunAsync(Statement statement, TransactionConfig txConfig);
     }
 
     /// <summary>
