@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public const byte MsgCommit = 0x12;
         public const byte MsgRollback = 0x13;
 
-        #endregion Consts
+        #endregion
         
         internal BoltProtocolV3MessageFormat()
             : base(true)

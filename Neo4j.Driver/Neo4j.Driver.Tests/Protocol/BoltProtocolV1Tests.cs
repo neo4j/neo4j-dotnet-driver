@@ -91,6 +91,9 @@ namespace Neo4j.Driver.Tests.Connector
             public void ShouldThrowExceptionWhenTxConfigIsUsed()
             {
                 var mockConn = new Mock<IConnection>();
+                var mockLogger = new Mock<ILogger>();
+                mockConn.Setup(x => x.Logger).Returns(mockLogger.Object);
+
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
                 var txConfig = new TransactionConfig
@@ -98,10 +101,8 @@ namespace Neo4j.Driver.Tests.Connector
                     Timeout = TimeSpan.FromMinutes(1),
                     Metadata = new Dictionary<string, object> {{"key1", "value1"}}
                 };
-                var e = Xunit.Record.Exception(() =>
-                    BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, txConfig));
-                e.Should().BeOfType<ClientException>();
-                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
+                BoltV1.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, txConfig);
+                mockLogger.Verify(x=>x.Info(It.IsRegex("^Driver is connected to the database that does not support transaction configuration")));
             }
         }
 
@@ -147,6 +148,8 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionWhenTxConfigIsUsed()
             {
                 var mockConn = new Mock<IConnection>();
+                var mockLogger = new Mock<ILogger>();
+                mockConn.Setup(x => x.Logger).Returns(mockLogger.Object);
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
                 var txConfig = new TransactionConfig
@@ -154,10 +157,18 @@ namespace Neo4j.Driver.Tests.Connector
                     Timeout = TimeSpan.FromMinutes(1),
                     Metadata = new Dictionary<string, object> {{"key1", "value1"}}
                 };
-                var e = await Xunit.Record.ExceptionAsync(() =>
-                    BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null, txConfig));
-                e.Should().BeOfType<ClientException>();
-                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
+
+                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), PullAll))
+                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
+                        (msg1, h, msg2) =>
+                        {
+                            h?.DoneSuccess();
+                        });
+
+                await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null,
+                    txConfig);
+
+                mockLogger.Verify(x=>x.Info(It.IsRegex("^Driver is connected to the database that does not support transaction configuration")));
             }
         }
 
@@ -199,14 +210,15 @@ namespace Neo4j.Driver.Tests.Connector
             public void ShouldThrowExceptionWhenTxConfigIsUsed()
             {
                 var mockConn = new Mock<IConnection>();
+                var mockLogger = new Mock<ILogger>();
+                mockConn.Setup(x => x.Logger).Returns(mockLogger.Object);
                 var txConfig = new TransactionConfig
                 {
                     Timeout = TimeSpan.FromMinutes(1),
                     Metadata = new Dictionary<string, object> {{"key1", "value1"}}
                 };
-                var e = Xunit.Record.Exception(()=>BoltV1.BeginTransaction(mockConn.Object, null, txConfig));
-                e.Should().BeOfType<ClientException>();
-                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
+                BoltV1.BeginTransaction(mockConn.Object, null, txConfig);
+                mockLogger.Verify(x=>x.Info(It.IsRegex("^Driver is connected to the database that does not support transaction configuration")));
             }
         }
 
@@ -248,14 +260,15 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionIfTxConfigIsGiven()
             {
                 var mockConn = new Mock<IConnection>();
+                var mockLog = new Mock<ILogger>();
+                mockConn.Setup(x=>x.Logger).Returns(mockLog.Object);
                 var txConfig = new TransactionConfig
                 {
                     Timeout = TimeSpan.FromMinutes(1),
                     Metadata = new Dictionary<string, object> {{"key1", "value1"}}
                 };
-                var e = await Xunit.Record.ExceptionAsync(()=>BoltV1.BeginTransactionAsync(mockConn.Object, null, txConfig));
-                e.Should().BeOfType<ClientException>();
-                e.Message.Should().StartWith("Driver is connected to the database that does not support transaction configuration");
+                await BoltV1.BeginTransactionAsync(mockConn.Object, null, txConfig);
+                mockLog.Verify(x=>x.Info(It.IsRegex("^Driver is connected to the database that does not support transaction configuration.")));
             }
         }
 

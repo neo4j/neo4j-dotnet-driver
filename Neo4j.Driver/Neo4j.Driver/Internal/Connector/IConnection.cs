@@ -86,5 +86,7 @@ namespace Neo4j.Driver.Internal.Connector
         /// Downgrade message reader and writer to not be able to read and write byte array
         /// </summary>
         void ResetMessageReaderAndWriterForServerV3_1();
+
+        ILogger Logger { get; }
     }
 }

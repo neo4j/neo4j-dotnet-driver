@@ -105,12 +105,22 @@ namespace Neo4j.Driver.Internal
             return RunAsync(statement, TransactionConfig.Empty);
         }
 
-        public ITransaction BeginTransaction(TransactionConfig txConfig=null)
+        public ITransaction BeginTransaction()
+        {
+            return BeginTransaction((TransactionConfig)null);
+        }
+
+        public Task<ITransaction> BeginTransactionAsync()
+        {
+            return BeginTransactionAsync(null);
+        }
+
+        public ITransaction BeginTransaction(TransactionConfig txConfig)
         {
             return TryExecute(() => BeginTransactionWithoutLogging(_defaultMode, txConfig));
         }
 
-        public Task<ITransaction> BeginTransactionAsync(TransactionConfig txConfig=null)
+        public Task<ITransaction> BeginTransactionAsync(TransactionConfig txConfig)
         {
             return TryExecuteAsync(() => BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig));
         }
@@ -121,47 +131,87 @@ namespace Neo4j.Driver.Internal
             return BeginTransaction();
         }
 
-        public void ReadTransaction(Action<ITransaction> work, TransactionConfig txConfig=null)
+        public T ReadTransaction<T>(Func<ITransaction, T> work)
         {
-            RunTransaction(AccessMode.Read, work, txConfig);
+            return ReadTransaction(work, null);
         }
 
-        public Task ReadTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig=null)
+        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work)
         {
-            return RunTransactionAsync(AccessMode.Read, work, txConfig);
+            return ReadTransactionAsync(work, null);
         }
 
-        public T ReadTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig=null)
+        public void ReadTransaction(Action<ITransaction> work)
+        {
+            ReadTransaction(work, null);
+        }
+
+        public Task ReadTransactionAsync(Func<ITransaction, Task> work)
+        {
+            return ReadTransactionAsync(work, null);
+        }
+
+        public T ReadTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig)
         {
             return RunTransaction(AccessMode.Read, work, txConfig);
         }
 
-        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig=null)
+        public Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig)
         {
             return RunTransactionAsync(AccessMode.Read, work, txConfig);
         }
 
-        public void WriteTransaction(Action<ITransaction> work, TransactionConfig txConfig=null)
+        public void ReadTransaction(Action<ITransaction> work, TransactionConfig txConfig)
         {
-            RunTransaction(AccessMode.Write, work, txConfig);
+            RunTransaction(AccessMode.Read, work, txConfig);
         }
 
-        public Task WriteTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig=null)
+        public Task ReadTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig)
         {
-            return RunTransactionAsync(AccessMode.Write, work, txConfig);
+            return RunTransactionAsync(AccessMode.Read, work, txConfig);
         }
 
-        public T WriteTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig=null)
+        public T WriteTransaction<T>(Func<ITransaction, T> work)
+        {
+            return WriteTransaction(work, null);
+        }
+
+        public Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work)
+        {
+            return WriteTransactionAsync(work, null);
+        }
+
+        public void WriteTransaction(Action<ITransaction> work)
+        {
+            WriteTransaction(work, null);
+        }
+
+        public Task WriteTransactionAsync(Func<ITransaction, Task> work)
+        {
+            return WriteTransactionAsync(work, null);
+        }
+
+        public T WriteTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig)
         {
             return RunTransaction(AccessMode.Write, work, txConfig);
         }
 
-        public Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig=null)
+        public Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig)
         {
             return RunTransactionAsync(AccessMode.Write, work, txConfig);
         }
 
-        private void RunTransaction(AccessMode mode, Action<ITransaction> work, TransactionConfig txConfig=null)
+        public void WriteTransaction(Action<ITransaction> work, TransactionConfig txConfig)
+        {
+            RunTransaction(AccessMode.Write, work, txConfig);
+        }
+
+        public Task WriteTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig)
+        {
+            return RunTransactionAsync(AccessMode.Write, work, txConfig);
+        }
+
+        private void RunTransaction(AccessMode mode, Action<ITransaction> work, TransactionConfig txConfig)
         {
             RunTransaction<object>(mode, tx =>
             {
@@ -170,7 +220,7 @@ namespace Neo4j.Driver.Internal
             }, txConfig);
         }
 
-        private T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, TransactionConfig txConfig=null)
+        private T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, TransactionConfig txConfig)
         {
             return TryExecute(() => _retryLogic.Retry(() =>
             {
@@ -191,7 +241,7 @@ namespace Neo4j.Driver.Internal
             }));
         }
 
-        private Task RunTransactionAsync(AccessMode mode, Func<ITransaction, Task> work, TransactionConfig txConfig=null)
+        private Task RunTransactionAsync(AccessMode mode, Func<ITransaction, Task> work, TransactionConfig txConfig)
         {
             return RunTransactionAsync(mode, async tx =>
             {
@@ -201,7 +251,7 @@ namespace Neo4j.Driver.Internal
             }, txConfig);
         }
 
-        private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransaction, Task<T>> work, TransactionConfig txConfig=null)
+        private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<ITransaction, Task<T>> work, TransactionConfig txConfig)
         {
             return TryExecuteAsync(async () => await _retryLogic.RetryAsync(async () =>
             {
@@ -222,7 +272,7 @@ namespace Neo4j.Driver.Internal
             }).ConfigureAwait(false));
         }
 
-        private ITransaction BeginTransactionWithoutLogging(AccessMode mode, TransactionConfig txConfig=null)
+        private ITransaction BeginTransactionWithoutLogging(AccessMode mode, TransactionConfig txConfig)
         {
             EnsureCanRunMoreStatements();
 
@@ -233,7 +283,7 @@ namespace Neo4j.Driver.Internal
             return _transaction;
         }
 
-        private async Task<ITransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode, TransactionConfig txConfig=null)
+        private async Task<ITransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode, TransactionConfig txConfig)
         {
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 

@@ -25,7 +25,12 @@ namespace Neo4j.Driver.V1
 {
     /// <summary>
     /// Configuration object containing settings for explicit and auto-commit transactions.
-    /// Instances are immutable and can be reused for multiple transactions.
+    /// Leave the fields unmodified to use server side transaction configurations.
+    /// <para/>
+    /// For example, the following code starts a transaction using server default transaction configurations.
+    /// <code>
+    /// session.BeginTransaction(new TransactionConfig());
+    /// </code>
     /// </summary>
     public class TransactionConfig
     {
@@ -37,7 +42,8 @@ namespace Neo4j.Driver.V1
         /// Get and set transaction timeout.
         /// Transactions that execute longer than the configured timeout will be terminated by the database.
         /// This functionality allows to limit query/transaction execution time.
-        /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting. 
+        /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
+        /// Leave this field unmodified to use default timeout configured on database.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less or equal to zero</exception>
         public TimeSpan Timeout
@@ -61,6 +67,7 @@ namespace Neo4j.Driver.V1
         /// and <code>dbms.listTransactions</code> procedures. It will also get logged to the <code>query.log</code>.
         /// Transactions starting with this <see cref="TransactionConfig"/>
         /// This functionality makes it easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure.
+        /// Leave this field unmodified to use default timeout configured on database.
         /// </summary>
         public IDictionary<string, object> Metadata
         {
@@ -73,7 +80,7 @@ namespace Neo4j.Driver.V1
         /// Returns a value indicating whether this instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="LocalTime"/> and 
+        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="TransactionConfig"/> and
         /// equals the value of this instance; otherwise, <code>false</code></returns>
         public override bool Equals(object obj)
         {

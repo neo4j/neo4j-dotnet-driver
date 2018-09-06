@@ -36,7 +36,39 @@ namespace Neo4j.Driver.V1
     public interface ISession : IStatementRunner
     {
         /// <summary>
-        /// Begin a new transaction in this session. A session can have at most one transaction running at a time, if you
+        /// Begin a new transaction in this session using server default transaction configurations.
+        /// A session can have at most one transaction running at a time, if you
+        /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
+        ///
+        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunner.Run(Statement)"/>
+        /// method directly on this session interface as well. When you use that method, your statement automatically gets
+        /// wrapped in a transaction.
+        ///
+        /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
+        /// method.
+        ///
+        /// </summary>
+        /// <returns>A new transaction.</returns>
+        ITransaction BeginTransaction();
+
+        /// <summary>
+        /// Asynchronously begin a new transaction in this session using server default transaction configurations.
+        /// A session can have at most one transaction running at a time, if you
+        /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
+        /// 
+        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunner.RunAsync(Statement)"/>
+        /// method directly on this session interface as well. When you use that method, your statement automatically gets
+        /// wrapped in a transaction.
+        ///
+        /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
+        /// method.
+        /// </summary>
+        /// <returns>A task of a new transaction.</returns>
+        Task<ITransaction> BeginTransactionAsync();
+
+        /// <summary>
+        /// Begin a new transaction with a specific <see cref="TransactionConfig"/> in this session.
+        /// A session can have at most one transaction running at a time, if you
         /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
         /// 
         /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunner.Run(Statement)"/>
@@ -48,12 +80,13 @@ namespace Neo4j.Driver.V1
         ///
         /// </summary>
         /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A new transaction.</returns>
-        ITransaction BeginTransaction(TransactionConfig txConfig=null);
+        ITransaction BeginTransaction(TransactionConfig txConfig);
 
         /// <summary>
-        /// Asynchronously begin a new transaction in this session. A session can have at most one transaction running at a time, if you
+        /// Asynchronously begin a new transaction with a specific <see cref="TransactionConfig"/> in this session.
+        /// A session can have at most one transaction running at a time, if you
         /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
         /// 
         /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IStatementRunner.RunAsync(Statement)"/>
@@ -64,9 +97,9 @@ namespace Neo4j.Driver.V1
         /// method.
         /// </summary>
         /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task of a new transaction.</returns>
-        Task<ITransaction> BeginTransactionAsync(TransactionConfig txConfig=null);
+        Task<ITransaction> BeginTransactionAsync(TransactionConfig txConfig);
 
         /// <summary>
         /// This method is deprecated.
@@ -81,74 +114,132 @@ namespace Neo4j.Driver.V1
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A result as returned by the given unit of work.</returns>
-        T ReadTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig=null);
+        T ReadTransaction<T>(Func<ITransaction, T> work);
 
         /// <summary>
         /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new read transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig=null);
+        Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work);
 
         /// <summary>
         /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Action{T}"/> to be applied to a new read transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
-        void ReadTransaction(Action<ITransaction> work, TransactionConfig txConfig=null);
+        void ReadTransaction(Action<ITransaction> work);
 
         /// <summary>
         /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
-        Task ReadTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig=null);
-        
+        Task ReadTransactionAsync(Func<ITransaction, Task> work);
+
+        /// <summary>
+        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations.</param>
+        /// <returns>A result as returned by the given unit of work.</returns>
+        T ReadTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig);
+
+        /// <summary>
+        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new read transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        /// <returns>A task of a result as returned by the given unit of work.</returns>
+        Task<T> ReadTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig);
+
+        /// <summary>
+        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <param name="work">The <see cref="Action{T}"/> to be applied to a new read transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        void ReadTransaction(Action<ITransaction> work, TransactionConfig txConfig);
+
+        /// <summary>
+        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
+        Task ReadTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig);
+
         /// <summary>
         ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A result as returned by the given unit of work.</returns>
-        T WriteTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig=null);
+        T WriteTransaction<T>(Func<ITransaction, T> work);
 
         /// <summary>
         ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new write transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig=null);
+        Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work);
 
         /// <summary>
         ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Action{T}"/> to be applied to a new write transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
-        void WriteTransaction(Action<ITransaction> work, TransactionConfig txConfig=null);
+        void WriteTransaction(Action<ITransaction> work);
 
         /// <summary>
         ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
         /// </summary>
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// If not specified, <see cref="TransactionConfig.Empty"/> will be used.</param>
         /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
-        Task WriteTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig=null);
+        Task WriteTransactionAsync(Func<ITransaction, Task> work);
+
+        /// <summary>
+        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        /// <returns>A result as returned by the given unit of work.</returns>
+        T WriteTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig);
+
+        /// <summary>
+        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new write transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        /// <returns>A task of a result as returned by the given unit of work.</returns>
+        Task<T> WriteTransactionAsync<T>(Func<ITransaction, Task<T>> work, TransactionConfig txConfig);
+
+        /// <summary>
+        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <param name="work">The <see cref="Action{T}"/> to be applied to a new write transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        void WriteTransaction(Action<ITransaction> work, TransactionConfig txConfig);
+
+        /// <summary>
+        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
+        /// <param name="txConfig">Configuration for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
+        Task WriteTransactionAsync(Func<ITransaction, Task> work, TransactionConfig txConfig);
 
         /// <summary>
         /// Close all resources used in this Session. If any transaction is left open in this session without commit or rollback,

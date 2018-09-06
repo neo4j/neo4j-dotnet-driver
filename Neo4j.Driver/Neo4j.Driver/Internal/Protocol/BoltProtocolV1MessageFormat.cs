@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public const byte MsgIgnored = 0x7E;
         public const byte MsgFailure = 0x7F;
 
-        #endregion Consts
+        #endregion
 
         internal BoltProtocolV1MessageFormat(bool supportBytes)
             : base(supportBytes)
