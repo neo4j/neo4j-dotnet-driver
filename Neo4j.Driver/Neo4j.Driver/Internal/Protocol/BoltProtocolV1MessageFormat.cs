@@ -32,7 +32,6 @@ namespace Neo4j.Driver.Internal.Protocol
             AddHandler<PullAllMessageHandler>();
             AddHandler<DiscardAllMessageHandler>();
             AddHandler<ResetMessageHandler>();
-            AddHandler<AckFailureMessageHandler>();
 
             // Response Message Types
             AddHandler<FailureMessageHandler>();
