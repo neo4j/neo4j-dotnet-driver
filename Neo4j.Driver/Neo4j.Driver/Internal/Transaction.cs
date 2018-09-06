@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal
         private readonly IBoltProtocol _protocol;
         private ITransactionResourceHandler _resourceHandler;
 
-        internal Bookmark Bookmark { get; private set; }
+        private Bookmark _bookmark;
 
         private State _state = State.Active;
 
@@ -63,17 +63,17 @@ namespace Neo4j.Driver.Internal
             _connection = new TransactionConnection(this, connection);
             _protocol = _connection.BoltProtocol;
             _resourceHandler = resourceHandler;
-            Bookmark = bookmark;
+            _bookmark = bookmark;
         }
 
-        public void BeginTransaction()
+        public void BeginTransaction(TransactionConfig txConfig)
         {
-            _protocol.BeginTransaction(_connection, Bookmark);
+            _protocol.BeginTransaction(_connection, _bookmark, txConfig);
         }
 
-        public Task BeginTransactionAsync()
+        public Task BeginTransactionAsync(TransactionConfig txConfig)
         {
-            return _protocol.BeginTransactionAsync(_connection, Bookmark);
+            return _protocol.BeginTransactionAsync(_connection, _bookmark, txConfig);
         }
 
         public override IStatementResult Run(Statement statement)
@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Internal
                 _connection.Close();
                 if (_resourceHandler != null)
                 {
-                    _resourceHandler.OnTransactionDispose();
+                    _resourceHandler.OnTransactionDispose(_bookmark);
                     _resourceHandler = null;
                 }
                 base.Dispose(true);
@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Internal
                 await _connection.CloseAsync().ConfigureAwait(false);
                 if (_resourceHandler != null)
                 {
-                    await _resourceHandler.OnTransactionDisposeAsync().ConfigureAwait(false);
+                    await _resourceHandler.OnTransactionDisposeAsync(_bookmark).ConfigureAwait(false);
                     _resourceHandler = null;
                 }
             }
@@ -182,13 +182,13 @@ namespace Neo4j.Driver.Internal
 
         private void CommitTx()
         {
-            Bookmark = _protocol.CommitTransaction(_connection);
+            _bookmark = _protocol.CommitTransaction(_connection);
             _state = State.Succeeded;
         }
 
         private async Task CommitTxAsync()
         {
-            Bookmark = await _protocol.CommitTransactionAsync(_connection).ConfigureAwait(false);
+            _bookmark = await _protocol.CommitTransactionAsync(_connection).ConfigureAwait(false);
             _state = State.Succeeded;
         }
 

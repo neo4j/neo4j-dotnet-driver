@@ -61,12 +61,12 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public void Authenticate(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            var initCollector = new InitCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
+            var serverVersionCollector = new ServerVersionCollector();
+            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
             connection.Sync();
-            ((ServerInfo)connection.Server).Version = initCollector.Server;
+            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
 
-            if (!(ServerVersion.Version(initCollector.Server) >= ServerVersion.V3_2_0))
+            if (!(ServerVersion.Version(serverVersionCollector.Server) >= ServerVersion.V3_2_0))
             {
                 connection.ResetMessageReaderAndWriterForServerV3_1();
             }
@@ -74,34 +74,37 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            var initCollector = new InitCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), initCollector);
+            var serverVersionCollector = new ServerVersionCollector();
+            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
             await connection.SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)connection.Server).Version = initCollector.Server;
+            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
         }
 
-        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement, IResultResourceHandler resultResourceHandler)
+        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
+            IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
         {
-            var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters,
-                connection.ReceiveOne, connection.Server, resultResourceHandler);
+            AssertNullOrEmptyTransactionConfig(txConfig, connection.Logger);
+            var resultBuilder = new ResultBuilder(NewSummaryCollector(statement, connection.Server),
+                connection.ReceiveOne, resultResourceHandler);
             connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
             connection.Send();
             return resultBuilder.PreBuild();
         }
 
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement,
-            IResultResourceHandler resultResourceHandler)
+            Statement statement, IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
         {
-            var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters,
-                connection.ReceiveOneAsync, connection.Server, resultResourceHandler);
+            AssertNullOrEmptyTransactionConfig(txConfig, connection.Logger);
+            var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
+                connection.ReceiveOneAsync, resultResourceHandler);
             connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
             return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
         }
 
-        public void BeginTransaction(IConnection connection, Bookmark bookmark)
+        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
+            AssertNullOrEmptyTransactionConfig(txConfig, connection.Logger);
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
             connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
             if (bookmark != null && !bookmark.IsEmpty())
@@ -110,8 +113,9 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark)
+        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
+            AssertNullOrEmptyTransactionConfig(txConfig, connection.Logger);
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
             connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
             if (bookmark != null && !bookmark.IsEmpty())
@@ -122,8 +126,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement)
         {
-            var resultBuilder = new ResultBuilder(statement.Text, statement.Parameters, connection.ReceiveOne,
-                connection.Server);
+            var resultBuilder = new ResultBuilder(
+                NewSummaryCollector(statement, connection.Server),connection.ReceiveOne);
             connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
             connection.Send();
             return resultBuilder.PreBuild();
@@ -132,8 +136,8 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
             Statement statement)
         {
-            var resultBuilder = new ResultCursorBuilder(statement.Text, statement.Parameters, connection.ReceiveOneAsync,
-                connection.Server);
+            var resultBuilder = new ResultCursorBuilder(
+                NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
             connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
 
@@ -171,6 +175,22 @@ namespace Neo4j.Driver.Internal.Protocol
         public void Reset(IConnection connection)
         {
             connection.Enqueue(ResetMessage.Reset, null);
+        }
+        
+        private static void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig, ILogger logger)
+        {
+            if ( txConfig != null && !txConfig.IsEmpty() )
+            {
+                logger?.Info(
+                    "Driver is connected to the database that does not support transaction configuration. " +
+                    "Please upgrade to neo4j 3.5.0 or later in order to use this functionality");
+            }
+
+        }
+        
+        private static SummaryCollector NewSummaryCollector(Statement statement, IServerInfo serverInfo)
+        {
+            return new SummaryCollector(statement, serverInfo);
         }
     }
 }

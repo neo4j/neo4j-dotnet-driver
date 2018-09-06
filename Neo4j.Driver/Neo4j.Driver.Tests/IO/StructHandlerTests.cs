@@ -18,12 +18,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Tests.IO.Utils;
 
-namespace Neo4j.Driver.Tests.IO.MessageHandlers
+namespace Neo4j.Driver.Tests.IO
 {
     public abstract class StructHandlerTests
     {

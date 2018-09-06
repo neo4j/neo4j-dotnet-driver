@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
 namespace Neo4j.Driver.Tests.IO.MessageHandlers
 {
@@ -36,7 +37,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
             var handler = HandlerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Read(Mock.Of<IPackStreamReader>(), PackStream.MsgInit, 2));
+                handler.Read(Mock.Of<IPackStreamReader>(), MsgInit, 2));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -60,7 +61,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgInit);
+            reader.ReadStructSignature().Should().Be(MsgInit);
             reader.ReadString().Should().Be("Client-Version/1.0");
             reader.ReadMap().Should().HaveCount(3).And.Contain(
                 new[]
@@ -84,7 +85,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be(PackStream.MsgInit);
+            reader.ReadStructSignature().Should().Be(MsgInit);
             reader.ReadString().Should().Be("Client-Version/1.0");
             reader.ReadMap().Should().NotBeNull().And.HaveCount(0);
         }

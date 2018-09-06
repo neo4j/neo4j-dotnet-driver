@@ -42,8 +42,7 @@ namespace Neo4j.Driver.IntegrationTests
             byte[] byteArray = PackStreamBitConverter.GetBytes("hello, world");
 
             // When
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
-            using (var session = driver.Session())
+            using (var session = Server.Driver.Session())
             {
                 var result = session.Run(
                     "CREATE (a {value:{value}}) RETURN a.value", new Dictionary<string, object> {{"value", byteArray}});
@@ -63,8 +62,7 @@ namespace Neo4j.Driver.IntegrationTests
             byte[] byteArray = PackStreamBitConverter.GetBytes("hello, world");
 
             // When
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
-            using (var session = driver.Session())
+            using (var session = Server.Driver.Session())
             {
                 var exception = Record.Exception(() =>
                             session.Run("CREATE (a {value:{value}})",
@@ -79,7 +77,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
         public void ShouldConnectIPv6AddressIfEnabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = true}))
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config { Ipv6Enabled = true }))
             using (var session = driver.Session())
             {
                 var ret = session.Run("RETURN 1").Single();
@@ -102,8 +100,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireServerFact]
         public void ShouldConnectIPv4AddressIfIpv6Disabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken))
-            using (var session = driver.Session())
+            using (var session = Server.Driver.Session())
             {
                 var ret = session.Run("RETURN 1").Single();
                 ret[0].ValueAs<int>().Should().Be(1);

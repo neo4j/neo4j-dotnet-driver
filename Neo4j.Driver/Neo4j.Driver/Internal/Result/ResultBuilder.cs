@@ -28,19 +28,19 @@ namespace Neo4j.Driver.Internal.Result
         private readonly Queue<IRecord> _records = new Queue<IRecord>();
         private bool _hasMoreRecords = true;
 
-        public ResultBuilder(Statement statement, Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler = null)
-            : base(statement, server)
+        public ResultBuilder(SummaryCollector summaryCollector, Action receiveOneAction, 
+            IResultResourceHandler resourceHandler = null)
+            : base(summaryCollector)
         {
             SetReceiveOneAction(receiveOneAction);
             _resourceHandler = resourceHandler;
         }
 
-        public ResultBuilder(string statement, IDictionary<string, object> parameters, 
-            Action receiveOneAction, IServerInfo server, IResultResourceHandler resourceHandler= null)
-            : this(new Statement(statement, parameters), receiveOneAction, server, resourceHandler)
+        public ResultBuilder()
+            : this(null, () => { })
         {
         }
-        
+
         public StatementResult PreBuild()
         {
             return new StatementResult(GetKeys, new RecordSet(NextRecord), Summary);
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Internal.Result
                 {
                     // The last message received is a reply to pull_all,
                     // we are good to do a reset and return the connection to pool
-                    _resourceHandler?.OnResultConsumed();
+                    _resourceHandler?.OnResultConsumed(Bookmark);
                 }
             };
         }

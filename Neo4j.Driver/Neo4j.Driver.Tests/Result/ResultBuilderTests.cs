@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Tests
     {
         private static ResultBuilder GenerateBuilder(IDictionary<string, object> meta = null)
         {
-            var builder = new ResultBuilder(null, () => { }, null, null);
+            var builder = new ResultBuilder(new SummaryCollector(null, null), null);
             builder.CollectFields(meta ?? new Dictionary<string, object> { { "fields", new List<object> { "x" } } });
             return builder;
         }
@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldPassDefaultKeysToResultIfNoKeySet()
             {
-                var builder = new ResultBuilder(null, () => { }, null, null);
+                var builder = new ResultBuilder();
                 builder.DoneSuccess();
 
                 var result = builder.PreBuild();
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldDoNothingWhenMetaIsNull()
             {
-                var builder = new ResultBuilder(null, () => { }, null, null);
+                var builder = new ResultBuilder();
                 builder.CollectFields(null);
                 builder.DoneSuccess();
 
@@ -164,12 +164,11 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldDoNothingWhenMetaDoesNotContainFields()
             {
-                var builder = new ResultBuilder(null, () => { }, null, null);
                 var meta = new Dictionary<string, object>
                 {
                     {"something", "here" }
                 };
-                builder.CollectFields(meta);
+                var builder = GenerateBuilder(meta);
                 builder.DoneSuccess();
 
                 var result = builder.PreBuild();
@@ -182,8 +181,7 @@ namespace Neo4j.Driver.Tests
                 IDictionary<string, object> meta = new Dictionary<string, object>
                 { {"fields", new List<object> {"fieldKey1", "fieldKey2", "fieldKey3"} },{"type", "r" } };
 
-                var builder = new ResultBuilder(null, () => { }, null, null);
-                builder.CollectFields(meta);
+                var builder = GenerateBuilder(meta);
                 builder.DoneSuccess();
                 var result = builder.PreBuild();
 

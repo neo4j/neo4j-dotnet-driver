@@ -17,12 +17,14 @@
 
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Types;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
 namespace Neo4j.Driver.Internal.IO.ValueHandlers
 {
     internal class UnboundRelationshipHandler : ReadOnlyStructHandler
     {
-        public override IEnumerable<byte> ReadableStructs => new[] {PackStream.UnboundRelationship};
+        public const byte UnboundRelationship = (byte)'r';
+        public override IEnumerable<byte> ReadableStructs => new[] {UnboundRelationship};
 
         public override object Read(IPackStreamReader reader, byte signature, long size)
         {

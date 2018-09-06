@@ -104,27 +104,6 @@ namespace Neo4j.Driver.Internal.IO
 
         #endregion
 
-        #region Bolt Constants
-
-        public const byte MsgInit = 0x01;
-        public const byte MsgAckFailure = 0x0E;
-        public const byte MsgReset = 0x0F;
-        public const byte MsgRun = 0x10;
-        public const byte MsgDiscardAll = 0x2F;
-        public const byte MsgPullAll = 0x3F;
-
-        public const byte MsgRecord = 0x71;
-        public const byte MsgSuccess = 0x70;
-        public const byte MsgIgnored = 0x7E;
-        public const byte MsgFailure = 0x7F;
-
-        public const byte Node = (byte)'N';
-        public const byte Relationship = (byte)'R';
-        public const byte UnboundRelationship = (byte)'r';
-        public const byte Path = (byte)'P';
-
-        #endregion Consts
-
         #region Helper Methods 
 
         public static readonly Dictionary<string, object> EmptyDictionary = new Dictionary<string, object>();

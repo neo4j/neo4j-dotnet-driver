@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.Messaging
 {
     internal class DiscardAllMessage : IRequestMessage
     {
-        public static DiscardAllMessage DiscardAll = new DiscardAllMessage();
+        public static readonly DiscardAllMessage DiscardAll = new DiscardAllMessage();
 
         private DiscardAllMessage()
         {

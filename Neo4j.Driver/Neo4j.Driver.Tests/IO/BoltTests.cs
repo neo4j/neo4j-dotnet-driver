@@ -26,9 +26,9 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.Internal.IO.ValueHandlers;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Tests.IO.Utils;
 using Neo4j.Driver.V1;
 using Xunit;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
 namespace Neo4j.Driver.Tests.IO
 {
@@ -252,8 +252,8 @@ namespace Neo4j.Driver.Tests.IO
         {
             return new Dictionary<byte, IPackStreamStructHandler>
             {
-                {PackStream.MsgSuccess, new SuccessMessageHandler()},
-                {PackStream.Node, new NodeHandler()}
+                {MsgSuccess, new SuccessMessageHandler()},
+                {NodeHandler.Node, new NodeHandler()}
             };
         }
 
@@ -269,7 +269,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var stream = new MemoryStream();
             var writer = new PackStreamWriter(stream, null);
-            writer.WriteStructHeader(1, PackStream.MsgSuccess);
+            writer.WriteStructHeader(1, MsgSuccess);
             writer.WriteMapHeader(1);
             writer.Write("x");
             writer.Write(1);
@@ -281,7 +281,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var stream = new MemoryStream();
             var writer = new PackStreamWriter(stream, null);
-            writer.WriteStructHeader(3, PackStream.Node);
+            writer.WriteStructHeader(3, NodeHandler.Node);
             writer.Write(1L);
             writer.Write(new List<string> { "Label" });
             writer.Write(new Dictionary<string, object>());
