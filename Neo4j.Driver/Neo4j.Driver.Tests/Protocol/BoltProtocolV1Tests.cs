@@ -34,28 +34,28 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class BoltProtocolV1Tests
     {
-        public class AuthenticateMethod
+        public class LoginMethod
         {
             [Fact]
             public void ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                BoltV1.Authenticate(mockConn.Object, "user-zhen", AuthTokens.None);
+                BoltV1.Login(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync());
             }
         }
 
-        public class AuthenticateAsyncMethod
+        public class LoginAsyncMethod
         {
             [Fact]
             public async Task ShouldEnqueueInitAndSync()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                await BoltV1.AuthenticateAsync(mockConn.Object, "user-zhen", AuthTokens.None);
+                await BoltV1.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<InitMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());

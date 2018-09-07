@@ -28,8 +28,8 @@ namespace Neo4j.Driver.Internal.Protocol
         IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled = true);
         IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled = true);
 
-        void Authenticate(IConnection connection, string userAgent, IAuthToken authToken);
-        Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken);
+        void Login(IConnection connection, string userAgent, IAuthToken authToken);
+        Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
         IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
             IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig);
@@ -50,5 +50,8 @@ namespace Neo4j.Driver.Internal.Protocol
         Task RollbackTransactionAsync(IConnection connection);
 
         void Reset(IConnection connection);
+
+        void Logout(IConnection connection);
+        Task LogoutAsync(IConnection connection);
     }
 }

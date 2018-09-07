@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, messageFormat);
         }
 
-        public void Authenticate(IConnection connection, string userAgent, IAuthToken authToken)
+        public void Login(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var serverVersionCollector = new ServerVersionCollector();
             connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public async Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var serverVersionCollector = new ServerVersionCollector();
             connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
@@ -176,8 +176,17 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             connection.Enqueue(ResetMessage.Reset, null);
         }
-        
-        private static void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig, ILogger logger)
+
+        public void Logout(IConnection connection)
+        {
+        }
+
+        public Task LogoutAsync(IConnection connection)
+        {
+            return TaskHelper.GetCompletedTask();
+        }
+
+        private void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig, ILogger logger)
         {
             if ( txConfig != null && !txConfig.IsEmpty() )
             {
