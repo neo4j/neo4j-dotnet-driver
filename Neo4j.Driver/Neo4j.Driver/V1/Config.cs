@@ -231,6 +231,13 @@ namespace Neo4j.Driver.V1
         public bool Ipv6Enabled { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets a custom server address resolver used by the routing driver to resolve the initial address used to create the driver.
+        /// Such resolution happens: 1) during the very first rediscovery when driver is created.
+        /// 2) when all the known routers from the current routing table have failed and driver needs to fallback to the initial address.
+        /// </summary>
+        public IServerAddressResolver Resolver { get; set; } = new PassThroughServerAddressResolver();
+
+        /// <summary>
         /// Gets or sets the load balancing strategy for the routing driver. Direct driver will ignore this setting.
         /// </summary>
         public LoadBalancingStrategy LoadBalancingStrategy { get; set; } = LoadBalancingStrategy.LeastConnected;
@@ -359,6 +366,13 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithIpv6Enabled(bool enable)
             {
                 _config.Ipv6Enabled = enable;
+                return this;
+            }
+
+            public IConfigBuilder WithResolver(IServerAddressResolver resolver)
+            {
+                Throw.ArgumentNullException.IfNull(resolver, nameof(resolver));
+                _config.Resolver = resolver;
                 return this;
             }
 
@@ -529,6 +543,15 @@ namespace Neo4j.Driver.V1
         /// <param name="enable">true to enable ipv6, false to only support ipv4 addresses.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         IConfigBuilder WithIpv6Enabled(bool enable);
+
+        /// <summary>
+        /// Gets or sets a custom server address resolver used by the routing driver to resolve the initial address used to create the driver.
+        /// Such resolution happens: 1) during the very first rediscovery when driver is created.
+        /// 2) when all the known routers from the current routing table have failed and driver needs to fallback to the initial address.
+        /// </summary>
+        /// <param name="resolver">The resolver, default to a resolver that simply pass the initial server address as it is.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        IConfigBuilder WithResolver(IServerAddressResolver resolver);
 
         /// <summary>
         /// Provide an alternative load balancing strategy for the routing driver to use. By default routing

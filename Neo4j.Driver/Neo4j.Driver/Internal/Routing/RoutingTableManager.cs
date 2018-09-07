@@ -28,52 +28,42 @@ namespace Neo4j.Driver.Internal.Routing
     {
         private readonly ILogger _logger;
 
-        private readonly ISet<Uri> _seedServers;
         private readonly IDictionary<string, string> _routingContext;
-
         private IRoutingTable _routingTable;
-
-        public IRoutingTable RoutingTable
-        {
-            get => _routingTable;
-            set => _routingTable = value;
-        }
-
         private readonly IClusterConnectionPoolManager _poolManager;
+
+        private readonly IInitialServerAddressProvider _initialServerAddressProvider;
 
         private readonly object _syncLock = new object();
         readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        private bool _isReadingInAbsenceOfWriter = false;
 
-        public bool IsReadingInAbsenceOfWriter
-        {
-            get => _isReadingInAbsenceOfWriter;
-            set => _isReadingInAbsenceOfWriter = value;
-        }
+        public bool IsReadingInAbsenceOfWriter { get; set; } = false;
 
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
             ILogger logger) :
-            this(new RoutingTable(routingSettings.InitialServers),
-                routingSettings, poolManager, logger)
+            this(routingSettings.InitialServerAddressProvider, routingSettings.RoutingContext,
+                Routing.RoutingTable.Empty, poolManager, logger)
         {
         }
 
         public RoutingTableManager(
+            IInitialServerAddressProvider initialServerAddressProvider,
+            IDictionary<string, string> routingContext,
             IRoutingTable routingTable,
-            RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
             ILogger logger)
         {
+            _initialServerAddressProvider = initialServerAddressProvider;
+            _routingContext = routingContext;
             _routingTable = routingTable;
-            _routingContext = routingSettings.RoutingContext;
-            _seedServers = routingSettings.InitialServers;
-
             _poolManager = poolManager;
             _logger = logger;
         }
+
+        public IRoutingTable RoutingTable => _routingTable;
 
         public void EnsureRoutingTableForMode(AccessMode mode)
         {
@@ -91,7 +81,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return;
                 }
 
-                var routingTable = UpdateRoutingTableWithInitialUriFallback(_seedServers);
+                var routingTable = UpdateRoutingTableWithInitialUriFallback();
                 Update(routingTable);
 
             }
@@ -115,7 +105,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return;
                 }
 
-                var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync(_seedServers).ConfigureAwait(false);
+                var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync().ConfigureAwait(false);
                 await UpdateAsync(routingTable).ConfigureAwait(false);
             }
             finally
@@ -160,7 +150,7 @@ namespace Neo4j.Driver.Internal.Routing
                     {
                         return true;
                     }
-                    _isReadingInAbsenceOfWriter = routingTable.IsStale(AccessMode.Write);
+                    IsReadingInAbsenceOfWriter = routingTable.IsStale(AccessMode.Write);
                     return false;
                 case AccessMode.Write:
                     return routingTable.IsStale(AccessMode.Write);
@@ -181,15 +171,16 @@ namespace Neo4j.Driver.Internal.Routing
             return _poolManager.AddConnectionPoolAsync(uris);
         }
 
-        internal IRoutingTable UpdateRoutingTableWithInitialUriFallback(ISet<Uri> initialUriSet,
+        internal IRoutingTable UpdateRoutingTableWithInitialUriFallback(
             Func<ISet<Uri>, IRoutingTable> updateRoutingTableFunc = null)
         {
             updateRoutingTableFunc = updateRoutingTableFunc ?? (u => UpdateRoutingTable(u));
 
             var hasPrependedInitialRouters = false;
-            if (_isReadingInAbsenceOfWriter)
+            if (IsReadingInAbsenceOfWriter)
             {
-                PrependRouters(initialUriSet);
+                // to prevent from only talking to minority part of a partitioned cluster.
+                PrependRouters(_initialServerAddressProvider.Resolve());
                 hasPrependedInitialRouters = true;
             }
 
@@ -202,7 +193,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             if (!hasPrependedInitialRouters)
             {
-                var uris = initialUriSet;
+                var uris = _initialServerAddressProvider.Resolve();
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
@@ -221,15 +212,16 @@ namespace Neo4j.Driver.Internal.Routing
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
-        internal async Task<IRoutingTable> UpdateRoutingTableWithInitialUriFallbackAsync(ISet<Uri> initialUriSet,
+        internal async Task<IRoutingTable> UpdateRoutingTableWithInitialUriFallbackAsync(
             Func<ISet<Uri>, Task<IRoutingTable>> updateRoutingTableFunc = null)
         {
             updateRoutingTableFunc = updateRoutingTableFunc ?? (u => UpdateRoutingTableAsync(u));
 
             var hasPrependedInitialRouters = false;
-            if (_isReadingInAbsenceOfWriter)
+            if (IsReadingInAbsenceOfWriter)
             {
-                await PrependRoutersAsync(initialUriSet).ConfigureAwait(false);
+                var uris = await _initialServerAddressProvider.ResolveAsync().ConfigureAwait(false);
+                await PrependRoutersAsync(uris).ConfigureAwait(false);
                 hasPrependedInitialRouters = true;
             }
 
@@ -242,7 +234,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             if (!hasPrependedInitialRouters)
             {
-                var uris = initialUriSet;
+                var uris = await _initialServerAddressProvider.ResolveAsync().ConfigureAwait(false);
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
@@ -261,7 +253,8 @@ namespace Neo4j.Driver.Internal.Routing
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
-        public IRoutingTable UpdateRoutingTable(ISet<Uri> triedUris = null, Func<IConnection, IRoutingTable> rediscoveryFunc = null)
+        public IRoutingTable UpdateRoutingTable(ISet<Uri> triedUris = null,
+            Func<IConnection, IRoutingTable> rediscoveryFunc = null)
         {
             rediscoveryFunc = rediscoveryFunc ?? Rediscovery;
 
@@ -303,7 +296,8 @@ namespace Neo4j.Driver.Internal.Routing
             return null;
         }
 
-        public async Task<IRoutingTable> UpdateRoutingTableAsync(ISet<Uri> triedUris = null, Func<IConnection, Task<IRoutingTable>> rediscoveryFunc = null)
+        public async Task<IRoutingTable> UpdateRoutingTableAsync(ISet<Uri> triedUris = null,
+            Func<IConnection, Task<IRoutingTable>> rediscoveryFunc = null)
         {
             rediscoveryFunc = rediscoveryFunc ?? RediscoveryAsync;
 

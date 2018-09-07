@@ -41,9 +41,8 @@ namespace Neo4j.Driver.Internal.Routing
             ILogger logger)
         {
             _logger = logger;
-            var uris = routingSettings.InitialServers;
 
-            _clusterConnectionPool = new ClusterConnectionPool(uris, connectionFactory, poolSettings, logger);
+            _clusterConnectionPool = new ClusterConnectionPool(new Uri[0], connectionFactory, poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
 
             _loadBalancingStrategy = CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, logger);
