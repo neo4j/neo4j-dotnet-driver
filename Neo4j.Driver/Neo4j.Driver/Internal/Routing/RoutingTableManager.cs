@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -45,7 +46,7 @@ namespace Neo4j.Driver.Internal.Routing
             IClusterConnectionPoolManager poolManager,
             ILogger logger) :
             this(routingSettings.InitialServerAddressProvider, routingSettings.RoutingContext,
-                Routing.RoutingTable.Empty, poolManager, logger)
+                new RoutingTable(Enumerable.Empty<Uri>()), poolManager, logger)
         {
         }
 

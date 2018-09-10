@@ -16,21 +16,14 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Net.Sockets;
 using System.Reflection;
-using System.Threading.Tasks;
-using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
     internal class BoltStubServer : IDisposable
     {
-        public static readonly Config Config = new Config
-        {
-            EncryptionLevel = EncryptionLevel.None,
-        };
+
         private static readonly string ScriptSourcePath;
 
         static BoltStubServer()
@@ -42,15 +35,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         }
         
         private readonly IShellCommandRunner _commandRunner;
-        private readonly int _port;
-        private readonly TcpClient _testTcpClient = new TcpClient();
 
         private BoltStubServer(string script, int port)
         {
             _commandRunner = ShellCommandRunnerFactory.Create();
             _commandRunner.BeginRunCommand("boltstub", port.ToString(), script);
-            _port = port;
-            WaitForServer(_port);
         }
 
         public static BoltStubServer Start(string script, int port)
@@ -60,13 +49,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Dispose()
         {
-#if NET452
-            _testTcpClient.Close();
-#else
-            _testTcpClient.Dispose();
-#endif
             _commandRunner.EndRunCommand();
-            WaitForServer(_port, ServerStatus.Offline);
         }
 
         private static string Source(string script)
@@ -77,47 +60,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 throw new ArgumentException($"Cannot locate script file `{scriptFilePath}`", scriptFilePath);
             }
             return scriptFilePath;
-        }
-
-        private enum ServerStatus
-        {
-            Online, Offline
-        }
-
-        private void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
-        {
-            var retryAttempts = 20;
-            for (var i = 0; i < retryAttempts; i++)
-            {
-                ServerStatus currentStatus;
-                try
-                {
-#if NET452
-                    _testTcpClient.Connect("127.0.0.1", port);
-#else
-                    Task.Run(() => _testTcpClient.ConnectAsync("127.0.0.1", port)).Wait();
-#endif
-                    if (_testTcpClient.Connected)
-                    {
-                        currentStatus = ServerStatus.Online;
-                    }
-                    else
-                    {
-                        currentStatus = ServerStatus.Offline;
-                    }
-                }
-                catch (Exception)
-                {
-                    currentStatus = ServerStatus.Offline;
-                }
-
-                if (currentStatus == status)
-                {
-                    return;
-                }
-                // otherwise wait and retry
-                Task.Delay(300).Wait();
-            }
         }
     }
 }

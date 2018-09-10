@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -42,7 +43,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _logger = logger;
 
-            _clusterConnectionPool = new ClusterConnectionPool(new Uri[0], connectionFactory, poolSettings, logger);
+            _clusterConnectionPool = new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
 
             _loadBalancingStrategy = CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, logger);
@@ -257,7 +258,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return new ClusterConnection(conn, uri, mode, this);
                 }
                 OnConnectionError(uri, new ArgumentException(
-                    $"Routing table {_routingTableManager.RoutingTable} contains a server {uri} " +
+                    $"Routing table {_routingTableManager.RoutingTable} contains a server '{uri}' " +
                     $"that is not known to cluster connection pool {_clusterConnectionPool}."));
             }
             catch (ServiceUnavailableException e)

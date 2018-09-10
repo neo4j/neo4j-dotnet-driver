@@ -17,6 +17,7 @@
 
 using System;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -32,16 +33,24 @@ namespace Neo4j.Driver.IntegrationTests
 
         protected string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
         protected string WrongServer => "bolt+routing://localhost:1234";
+        protected IDriver Driver { get; }
 
         public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
         {
             Output = output;
             Cluster = fixture.Cluster;
             AuthToken = Cluster.AuthToken;
+
+            var config = new Config
+            {
+                Logger = new TestLogger(output)
+            };
+            Driver = GraphDatabase.Driver(RoutingServer, AuthToken, config);
         }
 
         public virtual void Dispose()
         {
+            Driver.Close();
             // put some code that you want to run after each unit test
         }
     }

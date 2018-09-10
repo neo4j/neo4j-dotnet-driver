@@ -24,8 +24,6 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class RoutingTable : IRoutingTable
     {
-        public static RoutingTable Empty = new RoutingTable(new Uri[0]);
-
         private const int MinRouterCount = 1;
         private readonly AddressSet<Uri> _routers = new AddressSet<Uri>();
         private readonly AddressSet<Uri> _readers = new AddressSet<Uri>();

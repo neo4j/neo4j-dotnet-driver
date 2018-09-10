@@ -20,18 +20,26 @@ using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.V1;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
     public class BoltStubServerTests
     {
+        public Config Config { get; set; }
+
+        public BoltStubServerTests(ITestOutputHelper output)
+        {
+            Config = new Config {EncryptionLevel = EncryptionLevel.None, Logger = new TestLogger(output)};
+        }
+
         [RequireBoltStubServerFact]
         public void SendRoutingContextToServer()
         {
             using (BoltStubServer.Start("get_routing_table_with_context", 9001))
             {
                 var uri = new Uri("bolt+routing://127.0.0.1:9001/?policy=my_policy&region=china");
-                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                using (var driver = GraphDatabase.Driver(uri, Config))
                 using (var session = driver.Session())
                 {
                     var records = session.Run("MATCH (n) RETURN n.name AS name").ToList();
@@ -48,7 +56,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (BoltStubServer.Start("get_routing_table", 9001))
             {
                 var uri = new Uri("bolt+routing://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                using (var driver = GraphDatabase.Driver(uri, Config))
                 using (var session = driver.Session())
                 {
                     var records = session.Run("MATCH (n) RETURN n.name AS name").ToList();
@@ -72,7 +80,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (BoltStubServer.Start("multiple_bookmarks", 9001))
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                using (var driver = GraphDatabase.Driver(uri, Config))
                 using (var session = driver.Session(bookmarks))
                 {
                     using (var tx = session.BeginTransaction())
@@ -91,7 +99,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (BoltStubServer.Start("rollback_error", 9001))
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, BoltStubServer.Config))
+                using (var driver = GraphDatabase.Driver(uri, Config))
                 using (var session = driver.Session())
                 {
                     var tx = session.BeginTransaction();
