@@ -142,8 +142,6 @@ namespace Neo4j.Driver.Internal.Connector
             Delegate.ResetMessageReaderAndWriterForServerV3_1();
         }
 
-        public ILogger Logger => Delegate.Logger;
-
         public virtual void Destroy()
         {
             Delegate.Destroy();

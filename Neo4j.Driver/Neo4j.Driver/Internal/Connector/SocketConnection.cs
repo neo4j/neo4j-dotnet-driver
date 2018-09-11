@@ -183,8 +183,6 @@ namespace Neo4j.Driver.Internal.Connector
             _client.ResetMessageReaderAndWriterForServerV3_1(_boltProtocol);
         }
 
-        public ILogger Logger => _logger;
-
         public void Destroy()
         {
             Close();
