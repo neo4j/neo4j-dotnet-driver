@@ -15,18 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal abstract class StatementRunner : LoggerBase, IStatementRunner
+    internal abstract class StatementRunner : IStatementRunner
     {
-        protected StatementRunner(ILogger logger) : base(logger)
-        {
-        }
-
         public abstract IStatementResult Run(Statement statement);
 
         public abstract Task<IStatementResultCursor> RunAsync(Statement statement);
@@ -60,6 +58,14 @@ namespace Neo4j.Driver.Internal
         public Task<IStatementResultCursor> RunAsync(string statement, object parameters)
         {
             return RunAsync(new Statement(statement, parameters.ToDictionary()));
+        }
+
+        protected abstract void Dispose(bool isDisposing);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 

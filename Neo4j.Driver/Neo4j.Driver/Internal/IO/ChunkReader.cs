@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.IO
     internal class ChunkReader: IChunkReader
     {
         private readonly Stream _downStream;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
         private readonly byte[] _chunkSizeBuffer = new byte[2];
         private readonly byte[] _buffer = new byte[Constants.ChunkBufferSize];
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.IO
             
         }
 
-        internal ChunkReader(Stream downStream, ILogger logger)
+        internal ChunkReader(Stream downStream, IDriverLogger logger)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream));
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal.IO
                         throw new IOException($"Unexpected end of stream, read returned {read}");
                     }
 
-                    _logger?.Trace("S: ", _buffer, _lastWritePosition, read);
+                    LogBuffer(_buffer, _lastWritePosition, read);
 
                     _lastWritePosition += read;
 
@@ -201,7 +201,7 @@ namespace Neo4j.Driver.Internal.IO
                                 }
 
                                 // Otherwise process it.
-                                _logger?.Trace("S: ", _buffer, _lastWritePosition, t.Result);
+                                LogBuffer(_buffer, _lastWritePosition, t.Result);
 
                                 _lastWritePosition += t.Result;
 
@@ -304,7 +304,7 @@ namespace Neo4j.Driver.Internal.IO
             {
                 var leftOverBytes = _lastWritePosition - _lastReadPosition;
 
-                _logger?.Trace($"{leftWritableBytes} bytes left in chunk buffer [lastWritePosition: {_lastWritePosition}, lastReadPosition: {_lastReadPosition}], compacting.");
+                LogTrace("{0} bytes left in chunk buffer [lastWritePosition: {1}, lastReadPosition: {2}], compacting.", leftWritableBytes, _lastWritePosition, _lastReadPosition);
 
                 if (leftOverBytes > 0)
                 {
@@ -315,6 +315,21 @@ namespace Neo4j.Driver.Internal.IO
                 _lastReadPosition = 0;
             }
         }
-        
+
+        private void LogBuffer(byte[] bytes, int start, int size)
+        {
+            if (_logger != null && _logger.IsTraceEnabled())
+            {
+                _logger?.Trace("S: {0}", bytes.ToHexString(start, size));
+            }
+        }
+
+        private void LogTrace(string message, params object[] args)
+        {
+            if (_logger != null && _logger.IsTraceEnabled())
+            {
+                _logger?.Trace(message, args);
+            }
+        }
     }
 }

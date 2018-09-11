@@ -38,12 +38,12 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly EncryptionManager _encryptionManager;
         private readonly TimeSpan _connectionTimeout;
         private readonly bool _socketKeepAliveEnabled;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
         public Stream ReadStream => _stream;
         public Stream WriteStream => _stream;
 
-        public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
+        public TcpSocketClient(SocketSettings socketSettings, IDriverLogger logger = null)
         {
             Throw.ArgumentNullException.IfNull(socketSettings, nameof(socketSettings));
             Throw.ArgumentNullException.IfNull(socketSettings.HostResolver, nameof(SocketSettings.HostResolver));
@@ -201,9 +201,8 @@ namespace Neo4j.Driver.Internal.Connector
                     }
                     catch (Exception e)
                     {
-                        _logger?.Error($"Failed to close connect to the server {address}:{port}" +
-                                       $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms" +
-                                       $" due to error: {e.Message}.", e);
+                        _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
+                                          $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
                     }
 
                     throw new OperationCanceledException(
@@ -232,9 +231,8 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception e)
                 {
-                    _logger?.Error($"Failed to close connect to the server {address}:{port}" +
-                                   $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms" +
-                                   $" due to error: {e.Message}.", e);
+                    _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
+                                      $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
                 }
                 
                 throw new OperationCanceledException(

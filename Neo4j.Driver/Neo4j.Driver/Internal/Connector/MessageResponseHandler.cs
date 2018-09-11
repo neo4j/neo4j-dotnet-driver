@@ -26,7 +26,8 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class MessageResponseHandler : IMessageResponseHandler
     {
-        private readonly ILogger _logger;
+        private const string MessagePattern = "S: {0}";
+        private readonly IDriverLogger _logger;
         private readonly Queue<IMessageResponseCollector> _resultBuilders = new Queue<IMessageResponseCollector>();
         private readonly Queue<IRequestMessage> _unhandledMessages = new Queue<IRequestMessage>();
 
@@ -46,7 +47,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
         }
 
-        public MessageResponseHandler(ILogger logger)
+        public MessageResponseHandler(IDriverLogger logger)
         {
             _logger = logger;
         }
@@ -71,13 +72,13 @@ namespace Neo4j.Driver.Internal.Connector
                 CurrentResponseCollector?.CollectSummary(meta);
             }
             CurrentResponseCollector?.DoneSuccess();
-            _logger?.Debug("S: ", new SuccessMessage(meta));
+            LogSuccess(meta);
         }
 
         public void HandleRecordMessage(object[] fields)
         {
             CurrentResponseCollector?.CollectRecord(fields);
-            _logger?.Debug("S: ", new RecordMessage(fields));
+            LogRecord(fields);
         }
 
         public void HandleFailureMessage(string code, string message)
@@ -85,14 +86,14 @@ namespace Neo4j.Driver.Internal.Connector
             DequeueMessage();
             Error = ParseServerException(code, message);
             CurrentResponseCollector?.DoneFailure();
-            _logger?.Debug("S: ", new FailureMessage(code, message));
+            LogFailure(code, message);
         }
 
         public void HandleIgnoredMessage()
         {
             DequeueMessage();
             CurrentResponseCollector?.DoneIgnored();
-            _logger?.Debug("S: ", Ignored);
+            LogIgnored();
         }
 
         public void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null)
@@ -110,6 +111,38 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 _unhandledMessages.Dequeue();
                 CurrentResponseCollector = _resultBuilders.Dequeue();
+            }
+        }
+
+        private void LogSuccess(IDictionary<string, object> meta)
+        {
+            if (_logger!= null && _logger.IsDebugEnabled())
+            {
+                _logger?.Debug(MessagePattern, new SuccessMessage(meta));
+            }
+        }
+
+        private void LogRecord(object[] fields)
+        {
+            if (_logger !=null && _logger.IsDebugEnabled())
+            {
+                _logger?.Debug(MessagePattern, new RecordMessage(fields));
+            }
+        }
+
+        private void LogFailure(string code, string message)
+        {
+            if (_logger!= null && _logger.IsDebugEnabled())
+            {
+                _logger?.Debug(MessagePattern, new FailureMessage(code, message));
+            }
+        }
+
+        private void LogIgnored()
+        {
+            if (_logger!= null && _logger.IsDebugEnabled())
+            {
+                _logger?.Debug(MessagePattern, Ignored);
             }
         }
     }

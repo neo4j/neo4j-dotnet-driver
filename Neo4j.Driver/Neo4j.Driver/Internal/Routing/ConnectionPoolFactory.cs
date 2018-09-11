@@ -28,21 +28,21 @@ namespace Neo4j.Driver.Internal.Routing
     {
         private readonly IPooledConnectionFactory _connectionFactory;
         private readonly ConnectionPoolSettings _poolSettings;
-        private readonly ILogger _logger;
+        private readonly ILogging _logging;
 
         public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings,
-            ILogger logger)
+            ILogging logging)
         {
             Throw.ArgumentNullException.IfNull(connectionFactory, nameof(connectionFactory));
             Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
             _connectionFactory = connectionFactory;
             _poolSettings = poolSettings;
-            _logger = logger;
+            _logging = logging;
         }
 
         public IConnectionPool Create(Uri uri)
         {
-            return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger);
+            return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logging);
         }
     }
 }

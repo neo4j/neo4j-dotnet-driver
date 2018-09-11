@@ -28,8 +28,9 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal class SocketClient :  ISocketClient
+    internal class SocketClient : ISocketClient
     {
+        private const string MessagePattern = "C: {0}";
         private readonly Uri _uri;
         private readonly BufferSettings _bufferSettings;
 
@@ -39,12 +40,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         private int _closedMarker = -1;
 
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
         private readonly IConnectionListener _connMetricsListener;
         private readonly IListenerEvent _connEvent;
 
         public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings,
-            IConnectionListener connMetricsListener = null, ILogger logger = null, ITcpSocketClient socketClient = null)
+            IConnectionListener connMetricsListener = null, IDriverLogger logger = null, ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
@@ -138,13 +139,13 @@ namespace Neo4j.Driver.Internal.Connector
                 foreach (var message in messages)
                 {
                     Writer.Write(message);
-                    _logger?.Debug("C: ", message);
+                    LogDebug(MessagePattern, message);
                 }
                 Writer.Flush();
             }
             catch (Exception ex)
             {
-                _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
+                _logger?.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
                 Stop();
                 throw;
             }
@@ -157,13 +158,13 @@ namespace Neo4j.Driver.Internal.Connector
                 foreach (var message in messages)
                 {
                     Writer.Write(message);
-                    _logger?.Debug("C: ", message);
+                    LogDebug(MessagePattern, message);
                 }
                 await Writer.FlushAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                _logger?.Info($"Unable to send message to server {_uri}, connection will be terminated. ", ex);
+                _logger?.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
                 await StopAsync().ConfigureAwait(false);
                 throw;
             }
@@ -193,13 +194,13 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception ex)
             {
-                _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", ex);
+                _logger?.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
                 Stop();
                 throw;
             }
             if (responseHandler.HasProtocolViolationError)
             {
-                _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
+                _logger?.Warn(responseHandler.Error, $"Received bolt protocol error from server {_uri}, connection will be terminated.");
                 Stop();
                 throw responseHandler.Error;
             }
@@ -213,13 +214,13 @@ namespace Neo4j.Driver.Internal.Connector
             }
             catch (Exception ex)
             {
-                _logger?.Error($"Unable to read message from server {_uri}, connection will be terminated.", ex);
+                _logger?.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
                 await StopAsync().ConfigureAwait(false);
                 throw;
             }
             if (responseHandler.HasProtocolViolationError)
             {
-                _logger?.Info($"Received bolt protocol error from server {_uri}, connection will be terminated.", responseHandler.Error);
+                _logger?.Warn(responseHandler.Error, $"Received bolt protocol error from server {_uri}, connection will be terminated.");
                 await StopAsync().ConfigureAwait(false);
                 throw responseHandler.Error;
             }
@@ -277,13 +278,13 @@ namespace Neo4j.Driver.Internal.Connector
             var data = BoltProtocolFactory.PackSupportedVersions();
             _tcpSocketClient.WriteStream.Write(data, 0, data.Length);
             _tcpSocketClient.WriteStream.Flush();
-            _logger?.Debug("C: [HANDSHAKE] ", data);
+            _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
 
             data = new byte[4];
             _tcpSocketClient.ReadStream.Read(data, 0, data.Length);
 
             var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
-            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
+            _logger?.Debug("S: [HANDSHAKE] {0}", agreedVersion);
             return agreedVersion;
         }
 
@@ -292,13 +293,13 @@ namespace Neo4j.Driver.Internal.Connector
             var data = BoltProtocolFactory.PackSupportedVersions();
             await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
             await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
-            _logger?.Debug("C: [HANDSHAKE] ", data);
+            _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
 
             data = new byte[4];
             await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
 
             var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
-            _logger?.Debug($"S: [HANDSHAKE] {agreedVersion}");
+            _logger?.Debug("S: [HANDSHAKE] {0}", agreedVersion);
             return agreedVersion;
         }
 
@@ -308,6 +309,14 @@ namespace Neo4j.Driver.Internal.Connector
             Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger);
             Writer = boltProtocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger);
             return boltProtocol;
+        }
+
+        private void LogDebug(string message, params object[] args)
+        {
+            if (_logger != null && _logger.IsDebugEnabled())
+            {
+                _logger?.Debug(message, args);
+            }
         }
     }
 }

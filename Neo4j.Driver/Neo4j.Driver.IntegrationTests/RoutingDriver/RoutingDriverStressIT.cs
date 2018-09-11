@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
@@ -129,13 +130,13 @@ namespace Neo4j.Driver.IntegrationTests
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 100,
-                Logger = new TestLogger(Output)
+                Logging = new TestLogging(Output)
             };
 
             var connectionSettings = new ConnectionSettings(AuthToken, config);
             var bufferSettings = new BufferSettings(config);
             var connectionFactory = new MonitoredPooledConnectionFactory(
-                new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger));
+                new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logging));
 
             _driver = (Internal.Driver) GraphDatabase.CreateDriver(new Uri(RoutingServer), config, connectionFactory);
             _connections = connectionFactory.Connections;
@@ -171,7 +172,7 @@ namespace Neo4j.Driver.IntegrationTests
                 if (_connections.Count > minimalConnCount && _connections.TryDequeue(out var conn))
                 {
                     await conn.DestroyAsync();
-                    Output.WriteLine($"Terminator killed connection {conn.Id} towards server {conn.Server}");
+                    Output.WriteLine($"Terminator killed connection {conn} towards server {conn.Server}");
                 }
                 else
                 {

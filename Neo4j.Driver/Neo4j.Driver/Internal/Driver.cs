@@ -29,20 +29,20 @@ namespace Neo4j.Driver.Internal
 
         private readonly IConnectionProvider _connectionProvider;
         private readonly IRetryLogic _retryLogic;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
         private readonly IMetrics _metrics;
         public Uri Uri { get; }
 
         private const AccessMode DefaultAccessMode = AccessMode.Write;
         private const string NullBookmark = null;
 
-        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, ILogger logger,
+        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, ILogging logging,
             IMetrics metrics=null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
 
             Uri = uri;
-            _logger = logger;
+            _logger = logging.GetLogger(GetType().FullName);
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
             _metrics = metrics;

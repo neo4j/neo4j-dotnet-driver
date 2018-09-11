@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal class ClusterDiscoveryManager
     {
         private readonly IConnection _conn;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
         public IEnumerable<Uri> Readers { get; internal set; } = new Uri[0];
         public IEnumerable<Uri> Writers { get; internal set; } = new Uri[0];
         public IEnumerable<Uri> Routers { get; internal set; } = new Uri[0];
@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Routing
         private const string GetServersProcedure = "dbms.cluster.routing.getServers";
         private const string GetRoutingTableProcedure = "dbms.cluster.routing.getRoutingTable";
         public Statement DiscoveryProcedure { get; }
-        public ClusterDiscoveryManager(IConnection connection, IDictionary<string, string> context, ILogger logger)
+        public ClusterDiscoveryManager(IConnection connection, IDictionary<string, string> context, IDriverLogger logger)
         {
             _conn = connection;
             _logger = logger;

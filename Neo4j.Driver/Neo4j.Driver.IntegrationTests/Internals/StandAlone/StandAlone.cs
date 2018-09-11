@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using System.Linq;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.V1;
 using Org.BouncyCastle.Pkcs;
 

@@ -43,8 +43,13 @@ namespace Neo4j.Driver.Tests
                 throw new System.NotImplementedException();
             }
 
-            public MyStatementRunner() : base(null)
+            protected override void Dispose(bool isDisposing)
             {
+                if (!isDisposing)
+                {
+                    return;
+                }
+                Dispose();
             }
         }
 

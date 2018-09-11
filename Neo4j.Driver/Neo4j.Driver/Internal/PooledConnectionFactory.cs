@@ -29,15 +29,15 @@ namespace Neo4j.Driver.Internal
     {
         private readonly ConnectionSettings _connectionSettings;
         private readonly BufferSettings _bufferSettings;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
-        public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogger logger)
+        public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogging logging)
         {
             Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(bufferSettings, nameof(bufferSettings));
             _connectionSettings = connectionSettings;
             _bufferSettings = bufferSettings;
-            _logger = logger;
+            _logger = logging.GetLogger(GetType().FullName);
         }
 
         public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IConnectionListener metricsListener)

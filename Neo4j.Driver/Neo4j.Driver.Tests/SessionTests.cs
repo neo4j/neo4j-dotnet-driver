@@ -32,12 +32,12 @@ namespace Neo4j.Driver.Tests
 {
     public class SessionTests
     {
-        internal static Session NewSession(IConnection connection, ILogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        internal static Session NewSession(IConnection connection, IDriverLogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
             return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, Bookmark.From(bookmark));
         }
 
-        internal static Session NewSession(IBoltProtocol protocol, ILogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        internal static Session NewSession(IBoltProtocol protocol, IDriverLogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.IsOpen).Returns(true);

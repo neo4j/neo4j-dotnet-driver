@@ -17,6 +17,7 @@
 using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.V1
@@ -146,9 +147,22 @@ namespace Neo4j.Driver.V1
         public TrustManager TrustManager { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
+        /// Gets or sets the <see cref="ILogger"/> instance to be used to receive all logs produced by this driver.
+        /// Since Driver 1.7, this field is deprecated and we recommend to use the new logging <see cref="ILogging"/> instead to receive logs produced by this driver.
+        /// But for back-compatibility, if this field is set, you can still receive all logs in the <see cref="ILogger"/> specified.
+        /// If you want to use the new logging <see cref="ILogging"/> instead, then leave this field unchanged.
         /// </summary>
-        public ILogger Logger { get; set; } = new DebugLogger {Level = LogLevel.Info};
+        [Obsolete("Please use Logging instead.")]
+        public ILogger Logger
+        {
+            get => _legacyLogger;
+            set { _legacyLogger = value; Logging = new LegacyLoggerLoggingAdapter(_legacyLogger); }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ILogging"/> instance to be used to receive all logs produced by this driver.
+        /// </summary>
+        public ILogging Logging { get; set; } = NullLogging.DevNullLogging;
 
         /// <summary>
         /// Gets or sets the maximum transaction retry timeout.
@@ -159,8 +173,8 @@ namespace Neo4j.Driver.V1
         /// Gets or sets the max idle connection pool size. If the value of this is not set,
         /// then it will default to be the same as <see cref="MaxConnectionPoolSize"/>
         /// </summary>
-        /// <remarks> 
-        /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver. 
+        /// <remarks>
+        /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver.
         /// An idle connection is a connection that has already been connected to the database instance and doesn't need to re-initialize.
         /// Setting this value to <see cref="Infinite"/> results in the idle pool size to be assigned the same value as <see cref="MaxConnectionPoolSize"/>.
         /// </remarks>
@@ -171,11 +185,12 @@ namespace Neo4j.Driver.V1
         }
 
         private int _maxIdleConnPoolSize = Infinite;
+        private ILogger _legacyLogger = NullLegacyLogger.DevNullLogger;
 
         /// <summary>
         /// This property is deprecated. Use <see cref="MaxIdleConnectionPoolSize"/> instead.
         /// </summary>
-        [System.Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
+        [Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
         public int MaxIdleSessionPoolSize {
             get => MaxIdleConnectionPoolSize;
             set => MaxIdleConnectionPoolSize = value;
@@ -302,6 +317,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithLogger(ILogger logger)
             {
                 _config.Logger = logger;
+                return this;
+            }
+
+            public IConfigBuilder WithLogging(ILogging logging)
+            {
+                _config.Logging = logging;
                 return this;
             }
 
@@ -449,12 +470,22 @@ namespace Neo4j.Driver.V1
         IConfigBuilder WithTrustManager(TrustManager manager);
 
         /// <summary>
-        /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
+        /// This method is deprecated. Use <see cref="WithLogging"/> instead.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        [System.Obsolete("Please use WithMaxIdleConnectionPoolSize instead.")]
         IConfigBuilder WithLogger(ILogger logger);
+
+        /// <summary>
+        /// Sets the <see cref="Config"/> to use a given <see cref="ILogging"/> instance.
+        /// </summary>
+        /// <param name="logging">The <see cref="ILogging"/> instance to use, if <c>null</c> no logging will occur.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithLogging(ILogging logging);
+
 
         /// <summary>
         /// This method is deprecated. Use <see cref="WithMaxIdleConnectionPoolSize"/> instead.

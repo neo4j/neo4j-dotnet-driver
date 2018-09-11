@@ -26,9 +26,9 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly RoundRobinArrayIndex _readersIndex = new RoundRobinArrayIndex();
         private readonly RoundRobinArrayIndex _writersIndex = new RoundRobinArrayIndex();
 
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
-        public RoundRobinLoadBalancingStrategy(ILogger logger)
+        public RoundRobinLoadBalancingStrategy(IDriverLogger logger)
         {
             _logger = logger;
         }
@@ -48,14 +48,22 @@ namespace Neo4j.Driver.Internal.Routing
             var count = addresses.Count;
             if (count == 0)
             {
-                _logger.Trace($"Unable to select {addressType}, no known addresses given");
+                LogDebug($"Unable to select {addressType}, no known addresses given.");
                 return null;
             }
 
             var index = roundRobinIndex.Next(count);
             var address = addresses[index];
-            _logger.Trace($"Unable to select {addressType}, no known addresses given");
+            LogDebug($"Selected {addressType} with address: '{address}' in round-robin fashion.");
             return address;
+        }
+
+        private void LogDebug(string message)
+        {
+            if (_logger.IsDebugEnabled())
+            {
+                _logger.Debug(message);
+            }
         }
     }
 }

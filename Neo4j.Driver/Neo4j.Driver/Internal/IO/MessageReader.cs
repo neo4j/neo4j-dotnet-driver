@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO
     {
         private readonly IChunkReader _chunkReader;
         private readonly IPackStreamReader _packStreamReader;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
         private readonly MemoryStream _bufferStream;
         private readonly int _defaultBufferSize;
         private readonly int _maxBufferSize;
@@ -38,13 +38,13 @@ namespace Neo4j.Driver.Internal.IO
 
         }
 
-        public MessageReader(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, IMessageFormat messageFormat)
+        public MessageReader(Stream stream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger, IMessageFormat messageFormat)
             : this(new ChunkReader(stream, logger), defaultBufferSize, maxBufferSize, logger, messageFormat)
         {
 
         }
 
-        public MessageReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, ILogger logger, IMessageFormat messageFormat)
+        public MessageReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, IDriverLogger logger, IMessageFormat messageFormat)
         {
             Throw.ArgumentNullException.IfNull(chunkReader, nameof(chunkReader));
             Throw.ArgumentNullException.IfNull(messageFormat, nameof(messageFormat));

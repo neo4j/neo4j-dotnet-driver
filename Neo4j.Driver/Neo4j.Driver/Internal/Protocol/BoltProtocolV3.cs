@@ -31,13 +31,13 @@ namespace Neo4j.Driver.Internal.Protocol
         public static readonly BoltProtocolV3 BoltV3 = new BoltProtocolV3();
         
         public IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-            ILogger logger = null, bool ignored = true)
+            IDriverLogger logger = null, bool ignored = true)
         {
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
                 bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V3);
         }
 
-        public IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null,
+        public IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null,
             bool ignored = true)
         {
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,

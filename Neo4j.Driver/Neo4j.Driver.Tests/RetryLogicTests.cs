@@ -46,12 +46,14 @@ namespace Neo4j.Driver.Tests
         [InlineData(20)]
         public void ShouldRetry(int index)
         {
-            var mockLogger = new Mock<ILogger>();
-            mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
+            var mockLogging = new Mock<ILogging>();
+            var mockLogger = new Mock<IDriverLogger>();
+            mockLogging.Setup(x => x.GetLogger(It.IsAny<string>())).Returns(mockLogger.Object);
+
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogging.Object);
             Parallel.For(0, index, i => Retry(i, retryLogic));
 
-            mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()),
+            mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()),
                 Times.Exactly((int) Interlocked.Read(ref _globalCounter)));
         }
 
@@ -82,9 +84,10 @@ namespace Neo4j.Driver.Tests
         [InlineData("Neo.TransientError.Transaction.LockClientStopped")]
         public void ShouldNotRetryOnError(string errorCode)
         {
-            var mockLogger = new Mock<ILogger>();
-            mockLogger.SetupGet(l => l.Level).Returns(LogLevel.Info);
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
+            var mockLogging = new Mock<ILogging>();
+            var mockLogger = new Mock<IDriverLogger>();
+            mockLogging.Setup(x => x.GetLogger(It.IsAny<string>())).Returns(mockLogger.Object);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogging.Object);
 
             int count = 0;
             var e = Record.Exception(() => retryLogic.Retry<int>(() =>
@@ -96,7 +99,7 @@ namespace Neo4j.Driver.Tests
             e.Should().BeOfType<TransientException>();
             (e as TransientException).Code.Should().Be(errorCode);
             count.Should().Be(1);
-            mockLogger.Verify(l => l.Info(It.IsAny<string>(), It.IsAny<Exception>()), Times.Never);
+            mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()), Times.Never);
         }
     }
 }

@@ -22,6 +22,8 @@ using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Tests.IO;
+using Neo4j.Driver.Tests.TestUtil;
 using Neo4j.Driver.V1;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
@@ -63,7 +65,7 @@ namespace Neo4j.Driver.Tests
             public void LogsTheMessageToDebug()
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
-                var mockLogger = new Mock<ILogger>();
+                var mockLogger = LoggingHelper.GetTraceEnabledLogger();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
                 mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
@@ -129,7 +131,7 @@ namespace Neo4j.Driver.Tests
             public void LogsTheMessageToDebug()
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
-                var mockLogger = new Mock<ILogger>();
+                var mockLogger = LoggingHelper.GetTraceEnabledLogger();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
                 mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
@@ -196,7 +198,7 @@ namespace Neo4j.Driver.Tests
             public void LogsTheMessageToDebug()
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
-                var mockLogger = new Mock<ILogger>();
+                var mockLogger = LoggingHelper.GetTraceEnabledLogger();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
                 mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);
@@ -306,7 +308,7 @@ namespace Neo4j.Driver.Tests
             public void LogsTheMessageToDebug()
             {
                 var mockResultBuilder = new Mock<IMessageResponseCollector>();
-                var mockLogger = new Mock<ILogger>();
+                var mockLogger = LoggingHelper.GetTraceEnabledLogger();
 
                 var mrh = new MessageResponseHandler(mockLogger.Object);
                 mrh.EnqueueMessage(PullAll, mockResultBuilder.Object);

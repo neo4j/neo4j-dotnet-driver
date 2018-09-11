@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Protocol;
@@ -38,17 +39,27 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
+
+        private readonly string _id;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
-            IConnectionListener metricsListener = null, ILogger logger = null)
-            : this(new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener, logger),
-                connectionSettings.AuthToken, connectionSettings.UserAgent, logger, new ServerInfo(uri))
+            IConnectionListener metricsListener = null, IDriverLogger logger = null)
         {
+            _id = $"Conn-{UniqueIdGenerator.GetId()}";
+            _logger = new PrefixLogger(logger, $"[{_id}]");
+
+            _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener, _logger);
+            _authToken = connectionSettings.AuthToken;
+            _userAgent = connectionSettings.UserAgent;
+            Server = new ServerInfo(uri);
+
+            _responseHandler = new MessageResponseHandler(_logger);
         }
 
+        // for test only
         internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
-            string userAgent, ILogger logger, IServerInfo server,
+            string userAgent, IDriverLogger logger, IServerInfo server,
             IMessageResponseHandler messageResponseHandler = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
@@ -61,7 +72,8 @@ namespace Neo4j.Driver.Internal.Connector
             _userAgent = userAgent;
             Server = server;
 
-            _logger = logger;
+            _id = $"Conn-{UniqueIdGenerator.GetId()}";
+            _logger = new PrefixLogger(logger, $"[{_id}]");
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
         }
 
@@ -203,14 +215,14 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception e)
                 {
-                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}", e);
+                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
                 }
                 _client.Stop();
             }
             catch (Exception e)
             {
                 // only log the exception if failed to close connection
-                _logger.Error($"Failed to close connection properly due to error: {e.Message}", e);
+                _logger.Error(e, "Failed to close connection properly.");
             }
         }
 
@@ -224,14 +236,14 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception e)
                 {
-                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}", e);
+                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
                 }
                 await _client.StopAsync();
             }
             catch (Exception e)
             {
                 // only log the exception if failed to close connection
-                _logger.Error($"Failed to close connection properly due to error: {e.Message}", e);
+                _logger.Error(e, $"Failed to close connection properly.");
             }
         }
 
@@ -257,6 +269,11 @@ namespace Neo4j.Driver.Internal.Connector
                 _messages.Enqueue(requestStreamingMessage);
                 _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
             }
+        }
+
+        public override string ToString()
+        {
+            return _id;
         }
     }
 }

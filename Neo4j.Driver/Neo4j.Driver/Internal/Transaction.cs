@@ -21,6 +21,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
@@ -33,6 +34,7 @@ namespace Neo4j.Driver.Internal
         private Bookmark _bookmark;
 
         private State _state = State.Active;
+        private IDriverLogger _logger;
 
         private enum State
         {
@@ -58,12 +60,13 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
-        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, ILogger logger=null, Bookmark bookmark = null) : base(logger)
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, IDriverLogger logger=null, Bookmark bookmark = null)
         {
             _connection = new TransactionConnection(this, connection);
             _protocol = _connection.BoltProtocol;
             _resourceHandler = resourceHandler;
             _bookmark = bookmark;
+            _logger = logger;
         }
 
         public void BeginTransaction(TransactionConfig txConfig)
@@ -78,7 +81,7 @@ namespace Neo4j.Driver.Internal
 
         public override IStatementResult Run(Statement statement)
         {
-            return TryExecute(() =>
+            return TryExecute(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
                 return _protocol.RunInExplicitTransaction(_connection, statement);
@@ -87,7 +90,7 @@ namespace Neo4j.Driver.Internal
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
         {
-            return TryExecuteAsync(() =>
+            return TryExecuteAsync(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
                 return _protocol.RunInExplicitTransactionAsync(_connection, statement);
@@ -152,7 +155,6 @@ namespace Neo4j.Driver.Internal
                     _resourceHandler.OnTransactionDispose(_bookmark);
                     _resourceHandler = null;
                 }
-                base.Dispose(true);
             }
         }
 

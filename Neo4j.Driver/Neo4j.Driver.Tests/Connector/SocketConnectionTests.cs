@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
     {
         private static IAuthToken AuthToken => AuthTokens.None;
         private static string UserAgent => ConnectionSettings.DefaultUserAgent;
-        private static ILogger Logger => new Mock<ILogger>().Object;
+        private static IDriverLogger Logger => new Mock<IDriverLogger>().Object;
         private static IServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
@@ -46,33 +46,6 @@ namespace Neo4j.Driver.Tests
             socketClient = socketClient ?? SocketClient;
             server = server ?? Server;
             return new SocketConnection(socketClient, AuthToken, UserAgent, Logger, server, handler);
-        }
-
-        public class Construction
-        {
-            [Fact]
-            public void ShouldThrowArgumentNullExceptionIfSocketClientIsNull()
-            {
-                var exception = Exception(() => new SocketConnection(null, AuthToken, UserAgent, Logger, Server));
-                exception.Should().NotBeNull();
-                exception.Should().BeOfType<ArgumentNullException>();
-            }
-
-            [Fact]
-            public void ShouldThrowArgumentNullExceptionIfAuthTokenIsNull()
-            {
-                var exception = Exception(() => new SocketConnection(SocketClient, null, UserAgent, Logger, Server));
-                exception.Should().NotBeNull();
-                exception.Should().BeOfType<ArgumentNullException>();
-            }
-
-            [Fact]
-            public void ShouldThrowArgumentNullExceptionIfServerUriIsNull()
-            {
-                var exception = Exception(() => new SocketConnection(SocketClient, AuthToken, UserAgent, Logger, null));
-                exception.Should().NotBeNull();
-                exception.Should().BeOfType<ArgumentNullException>();
-            }
         }
 
         public class InitMethod

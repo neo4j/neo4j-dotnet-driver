@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public static readonly IRequestMessage Commit = new RunMessage("COMMIT");
         public static readonly IRequestMessage Rollback = new RunMessage("ROLLBACK");
 
-        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger=null, bool byteArraySupportEnabled = true)
+        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, IDriverLogger logger=null, bool byteArraySupportEnabled = true)
         {
             var messageFormat = BoltProtocolMessageFormat.V1;
             if (!byteArraySupportEnabled)
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxWriteBufferSize, logger, messageFormat);
         }
 
-        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool byteArraySupportEnabled=true)
+        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null, bool byteArraySupportEnabled=true)
         {
             var messageFormat = BoltProtocolMessageFormat.V1;
             if (!byteArraySupportEnabled)

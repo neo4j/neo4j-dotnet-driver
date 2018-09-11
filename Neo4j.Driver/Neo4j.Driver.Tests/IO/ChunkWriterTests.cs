@@ -20,6 +20,7 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Tests.TestUtil;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -155,7 +156,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var writer = new ChunkWriter(stream, logger.Object);
 
             // Write data
@@ -163,11 +164,11 @@ namespace Neo4j.Driver.Tests.IO
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
 
-            logger.Verify(x => x.Trace("C: ", It.IsAny<byte[]>(), 0, buffer.Length + 2), Times.Never);
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
 
             writer.Send();
 
-            logger.Verify(x => x.Trace("C: ", It.IsAny<byte[]>(), 0, buffer.Length + 2), Times.Once);
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -175,7 +176,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var writer = new ChunkWriter(stream, logger.Object);
 
             // Write data
@@ -183,11 +184,11 @@ namespace Neo4j.Driver.Tests.IO
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
 
-            logger.Verify(x => x.Trace("C: ", It.IsAny<byte[]>(), 0, buffer.Length + 2), Times.Never);
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
 
             await writer.SendAsync();
 
-            logger.Verify(x => x.Trace("C: ", It.IsAny<byte[]>(), 0, buffer.Length + 2), Times.Once);
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
         }
 
         [Theory]
@@ -199,7 +200,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -219,7 +220,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -240,7 +241,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -260,7 +261,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -277,7 +278,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
 
             writer.OpenChunk();
@@ -298,7 +299,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
 
             writer.OpenChunk();

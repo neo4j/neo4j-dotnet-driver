@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests.Routing
 
         private static RoundRobinLoadBalancingStrategy NewRoundRobinStrategy()
         {
-            return new RoundRobinLoadBalancingStrategy(new Mock<ILogger>().Object);
+            return new RoundRobinLoadBalancingStrategy(new Mock<IDriverLogger>().Object);
         }
     }
 }

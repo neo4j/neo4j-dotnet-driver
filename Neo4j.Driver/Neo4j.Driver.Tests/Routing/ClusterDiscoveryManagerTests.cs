@@ -449,7 +449,7 @@ namespace Neo4j.Driver.Tests.Routing
         }
 
         private static ClusterDiscoveryManager CreateDiscoveryManager(IConnection connection,
-            IDictionary<string, string> context = null, ILogger logger = null)
+            IDictionary<string, string> context = null, IDriverLogger logger = null)
         {
             return new ClusterDiscoveryManager(connection, context, logger);
         }

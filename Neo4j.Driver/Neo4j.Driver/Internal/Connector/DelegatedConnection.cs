@@ -173,5 +173,10 @@ namespace Neo4j.Driver.Internal.Connector
                 await OnErrorAsync(e).ConfigureAwait(false);
             }
         }
+
+        public override string ToString()
+        {
+            return Delegate.ToString();
+        }
     }
 }
