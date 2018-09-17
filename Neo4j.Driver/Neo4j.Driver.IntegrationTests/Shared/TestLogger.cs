@@ -26,6 +26,7 @@ namespace Neo4j.Driver.IntegrationTests
         public TestLogger(ITestOutputHelper output):
             base(output.WriteLine)
         {
+            Level = LogLevel.Debug;
         }
     }
 }

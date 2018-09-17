@@ -802,7 +802,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldReturnZeroAfterCreation()
             {
-                var uri = new Uri("localhost:7687");
+                var uri = new Uri("bolt://localhost:7687");
                 var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
                 var logger = new Mock<ILogger>().Object;
                 var connFactory = new MockedConnectionFactory();

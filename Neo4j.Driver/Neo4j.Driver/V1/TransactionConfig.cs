@@ -32,7 +32,7 @@ namespace Neo4j.Driver.V1
     /// session.BeginTransaction(new TransactionConfig());
     /// </code>
     /// </summary>
-    public class TransactionConfig
+    public sealed class TransactionConfig : IEquatable<TransactionConfig>
     {
         internal static readonly TransactionConfig Empty = new TransactionConfig();
         private IDictionary<string, object> _metadata = PackStream.EmptyDictionary;

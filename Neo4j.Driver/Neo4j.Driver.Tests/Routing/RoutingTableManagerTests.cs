@@ -30,15 +30,19 @@ namespace Neo4j.Driver.Tests.Routing
 {
     public class RoutingTableManagerTests
     {
+        internal static Uri InitialUri = new Uri("bolt+routing://neo4j.com:6060");
+
         internal static RoutingTableManager NewRoutingTableManager(
             IRoutingTable routingTable,
-            IClusterConnectionPoolManager poolManager)
+            IClusterConnectionPoolManager poolManager, IInitialServerAddressProvider addressProvider = null)
         {
-            var seedUri = new Uri("bolt+routing://neo4j.com:6060");
-            return new RoutingTableManager(
-                routingTable,
-                new RoutingSettings(seedUri, new Dictionary<string, string>(), Config.DefaultConfig),
-                poolManager, null);
+            if (addressProvider == null)
+            {
+                addressProvider = new InitialServerAddressProvider(InitialUri, new PassThroughServerAddressResolver());
+            }
+
+            return new RoutingTableManager(addressProvider, new Dictionary<string, string>(), routingTable, poolManager,
+                null);
         }
 
         internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri)
@@ -92,15 +96,13 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldPrependInitialRouterIfWriterIsAbsent()
             {
                 // Given
-                var uri = new Uri("bolt+routing://123:456");
-
                 var routingTableMock = new Mock<IRoutingTable>();
                 routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
-                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPool(It.IsAny<IEnumerable<Uri>>()))
-                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
 
                 var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
                 manager.IsReadingInAbsenceOfWriter = true;
@@ -109,7 +111,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // When
                 // should throw an exception as the initial routers should not be tried again
                 var exception = Record.Exception(() =>
-                    manager.UpdateRoutingTableWithInitialUriFallback(new HashSet<Uri> {uri}, c => c != null
+                    manager.UpdateRoutingTableWithInitialUriFallback(c => c != null
                         ? null
                         : routingTableReturnMock.Object));
                 exception.Should().BeOfType<ServiceUnavailableException>();
@@ -123,21 +125,19 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldAddInitialUriWhenNoAvailableRouters()
             {
                 // Given
-                var uri = new Uri("bolt+routing://123:456");
-
                 var routingTableMock = new Mock<IRoutingTable>();
                 routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
-                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPool(It.IsAny<IEnumerable<Uri>>()))
-                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(uri));
+                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
 
                 var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
                 var routingTableReturnMock = new Mock<IRoutingTable>();
 
                 // When
-                manager.UpdateRoutingTableWithInitialUriFallback(new HashSet<Uri> {uri}, c => c != null
+                manager.UpdateRoutingTableWithInitialUriFallback(c => c != null
                     ? null
                     : routingTableReturnMock.Object);
 
@@ -163,7 +163,11 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManagerMock.Setup(x => x.AddConnectionPool(It.IsAny<IEnumerable<Uri>>()))
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(t));
 
-                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
+                var initialUriSet = new HashSet<Uri> {s, t};
+                var mockProvider = new Mock<IInitialServerAddressProvider>();
+                mockProvider.Setup(x => x.Get()).Returns(initialUriSet);
+
+                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, mockProvider.Object);
 
                 IRoutingTable UpdateRoutingTableFunc(ISet<Uri> set)
                 {
@@ -173,15 +177,13 @@ namespace Neo4j.Driver.Tests.Routing
                         set.Add(b);
                         return null;
                     }
-                    else
-                    {
-                        return new Mock<IRoutingTable>().Object;
-                    }
+
+                    return new Mock<IRoutingTable>().Object;
                 }
 
                 // When
-                var initialUriSet = new HashSet<Uri> {s, t};
-                manager.UpdateRoutingTableWithInitialUriFallback(initialUriSet, UpdateRoutingTableFunc);
+
+                manager.UpdateRoutingTableWithInitialUriFallback(UpdateRoutingTableFunc);
 
                 // Then
                 // verify the method is actually called

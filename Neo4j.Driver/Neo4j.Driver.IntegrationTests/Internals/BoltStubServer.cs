@@ -16,21 +16,16 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading.Tasks;
-using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
     internal class BoltStubServer : IDisposable
     {
-        public static readonly Config Config = new Config
-        {
-            EncryptionLevel = EncryptionLevel.None,
-        };
+
         private static readonly string ScriptSourcePath;
 
         static BoltStubServer()
@@ -42,15 +37,13 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         }
         
         private readonly IShellCommandRunner _commandRunner;
-        private readonly int _port;
         private readonly TcpClient _testTcpClient = new TcpClient();
 
         private BoltStubServer(string script, int port)
         {
             _commandRunner = ShellCommandRunnerFactory.Create();
             _commandRunner.BeginRunCommand("boltstub", port.ToString(), script);
-            _port = port;
-            WaitForServer(_port);
+            WaitForServer(port);
         }
 
         public static BoltStubServer Start(string script, int port)
@@ -60,13 +53,15 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Dispose()
         {
-#if NET452
-            _testTcpClient.Close();
-#else
-            _testTcpClient.Dispose();
-#endif
+            try
+            {
+                Disconnect(_testTcpClient);
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
             _commandRunner.EndRunCommand();
-            WaitForServer(_port, ServerStatus.Offline);
         }
 
         private static string Source(string script)
@@ -92,11 +87,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 ServerStatus currentStatus;
                 try
                 {
-#if NET452
-                    _testTcpClient.Connect("127.0.0.1", port);
-#else
-                    Task.Run(() => _testTcpClient.ConnectAsync("127.0.0.1", port)).Wait();
-#endif
+                    Connect(_testTcpClient, port);
                     if (_testTcpClient.Connected)
                     {
                         currentStatus = ServerStatus.Online;
@@ -118,6 +109,25 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 // otherwise wait and retry
                 Task.Delay(300).Wait();
             }
+            throw new InvalidOperationException($"Waited for 6s for stub server to be in {status} status, but failed.");
+        }
+
+        private void Disconnect(TcpClient testTcpClient)
+        {
+#if NET452
+            testTcpClient.Close();
+#else
+            testTcpClient.Dispose();
+#endif
+        }
+
+        private void Connect(TcpClient testTcpClient, int port)
+        {
+#if NET452
+            testTcpClient.Connect("127.0.0.1", port);
+#else
+            Task.Run(() => testTcpClient.ConnectAsync("127.0.0.1", port)).Wait();
+#endif
         }
     }
 }

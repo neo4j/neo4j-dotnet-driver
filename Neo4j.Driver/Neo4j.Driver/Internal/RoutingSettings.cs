@@ -17,6 +17,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
@@ -24,17 +26,46 @@ namespace Neo4j.Driver.Internal
     internal class RoutingSettings
     {
         public IDictionary<string, string> RoutingContext { get; }
-        public ISet<Uri> InitialServers { get; }
+        public InitialServerAddressProvider InitialServerAddressProvider { get; }
         public LoadBalancingStrategy Strategy { get; }
 
-        public RoutingSettings(Uri initServers, IDictionary<string, string> routingContext, Config config)
+        public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)
         {
-            Throw.ArgumentNullException.IfNull(initServers, nameof(initServers));
+            Throw.ArgumentNullException.IfNull(initServerUri, nameof(initServerUri));
             Throw.ArgumentNullException.IfNull(routingContext, nameof(routingContext));
             Throw.ArgumentNullException.IfNull(config, nameof(config));
-            InitialServers = new HashSet<Uri> {initServers};
+
+            InitialServerAddressProvider = new InitialServerAddressProvider(initServerUri, config.Resolver);
             RoutingContext = routingContext;
             Strategy = config.LoadBalancingStrategy;
+        }
+    }
+
+    internal interface IInitialServerAddressProvider
+    {
+        ISet<Uri> Get();
+    }
+
+    internal class InitialServerAddressProvider : IInitialServerAddressProvider
+    {
+        private readonly Uri _initAddress;
+        private readonly IServerAddressResolver _resolver;
+        public InitialServerAddressProvider(Uri initialServerAddress, IServerAddressResolver resolver)
+        {
+            _initAddress = initialServerAddress;
+            _resolver = resolver;
+        }
+
+        public ISet<Uri> Get()
+        {
+            var set = new HashSet<Uri>();
+            var addresses = _resolver.Resolve(ServerAddress.From(_initAddress));
+            foreach (var address in addresses)
+            {
+                // for now we convert this ServerAddress back to Uri
+                set.Add(new UriBuilder("bolt+routing://", address.Host, address.Port).Uri);
+            }
+            return set;
         }
     }
 }
