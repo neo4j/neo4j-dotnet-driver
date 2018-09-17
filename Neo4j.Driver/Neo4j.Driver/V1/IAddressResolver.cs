@@ -41,7 +41,7 @@ namespace Neo4j.Driver.V1
     /// A server address consists of <see cref="ServerAddress.Host"/> and <see cref="ServerAddress.Port"/>.
     /// This address specifies where the driver to find the server.
     /// </summary>
-    public sealed class ServerAddress
+    public sealed class ServerAddress : IEquatable<ServerAddress>
     {
         /// <summary>
         /// Create a server address with host name and port number.
