@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var initialUriSet = new HashSet<Uri> {s, t};
                 var mockProvider = new Mock<IInitialServerAddressProvider>();
-                mockProvider.Setup(x => x.Resolve()).Returns(initialUriSet);
+                mockProvider.Setup(x => x.Get()).Returns(initialUriSet);
 
                 var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, mockProvider.Object);
 

@@ -43,8 +43,7 @@ namespace Neo4j.Driver.Internal
 
     internal interface IInitialServerAddressProvider
     {
-        ISet<Uri> Resolve();
-        Task<ISet<Uri>> ResolveAsync();
+        ISet<Uri> Get();
     }
 
     internal class InitialServerAddressProvider : IInitialServerAddressProvider
@@ -57,15 +56,16 @@ namespace Neo4j.Driver.Internal
             _resolver = resolver;
         }
 
-        public ISet<Uri> Resolve()
+        public ISet<Uri> Get()
         {
-            return _resolver.Resolve(_initAddress);
+            var set = new HashSet<Uri>();
+            var addresses = _resolver.Resolve(ServerAddress.From(_initAddress));
+            foreach (var address in addresses)
+            {
+                // for now we convert this ServerAddress back to Uri
+                set.Add(new UriBuilder("bolt+routing://", address.Host, address.Port).Uri);
+            }
+            return set;
         }
-
-        public Task<ISet<Uri>> ResolveAsync()
-        {
-            return _resolver.ResolveAsync(_initAddress);
-        }
-
     }
 }

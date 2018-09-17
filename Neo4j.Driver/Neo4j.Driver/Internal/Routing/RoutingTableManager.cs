@@ -181,7 +181,7 @@ namespace Neo4j.Driver.Internal.Routing
             if (IsReadingInAbsenceOfWriter)
             {
                 // to prevent from only talking to minority part of a partitioned cluster.
-                PrependRouters(_initialServerAddressProvider.Resolve());
+                PrependRouters(_initialServerAddressProvider.Get());
                 hasPrependedInitialRouters = true;
             }
 
@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             if (!hasPrependedInitialRouters)
             {
-                var uris = _initialServerAddressProvider.Resolve();
+                var uris = _initialServerAddressProvider.Get();
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
@@ -221,7 +221,7 @@ namespace Neo4j.Driver.Internal.Routing
             var hasPrependedInitialRouters = false;
             if (IsReadingInAbsenceOfWriter)
             {
-                var uris = await _initialServerAddressProvider.ResolveAsync().ConfigureAwait(false);
+                var uris = _initialServerAddressProvider.Get();
                 await PrependRoutersAsync(uris).ConfigureAwait(false);
                 hasPrependedInitialRouters = true;
             }
@@ -235,7 +235,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             if (!hasPrependedInitialRouters)
             {
-                var uris = await _initialServerAddressProvider.ResolveAsync().ConfigureAwait(false);
+                var uris = _initialServerAddressProvider.Get();
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
