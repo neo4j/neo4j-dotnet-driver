@@ -46,11 +46,9 @@ namespace Neo4j.Driver.Tests
         [InlineData(20)]
         public void ShouldRetry(int index)
         {
-            var mockLogging = new Mock<ILogging>();
             var mockLogger = new Mock<IDriverLogger>();
-            mockLogging.Setup(x => x.GetLogger(It.IsAny<string>())).Returns(mockLogger.Object);
 
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogging.Object);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
             Parallel.For(0, index, i => Retry(i, retryLogic));
 
             mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()),
@@ -84,10 +82,8 @@ namespace Neo4j.Driver.Tests
         [InlineData("Neo.TransientError.Transaction.LockClientStopped")]
         public void ShouldNotRetryOnError(string errorCode)
         {
-            var mockLogging = new Mock<ILogging>();
             var mockLogger = new Mock<IDriverLogger>();
-            mockLogging.Setup(x => x.GetLogger(It.IsAny<string>())).Returns(mockLogger.Object);
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogging.Object);
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
 
             int count = 0;
             var e = Record.Exception(() => retryLogic.Retry<int>(() =>

@@ -204,14 +204,14 @@ namespace Neo4j.Driver.V1
 
             var connectionSettings = new ConnectionSettings(authToken, config);
             var bufferSettings = new BufferSettings(config);
-            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logging);
+            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger);
 
             return CreateDriver(uri, config, connectionFactory);
         }
 
         internal static IDriver CreateDriver(Uri uri, Config config, IPooledConnectionFactory connectionFactory)
         {
-            var logging = config.Logging;
+            var logger = config.DriverLogger;
 
             var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
             var routingContext = uri.ParseRoutingContext();
@@ -220,23 +220,23 @@ namespace Neo4j.Driver.V1
             var metrics = config.MetricsFactory?.CreateMetrics(config);
             var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
 
-            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logging);
+            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 
             IConnectionProvider connectionProvider = null;
             switch (parsedUri.Scheme.ToLower())
             {
                 case "bolt":
                     EnsureNoRoutingContext(uri, routingContext);
-                    connectionProvider = new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logging);
+                    connectionProvider = new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logging);
+                    connectionProvider = new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logging, metrics);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)

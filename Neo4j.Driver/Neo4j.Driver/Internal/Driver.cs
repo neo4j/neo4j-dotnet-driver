@@ -36,13 +36,13 @@ namespace Neo4j.Driver.Internal
         private const AccessMode DefaultAccessMode = AccessMode.Write;
         private const string NullBookmark = null;
 
-        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, ILogging logging,
+        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, IDriverLogger logger,
             IMetrics metrics=null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
 
             Uri = uri;
-            _logger = logging.GetLogger(GetType().FullName);
+            _logger = logger;
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
             _metrics = metrics;

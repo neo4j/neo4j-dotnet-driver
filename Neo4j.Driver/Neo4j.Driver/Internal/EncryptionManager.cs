@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal
 
         public EncryptionManager(){} // for test
 
-        public EncryptionManager(EncryptionLevel level, TrustStrategy strategy, TrustManager trustManager, ILogging logging)
+        public EncryptionManager(EncryptionLevel level, TrustStrategy strategy, TrustManager trustManager, IDriverLogger logger)
         {
             _encryptionLevel = level;
 
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal
                     }
                 }
 
-                trustManager.Logger = logging?.GetLogger(GetType().FullName);
+                trustManager.Logger = logger;
 
                 TrustManager = trustManager;
             }

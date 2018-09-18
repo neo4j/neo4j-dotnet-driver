@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using System.Linq;
+using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.V1;
 using Org.BouncyCastle.Pkcs;
@@ -70,10 +71,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void NewBoltDriver()
         {
-            var config = Config.DefaultConfig;
+            var logger = new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s));
 #if DEBUG
-            config = Config.Builder.WithLogger(new DebugLogger {Level = LogLevel.Debug}).ToConfig();
+            logger = new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s), ExtendedLogLevel.Debug);
 #endif
+            var config = Config.Builder.WithDriverLogger(logger).ToConfig();
             Driver = GraphDatabase.Driver(BoltUri, AuthToken, config);
         }
 

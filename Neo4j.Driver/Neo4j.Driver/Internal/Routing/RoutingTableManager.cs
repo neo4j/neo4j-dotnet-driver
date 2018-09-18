@@ -44,9 +44,9 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
-            ILogging logging) :
+            IDriverLogger logger) :
             this(routingSettings.InitialServerAddressProvider, routingSettings.RoutingContext,
-                new RoutingTable(Enumerable.Empty<Uri>()), poolManager, logging)
+                new RoutingTable(Enumerable.Empty<Uri>()), poolManager, logger)
         {
         }
 
@@ -55,13 +55,13 @@ namespace Neo4j.Driver.Internal.Routing
             IDictionary<string, string> routingContext,
             IRoutingTable routingTable,
             IClusterConnectionPoolManager poolManager,
-            ILogging logging)
+            IDriverLogger logger)
         {
             _initialServerAddressProvider = initialServerAddressProvider;
             _routingContext = routingContext;
             _routingTable = routingTable;
             _poolManager = poolManager;
-            _logger = logging?.GetLogger(GetType().FullName);
+            _logger = logger;
         }
 
         public IRoutingTable RoutingTable => _routingTable;

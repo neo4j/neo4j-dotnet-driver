@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests
 
         public BoltStubServerTests(ITestOutputHelper output)
         {
-            Config = new Config {EncryptionLevel = EncryptionLevel.None, Logging = new TestLogging(output)};
+            Config = new Config {EncryptionLevel = EncryptionLevel.None, DriverLogger = new TestDriverLogger(output)};
         }
 
         [RequireBoltStubServerFact]

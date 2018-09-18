@@ -112,7 +112,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
         /// <item><see cref="MaxConnectionLifetime"/>: <c>1h</c></item>
         /// <br></br>
-        /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
+        /// <item><see cref="DriverLogger"/> : <c>logs nothing.</c></item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
         /// <item><see cref="LoadBalancingStrategy"/>: <c><see cref="LoadBalancingStrategy"/> LeastConnected</c> </item>
         /// <br></br>
@@ -148,21 +148,21 @@ namespace Neo4j.Driver.V1
 
         /// <summary>
         /// Gets or sets the <see cref="ILogger"/> instance to be used to receive all logs produced by this driver.
-        /// Since Driver 1.7, this field is deprecated and we recommend to use the new logging <see cref="ILogging"/> instead to receive logs produced by this driver.
+        /// Since Driver 1.7, this field is deprecated and we recommend to use the new logger <see cref="IDriverLogger"/> instead to receive logs produced by this driver.
         /// But for back-compatibility, if this field is set, you can still receive all logs in the <see cref="ILogger"/> specified.
-        /// If you want to use the new logging <see cref="ILogging"/> instead, then leave this field unchanged.
+        /// You cannot use both this legacy logger and new logger at the same time.
         /// </summary>
         [Obsolete("Please use Logging instead.")]
         public ILogger Logger
         {
             get => _legacyLogger;
-            set { _legacyLogger = value; Logging = new LegacyLoggerLoggingAdapter(_legacyLogger); }
+            set { _legacyLogger = value; DriverLogger = new LegacyLoggerAdapter(_legacyLogger); }
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="ILogging"/> instance to be used to receive all logs produced by this driver.
+        /// Gets or sets the <see cref="IDriverLogger"/> instance to be used to receive all logs produced by this driver.
         /// </summary>
-        public ILogging Logging { get; set; } = NullLogging.DevNullLogging;
+        public IDriverLogger DriverLogger { get; set; } = NullLogger.DevNullLogger;
 
         /// <summary>
         /// Gets or sets the maximum transaction retry timeout.
@@ -320,9 +320,9 @@ namespace Neo4j.Driver.V1
                 return this;
             }
 
-            public IConfigBuilder WithLogging(ILogging logging)
+            public IConfigBuilder WithDriverLogger(IDriverLogger logger)
             {
-                _config.Logging = logging;
+                _config.DriverLogger = logger;
                 return this;
             }
 
@@ -470,21 +470,21 @@ namespace Neo4j.Driver.V1
         IConfigBuilder WithTrustManager(TrustManager manager);
 
         /// <summary>
-        /// This method is deprecated. Use <see cref="WithLogging"/> instead.
+        /// This method is deprecated. Use <see cref="WithDriverLogger"/> instead.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
-        [System.Obsolete("Please use WithMaxIdleConnectionPoolSize instead.")]
+        [System.Obsolete("Please use WithDriverLogger instead.")]
         IConfigBuilder WithLogger(ILogger logger);
 
         /// <summary>
-        /// Sets the <see cref="Config"/> to use a given <see cref="ILogging"/> instance.
+        /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
         /// </summary>
-        /// <param name="logging">The <see cref="ILogging"/> instance to use, if <c>null</c> no logging will occur.</param>
+        /// <param name="logger">The <see cref="IDriverLogger"/> instance to use, if <c>null</c> no logging will occur.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
-        IConfigBuilder WithLogging(ILogging logging);
+        IConfigBuilder WithDriverLogger(IDriverLogger logger);
 
 
         /// <summary>

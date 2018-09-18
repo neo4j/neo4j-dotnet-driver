@@ -330,7 +330,7 @@ namespace Neo4j.Driver.Internal.Connector
                 {
                     if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
                     {
-                        _logger?.Error($"{GetType().Name}: Certificate not available.");
+                        _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
                         return false;
                     }
 
@@ -343,7 +343,7 @@ namespace Neo4j.Driver.Internal.Connector
                     }
                     else
                     {
-                        _logger?.Error("Trust not established, aborting communication.");
+                        _logger?.Error(null, "Trust not established, aborting communication.");
                     }
 
                     return trust;

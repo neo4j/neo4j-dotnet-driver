@@ -130,13 +130,13 @@ namespace Neo4j.Driver.IntegrationTests
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 100,
-                Logging = new TestLogging(Output)
+                DriverLogger = new TestDriverLogger(Output)
             };
 
             var connectionSettings = new ConnectionSettings(AuthToken, config);
             var bufferSettings = new BufferSettings(config);
             var connectionFactory = new MonitoredPooledConnectionFactory(
-                new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logging));
+                new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger));
 
             _driver = (Internal.Driver) GraphDatabase.CreateDriver(new Uri(RoutingServer), config, connectionFactory);
             _connections = connectionFactory.Connections;

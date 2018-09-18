@@ -45,10 +45,10 @@ namespace Neo4j.Driver.Internal
 
         private readonly IDriverLogger _logger;
 
-        public ExponentialBackoffRetryLogic(TimeSpan maxRetryTimeout, ILogging logging)
+        public ExponentialBackoffRetryLogic(TimeSpan maxRetryTimeout, IDriverLogger logger)
         {
             _maxRetryTimeMs = maxRetryTimeout.TotalMilliseconds;
-            _logger = logging.GetLogger(GetType().FullName);
+            _logger = logger;
             _initialRetryDelayMs = InitialRetryDelayMs;
             _multiplier = RetryDelayMultiplier;
             _jitterFactor = RetryDelayJitterFactor;

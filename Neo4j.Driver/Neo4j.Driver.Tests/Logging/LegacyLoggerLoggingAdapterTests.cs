@@ -24,46 +24,13 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Logging
 {
-    public class LegacyLoggerLoggingAdapterTests
+    public class LegacyLoggerAdapterTests
     {
-        [Fact]
-        public void ShouldReturnTheSameLogger()
-        {
-            var legacyLogger = new Mock<ILogger>();
-            var logging = new LegacyLoggerLoggingAdapter(legacyLogger.Object);
-            var logger = logging.GetLogger("name one");
-            logger.Should().Be(logging.GetLogger("name two"));
-            logger.Should().Be(logging.GetLogger("name three"));
-        }
-
-        [Fact]
-        public void ShouldDelegateFatalToLegacyLogger()
-        {
-            var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
-
-            var message = "a message";
-            var error = new Exception("an exception");
-            logger.Fatal(error, message);
-
-            legacyLogger.Verify(x=>x.Error(message, error));
-        }
-
-        [Fact]
-        public void ShouldDelegateFatalMessageToLegacyLogger()
-        {
-            var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
-
-            logger.Fatal("message: {0}", "hello world");
-            legacyLogger.Verify(x=>x.Error("message: hello world", null));
-        }
-
         [Fact]
         public void ShouldDelegateErrorToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
             var message = "a message";
             var error = new Exception("an exception");
@@ -76,9 +43,9 @@ namespace Neo4j.Driver.Tests.Logging
         public void ShouldDelegateErrorMessageToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
-            logger.Error("message: {0}", "hello world");
+            logger.Error(null, "message: {0}", "hello world");
             legacyLogger.Verify(x=>x.Error("message: hello world", null));
         }
 
@@ -86,7 +53,7 @@ namespace Neo4j.Driver.Tests.Logging
         public void ShouldDelegateWarnToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
             var message = "a message";
             var error = new Exception("an exception");
@@ -99,9 +66,9 @@ namespace Neo4j.Driver.Tests.Logging
         public void ShouldDelegateWarnMessageToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
-            logger.Warn("message: {0}", "hello world");
+            logger.Warn(null, "message: {0}", "hello world");
             legacyLogger.Verify(x=>x.Info("message: hello world"));
         }
 
@@ -109,7 +76,7 @@ namespace Neo4j.Driver.Tests.Logging
         public void ShouldDelegateInfoToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
             var message = "a message {0}";
             var error = new Exception("an exception");
@@ -122,7 +89,7 @@ namespace Neo4j.Driver.Tests.Logging
         public void ShouldDelegateInfoMessageToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
             logger.Info("message: {0}", "hello world");
             legacyLogger.Verify(x=>x.Info("message: hello world"));
@@ -132,7 +99,7 @@ namespace Neo4j.Driver.Tests.Logging
         public void ShouldDelegateTraceToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
             var message = "a message {0}";
             var error = new Exception("an exception");
@@ -145,7 +112,7 @@ namespace Neo4j.Driver.Tests.Logging
         public void ShouldDelegateTraceMessageToLegacyLogger()
         {
             var legacyLogger = new Mock<ILogger>();
-            var logger = new LegacyLoggerDriverLoggerAdapter(legacyLogger.Object);
+            var logger = new LegacyLoggerAdapter(legacyLogger.Object);
 
             logger.Trace("message: {0}", "hello world");
             legacyLogger.Verify(x=>x.Trace("message: hello world"));
@@ -154,12 +121,12 @@ namespace Neo4j.Driver.Tests.Logging
         [Fact]
         public void ShouldAllowNullLegacyLogger()
         {
-            var logger = new LegacyLoggerDriverLoggerAdapter(null);
+            var logger = new LegacyLoggerAdapter(null);
 
             // should not throw any error
-            logger.Fatal("1");
-            logger.Error("2");
-            logger.Warn("3");
+            logger.Error(null, "1");
+            logger.Warn(null, "2");
+            logger.Info(null, "3");
             logger.Debug("4");
             logger.Trace("5");
         }

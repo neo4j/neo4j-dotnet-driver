@@ -22,39 +22,30 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Shared
 {
-    internal class TestLogging : ILogging
-    {
-        private readonly ITestOutputHelper _output;
-        private readonly ExtendedLogLevel _level;
-
-        public TestLogging(ITestOutputHelper output, ExtendedLogLevel level = ExtendedLogLevel.Info)
-        {
-            _output = output;
-            _level = level;
-        }
-
-        public IDriverLogger GetLogger(string name)
-        {
-            return new TestDriverLogger(name, _level, _output.WriteLine);
-        }
-    }
-
     internal class TestDriverLogger : IDriverLogger
     {
-        private readonly string _name;
         private readonly ExtendedLogLevel _level;
         private readonly Action<string> _logMethod;
 
-        public TestDriverLogger(string name, ExtendedLogLevel level, Action<string> logMethod)
+        public TestDriverLogger(ITestOutputHelper output, ExtendedLogLevel level = ExtendedLogLevel.Info)
         {
-            _name = name;
+            _level = level;
+            _logMethod = output.WriteLine;
+        }
+
+        public TestDriverLogger(Action<string> logMethod, ExtendedLogLevel level = ExtendedLogLevel.Info)
+        {
             _level = level;
             _logMethod = logMethod;
         }
 
-        private void Log(ExtendedLogLevel level, Exception cause, string message="", params object[] args)
+        private void Log(ExtendedLogLevel level, Exception cause, string message, params object[] args)
         {
-            var formattableString = $"[{level}]-[{_name}]:{string.Format(message, args)}";
+            if (message == null)
+            {
+                message = "";
+            }
+            var formattableString = $"[{level}]:{string.Format(message, args)}";
             if (cause != null)
             {
                 formattableString = $"{formattableString}\n{cause}";
@@ -63,34 +54,14 @@ namespace Neo4j.Driver.IntegrationTests.Shared
             _logMethod(formattableString);
         }
 
-        public void Error(Exception cause)
-        {
-            Log(ExtendedLogLevel.Error, cause);
-        }
-
         public void Error(Exception cause, string message, params object[] args)
         {
             Log(ExtendedLogLevel.Error, cause, message, args);
         }
 
-        public void Error(string message, params object[] args)
-        {
-            Log(ExtendedLogLevel.Error, null, message, args);
-        }
-
-        public void Warn(Exception cause)
-        {
-            Log(ExtendedLogLevel.Warn, cause);
-        }
-
         public void Warn(Exception cause, string message, params object[] args)
         {
             Log(ExtendedLogLevel.Warn, cause, message, args);
-        }
-
-        public void Warn(string message, params object[] args)
-        {
-            Log(ExtendedLogLevel.Warn, null, message, args);
         }
 
         public void Info(string message, params object[] args)

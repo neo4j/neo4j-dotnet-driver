@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.DefaultConfig;
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logging.Should().BeOfType<NullLogging>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
                 config.LoadBalancingStrategy.Should().Be(LoadBalancingStrategy.LeastConnected);
             }
@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Tests
 
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logging.Should().BeOfType<NullLogging>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tests
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
                 config.Logger.Should().BeNull();
-                config.Logging.Should().BeOfType<LegacyLoggerLoggingAdapter>();
+                config.DriverLogger.Should().BeOfType<LegacyLoggerAdapter>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).ToConfig();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logging.Should().BeOfType<NullLogging>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(3);
             }
 
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).ToConfig();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logging.Should().BeOfType<NullLogging>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithTrustStrategy(TrustStrategy.TrustSystemCaSignedCertificates).ToConfig();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustSystemCaSignedCertificates);
-                config.Logging.Should().BeOfType<NullLogging>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 

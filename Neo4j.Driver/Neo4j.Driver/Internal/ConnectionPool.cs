@@ -85,10 +85,10 @@ namespace Neo4j.Driver.Internal
             Uri uri,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
-            ILogging logging)
+            IDriverLogger logger)
         {
             _id = $"Pool-{UniqueIdGenerator.GetId()}";
-            _logger = new PrefixLogger(logging?.GetLogger(GetType().Name), $"[{_id}]");
+            _logger = new PrefixLogger(logger, $"[{_id}]");
 
             _uri = uri;
 
@@ -112,8 +112,8 @@ namespace Neo4j.Driver.Internal
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ConnectionPoolSettings poolSettings = null,
             IConnectionValidator validator = null,
-            ILogging logging = null)
-            : this(null, connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logging )
+            IDriverLogger logger = null)
+            : this(null, connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger )
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();

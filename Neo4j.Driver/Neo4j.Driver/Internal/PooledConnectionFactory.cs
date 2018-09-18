@@ -31,13 +31,13 @@ namespace Neo4j.Driver.Internal
         private readonly BufferSettings _bufferSettings;
         private readonly IDriverLogger _logger;
 
-        public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogging logging)
+        public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, IDriverLogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(bufferSettings, nameof(bufferSettings));
             _connectionSettings = connectionSettings;
             _bufferSettings = bufferSettings;
-            _logger = logging.GetLogger(GetType().FullName);
+            _logger = logger;
         }
 
         public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IConnectionListener metricsListener)

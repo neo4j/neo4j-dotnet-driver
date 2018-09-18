@@ -41,14 +41,14 @@ namespace Neo4j.Driver.Internal.Connector.Trust
             {
                 if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
                 {
-                    Logger?.Error($"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+                    Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
                     return false;
                 }
             }
 
             if (!CertHelper.CheckValidity(certificate, now))
             {
-                Logger?.Error($"{GetType().Name}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
+                Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
                 return false;
             }
 
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Internal.Connector.Trust
             {
                 if (CertHelper.FindCertificate(_location, StoreName.Disallowed, certificate))
                 {
-                    Logger?.Error($"{GetType().Name}: Certificate '{certificate.Subject}' is found in '{_location}\\Disallowed` store.");
+                    Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' is found in '{_location}\\Disallowed` store.");
                     return false;
                 }
 
@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Internal.Connector.Trust
                 return true;
             }
 
-            Logger?.Error($"{GetType().Name}: Unable to locate a certificate for {uri} in '{_location}\\TrustedPeople` store.");
+            Logger?.Error(null, $"{GetType().Name}: Unable to locate a certificate for {uri} in '{_location}\\TrustedPeople` store.");
             return false;
         }
     }

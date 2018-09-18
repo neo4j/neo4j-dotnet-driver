@@ -20,32 +20,12 @@ using System;
 namespace Neo4j.Driver.V1
 {
     /// <summary>
-    /// The new logging framework adopted since Driver 1.7.
-    /// </summary>
-    public interface ILogging
-    {
-        /// <summary>
-        /// Gets a new logger with the specified name.
-        /// When used inside this driver, the name is the full name of the class.
-        /// The following example shows a simplified version of how the <see cref="IDriverLogger"/> is used in this driver:
-        /// <code>
-        /// IDriverLogger logger = logging.getLogger(GetType().FullName)
-        /// logger.Info("Hello {0}, {1}", "Alice", "Bob");
-        /// </code>
-        /// </summary>
-        /// <param name="name">The name of the logger</param>
-        /// <returns>A logger.</returns>
-        IDriverLogger GetLogger(string name);
-    }
-
-    /// <summary>
     /// The replacement of legacy <see cref="ILogger"/>.
     /// The new <see cref="IDriverLogger"/> differs from the legacy one in the message format the logging methods are accepting.
     /// In <see cref="IDriverLogger"/>, each logging method accepts a message which specifies how the message would be formatted
     /// and one or many arguments that are used to replace placeholders in the message string.
     /// The following example shows a simplified version of how the <see cref="IDriverLogger"/> is used in this driver:
     /// <code>
-    /// IDriverLogger logger = logging.getLogger(GetType().FullName)
     /// logger.Info("Hello {0}, {1}", "Alice", "Bob");
     /// </code>
     /// </summary>
@@ -54,44 +34,18 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Logs an error.
         /// </summary>
-        /// <param name="cause">The <see cref="Exception"/> that causes the error.</param>
-        void Error(Exception cause);
-
-        /// <summary>
-        /// Logs an error.
-        /// </summary>
-        /// <param name="cause">The <see cref="Exception"/> that causes the error.</param>
-        /// <param name="message">The message of the error.</param>
+        /// <param name="cause">The <see cref="Exception"/> that causes the error. This value could be null if not applied.</param>
+        /// <param name="message">The message of the error. This value could be null if not applied.</param>
         /// <param name="args">The arguments to replace placeholders in the message string.</param>
         void Error(Exception cause, string message, params object[] args);
 
         /// <summary>
-        /// Logs an error.
-        /// </summary>
-        /// <param name="message">The message of the error.</param>
-        /// <param name="args">The arguments to replace placeholders in the message string.</param>
-        void Error(string message, params object[] args);
-
-        /// <summary>
         /// Logs a warning.
         /// </summary>
-        /// <param name="cause">Any <see cref="Exception"/> that causes this warning.</param>
-        void Warn(Exception cause);
-
-        /// <summary>
-        /// Logs a warning.
-        /// </summary>
-        /// <param name="cause">Any <see cref="Exception"/> that causes this warning.</param>
-        /// <param name="message">The message of the warning.</param>
+        /// <param name="cause">Any <see cref="Exception"/> that causes this warning. This value could be null if not applied.</param>
+        /// <param name="message">The message of the warning. This value could be null if not applied.</param>
         /// <param name="args">The arguments to replace placeholders in the message string.</param>
         void Warn(Exception cause, string message, params object[] args);
-
-        /// <summary>
-        /// Logs a warning
-        /// </summary>
-        /// <param name="message">The message of the warning.</param>
-        /// <param name="args">The arguments to replace placeholders in the message string.</param>
-        void Warn(string message, params object[] args);
 
         /// <summary>
         /// Logs an information message.

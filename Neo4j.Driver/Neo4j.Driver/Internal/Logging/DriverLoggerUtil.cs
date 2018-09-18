@@ -31,15 +31,7 @@ namespace Neo4j.Driver.Internal.Logging
             }
             catch (Exception ex)
             {
-                if (message == null)
-                {
-                    logger?.Error(ex);
-                }
-                else
-                {
-                    logger?.Error(ex, message);
-                }
-
+                logger?.Error(ex, message);
                 throw;
             }
         }
@@ -52,15 +44,7 @@ namespace Neo4j.Driver.Internal.Logging
             }
             catch (Exception ex)
             {
-                if (message == null)
-                {
-                    logger?.Error(ex);
-                }
-                else
-                {
-                    logger?.Error(ex, message);
-                }
-
+                logger?.Error(ex, message);
                 throw;
             }
         }
@@ -73,15 +57,7 @@ namespace Neo4j.Driver.Internal.Logging
             }
             catch (Exception ex)
             {
-                if (message == null)
-                {
-                    logger?.Error(ex);
-                }
-                else
-                {
-                    logger?.Error(ex, message);
-                }
-
+                logger?.Error(ex, message);
                 throw;
             }
         }
@@ -94,15 +70,7 @@ namespace Neo4j.Driver.Internal.Logging
             }
             catch (Exception ex)
             {
-                if (message == null)
-                {
-                    logger?.Error(ex);
-                }
-                else
-                {
-                    logger?.Error(ex, message);
-                }
-
+                logger?.Error(ex, message);
                 throw;
             }
         }

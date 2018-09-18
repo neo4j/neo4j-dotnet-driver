@@ -30,34 +30,14 @@ namespace Neo4j.Driver.Internal.Logging
 
         protected abstract string Reformat(string message);
 
-        public void Error(Exception cause)
-        {
-            _delegate?.Error(cause);
-        }
-
         public void Error(Exception cause, string message, params object[] args)
         {
             _delegate?.Error(cause, Reformat(message), args);
         }
 
-        public void Error(string message, params object[] args)
-        {
-            _delegate?.Error(Reformat(message), args);
-        }
-
-        public void Warn(Exception cause)
-        {
-            _delegate?.Warn(cause);
-        }
-
         public void Warn(Exception cause, string message, params object[] args)
         {
             _delegate?.Warn(cause, Reformat(message), args);
-        }
-
-        public void Warn(string message, params object[] args)
-        {
-            _delegate?.Warn(Reformat(message), args);
         }
 
         public void Info(string message, params object[] args)

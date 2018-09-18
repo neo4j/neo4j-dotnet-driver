@@ -20,20 +20,6 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Logging
 {
-    internal class NullLogging : ILogging
-    {
-        public static readonly NullLogging DevNullLogging = new NullLogging();
-
-        private NullLogging()
-        {
-        }
-
-        public IDriverLogger GetLogger(string name)
-        {
-            return NullLogger.DevNullLogger;
-        }
-    }
-
     internal class NullLogger : IDriverLogger
     {
         public static readonly NullLogger DevNullLogger = new NullLogger();
@@ -42,27 +28,11 @@ namespace Neo4j.Driver.Internal.Logging
         {
         }
 
-        public void Error(Exception cause)
-        {
-        }
-
         public void Error(Exception cause, string message, params object[] args)
         {
         }
 
-        public void Error(string message, params object[] args)
-        {
-        }
-
-        public void Warn(Exception cause)
-        {
-        }
-
         public void Warn(Exception cause, string message, params object[] args)
-        {
-        }
-
-        public void Warn(string message, params object[] args)
         {
         }
 

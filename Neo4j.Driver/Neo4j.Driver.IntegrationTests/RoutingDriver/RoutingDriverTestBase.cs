@@ -44,7 +44,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             var config = new Config
             {
-                Logging = new TestLogging(output)
+                DriverLogger = new TestDriverLogger(output)
             };
             Driver = GraphDatabase.Driver(RoutingServer, AuthToken, config);
         }

@@ -20,72 +20,42 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Logging
 {
-    internal class LegacyLoggerLoggingAdapter : ILogging
-    {
-        private readonly LegacyLoggerDriverLoggerAdapter _legacyLoggerAdapter;
-
-        public LegacyLoggerLoggingAdapter(ILogger logger)
-        {
-            _legacyLoggerAdapter = new LegacyLoggerDriverLoggerAdapter(logger);
-        }
-        public IDriverLogger GetLogger(string name)
-        {
-            return _legacyLoggerAdapter;
-        }
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// The way we delegate to legacy <see cref="T:Neo4j.Driver.V1.ILogger" /> is by using message string only.
     /// All message format string and arguments will first be converted to message string and
     /// then be passed down to <see cref="T:Neo4j.Driver.V1.ILogger" /> without extra arguments.
     /// </summary>
-    internal class LegacyLoggerDriverLoggerAdapter : IDriverLogger
+    internal class LegacyLoggerAdapter : IDriverLogger
     {
         private readonly ILogger _logger;
-        public LegacyLoggerDriverLoggerAdapter(ILogger logger)
+        public LegacyLoggerAdapter(ILogger logger)
         {
             _logger = logger;
         }
 
-        public void Fatal(Exception cause, string message, params object[] args)
+        public void Error(Exception cause, string message = "", params object[] args)
         {
-            Error(cause, message, args);
+            if (cause != null)
+            {
+                _logger?.Error(string.Format(message, args), cause);
+            }
+            else
+            {
+                _logger?.Error(string.Format(message, args));
+            }
         }
 
-        public void Fatal(string message, params object[] args)
+        public void Warn(Exception cause, string message = "", params object[] args)
         {
-            Error(message, args);
-        }
-
-        public void Error(Exception cause)
-        {
-            _logger?.Error(cause.Message, cause);
-        }
-
-        public void Error(Exception cause, string message, params object[] args)
-        {
-            _logger?.Error(string.Format(message, args), cause);
-        }
-
-        public void Error(string message, params object[] args)
-        {
-            _logger?.Error(string.Format(message, args));
-        }
-
-        public void Warn(Exception cause)
-        {
-            _logger?.Info(cause.Message, cause);
-        }
-
-        public void Warn(Exception cause, string message, params object[] args)
-        {
-            _logger?.Info(string.Format(message, args), cause);
-        }
-
-        public void Warn(string message, params object[] args)
-        {
-            Info(message, args);
+            if (cause != null)
+            {
+                _logger?.Info(string.Format(message, args), cause);
+            }
+            else
+            {
+                _logger?.Info(string.Format(message, args));
+            }
         }
 
         public void Info(string message, params object[] args)

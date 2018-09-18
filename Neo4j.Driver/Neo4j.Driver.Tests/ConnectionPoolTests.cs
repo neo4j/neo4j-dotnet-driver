@@ -741,8 +741,6 @@ namespace Neo4j.Driver.Tests
             public void ShouldLogInUseAndAvailableConnectionIds()
             {
                 var mockLogger = LoggingHelper.GetTraceEnabledLogger();
-                var mockLogging = new Mock<ILogging>();
-                mockLogging.Setup(x => x.GetLogger(It.IsAny<string>())).Returns(mockLogger.Object);
 
                 var inUseConns = new ConcurrentSet<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
@@ -753,7 +751,7 @@ namespace Neo4j.Driver.Tests
                 availableConns.Add(mock1.Object);
 
                 var pool = new ConnectionPool(null, availableConns, inUseConns,
-                    validator: new TestConnectionValidator(), logging: mockLogging.Object);
+                    validator: new TestConnectionValidator(), logger: mockLogger.Object);
 
                 pool.Dispose();
 
@@ -807,10 +805,10 @@ namespace Neo4j.Driver.Tests
             {
                 var uri = new Uri("bolt://localhost:7687");
                 var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
-                var logging = new Mock<ILogging>().Object;
+                var logger = new Mock<IDriverLogger>().Object;
                 var connFactory = new MockedConnectionFactory();
 
-                var pool = new ConnectionPool(uri, connFactory, poolSettings, logging);
+                var pool = new ConnectionPool(uri, connFactory, poolSettings, logger);
 
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
