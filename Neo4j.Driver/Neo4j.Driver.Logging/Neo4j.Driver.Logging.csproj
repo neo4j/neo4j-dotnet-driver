@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard1.3;net452</TargetFrameworks>
+    <Authors>Neo4j Drivers Team</Authors>
+    <Product>Neo4j Driver Logging</Product>
+    <Company>Neo4j</Company>
+    <Description>The logging implementation for Neo4j.Driver</Description>
+    <Copyright>Apache</Copyright>
+    <PackageLicenseUrl>https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
+    <PackageIconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</PackageIconUrl>
+    <NeutralLanguage>English</NeutralLanguage>
+    <PackageTags>NoSql Graph Bolt Neo4j Logging Logger</PackageTags>
+    <Version>0.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
+  </ItemGroup>
+
+</Project>
