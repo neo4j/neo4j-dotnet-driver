@@ -18,6 +18,7 @@ using System;
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests
 
         public BoltStubServerTests(ITestOutputHelper output)
         {
-            Config = new Config {EncryptionLevel = EncryptionLevel.None, Logger = new TestLogger(output)};
+            Config = new Config {EncryptionLevel = EncryptionLevel.None, DriverLogger = new TestDriverLogger(output)};
         }
 
         [RequireBoltStubServerFact]

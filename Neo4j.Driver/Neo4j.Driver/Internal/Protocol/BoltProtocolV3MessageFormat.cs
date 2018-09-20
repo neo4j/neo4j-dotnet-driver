@@ -42,6 +42,9 @@ namespace Neo4j.Driver.Internal.Protocol
             AddHandler<BeginMessageHandler>();
             AddHandler<CommitMessageHandler>();
             AddHandler<RollbackMessageHandler>();
+
+            // BoltV3 optional Goodbye
+            AddHandler<GoodbyeMessageHandler>();
             
             AddHandler<PullAllMessageHandler>();
             AddHandler<DiscardAllMessageHandler>();

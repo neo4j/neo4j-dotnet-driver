@@ -185,7 +185,7 @@ namespace Neo4j.Driver.Tests.Routing
         private static LeastConnectedLoadBalancingStrategy NewLeastConnectedStrategy(
             IClusterConnectionPool connectionPool)
         {
-            return new LeastConnectedLoadBalancingStrategy(connectionPool, new Mock<ILogger>().Object);
+            return new LeastConnectedLoadBalancingStrategy(connectionPool, new Mock<IDriverLogger>().Object);
         }
     }
 }

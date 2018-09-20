@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;

@@ -90,15 +90,15 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldIgnoreButLogInvalidBookmark()
         {
             var invalidBookmark = "invalid bookmark format";
-            var loggerMock = new Mock<ILogger>();
-            using(var driver = GraphDatabase.Driver(Server.BoltUri, Server.AuthToken, new Config {Logger = loggerMock.Object}))
+            var loggerMock = new Mock<IDriverLogger>();
+            using(var driver = GraphDatabase.Driver(Server.BoltUri, Server.AuthToken, new Config {DriverLogger = loggerMock.Object}))
             using (var session = (Session)driver.Session())
             {
                 session.BeginTransaction(invalidBookmark);
                 session.LastBookmark.Should().BeNull(); // ignored
             }
-            loggerMock.Verify(x=>x.Info("Failed to recognize bookmark 'invalid bookmark format' and this bookmark is ignored.",
-                It.IsAny<object[]>()), Times.Once); // but logged
+            loggerMock.Verify(x=>x.Info("Failed to recognize bookmark '{0}' and this bookmark is ignored.",
+                invalidBookmark), Times.Once); // but logged
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]

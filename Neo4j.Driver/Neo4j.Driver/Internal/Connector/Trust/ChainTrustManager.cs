@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Internal.Connector.Trust
             {
                 if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
                 {
-                    Logger?.Error($"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+                    Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
                     return false;
                 }
             }
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Internal.Connector.Trust
                 result = BuildChain(certificate, chain.ChainPolicy.ExtraStore, out var newChain);
                 if (!result)
                 {
-                    Logger?.Error(
+                    Logger?.Error(null,
                         $"{GetType().Name}: Certificate '{certificate.Subject}' failed validation. Reason: {CertHelper.ChainStatusToText(newChain.ChainStatus)}");
                 }
             }

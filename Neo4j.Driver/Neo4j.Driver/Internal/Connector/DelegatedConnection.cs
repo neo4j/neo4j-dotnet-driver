@@ -142,6 +142,11 @@ namespace Neo4j.Driver.Internal.Connector
             Delegate.ResetMessageReaderAndWriterForServerV3_1();
         }
 
+        public void UpdateId(string newConnId)
+        {
+            Delegate.UpdateId(newConnId);
+        }
+
         public virtual void Destroy()
         {
             Delegate.Destroy();
@@ -172,6 +177,11 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 await OnErrorAsync(e).ConfigureAwait(false);
             }
+        }
+
+        public override string ToString()
+        {
+            return Delegate.ToString();
         }
     }
 }

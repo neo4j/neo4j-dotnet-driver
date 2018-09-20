@@ -16,6 +16,7 @@
 // limitations under the License.
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -31,7 +32,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.DefaultConfig;
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logger.Should().BeOfType<DebugLogger>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
                 config.LoadBalancingStrategy.Should().Be(LoadBalancingStrategy.LeastConnected);
             }
@@ -62,7 +63,7 @@ namespace Neo4j.Driver.Tests
 
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logger.Should().BeOfType<DebugLogger>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -89,6 +90,7 @@ namespace Neo4j.Driver.Tests
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
                 config.Logger.Should().BeNull();
+                config.DriverLogger.Should().BeOfType<LegacyLoggerAdapter>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -98,7 +100,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).ToConfig();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logger.Should().BeOfType<DebugLogger>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(3);
             }
 
@@ -108,7 +110,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).ToConfig();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logger.Should().BeOfType<DebugLogger>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -118,7 +120,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithTrustStrategy(TrustStrategy.TrustSystemCaSignedCertificates).ToConfig();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustSystemCaSignedCertificates);
-                config.Logger.Should().BeOfType<DebugLogger>();
+                config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -129,16 +131,15 @@ namespace Neo4j.Driver.Tests
                 var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).ToConfig();
                 var config2 = Config.Builder.WithLogger(null).ToConfig();
                 
-
                 config2.Logger.Should().BeNull();
                 config2.MaxIdleConnectionPoolSize.Should().Be(500);
 
                 config1.MaxIdleConnectionPoolSize.Should().Be(3);
-                config1.Logger.Should().BeOfType<DebugLogger>();
+                config1.Logger.Should().BeOfType<NullLegacyLogger>();
 
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustStrategy.Should().Be(TrustStrategy.TrustAllCertificates);
-                config.Logger.Should().BeOfType<DebugLogger>();
+                config.Logger.Should().BeOfType<NullLegacyLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
         }

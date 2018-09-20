@@ -27,9 +27,9 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly RoundRobinArrayIndex _writersIndex = new RoundRobinArrayIndex();
 
         private readonly IClusterConnectionPool _connectionPool;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
-        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, ILogger logger)
+        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, IDriverLogger logger)
         {
             _connectionPool = connectionPool;
             _logger = logger;
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal.Routing
             var count = addresses.Count;
             if (count == 0)
             {
-                _logger.Trace($"Unable to select {addressType}, no known addresses given");
+                LogDebug($"Unable to select {addressType}, no known addresses given");
                 return null;
             }
 
@@ -84,10 +84,18 @@ namespace Neo4j.Driver.Internal.Routing
                 }
             } while (index != startIndex);
 
-            _logger.Trace(
-                $"Selected {addressType} with address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
+            LogDebug(
+                $"Selected {addressType} with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
 
             return leastConnectedAddress;
+        }
+
+        private void LogDebug(string message)
+        {
+            if (_logger.IsDebugEnabled())
+            {
+                _logger.Debug(message);
+            }
         }
     }
 }

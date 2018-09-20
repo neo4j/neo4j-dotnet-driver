@@ -27,6 +27,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Tests.TestUtil;
 using Neo4j.Driver.V1;
 using Xunit;
 using Xunit.Abstractions;
@@ -256,8 +257,8 @@ namespace Neo4j.Driver.Tests
                 var timerMock = new Mock<ITimer>();
                 timerMock.Setup(x => x.ElapsedMilliseconds).Returns(1000);
                 mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
-                var idleTooLongId = Guid.NewGuid();
-                mock.Setup(x => x.Id).Returns(idleTooLongId);
+                var idleTooLongId = "Molly";
+                mock.Setup(x => x.ToString()).Returns(idleTooLongId);
 
                 var conns = new BlockingCollection<IPooledConnection>();
                 conns.Add(mock.Object);
@@ -278,7 +279,7 @@ namespace Neo4j.Driver.Tests
                 mock.Verify(x => x.Destroy(), Times.Once);
 
                 conn.Should().NotBeNull();
-                conn.Id.Should().NotBe(idleTooLongId);
+                conn.Should().NotBe(idleTooLongId);
             }
 
             [Fact]
@@ -290,8 +291,8 @@ namespace Neo4j.Driver.Tests
                 var timerMock = new Mock<ITimer>();
                 timerMock.Setup(x => x.ElapsedMilliseconds).Returns(10);
                 mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
-                var idleTooLongId = Guid.NewGuid();
-                mock.Setup(x => x.Id).Returns(idleTooLongId);
+                var idleTooLongId = "Molly";
+                mock.Setup(x => x.ToString()).Returns(idleTooLongId);
 
                 var conns = new BlockingCollection<IPooledConnection>();
                 conns.Add(mock.Object);
@@ -315,7 +316,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(1);
 
                 conn.Should().Be(mock.Object);
-                conn.Id.Should().Be(idleTooLongId);
+                conn.ToString().Should().Be(idleTooLongId);
             }
 
             [Theory]
@@ -326,10 +327,10 @@ namespace Neo4j.Driver.Tests
             [InlineData(500)]
             public void ShouldAcquireNewWhenBeingUsedConcurrentlyBy(int numberOfThreads)
             {
-                var ids = new List<Guid>();
+                var ids = new List<string>();
                 for (var i = 0; i < numberOfThreads; i++)
                 {
-                    ids.Add(Guid.NewGuid());
+                    ids.Add($"{i}");
                 }
 
                 var mockConns = new Queue<Mock<IPooledConnection>>();
@@ -338,7 +339,7 @@ namespace Neo4j.Driver.Tests
                 {
                     var mock = new Mock<IPooledConnection>();
                     mock.Setup(x => x.IsOpen).Returns(true);
-                    mock.Setup(x => x.Id).Returns(ids[i]);
+                    mock.Setup(x => x.ToString()).Returns(ids[i]);
                     conns.Add(mock.Object);
                     mockConns.Enqueue(mock);
                 }
@@ -348,7 +349,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(numberOfThreads);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                var receivedIds = new List<Guid>();
+                var receivedIds = new List<string>();
 
                 var tasks = new Task[numberOfThreads];
                 for (var i = 0; i < numberOfThreads; i++)
@@ -362,7 +363,7 @@ namespace Neo4j.Driver.Tests
                                 Task.Delay(500);
                                 var conn = pool.Acquire();
                                 lock (receivedIds)
-                                    receivedIds.Add(conn.Id);
+                                    receivedIds.Add(conn.ToString());
                             }
                             catch (Exception ex)
                             {
@@ -739,7 +740,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldLogInUseAndAvailableConnectionIds()
             {
-                var mockLogger = new Mock<ILogger>();
+                var mockLogger = LoggingHelper.GetTraceEnabledLogger();
 
                 var inUseConns = new ConcurrentSet<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
@@ -754,9 +755,9 @@ namespace Neo4j.Driver.Tests
 
                 pool.Dispose();
 
-                mockLogger.Verify(x => x.Info(It.Is<string>(actual => actual.StartsWith("Disposing In Use"))),
+                mockLogger.Verify(x => x.Info(It.Is<string>(actual => actual.Contains("Disposing In Use"))),
                     Times.Once);
-                mockLogger.Verify(x => x.Debug(It.Is<string>(actual => actual.StartsWith("Disposing Available"))),
+                mockLogger.Verify(x => x.Debug(It.Is<string>(actual => actual.Contains("Disposing Available"))),
                     Times.Once);
             }
 
@@ -804,7 +805,7 @@ namespace Neo4j.Driver.Tests
             {
                 var uri = new Uri("bolt://localhost:7687");
                 var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
-                var logger = new Mock<ILogger>().Object;
+                var logger = new Mock<IDriverLogger>().Object;
                 var connFactory = new MockedConnectionFactory();
 
                 var pool = new ConnectionPool(uri, connFactory, poolSettings, logger);
@@ -1566,7 +1567,6 @@ namespace Neo4j.Driver.Tests
             ConnectionPoolSettings poolSettings = null,
             bool isConnectionValid = true)
         {
-
             return new ConnectionPool(new MockedConnectionFactory(), idleConnections, inUseConnections,
                 poolSettings, new TestConnectionValidator(isConnectionValid));
 

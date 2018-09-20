@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
             {
                 metadataCopy[AuthToken.CredentialsKey] = "******";
             }
-            return "HELLO " + metadataCopy;
+            return "HELLO " + metadataCopy.ToContentString();
         }
     }
 }

@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class RoutingTableManager : IRoutingTableManager
     {
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
         private readonly IDictionary<string, string> _routingContext;
         private IRoutingTable _routingTable;
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
-            ILogger logger) :
+            IDriverLogger logger) :
             this(routingSettings.InitialServerAddressProvider, routingSettings.RoutingContext,
                 new RoutingTable(Enumerable.Empty<Uri>()), poolManager, logger)
         {
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.Routing
             IDictionary<string, string> routingContext,
             IRoutingTable routingTable,
             IClusterConnectionPoolManager poolManager,
-            ILogger logger)
+            IDriverLogger logger)
         {
             _initialServerAddressProvider = initialServerAddressProvider;
             _routingContext = routingContext;
@@ -126,7 +126,7 @@ namespace Neo4j.Driver.Internal.Routing
             _poolManager.UpdateConnectionPool(added, removed);
             _routingTable = newTable;
 
-            _logger?.Info($"Updated routingTable to be {_routingTable}");
+            _logger?.Info("Updated routingTable to be {0}", _routingTable);
         }
 
         internal async Task UpdateAsync(IRoutingTable newTable)
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Internal.Routing
             await _poolManager.UpdateConnectionPoolAsync(added, removed).ConfigureAwait(false);
             _routingTable = newTable;
 
-            _logger?.Info($"Updated routingTable to be {_routingTable}");
+            _logger?.Info("Updated routingTable to be {0}", _routingTable);
         }
 
         private bool IsRoutingTableStale(IRoutingTable routingTable, AccessMode mode = AccessMode.Read)
@@ -280,8 +280,8 @@ namespace Neo4j.Driver.Internal.Routing
                     }
                     catch (Exception e)
                     {
-                        _logger?.Info(
-                            $"Failed to update routing table with server uri={router} due to error {e.Message}");
+                        _logger?.Warn(e,
+                            "Failed to update routing table with server uri={0}.", router);
                         if (e is SessionExpiredException)
                         {
                             // ignored
@@ -323,8 +323,8 @@ namespace Neo4j.Driver.Internal.Routing
                     }
                     catch (Exception e)
                     {
-                        _logger?.Info(
-                            $"Failed to update routing table with server uri={router} due to error {e.Message}");
+                        _logger?.Warn(e,
+                            "Failed to update routing table with server uri={0}.", router);
                         if (e is SessionExpiredException)
                         {
                             // ignored

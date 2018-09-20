@@ -43,14 +43,9 @@ namespace Neo4j.Driver.Internal
         private const double RetryDelayMultiplier = 2.0;
         private const double RetryDelayJitterFactor = 0.2;
 
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
-        public ExponentialBackoffRetryLogic(Config config)
-            : this(config.MaxTransactionRetryTime, config.Logger)
-        {
-        }
-
-        public ExponentialBackoffRetryLogic(TimeSpan maxRetryTimeout, ILogger logger = null)
+        public ExponentialBackoffRetryLogic(TimeSpan maxRetryTimeout, IDriverLogger logger)
         {
             _maxRetryTimeMs = maxRetryTimeout.TotalMilliseconds;
             _logger = logger;
@@ -78,7 +73,7 @@ namespace Neo4j.Driver.Internal
                     exceptions.Add(e);
 
                     var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
+                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
                     Thread.Sleep(delay);
                     delayMs = delayMs * _multiplier;
                 }
@@ -86,7 +81,7 @@ namespace Neo4j.Driver.Internal
 
             timer.Stop();
             throw new ServiceUnavailableException(
-                $"Failed after retried for {counter} times in {_maxRetryTimeMs} ms. " +
+                $"Failed after retried for {counter} times in {_maxRetryTimeMs}ms. " +
                 "Make sure that your database is online and retry again.", new AggregateException(exceptions));
         }
 
@@ -109,7 +104,7 @@ namespace Neo4j.Driver.Internal
                     exceptions.Add(e);
 
                     var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger?.Info("Transaction failed and will be retried in " + delay + "ms.", e);
+                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
                     await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
                     delayMs = delayMs * _multiplier;
                 }

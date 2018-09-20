@@ -23,11 +23,6 @@ namespace Neo4j.Driver.Internal
     internal interface IPooledConnection : IConnection
     {
         /// <summary>
-        /// An identifer of this connection for pooling
-        /// </summary>
-        Guid Id { get; }
-
-        /// <summary>
         /// Try to reset the connection to a clean state.
         /// </summary>
         void ClearConnection();

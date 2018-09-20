@@ -204,14 +204,14 @@ namespace Neo4j.Driver.V1
 
             var connectionSettings = new ConnectionSettings(authToken, config);
             var bufferSettings = new BufferSettings(config);
-            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger);
 
             return CreateDriver(uri, config, connectionFactory);
         }
 
         internal static IDriver CreateDriver(Uri uri, Config config, IPooledConnectionFactory connectionFactory)
         {
-            var logger = config.Logger;
+            var logger = config.DriverLogger;
 
             var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
             var routingContext = uri.ParseRoutingContext();

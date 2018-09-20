@@ -122,11 +122,6 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public override string ToString()
-        {
-            return Id.ToString();
-        }
-
         public ITimer IdleTimer { get; }
         public ITimer LifetimeTimer { get; }
     }

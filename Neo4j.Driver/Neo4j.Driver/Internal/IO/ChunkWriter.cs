@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.IO
         private readonly int _chunkSize;
         private readonly Stream _downStream;
         private readonly MemoryStream _chunkStream;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
         private readonly int _defaultBufferSize;
         private readonly int _maxBufferSize;
         private int _shrinkCounter = 0;
@@ -53,26 +53,26 @@ namespace Neo4j.Driver.Internal.IO
 
         }
 
-        public ChunkWriter(Stream downStream, ILogger logger)
+        public ChunkWriter(Stream downStream, IDriverLogger logger)
             : this(downStream, logger, Constants.MaxChunkSize)
         {
 
         }
 
-        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger)
+        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger)
             : this(downStream, defaultBufferSize, maxBufferSize, logger, Constants.MaxChunkSize)
         {
 
         }
 
 
-        public ChunkWriter(Stream downStream, ILogger logger, int chunkSize)
+        public ChunkWriter(Stream downStream, IDriverLogger logger, int chunkSize)
             : this(downStream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, logger, chunkSize)
         {
 
         }
 
-        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize)
+        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger, int chunkSize)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream));
@@ -162,12 +162,7 @@ namespace Neo4j.Driver.Internal.IO
         
         public void Send()
         {
-            if (_logger != null)
-            {
-                byte[] buffer = _chunkStream.ToArray();
-
-                _logger?.Trace("C: ", buffer, 0, buffer.Length);
-            }
+            LogStream(_chunkStream);
 
             _chunkStream.Position = 0;
             _chunkStream.CopyTo(_downStream);
@@ -177,12 +172,7 @@ namespace Neo4j.Driver.Internal.IO
 
         public Task SendAsync()
         {
-            if (_logger != null)
-            {
-                byte[] buffer = _chunkStream.ToArray();
-
-                _logger?.Trace("C: ", buffer, 0, buffer.Length);
-            }
+            LogStream(_chunkStream);
 
             _chunkStream.Position = 0;
 
@@ -216,6 +206,15 @@ namespace Neo4j.Driver.Internal.IO
                 _shrinkCounter += 1;
 
                 _chunkStream.Capacity = _defaultBufferSize;
+            }
+        }
+
+        private void LogStream(MemoryStream stream)
+        {
+            if (_logger != null && _logger.IsTraceEnabled())
+            {
+                var buffer = stream.ToArray();
+                _logger?.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));
             }
         }
 

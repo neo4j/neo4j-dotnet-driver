@@ -22,11 +22,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class ClusterConnectionPool : LoggerBase, IClusterConnectionPool
+    internal class ClusterConnectionPool : IClusterConnectionPool
     {
         private readonly IConnectionPoolFactory _poolFactory;
 
@@ -35,11 +36,13 @@ namespace Neo4j.Driver.Internal.Routing
 
         private int _closedMarker = 0;
 
+        private readonly IDriverLogger _logger;
+
         public ClusterConnectionPool(
             IEnumerable<Uri> initUris,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings poolSettings,
-            ILogger logger
+            IDriverLogger logger
         ) : this(initUris, new ConnectionPoolFactory(connectionFactory, poolSettings, logger), logger)
         {
         }
@@ -48,7 +51,7 @@ namespace Neo4j.Driver.Internal.Routing
         internal ClusterConnectionPool(
             IConnectionPoolFactory poolFactory,
             ConcurrentDictionary<Uri, IConnectionPool> clusterPool,
-            ILogger logger = null
+            IDriverLogger logger = null
         ) :
             this(Enumerable.Empty<Uri>(), poolFactory, logger)
         {
@@ -57,9 +60,9 @@ namespace Neo4j.Driver.Internal.Routing
 
 
         private ClusterConnectionPool(IEnumerable<Uri> initUris,
-            IConnectionPoolFactory poolFactory, ILogger logger)
-            : base(logger)
+            IConnectionPoolFactory poolFactory, IDriverLogger logger)
         {
+            _logger = logger;
             _poolFactory = poolFactory;
             Add(initUris);
         }
@@ -94,6 +97,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
             }
+
             if (IsClosed)
             {
                 // Anything added after dispose should be directly cleaned.
@@ -236,7 +240,7 @@ namespace Neo4j.Driver.Internal.Routing
             return TaskHelper.GetCompletedTask();
         }
 
-        protected override void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (IsClosed)
                 return;
@@ -245,8 +249,12 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 Close();
             }
+        }
 
-            base.Dispose(disposing);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         public override string ToString()
@@ -254,7 +262,7 @@ namespace Neo4j.Driver.Internal.Routing
             return _pools.ToContentString();
         }
 
-        private IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)
+        private static IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)
         {
             pool.Activate();
             return pool;

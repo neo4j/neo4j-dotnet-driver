@@ -30,16 +30,16 @@ namespace Neo4j.Driver.Internal
 
         private readonly IEnumerable<string> _values;// nullable or contain null items
         private readonly string _maxBookmark;        // nullable
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
-        private Bookmark(IEnumerable<string> values, ILogger logger)
+        private Bookmark(IEnumerable<string> values, IDriverLogger logger)
         {
             _logger = logger;
             _values = values;
             _maxBookmark = ComputeMaxBookmark(values);
         }
 
-        public static Bookmark From(string bookmark, ILogger logger = null)
+        public static Bookmark From(string bookmark, IDriverLogger logger = null)
         {
             if (bookmark == null)
             {
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Internal
             return new Bookmark(new []{bookmark}, logger);
         }
 
-        public static Bookmark From(IEnumerable<string> values, ILogger logger = null)
+        public static Bookmark From(IEnumerable<string> values, IDriverLogger logger = null)
         {
             return new Bookmark(values, logger);
         }
@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Internal
 
         private void LogIllegalBookmark(string value)
         {
-            _logger?.Info($"Failed to recognize bookmark '{value}' and this bookmark is ignored.");
+            _logger?.Info("Failed to recognize bookmark '{0}' and this bookmark is ignored.", value);
         }
     }
 }

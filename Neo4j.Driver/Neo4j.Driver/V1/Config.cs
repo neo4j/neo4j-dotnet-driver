@@ -17,6 +17,7 @@
 using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.V1
@@ -111,7 +112,7 @@ namespace Neo4j.Driver.V1
         /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
         /// <item><see cref="MaxConnectionLifetime"/>: <c>1h</c></item>
         /// <br></br>
-        /// <item><see cref="Logger"/> : <c>DebugLogger</c> at <c><see cref="LogLevel"/> Info</c> </item>
+        /// <item><see cref="DriverLogger"/> : <c>logs nothing.</c></item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
         /// <item><see cref="LoadBalancingStrategy"/>: <c><see cref="LoadBalancingStrategy"/> LeastConnected</c> </item>
         /// <br></br>
@@ -146,9 +147,22 @@ namespace Neo4j.Driver.V1
         public TrustManager TrustManager { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ILogger"/> instance to be used by the <see cref="ISession"/>s.
+        /// Gets or sets the <see cref="ILogger"/> instance to be used to receive all logs produced by this driver.
+        /// Since Driver 1.7, this field is deprecated and we recommend to use the new logger <see cref="IDriverLogger"/> instead to receive logs produced by this driver.
+        /// But for back-compatibility, if this field is set, you can still receive all logs in the <see cref="ILogger"/> specified.
+        /// You cannot use both this legacy logger and new logger at the same time.
         /// </summary>
-        public ILogger Logger { get; set; } = new DebugLogger {Level = LogLevel.Info};
+        [Obsolete("Please use Logging instead.")]
+        public ILogger Logger
+        {
+            get => _legacyLogger;
+            set { _legacyLogger = value; DriverLogger = new LegacyLoggerAdapter(_legacyLogger); }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IDriverLogger"/> instance to be used to receive all logs produced by this driver.
+        /// </summary>
+        public IDriverLogger DriverLogger { get; set; } = NullLogger.Instance;
 
         /// <summary>
         /// Gets or sets the maximum transaction retry timeout.
@@ -159,8 +173,8 @@ namespace Neo4j.Driver.V1
         /// Gets or sets the max idle connection pool size. If the value of this is not set,
         /// then it will default to be the same as <see cref="MaxConnectionPoolSize"/>
         /// </summary>
-        /// <remarks> 
-        /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver. 
+        /// <remarks>
+        /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver.
         /// An idle connection is a connection that has already been connected to the database instance and doesn't need to re-initialize.
         /// Setting this value to <see cref="Infinite"/> results in the idle pool size to be assigned the same value as <see cref="MaxConnectionPoolSize"/>.
         /// </remarks>
@@ -171,11 +185,12 @@ namespace Neo4j.Driver.V1
         }
 
         private int _maxIdleConnPoolSize = Infinite;
+        private ILogger _legacyLogger = NullLegacyLogger.DevNullLogger;
 
         /// <summary>
         /// This property is deprecated. Use <see cref="MaxIdleConnectionPoolSize"/> instead.
         /// </summary>
-        [System.Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
+        [Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
         public int MaxIdleSessionPoolSize {
             get => MaxIdleConnectionPoolSize;
             set => MaxIdleConnectionPoolSize = value;
@@ -302,6 +317,12 @@ namespace Neo4j.Driver.V1
             public IConfigBuilder WithLogger(ILogger logger)
             {
                 _config.Logger = logger;
+                return this;
+            }
+
+            public IConfigBuilder WithDriverLogger(IDriverLogger logger)
+            {
+                _config.DriverLogger = logger;
                 return this;
             }
 
@@ -449,12 +470,22 @@ namespace Neo4j.Driver.V1
         IConfigBuilder WithTrustManager(TrustManager manager);
 
         /// <summary>
-        /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
+        /// This method is deprecated. Use <see cref="WithDriverLogger"/> instead.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        [System.Obsolete("Please use WithDriverLogger instead.")]
         IConfigBuilder WithLogger(ILogger logger);
+
+        /// <summary>
+        /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
+        /// </summary>
+        /// <param name="logger">The <see cref="IDriverLogger"/> instance to use, if <c>null</c> no logging will occur.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
+        IConfigBuilder WithDriverLogger(IDriverLogger logger);
+
 
         /// <summary>
         /// This method is deprecated. Use <see cref="WithMaxIdleConnectionPoolSize"/> instead.

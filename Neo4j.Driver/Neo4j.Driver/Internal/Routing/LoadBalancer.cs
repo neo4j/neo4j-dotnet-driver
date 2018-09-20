@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IRoutingTableManager _routingTableManager;
         private readonly ILoadBalancingStrategy _loadBalancingStrategy;
         private readonly IClusterConnectionPool _clusterConnectionPool;
-        private readonly ILogger _logger;
+        private readonly IDriverLogger _logger;
 
         private int _closedMarker = 0;
 
@@ -39,14 +39,13 @@ namespace Neo4j.Driver.Internal.Routing
             IPooledConnectionFactory connectionFactory,
             RoutingSettings routingSettings,
             ConnectionPoolSettings poolSettings,
-            ILogger logger)
+            IDriverLogger logger)
         {
             _logger = logger;
 
             _clusterConnectionPool = new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
-
-            _loadBalancingStrategy = CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, logger);
+            _loadBalancingStrategy = CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, _logger);
         }
 
         // for test only
@@ -54,10 +53,12 @@ namespace Neo4j.Driver.Internal.Routing
             IClusterConnectionPool clusterConnPool,
             IRoutingTableManager routingTableManager)
         {
+            var config = Config.DefaultConfig;
+            _logger = config.DriverLogger;
+
             _clusterConnectionPool = clusterConnPool;
             _routingTableManager = routingTableManager;
-            var config = Config.DefaultConfig;
-            _loadBalancingStrategy = CreateLoadBalancingStrategy(config.LoadBalancingStrategy, clusterConnPool, config.Logger);
+            _loadBalancingStrategy = CreateLoadBalancingStrategy(config.LoadBalancingStrategy, clusterConnPool, _logger);
         }
 
         private bool IsClosed => _closedMarker > 0;
@@ -169,7 +170,7 @@ namespace Neo4j.Driver.Internal.Routing
             GC.SuppressFinalize(this);
         }
 
-        protected void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (IsClosed)
                 return;
@@ -300,7 +301,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         private static ILoadBalancingStrategy CreateLoadBalancingStrategy(LoadBalancingStrategy strategy, IClusterConnectionPool pool,
-            ILogger logger)
+            IDriverLogger logger)
         {
             if (strategy == LoadBalancingStrategy.LeastConnected)
             {

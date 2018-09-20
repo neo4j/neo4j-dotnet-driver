@@ -20,9 +20,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
+using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 
 namespace Neo4j.Driver.Internal
@@ -41,7 +43,7 @@ namespace Neo4j.Driver.Internal
         }
     }
 
-    internal class ConnectionPool : LoggerBase, IConnectionPool
+    internal class ConnectionPool : IConnectionPool
     {
         private const int SpinningWaitInterval = 500;
 
@@ -69,6 +71,9 @@ namespace Neo4j.Driver.Internal
         public int NumberOfInUseConnections => _inUseConnections.Count;
         public int NumberOfIdleConnections => _idleConnections.Count;
         internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
+        private readonly string _id;
+
+        private readonly IDriverLogger _logger;
 
         public ConnectionPoolStatus Status
         {
@@ -80,10 +85,11 @@ namespace Neo4j.Driver.Internal
             Uri uri,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
-            ILogger logger)
-            : base(logger)
+            IDriverLogger logger)
         {
             _uri = uri;
+            _id = $"pool-{_uri.Host}:{_uri.Port}";
+            _logger = new PrefixLogger(logger, $"[{_id}]");
 
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
@@ -99,14 +105,15 @@ namespace Neo4j.Driver.Internal
             _connectionMetricsListener = metrics?.CreateConnectionListener(uri);
         }
 
+        // Used in test only
         internal ConnectionPool(
             IPooledConnectionFactory connectionFactory,
             BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentSet<IPooledConnection> inUseConnections = null,
             ConnectionPoolSettings poolSettings = null,
             IConnectionValidator validator = null,
-            ILogger logger = null)
-            : this(null, connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
+            IDriverLogger logger = null)
+            : this(new Uri("bolt://localhost:7687"), connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
@@ -264,7 +271,7 @@ namespace Neo4j.Driver.Internal
 
         private IPooledConnection Acquire(CancellationToken cancellationToken)
         {
-            return TryExecute(() =>
+            return TryExecute(_logger, () =>
             {
                 IPooledConnection connection = null;
 
@@ -335,7 +342,7 @@ namespace Neo4j.Driver.Internal
                 }
 
                 return connection;
-            });
+            }, "Failed to acquire a connection from connection pool.");
         }
 
         private void ThrowConnectionAcquisitionTimedOutException(OperationCanceledException ex=null)
@@ -368,7 +375,7 @@ namespace Neo4j.Driver.Internal
 
         private Task<IConnection> AcquireAsync(CancellationToken cancellationToken)
         {
-            return TryExecuteAsync(async () =>
+            return TryExecuteAsync(_logger, async () =>
             {
                 IPooledConnection connection = null;
                 try
@@ -439,7 +446,7 @@ namespace Neo4j.Driver.Internal
                 }
 
                 return (IConnection) connection;
-            });
+            }, "Failed to acquire a connection from connection pool asynchronously.");
         }
 
         private bool IsConnectionPoolFull()
@@ -454,7 +461,7 @@ namespace Neo4j.Driver.Internal
 
         public void Release(IPooledConnection connection)
         {
-            TryExecute(() =>
+            TryExecute(_logger, () =>
             {
                 if (IsClosed)
                 {
@@ -483,12 +490,12 @@ namespace Neo4j.Driver.Internal
                 {
                     DestroyConnection(connection);
                 }
-            });
+            }, $"Failed to release connection '{connection}' back into pool.");
         }
 
         public Task ReleaseAsync(IPooledConnection connection)
         {
-            return TryExecuteAsync(async () =>
+            return TryExecuteAsync(_logger, async () =>
             {
                 if (IsClosed)
                 {
@@ -517,12 +524,12 @@ namespace Neo4j.Driver.Internal
                 {
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
                 }
-            });
+            }, $"Failed to release connection '{connection}' asynchronously back to pool.");
         }
 
         // For concurrent calling: you are free to get something from inUseConn or availConn when we dispose.
         // However it is forbidden to put something back to the conn queues after we've already started disposing.
-        protected override void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (IsClosed)
                 return;
@@ -531,19 +538,23 @@ namespace Neo4j.Driver.Internal
             {
                 Close();
             }
+        }
 
-            base.Dispose(disposing);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         public void Close()
         {
             if (Interlocked.Exchange(ref _poolStatus, Closed) != Closed)
             {
-                TryExecute(() =>
+                TryExecute(_logger, () =>
                 {
                     foreach (var inUseConnection in _inUseConnections)
                     {
-                        Logger?.Info($"Disposing In Use Connection {inUseConnection.Id}");
+                        _logger?.Info($"Disposing In Use Connection {inUseConnection}");
                         if (_inUseConnections.TryRemove(inUseConnection))
                         {
                             DestroyConnection(inUseConnection);
@@ -551,7 +562,7 @@ namespace Neo4j.Driver.Internal
                     }
 
                     TerminateIdleConnections();
-                });
+                }, "Failed to close connection pool properly.");
             }
         }
 
@@ -563,7 +574,7 @@ namespace Neo4j.Driver.Internal
 
                 foreach (var inUseConnection in _inUseConnections)
                 {
-                    Logger?.Info($"Disposing In Use Connection {inUseConnection.Id}");
+                    _logger?.Info($"Disposing In Use Connection {inUseConnection}");
                     if (_inUseConnections.TryRemove(inUseConnection))
                     {
                         allCloseTasks.Add(DestroyConnectionAsync(inUseConnection));
@@ -604,7 +615,7 @@ namespace Neo4j.Driver.Internal
         {
             while (_idleConnections.TryTake(out var connection))
             {
-                Logger?.Debug($"Disposing Available Connection {connection.Id}");
+                _logger?.Debug($"Disposing Available Connection {connection}");
                 DestroyConnection(connection);
             }
         }
@@ -614,7 +625,7 @@ namespace Neo4j.Driver.Internal
             var allCloseTasks = new List<Task>();
             while (_idleConnections.TryTake(out var connection))
             {
-                Logger?.Debug($"Disposing Available Connection {connection.Id}");
+                _logger?.Debug($"Disposing Available Connection {connection}");
                 allCloseTasks.Add(DestroyConnectionAsync(connection));
             }
             return allCloseTasks;
@@ -643,7 +654,7 @@ namespace Neo4j.Driver.Internal
         
         public override string ToString()
         {
-            return $"{nameof(_idleConnections)}: {{{_idleConnections.ToContentString()}}}, " +
+            return $"{nameof(_id)}: {{{_id}}}, {nameof(_idleConnections)}: {{{_idleConnections.ToContentString()}}}, " +
                    $"{nameof(_inUseConnections)}: {{{_inUseConnections}}}";
         }
     }

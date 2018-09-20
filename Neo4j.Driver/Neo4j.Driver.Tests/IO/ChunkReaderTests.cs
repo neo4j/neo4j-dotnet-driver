@@ -25,6 +25,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Tests.IO.Utils;
+using Neo4j.Driver.Tests.TestUtil;
 using Neo4j.Driver.V1;
 using Xunit;
 
@@ -33,7 +34,7 @@ namespace Neo4j.Driver.Tests.IO
     [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
     public class ChunkReaderTests
     {
-        private const string CompactingArgumentRegEx = "^\\d+ bytes left in chunk buffer.*compacting\\.$";
+        private const string CompactingArgumentRegEx = "bytes left in chunk buffer.*compacting\\.$";
 
         [Fact]
         public void ShouldThrowWhenConstructedUsingNullStream()
@@ -47,7 +48,7 @@ namespace Neo4j.Driver.Tests.IO
         [Fact]
         public void ShouldThrowWhenConstructedUsingNullStreamWithLogger()
         {
-            var ex = Record.Exception(() => new ChunkReader(null, Mock.Of<ILogger>()));
+            var ex = Record.Exception(() => new ChunkReader(null, Mock.Of<IDriverLogger>()));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentNullException>();
@@ -164,7 +165,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var input = GenerateMessageChunk(Constants.ChunkBufferSize -
                                              (Constants.ChunkBufferResetPositionsWatermark + 10));
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = reader.ReadNextMessages(new MemoryStream());
@@ -178,7 +179,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var input = GenerateMessageChunk(Constants.ChunkBufferSize -
                                              (Constants.ChunkBufferResetPositionsWatermark + 10));
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = await reader.ReadNextMessagesAsync(new MemoryStream());
@@ -191,7 +192,7 @@ namespace Neo4j.Driver.Tests.IO
         public void ShouldResetInternalBufferPositionsWhenWritableBufferIsSmallerThanSetWatermark()
         {
             var input = GenerateMessageChunk(Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark);
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = reader.ReadNextMessages(new MemoryStream());
@@ -204,7 +205,7 @@ namespace Neo4j.Driver.Tests.IO
         public async void ShouldResetInternalBufferPositionsWhenWritableBufferIsSmallerThanSetWatermarkAsync()
         {
             var input = GenerateMessageChunk(Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark);
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = await reader.ReadNextMessagesAsync(new MemoryStream());
@@ -220,7 +221,7 @@ namespace Neo4j.Driver.Tests.IO
             const int maxBytes = Constants.ChunkBufferSize - (Constants.ChunkBufferResetPositionsWatermark + 10);
 
             var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = reader.ReadNextMessages(new MemoryStream());
@@ -236,7 +237,7 @@ namespace Neo4j.Driver.Tests.IO
             const int maxBytes = Constants.ChunkBufferSize - (Constants.ChunkBufferResetPositionsWatermark + 10);
 
             var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = await reader.ReadNextMessagesAsync(new MemoryStream());
@@ -252,7 +253,7 @@ namespace Neo4j.Driver.Tests.IO
             const int maxBytes = Constants.ChunkBufferSize;
 
             var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = reader.ReadNextMessages(new MemoryStream());
@@ -268,7 +269,7 @@ namespace Neo4j.Driver.Tests.IO
             const int maxBytes = Constants.ChunkBufferSize;
 
             var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = await reader.ReadNextMessagesAsync(new MemoryStream());
@@ -282,7 +283,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var size = 3 * Constants.MaxChunkSize;
             var input = GenerateMessageChunk(3 * Constants.MaxChunkSize);
-            var logger = new Mock<ILogger>();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
             var reader = new ChunkReader(new MemoryStream(input), logger.Object);
 
             var count = reader.ReadNextMessages(new MemoryStream());
@@ -296,7 +297,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var data = GenerateMessages(1000, 128 * 1024);
 
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
 
             var bufferStream = new MemoryStream();
@@ -360,7 +361,7 @@ namespace Neo4j.Driver.Tests.IO
         {
             var data = GenerateMessages(1000, 128 * 1024);
 
-            var logger = new Mock<ILogger>();
+            var logger = new Mock<IDriverLogger>();
             var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
 
             var bufferStream = new MemoryStream();
@@ -409,6 +410,5 @@ namespace Neo4j.Driver.Tests.IO
 
             return stream.ToArray();
         }
-
     }
 }

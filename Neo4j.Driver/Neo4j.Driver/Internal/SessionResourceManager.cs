@@ -18,6 +18,7 @@ using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.V1;
+using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            TryExecute(() =>
+            TryExecute(_logger, () =>
             {
                 if (_isOpen)
                 {
@@ -39,13 +40,12 @@ namespace Neo4j.Driver.Internal
                     DisposeTransaction();
                     DisposeSessionResult();
                 }
-            });
-            base.Dispose(true);
+            }, "Failed to dispose the session.");
         }
 
         public Task CloseAsync()
         {
-            return TryExecuteAsync(async () =>
+            return TryExecuteAsync(_logger, async () =>
             {
                 if (_isOpen)
                 {
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal
                     await DisposeTransactionAsync().ConfigureAwait(false);
                     await DisposeSessionResultAsync().ConfigureAwait(false);
                 }
-            });
+            }, "Failed to close the session asynchronously.");
         }
 
         /// <summary>

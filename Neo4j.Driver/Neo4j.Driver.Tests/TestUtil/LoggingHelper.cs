@@ -14,19 +14,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-using Neo4j.Driver.Internal;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Moq;
 using Neo4j.Driver.V1;
-using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.Tests.TestUtil
 {
-    internal class TestLogger : BaseOutLogger
+    public static class LoggingHelper
     {
-        public TestLogger(ITestOutputHelper output):
-            base(output.WriteLine)
+        public static Mock<IDriverLogger> GetTraceEnabledLogger()
         {
-            Level = LogLevel.Debug;
+            var mockLogger = new Mock<IDriverLogger>();
+            mockLogger.Setup(x => x.IsTraceEnabled()).Returns(true);
+            mockLogger.Setup(x => x.IsDebugEnabled()).Returns(true);
+            return mockLogger;
         }
     }
 }
