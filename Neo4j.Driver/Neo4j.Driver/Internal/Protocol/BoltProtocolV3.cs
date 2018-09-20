@@ -46,18 +46,20 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public void Login(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            var serverVersionCollector = new ServerVersionCollector();
-            connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
+            var collector = new HelloMessageResponseCollector();
+            connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
             connection.Sync();
-            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
+            ((ServerInfo)connection.Server).Version = collector.Server;
+            connection.UpdateId(collector.ConnectionId);
         }
 
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            var serverVersionCollector = new ServerVersionCollector();
-            connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
+            var collector = new HelloMessageResponseCollector();
+            connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
             await connection.SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
+            ((ServerInfo)connection.Server).Version = collector.Server;
+            connection.UpdateId(collector.ConnectionId);
         }
 
         public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,

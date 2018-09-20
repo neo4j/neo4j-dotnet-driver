@@ -87,10 +87,9 @@ namespace Neo4j.Driver.Internal
             ConnectionPoolSettings connectionPoolSettings,
             IDriverLogger logger)
         {
-            _id = $"Pool-{UniqueIdGenerator.GetId()}";
-            _logger = new PrefixLogger(logger, $"[{_id}]");
-
             _uri = uri;
+            _id = $"pool-{_uri.Host}:{_uri.Port}";
+            _logger = new PrefixLogger(logger, $"[{_id}]");
 
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
@@ -106,6 +105,7 @@ namespace Neo4j.Driver.Internal
             _connectionMetricsListener = metrics?.CreateConnectionListener(uri);
         }
 
+        // Used in test only
         internal ConnectionPool(
             IPooledConnectionFactory connectionFactory,
             BlockingCollection<IPooledConnection> idleConnections = null,
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Internal
             ConnectionPoolSettings poolSettings = null,
             IConnectionValidator validator = null,
             IDriverLogger logger = null)
-            : this(null, connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger )
+            : this(new Uri("bolt://localhost:7687"), connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();

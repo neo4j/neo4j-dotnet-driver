@@ -1567,7 +1567,6 @@ namespace Neo4j.Driver.Tests
             ConnectionPoolSettings poolSettings = null,
             bool isConnectionValid = true)
         {
-
             return new ConnectionPool(new MockedConnectionFactory(), idleConnections, inUseConnections,
                 poolSettings, new TestConnectionValidator(isConnectionValid));
 

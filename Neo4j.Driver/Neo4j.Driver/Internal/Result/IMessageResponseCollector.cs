@@ -68,6 +68,20 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
+    internal class HelloMessageResponseCollector : ServerVersionCollector
+    {
+        public string ConnectionId { private set; get; }
+
+        public override void CollectSummary(IDictionary<string, object> meta)
+        {
+            base.CollectSummary(meta);
+            if (meta.ContainsKey("connection_id"))
+            {
+                ConnectionId = meta["connection_id"].As<string>();
+            }
+        }
+    }
+
     internal class NoOperationCollector : IMessageResponseCollector
     {
         public static readonly NoOperationCollector NoOpResponseCollector = new NoOperationCollector();

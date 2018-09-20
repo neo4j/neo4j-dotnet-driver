@@ -162,7 +162,7 @@ namespace Neo4j.Driver.V1
         /// <summary>
         /// Gets or sets the <see cref="IDriverLogger"/> instance to be used to receive all logs produced by this driver.
         /// </summary>
-        public IDriverLogger DriverLogger { get; set; } = NullLogger.DevNullLogger;
+        public IDriverLogger DriverLogger { get; set; } = NullLogger.Instance;
 
         /// <summary>
         /// Gets or sets the maximum transaction retry timeout.

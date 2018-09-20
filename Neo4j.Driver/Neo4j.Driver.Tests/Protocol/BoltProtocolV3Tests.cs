@@ -65,6 +65,7 @@ namespace Neo4j.Driver.Tests.Connector
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<HelloMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync());
+                mockConn.Verify(x => x.UpdateId(It.IsAny<string>()));
             }
         }
 
@@ -79,6 +80,7 @@ namespace Neo4j.Driver.Tests.Connector
 
                 mockConn.Verify(x => x.Enqueue(It.IsAny<HelloMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
+                mockConn.Verify(x => x.UpdateId(It.IsAny<string>()));
             }
         }
         

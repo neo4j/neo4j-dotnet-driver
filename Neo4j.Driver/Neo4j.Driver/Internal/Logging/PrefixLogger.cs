@@ -21,16 +21,16 @@ namespace Neo4j.Driver.Internal.Logging
 {
     internal class PrefixLogger : ReformattedLogger
     {
-        private readonly string _prefix;
-
         public PrefixLogger(IDriverLogger logger, string prefix = null) : base(logger)
         {
-            _prefix = prefix;
+            Prefix = prefix;
         }
 
         protected override string Reformat(string message)
         {
-            return _prefix == null ? message : $"{_prefix} {message}";
+            return Prefix == null ? message : $"{Prefix} {message}";
         }
+
+        public string Prefix { private get; set; }
     }
 }

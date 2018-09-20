@@ -41,10 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Shared
 
         private void Log(ExtendedLogLevel level, Exception cause, string message, params object[] args)
         {
-            if (message == null)
-            {
-                message = "";
-            }
+            message = message ?? "";
             var formattableString = $"[{level}]:{string.Format(message, args)}";
             if (cause != null)
             {

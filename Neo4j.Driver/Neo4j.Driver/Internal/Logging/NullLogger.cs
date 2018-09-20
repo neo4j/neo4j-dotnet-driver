@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.Logging
 {
     internal class NullLogger : IDriverLogger
     {
-        public static readonly NullLogger DevNullLogger = new NullLogger();
+        public static readonly NullLogger Instance = new NullLogger();
 
         private NullLogger()
         {

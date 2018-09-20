@@ -39,15 +39,15 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
-        private readonly IDriverLogger _logger;
+        private readonly PrefixLogger _logger;
 
-        private readonly string _id;
+        private string _id;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
             IConnectionListener metricsListener = null, IDriverLogger logger = null)
         {
-            _id = $"Conn-{UniqueIdGenerator.GetId()}";
-            _logger = new PrefixLogger(logger, $"[{_id}]");
+            _id = $"conn-{UniqueIdGenerator.GetId()}";
+            _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
             _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener, _logger);
             _authToken = connectionSettings.AuthToken;
@@ -72,8 +72,8 @@ namespace Neo4j.Driver.Internal.Connector
             _userAgent = userAgent;
             Server = server;
 
-            _id = $"Conn-{UniqueIdGenerator.GetId()}";
-            _logger = new PrefixLogger(logger, $"[{_id}]");
+            _id = $"conn-{UniqueIdGenerator.GetId()}";
+            _logger = new PrefixLogger(logger, FormatPrefix(_id));
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
         }
 
@@ -195,6 +195,13 @@ namespace Neo4j.Driver.Internal.Connector
             _client.ResetMessageReaderAndWriterForServerV3_1(_boltProtocol);
         }
 
+        public void UpdateId(string newConnId)
+        {
+            _logger.Debug("Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.", _id, newConnId);
+            _id = newConnId;
+            _logger.Prefix = FormatPrefix(_id);
+        }
+
         public void Destroy()
         {
             Close();
@@ -274,6 +281,11 @@ namespace Neo4j.Driver.Internal.Connector
         public override string ToString()
         {
             return _id;
+        }
+
+        private static string FormatPrefix(string id)
+        {
+            return $"[{id}]";
         }
     }
 }
