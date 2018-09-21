@@ -4,7 +4,7 @@ using Neo4j.Driver.V1;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
-namespace Neo4j.Driver.Logging
+namespace Neo4j.Driver.Extensions.Logging
 {
     public class DriverLogger : IDriverLogger
     {
