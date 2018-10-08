@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2018 "Neo4j,"
+// Copyright (c) 2002-2018 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,7 @@ using FluentAssertions;
 //The only imported needed for using this driver
 using Neo4j.Driver.V1;
 using Neo4j.Driver.IntegrationTests;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -120,7 +122,8 @@ namespace Neo4j.Driver.Examples
 
         public class ConfigLoadBalancingStrategyExample : BaseExample
         {
-            public ConfigLoadBalancingStrategyExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ConfigLoadBalancingStrategyExample(ITestOutputHelper output,
+                StandAloneIntegrationTestFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -261,6 +264,67 @@ namespace Neo4j.Driver.Examples
             }
         }
 
+        public class ConfigCustomResolverExample : BaseClusterExample
+        {
+            public ConfigCustomResolverExample(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::config-custom-resolver[]
+            private IDriver CreateDriverWithCustomResolver(string virtualUri, IAuthToken token,
+                params ServerAddress[] addresses)
+            {
+                return GraphDatabase.Driver(virtualUri, token,
+                    new Config {Resolver = new ListAddressResolver(addresses)});
+            }
+
+            public void AddPerson(string name)
+            {
+                using (var driver = CreateDriverWithCustomResolver("bolt+routing://x.acme.com", Cluster.AuthToken,
+                    ServerAddress.From("a.acme.com", 7687), ServerAddress.From("b.acme.com", 7877),
+                    ServerAddress.From("c.acme.com", 9092)))
+                {
+                    using (var session = driver.Session())
+                    {
+                        session.Run("CREATE (a:Person {name: $name})", new {name});
+                    }
+                }
+            }
+
+            private class ListAddressResolver : IServerAddressResolver
+            {
+                private readonly ServerAddress[] servers;
+
+                public ListAddressResolver(params ServerAddress[] servers)
+                {
+                    this.servers = servers;
+                }
+
+                public ISet<ServerAddress> Resolve(ServerAddress address)
+                {
+                    return new HashSet<ServerAddress>(servers);
+                }
+            }
+            // end::config-custom-resolver[]
+
+            [RequireClusterFact]
+            public void TestCustomResolverExample()
+            {
+                using (var driver =
+                    CreateDriverWithCustomResolver("bolt+routing://x.acme.com", Cluster.AuthToken, Cluster.Members
+                        .Select(m => ServerAddress.From(m.BoltUri.Host, m.BoltUri.Port))
+                        .ToArray()))
+                {
+                    using (var session = driver.Session())
+                    {
+                        // When & Then
+                        session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                    }
+                }
+            }
+        }
+
         public class CustomAuthExample : BaseExample
         {
             public CustomAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -270,7 +334,8 @@ namespace Neo4j.Driver.Examples
 
             // tag::custom-auth[]
             public IDriver CreateDriverWithCustomizedAuth(string uri,
-                string principal, string credentials, string realm, string scheme, Dictionary<string, object> parameters)
+                string principal, string credentials, string realm, string scheme,
+                Dictionary<string, object> parameters)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
                     new Config {EncryptionLevel = EncryptionLevel.None});
@@ -301,7 +366,7 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithKerberosAuth(string uri, string ticket)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Kerberos(ticket),
-                    new Config { EncryptionLevel = EncryptionLevel.None });
+                    new Config {EncryptionLevel = EncryptionLevel.None});
             }
             // end::kerberos-auth[]
 
@@ -450,6 +515,7 @@ namespace Neo4j.Driver.Examples
                     }
                 }
             }
+
             // end::hello-world[]
         }
 
@@ -487,6 +553,7 @@ namespace Neo4j.Driver.Examples
                 var result = tx.Run("MATCH (a:Person {name: $name}) RETURN id(a)", new {name});
                 return result.Single()[0].As<long>();
             }
+
             // end::read-write-transaction[]
         }
 
@@ -534,12 +601,13 @@ namespace Neo4j.Driver.Examples
             {
                 using (var session = Driver.Session())
                 {
-                    var persons = session.ReadTransaction(tx => tx.Run("MATCH (a:Person) RETURN a.name AS name").ToList());
+                    var persons =
+                        session.ReadTransaction(tx => tx.Run("MATCH (a:Person) RETURN a.name AS name").ToList());
                     return persons.Sum(person => session.WriteTransaction(tx =>
                     {
                         tx.Run("MATCH (emp:Person {name: $person_name}) " +
-                            "MERGE (com:Company {name: $company_name}) " +
-                            "MERGE (emp)-[:WORKS_FOR]->(com)",
+                               "MERGE (com:Company {name: $company_name}) " +
+                               "MERGE (emp)-[:WORKS_FOR]->(com)",
                             new {person_name = person["name"].As<string>(), company_name = companyName});
                         return 1;
                     }));
@@ -640,7 +708,7 @@ namespace Neo4j.Driver.Examples
 
         public class TransactionFunctionExample : BaseExample
         {
-            public TransactionFunctionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) 
+            public TransactionFunctionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -664,7 +732,7 @@ namespace Neo4j.Driver.Examples
                 CountPerson("Alice").Should().Be(1);
             }
         }
-        
+
         public class PassBookmarksExample : BaseExample
         {
             public PassBookmarksExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -678,7 +746,7 @@ namespace Neo4j.Driver.Examples
             {
                 tx.Run("CREATE (a:Company {name: $name})", new {name});
             }
-            
+
             // Create a person node
             private void AddPerson(ITransaction tx, string name)
             {
@@ -734,7 +802,7 @@ namespace Neo4j.Driver.Examples
                     session2.WriteTransaction(tx => AddCompany(tx, "LexCorp"));
                     session2.WriteTransaction(tx => AddPerson(tx, "Bob"));
                     session2.WriteTransaction(tx => Employ(tx, "Bob", "LexCorp"));
-                    
+
                     savedBookmarks.Add(session2.LastBookmark);
                 }
 
@@ -742,11 +810,11 @@ namespace Neo4j.Driver.Examples
                 using (var session3 = Driver.Session(AccessMode.Write, savedBookmarks))
                 {
                     session3.WriteTransaction(tx => MakeFriends(tx, "Alice", "Bob"));
-                    
+
                     session3.ReadTransaction(PrintFriendships);
                 }
             }
-            
+
             // end::pass-bookmarks[]
 
             [RequireServerFact]
@@ -754,7 +822,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given & When
                 AddEmployAndMakeFriends();
-                
+
                 // Then
                 CountNodes("Person", "name", "Alice").Should().Be(1);
                 CountNodes("Person", "name", "Bob").Should().Be(1);
@@ -765,7 +833,7 @@ namespace Neo4j.Driver.Examples
                     "MATCH (a:Person {name: $person})-[:WORKS_FOR]->(b:Company {name: $company}) RETURN count(a)",
                     new {person = "Alice", company = "Wayne Enterprises"});
                 works1.Count().Should().Be(1);
-                
+
                 var works2 = Read(
                     "MATCH (a:Person {name: $person})-[:WORKS_FOR]->(b:Company {name: $company}) RETURN count(a)",
                     new {person = "Bob", company = "LexCorp"});
@@ -777,7 +845,6 @@ namespace Neo4j.Driver.Examples
                 friends.Count().Should().Be(1);
             }
         }
-        
     }
 
     [Collection(SAIntegrationCollection.CollectionName)]
@@ -817,10 +884,10 @@ namespace Neo4j.Driver.Examples
             {
                 return session.ReadTransaction(
                     tx => tx.Run($"MATCH (a:{label} {{{property}: $value}}) RETURN count(a)",
-                        new { value }).Single()[0].As<int>());
+                        new {value}).Single()[0].As<int>());
             }
         }
-        
+
         protected int CountPerson(string name)
         {
             return CountNodes("Person", "name", name);
@@ -843,8 +910,75 @@ namespace Neo4j.Driver.Examples
                     tx.Run(statement, parameters));
             }
         }
-        
     }
+
+    [Collection(CCIntegrationCollection.CollectionName)]
+    public abstract class BaseClusterExample : IDisposable
+    {
+        protected ITestOutputHelper Output { get; }
+        protected CausalCluster Cluster { set; get; }
+        protected IDriver Driver { get; set; }
+        protected IAuthToken AuthToken { get; set; }
+
+        protected BaseClusterExample(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+        {
+            Output = output;
+            Cluster = fixture.Cluster;
+            AuthToken = Cluster.AnyCore().AuthToken;
+            Driver = GraphDatabase.Driver(Cluster.AnyCore().BoltRoutingUri, Cluster.AnyCore().AuthToken,
+                Config.DefaultConfig);
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (!isDisposing)
+                return;
+
+            using (var session = Driver.Session(AccessMode.Write))
+            {
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        protected int CountNodes(string label, string property, string value)
+        {
+            using (var session = Driver.Session())
+            {
+                return session.ReadTransaction(
+                    tx => tx.Run($"MATCH (a:{label} {{{property}: $value}}) RETURN count(a)",
+                        new {value}).Single()[0].As<int>());
+            }
+        }
+
+        protected int CountPerson(string name)
+        {
+            return CountNodes("Person", "name", name);
+        }
+
+        protected void Write(string statement, object parameters = null)
+        {
+            using (var session = Driver.Session())
+            {
+                session.WriteTransaction(tx =>
+                    tx.Run(statement, parameters));
+            }
+        }
+
+        protected IStatementResult Read(string statement, object parameters = null)
+        {
+            using (var session = Driver.Session())
+            {
+                return session.ReadTransaction(tx =>
+                    tx.Run(statement, parameters));
+            }
+        }
+    }
+
 
     // TODO Remove it after we figure out a way to solve the naming problem
     internal static class ValueExtensions
