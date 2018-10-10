@@ -264,24 +264,23 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        public class ConfigCustomResolverExample : BaseClusterExample
+        public class ConfigCustomResolverExample
         {
-            public ConfigCustomResolverExample(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
-                : base(output, fixture)
-            {
-            }
+            private const string Username = "neo4j";
+            private const string Password = "some password";
 
             // tag::config-custom-resolver[]
             private IDriver CreateDriverWithCustomResolver(string virtualUri, IAuthToken token,
                 params ServerAddress[] addresses)
             {
                 return GraphDatabase.Driver(virtualUri, token,
-                    new Config {Resolver = new ListAddressResolver(addresses)});
+                    new Config {Resolver = new ListAddressResolver(addresses), EncryptionLevel = EncryptionLevel.None});
             }
 
             public void AddPerson(string name)
             {
-                using (var driver = CreateDriverWithCustomResolver("bolt+routing://x.acme.com", Cluster.AuthToken,
+                using (var driver = CreateDriverWithCustomResolver("bolt+routing://x.acme.com",
+                    AuthTokens.Basic(Username, Password),
                     ServerAddress.From("a.acme.com", 7687), ServerAddress.From("b.acme.com", 7877),
                     ServerAddress.From("c.acme.com", 9092)))
                 {
@@ -308,18 +307,23 @@ namespace Neo4j.Driver.Examples
             }
             // end::config-custom-resolver[]
 
-            [RequireClusterFact]
+            [Fact]
             public void TestCustomResolverExample()
             {
-                using (var driver =
-                    CreateDriverWithCustomResolver("bolt+routing://x.acme.com", Cluster.AuthToken, Cluster.Members
-                        .Select(m => ServerAddress.From(m.BoltUri.Host, m.BoltUri.Port))
-                        .ToArray()))
+                using (var server1 = BoltStubServer.Start("get_routing_table_only", 9001))
                 {
-                    using (var session = driver.Session())
+                    using (var server2 = BoltStubServer.Start("return_1", 9002))
                     {
-                        // When & Then
-                        session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                        using (var driver =
+                            CreateDriverWithCustomResolver("bolt+routing://x.acme.com", AuthTokens.None,
+                                ServerAddress.From("localhost", 9001)))
+                        {
+                            using (var session = driver.Session(AccessMode.Read))
+                            {
+                                // When & Then
+                                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+                            }
+                        }
                     }
                 }
             }
@@ -911,75 +915,7 @@ namespace Neo4j.Driver.Examples
             }
         }
     }
-
-    [Collection(CCIntegrationCollection.CollectionName)]
-    public abstract class BaseClusterExample : IDisposable
-    {
-        protected ITestOutputHelper Output { get; }
-        protected CausalCluster Cluster { set; get; }
-        protected IDriver Driver { get; set; }
-        protected IAuthToken AuthToken { get; set; }
-
-        protected BaseClusterExample(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
-        {
-            Output = output;
-            Cluster = fixture.Cluster;
-            AuthToken = Cluster.AnyCore().AuthToken;
-            Driver = GraphDatabase.Driver(Cluster.AnyCore().BoltRoutingUri, Cluster.AnyCore().AuthToken,
-                Config.DefaultConfig);
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
-            using (var session = Driver.Session(AccessMode.Write))
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        protected int CountNodes(string label, string property, string value)
-        {
-            using (var session = Driver.Session())
-            {
-                return session.ReadTransaction(
-                    tx => tx.Run($"MATCH (a:{label} {{{property}: $value}}) RETURN count(a)",
-                        new {value}).Single()[0].As<int>());
-            }
-        }
-
-        protected int CountPerson(string name)
-        {
-            return CountNodes("Person", "name", name);
-        }
-
-        protected void Write(string statement, object parameters = null)
-        {
-            using (var session = Driver.Session())
-            {
-                session.WriteTransaction(tx =>
-                    tx.Run(statement, parameters));
-            }
-        }
-
-        protected IStatementResult Read(string statement, object parameters = null)
-        {
-            using (var session = Driver.Session())
-            {
-                return session.ReadTransaction(tx =>
-                    tx.Run(statement, parameters));
-            }
-        }
-    }
-
-
+    
     // TODO Remove it after we figure out a way to solve the naming problem
     internal static class ValueExtensions
     {

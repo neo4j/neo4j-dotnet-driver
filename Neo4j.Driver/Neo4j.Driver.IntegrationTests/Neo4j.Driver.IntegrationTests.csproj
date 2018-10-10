@@ -37,8 +37,10 @@
   <ItemGroup>
     <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    <None Update="Resources\get_routing_table.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    <None Update="Resources\rollback_error.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="Resources\return_1.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="Resources\get_routing_table_only.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="Resources\get_routing_table.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="Resources\rollback_error.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
