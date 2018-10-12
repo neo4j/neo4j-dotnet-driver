@@ -70,11 +70,10 @@ result.First(); // Selina Kyle as you already consumed the previous "first" reco
 ```
 
 #### Value Types
+Values in a record are currently exposed as of `object` type.
+The underlying types of these values are determined by their Cypher types.
 
-The driver currently exposes values in the record in the record as of `object` type.
-The underlying types of the returned values depend on the corresponding Cypher types.
-
-The mapping between Cypher types and the types used by this driver (to represent the Cypher type):
+The mapping between driver types and Cypher types are listed in the table bellow:
 
 | Cypher Type | Driver Type
 | ---: | :--- |
@@ -91,7 +90,7 @@ The mapping between Cypher types and the types used by this driver (to represent
 | Relationship| IRelationship |
 | Path| IPath |
 
-To convert from `object` to the driver type, a helper method `ValueExtensions#As<T>` is available:
+To convert from `object` to the driver type, a helper method `ValueExtensions#As<T>` can be used:
 ```csharp
 IRecord record = result.First();
 string name = record["name"].As<string>();
@@ -141,6 +140,40 @@ time zone name conversions, a conversion from IANA system to Windows system may 
 requested by the user. [Unicode CLDR mapping](http://cldr.unicode.org/development/development-process/design-proposals/extended-windows-olson-zid-mapping) 
 is used for this conversion. Please bear in mind that Windows time zone database do not provide precise historical data, so you may end up with inaccurate 
 `DateTimeOffset` values for past values. _It is recommended that you use driver level temporal types to avoid these inaccuracies._    
+
+### Logging
+
+Since 1.7 series, we introduce a new logger called `IDriverLogger`, aiming to replace the legacy `ILogger` interface for good.
+Therefore we recommend driver users to upgrade to the new logger if it is possible.
+Though for backward compatibility, the current release still supports accessing driver logs via the legacy `ILogger` interface.
+But note that using the legacy `ILogger` interface might harm driver's performance,
+as string concatenation is used internally on some log messages to fit the new log message format to legacy logging interface.
+
+To pass a `IDriverLogger` to this driver:
+```c#
+Config config = Config.Builder.WithDriverLogger(driverLogger).ToConfig();
+IDriver driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"), config);
+```
+
+In this new `IDriverLogger` interface, each logging method takes a message format string and message arguments as input.
+The full log messages can be restored using `string.format(message_format, message_argument)`.
+
+An example of implementing `IDriverLogger` with `Microsoft.Extensions.Logging`:
+```c#
+public class DriverLogger : IDriverLogger
+{
+    private readonly Microsoft.Extensions.Logging.ILogger _delegator;
+    public DriverLogger(ILogger delegator)
+    {
+       _delegator = delegator;
+    }
+    public void Error(Exception cause, string format, params object[] args)
+    {
+        _delegator.LogError(default(EventId), cause, format, args);
+    }
+    ...
+}
+```
 
 ## For Driver Developers
 This section targets at people who would like to compile the source code on their own machines for the purpose of, for example,
