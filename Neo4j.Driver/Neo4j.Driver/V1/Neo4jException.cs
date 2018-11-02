@@ -19,11 +19,13 @@ using System.Runtime.Serialization;
 
 namespace Neo4j.Driver.V1
 {
-
     /// <summary>
     /// The base class for all Neo4j exceptions.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class Neo4jException : Exception
     {
         /// <summary>
@@ -74,6 +76,14 @@ namespace Neo4j.Driver.V1
             Code = code;
         }
 
+#if NET452
+        protected Neo4jException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
+
         /// <summary>
         /// Gets or sets the code of a Neo4j exception.
         /// </summary>
@@ -85,6 +95,9 @@ namespace Neo4j.Driver.V1
     /// The error code provided can be used to determine further detail for the problem.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class ClientException : Neo4jException
     {
         /// <summary>
@@ -131,6 +144,14 @@ namespace Neo4j.Driver.V1
             : base(code, message, innerException)
         {
         }
+
+#if NET452
+        protected ClientException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -139,6 +160,9 @@ namespace Neo4j.Driver.V1
     /// The error code provided can be used to determine further details for the problem.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class TransientException : Neo4jException
     {
         /// <summary>
@@ -167,6 +191,14 @@ namespace Neo4j.Driver.V1
             : base(code, message, innerException)
         {
         }
+
+#if NET452
+        protected TransientException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -174,6 +206,9 @@ namespace Neo4j.Driver.V1
     /// The error code provided can be used to determine further detail for the problem.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class DatabaseException : Neo4jException
     {
         /// <summary>
@@ -202,12 +237,23 @@ namespace Neo4j.Driver.V1
             : base(code, message, innerException)
         {
         }
+
+#if NET452
+        protected DatabaseException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
     ///  A <see cref="ServiceUnavailableException"/> indicates that the driver cannot communicate with the cluster.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class ServiceUnavailableException : Neo4jException
     {
         /// <summary>
@@ -226,6 +272,14 @@ namespace Neo4j.Driver.V1
         public ServiceUnavailableException(string message, Exception innerException) : base(message, innerException)
         {
         }
+
+#if NET452
+        protected ServiceUnavailableException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -235,6 +289,9 @@ namespace Neo4j.Driver.V1
     /// A new session needs to be acquired from the driver and all actions taken on the expired session must be replayed.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class SessionExpiredException : Neo4jException
     {
         /// <summary>
@@ -253,6 +310,14 @@ namespace Neo4j.Driver.V1
         public SessionExpiredException(string message, Exception innerException) : base(message, innerException)
         {
         }
+
+#if NET452
+        protected SessionExpiredException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -260,6 +325,9 @@ namespace Neo4j.Driver.V1
     /// When seen this error, contact driver developers.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class ProtocolException : Neo4jException
     {
         private const string ErrorCodeInvalid = "Neo.ClientError.Request.Invalid";
@@ -297,6 +365,14 @@ namespace Neo4j.Driver.V1
         public ProtocolException(string message, Exception innerException) : base(message, innerException)
         {
         }
+
+#if NET452
+        protected ProtocolException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -304,6 +380,9 @@ namespace Neo4j.Driver.V1
     /// When this type of error happens, recreation of the driver might be required.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class SecurityException : Neo4jException
     {
         /// <summary>
@@ -332,6 +411,14 @@ namespace Neo4j.Driver.V1
         public SecurityException(string message, Exception innerException) : base(message, innerException)
         {
         }
+
+#if NET452
+        protected SecurityException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -339,6 +426,9 @@ namespace Neo4j.Driver.V1
     /// To recover from this error, close the current driver and restart with the correct credentials 
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class AuthenticationException : SecurityException
     {
         private const string ErrorCode = "Neo.ClientError.Security.Unauthorized";
@@ -356,6 +446,14 @@ namespace Neo4j.Driver.V1
         public AuthenticationException(string message) : base(ErrorCode, message)
         {
         }
+
+#if NET452
+        protected AuthenticationException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -363,6 +461,9 @@ namespace Neo4j.Driver.V1
     /// cause working with a modified data.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class ValueTruncationException : ClientException
     {
 
@@ -374,6 +475,14 @@ namespace Neo4j.Driver.V1
         public ValueTruncationException(string message) : base(message)
         {
         }
+
+#if NET452
+        protected ValueTruncationException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 
     /// <summary>
@@ -381,6 +490,9 @@ namespace Neo4j.Driver.V1
     /// cause working with a modified data.
     /// </summary>
     [DataContract]
+#if NET452
+    [Serializable]
+#endif
     public class ValueOverflowException : ClientException
     {
 
@@ -392,5 +504,13 @@ namespace Neo4j.Driver.V1
         public ValueOverflowException(string message) : base(message)
         {
         }
+
+#if NET452
+        protected ValueOverflowException(
+            System.Runtime.Serialization.SerializationInfo info,
+            StreamingContext context) : base(info, context)
+        {
+        }
+#endif
     }
 }
