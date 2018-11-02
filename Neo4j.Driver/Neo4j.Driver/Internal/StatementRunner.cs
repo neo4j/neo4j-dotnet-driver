@@ -23,7 +23,15 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {
-    internal abstract class StatementRunner : IStatementRunner
+    internal abstract class StatementRunner :
+#if NET452
+        // Needed to use a Transaction remotely.
+        // This can be used by drivers to add a Transaction to a custom AppDomain
+        // to implement promotion to a distributed transaction (as done by
+        // the Neo4jClient driver).
+        MarshalByRefObject,
+#endif
+        IStatementRunner
     {
         public abstract IStatementResult Run(Statement statement);
 
