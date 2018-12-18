@@ -34,14 +34,6 @@
     <ProjectReference Include="..\Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj" />
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    <None Include="Resources\multiple_bookmarks.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    <None Include="Resources\return_1.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    <None Include="Resources\get_routing_table_only.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    <None Include="Resources\get_routing_table.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    <None Include="Resources\rollback_error.script" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
@@ -55,6 +47,19 @@
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Resources\accessmode_reader_explicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_reader_func.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_reader_implicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_router.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_writer_explicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_writer_func.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_writer_implicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\get_routing_table_only.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\return_1.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\rollback_error.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
