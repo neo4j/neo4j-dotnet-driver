@@ -21,6 +21,7 @@ using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
 using Org.BouncyCastle.Pkcs;
+using static Neo4j.Driver.IntegrationTests.Internals.Neo4jDefaultInstallation;
 using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;
 using Path = System.IO.Path;
 
@@ -28,12 +29,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class ExternalBoltkitInstaller : IInstaller
     {
-
         private static readonly string HomeDir = Path.Combine(BoltkitHelper.TargetDir, "neo4jhome");
-
-        private const string Password = "neo4j";
-        private const string HttpUri = "http://localhost:7474";
-        private const string BoltUri = "bolt://localhost:7687";
 
         private readonly IShellCommandRunner _commandRunner;
 

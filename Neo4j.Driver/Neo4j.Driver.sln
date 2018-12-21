@@ -16,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\Neo4j.Driver.Docs.shfbproj = ..\Neo4j.Driver.Docs.shfbproj
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tck.Tests", "Neo4j.Driver.Tck.Tests\Neo4j.Driver.Tck.Tests.csproj", "{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Metrics", "Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj", "{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}"
 EndProject
 Global
@@ -52,14 +50,6 @@ Global
 		{02F68DF2-0047-4B04-93B6-521BD12B5D45}.Release|Any CPU.Build.0 = Release|Any CPU
 		{02F68DF2-0047-4B04-93B6-521BD12B5D45}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
 		{02F68DF2-0047-4B04-93B6-521BD12B5D45}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.DebugDelaySigned|Any CPU.ActiveCfg = DebugDelaySigned|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.DebugDelaySigned|Any CPU.Build.0 = DebugDelaySigned|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
-		{E95B6563-4BC7-4B12-98C4-97FC8A8E5721}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
 		{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}.DebugDelaySigned|Any CPU.ActiveCfg = DebugDelaySigned|Any CPU

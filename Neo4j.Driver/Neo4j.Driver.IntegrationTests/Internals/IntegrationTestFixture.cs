@@ -17,28 +17,40 @@
 using Neo4j.Driver.IntegrationTests.Internals;
 using System;
 using Xunit;
+using static System.Boolean;
+using static System.Environment;
 
 namespace Neo4j.Driver.IntegrationTests
 {
     public class StandAloneIntegrationTestFixture : IDisposable
     {
-        public StandAlone StandAlone { get; }
+        public IStandAlone StandAlone { get; }
+
+        private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
 
         public StandAloneIntegrationTestFixture()
         {
-            if (!BoltkitHelper.IsBoltkitAvailable())
+            // If a system flag is set, then we use the local single server instead
+            if (TryParse(GetEnvironmentVariable(UsingLocalServer), out _))
             {
-                return;
+                StandAlone = new LocalStandAloneInstance();
             }
+            else
+            {
+                if (!BoltkitHelper.IsBoltkitAvailable())
+                {
+                    return;
+                }
 
-            try
-            {
-                StandAlone = new StandAlone();
-            }
-            catch (Exception)
-            {
-                Dispose();
-                throw;
+                try
+                {
+                    StandAlone = new StandAlone();
+                }
+                catch (Exception)
+                {
+                    Dispose();
+                    throw;
+                }
             }
         }
 
