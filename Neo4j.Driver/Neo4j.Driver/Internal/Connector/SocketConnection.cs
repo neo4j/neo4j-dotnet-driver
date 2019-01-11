@@ -42,11 +42,13 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly PrefixLogger _logger;
 
         private string _id;
+        private readonly string _idPrefix;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
             IConnectionListener metricsListener = null, IDriverLogger logger = null)
         {
-            _id = $"conn-{UniqueIdGenerator.GetId()}";
+            _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
+            _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
             _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener, _logger);
@@ -72,7 +74,7 @@ namespace Neo4j.Driver.Internal.Connector
             _userAgent = userAgent;
             Server = server;
 
-            _id = $"conn-{UniqueIdGenerator.GetId()}";
+            _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
         }
