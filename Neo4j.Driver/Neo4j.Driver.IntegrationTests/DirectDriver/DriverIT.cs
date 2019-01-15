@@ -56,25 +56,6 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionLessThanFact("3.2.0")]
-        public void ShouldNotPackBytes()
-        {
-            // Given
-            byte[] byteArray = PackStreamBitConverter.GetBytes("hello, world");
-
-            // When
-            using (var session = Server.Driver.Session())
-            {
-                var exception = Record.Exception(() =>
-                            session.Run("CREATE (a {value:{value}})",
-                                new Dictionary<string, object> {{"value", byteArray}}));
-
-                // Then
-                exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should().Be("Cannot understand values with type System.Byte[]");
-            }
-        }
-
         [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
         public void ShouldConnectIPv6AddressIfEnabled()
         {

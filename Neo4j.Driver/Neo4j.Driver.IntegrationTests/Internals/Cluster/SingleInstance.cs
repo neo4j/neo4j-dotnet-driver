@@ -36,7 +36,14 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             HttpUri = new Uri(httpUri);
             BoltUri = new Uri(boltUri);
             BoltRoutingUri = new Uri(BoltRoutingScheme + $"{BoltUri.Host}:{BoltUri.Port}");
-            HomePath = new DirectoryInfo(homePath).FullName;
+            if (homePath == null)
+            {
+                HomePath = "UNKNOWN";
+            }
+            else
+            {
+                HomePath = new DirectoryInfo(homePath).FullName;
+            }
             AuthToken = AuthTokens.Basic(Username, password);
         }
 

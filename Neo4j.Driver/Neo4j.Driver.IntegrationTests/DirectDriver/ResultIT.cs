@@ -32,16 +32,25 @@ namespace Neo4j.Driver.IntegrationTests
         {}
 
         [RequireServerFact]
-        public void GetsSummary()
+        public void GetSummary()
         {
             using (var session = Driver.Session())
             {
                 var result = session.Run("CREATE (p:Person { Name: 'Test'})");
-                var stats = result.Consume().Counters;
+                var summary = result.Consume();
+                result.Peek().Should().BeNull();
+
+                summary.Statement.Text.Should().Be("CREATE (p:Person { Name: 'Test'})");
+                summary.Statement.Parameters.Count.Should().Be(0);
+
+                var stats = summary.Counters;
                 stats.ToString().Should()
                     .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
                     "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
                     "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
+
+                summary.StatementType.Should().Be(StatementType.WriteOnly);
+
                 var serverInfo = result.Summary.Server;
 
                 serverInfo.Address.Should().Be("localhost:7687");
@@ -55,6 +64,65 @@ namespace Neo4j.Driver.IntegrationTests
                     result.Summary.ResultAvailableAfter.Should().BeLessThan(TimeSpan.Zero);
                     result.Summary.ResultConsumedAfter.Should().BeLessThan(TimeSpan.Zero);
                 }
+            }
+        }
+
+        [RequireServerFact]
+        public void GetPlan()
+        {
+            using (var session = Driver.Session())
+            {
+                var result = session.Run("EXPLAIN MATCH (n) RETURN 1");
+                var summary = result.Consume();
+
+                summary.HasPlan.Should().BeTrue();
+                summary.HasProfile.Should().BeFalse();
+
+                var plan = summary.Plan;
+                plan.Identifiers.Count.Should().BePositive();
+                plan.Arguments.Count.Should().BePositive();
+                plan.Children.Count.Should().BePositive();
+                plan.OperatorType.Should().NotBeNullOrEmpty();
+            }
+        }
+
+        [RequireServerFact]
+        public void GetProfile()
+        {
+            using (var session = Driver.Session())
+            {
+                var result = session.Run("PROFILE RETURN 1");
+                var summary = result.Consume();
+
+                summary.HasPlan.Should().BeTrue();
+                summary.HasProfile.Should().BeTrue();
+
+                summary.Plan.Should().Be(summary.Profile);
+
+                var profile = summary.Profile;
+                profile.DbHits.Should().Be(0L);
+                profile.Records.Should().Be(1L);
+            }
+        }
+
+        [RequireServerFact]
+        public void GetNotification()
+        {
+            using (var session = Driver.Session())
+            {
+                var result = session.Run("EXPLAIN MATCH (n), (m) RETURN n, m");
+                var summary = result.Consume();
+
+                var notifications = summary.Notifications;
+                notifications.Should().NotBeNull();
+                notifications.Count.Should().Be(1);
+                var notification = notifications[0];
+
+                notification.Code.Should().NotBeNullOrEmpty();
+                notification.Description.Should().NotBeNullOrEmpty();
+                notification.Title.Should().NotBeNullOrEmpty();
+                notification.Severity.Should().NotBeNullOrEmpty();
+                notification.Position.Should().NotBeNull();
             }
         }
 

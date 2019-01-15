@@ -25,7 +25,13 @@ using Org.BouncyCastle.Pkcs;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class StandAlone : ISingleInstance, IDisposable
+
+    public interface IStandAlone : ISingleInstance, IDisposable
+    {
+        IDriver Driver { get; }
+    }
+
+    public class StandAlone : IStandAlone
     {
         private readonly ExternalBoltkitInstaller _installer = new ExternalBoltkitInstaller();
         public IDriver Driver { private set; get; }
@@ -71,12 +77,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void NewBoltDriver()
         {
-            var logger = new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s));
-#if DEBUG
-            logger = new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s), ExtendedLogLevel.Debug);
-#endif
-            var config = Config.Builder.WithDriverLogger(logger).ToConfig();
-            Driver = GraphDatabase.Driver(BoltUri, AuthToken, config);
+            Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
         }
 
         private void DisposeBoltDriver()

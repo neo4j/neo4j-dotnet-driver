@@ -16,5 +16,4 @@ If (Test-Path $dir\..\Target) {
 
 Invoke-Expression "cd $dir\Neo4j.Driver.Tests; dotnet xunit -f net452 -nobuild"
 Invoke-Expression "cd $dir\Neo4j.Driver.IntegrationTests; dotnet xunit -f net452 -nobuild -parallel none"
-Invoke-Expression "cd $dir\Neo4j.Driver.Tck.Tests; dotnet xunit -f net452 -nobuild -parallel none"
 

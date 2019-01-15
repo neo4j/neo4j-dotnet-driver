@@ -26,7 +26,7 @@ namespace Neo4j.Driver.IntegrationTests
     public abstract class DirectDriverTestBase : IDisposable
     {
         protected ITestOutputHelper Output { get; }
-        protected StandAlone Server { get; }
+        protected IStandAlone Server { get; }
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
