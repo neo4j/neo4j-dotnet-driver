@@ -23,7 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Logging;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Routing
 {

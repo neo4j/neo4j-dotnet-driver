@@ -16,7 +16,7 @@
 // limitations under the License.
 using System;
 using FluentAssertions;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 using System.Linq;

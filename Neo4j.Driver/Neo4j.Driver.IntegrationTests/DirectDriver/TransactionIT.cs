@@ -19,7 +19,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using FluentAssertions;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 

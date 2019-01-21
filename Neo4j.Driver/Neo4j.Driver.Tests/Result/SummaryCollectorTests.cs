@@ -21,7 +21,7 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using Record = Xunit.Record;
 

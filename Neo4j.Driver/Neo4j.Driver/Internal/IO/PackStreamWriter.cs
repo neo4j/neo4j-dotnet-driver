@@ -21,7 +21,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO

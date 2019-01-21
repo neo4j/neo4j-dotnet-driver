@@ -19,7 +19,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Protocol
 {

@@ -19,7 +19,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageHandlers;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;

@@ -19,7 +19,7 @@ using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.IntegrationTests.Shared;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 

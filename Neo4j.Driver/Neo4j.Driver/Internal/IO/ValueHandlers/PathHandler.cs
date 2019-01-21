@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.IO.ValueHandlers
 {

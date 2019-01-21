@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 

@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 //The only imported needed for using this driver
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
@@ -921,7 +921,7 @@ namespace Neo4j.Driver.Examples
     {
         public static T As<T>(this object value)
         {
-            return V1.ValueExtensions.As<T>(value);
+            return Neo4j.Driver.ValueExtensions.As<T>(value);
         }
     }
 }

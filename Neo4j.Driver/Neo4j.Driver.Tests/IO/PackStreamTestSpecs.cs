@@ -24,7 +24,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Tests.IO.Utils;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using static Neo4j.Driver.Tests.TestUtil.CollectionExtensionsTests;
 

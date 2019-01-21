@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal
 {

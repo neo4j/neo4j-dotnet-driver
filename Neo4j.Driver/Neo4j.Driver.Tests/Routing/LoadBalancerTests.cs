@@ -21,7 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using static Neo4j.Driver.Tests.Routing.RoutingTableManagerTests;
 

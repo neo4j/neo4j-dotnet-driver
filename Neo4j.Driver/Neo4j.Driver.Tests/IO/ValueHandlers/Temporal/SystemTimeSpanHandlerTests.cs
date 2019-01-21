@@ -21,7 +21,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.ValueHandlers;
 using Neo4j.Driver.Tests.IO.MessageHandlers;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.IO.ValueHandlers

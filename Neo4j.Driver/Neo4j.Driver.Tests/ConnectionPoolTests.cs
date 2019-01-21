@@ -28,7 +28,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Tests.TestUtil;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 

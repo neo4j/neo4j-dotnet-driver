@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using static Neo4j.Driver.Internal.Messaging.V3.CommitMessage;

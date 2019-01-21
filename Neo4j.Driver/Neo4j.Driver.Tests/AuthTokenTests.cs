@@ -17,7 +17,7 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests

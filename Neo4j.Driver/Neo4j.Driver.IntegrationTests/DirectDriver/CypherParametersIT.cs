@@ -21,7 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.DirectDriver

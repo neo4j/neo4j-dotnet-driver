@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageHandlers.V3;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using static Neo4j.Driver.Tests.SessionTests;
 

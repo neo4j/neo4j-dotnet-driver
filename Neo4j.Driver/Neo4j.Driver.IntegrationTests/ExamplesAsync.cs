@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using FluentAssertions;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -936,7 +936,7 @@ namespace Neo4j.Driver.ExamplesAsync
     {
         public static T As<T>(this object value)
         {
-            return V1.ValueExtensions.As<T>(value);
+            return Neo4j.Driver.ValueExtensions.As<T>(value);
         }
     }
 }

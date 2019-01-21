@@ -18,8 +18,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Neo4j.Driver.V1.StatementType;
-using Neo4j.Driver.V1;
+using static Neo4j.Driver.StatementType;
+using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {

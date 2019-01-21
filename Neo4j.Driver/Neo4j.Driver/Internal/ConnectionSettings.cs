@@ -15,10 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.V1;
 using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
 
 namespace Neo4j.Driver.Internal

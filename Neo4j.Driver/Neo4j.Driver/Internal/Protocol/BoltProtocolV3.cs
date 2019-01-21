@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 
 namespace Neo4j.Driver.Internal.Protocol

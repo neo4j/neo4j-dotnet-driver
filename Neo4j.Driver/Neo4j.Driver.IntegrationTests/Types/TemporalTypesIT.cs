@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 

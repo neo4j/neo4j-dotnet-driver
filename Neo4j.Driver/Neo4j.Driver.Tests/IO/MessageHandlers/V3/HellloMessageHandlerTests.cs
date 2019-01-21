@@ -20,7 +20,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Neo4j.Driver.Internal.IO.MessageHandlers.V3;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Xunit;

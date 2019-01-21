@@ -17,7 +17,6 @@
 
 using System;
 using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal
 {

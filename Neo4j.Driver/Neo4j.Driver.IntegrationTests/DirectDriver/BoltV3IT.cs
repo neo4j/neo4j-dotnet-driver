@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests

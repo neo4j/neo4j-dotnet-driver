@@ -18,7 +18,7 @@
 using System;
 using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {

@@ -23,7 +23,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using static System.Security.Authentication.SslProtocols;
 
 namespace Neo4j.Driver.Internal.Connector

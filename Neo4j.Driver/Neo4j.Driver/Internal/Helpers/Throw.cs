@@ -68,13 +68,13 @@ namespace Neo4j.Driver.Internal
             public static void If(Func<bool> func, object first, object second, string firstParam, string secondParam)
             {
                 if(func())
-                    throw new V1.ProtocolException($"{firstParam} ({first}) does not equal to {secondParam} ({second})");
+                    throw new Neo4j.Driver.ProtocolException($"{firstParam} ({first}) does not equal to {secondParam} ({second})");
             }
 
             public static void IfFalse(bool value, string nameofValue)
             {
                 if(!value)
-                    throw new V1.ProtocolException($"Expecting {nameofValue} to be true, however the value is false");
+                    throw new Neo4j.Driver.ProtocolException($"Expecting {nameofValue} to be true, however the value is false");
             }
         }
 

@@ -16,7 +16,7 @@
 // limitations under the License.
 using System;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal
 {
@@ -39,10 +39,10 @@ namespace Neo4j.Driver.Internal
                 {
                     switch (strategy)
                     {
-                        case V1.TrustStrategy.TrustAllCertificates:
+                        case TrustStrategy.TrustAllCertificates:
                             trustManager = TrustManager.CreateInsecure(false);
                             break;
-                        case V1.TrustStrategy.TrustSystemCaSignedCertificates:
+                        case TrustStrategy.TrustSystemCaSignedCertificates:
                             trustManager = TrustManager.CreateChainTrust(true);
                             break;
                         default:

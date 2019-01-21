@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal;
 using System.Linq;
 using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal.Logging;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Org.BouncyCastle.Pkcs;
 
 namespace Neo4j.Driver.IntegrationTests.Internals

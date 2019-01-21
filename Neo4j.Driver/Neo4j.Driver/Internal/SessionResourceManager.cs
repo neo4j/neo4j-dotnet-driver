@@ -17,7 +17,7 @@
 using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal

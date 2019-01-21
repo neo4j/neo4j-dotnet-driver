@@ -17,7 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Metrics;
 

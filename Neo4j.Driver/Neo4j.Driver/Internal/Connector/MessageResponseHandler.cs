@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using static Neo4j.Driver.Internal.ErrorExtensions;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
 

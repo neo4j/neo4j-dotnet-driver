@@ -22,7 +22,7 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector.Trust;
-using Neo4j.Driver.V1;
+using Neo4j.Driver;
 using Xunit;
 using Xunit.Sdk;
 
