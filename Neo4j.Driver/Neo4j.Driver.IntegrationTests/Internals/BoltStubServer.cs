@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Reflection;
@@ -81,8 +82,10 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
         {
-            var retryAttempts = 20;
-            for (var i = 0; i < retryAttempts; i++)
+            var waitingTimeInSeconds = 15;
+            var waitingTime = TimeSpan.FromSeconds(waitingTimeInSeconds).TotalMilliseconds;
+            var stopwatch = Stopwatch.StartNew();
+            do
             {
                 ServerStatus currentStatus;
                 try
@@ -106,10 +109,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 {
                     return;
                 }
+
                 // otherwise wait and retry
                 Task.Delay(300).Wait();
-            }
-            throw new InvalidOperationException($"Waited for 6s for stub server to be in {status} status, but failed.");
+            } while (stopwatch.ElapsedMilliseconds <= waitingTime);
+            throw new InvalidOperationException($"Waited for {waitingTimeInSeconds}s for stub server to be in {status} status, but failed.");
         }
 
         private void Disconnect(TcpClient testTcpClient)

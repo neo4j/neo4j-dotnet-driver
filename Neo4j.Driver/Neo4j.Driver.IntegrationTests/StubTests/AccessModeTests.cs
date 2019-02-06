@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         private static readonly Config NoEncryption =
             Config.Builder.WithEncryptionLevel(EncryptionLevel.None).ToConfig();
 
-        [Fact]
+        [RequireBoltStubServerFactAttribute]
         public void RunOnReadModeSessionShouldGoToReader()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [Fact]
+        [RequireBoltStubServerFactAttribute]
         public void RunOnReadModeTransactionShouldGoToReader()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [Theory]
+        [RequireBoltStubServerTheoryAttribute]
         [InlineData(AccessMode.Read)]
         [InlineData(AccessMode.Write)]
         public void ReadTransactionOnSessionShouldGoToReader(AccessMode mode)
@@ -105,7 +105,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [Fact]
+        [RequireBoltStubServerFactAttribute]
         public void RunOnWriteModeSessionShouldGoToWriter()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
@@ -127,7 +127,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [Fact]
+        [RequireBoltStubServerFactAttribute]
         public void RunOnWriteModeTransactionShouldGoToReader()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
@@ -154,7 +154,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [Theory]
+        [RequireBoltStubServerTheoryAttribute]
         [InlineData(AccessMode.Read)]
         [InlineData(AccessMode.Write)]
         public void WriteTransactionOnSessionShouldGoToReader(AccessMode mode)

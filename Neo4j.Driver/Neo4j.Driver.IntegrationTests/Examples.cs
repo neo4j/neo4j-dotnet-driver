@@ -307,7 +307,7 @@ namespace Neo4j.Driver.Examples
             }
             // end::config-custom-resolver[]
 
-            [Fact]
+            [RequireBoltStubServerFactAttribute]
             public void TestCustomResolverExample()
             {
                 using (var server1 = BoltStubServer.Start("get_routing_table_only", 9001))

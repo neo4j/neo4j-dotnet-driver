@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
@@ -47,6 +48,36 @@ namespace Neo4j.Driver.IntegrationTests
                     records.Count.Should().Be(2);
                     records[0]["name"].ValueAs<string>().Should().Be("Alice");
                     records[1]["name"].ValueAs<string>().Should().Be("Bob");
+                }
+            }
+        }
+
+        [RequireBoltStubServerFact]
+        public void ShouldLogServerAddress()
+        {
+            var logs = new List<string>();
+            var config = new Config
+            {
+                EncryptionLevel = EncryptionLevel.None,
+                DriverLogger = new TestDriverLogger(logs.Add, ExtendedLogLevel.Debug)
+            };
+            using (BoltStubServer.Start("accessmode_reader_implicit", 9001))
+            {
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
+                {
+                    using (var session = driver.Session(AccessMode.Read))
+                    {
+                        var list = session.Run("RETURN $x", new {x = 1}).Select(r => Convert.ToInt32(r[0])).ToList();
+                        list.Should().HaveCount(1).And.Contain(1);
+                    }
+                }
+            }
+
+            foreach (var log in logs)
+            {
+                if (log.StartsWith("[Debug]:[conn-"))
+                {
+                    log.Should().Contain("localhost:9001");
                 }
             }
         }
