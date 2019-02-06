@@ -126,7 +126,7 @@ namespace Neo4j.Driver.Internal.Routing
             _poolManager.UpdateConnectionPool(added, removed);
             _routingTable = newTable;
 
-            _logger?.Info("Updated routingTable to be {0}", _routingTable);
+            _logger?.Info("Updated routing table to be {0}", _routingTable);
         }
 
         internal async Task UpdateAsync(IRoutingTable newTable)
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Internal.Routing
             await _poolManager.UpdateConnectionPoolAsync(added, removed).ConfigureAwait(false);
             _routingTable = newTable;
 
-            _logger?.Info("Updated routingTable to be {0}", _routingTable);
+            _logger?.Info("Updated routing table to be {0}", _routingTable);
         }
 
         private bool IsRoutingTableStale(IRoutingTable routingTable, AccessMode mode = AccessMode.Read)
@@ -175,6 +175,7 @@ namespace Neo4j.Driver.Internal.Routing
         internal IRoutingTable UpdateRoutingTableWithInitialUriFallback(
             Func<ISet<Uri>, IRoutingTable> updateRoutingTableFunc = null)
         {
+            _logger?.Debug("Updating routing table.");
             updateRoutingTableFunc = updateRoutingTableFunc ?? (u => UpdateRoutingTable(u));
 
             var hasPrependedInitialRouters = false;
@@ -216,6 +217,7 @@ namespace Neo4j.Driver.Internal.Routing
         internal async Task<IRoutingTable> UpdateRoutingTableWithInitialUriFallbackAsync(
             Func<ISet<Uri>, Task<IRoutingTable>> updateRoutingTableFunc = null)
         {
+            _logger?.Debug("Updating routing table.");
             updateRoutingTableFunc = updateRoutingTableFunc ?? (u => UpdateRoutingTableAsync(u));
 
             var hasPrependedInitialRouters = false;

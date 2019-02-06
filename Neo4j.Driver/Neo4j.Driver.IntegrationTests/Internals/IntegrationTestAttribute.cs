@@ -32,6 +32,17 @@ namespace Neo4j.Driver.IntegrationTests
         }
     }
 
+    public class RequireBoltStubServerTheoryAttribute : TheoryAttribute
+    {
+        public RequireBoltStubServerTheoryAttribute()
+        {
+            if (!IsBoltkitAvailable())
+            {
+                Skip = TestRequireBoltkit;
+            }
+        }
+    }
+
     /// <summary>
     /// Use `RequireServerVersionGreaterThanOrEqualToFact` tag for the tests that require a server with version equals to or greater than given version
     /// </summary>
