@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -62,7 +63,9 @@ namespace Neo4j.Driver.Internal
         private readonly IConnectionValidator _connectionValidator;
         private readonly IPooledConnectionFactory _connectionFactory;
 
-        private readonly BlockingCollection<IPooledConnection> _idleConnections = new BlockingCollection<IPooledConnection>();
+        private readonly BlockingCollection<IPooledConnection> _idleConnections =
+            new BlockingCollection<IPooledConnection>();
+
         private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
 
         private readonly IConnectionPoolListener _poolMetricsListener;
@@ -113,7 +116,8 @@ namespace Neo4j.Driver.Internal
             ConnectionPoolSettings poolSettings = null,
             IConnectionValidator validator = null,
             IDriverLogger logger = null)
-            : this(new Uri("bolt://localhost:7687"), connectionFactory, poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
+            : this(new Uri("bolt://localhost:7687"), connectionFactory,
+                poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
@@ -181,6 +185,7 @@ namespace Neo4j.Driver.Internal
 
                 return _connectionFactory.Create(_uri, this, _connectionMetricsListener);
             }
+
             return null;
         }
 
@@ -244,13 +249,18 @@ namespace Neo4j.Driver.Internal
             Interlocked.Decrement(ref _poolSize);
         }
 
-        public IConnection Acquire(AccessMode mode)
+        public IConnection Acquire(AccessMode mode = AccessMode.Write)
         {
             var acquireEvent = new SimpleTimerEvent();
             _poolMetricsListener?.PoolAcquiring(acquireEvent);
             try
             {
-                var conn = Acquire();
+                IConnection conn = null;
+                using (var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout))
+                {
+                    conn = Acquire(mode, timeOutTokenSource.Token);
+                }
+
                 _poolMetricsListener?.PoolAcquired(acquireEvent);
                 return conn;
             }
@@ -261,15 +271,7 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public IPooledConnection Acquire()
-        {
-            using (var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout))
-            {
-                return Acquire(timeOutTokenSource.Token);
-            }
-        }
-
-        private IPooledConnection Acquire(CancellationToken cancellationToken)
+        private IPooledConnection Acquire(AccessMode mode, CancellationToken cancellationToken)
         {
             return TryExecute(_logger, () =>
             {
@@ -341,11 +343,16 @@ namespace Neo4j.Driver.Internal
                     ThrowConnectionAcquisitionTimedOutException(ex);
                 }
 
+                if (connection != null)
+                {
+                    connection.Mode = mode;
+                }
+
                 return connection;
             }, "Failed to acquire a connection from connection pool.");
         }
 
-        private void ThrowConnectionAcquisitionTimedOutException(OperationCanceledException ex=null)
+        private void ThrowConnectionAcquisitionTimedOutException(OperationCanceledException ex = null)
         {
             _poolMetricsListener?.PoolTimedOutToAcquire();
             throw new ClientException(
@@ -357,7 +364,7 @@ namespace Neo4j.Driver.Internal
             var acquireEvent = new SimpleTimerEvent();
             _poolMetricsListener?.PoolAcquiring(acquireEvent);
             var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
-            var task = AcquireAsync(timeOutTokenSource.Token).ContinueWith(t =>
+            var task = AcquireAsync(mode, timeOutTokenSource.Token).ContinueWith(t =>
             {
                 timeOutTokenSource.Dispose();
                 if (t.Status == TaskStatus.RanToCompletion)
@@ -368,12 +375,13 @@ namespace Neo4j.Driver.Internal
                 {
                     _poolMetricsListener?.PoolFailedToAcquire();
                 }
+
                 return t;
             }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
             return task;
         }
 
-        private Task<IConnection> AcquireAsync(CancellationToken cancellationToken)
+        private Task<IConnection> AcquireAsync(AccessMode mode, CancellationToken cancellationToken)
         {
             return TryExecuteAsync(_logger, async () =>
             {
@@ -437,12 +445,18 @@ namespace Neo4j.Driver.Internal
                         {
                             await DestroyConnectionAsync(connection).ConfigureAwait(false);
                         }
+
                         ThrowObjectDisposedException();
                     }
                 }
                 catch (OperationCanceledException ex)
                 {
                     ThrowConnectionAcquisitionTimedOutException(ex);
+                }
+
+                if (connection != null)
+                {
+                    connection.Mode = mode;
                 }
 
                 return (IConnection) connection;
@@ -483,6 +497,8 @@ namespace Neo4j.Driver.Internal
                     return;
                 }
 
+                connection.Mode = null;
+
                 // Add back to the idle pool
                 _idleConnections.Add(connection);
                 // Just dequeue any one connection and close it will ensure that all connections in the pool will finally be closed
@@ -502,6 +518,7 @@ namespace Neo4j.Driver.Internal
                     // pool already disposed
                     return;
                 }
+
                 // Remove from idle
                 if (!_inUseConnections.TryRemove(connection))
                 {
@@ -516,6 +533,8 @@ namespace Neo4j.Driver.Internal
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
                     return;
                 }
+
+                connection.Mode = null;
 
                 // Add back to idle pool
                 _idleConnections.Add(connection);
@@ -603,6 +622,7 @@ namespace Neo4j.Driver.Internal
             {
                 return Task.WhenAll(TerminateIdleConnectionsAsync());
             }
+
             return TaskHelper.GetCompletedTask();
         }
 
@@ -628,6 +648,7 @@ namespace Neo4j.Driver.Internal
                 _logger?.Debug($"Disposing Available Connection {connection}");
                 allCloseTasks.Add(DestroyConnectionAsync(connection));
             }
+
             return allCloseTasks;
         }
 
@@ -651,7 +672,7 @@ namespace Neo4j.Driver.Internal
             // a.k.a. do nothing but return the original value
             return Interlocked.CompareExchange(ref value, Active, Active);
         }
-        
+
         public override string ToString()
         {
             return $"{nameof(_id)}: {{{_id}}}, {nameof(_idleConnections)}: {{{_idleConnections.ToContentString()}}}, " +

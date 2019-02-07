@@ -43,9 +43,11 @@ namespace Neo4j.Driver.Internal.Routing
         {
             _logger = logger;
 
-            _clusterConnectionPool = new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
+            _clusterConnectionPool =
+                new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
-            _loadBalancingStrategy = CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, _logger);
+            _loadBalancingStrategy =
+                CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, _logger);
         }
 
         // for test only
@@ -58,7 +60,8 @@ namespace Neo4j.Driver.Internal.Routing
 
             _clusterConnectionPool = clusterConnPool;
             _routingTableManager = routingTableManager;
-            _loadBalancingStrategy = CreateLoadBalancingStrategy(config.LoadBalancingStrategy, clusterConnPool, _logger);
+            _loadBalancingStrategy =
+                CreateLoadBalancingStrategy(config.LoadBalancingStrategy, clusterConnPool, _logger);
         }
 
         private bool IsClosed => _closedMarker > 0;
@@ -76,6 +79,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 ThrowObjectDisposedException();
             }
+
             return conn;
         }
 
@@ -92,6 +96,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 ThrowObjectDisposedException();
             }
+
             return conn;
         }
 
@@ -142,7 +147,8 @@ namespace Neo4j.Driver.Internal.Routing
         public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
         {
             return CreateClusterConnectionAsync(uri, AccessMode.Write);
-;       }
+            ;
+        }
 
         public void Close()
         {
@@ -205,13 +211,16 @@ namespace Neo4j.Driver.Internal.Routing
                     // no server known to routingTable
                     break;
                 }
+
                 IConnection conn = CreateClusterConnection(uri, mode);
                 if (conn != null)
                 {
                     return conn;
                 }
+
                 //else  connection already removed by clusterConnection onError method
             }
+
             throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
         }
 
@@ -239,13 +248,16 @@ namespace Neo4j.Driver.Internal.Routing
                     // no server known to routingTable
                     break;
                 }
+
                 IConnection conn = await CreateClusterConnectionAsync(uri, mode).ConfigureAwait(false);
                 if (conn != null)
                 {
                     return conn;
                 }
+
                 //else  connection already removed by clusterConnection onError method
             }
+
             throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
         }
 
@@ -253,11 +265,12 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                IConnection conn = _clusterConnectionPool.Acquire(uri);
+                IConnection conn = _clusterConnectionPool.Acquire(uri, mode);
                 if (conn != null)
                 {
-                    return new ClusterConnection(conn, uri, mode, this);
+                    return new ClusterConnection(conn, uri, this);
                 }
+
                 OnConnectionError(uri, new ArgumentException(
                     $"Routing table {_routingTableManager.RoutingTable} contains a server '{uri}' " +
                     $"that is not known to cluster connection pool {_clusterConnectionPool}."));
@@ -266,6 +279,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 OnConnectionError(uri, e);
             }
+
             return null;
         }
 
@@ -273,11 +287,12 @@ namespace Neo4j.Driver.Internal.Routing
         {
             try
             {
-                IConnection conn = await _clusterConnectionPool.AcquireAsync(uri).ConfigureAwait(false);
+                IConnection conn = await _clusterConnectionPool.AcquireAsync(uri, mode).ConfigureAwait(false);
                 if (conn != null)
                 {
-                    return new ClusterConnection(conn, uri, mode, this);
+                    return new ClusterConnection(conn, uri, this);
                 }
+
                 await OnConnectionErrorAsync(uri, new ArgumentException(
                     $"Routing table {_routingTableManager.RoutingTable} contains a server {uri} " +
                     $"that is not known to cluster connection pool {_clusterConnectionPool}.")).ConfigureAwait(false);
@@ -286,6 +301,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 await OnConnectionErrorAsync(uri, e).ConfigureAwait(false);
             }
+
             return null;
         }
 
@@ -300,7 +316,8 @@ namespace Neo4j.Driver.Internal.Routing
                    $"{nameof(_clusterConnectionPool)}: {{{_clusterConnectionPool}}}";
         }
 
-        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(LoadBalancingStrategy strategy, IClusterConnectionPool pool,
+        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(LoadBalancingStrategy strategy,
+            IClusterConnectionPool pool,
             IDriverLogger logger)
         {
             if (strategy == LoadBalancingStrategy.LeastConnected)

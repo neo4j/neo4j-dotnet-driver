@@ -14,27 +14,37 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IClusterConnectionPool : IDisposable
     {
         // Try to acquire a connection with the server specified by the uri
-        IConnection Acquire(Uri uri);
-        Task<IConnection> AcquireAsync(Uri uri);
+        IConnection Acquire(Uri uri, AccessMode mode);
+
+        Task<IConnection> AcquireAsync(Uri uri, AccessMode mode);
+
         // Add a set of uri to this pool
         void Add(IEnumerable<Uri> uris);
+
         Task AddAsync(IEnumerable<Uri> uris);
+
         // Update the pool keys with the new server uris
         void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed);
+
         Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
+
         // Deactivate all the connection pool with the server specified by the uri
         void Deactivate(Uri uri);
+
         Task DeactivateAsync(Uri uri);
+
         // Get number of in-use connections for the uri
         int NumberOfInUseConnections(Uri uri);
 

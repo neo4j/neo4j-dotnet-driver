@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOne, resultResourceHandler);
-            connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, PullAll);
+            connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), resultBuilder, PullAll);
             connection.Send();
             return resultBuilder.PreBuild();
         }
@@ -77,14 +77,14 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, PullAll);
+            connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
             return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
         }
 
         public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            connection.Enqueue(new BeginMessage(bookmark, txConfig), null);
+            connection.Enqueue(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), null);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 connection.Sync();
@@ -93,7 +93,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            connection.Enqueue(new BeginMessage(bookmark, txConfig), null);
+            connection.Enqueue(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), null);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOne);
-            connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, PullAll);
+            connection.Enqueue(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), resultBuilder, PullAll);
             connection.Send();
             return resultBuilder.PreBuild();
         }
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, PullAll);
+            connection.Enqueue(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
 
             return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
