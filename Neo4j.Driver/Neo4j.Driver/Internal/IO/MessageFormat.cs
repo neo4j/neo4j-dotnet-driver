@@ -23,28 +23,21 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal abstract class MessageFormat: IMessageFormat
     {
-        private readonly bool _supportBytes;
         private readonly IDictionary<byte, IPackStreamStructHandler> _readerStructHandlers = new Dictionary<byte, IPackStreamStructHandler>();
         private readonly IDictionary<Type, IPackStreamStructHandler> _writerStructHandlers = new Dictionary<Type, IPackStreamStructHandler>();
 
-        protected MessageFormat(bool supportBytes)
+        protected MessageFormat()
         {
-            _supportBytes = supportBytes;
         }
 
         public IPackStreamReader CreateReader(Stream stream)
         {
-            return _supportBytes ? new PackStreamReader(stream, _readerStructHandlers) : new PackStreamReaderBytesIncompatible(stream, _readerStructHandlers);
+            return new PackStreamReader(stream, _readerStructHandlers);
         }
 
         public IPackStreamWriter CreateWriter(Stream stream)
         {
-            if (_supportBytes)
-            {
                 return new PackStreamWriter(stream, _writerStructHandlers);
-            }
-
-            return new PackStreamWriterBytesIncompatible(stream, _writerStructHandlers);
         }
 
         protected void AddHandler<T>()

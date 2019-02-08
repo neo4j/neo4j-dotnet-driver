@@ -23,7 +23,6 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV2MessageFormat : BoltProtocolV1MessageFormat
     {
         internal BoltProtocolV2MessageFormat()
-            : base(true)
         {
             // Add V2 Spatial Types
             AddHandler<PointHandler>();

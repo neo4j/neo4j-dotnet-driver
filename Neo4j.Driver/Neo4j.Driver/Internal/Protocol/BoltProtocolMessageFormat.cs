@@ -21,9 +21,7 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal static class BoltProtocolMessageFormat
     {
-        public static readonly IMessageFormat V1 = new BoltProtocolV1MessageFormat(true);
-
-        public static readonly IMessageFormat V1NoByteArray = new BoltProtocolV1MessageFormat(false);
+        public static readonly IMessageFormat V1 = new BoltProtocolV1MessageFormat();
 
         public static readonly IMessageFormat V2 = new BoltProtocolV2MessageFormat();
         

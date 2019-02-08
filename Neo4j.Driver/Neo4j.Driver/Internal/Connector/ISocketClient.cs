@@ -36,6 +36,5 @@ namespace Neo4j.Driver.Internal.Connector
         bool IsOpen { get; }
         void Stop();
         Task StopAsync();
-        void ResetMessageReaderAndWriterForServerV3_1(IBoltProtocol boltProtocol);
     }
 }

@@ -29,16 +29,15 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV3 : IBoltProtocol
     {
         public static readonly BoltProtocolV3 BoltV3 = new BoltProtocolV3();
-        
+
         public IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-            IDriverLogger logger = null, bool ignored = true)
+            IDriverLogger logger = null)
         {
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
                 bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V3);
         }
 
-        public IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null,
-            bool ignored = true)
+        public IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null)
         {
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
@@ -49,7 +48,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var collector = new HelloMessageResponseCollector();
             connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
             connection.Sync();
-            ((ServerInfo)connection.Server).Version = collector.Server;
+            ((ServerInfo) connection.Server).Version = collector.Server;
             connection.UpdateId(collector.ConnectionId);
         }
 
@@ -58,7 +57,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var collector = new HelloMessageResponseCollector();
             connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
             await connection.SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)connection.Server).Version = collector.Server;
+            ((ServerInfo) connection.Server).Version = collector.Server;
             connection.UpdateId(collector.ConnectionId);
         }
 
@@ -72,7 +71,8 @@ namespace Neo4j.Driver.Internal.Protocol
             return resultBuilder.PreBuild();
         }
 
-        public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
+        public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+            Statement statement,
             IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
         {
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
@@ -109,7 +109,8 @@ namespace Neo4j.Driver.Internal.Protocol
             return resultBuilder.PreBuild();
         }
 
-        public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement)
+        public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
+            Statement statement)
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);

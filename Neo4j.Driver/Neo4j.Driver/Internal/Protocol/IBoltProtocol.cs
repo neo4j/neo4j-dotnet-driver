@@ -25,8 +25,8 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal interface IBoltProtocol
     {
-        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null, bool byteArraySupportEnabled = true);
-        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, IDriverLogger logger = null, bool byteArraySupportEnabled = true);
+        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null);
+        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, IDriverLogger logger = null);
 
         void Login(IConnection connection, string userAgent, IAuthToken authToken);
         Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);

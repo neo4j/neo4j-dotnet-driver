@@ -33,31 +33,23 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV1 : IBoltProtocol
     {
         public static readonly BoltProtocolV1 BoltV1 = new BoltProtocolV1();
-        
+
         private const string Begin = "BEGIN";
         public static readonly IRequestMessage Commit = new RunMessage("COMMIT");
         public static readonly IRequestMessage Rollback = new RunMessage("ROLLBACK");
 
-        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, IDriverLogger logger=null, bool byteArraySupportEnabled = true)
+        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
+            IDriverLogger logger = null)
         {
-            var messageFormat = BoltProtocolMessageFormat.V1;
-            if (!byteArraySupportEnabled)
-            {
-                messageFormat = BoltProtocolMessageFormat.V1NoByteArray;
-            }
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
-                bufferSettings.MaxWriteBufferSize, logger, messageFormat);
+                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V1);
         }
 
-        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null, bool byteArraySupportEnabled=true)
+        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
+            IDriverLogger logger = null)
         {
-            var messageFormat = BoltProtocolMessageFormat.V1;
-            if (!byteArraySupportEnabled)
-            {
-                messageFormat = BoltProtocolMessageFormat.V1NoByteArray;
-            }
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
-                bufferSettings.MaxReadBufferSize, logger, messageFormat);
+                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V1);
         }
 
         public void Login(IConnection connection, string userAgent, IAuthToken authToken)
@@ -65,12 +57,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var serverVersionCollector = new ServerVersionCollector();
             connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
             connection.Sync();
-            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
-
-            if (!(ServerVersion.Version(serverVersionCollector.Server) >= ServerVersion.V3_2_0))
-            {
-                connection.ResetMessageReaderAndWriterForServerV3_1();
-            }
+            ((ServerInfo) connection.Server).Version = serverVersionCollector.Server;
         }
 
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
@@ -78,7 +65,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var serverVersionCollector = new ServerVersionCollector();
             connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
             await connection.SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
+            ((ServerInfo) connection.Server).Version = serverVersionCollector.Server;
         }
 
         public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
@@ -93,7 +80,8 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement, IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
+            Statement statement, IResultResourceHandler resultResourceHandler, Bookmark ignored,
+            TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
@@ -128,7 +116,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement)
         {
             var resultBuilder = new ResultBuilder(
-                NewSummaryCollector(statement, connection.Server),connection.ReceiveOne);
+                NewSummaryCollector(statement, connection.Server), connection.ReceiveOne);
             connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
             connection.Send();
             return resultBuilder.PreBuild();
@@ -189,15 +177,14 @@ namespace Neo4j.Driver.Internal.Protocol
 
         private void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig)
         {
-            if ( txConfig != null && !txConfig.IsEmpty() )
+            if (txConfig != null && !txConfig.IsEmpty())
             {
                 throw new ArgumentException(
                     "Driver is connected to the database that does not support transaction configuration. " +
                     "Please upgrade to neo4j 3.5.0 or later in order to use this functionality");
             }
-
         }
-        
+
         private static SummaryCollector NewSummaryCollector(Statement statement, IServerInfo serverInfo)
         {
             return new SummaryCollector(statement, serverInfo);

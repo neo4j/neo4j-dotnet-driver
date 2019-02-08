@@ -82,11 +82,6 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         IBoltProtocol BoltProtocol { get; }
 
-        /// <summary>
-        /// Downgrade message reader and writer to not be able to read and write byte array
-        /// </summary>
-        void ResetMessageReaderAndWriterForServerV3_1();
-
         void UpdateId(string newConnId);
     }
 }

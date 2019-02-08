@@ -192,11 +192,6 @@ namespace Neo4j.Driver.Internal.Connector
             set => _boltProtocol = value;
         }
 
-        public void ResetMessageReaderAndWriterForServerV3_1()
-        {
-            _client.ResetMessageReaderAndWriterForServerV3_1(_boltProtocol);
-        }
-
         public void UpdateId(string newConnId)
         {
             _logger.Debug("Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.", _id, newConnId);

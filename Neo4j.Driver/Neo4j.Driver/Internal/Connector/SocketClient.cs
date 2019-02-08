@@ -250,12 +250,6 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskHelper.GetCompletedTask();
         }
 
-        public void ResetMessageReaderAndWriterForServerV3_1(IBoltProtocol boltProtocol)
-        {
-            Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger, false);
-            Writer = boltProtocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger, false);
-        }
-
         public void Dispose()
         {
             Dispose(true);
