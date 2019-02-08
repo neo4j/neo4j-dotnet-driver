@@ -15,18 +15,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.IO;
-
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Internal.Messaging.V4
 {
-    internal static class BoltProtocolMessageFormat
+    internal class PullNMessage : ResultHandleMessage
     {
-        public static readonly IMessageFormat V1 = new BoltProtocolV1MessageFormat();
+        public PullNMessage(long n)
+            : this(NoStatementId, n)
+        {
+        }
 
-        public static readonly IMessageFormat V2 = new BoltProtocolV2MessageFormat();
-        
-        public static readonly IMessageFormat V3 = new BoltProtocolV3MessageFormat();
+        public PullNMessage(long id, long n)
+            : base(id, n)
+        {
+        }
 
-        public static readonly IMessageFormat V4 = new BoltProtocolV4MessageFormat();
+        protected override string Name => "PULL_N";
     }
 }

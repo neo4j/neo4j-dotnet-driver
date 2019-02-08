@@ -14,9 +14,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Messaging.V4;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
@@ -50,7 +52,11 @@ namespace Neo4j.Driver.Tests
                         {"key2", new[] {2, 4}}
                     }),
                     "RUN `A statement` [{key1, 1}, {key2, [2, 4]}]"
-                }
+                },
+                new object[] {new PullNMessage(1, 2), "PULL_N [{n, 2}, {stmt_id, 1}]"},
+                new object[] {new PullNMessage(2), "PULL_N [{n, 2}]"},
+                new object[] {new DiscardNMessage(1, 2), "DISCARD_N [{n, 2}, {stmt_id, 1}]"},
+                new object[] {new DiscardNMessage(2), "DISCARD_N [{n, 2}]"},
             };
 
             [Theory, MemberData(nameof(MessageData))]

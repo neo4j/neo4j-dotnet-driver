@@ -18,13 +18,17 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal abstract class MessageFormat: IMessageFormat
+    internal abstract class MessageFormat : IMessageFormat
     {
-        private readonly IDictionary<byte, IPackStreamStructHandler> _readerStructHandlers = new Dictionary<byte, IPackStreamStructHandler>();
-        private readonly IDictionary<Type, IPackStreamStructHandler> _writerStructHandlers = new Dictionary<Type, IPackStreamStructHandler>();
+        private readonly IDictionary<byte, IPackStreamStructHandler> _readerStructHandlers =
+            new Dictionary<byte, IPackStreamStructHandler>();
+
+        private readonly IDictionary<Type, IPackStreamStructHandler> _writerStructHandlers =
+            new Dictionary<Type, IPackStreamStructHandler>();
 
         protected MessageFormat()
         {
@@ -37,11 +41,11 @@ namespace Neo4j.Driver.Internal.IO
 
         public IPackStreamWriter CreateWriter(Stream stream)
         {
-                return new PackStreamWriter(stream, _writerStructHandlers);
+            return new PackStreamWriter(stream, _writerStructHandlers);
         }
 
         protected void AddHandler<T>()
-            where T : IPackStreamStructHandler, new() 
+            where T : IPackStreamStructHandler, new()
         {
             var handler = new T();
 
@@ -54,6 +58,14 @@ namespace Neo4j.Driver.Internal.IO
             {
                 _writerStructHandlers.Add(writableType, handler);
             }
+        }
+
+        protected void RemoveHandler<T>()
+        {
+            _readerStructHandlers.Where(kvp => kvp.Value is T).Select(kvp => kvp.Key).ToList()
+                .ForEach(b => _readerStructHandlers.Remove(b));
+            _writerStructHandlers.Where(kvp => kvp.Value is T).Select(kvp => kvp.Key).ToList()
+                .ForEach(t => _writerStructHandlers.Remove(t));
         }
     }
 }

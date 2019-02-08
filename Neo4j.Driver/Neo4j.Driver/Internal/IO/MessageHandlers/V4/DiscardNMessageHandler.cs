@@ -15,18 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.IO;
+using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Messaging.V4;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV4MessageFormat;
 
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Internal.IO.MessageHandlers
 {
-    internal static class BoltProtocolMessageFormat
+    internal class DiscardNMessageHandler : WriteOnlyStructHandler
     {
-        public static readonly IMessageFormat V1 = new BoltProtocolV1MessageFormat();
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(DiscardNMessage)};
 
-        public static readonly IMessageFormat V2 = new BoltProtocolV2MessageFormat();
-        
-        public static readonly IMessageFormat V3 = new BoltProtocolV3MessageFormat();
+        public override void Write(IPackStreamWriter writer, object value)
+        {
+            var discardN = value.CastOrThrow<DiscardNMessage>();
 
-        public static readonly IMessageFormat V4 = new BoltProtocolV4MessageFormat();
+            writer.WriteStructHeader(1, MsgDiscardN);
+            writer.Write(discardN.Metadata);
+        }
     }
 }
