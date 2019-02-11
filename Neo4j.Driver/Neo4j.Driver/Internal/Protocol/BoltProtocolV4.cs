@@ -45,32 +45,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
-        public void Login(IConnection connection, string userAgent, IAuthToken authToken)
-        {
-            var collector = new HelloMessageResponseCollector();
-            connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
-            connection.Sync();
-            ((ServerInfo) connection.Server).Version = collector.Server;
-            connection.UpdateId(collector.ConnectionId);
-        }
-
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var collector = new HelloMessageResponseCollector();
-            connection.Enqueue(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
+            await connection.EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
             await connection.SyncAsync().ConfigureAwait(false);
             ((ServerInfo) connection.Server).Version = collector.Server;
             connection.UpdateId(collector.ConnectionId);
-        }
-
-        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
-            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
-        {
-            var resultBuilder = new ResultBuilder(NewSummaryCollector(statement, connection.Server),
-                connection.ReceiveOne, resultResourceHandler);
-            connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, new PullNMessage(All));
-            connection.Send();
-            return resultBuilder.PreBuild();
         }
 
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
@@ -79,36 +60,18 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            connection.Enqueue(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, new PullNMessage(All));
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, new PullNMessage(All));
             await connection.SendAsync().ConfigureAwait(false);
-            return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
-        }
-
-        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
-        {
-            connection.Enqueue(new BeginMessage(bookmark, txConfig), null);
-            if (bookmark != null && !bookmark.IsEmpty())
-            {
-                connection.Sync();
-            }
+            return resultBuilder.PreBuild();
         }
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            connection.Enqueue(new BeginMessage(bookmark, txConfig), null);
+            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig), null);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
-        }
-
-        public IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement)
-        {
-            var resultBuilder = new ResultBuilder(
-                NewSummaryCollector(statement, connection.Server), connection.ReceiveOne);
-            connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All));
-            connection.Send();
-            return resultBuilder.PreBuild();
         }
 
         public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
@@ -116,55 +79,35 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            connection.Enqueue(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All));
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All));
             await connection.SendAsync().ConfigureAwait(false);
 
-            return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
-        }
-
-        public Bookmark CommitTransaction(IConnection connection)
-        {
-            var bookmarkCollector = new BookmarkCollector();
-            connection.Enqueue(CommitMessage.Commit, bookmarkCollector);
-            connection.Sync();
-            return bookmarkCollector.Bookmark;
+            return resultBuilder.PreBuild();
         }
 
         public async Task<Bookmark> CommitTransactionAsync(IConnection connection)
         {
             var bookmarkCollector = new BookmarkCollector();
-            connection.Enqueue(CommitMessage.Commit, bookmarkCollector);
+            await connection.EnqueueAsync(CommitMessage.Commit, bookmarkCollector);
             await connection.SyncAsync().ConfigureAwait(false);
             return bookmarkCollector.Bookmark;
         }
 
-        public void RollbackTransaction(IConnection connection)
+        public async Task RollbackTransactionAsync(IConnection connection)
         {
-            connection.Enqueue(RollbackMessage.Rollback, null);
-            connection.Sync();
+            await connection.EnqueueAsync(RollbackMessage.Rollback, null);
+            await connection.SyncAsync();
         }
 
-        public Task RollbackTransactionAsync(IConnection connection)
+        public Task ResetAsync(IConnection connection)
         {
-            connection.Enqueue(RollbackMessage.Rollback, null);
-            return connection.SyncAsync();
+            return connection.EnqueueAsync(ResetMessage.Reset, null);
         }
 
-        public void Reset(IConnection connection)
+        public async Task LogoutAsync(IConnection connection)
         {
-            connection.Enqueue(ResetMessage.Reset, null);
-        }
-
-        public void Logout(IConnection connection)
-        {
-            connection.Enqueue(GoodbyeMessage.Goodbye, null);
-            connection.Send();
-        }
-
-        public Task LogoutAsync(IConnection connection)
-        {
-            connection.Enqueue(GoodbyeMessage.Goodbye, null);
-            return connection.SendAsync();
+            await connection.EnqueueAsync(GoodbyeMessage.Goodbye, null);
+            await connection.SendAsync();
         }
 
         private SummaryCollector NewSummaryCollector(Statement statement, IServerInfo serverInfo)

@@ -20,9 +20,8 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
-    internal interface IConnectionReleaseManager : IDisposable
+    internal interface IConnectionReleaseManager
     {
-        void Release(IPooledConnection connection);
         Task ReleaseAsync(IPooledConnection connection);
     }
 }

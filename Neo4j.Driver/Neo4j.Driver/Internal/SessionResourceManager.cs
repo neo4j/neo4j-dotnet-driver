@@ -31,16 +31,7 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            TryExecute(_logger, () =>
-            {
-                if (_isOpen)
-                {
-                    // This will protect the session being disposed twice
-                    _isOpen = false;
-                    DisposeTransaction();
-                    DisposeSessionResult();
-                }
-            }, "Failed to dispose the session.");
+            _syncExecutor.RunSync(CloseAsync);
         }
 
         public Task CloseAsync()
@@ -58,15 +49,8 @@ namespace Neo4j.Driver.Internal
         }
 
         /// <summary>
-        ///  This method will be called back by <see cref="ResultBuilder"/> after it consumed result
+        ///  This method will be called back by <see cref="ResultCursorBuilder"/> after it consumed result
         /// </summary>
-        public void OnResultConsumed(Bookmark bookmark)
-        {
-            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-            UpdateBookmark(bookmark);
-            DisposeConnection();
-        }
-
         public Task OnResultConsumedAsync(Bookmark bookmark)
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
@@ -77,17 +61,6 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         /// Called back in <see cref="Transaction.Dispose"/>
         /// </summary>
-        public void OnTransactionDispose(Bookmark bookmark)
-        {
-            Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
-            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-
-            UpdateBookmark(bookmark);
-            _transaction = null;
-
-            DisposeConnection();
-        }
-
         public Task OnTransactionDisposeAsync(Bookmark bookmark)
         {
             Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
@@ -116,22 +89,6 @@ namespace Neo4j.Driver.Internal
         /// If transaction result is not commited, then rollback the transaction.
         /// </summary>
         /// <exception cref="ClientException">If error when rollback the transaction</exception>
-        private void DisposeTransaction()
-        {
-            // When there is a open transaction, this method will aslo try to close the tx
-            if (_transaction != null)
-            {
-                try
-                {
-                    _transaction.Dispose();
-                }
-                catch (Exception e)
-                {
-                    throw new ClientException($"Error when disposing unclosed transaction in session: {e.Message}", e);
-                }
-            }
-        }
-
         private async Task DisposeTransactionAsync()
         {
             // When there is a open transaction, this method will aslo try to close the tx
@@ -153,38 +110,6 @@ namespace Neo4j.Driver.Internal
         /// If session.run result is not fully consumed, then pull full result into memory.
         /// </summary>
         /// <exception cref="ClientException">If error when pulling result into memory</exception>
-        private void DisposeSessionResult()
-        {
-            if (_connection == null)
-            {
-                // there is no session result resources to dispose
-                return;
-            }
-
-            if (_connection.IsOpen)
-            {
-                try
-                {
-                    // this will force buffering of all unconsumed result
-                    _connection.Sync();
-                }
-                catch (Exception e)
-                {
-                    throw new ClientException(
-                        $"Error when pulling unconsumed session.run records into memory in session: {e.Message}", e);
-                }
-                finally
-                {
-                    // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
-                    DisposeConnection();
-                }
-            }
-            else
-            {
-                DisposeConnection();
-            }
-        }
-
         private async Task DisposeSessionResultAsync()
         {
             if (_connection == null)
@@ -217,13 +142,6 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private void DisposeConnection()
-        {
-            // always try to close connection used by the result too
-            _connection?.Close();
-            _connection = null;
-        }
-
         private async Task DisposeConnectionAsync()
         {
             // always try to close connection used by the result too
@@ -232,13 +150,6 @@ namespace Neo4j.Driver.Internal
                 await _connection.CloseAsync().ConfigureAwait(false);
             }
             _connection = null;
-        }
-
-        private void EnsureCanRunMoreStatements()
-        {
-            EnsureSessionIsOpen();
-            EnsureNoOpenTransaction();
-            DisposeSessionResult();
         }
 
         private Task EnsureCanRunMoreStatementsAsync()

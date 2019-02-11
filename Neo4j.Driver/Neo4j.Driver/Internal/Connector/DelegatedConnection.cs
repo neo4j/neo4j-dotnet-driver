@@ -33,24 +33,9 @@ namespace Neo4j.Driver.Internal.Connector
             Delegate = connection;
         }
 
-        public abstract void OnError(Exception error);
-
         public virtual Task OnErrorAsync(Exception error)
         {
-            OnError(error);
             return TaskHelper.GetCompletedTask();
-        }
-
-        public void Sync()
-        {
-            try
-            {
-                Delegate.Sync();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
         }
 
         public Task SyncAsync()
@@ -58,33 +43,9 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskWithErrorHandling(() => Delegate.SyncAsync());
         }
 
-        public void Send()
-        {
-            try
-            {
-                Delegate.Send();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
         public Task SendAsync()
         {
             return TaskWithErrorHandling(() => Delegate.SendAsync());
-        }
-
-        public void ReceiveOne()
-        {
-            try
-            {
-                Delegate.ReceiveOne();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
         }
 
         public Task ReceiveOneAsync()
@@ -92,45 +53,33 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskWithErrorHandling(() => Delegate.ReceiveOneAsync());
         }
 
-        public void Init()
-        {
-            try
-            {
-                Delegate.Init();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
-        }
-
         public Task InitAsync()
         {
             return TaskWithErrorHandling(() => Delegate.InitAsync());
         }
 
-        public void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector,
+        public Task EnqueueAsync(IRequestMessage message1, IMessageResponseCollector responseCollector,
             IRequestMessage message2 = null)
         {
             try
             {
-                Delegate.Enqueue(message1, responseCollector, message2);
+                return Delegate.EnqueueAsync(message1, responseCollector, message2);
             }
             catch (Exception e)
             {
-                OnError(e);
+                return OnErrorAsync(e);
             }
         }
 
-        public void Reset()
+        public Task ResetAsync()
         {
             try
             {
-                Delegate.Reset();
+                return Delegate.ResetAsync();
             }
             catch (Exception e)
             {
-                OnError(e);
+                return OnErrorAsync(e);
             }
         }
 
@@ -144,19 +93,9 @@ namespace Neo4j.Driver.Internal.Connector
             Delegate.UpdateId(newConnId);
         }
 
-        public virtual void Destroy()
-        {
-            Delegate.Destroy();
-        }
-
         public virtual Task DestroyAsync()
         {
             return Delegate.DestroyAsync();
-        }
-
-        public virtual void Close()
-        {
-            Delegate.Close();
         }
 
         public virtual Task CloseAsync()

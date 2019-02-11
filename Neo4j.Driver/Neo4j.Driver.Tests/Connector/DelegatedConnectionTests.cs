@@ -36,11 +36,6 @@ namespace Neo4j.Driver.Tests.Connector
             {
             }
 
-            public override void OnError(Exception error)
-            {
-                throw new NotImplementedException();
-            }
-
             public override Task OnErrorAsync(Exception error)
             {
                 ErrorList.Add(error);

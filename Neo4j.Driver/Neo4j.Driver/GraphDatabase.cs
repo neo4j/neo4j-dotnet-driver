@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
@@ -67,7 +68,7 @@ namespace Neo4j.Driver
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
         public static IDriver Driver(Uri uri)
         {
-            return Driver(uri, (Config)null);
+            return Driver(uri, (Config) null);
         }
 
         /// <summary>
@@ -204,7 +205,8 @@ namespace Neo4j.Driver
 
             var connectionSettings = new ConnectionSettings(authToken, config);
             var bufferSettings = new BufferSettings(config);
-            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger);
+            var connectionFactory =
+                new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger);
 
             return CreateDriver(uri, config, connectionFactory);
         }
@@ -222,28 +224,33 @@ namespace Neo4j.Driver
 
             var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
 
+            var syncExecutor = new SyncExecutor();
+
             IConnectionProvider connectionProvider = null;
             switch (parsedUri.Scheme.ToLower())
             {
                 case "bolt":
                     EnsureNoRoutingContext(uri, routingContext);
-                    connectionProvider = new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
+                    connectionProvider =
+                        new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
+                    connectionProvider = new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings,
+                        syncExecutor, logger);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, syncExecutor, metrics);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)
         {
             if (routingContext.Count != 0)
             {
-                throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
+                throw new ArgumentException(
+                    $"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
             }
         }
     }

@@ -71,13 +71,11 @@ namespace Neo4j.Driver.Internal
 
     internal interface IResultResourceHandler
     {
-        void OnResultConsumed(Bookmark bookmark);
         Task OnResultConsumedAsync(Bookmark bookmark);
     }
 
     internal interface ITransactionResourceHandler
     {
-        void OnTransactionDispose(Bookmark bookmark);
         Task OnTransactionDisposeAsync(Bookmark bookmark);
     }
 }

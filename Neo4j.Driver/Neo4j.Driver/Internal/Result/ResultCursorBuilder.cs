@@ -36,19 +36,18 @@ namespace Neo4j.Driver.Internal.Result
             _resourceHandler = resourceHandler;
         }
 
-        public async Task<IStatementResultCursor> PreBuildAsync()
+        public IStatementResultCursor PreBuild()
         {
-            await GetKeys().ConfigureAwait(false);
-            return new StatementResultCursor(Keys, NextRecordAsync, SummaryAsync);
+            return new StatementResultCursor(GetKeys, NextRecordAsync, SummaryAsync);
         }
 
-        private async Task<List<string>> GetKeys()
+        private async Task<string[]> GetKeys()
         {
             while (!StatementProcessed)
             {
                 await _receiveOneFunc().ConfigureAwait(false);
             }
-            return Keys;
+            return Keys.ToArray();
         }
 
         /// <summary>

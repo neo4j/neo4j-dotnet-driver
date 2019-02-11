@@ -274,8 +274,9 @@ namespace Neo4j.Driver.IntegrationTests
                     using (var txc = await session.BeginTransactionAsync())
                     {
                         var cursor = await txc.RunAsync("RETURN 1 As X");
-                        cursor.Keys.Should().HaveCount(1);
-                        cursor.Keys.Should().Contain("X");
+                        var keys = await cursor.KeysAsync();
+
+                        keys.Should().HaveCount(1).And.Contain("X");
                     }
                 }
             }
@@ -293,11 +294,11 @@ namespace Neo4j.Driver.IntegrationTests
                         var cursor1 = await txc.RunAsync("RETURN 1 As X");
                         var cursor2 = await txc.RunAsync("RETURN 1 As Y");
 
-                        cursor1.Keys.Should().HaveCount(1);
-                        cursor1.Keys.Should().Contain("X");
+                        var keys1 = await cursor1.KeysAsync();
+                        keys1.Should().HaveCount(1).And.Contain("X");
 
-                        cursor2.Keys.Should().HaveCount(1);
-                        cursor2.Keys.Should().Contain("Y");
+                        var keys2 = await cursor2.KeysAsync();
+                        keys2.Should().HaveCount(1).And.Contain("Y");
                     }
                 }
             }
@@ -317,11 +318,11 @@ namespace Neo4j.Driver.IntegrationTests
 
                         await cursor1.ConsumeAsync();
 
-                        cursor1.Keys.Should().HaveCount(1);
-                        cursor1.Keys.Should().Contain("X");
+                        var keys1 = await cursor1.KeysAsync();
+                        keys1.Should().HaveCount(1).And.Contain("X");
 
-                        cursor2.Keys.Should().HaveCount(1);
-                        cursor2.Keys.Should().Contain("Y");
+                        var keys2 = await cursor2.KeysAsync();
+                        keys2.Should().HaveCount(1).And.Contain("Y");
                     }
                 }
             }

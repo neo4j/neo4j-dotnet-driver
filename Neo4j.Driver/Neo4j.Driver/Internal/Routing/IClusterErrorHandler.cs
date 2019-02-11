@@ -21,7 +21,6 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IClusterErrorHandler
     {
-        void OnConnectionError(Uri uri, Exception e);
         Task OnConnectionErrorAsync(Uri uri, Exception e);
         void OnWriteError(Uri uri);
     }

@@ -52,31 +52,12 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V1);
         }
 
-        public void Login(IConnection connection, string userAgent, IAuthToken authToken)
-        {
-            var serverVersionCollector = new ServerVersionCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
-            connection.Sync();
-            ((ServerInfo) connection.Server).Version = serverVersionCollector.Server;
-        }
-
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var serverVersionCollector = new ServerVersionCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
+            await connection.EnqueueAsync(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
             await connection.SyncAsync().ConfigureAwait(false);
             ((ServerInfo) connection.Server).Version = serverVersionCollector.Server;
-        }
-
-        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
-            IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
-        {
-            AssertNullOrEmptyTransactionConfig(txConfig);
-            var resultBuilder = new ResultBuilder(NewSummaryCollector(statement, connection.Server),
-                connection.ReceiveOne, resultResourceHandler);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
-            connection.Send();
-            return resultBuilder.PreBuild();
         }
 
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
@@ -86,40 +67,20 @@ namespace Neo4j.Driver.Internal.Protocol
             AssertNullOrEmptyTransactionConfig(txConfig);
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
+            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
-            return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
-        }
-
-        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
-        {
-            AssertNullOrEmptyTransactionConfig(txConfig);
-            IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
-            if (bookmark != null && !bookmark.IsEmpty())
-            {
-                connection.Sync();
-            }
+            return resultBuilder.PreBuild();
         }
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
+            await connection.EnqueueAsync(new RunMessage(Begin, parameters), null, PullAll);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
-        }
-
-        public IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement)
-        {
-            var resultBuilder = new ResultBuilder(
-                NewSummaryCollector(statement, connection.Server), connection.ReceiveOne);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
-            connection.Send();
-            return resultBuilder.PreBuild();
         }
 
         public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
@@ -127,47 +88,29 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
+            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll);
             await connection.SendAsync().ConfigureAwait(false);
 
-            return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
-        }
-
-        public Bookmark CommitTransaction(IConnection connection)
-        {
-            var bookmarkCollector = new BookmarkCollector();
-            connection.Enqueue(Commit, bookmarkCollector, PullAll);
-            connection.Sync();
-            return bookmarkCollector.Bookmark;
+            return resultBuilder.PreBuild();
         }
 
         public async Task<Bookmark> CommitTransactionAsync(IConnection connection)
         {
             var bookmarkCollector = new BookmarkCollector();
-            connection.Enqueue(Commit, bookmarkCollector, PullAll);
+            await connection.EnqueueAsync(Commit, bookmarkCollector, PullAll);
             await connection.SyncAsync().ConfigureAwait(false);
             return bookmarkCollector.Bookmark;
         }
 
-        public void RollbackTransaction(IConnection connection)
+        public async Task RollbackTransactionAsync(IConnection connection)
         {
-            connection.Enqueue(Rollback, null, DiscardAll);
-            connection.Sync();
+            await connection.EnqueueAsync(Rollback, null, DiscardAll).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
         }
 
-        public Task RollbackTransactionAsync(IConnection connection)
+        public Task ResetAsync(IConnection connection)
         {
-            connection.Enqueue(Rollback, null, DiscardAll);
-            return connection.SyncAsync();
-        }
-
-        public void Reset(IConnection connection)
-        {
-            connection.Enqueue(ResetMessage.Reset, null);
-        }
-
-        public void Logout(IConnection connection)
-        {
+            return connection.EnqueueAsync(ResetMessage.Reset, null);
         }
 
         public Task LogoutAsync(IConnection connection)

@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldCallConnInit()
+            public async Task ShouldCallConnInit()
             {
                 // Given
                 var mock = new Mock<IConnection>();
@@ -54,33 +54,32 @@ namespace Neo4j.Driver.Tests
                 var connectionPool = new ConnectionPool(connFactory, validator: new TestConnectionValidator());
 
                 // When
-                connectionPool.Acquire();
+                await connectionPool.AcquireAsync(AccessMode.Read);
 
                 //Then
-                mock.Verify(x => x.Init(), Times.Once);
+                mock.Verify(x => x.InitAsync(), Times.Once);
             }
 
             [Fact]
-            public void ShouldBlockWhenMaxPoolSizeReached()
+            public async Task ShouldBlockWhenMaxPoolSizeReached()
             {
                 var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxConnectionPoolSize = 2});
                 var pool = NewConnectionPool(poolSettings: connectionPoolSettings);
-                var conn = pool.Acquire();
-                pool.Acquire();
+                var conn1 = await pool.AcquireAsync(AccessMode.Read);
+                var conn2 = await pool.AcquireAsync(AccessMode.Read);
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(2);
 
                 var timer = new Stopwatch();
-                var blockingAcquire = new Task(()=>{ pool.Acquire(); });
-                var releaseConn = new Task(()=>{ conn.Close(); });
+                var blockingAcquire = new Task<Task<IConnection>>(() => pool.AcquireAsync(AccessMode.Read));
 
                 timer.Start();
                 blockingAcquire.Start();
-                Task.Delay(1000).Wait(); // delay a bit here
-                releaseConn.Start();
 
-                releaseConn.Wait();
-                blockingAcquire.Wait();
+                await Task.Delay(1000); // delay a bit here
+                await conn1.CloseAsync();
+
+                var conn3 = await blockingAcquire.Unwrap();
                 timer.Stop();
 
                 pool.NumberOfIdleConnections.Should().Be(0);
@@ -89,7 +88,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldThrowClientExceptionWhenFailedToAcquireWithinTimeout()
+            public async Task ShouldThrowClientExceptionWhenFailedToAcquireWithinTimeout()
             {
                 var connectionPoolSettings = new ConnectionPoolSettings(
                     new Config
@@ -98,18 +97,18 @@ namespace Neo4j.Driver.Tests
                         ConnectionAcquisitionTimeout = TimeSpan.FromMilliseconds(0)
                     });
                 var pool = NewConnectionPool(poolSettings: connectionPoolSettings);
-                pool.Acquire();
-                pool.Acquire();
+                await pool.AcquireAsync(AccessMode.Read);
+                await pool.AcquireAsync(AccessMode.Read);
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(2);
 
-                var exception = Record.Exception(() => pool.Acquire());
-                exception.Should().BeOfType<ClientException>();
-                exception.Message.Should().Contain("Failed to obtain a connection from pool within");
+                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
+                exception.Should().BeOfType<ClientException>().Which.Message.Should()
+                    .Contain("Failed to obtain a connection from pool within");
             }
 
             [Fact]
-            public void ShouldNotExceedIdleLimit()
+            public async Task ShouldNotExceedIdleLimit()
             {
                 var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxIdleConnectionPoolSize = 2});
                 var pool = NewConnectionPool(poolSettings: connectionPoolSettings);
@@ -117,13 +116,13 @@ namespace Neo4j.Driver.Tests
                 var conns = new List<IConnection>();
                 for (var i = 0; i < 4; i++)
                 {
-                    conns.Add(pool.Acquire());
+                    conns.Add(await pool.AcquireAsync(AccessMode.Read));
                     pool.NumberOfIdleConnections.Should().Be(0);
                 }
 
                 foreach (var conn in conns)
                 {
-                    conn.Close();
+                    await conn.CloseAsync();
                     pool.NumberOfIdleConnections.Should().BeLessOrEqualTo(2);
                 }
 
@@ -131,17 +130,17 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldAcquireFromPoolIfAvailable()
+            public async Task ShouldAcquireFromPoolIfAvailable()
             {
                 var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxIdleConnectionPoolSize = 2});
                 var pool = NewConnectionPool(poolSettings: connectionPoolSettings);
 
                 for (var i = 0; i < 4; i++)
                 {
-                    var conn = pool.Acquire();
+                    var conn = await pool.AcquireAsync(AccessMode.Read);
                     pool.NumberOfInUseConnections.Should().Be(1);
                     pool.NumberOfIdleConnections.Should().Be(0);
-                    conn.Close();
+                    await conn.CloseAsync();
                     pool.NumberOfIdleConnections.Should().Be(1);
                     pool.NumberOfInUseConnections.Should().Be(0);
                 }
@@ -151,33 +150,34 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldCreateNewWhenQueueIsEmpty()
+            public async Task ShouldCreateNewWhenQueueIsEmpty()
             {
                 var pool = NewConnectionPool();
 
-                pool.Acquire();
+                await pool.AcquireAsync(AccessMode.Read);
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
             }
 
             [Fact]
-            public void ShouldCloseConnectionIfFailedToCreate()
+            public async Task ShouldCloseConnectionIfFailedToCreate()
             {
-
                 var connMock = new Mock<IPooledConnection>();
-                connMock.Setup(x => x.Init()).Throws(new NotImplementedException());
+                connMock.Setup(x => x.InitAsync()).Throws<NotImplementedException>();
 
                 var connFactory = new MockedConnectionFactory(connMock.Object);
                 var pool = new ConnectionPool(connFactory);
 
-                Record.Exception(() => pool.Acquire());
-                connMock.Verify(x => x.Destroy(), Times.Once);
+                var exc = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
+
+                exc.Should().BeOfType<NotImplementedException>();
+                connMock.Verify(x => x.DestroyAsync(), Times.Once);
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
 
             [Fact]
-            public void ShouldCreateNewWhenQueueOnlyContainsClosedConnections()
+            public async Task ShouldCreateNewWhenQueueOnlyContainsClosedConnections()
             {
                 var conns = new BlockingCollection<IPooledConnection>();
                 var closedMock = new Mock<IPooledConnection>();
@@ -189,19 +189,19 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                var conn = pool.Acquire();
+                var conn = await pool.AcquireAsync(AccessMode.Read);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
                 closedMock.Verify(x => x.IsOpen, Times.Once);
-                closedMock.Verify(x => x.Destroy(), Times.Once);
+                closedMock.Verify(x => x.DestroyAsync(), Times.Once);
 
                 conn.Should().NotBeNull();
                 conn.Should().NotBe(closedMock.Object);
             }
 
             [Fact]
-            public void ShouldReuseWhenOpenConnectionInQueue()
+            public async Task ShouldReuseWhenOpenConnectionInQueue()
             {
                 var conns = new BlockingCollection<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
@@ -214,7 +214,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                var conn = pool.Acquire();
+                var conn = await pool.AcquireAsync(AccessMode.Read);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
@@ -223,7 +223,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReuseOpenConnectionWhenOpenAndClosedConnectionsInQueue()
+            public async Task ShouldReuseOpenConnectionWhenOpenAndClosedConnectionsInQueue()
             {
                 var conns = new BlockingCollection<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
@@ -239,17 +239,17 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(2);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                var conn = pool.Acquire();
+                var conn = await pool.AcquireAsync(AccessMode.Read);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
-                unhealthyMock.Verify(x => x.Destroy(), Times.Once);
-                healthyMock.Verify(x => x.Destroy(), Times.Never);
+                unhealthyMock.Verify(x => x.DestroyAsync(), Times.Once);
+                healthyMock.Verify(x => x.DestroyAsync(), Times.Never);
                 conn.Should().Be(healthyMock.Object);
             }
 
             [Fact]
-            public void ShouldCloseIdleTooLongConn()
+            public async Task ShouldCloseIdleTooLongConn()
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
@@ -271,19 +271,19 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
 
                 // When
-                var conn = pool.Acquire();
+                var conn = await pool.AcquireAsync(AccessMode.Read);
 
                 // Then
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
 
                 conn.Should().NotBeNull();
                 conn.Should().NotBe(idleTooLongId);
             }
 
             [Fact]
-            public void ShouldReuseIdleNotTooLongConn()
+            public async Task ShouldReuseIdleNotTooLongConn()
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
@@ -298,7 +298,8 @@ namespace Neo4j.Driver.Tests
                 conns.Add(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
                 var poolSettings = new ConnectionPoolSettings(
-                    new Config {
+                    new Config
+                    {
                         MaxIdleConnectionPoolSize = 2,
                         ConnectionIdleTimeout = enableIdleTooLongTest,
                         MaxConnectionLifetime = Config.InfiniteInterval, // disable life time check
@@ -309,7 +310,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
 
                 // When
-                var conn = pool.Acquire();
+                var conn = await pool.AcquireAsync(AccessMode.Read);
 
                 // Then
                 pool.NumberOfIdleConnections.Should().Be(0);
@@ -325,7 +326,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(5)]
             [InlineData(10)]
             [InlineData(500)]
-            public void ShouldAcquireNewWhenBeingUsedConcurrentlyBy(int numberOfThreads)
+            public async Task ShouldAcquireNewWhenBeingUsedConcurrentlyBy(int numberOfThreads)
             {
                 var ids = new List<string>();
                 for (var i = 0; i < numberOfThreads; i++)
@@ -356,12 +357,12 @@ namespace Neo4j.Driver.Tests
                 {
                     var localI = i;
                     tasks[localI] =
-                        Task.Run(() =>
+                        Task.Run(async () =>
                         {
                             try
                             {
-                                Task.Delay(500);
-                                var conn = pool.Acquire();
+                                await Task.Delay(500);
+                                var conn = await pool.AcquireAsync(AccessMode.Read);
                                 lock (receivedIds)
                                     receivedIds.Add(conn.ToString());
                             }
@@ -372,7 +373,7 @@ namespace Neo4j.Driver.Tests
                         });
                 }
 
-                Task.WaitAll(tasks);
+                await Task.WhenAll(tasks);
 
                 receivedIds.Count.Should().Be(numberOfThreads);
                 foreach (var receivedId in receivedIds)
@@ -390,12 +391,12 @@ namespace Neo4j.Driver.Tests
             // thread-safe test
             // concurrent call of Acquire and Dispose
             [Fact]
-            public void ShouldThrowExceptionWhenAcquireCalledAfterDispose()
+            public async Task ShouldThrowExceptionWhenAcquireCalledAfterClose()
             {
                 var pool = NewConnectionPool();
 
-                pool.Dispose();
-                var exception = Record.Exception(() => pool.Acquire());
+                await pool.CloseAsync();
+                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().StartWith("Failed to acquire a new connection");
             }
@@ -403,7 +404,7 @@ namespace Neo4j.Driver.Tests
             // thread-safe test
             // concurrent call of Acquire and Dispose
             [Fact]
-            public void ShouldCloseAcquiredConnectionIfPoolDisposeStarted()
+            public async Task ShouldCloseAcquiredConnectionIfPoolDisposeStarted()
             {
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
@@ -417,60 +418,18 @@ namespace Neo4j.Driver.Tests
                 // but before Acquire put a new conn into inUseConn, Dispose get called.
                 // Note: Once dispose get called, it is forbidden to put anything into queue.
                 healthyMock.Setup(x => x.IsOpen).Returns(true)
-                    .Callback(() => pool.Close()); // Simulate Dispose get called at this time
+                    .Callback(async () => await pool.CloseAsync()); // Simulate Dispose get called at this time
                 idleConnections.Add(healthyMock.Object);
                 pool.NumberOfIdleConnections.Should().Be(1);
                 // When
-                var exception = Record.Exception(() => pool.Acquire());
+                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
                 healthyMock.Verify(x => x.IsOpen, Times.Once);
-                healthyMock.Verify(x => x.Destroy(), Times.Once);
+                healthyMock.Verify(x => x.DestroyAsync(), Times.Once);
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().StartWith("Failed to acquire a new connection");
-            }
-
-            [Fact]
-            public void ShouldTimeoutAfterAcquireTimeoutIfPoolIsFull()
-            {
-                Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(10))
-                    .WithMaxConnectionPoolSize(5).WithMaxIdleConnectionPoolSize(0).ToConfig();
-
-                var pool = NewConnectionPool(poolSettings: new ConnectionPoolSettings(config));
-
-                for (var i = 0; i < config.MaxConnectionPoolSize; i++)
-                {
-                    pool.Acquire();
-                }
-
-                var stopWatch = new Stopwatch();
-                stopWatch.Start();
-
-                var exception = Record.Exception(() => pool.Acquire());
-
-                stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10, 0.1);
-                exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
-                exception.Should().BeOfType<ClientException>();
-
-            }
-
-            [Fact]
-            public void ShouldTimeoutAfterAcquireTimeoutWhenConnectionIsNotValidated()
-            {
-                Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(5))
-                    .ToConfig();
-
-                var closedConnectionMock = new Mock<IPooledConnection>();
-                closedConnectionMock.Setup(x => x.IsOpen).Returns(false);
-
-                var pool = NewConnectionPool(poolSettings: new ConnectionPoolSettings(config),
-                    isConnectionValid: false);
-
-                var exception = Record.Exception(() => pool.Acquire());
-
-                exception.Should().BeOfType<ClientException>();
-                exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
             }
 
             [Fact]
@@ -483,7 +442,7 @@ namespace Neo4j.Driver.Tests
 
                 for (var i = 0; i < config.MaxConnectionPoolSize; i++)
                 {
-                    pool.Acquire();
+                    await pool.AcquireAsync(AccessMode.Read);
                 }
 
                 var stopWatch = new Stopwatch();
@@ -504,20 +463,20 @@ namespace Neo4j.Driver.Tests
                     .ToConfig();
 
 
-                var pool = NewConnectionPool(poolSettings: new ConnectionPoolSettings(config), isConnectionValid: false);
+                var pool = NewConnectionPool(poolSettings: new ConnectionPoolSettings(config),
+                    isConnectionValid: false);
 
                 var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
             }
-
         }
 
         public class ReleaseMethod
         {
             [Fact]
-            public void ShouldReturnToPoolWhenConnectionIsReusableAndPoolIsNotFull()
+            public async Task ShouldReturnToPoolWhenConnectionIsReusableAndPoolIsNotFull()
             {
                 var conn = new Mock<IPooledConnection>().Object;
 
@@ -528,14 +487,14 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(conn);
+                await pool.ReleaseAsync(conn);
 
                 pool.NumberOfIdleConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
 
             [Fact]
-            public void ShouldCloseConnectionWhenConnectionIsClosed()
+            public async Task ShouldCloseConnectionWhenConnectionIsClosed()
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(false);
@@ -547,19 +506,19 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(mock.Object);
+                await pool.ReleaseAsync(mock.Object);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
             }
 
             [Fact]
-            public void ShouldCloseConnectionWhenConnectionIsOpenButNotResetable()
+            public async Task ShouldCloseConnectionWhenConnectionIsOpenButNotResetable()
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
-                mock.Setup(x => x.ClearConnection()).Throws<ClientException>();
+                mock.Setup(x => x.ClearConnectionAsync()).Returns(TaskHelper.GetFailedTask(new ClientException()));
 
                 var inUseConns = new ConcurrentSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
@@ -568,15 +527,15 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(mock.Object);
+                await pool.ReleaseAsync(mock.Object);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
             }
 
             [Fact]
-            public void ShouldCloseConnectionWhenConnectionIsNotValid()
+            public async Task ShouldCloseConnectionWhenConnectionIsNotValid()
             {
                 var mock = new Mock<IPooledConnection>();
 
@@ -587,15 +546,15 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(mock.Object);
+                await pool.ReleaseAsync(mock.Object);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
             }
 
             [Fact]
-            public void ShouldCloseTheConnectionWhenConnectionIsReusableButThePoolIsFull()
+            public async Task ShouldCloseTheConnectionWhenConnectionIsReusableButThePoolIsFull()
             {
                 var mock = new Mock<IPooledConnection>();
 
@@ -617,15 +576,15 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(10);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Release(mock.Object);
+                await pool.ReleaseAsync(mock.Object);
 
                 pool.NumberOfIdleConnections.Should().Be(10);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
             }
 
             [Fact]
-            public void ShouldStartTimerBeforeReturnToPoolWhenIdleDetectionEnabled()
+            public async Task ShouldStartTimerBeforeReturnToPoolWhenIdleDetectionEnabled()
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
@@ -645,7 +604,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(1);
 
                 //When
-                pool.Release(mock.Object);
+                await pool.ReleaseAsync(mock.Object);
 
                 // Then
                 pool.NumberOfIdleConnections.Should().Be(1);
@@ -655,7 +614,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldNotStartTimerBeforeReturnToPoolWhenIdleDetectionDisabled()
+            public async Task ShouldNotStartTimerBeforeReturnToPoolWhenIdleDetectionDisabled()
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
@@ -672,7 +631,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(1);
 
                 //When
-                pool.Release(mock.Object);
+                await pool.ReleaseAsync(mock.Object);
 
                 // Then
                 pool.NumberOfIdleConnections.Should().Be(1);
@@ -684,7 +643,7 @@ namespace Neo4j.Driver.Tests
             // thread safe test
             // Concurrent call of Release and Dispose
             [Fact]
-            public void ShouldCloseConnectionIfPoolDisposeStarted()
+            public async Task ShouldCloseConnectionIfPoolDisposeStarted()
             {
                 // Given
                 var inUseConns = new ConcurrentSet<IPooledConnection>();
@@ -702,20 +661,20 @@ namespace Neo4j.Driver.Tests
                 // but before Release put a new conn into availConns, Dispose get called.
                 // Note: Once dispose get called, it is forbidden to put anything into queue.
                 mock.Setup(x => x.IsOpen).Returns(true)
-                    .Callback(() => pool.Close()); // Simulate Dispose get called at this time
-                pool.Release(mock.Object);
+                    .Callback(async () => await pool.CloseAsync()); // Simulate Dispose get called at this time
+                await pool.ReleaseAsync(mock.Object);
 
                 // Then
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
             }
         }
 
-        public class DisposeMethod
+        public class CloseMethod
         {
             [Fact]
-            public void ShouldReleaseAll()
+            public async Task ShouldReleaseAll()
             {
                 var inUseConns = new ConcurrentSet<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
@@ -729,16 +688,16 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfIdleConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
-                pool.Dispose();
+                await pool.CloseAsync();
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
-                mock.Verify(x=>x.Destroy(), Times.Once);
-                mock1.Verify(x=>x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
+                mock1.Verify(x => x.DestroyAsync(), Times.Once);
             }
 
             [Fact]
-            public void ShouldLogInUseAndAvailableConnectionIds()
+            public async Task ShouldLogInUseAndAvailableConnectionIds()
             {
                 var mockLogger = LoggingHelper.GetTraceEnabledLogger();
 
@@ -753,7 +712,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(null, availableConns, inUseConns,
                     validator: new TestConnectionValidator(), logger: mockLogger.Object);
 
-                pool.Dispose();
+                await pool.CloseAsync();
 
                 mockLogger.Verify(x => x.Info(It.Is<string>(actual => actual.Contains("Disposing In Use"))),
                     Times.Once);
@@ -762,7 +721,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReturnDirectlyWhenConnectionReleaseCalledAfterPoolDispose()
+            public async Task ShouldReturnDirectlyWhenConnectionReleaseCalledAfterPoolDispose()
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
@@ -771,15 +730,15 @@ namespace Neo4j.Driver.Tests
                 var pool = NewConnectionPool(inUseConnections: inUseConns);
 
                 // When
-                pool.Dispose();
-                pool.Release(mock.Object);
+                await pool.CloseAsync();
+                await pool.ReleaseAsync(mock.Object);
 
                 // Then
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
             }
 
             [Fact]
-            public void ShouldNotThrowExceptionWhenDisposedTwice()
+            public async Task ShouldNotThrowExceptionWhenDisposedTwice()
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
@@ -788,11 +747,11 @@ namespace Neo4j.Driver.Tests
                 var pool = NewConnectionPool(inUseConnections: inUseConns);
 
                 // When
-                pool.Dispose();
-                pool.Dispose();
+                await pool.CloseAsync();
+                await pool.CloseAsync();
 
                 // Then
-                mock.Verify(x => x.Destroy(), Times.Once);
+                mock.Verify(x => x.DestroyAsync(), Times.Once);
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
@@ -804,7 +763,8 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnZeroAfterCreation()
             {
                 var uri = new Uri("bolt://localhost:7687");
-                var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
+                var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval,
+                    Config.InfiniteInterval);
                 var logger = new Mock<IDriverLogger>().Object;
                 var connFactory = new MockedConnectionFactory();
 
@@ -871,10 +831,10 @@ namespace Neo4j.Driver.Tests
 
         public class PoolSize
         {
-
             private static ConnectionPool CreatePool(IConnection conn, int maxIdlePoolSize, int maxPoolSize)
             {
-                var poolSettings = new ConnectionPoolSettings(maxIdlePoolSize, maxPoolSize, Config.InfiniteInterval, Config.InfiniteInterval, Config.InfiniteInterval);
+                var poolSettings = new ConnectionPoolSettings(maxIdlePoolSize, maxPoolSize, Config.InfiniteInterval,
+                    Config.InfiniteInterval, Config.InfiniteInterval);
                 var connFactory = new MockedConnectionFactory(conn);
 
                 var pool = new ConnectionPool(connFactory, poolSettings: poolSettings);
@@ -883,7 +843,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowed()
+            public async Task ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowed()
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
@@ -892,24 +852,24 @@ namespace Neo4j.Driver.Tests
 
                 pool.PoolSize.Should().Be(0);
 
-                var conn1 = pool.Acquire();
+                var conn1 = await pool.AcquireAsync(AccessMode.Read);
                 pool.PoolSize.Should().Be(1);
 
-                var conn2 = pool.Acquire();
-                var conn3 = pool.Acquire();
-                var conn4 = pool.Acquire();
+                var conn2 = await pool.AcquireAsync(AccessMode.Read);
+                var conn3 = await pool.AcquireAsync(AccessMode.Read);
+                var conn4 = await pool.AcquireAsync(AccessMode.Read);
                 pool.PoolSize.Should().Be(4);
 
-                conn1.Close();
+                await conn1.CloseAsync();
                 pool.PoolSize.Should().Be(3);
 
-                var conn5 = pool.Acquire();
+                var conn5 = await pool.AcquireAsync(AccessMode.Read);
                 pool.PoolSize.Should().Be(4);
 
-                conn5.Close();
-                conn4.Close();
-                conn3.Close();
-                conn2.Close();
+                await conn5.CloseAsync();
+                await conn4.CloseAsync();
+                await conn3.CloseAsync();
+                await conn2.CloseAsync();
 
                 pool.PoolSize.Should().Be(0);
 
@@ -917,7 +877,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReportCorrectPoolSize()
+            public async Task ShouldReportCorrectPoolSize()
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
@@ -926,24 +886,24 @@ namespace Neo4j.Driver.Tests
 
                 pool.PoolSize.Should().Be(0);
 
-                var conn1 = pool.Acquire();
+                var conn1 = await pool.AcquireAsync(AccessMode.Read);
                 pool.PoolSize.Should().Be(1);
 
-                var conn2 = pool.Acquire();
-                var conn3 = pool.Acquire();
-                var conn4 = pool.Acquire();
+                var conn2 = await pool.AcquireAsync(AccessMode.Read);
+                var conn3 = await pool.AcquireAsync(AccessMode.Read);
+                var conn4 = await pool.AcquireAsync(AccessMode.Read);
                 pool.PoolSize.Should().Be(4);
 
-                conn1.Close();
+                await conn1.CloseAsync();
                 pool.PoolSize.Should().Be(4);
 
-                var conn5 = pool.Acquire();
+                var conn5 = await pool.AcquireAsync(AccessMode.Read);
                 pool.PoolSize.Should().Be(4);
 
-                conn5.Close();
-                conn4.Close();
-                conn3.Close();
-                conn2.Close();
+                await conn5.CloseAsync();
+                await conn4.CloseAsync();
+                await conn3.CloseAsync();
+                await conn2.CloseAsync();
 
                 pool.PoolSize.Should().Be(4);
 
@@ -951,7 +911,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldReportPoolSizeCorrectOnConcurrentRequests()
+            public async Task ShouldReportPoolSizeCorrectOnConcurrentRequests()
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
@@ -963,15 +923,16 @@ namespace Neo4j.Driver.Tests
                 var stopMarker = 0;
                 var waitedTime = 0;
 
-                var acquireTasks = Enumerable.Range(0, 100).Select(i => Task.Run(() => {
-                    var conn = pool.Acquire();
+                var acquireTasks = Enumerable.Range(0, 100).Select(i => Task.Run(async () =>
+                {
+                    var conn = await pool.AcquireAsync(AccessMode.Read);
                     Interlocked.Increment(ref acquireCounter);
 
                     var wait = rnd.Next(1000);
                     Interlocked.Add(ref waitedTime, wait);
                     Thread.Sleep(wait);
 
-                    conn.Close();
+                    await conn.CloseAsync();
                     Interlocked.Increment(ref releaseCounter);
                 }));
 
@@ -986,9 +947,9 @@ namespace Neo4j.Driver.Tests
                     }
                 });
 
-                var tasks = acquireTasks as Task[] ?? acquireTasks.ToArray();
+                await Task.WhenAll(acquireTasks);
 
-                Task.WhenAll(tasks).ContinueWith(t => Interlocked.CompareExchange(ref stopMarker, 1, 0)).Wait();
+                Interlocked.CompareExchange(ref stopMarker, 1, 0);
 
                 reportTask.Wait();
                 reportedSizes.Should().NotBeEmpty();
@@ -1077,7 +1038,8 @@ namespace Neo4j.Driver.Tests
                 var stopMarker = 0;
                 var waitedTime = 0;
 
-                var acquireTasks = Enumerable.Range(0, 100).Select(i => Task.Run(async () => {
+                var acquireTasks = Enumerable.Range(0, 100).Select(i => Task.Run(async () =>
+                {
                     var conn = await pool.AcquireAsync(AccessMode.Read);
                     Interlocked.Increment(ref acquireCounter);
 
@@ -1110,22 +1072,21 @@ namespace Neo4j.Driver.Tests
                 reportedSizes.Should().NotContain(v => v < 0);
                 reportedSizes.Should().NotContain(v => v > 5);
             }
-
         }
 
         public class PoolState
         {
             // active
             [Fact]
-            public void FromActiveViaAcquireToActive()
+            public async Task FromActiveViaAcquireToActive()
             {
                 var pool = NewConnectionPool();
-                pool.Acquire();
+                await pool.AcquireAsync(AccessMode.Read);
                 pool.Status.Should().Be(ConnectionPoolStatus.Active);
             }
 
             [Fact]
-            public void FromActiveViaReleaseToActive()
+            public async Task FromActiveViaReleaseToActive()
             {
                 var idleQueue = new BlockingCollection<IPooledConnection>();
                 var inUseConnections = new ConcurrentSet<IPooledConnection>();
@@ -1133,7 +1094,7 @@ namespace Neo4j.Driver.Tests
                 inUseConnections.TryAdd(conn);
                 var pool = NewConnectionPool(idleQueue, inUseConnections);
 
-                pool.Release(conn);
+                await pool.ReleaseAsync(conn);
 
                 idleQueue.Count.Should().Be(1);
                 inUseConnections.Count.Should().Be(0);
@@ -1141,10 +1102,10 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromActiveViaDisposeToClosed()
+            public async Task FromActiveViaCloseToClosed()
             {
                 var pool = NewConnectionPool();
-                pool.Dispose();
+                await pool.CloseAsync();
                 pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
@@ -1157,28 +1118,28 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromActiveViaDeactivateToInactive()
+            public async Task FromActiveViaDeactivateToInactive()
             {
                 var pool = NewConnectionPool();
-                pool.Deactivate();
+                await pool.DeactivateAsync();
                 pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
             // inactive
             [Fact]
-            public void FromInactiveViaAcquireThrowsError()
+            public async Task FromInactiveViaAcquireThrowsError()
             {
                 var pool = NewConnectionPool();
                 pool.Status = ConnectionPoolStatus.Inactive;
 
-                var exception = Record.Exception(()=>pool.Acquire());
+                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
                 exception.Should().BeOfType<ClientException>();
                 pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
             [Fact]
-            public void FromInactiveViaReleaseToInactive()
+            public async Task FromInactiveViaReleaseToInactive()
             {
                 var idleQueue = new BlockingCollection<IPooledConnection>();
                 var inUseConnections = new ConcurrentSet<IPooledConnection>();
@@ -1189,7 +1150,7 @@ namespace Neo4j.Driver.Tests
                 var pool = NewConnectionPool(idleQueue, inUseConnections);
                 pool.Status = ConnectionPoolStatus.Inactive;
 
-                pool.Release(conn);
+                await pool.ReleaseAsync(conn);
 
                 inUseConnections.Count.Should().Be(0);
                 idleQueue.Count.Should().Be(0);
@@ -1197,12 +1158,12 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromInactiveViaDisposeToClosed()
+            public async Task FromInactiveViaCloseToClosed()
             {
                 var pool = NewConnectionPool();
                 pool.Status = ConnectionPoolStatus.Inactive;
 
-                pool.Dispose();
+                await pool.CloseAsync();
 
                 pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
@@ -1219,31 +1180,31 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromInactiveViaDeactivateToInactive()
+            public async Task FromInactiveViaDeactivateToInactive()
             {
                 var pool = NewConnectionPool();
                 pool.Status = ConnectionPoolStatus.Inactive;
 
-                pool.Deactivate();
+                await pool.DeactivateAsync();
 
                 pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
             //closed
             [Fact]
-            public void FromClosedViaAcquireThrowsError()
+            public async Task FromClosedViaAcquireThrowsError()
             {
                 var pool = NewConnectionPool();
                 pool.Status = ConnectionPoolStatus.Closed;
 
-                var exception = Record.Exception(()=>pool.Acquire());
+                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
                 exception.Should().BeOfType<ObjectDisposedException>();
                 pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
 
             [Fact]
-            public void FromClosedViaReleaseToClosed()
+            public async Task FromClosedViaReleaseToClosed()
             {
                 var idleQueue = new BlockingCollection<IPooledConnection>();
                 var inUseConnections = new ConcurrentSet<IPooledConnection>();
@@ -1254,7 +1215,7 @@ namespace Neo4j.Driver.Tests
                 var pool = NewConnectionPool(idleQueue, inUseConnections);
                 pool.Status = ConnectionPoolStatus.Closed;
 
-                pool.Release(conn);
+                await pool.ReleaseAsync(conn);
 
                 inUseConnections.Count.Should().Be(1);
                 idleQueue.Count.Should().Be(0);
@@ -1262,12 +1223,12 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromClosedViaDisposeToClosed()
+            public async Task FromClosedViaCloseToClosed()
             {
                 var pool = NewConnectionPool();
                 pool.Status = ConnectionPoolStatus.Closed;
 
-                pool.Dispose();
+                await pool.CloseAsync();
 
                 pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
@@ -1284,12 +1245,12 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void FromClosedViaDeactivateToClosed()
+            public async Task FromClosedViaDeactivateToClosed()
             {
                 var pool = NewConnectionPool();
                 pool.Status = ConnectionPoolStatus.Closed;
 
-                pool.Deactivate();
+                await pool.DeactivateAsync();
 
                 pool.Status.Should().Be(ConnectionPoolStatus.Closed);
             }
@@ -1307,6 +1268,7 @@ namespace Neo4j.Driver.Tests
                     idleMocks.Add(connMock);
                     idleConnections.Add(connMock.Object);
                 }
+
                 return idleMocks;
             }
 
@@ -1320,46 +1282,23 @@ namespace Neo4j.Driver.Tests
                     inUseMocks.Add(connMock);
                     inUseConnections.TryAdd(connMock.Object);
                 }
-                return inUseMocks;
-            }
 
-            private static void VerifyDestroyCalledOnce(List<Mock<IPooledConnection>> mocks)
-            {
-                foreach (var conn in mocks)
-                {
-                    conn.Verify(x=>x.Destroy(), Times.Once);
-                }
+                return inUseMocks;
             }
 
             private static void VerifyDestroyAsyncCalledOnce(List<Mock<IPooledConnection>> mocks)
             {
                 foreach (var conn in mocks)
                 {
-                    conn.Verify(x=>x.DestroyAsync(), Times.Once);
+                    conn.Verify(x => x.DestroyAsync(), Times.Once);
                 }
-            }
-
-            [Fact]
-            public void ShouldCloseAllIdleConnections()
-            {
-                // Given
-                var idleConnections = new BlockingCollection<IPooledConnection> ();
-                var idleMocks = FillIdleConnections(idleConnections, 10);
-                var pool = NewConnectionPool(idleConnections);
-
-                // When
-                pool.Deactivate();
-
-                // Then
-                idleConnections.Count.Should().Be(0);
-                VerifyDestroyCalledOnce(idleMocks);
             }
 
             [Fact]
             public async Task ShouldCloseAllIdleConnectionsAsync()
             {
                 // Given
-                var idleConnections = new BlockingCollection<IPooledConnection> ();
+                var idleConnections = new BlockingCollection<IPooledConnection>();
 
                 var idleMocks = FillIdleConnections(idleConnections, 10);
 
@@ -1376,7 +1315,7 @@ namespace Neo4j.Driver.Tests
             // concurrent test
             // concurrently close and deactivate
             [Fact]
-            public void DeactivateAndThenCloseShouldCloseAllConnections()
+            public async Task DeactivateAndThenCloseShouldCloseAllConnections()
             {
                 var idleConnections = new BlockingCollection<IPooledConnection>();
                 var idleMocks = FillIdleConnections(idleConnections, 5);
@@ -1386,29 +1325,29 @@ namespace Neo4j.Driver.Tests
                 var pool = NewConnectionPool(idleConnections, inUseConnections);
 
                 // When
-                pool.Deactivate();
+                await pool.DeactivateAsync();
                 // Then
                 idleConnections.Count.Should().Be(0);
                 inUseConnections.Count.Should().Be(10);
-                VerifyDestroyCalledOnce(idleMocks);
+                VerifyDestroyAsyncCalledOnce(idleMocks);
                 // refill the idle connections
                 var newIdleMocks = FillIdleConnections(idleConnections, 5);
                 idleConnections.Count.Should().Be(5);
 
                 // When
-                pool.Close();
+                await pool.CloseAsync();
                 // Then
                 idleConnections.Count.Should().Be(0);
                 inUseConnections.Count.Should().Be(0);
 
-                VerifyDestroyCalledOnce(newIdleMocks);
-                VerifyDestroyCalledOnce(inUseMocks);
+                VerifyDestroyAsyncCalledOnce(newIdleMocks);
+                VerifyDestroyAsyncCalledOnce(inUseMocks);
             }
 
             // concurrent tests
             // ConcurrentlyAcquireAndDeactivate
             [Fact]
-            public void ReturnConnectionIfAcquiredValidConnectionBeforeInactivation()
+            public async Task ReturnConnectionIfAcquiredValidConnectionBeforeInactivation()
             {
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
@@ -1421,11 +1360,11 @@ namespace Neo4j.Driver.Tests
                 // This is to simulate Acquire called first,
                 // but before Acquire put a new conn into inUseConn, Deactivate get called.
                 openConnMock.Setup(x => x.IsOpen).Returns(true)
-                    .Callback(() => pool.Deactivate());
+                    .Callback(async () => await pool.DeactivateAsync());
                 idleConnections.Add(openConnMock.Object);
                 pool.NumberOfIdleConnections.Should().Be(1);
                 // When
-                pool.Acquire();
+                await pool.AcquireAsync(AccessMode.Read);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
@@ -1433,7 +1372,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ErrorIfAcquiredInvalidConnectionBeforeInactivation()
+            public async Task ErrorIfAcquiredInvalidConnectionBeforeInactivation()
             {
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
@@ -1447,16 +1386,16 @@ namespace Neo4j.Driver.Tests
                 // but before Acquire put a new conn into inUseConn, Deactivate get called.
                 // However here, this connection is not healthy and will be destroyed directly
                 closedConnMock.Setup(x => x.IsOpen).Returns(false)
-                    .Callback(() => pool.Deactivate());
+                    .Callback(async () => await pool.DeactivateAsync());
                 idleConnections.Add(closedConnMock.Object);
                 pool.NumberOfIdleConnections.Should().Be(1);
                 // When
-                var exception = Record.Exception(() => pool.Acquire());
+                var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read));
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(0);
                 closedConnMock.Verify(x => x.IsOpen, Times.Once);
-                closedConnMock.Verify(x => x.Destroy(), Times.Once);
+                closedConnMock.Verify(x => x.DestroyAsync(), Times.Once);
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Failed to acquire a connection");
             }
@@ -1464,7 +1403,7 @@ namespace Neo4j.Driver.Tests
             // concurrent test
             // ConcurrentlyReleaseAndDeactivate
             [Fact]
-            public void ShouldCloseConnectionReleasedDuringDeactivation()
+            public async Task ShouldCloseConnectionReleasedDuringDeactivation()
             {
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
@@ -1473,7 +1412,9 @@ namespace Neo4j.Driver.Tests
 
                 var specialConn = new Mock<IPooledConnection>();
                 var releasedConn = new Mock<IPooledConnection>();
-                specialConn.Setup(x => x.Destroy()).Callback(() => { idleConnections.Add(releasedConn.Object); });
+                specialConn.Setup(x => x.DestroyAsync())
+                    .Returns(TaskHelper.GetCompletedTask())
+                    .Callback(() => { idleConnections.Add(releasedConn.Object); });
 
                 idleConnections.Add(specialConn.Object);
                 idleMocks.Add(specialConn);
@@ -1483,17 +1424,17 @@ namespace Neo4j.Driver.Tests
                 var pool = NewConnectionPool(idleConnections);
 
                 // When
-                pool.Deactivate();
+                await pool.DeactivateAsync();
 
                 // Then
                 idleConnections.Count.Should().Be(0);
-                VerifyDestroyCalledOnce(idleMocks);
+                VerifyDestroyAsyncCalledOnce(idleMocks);
             }
 
             // concurrent test
             // ConcurrentlyActivateAndDeactivate
             [Fact]
-            public void ShouldCloseAllIdleConnectionsRegardlessActivateCalled()
+            public async Task ShouldCloseAllIdleConnectionsRegardlessActivateCalled()
             {
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
@@ -1502,10 +1443,9 @@ namespace Neo4j.Driver.Tests
 
                 var specialConn = new Mock<IPooledConnection>();
                 var pool = NewConnectionPool(idleConnections);
-                specialConn.Setup(x => x.Destroy()).Callback(() =>
-                {
-                    pool.Activate();
-                });
+                specialConn.Setup(x => x.DestroyAsync())
+                    .Returns(TaskHelper.GetCompletedTask())
+                    .Callback(() => { pool.Activate(); });
 
                 idleConnections.Add(specialConn.Object);
                 idleMocks.Add(specialConn);
@@ -1514,11 +1454,11 @@ namespace Neo4j.Driver.Tests
                 idleMocks.Count.Should().Be(5 + 1 + 5);
 
                 // When
-                pool.Deactivate();
+                await pool.DeactivateAsync();
 
                 // Then
                 idleConnections.Count.Should().Be(0);
-                VerifyDestroyCalledOnce(idleMocks);
+                VerifyDestroyAsyncCalledOnce(idleMocks);
             }
         }
 
@@ -1555,7 +1495,9 @@ namespace Neo4j.Driver.Tests
             {
                 _connection = conn ?? new Mock<IConnection>().Object;
             }
-            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IConnectionListener listener)
+
+            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager,
+                IConnectionListener listener)
             {
                 return new PooledConnection(_connection, releaseManager, listener);
             }
@@ -1569,7 +1511,6 @@ namespace Neo4j.Driver.Tests
         {
             return new ConnectionPool(new MockedConnectionFactory(), idleConnections, inUseConnections,
                 poolSettings, new TestConnectionValidator(isConnectionValid));
-
         }
 
         private static ConnectionPool NewConnectionPoolWithConnectionTimeoutCheckDisabled(

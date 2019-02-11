@@ -69,17 +69,6 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        public IConnection Acquire(Uri uri)
-        {
-            if (!_pools.TryGetValue(uri, out var pool))
-            {
-                return null;
-            }
-
-            AccessMode ignored = AccessMode.Write;
-            return pool.Acquire(ignored);
-        }
-
         public Task<IConnection> AcquireAsync(Uri uri)
         {
             if (!_pools.TryGetValue(uri, out var pool))
@@ -91,50 +80,24 @@ namespace Neo4j.Driver.Internal.Routing
             return pool.AcquireAsync(ignored);
         }
 
-        public void Add(IEnumerable<Uri> servers)
+        private void Add(IEnumerable<Uri> servers)
         {
             foreach (var uri in servers)
             {
                 _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
-            }
-
-            if (IsClosed)
-            {
-                // Anything added after dispose should be directly cleaned.
-                Clear();
-                throw new ObjectDisposedException(GetType().Name,
-                    $"Failed to create connections with servers {servers.ToContentString()} as the driver has already started to dispose.");
             }
         }
 
         public async Task AddAsync(IEnumerable<Uri> servers)
         {
-            foreach (var uri in servers)
-            {
-                _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
-            }
+            Add(servers);
+
             if (IsClosed)
             {
                 // Anything added after dispose should be directly cleaned.
                 await ClearAsync().ConfigureAwait(false);
                 throw new ObjectDisposedException(GetType().Name,
                     $"Failed to create connections with servers {servers.ToContentString()} as the driver has already started to dispose.");
-            }
-        }
-
-        public void Update(IEnumerable<Uri> added, IEnumerable<Uri> removed)
-        {
-            Add(added);
-            foreach (var uri in removed)
-            {
-                if (_pools.TryGetValue(uri, out var pool))
-                {
-                    pool.Deactivate();
-                    if (pool.NumberOfInUseConnections == 0)
-                    {
-                        Purge(uri);
-                    }
-                }
             }
         }
 
@@ -151,14 +114,6 @@ namespace Neo4j.Driver.Internal.Routing
                         await PurgeAsync(uri).ConfigureAwait(false);
                     }
                 }
-            }
-        }
-
-        public void Deactivate(Uri uri)
-        {
-            if (_pools.TryGetValue(uri, out var pool))
-            {
-                pool.Deactivate();
             }
         }
 
@@ -180,14 +135,6 @@ namespace Neo4j.Driver.Internal.Routing
             return 0;
         }
 
-        public void Close()
-        {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-            {
-                Clear();
-            }
-        }
-
         public Task CloseAsync()
         {
             if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
@@ -196,15 +143,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             return TaskHelper.GetCompletedTask();
-        }
-
-        private void Clear()
-        {
-            var uris = _pools.Keys;
-            foreach (var uri in uris)
-            {
-                Purge(uri);
-            }
         }
 
         private Task ClearAsync()
@@ -220,15 +158,6 @@ namespace Neo4j.Driver.Internal.Routing
             return Task.WhenAll(clearTasks);
         }
 
-        private void Purge(Uri uri)
-        {
-            var removed = _pools.TryRemove(uri, out var toRemove);
-            if (removed)
-            {
-                toRemove.Close();
-            }
-        }
-
         private Task PurgeAsync(Uri uri)
         {
             var removed = _pools.TryRemove(uri, out var toRemove);
@@ -238,23 +167,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             return TaskHelper.GetCompletedTask();
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (IsClosed)
-                return;
-
-            if (disposing)
-            {
-                Close();
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         public override string ToString()

@@ -14,7 +14,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -32,46 +34,52 @@ namespace Neo4j.Driver.Tests
             {
                 connIdleTimeout = Config.InfiniteInterval;
             }
+
             if (maxConnLifetime == null)
             {
                 maxConnLifetime = Config.InfiniteInterval;
             }
+
             return new ConnectionValidator(connIdleTimeout.Value, maxConnLifetime.Value);
         }
 
         public class IsConnectionReusableTests
         {
             [Fact]
-            public void ShouldReturnFalseIfTheConnectionIsNotOpen()
+            public async Task ShouldReturnFalseIfTheConnectionIsNotOpen()
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(false);
                 var validator = NewConnectionValidator();
-                validator.OnRelease(conn.Object).Should().BeFalse();
+                var result = await validator.OnReleaseAsync(conn.Object);
+                result.Should().BeFalse();
             }
 
             [Fact]
-            public void ShouldReturnFalseIfFailedToCleanConnection()
+            public async Task ShouldReturnFalseIfFailedToCleanConnection()
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
-                conn.Setup(x => x.ClearConnection()).Throws(new InvalidOperationException());
+                conn.Setup(x => x.ClearConnectionAsync())
+                    .Returns(TaskHelper.GetFailedTask(new InvalidOperationException()));
                 var validator = NewConnectionValidator();
-                validator.OnRelease(conn.Object).Should().BeFalse();
+                var result = await validator.OnReleaseAsync(conn.Object);
+                result.Should().BeFalse();
             }
 
             [Fact]
-            public void ShouldResetIdleTimmer()
+            public async Task ShouldResetIdleTimmer()
             {
                 var conn = new Mock<IPooledConnection>();
-                var idleTimmer = new Mock<ITimer>();
+                var idleTimer = new Mock<ITimer>();
                 conn.Setup(x => x.IsOpen).Returns(true);
-                conn.Setup(x => x.IdleTimer).Returns(idleTimmer.Object);
+                conn.Setup(x => x.IdleTimer).Returns(idleTimer.Object);
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
 
-                validator.OnRelease(conn.Object).Should().BeTrue();
-                idleTimmer.Verify(x=>x.Start(), Times.Once);
+                var valid = await validator.OnReleaseAsync(conn.Object);
+                valid.Should().BeTrue();
+                idleTimer.Verify(x => x.Start(), Times.Once);
             }
         }
 
@@ -121,7 +129,7 @@ namespace Neo4j.Driver.Tests
 
                 var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue);
                 validator.OnRequire(conn.Object).Should().BeTrue();
-                idleTimmer.Verify(x=>x.Reset(), Times.Once);
+                idleTimmer.Verify(x => x.Reset(), Times.Once);
             }
 
             private static ITimer MockTimer(long elapsedMilliseconds)

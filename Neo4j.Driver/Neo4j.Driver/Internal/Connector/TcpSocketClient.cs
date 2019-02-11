@@ -57,34 +57,6 @@ namespace Neo4j.Driver.Internal.Connector
             _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
         }
 
-
-        public void Connect(Uri uri)
-        {
-            ConnectSocket(uri);
-            
-            _stream = new NetworkStream(_client);
-            if (_encryptionManager.UseTls)
-            {
-                try
-                {
-                    var secureStream = CreateSecureStream(uri);
-                    
-#if NET452
-                    secureStream.AuthenticateAsClient(uri.Host, null, Tls12, false);
-#else
-                    secureStream.AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false)
-                        .GetAwaiter().GetResult();
-#endif
-
-                    _stream = secureStream;
-                }
-                catch (Exception e)
-                {
-                    throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
-                }
-            }
-        }
-
         public async Task ConnectAsync(Uri uri)
         {
             await ConnectSocketAsync(uri).ConfigureAwait(false);
@@ -104,39 +76,6 @@ namespace Neo4j.Driver.Internal.Connector
                     throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
                 }
             }
-        }
-
-        private void ConnectSocket(Uri uri)
-        {
-            var innerErrors = new List<Exception>();
-            var addresses = _resolver.Resolve(uri.Host);
-                        
-            foreach (var address in addresses)
-            {
-                try
-                {
-                    ConnectSocket(address, uri.Port);
-                    
-                    return;
-                }
-                catch (Exception e)
-                {
-                    var actualException = e;
-                    if (actualException is AggregateException)
-                    {
-                        actualException = ((AggregateException) actualException).GetBaseException();
-                    }
-
-                    innerErrors.Add(new IOException(
-                        $"Failed to connect to server '{uri}' via IP address '{address}': {actualException.Message}",
-                        actualException));
-                }
-            }
-            
-            // all failed
-            throw new IOException(
-                $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.",
-                new AggregateException(innerErrors));
         }
 
         private async Task ConnectSocketAsync(Uri uri)
@@ -172,46 +111,6 @@ namespace Neo4j.Driver.Internal.Connector
                 new AggregateException(innerErrors));
         }
 
-        internal void ConnectSocket(IPAddress address, int port)
-        {
-            InitClient();
-
-            using (var cts = new CancellationTokenSource(_connectionTimeout))
-            {
-#if NET452
-                try
-                {
-                    _client.Connect(address, port);
-                }
-                catch (SocketException ex) when (ex.Message.Contains(
-                    "An address incompatible with the requested protocol was used"))
-                {
-                    throw new NotSupportedException("This protocol version is not supported.");
-                }
-#else
-                _client.ConnectAsync(address, port).ConfigureAwait(false).GetAwaiter().GetResult();
-#endif
-
-                if (cts.IsCancellationRequested)
-                {
-                    try
-                    {
-                        // close client immediately when failed to connect within timeout
-                        Disconnect();
-                    }
-                    catch (Exception e)
-                    {
-                        _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
-                                          $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
-                    }
-
-                    throw new OperationCanceledException(
-                        $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.",
-                        cts.Token);
-                }
-            }
-        }
-
         internal async Task ConnectSocketAsync(IPAddress address, int port)
         {
             InitClient();
@@ -240,22 +139,6 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             await connectTask.ConfigureAwait(false);
-        }
-
-        public virtual void Disconnect()
-        {
-            if (_client != null)
-            {
-                if (_client.Connected)
-                {
-                    _client.Shutdown(SocketShutdown.Both);
-                }
-
-                _client.Dispose();
-
-                _client = null;
-                _stream = null;
-            }   
         }
 
         public virtual Task DisconnectAsync()
@@ -289,21 +172,6 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             return TaskHelper.GetCompletedTask();
-        }
-
-        /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
-            Disconnect();
         }
 
         private void InitClient()

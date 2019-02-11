@@ -47,6 +47,17 @@ namespace Neo4j.Driver.Internal
             return Task.FromException(exc);
 #endif
         }
-        
+
+        public static Task<T> GetFailedTask<T>(Exception exc)
+        {
+#if NET452
+            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
+            tcs.SetException(exc);
+            return tcs.Task;
+#else
+            return Task.FromException<T>(exc);
+#endif
+        }
+
     }
 }

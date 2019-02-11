@@ -79,49 +79,16 @@ namespace Neo4j.Driver.Internal.Connector
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
         }
 
-        public void Init()
-        {
-            try
-            {
-                _boltProtocol = _client.Connect();
-                _boltProtocol.Login(this, _userAgent, _authToken);
-            }
-            catch (AggregateException e)
-            {
-                // To remove the wrapper around the inner exception because of Task.Wait()
-                throw e.InnerException;
-            }
-        }
-
         public async Task InitAsync()
         {
             _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
             await _boltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
         }
 
-        public void Sync()
-        {
-            Send();
-            Receive();
-        }
-
         public async Task SyncAsync()
         {
             await SendAsync().ConfigureAwait(false);
             await ReceiveAsync().ConfigureAwait(false);
-        }
-
-        public void Send()
-        {
-            if (_messages.Count == 0)
-            {
-                // nothing to send
-                return;
-            }
-            // blocking to send
-            _client.Send(_messages);
-
-            _messages.Clear();
         }
 
         public async Task SendAsync()
@@ -138,19 +105,6 @@ namespace Neo4j.Driver.Internal.Connector
             _messages.Clear();
         }
 
-        private void Receive()
-        {
-            if (_responseHandler.UnhandledMessageSize == 0)
-            {
-                // nothing to receive
-                return;
-            }
-
-            // blocking to receive
-            _client.Receive(_responseHandler);
-            AssertNoServerFailure();
-        }
-
         private async Task ReceiveAsync()
         {
             if (_responseHandler.UnhandledMessageSize == 0)
@@ -165,12 +119,6 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void ReceiveOne()
-        {
-            _client.ReceiveOne(_responseHandler);
-            AssertNoServerFailure();
-        }
-
         public async Task ReceiveOneAsync()
         {
             await _client.ReceiveOneAsync(_responseHandler).ConfigureAwait(false);
@@ -178,9 +126,9 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public void Reset()
+        public async Task ResetAsync()
         {
-            _boltProtocol.Reset(this);
+            await _boltProtocol.ResetAsync(this);
         }
 
         public bool IsOpen => _client.IsOpen;
@@ -199,35 +147,9 @@ namespace Neo4j.Driver.Internal.Connector
             _logger.Prefix = FormatPrefix(_id);
         }
 
-        public void Destroy()
-        {
-            Close();
-        }
-
         public Task DestroyAsync()
         {
             return CloseAsync();
-        }
-
-        public void Close()
-        {
-            try
-            {
-                try
-                {
-                    _boltProtocol.Logout(this);
-                }
-                catch (Exception e)
-                {
-                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
-                }
-                _client.Stop();
-            }
-            catch (Exception e)
-            {
-                // only log the exception if failed to close connection
-                _logger.Error(e, "Failed to close connection properly.");
-            }
         }
 
         public async Task CloseAsync()
@@ -261,7 +183,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public void Enqueue(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
+        public Task EnqueueAsync(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
             IRequestMessage requestStreamingMessage = null)
         {
 
@@ -273,6 +195,8 @@ namespace Neo4j.Driver.Internal.Connector
                 _messages.Enqueue(requestStreamingMessage);
                 _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
             }
+
+            return TaskHelper.GetCompletedTask();
         }
 
         public override string ToString()

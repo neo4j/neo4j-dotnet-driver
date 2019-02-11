@@ -16,6 +16,7 @@
 // limitations under the License.
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -75,8 +76,8 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             ClientMock = clientMock ?? new Mock<ISocketClient>();
-            ClientMock.Setup(x => x.Connect()).Returns(new Mock<IBoltProtocol>().Object);
-            ClientMock.Setup(x => x.Send(It.IsAny<IEnumerable<IRequestMessage>>()))
+            ClientMock.Setup(x => x.ConnectAsync()).Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
+            ClientMock.Setup(x => x.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()))
                 .Callback<IEnumerable<IRequestMessage>>(msg =>
                 {
                     foreach (var m in msg)
@@ -86,7 +87,7 @@ namespace Neo4j.Driver.Tests.Routing
                     }
                 });
 
-            ClientMock.Setup(x => x.ReceiveOne(It.IsAny<IMessageResponseHandler>()))
+            ClientMock.Setup(x => x.ReceiveOneAsync(It.IsAny<IMessageResponseHandler>()))
                 .Callback<IMessageResponseHandler>(handler =>
                 {
                     if (_responseCount < _responseMessages.Count)

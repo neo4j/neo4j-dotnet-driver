@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -32,76 +33,76 @@ namespace Neo4j.Driver.Tests.Routing
         public class OnErrorMethod
         {
             [Fact]
-            public void ConvertConnectionErrorToSessionExpired()
+            public async Task ConvertConnectionErrorToSessionExpired()
             {
                 var connMock = new Mock<IConnection>();
                 var handlerMock = new Mock<IClusterErrorHandler>();
                 var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
 
                 var inError = new ServiceUnavailableException("Connection error");
-                var outError = Record.Exception(()=>clusterConn.OnError(inError));
+                var outError = await Record.ExceptionAsync(()=>clusterConn.OnErrorAsync(inError));
                 outError.Should().BeOfType<SessionExpiredException>();
-                handlerMock.Verify(x=>x.OnConnectionError(Uri, inError), Times.Once);
+                handlerMock.Verify(x=>x.OnConnectionErrorAsync(Uri, inError), Times.Once);
                 handlerMock.Verify(x=>x.OnWriteError(Uri), Times.Never);
             }
 
             [Fact]
-            public void TreatsDatabaseUnavailableAsConnectionError()
+            public async Task TreatsDatabaseUnavailableAsConnectionError()
             {
                 var connMock = new Mock<IConnection>();
                 var handlerMock = new Mock<IClusterErrorHandler>();
                 var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
 
                 var inError = new TransientException("Neo.TransientError.General.DatabaseUnavailable", "Store copying");
-                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.ShouldBeEquivalentTo(inError);
 
-                handlerMock.Verify(x => x.OnConnectionError(Uri, inError));
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError));
             }
 
             [Theory]
             [InlineData("Neo.ClientError.Cluster.NotALeader")]
             [InlineData("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase")]
-            public void ConvertReadClusterErrorToClientError(string code)
+            public async Task ConvertReadClusterErrorToClientError(string code)
             {
                 var connMock = new Mock<IConnection>();
                 var handlerMock = new Mock<IClusterErrorHandler>();
                 var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
 
                 var inError = ErrorExtensions.ParseServerException(code, null);
-                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().BeOfType<ClientException>();
-                handlerMock.Verify(x => x.OnConnectionError(Uri, inError), Times.Never);
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError), Times.Never);
                 handlerMock.Verify(x => x.OnWriteError(Uri), Times.Never);
             }
 
             [Theory]
             [InlineData("Neo.ClientError.Cluster.NotALeader")]
             [InlineData("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase")]
-            public void ConvertWriteClusterErrorToSessionExpiredError(string code)
+            public async Task ConvertWriteClusterErrorToSessionExpiredError(string code)
             {
                 var connMock = new Mock<IConnection>();
                 var handlerMock = new Mock<IClusterErrorHandler>();
                 var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Write, handlerMock.Object);
 
                 var inError = ErrorExtensions.ParseServerException(code, null);
-                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().BeOfType<SessionExpiredException>();
-                handlerMock.Verify(x => x.OnConnectionError(Uri, inError), Times.Never);
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError), Times.Never);
                 handlerMock.Verify(x => x.OnWriteError(Uri), Times.Once);
             }
 
             [Fact]
-            public void ConvertClusterErrorToClientError()
+            public async Task ConvertClusterErrorToClientError()
             {
                 var connMock = new Mock<IConnection>();
                 var handlerMock = new Mock<IClusterErrorHandler>();
                 var clusterConn = new ClusterConnection(connMock.Object, Uri, AccessMode.Read, handlerMock.Object);
 
                 var inError = new ClientException("random error");
-                var outError = Record.Exception(() => clusterConn.OnError(inError));
+                var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().Be(inError);
-                handlerMock.Verify(x => x.OnConnectionError(Uri, inError), Times.Never);
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError), Times.Never);
                 handlerMock.Verify(x => x.OnWriteError(Uri), Times.Never);
             }
         }

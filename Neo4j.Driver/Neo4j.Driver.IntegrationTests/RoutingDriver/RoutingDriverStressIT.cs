@@ -146,20 +146,21 @@ namespace Neo4j.Driver.IntegrationTests
         private Task ConnectionTerminator()
         {
             const int minimalConnCount = 3;
-            return Task.Run(() =>
+            return Task.Run(async () =>
             {
                 while (!_cancellationTokenSource.IsCancellationRequested)
                 {
                     if (_connections.Count > minimalConnCount && _connections.TryDequeue(out var conn))
                     {
-                        conn.Destroy();
+                        await conn.DestroyAsync();
                         Output.WriteLine($"Terminator killed a connection towards server {conn.Server}");
                     }
                     else
                     {
                         Output.WriteLine("Terminator failed to find a open connection to kill.");
                     }
-                    Task.Delay(1000, _cancellationTokenSource.Token).Wait(_cancellationTokenSource.Token); // sleep
+
+                    await Task.Delay(1000, _cancellationTokenSource.Token);
                 }
             }, _cancellationTokenSource.Token);
         }

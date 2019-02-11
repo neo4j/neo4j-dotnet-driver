@@ -27,11 +27,6 @@ namespace Neo4j.Driver.Internal.Result
     internal interface IRecordSet
     {
         /// <summary>
-        /// Returns true if this set contains no elements to consume.
-        /// </summary>
-        bool AtEnd { get; }
-
-        /// <summary>
         /// Retrievers the next <see cref="IRecord"/>  without consuming it or returns null if the set is empty.
         /// </summary>
         IRecord Peek();

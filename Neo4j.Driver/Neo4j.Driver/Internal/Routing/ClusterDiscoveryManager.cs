@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal class ClusterDiscoveryManager
     {
         private readonly IConnection _conn;
+        private readonly SyncExecutor _syncExecutor;
         private readonly IDriverLogger _logger;
         public IEnumerable<Uri> Readers { get; internal set; } = new Uri[0];
         public IEnumerable<Uri> Writers { get; internal set; } = new Uri[0];
@@ -35,9 +37,12 @@ namespace Neo4j.Driver.Internal.Routing
         private const string GetServersProcedure = "dbms.cluster.routing.getServers";
         private const string GetRoutingTableProcedure = "dbms.cluster.routing.getRoutingTable";
         public Statement DiscoveryProcedure { get; }
-        public ClusterDiscoveryManager(IConnection connection, IDictionary<string, string> context, IDriverLogger logger)
+
+        public ClusterDiscoveryManager(IConnection connection, SyncExecutor syncExecutor, IDictionary<string, string> context,
+            IDriverLogger logger)
         {
             _conn = connection;
+            _syncExecutor = syncExecutor;
             _logger = logger;
             if (ServerVersion.Version(_conn.Server.Version) >= ServerVersion.V3_2_0)
             {
@@ -52,35 +57,10 @@ namespace Neo4j.Driver.Internal.Routing
 
         /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
         /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
-        public void Rediscovery()
-        {
-            try
-            {
-                using (var provider = new SingleConnectionBasedConnectionProvider(_conn))
-                using (var session = new Session(provider, _logger))
-                {
-                    var result = session.Run(DiscoveryProcedure);
-                    var record = result.Single();
-                    ParseDiscoveryResult(record);
-                }
-            }
-            catch (Exception e)
-            {
-                HandleDiscoveryException(e);
-            }
-
-            if (!Readers.Any() || !Routers.Any())
-            {
-                throw new ProtocolException(
-                    $"Invalid discovery result: discovered {Routers.Count()} routers, " +
-                    $"{Writers.Count()} writers and {Readers.Count()} readers.");
-            }
-        }
-
         public async Task RediscoveryAsync()
         {
             var provider = new SingleConnectionBasedConnectionProvider(_conn);
-            var session = new Session(provider, _logger);
+            var session = new Session(provider, _logger, _syncExecutor);
             try
             {
                 var result = await session.RunAsync(DiscoveryProcedure).ConfigureAwait(false);
@@ -102,6 +82,7 @@ namespace Neo4j.Driver.Internal.Routing
                 {
                     // ignore any exception
                 }
+
                 await provider.CloseAsync().ConfigureAwait(false);
             }
 
@@ -125,7 +106,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 // for any reason we failed to do a discovery
                 throw new ProtocolException(
-                    $"Error when parsing `getServers` result: {e.Message}.");
+                    $"Error when parsing `getServers` result: {e.Message}{(e.Message.EndsWith(".") ? "" : ".")}");
             }
         }
 
@@ -148,13 +129,14 @@ namespace Neo4j.Driver.Internal.Routing
                         break;
                 }
             }
+
             ExpireAfterSeconds = record["ttl"].As<long>();
         }
 
         public static Uri BoltRoutingUri(string address)
         {
             UriBuilder builder = new UriBuilder("bolt+routing://" + address);
-            
+
             // If scheme is not registered and no port is specified, then the port is assigned as -1
             if (builder.Port == -1)
             {
@@ -172,26 +154,12 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 _connection = connection;
             }
-            public void Dispose()
-            {
-                _connection?.Close();
-            }
-
-            public IConnection Acquire(AccessMode mode)
-            {
-                var conn = _connection;
-                _connection = null;
-                return conn;
-            }
 
             public Task<IConnection> AcquireAsync(AccessMode mode)
             {
-                return Task.FromResult(Acquire(mode));
-            }
-
-            public void Close()
-            {
-                _connection?.Close();
+                var conn = _connection;
+                _connection = null;
+                return Task.FromResult(conn);
             }
 
             public Task CloseAsync()
