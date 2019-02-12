@@ -21,9 +21,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.Messaging.V4;
-using static Neo4j.Driver.Internal.Messaging.V4.PullNMessage;
 using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -48,7 +46,8 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var collector = new HelloMessageResponseCollector();
-            await connection.EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()), collector);
+            await connection.EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()), collector)
+                .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
             ((ServerInfo) connection.Server).Version = collector.Server;
             connection.UpdateId(collector.ConnectionId);
@@ -60,14 +59,15 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, new PullNMessage(All));
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder,
+                new PullNMessage(All)).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return resultBuilder.PreBuild();
         }
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig), null);
+            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig), null).ConfigureAwait(false);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
@@ -79,7 +79,8 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All));
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All))
+                .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
 
             return resultBuilder.PreBuild();
@@ -88,15 +89,15 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task<Bookmark> CommitTransactionAsync(IConnection connection)
         {
             var bookmarkCollector = new BookmarkCollector();
-            await connection.EnqueueAsync(CommitMessage.Commit, bookmarkCollector);
+            await connection.EnqueueAsync(CommitMessage.Commit, bookmarkCollector).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
             return bookmarkCollector.Bookmark;
         }
 
         public async Task RollbackTransactionAsync(IConnection connection)
         {
-            await connection.EnqueueAsync(RollbackMessage.Rollback, null);
-            await connection.SyncAsync();
+            await connection.EnqueueAsync(RollbackMessage.Rollback, null).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
         }
 
         public Task ResetAsync(IConnection connection)

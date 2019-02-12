@@ -55,7 +55,8 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var serverVersionCollector = new ServerVersionCollector();
-            await connection.EnqueueAsync(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
+            await connection.EnqueueAsync(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector)
+                .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
             ((ServerInfo) connection.Server).Version = serverVersionCollector.Server;
         }
@@ -67,7 +68,7 @@ namespace Neo4j.Driver.Internal.Protocol
             AssertNullOrEmptyTransactionConfig(txConfig);
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll);
+            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return resultBuilder.PreBuild();
         }
@@ -76,7 +77,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            await connection.EnqueueAsync(new RunMessage(Begin, parameters), null, PullAll);
+            await connection.EnqueueAsync(new RunMessage(Begin, parameters), null, PullAll).ConfigureAwait(false);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
@@ -88,7 +89,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll);
+            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
 
             return resultBuilder.PreBuild();
@@ -97,7 +98,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task<Bookmark> CommitTransactionAsync(IConnection connection)
         {
             var bookmarkCollector = new BookmarkCollector();
-            await connection.EnqueueAsync(Commit, bookmarkCollector, PullAll);
+            await connection.EnqueueAsync(Commit, bookmarkCollector, PullAll).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
             return bookmarkCollector.Bookmark;
         }

@@ -126,9 +126,9 @@ namespace Neo4j.Driver.Internal.Connector
             AssertNoServerFailure();
         }
 
-        public async Task ResetAsync()
+        public Task ResetAsync()
         {
-            await _boltProtocol.ResetAsync(this);
+            return _boltProtocol.ResetAsync(this);
         }
 
         public bool IsOpen => _client.IsOpen;

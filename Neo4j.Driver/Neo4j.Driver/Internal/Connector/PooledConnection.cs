@@ -49,8 +49,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task ClearConnectionAsync()
         {
-            await ResetAsync();
-            await SyncAsync();
+            await ResetAsync().ConfigureAwait(false);
+            await SyncAsync().ConfigureAwait(false);
         }
 
         public void OnAcquire()
