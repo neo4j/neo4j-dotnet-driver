@@ -117,7 +117,9 @@ namespace Neo4j.Driver.IntegrationTests
                     var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
                     using (var session = Server.Driver.Session())
                     {
-                        var error = await Xunit.Record.ExceptionAsync(() => session.RunAsync("MATCH (n:Node) SET n.prop = 2", txConfig));
+                        var error = await Xunit.Record.ExceptionAsync(() =>
+                            session.RunAsync("MATCH (n:Node) SET n.prop = 2", txConfig)
+                                .ContinueWith(t => t.Result.ConsumeAsync()).Unwrap());
                         // Then
                         error.Should().BeOfType<TransientException>();
                         error.Message.Should().Contain("terminated");
@@ -137,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             await RunWithTxConfigAsync(true);
         }
-        
+
         [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
         public void ShouldWriteWithTxConfig()
         {
@@ -149,7 +151,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             await RunWithTxConfigAsync(false);
         }
-        
+
         private void RunWithTxConfig(bool read)
         {
             // Given
@@ -166,7 +168,7 @@ namespace Neo4j.Driver.IntegrationTests
                 value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
             }
         }
-        
+
         private async Task RunWithTxConfigAsync(bool read)
         {
             // Given
@@ -184,6 +186,5 @@ namespace Neo4j.Driver.IntegrationTests
                 value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
             }
         }
-
     }
 }
