@@ -34,7 +34,6 @@ namespace Neo4j.Driver.Internal.Protocol
         #endregion
         
         internal BoltProtocolV3MessageFormat()
-            : base(true)
         {
             // BoltV3 Request Message Types
             AddHandler<HelloMessageHandler>();

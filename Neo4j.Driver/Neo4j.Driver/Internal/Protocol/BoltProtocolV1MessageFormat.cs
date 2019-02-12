@@ -39,8 +39,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         #endregion
 
-        internal BoltProtocolV1MessageFormat(bool supportBytes)
-            : base(supportBytes)
+        internal BoltProtocolV1MessageFormat()
         {
             // Request Message Types
             AddHandler<InitMessageHandler>();

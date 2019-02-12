@@ -33,105 +33,55 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV1 : IBoltProtocol
     {
         public static readonly BoltProtocolV1 BoltV1 = new BoltProtocolV1();
-        
+
         private const string Begin = "BEGIN";
         public static readonly IRequestMessage Commit = new RunMessage("COMMIT");
         public static readonly IRequestMessage Rollback = new RunMessage("ROLLBACK");
 
-        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, IDriverLogger logger=null, bool byteArraySupportEnabled = true)
+        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
+            IDriverLogger logger = null)
         {
-            var messageFormat = BoltProtocolMessageFormat.V1;
-            if (!byteArraySupportEnabled)
-            {
-                messageFormat = BoltProtocolMessageFormat.V1NoByteArray;
-            }
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
-                bufferSettings.MaxWriteBufferSize, logger, messageFormat);
+                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V1);
         }
 
-        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null, bool byteArraySupportEnabled=true)
+        public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
+            IDriverLogger logger = null)
         {
-            var messageFormat = BoltProtocolMessageFormat.V1;
-            if (!byteArraySupportEnabled)
-            {
-                messageFormat = BoltProtocolMessageFormat.V1NoByteArray;
-            }
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
-                bufferSettings.MaxReadBufferSize, logger, messageFormat);
-        }
-
-        public void Login(IConnection connection, string userAgent, IAuthToken authToken)
-        {
-            var serverVersionCollector = new ServerVersionCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
-            connection.Sync();
-            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
-
-            if (!(ServerVersion.Version(serverVersionCollector.Server) >= ServerVersion.V3_2_0))
-            {
-                connection.ResetMessageReaderAndWriterForServerV3_1();
-            }
+                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V1);
         }
 
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             var serverVersionCollector = new ServerVersionCollector();
-            connection.Enqueue(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector);
+            await connection.EnqueueAsync(new InitMessage(userAgent, authToken.AsDictionary()), serverVersionCollector)
+                .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
-            ((ServerInfo)connection.Server).Version = serverVersionCollector.Server;
-        }
-
-        public IStatementResult RunInAutoCommitTransaction(IConnection connection, Statement statement,
-            IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
-        {
-            AssertNullOrEmptyTransactionConfig(txConfig);
-            var resultBuilder = new ResultBuilder(NewSummaryCollector(statement, connection.Server),
-                connection.ReceiveOne, resultResourceHandler);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
-            connection.Send();
-            return resultBuilder.PreBuild();
+            ((ServerInfo) connection.Server).Version = serverVersionCollector.Server;
         }
 
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement, IResultResourceHandler resultResourceHandler, Bookmark ignored, TransactionConfig txConfig)
+            Statement statement, IResultResourceHandler resultResourceHandler, Bookmark ignored,
+            TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
+            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
-            return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
-        }
-
-        public void BeginTransaction(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
-        {
-            AssertNullOrEmptyTransactionConfig(txConfig);
-            IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
-            if (bookmark != null && !bookmark.IsEmpty())
-            {
-                connection.Sync();
-            }
+            return resultBuilder.PreBuild();
         }
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
             IDictionary<string, object> parameters = bookmark?.AsBeginTransactionParameters();
-            connection.Enqueue(new RunMessage(Begin, parameters), null, PullAll);
+            await connection.EnqueueAsync(new RunMessage(Begin, parameters), null, PullAll).ConfigureAwait(false);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
-        }
-
-        public IStatementResult RunInExplicitTransaction(IConnection connection, Statement statement)
-        {
-            var resultBuilder = new ResultBuilder(
-                NewSummaryCollector(statement, connection.Server),connection.ReceiveOne);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
-            connection.Send();
-            return resultBuilder.PreBuild();
         }
 
         public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
@@ -139,47 +89,29 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            connection.Enqueue(new RunMessage(statement), resultBuilder, PullAll);
+            await connection.EnqueueAsync(new RunMessage(statement), resultBuilder, PullAll).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
 
-            return await resultBuilder.PreBuildAsync().ConfigureAwait(false);
-        }
-
-        public Bookmark CommitTransaction(IConnection connection)
-        {
-            var bookmarkCollector = new BookmarkCollector();
-            connection.Enqueue(Commit, bookmarkCollector, PullAll);
-            connection.Sync();
-            return bookmarkCollector.Bookmark;
+            return resultBuilder.PreBuild();
         }
 
         public async Task<Bookmark> CommitTransactionAsync(IConnection connection)
         {
             var bookmarkCollector = new BookmarkCollector();
-            connection.Enqueue(Commit, bookmarkCollector, PullAll);
+            await connection.EnqueueAsync(Commit, bookmarkCollector, PullAll).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
             return bookmarkCollector.Bookmark;
         }
 
-        public void RollbackTransaction(IConnection connection)
+        public async Task RollbackTransactionAsync(IConnection connection)
         {
-            connection.Enqueue(Rollback, null, DiscardAll);
-            connection.Sync();
+            await connection.EnqueueAsync(Rollback, null, DiscardAll).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
         }
 
-        public Task RollbackTransactionAsync(IConnection connection)
+        public Task ResetAsync(IConnection connection)
         {
-            connection.Enqueue(Rollback, null, DiscardAll);
-            return connection.SyncAsync();
-        }
-
-        public void Reset(IConnection connection)
-        {
-            connection.Enqueue(ResetMessage.Reset, null);
-        }
-
-        public void Logout(IConnection connection)
-        {
+            return connection.EnqueueAsync(ResetMessage.Reset, null);
         }
 
         public Task LogoutAsync(IConnection connection)
@@ -189,15 +121,14 @@ namespace Neo4j.Driver.Internal.Protocol
 
         private void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig)
         {
-            if ( txConfig != null && !txConfig.IsEmpty() )
+            if (txConfig != null && !txConfig.IsEmpty())
             {
                 throw new ArgumentException(
                     "Driver is connected to the database that does not support transaction configuration. " +
                     "Please upgrade to neo4j 3.5.0 or later in order to use this functionality");
             }
-
         }
-        
+
         private static SummaryCollector NewSummaryCollector(Statement statement, IServerInfo serverInfo)
         {
             return new SummaryCollector(statement, serverInfo);

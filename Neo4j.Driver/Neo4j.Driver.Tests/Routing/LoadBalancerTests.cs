@@ -17,11 +17,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal;
 using Xunit;
 using static Neo4j.Driver.Tests.Routing.RoutingTableManagerTests;
 
@@ -34,7 +36,7 @@ namespace Neo4j.Driver.Tests.Routing
             public class OnConnectionErrorMethod
             {
                 [Fact]
-                public void ShouldRemoveFromLoadBalancer()
+                public async Task ShouldRemoveFromLoadBalancer()
                 {
                     var clusterPoolMock = new Mock<IClusterConnectionPool>();
                     var routingTableMock = new Mock<IRoutingTable>();
@@ -43,8 +45,9 @@ namespace Neo4j.Driver.Tests.Routing
                     routingTableManagerMock.Setup(x => x.RoutingTable).Returns(routingTableMock.Object);
                     var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
 
-                    loadBalancer.OnConnectionError(uri, new ClientException());
-                    clusterPoolMock.Verify(x => x.Deactivate(uri), Times.Once);
+                    await loadBalancer.OnConnectionErrorAsync(uri, new ClientException());
+
+                    clusterPoolMock.Verify(x => x.DeactivateAsync(uri), Times.Once);
                     routingTableMock.Verify(x => x.Remove(uri), Times.Once);
                     routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Never);
                 }
@@ -63,7 +66,7 @@ namespace Neo4j.Driver.Tests.Routing
                     var loadBalancer = new LoadBalancer(clusterPoolMock.Object, routingTableManagerMock.Object);
 
                     loadBalancer.OnWriteError(uri);
-                    clusterPoolMock.Verify(x => x.Deactivate(uri), Times.Never);
+                    clusterPoolMock.Verify(x => x.DeactivateAsync(uri), Times.Never);
                     routingTableMock.Verify(x => x.Remove(uri), Times.Never);
                     routingTableMock.Verify(x => x.RemoveWriter(uri), Times.Once);
                 }
@@ -75,7 +78,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
-            public void ShouldThrowSessionExpiredExceptionIfNoServerAvailable(AccessMode mode)
+            public async Task ShouldThrowSessionExpiredExceptionIfNoServerAvailable(AccessMode mode)
             {
                 // Given
                 var mock = new Mock<IRoutingTableManager>();
@@ -83,7 +86,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var balancer = new LoadBalancer(null, mock.Object);
 
                 // When
-                var error = Record.Exception(() => balancer.Acquire(mode));
+                var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode));
 
                 // Then
                 error.Should().BeOfType<SessionExpiredException>();
@@ -93,7 +96,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
-            public void ShouldReturnConnectionWithCorrectMode(AccessMode mode)
+            public async Task ShouldReturnConnectionWithCorrectMode(AccessMode mode)
             {
                 // Given
                 var uri = new Uri("bolt+routing://123:456");
@@ -105,11 +108,11 @@ namespace Neo4j.Driver.Tests.Routing
                 var mockedConn = new Mock<IConnection>();
                 mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
                 var conn = mockedConn.Object;
-                clusterPoolMock.Setup(x => x.Acquire(uri)).Returns(conn);
+                clusterPoolMock.Setup(x => x.AcquireAsync(uri)).ReturnsAsync(conn);
                 var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
 
                 // When
-                var acquiredConn = balancer.Acquire(mode);
+                var acquiredConn = await balancer.AcquireAsync(mode);
 
                 // Then
                 acquiredConn.Server.Address.Should().Be(uri.ToString());
@@ -118,7 +121,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
-            public void ShouldForgetServerWhenFailedToEstablishConn(AccessMode mode)
+            public async Task ShouldForgetServerWhenFailedToEstablishConn(AccessMode mode)
             {
                 // Given
                 var uri = new Uri("bolt+routing://123:456");
@@ -127,13 +130,13 @@ namespace Neo4j.Driver.Tests.Routing
                 mock.Setup(x => x.RoutingTable).Returns(routingTableMock.Object);
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                clusterConnPoolMock.Setup(x => x.Acquire(uri))
-                    .Callback(() => throw new ServiceUnavailableException("failed init"));
+                clusterConnPoolMock.Setup(x => x.AcquireAsync(uri))
+                    .Returns(TaskHelper.GetFailedTask<IConnection>(new ServiceUnavailableException("failed init")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
                 // When
-                var error = Record.Exception(() => balancer.Acquire(mode));
+                var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode));
 
                 // Then
                 error.Should().BeOfType<SessionExpiredException>();
@@ -141,13 +144,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // should be removed
                 routingTableMock.Verify(m => m.Remove(uri), Times.Once);
-                clusterConnPoolMock.Verify(m => m.Deactivate(uri), Times.Once);
+                clusterConnPoolMock.Verify(m => m.DeactivateAsync(uri), Times.Once);
             }
 
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
-            public void ShouldThrowErrorDirectlyIfSecurityError(AccessMode mode)
+            public async Task ShouldThrowErrorDirectlyIfSecurityError(AccessMode mode)
             {
                 // Given
                 var uri = new Uri("bolt+routing://123:456");
@@ -156,13 +159,14 @@ namespace Neo4j.Driver.Tests.Routing
                 mock.Setup(x => x.RoutingTable).Returns(routingTableMock.Object);
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                clusterConnPoolMock.Setup(x => x.Acquire(uri))
-                    .Callback(() => throw new SecurityException("Failed to establish ssl connection with the server"));
+                clusterConnPoolMock.Setup(x => x.AcquireAsync(uri))
+                    .Returns(TaskHelper.GetFailedTask<IConnection>(
+                        new SecurityException("Failed to establish ssl connection with the server")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
                 // When
-                var error = Record.Exception(() => balancer.Acquire(mode));
+                var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode));
 
                 // Then
                 error.Should().BeOfType<SecurityException>();
@@ -170,13 +174,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // while the server is not removed
                 routingTableMock.Verify(m => m.Remove(uri), Times.Never);
-                clusterConnPoolMock.Verify(m => m.Deactivate(uri), Times.Never);
+                clusterConnPoolMock.Verify(m => m.DeactivateAsync(uri), Times.Never);
             }
 
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
-            public void ShouldThrowErrorDirectlyIfProtocolError(AccessMode mode)
+            public async Task ShouldThrowErrorDirectlyIfProtocolError(AccessMode mode)
             {
                 // Given
                 var uri = new Uri("bolt+routing://123:456");
@@ -185,13 +189,13 @@ namespace Neo4j.Driver.Tests.Routing
                 mock.Setup(x => x.RoutingTable).Returns(routingTableMock.Object);
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
-                clusterConnPoolMock.Setup(x => x.Acquire(uri)).Returns(() => null)
-                    .Callback(() => throw new ProtocolException("do not understand struct 0x01"));
+                clusterConnPoolMock.Setup(x => x.AcquireAsync(uri)).Returns(
+                    TaskHelper.GetFailedTask<IConnection>(new ProtocolException("do not understand struct 0x01")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
                 // When
-                var error = Record.Exception(() => balancer.Acquire(mode));
+                var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode));
 
                 // Then
                 error.Should().BeOfType<ProtocolException>();
@@ -199,13 +203,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // while the server is not removed
                 routingTableMock.Verify(m => m.Remove(uri), Times.Never);
-                clusterConnPoolMock.Verify(m => m.Deactivate(uri), Times.Never);
+                clusterConnPoolMock.Verify(m => m.DeactivateAsync(uri), Times.Never);
             }
 
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
-            public void ShouldReturnConnectionAccordingToLoadBalancingStrategy(AccessMode mode)
+            public async Task ShouldReturnConnectionAccordingToLoadBalancingStrategy(AccessMode mode)
             {
                 var routingTable = NewRoutingTable(
                     new List<Uri> {new Uri("router:1"), new Uri("router:2")},
@@ -216,28 +220,28 @@ namespace Neo4j.Driver.Tests.Routing
                 routingTableManager.Setup(x => x.RoutingTable).Returns(routingTable);
 
                 var clusterPoolMock = new Mock<IClusterConnectionPool>();
-                clusterPoolMock.Setup(x => x.Acquire(It.IsAny<Uri>()))
-                    .Returns((Uri uri) => NewConnectionMock(uri));
+                clusterPoolMock.Setup(x => x.AcquireAsync(It.IsAny<Uri>()))
+                    .ReturnsAsync((Uri uri) => NewConnectionMock(uri));
 
                 var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
 
                 if (mode == AccessMode.Read)
                 {
-                    balancer.Acquire(mode).Server.Address.Should().Be("reader:1");
-                    balancer.Acquire(mode).Server.Address.Should().Be("reader:2");
-                    balancer.Acquire(mode).Server.Address.Should().Be("reader:3");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("reader:1");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("reader:2");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("reader:3");
 
-                    balancer.Acquire(mode).Server.Address.Should().Be("reader:1");
-                    balancer.Acquire(mode).Server.Address.Should().Be("reader:2");
-                    balancer.Acquire(mode).Server.Address.Should().Be("reader:3");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("reader:1");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("reader:2");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("reader:3");
                 }
                 else if (mode == AccessMode.Write)
                 {
-                    balancer.Acquire(mode).Server.Address.Should().Be("writer:1");
-                    balancer.Acquire(mode).Server.Address.Should().Be("writer:2");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("writer:1");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("writer:2");
 
-                    balancer.Acquire(mode).Server.Address.Should().Be("writer:1");
-                    balancer.Acquire(mode).Server.Address.Should().Be("writer:2");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("writer:1");
+                    (await balancer.AcquireAsync(mode)).Server.Address.Should().Be("writer:2");
                 }
                 else
                 {

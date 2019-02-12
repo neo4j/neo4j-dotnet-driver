@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
@@ -32,103 +33,53 @@ namespace Neo4j.Driver.Internal.Connector
             Delegate = connection;
         }
 
-        public abstract void OnError(Exception error);
-
         public virtual Task OnErrorAsync(Exception error)
         {
-            OnError(error);
             return TaskHelper.GetCompletedTask();
-        }
-
-        public void Sync()
-        {
-            try
-            {
-                Delegate.Sync();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
         }
 
         public Task SyncAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.SyncAsync());
-        }
-
-        public void Send()
-        {
-            try
-            {
-                Delegate.Send();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
+            return TaskWithErrorHandling(() => Delegate.SyncAsync());
         }
 
         public Task SendAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.SendAsync());
-        }
-
-        public void ReceiveOne()
-        {
-            try
-            {
-                Delegate.ReceiveOne();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
+            return TaskWithErrorHandling(() => Delegate.SendAsync());
         }
 
         public Task ReceiveOneAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.ReceiveOneAsync());
-        }
-
-        public void Init()
-        {
-            try
-            {
-                Delegate.Init();
-            }
-            catch (Exception e)
-            {
-                OnError(e);
-            }
+            return TaskWithErrorHandling(() => Delegate.ReceiveOneAsync());
         }
 
         public Task InitAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.InitAsync());
+            return TaskWithErrorHandling(() => Delegate.InitAsync());
         }
 
-        public void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null)
+        public Task EnqueueAsync(IRequestMessage message1, IMessageResponseCollector responseCollector,
+            IRequestMessage message2 = null)
         {
             try
             {
-                Delegate.Enqueue(message1, responseCollector, message2);
+                return Delegate.EnqueueAsync(message1, responseCollector, message2);
             }
             catch (Exception e)
             {
-                OnError(e);
+                return OnErrorAsync(e);
             }
         }
 
-        public void Reset()
+        public Task ResetAsync()
         {
             try
             {
-                Delegate.Reset();
+                return Delegate.ResetAsync();
             }
             catch (Exception e)
             {
-                OnError(e);
+                return OnErrorAsync(e);
             }
         }
 
@@ -136,29 +87,15 @@ namespace Neo4j.Driver.Internal.Connector
 
         public IServerInfo Server => Delegate.Server;
         public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
-        public void ResetMessageReaderAndWriterForServerV3_1()
-        {
-            Delegate.ResetMessageReaderAndWriterForServerV3_1();
-        }
 
         public void UpdateId(string newConnId)
         {
             Delegate.UpdateId(newConnId);
         }
 
-        public virtual void Destroy()
-        {
-            Delegate.Destroy();
-        }
-
         public virtual Task DestroyAsync()
         {
             return Delegate.DestroyAsync();
-        }
-
-        public virtual void Close()
-        {
-            Delegate.Close();
         }
 
         public virtual Task CloseAsync()

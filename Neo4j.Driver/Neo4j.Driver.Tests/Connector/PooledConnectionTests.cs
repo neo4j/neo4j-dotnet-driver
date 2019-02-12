@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
@@ -41,17 +42,17 @@ namespace Neo4j.Driver.Tests.Connector
             }
 
             [Fact]
-            public void ShouldReportErrorIfIsDatabaseException()
+            public async Task ShouldReportErrorIfIsDatabaseException()
             {
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = new PooledConnection(SocketConnectionTests.NewSocketConnection(handler: mockResponseHandler.Object));
+                var con = new PooledConnection(
+                    SocketConnectionTests.NewSocketConnection(handler: mockResponseHandler.Object));
 
                 mockResponseHandler.Setup(x => x.HasError).Returns(true);
                 mockResponseHandler.Setup(x => x.Error).Returns(new DatabaseException("BLAH", "lalala"));
 
-                var exception = Record.Exception(() => con.ReceiveOne());
-                exception.Should().BeOfType<DatabaseException>();
-                exception.Message.Should().Be("lalala");
+                var exception = await Record.ExceptionAsync(() => con.ReceiveOneAsync());
+                exception.Should().BeOfType<DatabaseException>().Which.Message.Should().Be("lalala");
 
                 con.HasUnrecoverableError.Should().BeTrue();
                 mockResponseHandler.VerifySet(x => x.Error = null, Times.Once);

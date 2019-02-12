@@ -14,9 +14,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
@@ -25,49 +27,104 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    internal class ListBasedRecordSet : IRecordSet
+    internal class ListBasedRecordCursor : IStatementResultCursor
     {
-        private readonly IList<IRecord> _records;
+        private readonly string[] _keys;
+        private readonly Func<IResultSummary> _summaryFunc;
+        private readonly Func<IEnumerable<IRecord>> _recordsFunc;
+
+        private IResultSummary _summary;
         private int _count = 0;
-        private readonly RecordSet _recordSet;
+        private IEnumerator<IRecord> _enum = null;
+        private IRecord _record = null;
+        private IRecord _peeked = null;
 
-        public ListBasedRecordSet(IList<IRecord> records)
+        public ListBasedRecordCursor(IEnumerable<string> keys, Func<IEnumerable<IRecord>> recordsFunc,
+            Func<IResultSummary> summaryFunc = null)
         {
-            _records = records;
-            _recordSet = new RecordSet(NextRecord);
+            _keys = keys.ToArray();
+            _recordsFunc = recordsFunc;
+            _summaryFunc = summaryFunc;
         }
 
-        public bool AtEnd => _count >= _records.Count;
-
-        private IRecord NextRecord()
+        public Task<string[]> KeysAsync()
         {
-            return AtEnd ? null : _records[_count++];
+            return Task.FromResult(_keys);
         }
 
-        public IRecord Peek()
+        public Task<IResultSummary> SummaryAsync()
         {
-            return _recordSet.Peek();
+            if (_summary == null && _summaryFunc != null)
+            {
+                _summary = _summaryFunc();
+            }
+
+            return Task.FromResult(_summary);
         }
 
-        public IEnumerable<IRecord> Records()
+        public Task<IRecord> PeekAsync()
         {
-            return _recordSet.Records();
+            if (_peeked == null)
+            {
+                if (_enum == null)
+                {
+                    _enum = _recordsFunc().GetEnumerator();
+                }
+
+                if (_enum.MoveNext())
+                {
+                    _peeked = _enum.Current;
+                }
+            }
+
+            return Task.FromResult(_peeked);
         }
+
+        public async Task<IResultSummary> ConsumeAsync()
+        {
+            while (await FetchAsync())
+            {
+            }
+
+            return await SummaryAsync();
+        }
+
+        public Task<bool> FetchAsync()
+        {
+            if (_enum == null)
+            {
+                _enum = _recordsFunc().GetEnumerator();
+            }
+
+            if (_peeked != null)
+            {
+                _record = _peeked;
+                _peeked = null;
+                return Task.FromResult(true);
+            }
+
+            var hasNext = _enum.MoveNext();
+            _record = _enum.Current;
+            return Task.FromResult(hasNext);
+        }
+
+        public IRecord Current => _record;
     }
 
     internal static class RecordCreator
     {
-        public static List<string> CreateKeys(int keySize=1)
+        public static List<string> CreateKeys(int keySize = 1)
         {
             var keys = new List<string>(keySize);
             for (int i = 0; i < keySize; i++)
             {
                 keys.Add($"key{i}");
             }
+
             return keys;
         }
 
-        public static IList<IRecord> CreateRecords(int recordSize, int keySize=1)
+        public static IList<IRecord> CreateRecords(int recordSize, int keySize = 1)
         {
             var keys = CreateKeys(keySize);
             return CreateRecords(recordSize, keys);
@@ -85,10 +142,12 @@ namespace Neo4j.Driver.Tests
                 {
                     values.Add($"record{j}:key{i}");
                 }
+
                 records.Add(new Record(keys, values.ToArray()));
             }
+
             return records;
-        } 
+        }
     }
 
     public class RecordSetTests
@@ -96,35 +155,37 @@ namespace Neo4j.Driver.Tests
         public class RecordMethod
         {
             [Fact]
-            public void ShouldReturnRecordsInOrder()
+            public async Task ShouldReturnRecordsInOrder()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var recordSet = new ListBasedRecordSet(records);
+                var cursor = new ListBasedRecordCursor(new[] {"key1"}, () => records);
 
                 int i = 0;
-                foreach (var record in recordSet.Records())
+                while (await cursor.FetchAsync())
                 {
-                    record[0].ValueAs<string>().Should().Be($"record{i++}:key0");
+                    cursor.Current[0].ValueAs<string>().Should().Be($"record{i++}:key0");
                 }
+
                 i.Should().Be(5);
             }
 
             [Fact]
-            public void ShouldReturnRecordsAddedLatter()
+            public async Task ShouldReturnRecordsAddedLatter()
             {
                 var keys = RecordCreator.CreateKeys();
                 var records = RecordCreator.CreateRecords(5, keys);
-                var recordSet = new ListBasedRecordSet(records);
+                var cursor = new ListBasedRecordCursor(keys, () => records);
 
                 // I add a new record after RecordSet is created
                 var newRecord = new Record(keys, new object[] {"record5:key0"});
                 records.Add(newRecord);
 
                 int i = 0;
-                foreach (var record in recordSet.Records())
+                while (await cursor.FetchAsync())
                 {
-                    record[0].ValueAs<string>().Should().Be($"record{i++}:key0");
+                    cursor.Current[0].ValueAs<string>().Should().Be($"record{i++}:key0");
                 }
+
                 i.Should().Be(6);
             }
         }
@@ -132,130 +193,91 @@ namespace Neo4j.Driver.Tests
         public class PeekMethod
         {
             [Fact]
-            public void ShouldReturnNextRecordWithoutMovingCurrentRecord()
+            public async Task ShouldReturnNextRecordWithoutMovingCurrentRecord()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var recordSet = new ListBasedRecordSet(records);
+                var cursor = new ListBasedRecordCursor(new[] {"key1"}, () => records);
 
-                var record = recordSet.Peek();
+                var record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
                 record[0].ValueAs<string>().Should().Be("record0:key0");
 
                 // not moving further no matter how many times are called
-                record = recordSet.Peek();
+                record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
                 record[0].ValueAs<string>().Should().Be("record0:key0");
             }
 
             [Fact]
-            public void ShouldReturnNextRecordAfterNextWithoutMovingCurrentRecord()
+            public async Task ShouldReturnNextRecordAfterNextWithoutMovingCurrentRecord()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var recordSet = new ListBasedRecordSet(records);
+                var cursor = new ListBasedRecordCursor(new[] {"key0"}, () => records);
 
-                recordSet.Records().Take(1).ToList();
-                var record = recordSet.Peek();
+                await cursor.FetchAsync();
+
+                var record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
                 record[0].ValueAs<string>().Should().Be("record1:key0");
 
                 // not moving further no matter how many times are called
-                record = recordSet.Peek();
+                record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
                 record[0].ValueAs<string>().Should().Be("record1:key0");
             }
 
             [Fact]
-            public void ShouldReturnNullIfAtEnd()
+            public async Task ShouldReturnNullIfAtEnd()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var recordSet = new ListBasedRecordSet(records);
-                recordSet.Records().Take(4).ToList(); // [0, 1, 2, 3]
+                var cursor = new ListBasedRecordCursor(new[] {"key0"}, () => records);
 
-                var record = recordSet.Peek();
+                // [0, 1, 2, 3]
+                await cursor.FetchAsync();
+                await cursor.FetchAsync();
+                await cursor.FetchAsync();
+                await cursor.FetchAsync();
+
+                var record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
                 record[0].ValueAs<string>().Should().Be("record4:key0");
 
-                var moveNext = recordSet.Records().GetEnumerator().MoveNext();
+                var moveNext = await cursor.FetchAsync();
                 moveNext.Should().BeTrue();
 
                 record.Should().NotBeNull();
                 record[0].ValueAs<string>().Should().Be("record4:key0");
 
-                record = recordSet.Peek();
+                record = await cursor.PeekAsync();
                 record.Should().BeNull();
             }
 
             [Fact]
-            public void ShouldBeTheSameWithEnumeratorMoveNextCurrent()
+            public async Task ShouldBeTheSameWithEnumeratorMoveNextCurrent()
             {
                 var records = RecordCreator.CreateRecords(2);
-                var recordSet = new ListBasedRecordSet(records);
+                var cursor = new ListBasedRecordCursor(new[] {"key0"}, () => records);
 
                 IRecord record;
-                IEnumerator<IRecord> enumerator;
+                bool hasNext;
                 for (int i = 0; i < 2; i++)
                 {
-                    record = recordSet.Peek();
+                    record = await cursor.PeekAsync();
                     record.Should().NotBeNull();
                     record[0].ValueAs<string>().Should().Be($"record{i}:key0");
 
-                    enumerator = recordSet.Records().GetEnumerator();
-                    enumerator.MoveNext().Should().BeTrue();
+                    hasNext = await cursor.FetchAsync();
+                    hasNext.Should().BeTrue();
 
                     // peeked record = current
-                    enumerator.Current[0].ValueAs<string>().Should().Be($"record{i}:key0");
+                    cursor.Current[0].ValueAs<string>().Should().Be($"record{i}:key0");
                 }
 
-                record = recordSet.Peek();
+                record = await cursor.PeekAsync();
                 record.Should().BeNull();
 
-                enumerator = recordSet.Records().GetEnumerator();
-                enumerator.MoveNext().Should().BeFalse();
-                enumerator.Current.Should().BeNull();
-            }
-            
-        }
-
-        public class RecordNavigation
-        {
-            [Fact]
-            public void EnumeratorResetShouldDoNothing()
-            {
-                var records = RecordCreator.CreateRecords(5);
-                var recordSet = new ListBasedRecordSet(records);
-
-                var ex = Xunit.Record.Exception(()=>recordSet.Records().GetEnumerator().Reset());
-                ex.Should().BeOfType<NotSupportedException>();
-            }
-
-            [Fact]
-            public void ShouldGetTheFirstRecordAndMoveToNextPosition()
-            {
-                var records = RecordCreator.CreateRecords(5);
-                var recordSet = new ListBasedRecordSet(records);
-                var recordStream = recordSet.Records();
-
-                var record = recordStream.First();
-                record[0].ValueAs<string>().Should().Be("record0:key0");
-
-                record = recordStream.First();
-                record[0].ValueAs<string>().Should().Be("record1:key0");
-            }
-
-            [Fact]
-            public void ShouldAlwaysAdvanceRecordPosition()
-            {
-                var recordSet = new ListBasedRecordSet(RecordCreator.CreateRecords(5));
-                var recordStream = recordSet.Records();
-
-                var enumerable = recordStream.Take(1);
-                var records = recordStream.Take(2).ToList();
-
-                records[0][0].ValueAs<string>().Should().Be("record0:key0");
-                records[1][0].ValueAs<string>().Should().Be("record1:key0");
-
-                records = enumerable.ToList();
-                records[0][0].ValueAs<string>().Should().Be("record2:key0");
+                hasNext = await cursor.FetchAsync();
+                hasNext.Should().BeFalse();
             }
         }
     }

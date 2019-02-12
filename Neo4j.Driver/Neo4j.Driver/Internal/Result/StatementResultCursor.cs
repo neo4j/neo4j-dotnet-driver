@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class StatementResultCursor: IStatementResultCursor
     {
-        private readonly List<string> _keys;
+        private readonly Func<Task<string[]>> _keysFunc;
         private readonly Func<Task<IRecord>> _nextRecordFunc;
         private readonly Func<Task<IResultSummary>> _summaryFunc;
 
@@ -32,19 +32,28 @@ namespace Neo4j.Driver.Internal.Result
         private IRecord _peeked = null;
         private IRecord _current = null;
 
+        private Task<string[]> _keys;
         private Task<IResultSummary> _summary;
 
-        public StatementResultCursor(List<string> keys, Func<Task<IRecord>> nextRecordFunc, Func<Task<IResultSummary>> summaryFunc = null)
+        public StatementResultCursor(Func<Task<string[]>> keysFunc, Func<Task<IRecord>> nextRecordFunc, Func<Task<IResultSummary>> summaryFunc = null)
         {
-            Throw.ArgumentNullException.IfNull(keys, nameof(keys));
+            Throw.ArgumentNullException.IfNull(keysFunc, nameof(keysFunc));
             Throw.ArgumentNullException.IfNull(nextRecordFunc, nameof(nextRecordFunc));
 
-            _keys = keys;
+            _keysFunc = keysFunc;
             _nextRecordFunc = nextRecordFunc;
             _summaryFunc = summaryFunc;
         }
 
-        public IReadOnlyList<string> Keys => _keys;
+        public Task<string[]> KeysAsync()
+        {
+            if (_keys == null)
+            {
+                _keys = _keysFunc();
+            }
+
+            return _keys;
+        }
 
         public Task<IResultSummary> SummaryAsync()
         {

@@ -21,26 +21,26 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
-using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
+using Neo4j.Driver.Internal.Messaging.V4;
+using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV3 : IBoltProtocol
+    internal class BoltProtocolV4 : IBoltProtocol
     {
-        public static readonly BoltProtocolV3 BoltV3 = new BoltProtocolV3();
+        public static readonly BoltProtocolV4 BoltV4 = new BoltProtocolV4();
 
         public IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
             IDriverLogger logger = null)
         {
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
-                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V3);
+                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
         public IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null)
         {
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
-                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
+                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
         public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
@@ -59,9 +59,8 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            await connection
-                .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder, PullAll)
-                .ConfigureAwait(false);
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder,
+                new PullNMessage(All)).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return resultBuilder.PreBuild();
         }
@@ -80,7 +79,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), resultBuilder, PullAll)
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All))
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
 

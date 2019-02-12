@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -32,17 +33,21 @@ namespace Neo4j.Driver.Tests
 {
     public class SessionTests
     {
-        internal static Session NewSession(IConnection connection, IDriverLogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        internal static Session NewSession(IConnection connection, IDriverLogger logger = null,
+            IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
-            return new Session(new TestConnectionProvider(connection), logger, retryLogic, mode, Bookmark.From(bookmark));
+            return new Session(new TestConnectionProvider(connection), logger, new SyncExecutor(), retryLogic, mode,
+                Bookmark.From(bookmark));
         }
 
-        internal static Session NewSession(IBoltProtocol protocol, IDriverLogger logger=null, IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        internal static Session NewSession(IBoltProtocol protocol, IDriverLogger logger = null,
+            IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
-            return new Session(new TestConnectionProvider(mockConn.Object), logger, retryLogic, mode, Bookmark.From(bookmark));
+            return new Session(new TestConnectionProvider(mockConn.Object), logger, new SyncExecutor(), retryLogic,
+                mode, Bookmark.From(bookmark));
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
@@ -51,8 +56,30 @@ namespace Neo4j.Driver.Tests
             mockConn.Setup(x => x.IsOpen).Returns(true);
             if (boltProtocol == null)
             {
-                boltProtocol = new Mock<IBoltProtocol>().Object;
+                var protocol = new Mock<IBoltProtocol>();
+                protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
+                    .Returns(TaskHelper.GetCompletedTask());
+                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
+                        It.IsAny<IResultResourceHandler>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
+                    .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
+                protocol.Setup(x =>
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
+                    .Returns(TaskHelper.GetCompletedTask());
+                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>()))
+                    .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
+                protocol.Setup(x => x.CommitTransactionAsync(It.IsAny<IConnection>()))
+                    .ReturnsAsync(Bookmark.From((string) null));
+                protocol.Setup(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()))
+                    .Returns(TaskHelper.GetCompletedTask());
+                protocol.Setup(x => x.ResetAsync(It.IsAny<IConnection>()))
+                    .Returns(TaskHelper.GetCompletedTask());
+                protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>()))
+                    .Returns(TaskHelper.GetCompletedTask());
+
+                boltProtocol = protocol.Object;
             }
+
             mockConn.Setup(x => x.BoltProtocol).Returns(boltProtocol);
             return mockConn;
         }
@@ -68,11 +95,17 @@ namespace Neo4j.Driver.Tests
             public void ShouldDelegateToProtocolRunAutoCommitTx()
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
+                mockProtocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(),
+                        It.IsAny<Statement>(), It.IsAny<IResultResourceHandler>(),
+                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
+                    .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
+
                 var session = NewSession(mockProtocol.Object);
                 session.Run("lalalal");
 
                 mockProtocol.Verify(
-                    x => x.RunInAutoCommitTransaction(It.IsAny<IConnection>(), It.IsAny<Statement>(), session, It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), session,
+                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
 
@@ -108,7 +141,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var session = NewSession(mockConn.Object, bookmark: FakeABookmark(123));
                 session.LastBookmark.Should().EndWith("123");
-                session.BeginTransaction((string)null);
+                session.BeginTransaction((string) null);
                 session.LastBookmark.Should().EndWith("123");
             }
 
@@ -116,7 +149,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldSetNewBookmark()
             {
                 var mockConn = NewMockedConnection();
-                var session = NewSession(mockConn.Object, bookmark:FakeABookmark(123));
+                var session = NewSession(mockConn.Object, bookmark: FakeABookmark(123));
                 session.LastBookmark.Should().EndWith("123");
                 // begin tx will directly override the bookmark that was originally set before
                 session.BeginTransaction(FakeABookmark(12));
@@ -173,7 +206,7 @@ namespace Neo4j.Driver.Tests
                 session.Run("lalal");
 
                 session.Run("bibib");
-                mockConn.Verify(c=>c.Close(), Times.Once);
+                mockConn.Verify(c => c.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -184,7 +217,7 @@ namespace Neo4j.Driver.Tests
                 session.Run("lala");
 
                 session.BeginTransaction();
-                mockConn.Verify(c=>c.Close(), Times.Once);
+                mockConn.Verify(c => c.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -193,8 +226,15 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
-                mockProtocol.Setup(x => x.BeginTransaction(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
-                    .Throws(new IOException("Triggered an error when beginTx"));
+                mockProtocol.Setup(x =>
+                        x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
+                            It.IsAny<IResultResourceHandler>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
+                    .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
+                mockProtocol.Setup(x =>
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
+                    .ThrowsAsync(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 Record.Exception(() => session.BeginTransaction()).Should().BeOfType<IOException>();
 
@@ -202,7 +242,7 @@ namespace Neo4j.Driver.Tests
                 session.Run("lala");
 
                 // Then
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -212,7 +252,10 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 var calls = 0;
-                mockProtocol.Setup(x => x.BeginTransaction(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
+                mockProtocol.Setup(x =>
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
+                    .Returns(TaskHelper.GetCompletedTask())
                     .Callback(() =>
                     {
                         // only throw exception on the first beginTx call
@@ -230,7 +273,7 @@ namespace Neo4j.Driver.Tests
                 session.BeginTransaction();
 
                 // Then
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
         }
 
@@ -309,7 +352,9 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = MockedConnectionWithSuccessResponse(mockProtocol.Object);
 
-                mockProtocol.Setup(x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
+                mockProtocol.Setup(x =>
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -329,7 +374,9 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 var calls = 0;
-                mockProtocol.Setup(x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
+                mockProtocol.Setup(x =>
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
                     .Returns(TaskHelper.GetCompletedTask()).Callback(() =>
                     {
                         // only throw exception on the first beginTx call
@@ -359,14 +406,16 @@ namespace Neo4j.Driver.Tests
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
-                mockProtocol.Setup(x => x.BeginTransaction(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
-                    .Throws(new IOException("Triggered an error when beginTx"));
+                mockProtocol.Setup(x =>
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
+                    .Returns(TaskHelper.GetFailedTask(new IOException("Triggered an error when beginTx")));
                 var session = NewSession(mockConn.Object);
-                Record.Exception(()=>session.BeginTransaction()).Should().BeOfType<IOException>();
+                Record.Exception(() => session.BeginTransaction()).Should().BeOfType<IOException>();
                 session.Dispose();
 
-                mockConn.Verify(x => x.Sync(), Times.Once);
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -378,8 +427,8 @@ namespace Neo4j.Driver.Tests
                 session.BeginTransaction();
                 session.Dispose();
 
-                mockProtocol.Verify(x => x.RollbackTransaction(It.IsAny<IConnection>()), Times.Once);
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -390,8 +439,8 @@ namespace Neo4j.Driver.Tests
                 session.Run("lalal");
                 session.Dispose();
 
-                mockConn.Verify(x => x.Sync(), Times.Once);
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
@@ -407,8 +456,8 @@ namespace Neo4j.Driver.Tests
                 session.Dispose();
 
                 // Then
-                mockConn.Verify(x => x.Sync(), Times.Once);
-                mockConn.Verify(x=>x.Close(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
         }
 
@@ -419,7 +468,9 @@ namespace Neo4j.Driver.Tests
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
-                mockProtocol.Setup(x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
+                mockProtocol.Setup(x =>
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                            It.IsAny<TransactionConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -447,12 +498,10 @@ namespace Neo4j.Driver.Tests
             public async void ShouldDisposeConnectionOnDispose()
             {
                 var mockConn = NewMockedConnection();
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(),
+                        It.IsAny<IRequestMessage>()))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (msg1, h, msg2) =>
-                        {
-                            h?.DoneSuccess();
-                        });
+                        (msg1, h, msg2) => { h?.DoneSuccess(); });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
                 await session.CloseAsync();
@@ -466,12 +515,10 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockConn = NewMockedConnection();
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(),
+                        It.IsAny<IRequestMessage>()))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (msg1, h, msg2) =>
-                        {
-                            h?.DoneSuccess();
-                        });
+                        (msg1, h, msg2) => { h?.DoneSuccess(); });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
 
@@ -481,9 +528,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Never);
                 mockConn.Verify(x => x.CloseAsync(), Times.Once);
-                mockConn.Verify(x => x.Close(), Times.Never);
             }
 
             [Fact]
@@ -491,12 +536,10 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockConn = NewMockedConnection();
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(),
+                        It.IsAny<IRequestMessage>()))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (msg1, h, msg2) =>
-                        {
-                            h?.DoneSuccess();
-                        });
+                        (msg1, h, msg2) => { h?.DoneSuccess(); });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
 
@@ -505,18 +548,18 @@ namespace Neo4j.Driver.Tests
                 await session.CloseAsync();
 
                 // Then
-                mockConn.Verify(x => x.SyncAsync(), Times.Never);
-                mockConn.Verify(x => x.Sync(), Times.Once);
-                mockConn.Verify(x => x.CloseAsync(), Times.Never);
-                mockConn.Verify(x => x.Close(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
         }
 
-        internal static Mock<IConnection> MockedConnectionWithSuccessResponse(IBoltProtocol protocol=null)
+        internal static Mock<IConnection> MockedConnectionWithSuccessResponse(IBoltProtocol protocol = null)
         {
             var mockConn = new Mock<IConnection>();
             // Whenever you enqueue any message, you immediately receives a response
-            mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(), It.IsAny<IRequestMessage>()))
+            mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(),
+                    It.IsAny<IRequestMessage>()))
+                .Returns(TaskHelper.GetCompletedTask())
                 .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                     (msg1, h, msg2) =>
                     {
@@ -546,6 +589,7 @@ namespace Neo4j.Driver.Tests
             {
                 Connection = connection;
             }
+
             public void Dispose()
             {
                 // do nothing
@@ -564,7 +608,6 @@ namespace Neo4j.Driver.Tests
 
             public void Close()
             {
-                
             }
 
             public Task CloseAsync()

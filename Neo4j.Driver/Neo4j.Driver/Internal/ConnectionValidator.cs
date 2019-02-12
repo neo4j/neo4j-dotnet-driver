@@ -22,13 +22,6 @@ namespace Neo4j.Driver.Internal
     internal interface IConnectionValidator
     {
         /// <summary>
-        /// Healthy check on connection before pooling.
-        /// </summary>
-        /// <param name="connection">The connection to be checked.</param>
-        /// <returns>True if the connection is good to be pooled, otherwise false.</returns>
-        bool OnRelease(IPooledConnection connection);
-
-        /// <summary>
         /// Healthy check on the connection before pooling
         /// </summary>
         /// <param name="connection">The connection to be checked.</param>
@@ -52,28 +45,6 @@ namespace Neo4j.Driver.Internal
         {
             _connIdleTimeout = connIdleTimeout;
             _maxConnLifetime = maxConnLifetime;
-        }
-
-        public bool OnRelease(IPooledConnection connection)
-        {
-            if (!connection.IsOpen)
-            {
-                return false;
-            }
-
-            try
-            {
-                connection.ClearConnection();
-            }
-            catch
-            {
-                return false;
-            }
-
-            RestartIdleTimer(connection);
-            connection.OnRelease();
-
-            return true;
         }
 
         public async Task<bool> OnReleaseAsync(IPooledConnection connection)

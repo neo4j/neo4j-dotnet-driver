@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver;
@@ -22,79 +23,26 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class RecordSet : IRecordSet
     {
-        private readonly Func<IRecord> _nextRecordFunc;
-        private IRecord _peekedRecord;
+        private readonly IStatementResultCursor _cursor;
+        private readonly SyncExecutor _syncExecutor;
 
-        public RecordSet(Func<IRecord> nextRecordFunc)
+        public RecordSet(IStatementResultCursor cursor, SyncExecutor syncExecutor)
         {
-            _nextRecordFunc = nextRecordFunc;
+            _cursor = cursor;
+            _syncExecutor = syncExecutor;
         }
-
-        public bool AtEnd { get; private set; }
 
         public IEnumerable<IRecord> Records()
         {
-            while (!HasReadAllRecords())
+            while (_syncExecutor.RunSync(() => _cursor.FetchAsync()))
             {
-                // first try to return if already retrieved,
-                // otherwise pull from input stream
-
-                if (_peekedRecord != null)
-                {
-                    var record = _peekedRecord;
-                    _peekedRecord = null;
-                    yield return record;
-                }
-                else
-                {
-                    IRecord record = null;
-                    try
-                    {
-                        record = _nextRecordFunc.Invoke();
-                    }
-                    finally
-                    {
-                        if (record == null)
-                        {
-                            AtEnd = true;
-                        }
-                    }
-                    if (!AtEnd)
-                    {
-                        yield return record;
-                    }
-                }
+                yield return _cursor.Current;
             }
-        }
-
-        private bool HasReadAllRecords()
-        {
-            return AtEnd && _peekedRecord == null;
         }
 
         public IRecord Peek()
         {
-            // we did not move the cursor in the stream
-            if (_peekedRecord != null)
-            {
-                return _peekedRecord;
-            }
-            // we already arrived at the end of the stream
-            if (AtEnd)
-            {
-                return null;
-            }
-            // we still in the middle of the stream and we need to pull from input buffer
-            _peekedRecord = _nextRecordFunc.Invoke();
-            if (_peekedRecord == null) // well the message received is a success
-            {
-                AtEnd = true;
-                return null;
-            }
-            else // we get another record message
-            {
-                return _peekedRecord;
-            }
+            return _syncExecutor.RunSync(() => _cursor.PeekAsync());
         }
     }
 }

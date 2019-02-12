@@ -32,7 +32,7 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets the keys in the result.
         /// </summary>
-        IReadOnlyList<string> Keys { get; }
+        Task<string[]> KeysAsync();
 
         /// <summary>
         /// Asynchronously gets the <see cref="IResultSummary"/> after streaming the whole records to the client.

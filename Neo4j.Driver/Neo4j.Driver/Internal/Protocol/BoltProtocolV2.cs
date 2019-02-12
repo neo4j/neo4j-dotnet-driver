@@ -26,14 +26,14 @@ namespace Neo4j.Driver.Internal.Protocol
         public static readonly BoltProtocolV2 BoltV2 = new BoltProtocolV2();
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-            IDriverLogger logger = null, bool ignored = true)
+            IDriverLogger logger = null)
         {
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
                 bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V2);
         }
 
-        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null,
-            bool ignored = true)
+        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
+            IDriverLogger logger = null)
         {
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V2);

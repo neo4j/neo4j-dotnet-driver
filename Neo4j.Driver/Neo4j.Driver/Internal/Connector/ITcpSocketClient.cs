@@ -14,21 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal interface ITcpSocketClient : IDisposable
+    internal interface ITcpSocketClient
     {
-        Stream ReadStream { get;  }
-        Stream WriteStream { get;  }
-
-        void Connect(Uri uri);
+        Stream ReadStream { get; }
+        Stream WriteStream { get; }
         Task ConnectAsync(Uri uri);
-
-        void Disconnect();
         Task DisconnectAsync();
     }
 }

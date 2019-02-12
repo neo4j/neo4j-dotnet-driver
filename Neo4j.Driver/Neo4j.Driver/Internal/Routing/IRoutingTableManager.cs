@@ -23,7 +23,6 @@ namespace Neo4j.Driver.Internal.Routing
     internal interface IRoutingTableManager
     {
         IRoutingTable RoutingTable { get; }
-        void EnsureRoutingTableForMode(AccessMode mode);
         Task EnsureRoutingTableForModeAsync(AccessMode mode);
     }
 }

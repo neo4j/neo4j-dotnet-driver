@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -28,6 +29,7 @@ namespace Neo4j.Driver.Internal
     internal class Transaction : StatementRunner, ITransaction
     {
         private readonly TransactionConnection _connection;
+        private readonly SyncExecutor _syncExecutor;
         private readonly IBoltProtocol _protocol;
         private ITransactionResourceHandler _resourceHandler;
 
@@ -60,9 +62,11 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
-        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler=null, IDriverLogger logger=null, Bookmark bookmark = null)
+        public Transaction(IConnection connection, SyncExecutor syncExecutor, ITransactionResourceHandler resourceHandler = null,
+            IDriverLogger logger = null, Bookmark bookmark = null)
         {
             _connection = new TransactionConnection(this, connection);
+            _syncExecutor = syncExecutor;
             _protocol = _connection.BoltProtocol;
             _resourceHandler = resourceHandler;
             _bookmark = bookmark;
@@ -71,7 +75,7 @@ namespace Neo4j.Driver.Internal
 
         public void BeginTransaction(TransactionConfig txConfig)
         {
-            _protocol.BeginTransaction(_connection, _bookmark, txConfig);
+            _syncExecutor.RunSync(() => _protocol.BeginTransactionAsync(_connection, _bookmark, txConfig));
         }
 
         public Task BeginTransactionAsync(TransactionConfig txConfig)
@@ -84,7 +88,8 @@ namespace Neo4j.Driver.Internal
             return TryExecute(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
-                return _protocol.RunInExplicitTransaction(_connection, statement);
+                return new StatementResult(_syncExecutor.RunSync(() =>
+                    _protocol.RunInExplicitTransactionAsync(_connection, statement)), _syncExecutor);
             });
         }
 
@@ -136,23 +141,24 @@ namespace Neo4j.Driver.Internal
             {
                 return;
             }
+
             try
             {
                 if (_state == State.MarkedSuccess)
                 {
-                    CommitTx();
+                    _syncExecutor.RunSync(CommitTxAsync);
                 }
                 else if (_state == State.MarkedFailed || _state == State.Active)
                 {
-                    RollbackTx();
+                    _syncExecutor.RunSync(RollbackTxAsync);
                 }
             }
             finally
             {
-                _connection.Close();
+                _syncExecutor.RunSync(() => _connection.CloseAsync());
                 if (_resourceHandler != null)
                 {
-                    _resourceHandler.OnTransactionDispose(_bookmark);
+                    _syncExecutor.RunSync(() => _resourceHandler.OnTransactionDisposeAsync(_bookmark));
                     _resourceHandler = null;
                 }
             }
@@ -182,22 +188,10 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private void CommitTx()
-        {
-            _bookmark = _protocol.CommitTransaction(_connection);
-            _state = State.Succeeded;
-        }
-
         private async Task CommitTxAsync()
         {
             _bookmark = await _protocol.CommitTransactionAsync(_connection).ConfigureAwait(false);
             _state = State.Succeeded;
-        }
-
-        private void RollbackTx()
-        {
-            _protocol.RollbackTransaction(_connection);
-            _state = State.RolledBack;
         }
 
         private async Task RollbackTxAsync()
@@ -218,8 +212,9 @@ namespace Neo4j.Driver.Internal
             }
             else if (_state == State.Succeeded)
             {
-                throw new ClientException("Cannot run more sattements in this transaction, because the transaction has already been committed successfuly. " +
-                                          "Please start a new transaction to run another statement.");
+                throw new ClientException(
+                    "Cannot run more sattements in this transaction, because the transaction has already been committed successfuly. " +
+                    "Please start a new transaction to run another statement.");
             }
             else if (_state == State.Failed || _state == State.MarkedFailed)
             {
@@ -236,25 +231,20 @@ namespace Neo4j.Driver.Internal
             private Transaction _transaction;
 
             public TransactionConnection(Transaction transaction, IConnection connection)
-                :base(connection)
+                : base(connection)
             {
                 _transaction = transaction;
             }
 
-            public override void Close()
+            public override Task CloseAsync()
             {
                 // no resources will be closed as the resources passed in this class are managed outside this class
                 Delegate = null;
                 _transaction = null;
-            }
-
-            public override Task CloseAsync()
-            {
-                Close();
                 return TaskHelper.GetCompletedTask();
             }
 
-            public override void OnError(Exception error)
+            public override Task OnErrorAsync(Exception error)
             {
                 _transaction.MarkToClose();
                 throw error;

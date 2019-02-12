@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -31,21 +32,25 @@ namespace Neo4j.Driver.Internal
         private readonly IRetryLogic _retryLogic;
         private readonly IDriverLogger _logger;
         private readonly IMetrics _metrics;
+        private readonly SyncExecutor _syncExecutor;
+
         public Uri Uri { get; }
 
         private const AccessMode DefaultAccessMode = AccessMode.Write;
         private const string NullBookmark = null;
 
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, IDriverLogger logger,
-            IMetrics metrics=null)
+            SyncExecutor syncExecutor, IMetrics metrics = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
+            Throw.ArgumentNullException.IfNull(syncExecutor, nameof(syncExecutor));
 
             Uri = uri;
             _logger = logger;
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
             _metrics = metrics;
+            _syncExecutor = syncExecutor;
         }
 
         private bool IsClosed => _closedMarker > 0;
@@ -71,7 +76,7 @@ namespace Neo4j.Driver.Internal
             return Session(defaultMode, Bookmark.From(bookmark, _logger));
         }
 
-       
+
         public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
         {
             return Session(defaultMode, Bookmark.From(bookmarks, _logger));
@@ -89,7 +94,7 @@ namespace Neo4j.Driver.Internal
                 ThrowDriverClosedException();
             }
 
-            var session = new Session(_connectionProvider, _logger, _retryLogic, defaultMode, bookmark);
+            var session = new Session(_connectionProvider, _logger, _syncExecutor, _retryLogic, defaultMode, bookmark);
 
             if (IsClosed)
             {
@@ -102,10 +107,7 @@ namespace Neo4j.Driver.Internal
 
         public void Close()
         {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-            {
-                _connectionProvider.Close();
-            }
+            _syncExecutor.RunSync(CloseAsync);
         }
 
         public Task CloseAsync()
@@ -137,15 +139,18 @@ namespace Neo4j.Driver.Internal
 
         private void ThrowDriverClosedException()
         {
-            throw new ObjectDisposedException(GetType().Name, "Cannot open a new session on a driver that is already disposed.");
+            throw new ObjectDisposedException(GetType().Name,
+                "Cannot open a new session on a driver that is already disposed.");
         }
 
         internal IMetrics GetMetrics()
         {
             if (_metrics == null)
             {
-                throw new InvalidOperationException("Cannot access driver metrics if it is not enabled when creating this driver.");
+                throw new InvalidOperationException(
+                    "Cannot access driver metrics if it is not enabled when creating this driver.");
             }
+
             return _metrics;
         }
     }

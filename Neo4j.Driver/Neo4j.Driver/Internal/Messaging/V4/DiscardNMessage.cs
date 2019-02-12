@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2019 "Neo4j,"
+﻿// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,14 +14,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Messaging.V4
 {
-    internal interface IClusterErrorHandler
+    internal class DiscardNMessage : ResultHandleMessage
     {
-        Task OnConnectionErrorAsync(Uri uri, Exception e);
-        void OnWriteError(Uri uri);
+        public DiscardNMessage(long n)
+            : this(NoStatementId, n)
+        {
+        }
+
+        public DiscardNMessage(long id, long n)
+            : base(id, n)
+        {
+        }
+
+        protected override string Name => "DISCARD_N";
     }
 }

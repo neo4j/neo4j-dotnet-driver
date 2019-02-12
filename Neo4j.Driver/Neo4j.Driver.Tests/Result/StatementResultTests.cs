@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
@@ -38,34 +40,19 @@ namespace Neo4j.Driver.Tests
                 var keys = RecordCreator.CreateKeys(keySize);
                 var records = RecordCreator.CreateRecords(recordSize, keys);
 
-                return new StatementResult(() => keys, new ListBasedRecordSet(records), getSummaryFunc);
+                return new StatementResult(new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
+                    new SyncExecutor());
             }
         }
 
         public class Constructor
         {
             [Fact]
-            public void ShouldThrowArgumentNullExceptionIfRecordsIsNull()
+            public void ShouldThrowArgumentNullExceptionIfCursorIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new StatementResult(() => new List<string>{"test"}, null));
+                var ex = Xunit.Record.Exception(() => new StatementResult(null, new SyncExecutor()));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
-            }
-
-            [Fact]
-            public void ShouldThrowArgumentNullExceptionIfKeysIsNull()
-            {
-                var ex = Xunit.Record.Exception(() => new StatementResult(null, new ListBasedRecordSet(new List<IRecord>())));
-                ex.Should().NotBeNull();
-                ex.Should().BeOfType<ArgumentNullException>();
-            }
-
-            [Fact]
-            public void ShouldSetKeysProperlyIfKeysNotNull()
-            {
-                var result = new StatementResult(() => new List<string>{"test"}, new ListBasedRecordSet(new List<IRecord>()));
-                result.Keys.Should().HaveCount(1);
-                result.Keys.Should().Contain("test");
             }
         }
 
@@ -85,7 +72,11 @@ namespace Neo4j.Driver.Tests
             public void ShouldConsumeSummaryCorrectly()
             {
                 int getSummaryCalled = 0;
-                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
+                var result = ResultCreator.CreateResult(1, 0, () =>
+                {
+                    getSummaryCalled++;
+                    return new FakeSummary();
+                });
 
 
                 result.Consume();
@@ -99,7 +90,6 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowNoExceptionWhenCallingMultipleTimes()
             {
-              
                 var result = ResultCreator.CreateResult(1);
 
                 result.Consume();
@@ -110,7 +100,6 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldConsumeRecordCorrectly()
             {
-
                 var result = ResultCreator.CreateResult(1, 3);
 
                 result.Consume();
@@ -131,11 +120,11 @@ namespace Neo4j.Driver.Tests
                 private readonly int _total = 0;
 
                 private readonly ITestOutputHelper _output;
-                public static List<string> Keys => new List<string>{"Test", "Keys"};
+                public static List<string> Keys => new List<string> {"Test", "Keys"};
 
                 public TestRecordYielder(int count, int total, ITestOutputHelper output)
                 {
-                   Add(count);
+                    Add(count);
                     _total = total;
                     _output = output;
                 }
@@ -149,7 +138,7 @@ namespace Neo4j.Driver.Tests
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        _records.Add(new Record(Keys, new object[] { "Test", 123 }));
+                        _records.Add(new Record(Keys, new object[] {"Test", 123}));
                     }
                 }
 
@@ -162,7 +151,8 @@ namespace Neo4j.Driver.Tests
                         {
                             while (i == _records.Count)
                             {
-                                _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                _output.WriteLine(
+                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
                                 Thread.Sleep(50);
                             }
 
@@ -181,7 +171,8 @@ namespace Neo4j.Driver.Tests
                         {
                             while (i == _records.Count)
                             {
-                                _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                _output.WriteLine(
+                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
                                 Thread.Sleep(500);
                                 AddNew(1);
                                 _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
@@ -215,7 +206,6 @@ namespace Neo4j.Driver.Tests
 
                 public IEnumerable<IRecord> Records()
                 {
-
                     return _getRecords();
                 }
             }
@@ -229,7 +219,9 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecords()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var cursor = new StatementResult(() => TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.RecordsWithAutoLoad));
+                var cursor =
+                    new StatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys,
+                        () => recordYielder.RecordsWithAutoLoad), new SyncExecutor());
                 var records = cursor.ToList();
                 records.Count.Should().Be(10);
             }
@@ -240,16 +232,19 @@ namespace Neo4j.Driver.Tests
                 var recordYielder = new TestRecordYielder(5, 10, _output);
 
                 int count = 0;
-                var cursor = new StatementResult(() => TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
+                var cursor =
+                    new StatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                        new SyncExecutor());
                 var t = Task.Factory.StartNew(() =>
-               {
+                {
                     // ReSharper disable once LoopCanBeConvertedToQuery
                     foreach (var item in cursor)
-                   {
-                       count++;
-                   }
-                   count.Should().Be(10);
-               });
+                    {
+                        count++;
+                    }
+
+                    count.Should().Be(10);
+                });
 
                 while (count < 5)
                 {
@@ -264,7 +259,9 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnRecordsImmediatelyWhenReady()
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
-                var result = new StatementResult(() => TestRecordYielder.Keys, new FuncBasedRecordSet(() => recordYielder.Records));
+                var result =
+                    new StatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                        new SyncExecutor());
                 var temp = result.Take(5);
                 var records = temp.ToList();
                 records.Count.Should().Be(5);
@@ -305,7 +302,11 @@ namespace Neo4j.Driver.Tests
             public void ShouldCallGetSummaryWhenGetSummaryIsNotNull()
             {
                 bool getSummaryCalled = false;
-                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled = true; return null; });
+                var result = ResultCreator.CreateResult(1, 0, () =>
+                {
+                    getSummaryCalled = true;
+                    return null;
+                });
 
                 // ReSharper disable once UnusedVariable
                 var summary = result.Summary;
@@ -325,7 +326,11 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
             {
                 int getSummaryCalled = 0;
-                var result = ResultCreator.CreateResult(1, 0, () => { getSummaryCalled++; return new FakeSummary(); });
+                var result = ResultCreator.CreateResult(1, 0, () =>
+                {
+                    getSummaryCalled++;
+                    return new FakeSummary();
+                });
 
                 // ReSharper disable once NotAccessedVariable
                 var summary = result.Summary;

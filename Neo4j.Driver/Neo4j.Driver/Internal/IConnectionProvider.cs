@@ -21,11 +21,9 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal
 {
-    internal interface IConnectionProvider : IDisposable
+    internal interface IConnectionProvider
     {
-        IConnection Acquire(AccessMode mode);
         Task<IConnection> AcquireAsync(AccessMode mode);
-        void Close();
         Task CloseAsync();
     }
 }

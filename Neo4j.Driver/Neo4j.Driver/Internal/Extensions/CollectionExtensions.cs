@@ -35,17 +35,18 @@ namespace Neo4j.Driver.Internal
             if (!dictionary.ContainsKey(key))
                 throw new Neo4jException($"Required property '{key}' is not in the response.");
 
-            return (T)dictionary[key];
+            return (T) dictionary[key];
         }
 
         public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue)
         {
-            return dict.ContainsKey(key) ? (T)dict[key] : defaultValue;
+            return dict.ContainsKey(key) ? (T) dict[key] : defaultValue;
         }
 
         private static string ToContentString(this IDictionary dict, string separator)
         {
-            var dictStrings = from object key in dict.Keys select $"{{{key.ToContentString()}, {dict[key].ToContentString()}}}";
+            var dictStrings = from object key in dict.Keys
+                select $"{{{key.ToContentString()}, {dict[key].ToContentString()}}}";
             return $"[{string.Join(separator, dictStrings)}]";
         }
 
@@ -61,14 +62,17 @@ namespace Neo4j.Driver.Internal
             {
                 return "NULL";
             }
+
             if (o is string)
             {
                 return o.ToString();
             }
+
             if (o is IDictionary)
             {
                 return ToContentString((IDictionary) o, separator);
             }
+
             if (o is IEnumerable)
             {
                 return ToContentString((IEnumerable) o, separator);
@@ -82,6 +86,21 @@ namespace Neo4j.Driver.Internal
             if (o == null)
             {
                 return null;
+            }
+
+            if (o is Dictionary<string, object> dict)
+            {
+                return dict;
+            }
+
+            if (o is IDictionary<string, object> dictInt)
+            {
+                return new Dictionary<string, object>(dictInt);
+            }
+
+            if (o is IReadOnlyDictionary<string, object> dictIntRo)
+            {
+                return dictIntRo.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             }
 
             return FillDictionary(o, new Dictionary<string, object>());
@@ -116,18 +135,19 @@ namespace Neo4j.Driver.Internal
 
                 if (elementType.NeedsConversion())
                 {
-                    var convertedList = new List<object>(((IList)value).Count);
+                    var convertedList = new List<object>(((IList) value).Count);
                     foreach (var element in (IEnumerable) value)
                     {
                         convertedList.Add(Transform(element));
                     }
+
                     value = convertedList;
                 }
             }
             else if (value is IList)
             {
                 var valueTypeInfo = valueType.GetTypeInfo();
-                var elementType = (Type)null;
+                var elementType = (Type) null;
 
                 if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
                 {
@@ -136,18 +156,19 @@ namespace Neo4j.Driver.Internal
 
                 if (elementType == null || elementType.NeedsConversion())
                 {
-                    var convertedList = new List<object>(((IList)value).Count);
-                    foreach (var element in (IEnumerable)value)
+                    var convertedList = new List<object>(((IList) value).Count);
+                    foreach (var element in (IEnumerable) value)
                     {
                         convertedList.Add(Transform(element));
                     }
+
                     value = convertedList;
                 }
             }
             else if (value is IDictionary)
             {
                 var valueTypeInfo = valueType.GetTypeInfo();
-                var elementType = (Type)null;
+                var elementType = (Type) null;
 
                 if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(IDictionary<,>))
                 {
@@ -167,15 +188,16 @@ namespace Neo4j.Driver.Internal
                                 "dictionaries passed as part of a parameter to cypher statements should have string keys!");
                         }
 
-                        convertedDict.Add((string)key, Transform(dict[key]));
+                        convertedDict.Add((string) key, Transform(dict[key]));
                     }
+
                     value = convertedDict;
                 }
             }
             else if (value is IEnumerable && !(value is string))
             {
                 var valueTypeInfo = valueType.GetTypeInfo();
-                var elementType = (Type)null;
+                var elementType = (Type) null;
 
                 if (valueTypeInfo.IsGenericType && valueTypeInfo.GetGenericTypeDefinition() == typeof(List<>))
                 {
@@ -185,10 +207,11 @@ namespace Neo4j.Driver.Internal
                 if (elementType == null || elementType.NeedsConversion())
                 {
                     var convertedList = new List<object>();
-                    foreach (var element in (IEnumerable)value)
+                    foreach (var element in (IEnumerable) value)
                     {
                         convertedList.Add(Transform(element));
                     }
+
                     value = convertedList;
                 }
             }
@@ -224,6 +247,5 @@ namespace Neo4j.Driver.Internal
 
             return true;
         }
-
     }
 }

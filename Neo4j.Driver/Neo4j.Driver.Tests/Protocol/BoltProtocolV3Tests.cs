@@ -54,21 +54,6 @@ namespace Neo4j.Driver.Tests.Connector
             txMeta.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key1", "value1"));
         }
         
-        public class LoginMethod
-        {
-            [Fact]
-            public void ShouldEnqueueHelloAndSync()
-            {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                BoltV3.Login(mockConn.Object, "user-zhen", AuthTokens.None);
-
-                mockConn.Verify(x => x.Enqueue(It.IsAny<HelloMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
-                mockConn.Verify(x => x.Sync());
-                mockConn.Verify(x => x.UpdateId(It.IsAny<string>()));
-            }
-        }
-
         public class LoginAsyncMethod
         {
             [Fact]
@@ -78,25 +63,12 @@ namespace Neo4j.Driver.Tests.Connector
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
                 await BoltV3.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<HelloMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<ServerVersionCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
                 mockConn.Verify(x => x.UpdateId(It.IsAny<string>()));
             }
         }
         
-        public class LogoutMethod
-        {
-            [Fact]
-            public void ShouldEnqueueGoodbyeAndSend()
-            {
-                var mockConn = new Mock<IConnection>();
-                BoltV3.Logout(mockConn.Object);
-
-                mockConn.Verify(x => x.Enqueue(It.IsAny<GoodbyeMessage>(), null, null), Times.Once);
-                mockConn.Verify(x => x.Send());
-            }
-        }
-
         public class LogoutAsyncMethod
         {
             [Fact]
@@ -105,54 +77,8 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 await BoltV3.LogoutAsync(mockConn.Object);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<GoodbyeMessage>(), null, null), Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<GoodbyeMessage>(), null, null), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
-            }
-        }
-
-        public class RunInAutoCommitTransactionMethod
-        {        
-            [Fact]
-            public void ShouldEnqueueRunAndPullAllAndSend()
-            {
-                var mockConn = new Mock<IConnection>();
-                var statement = new Statement("A cypher query");
-                var mockHandler = new Mock<IResultResourceHandler>();
-                BoltV3.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
-
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
-                mockConn.Verify(x => x.Send());
-            }
-
-            [Fact]
-            public void ResultBuilderShouldObtainServerInfoFromConnection()
-            {
-                var mockConn = new Mock<IConnection>();
-                var statement = new Statement("A cypher query");
-                var mockHandler = new Mock<IResultResourceHandler>();
-                BoltV3.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
-
-                mockConn.Verify(x => x.Server, Times.Once);
-            }
-            
-            [Fact]
-            public void ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
-            {
-                var mockConn = new Mock<IConnection>();
-                var statement = new Statement("A cypher query");
-                var mockHandler = new Mock<IResultResourceHandler>();
-
-                mockConn.Setup(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultBuilder>(), PullAll))
-                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (m0, r, m1) =>
-                        {
-                            var msg = m0.CastOrThrow<RunWithMetadataMessage>();
-                            VerifyMetadata(msg.Metadata);
-                        });
-                BoltV3.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object,
-                    Bookmark, TxConfig);
-                
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
             }
         }
 
@@ -165,7 +91,8 @@ namespace Neo4j.Driver.Tests.Connector
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), It.IsAny<IRequestMessage>()))
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), It.IsAny<IRequestMessage>()))
+                    .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                     (msg1, h, msg2) =>
                     {
@@ -173,7 +100,7 @@ namespace Neo4j.Driver.Tests.Connector
                     });
 
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object, null, null);
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
             }
 
@@ -183,7 +110,8 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
+                    .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                         (msg1, h, msg2) =>
                         {
@@ -201,7 +129,8 @@ namespace Neo4j.Driver.Tests.Connector
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
+                    .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                         (m0, h, m1) =>
                         {
@@ -211,58 +140,7 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object,
                     Bookmark, TxConfig);
                 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
-            }
-        }
-
-        public class BeginTransactionMethod
-        {
-            [Fact]
-            public void ShouldNotSyncIfBookmarkIsNull()
-            {
-                var mockConn = new Mock<IConnection>();
-                BoltV3.BeginTransaction(mockConn.Object, null, null);
-
-                mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Never);
-            }
-
-            [Fact]
-            public void ShouldNotSyncIfInvalidBookmarkGiven()
-            {
-                var mockConn = new Mock<IConnection>();
-                var bookmark = Bookmark.From((string)null);
-                BoltV3.BeginTransaction(mockConn.Object, bookmark, null);
-
-                mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Never);
-            }
-
-            [Fact]
-            public void ShouldSyncIfValidBookmarkGiven()
-            {
-                var mockConn = new Mock<IConnection>();
-                var bookmark = Bookmark.From(FakeABookmark(234));
-                BoltV3.BeginTransaction(mockConn.Object, bookmark,null);
-
-                mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Once);
-            }
-            
-            [Fact]
-            public void ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
-            {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null))
-                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (m0, r, m1) =>
-                        {
-                            var msg = m0.CastOrThrow<BeginMessage>();
-                            VerifyMetadata(msg.Metadata);
-                        });
-                BoltV3.BeginTransaction(mockConn.Object, Bookmark, TxConfig);
-                
-                mockConn.Verify(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null), Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
             }
         }
 
@@ -274,7 +152,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 await BoltV3.BeginTransactionAsync(mockConn.Object, null, null);
 
-                mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
+                mockConn.Verify(x=>x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }
 
@@ -285,7 +163,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var bookmark = Bookmark.From((string)null);
                 await BoltV3.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
-                mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
+                mockConn.Verify(x=>x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }
 
@@ -296,7 +174,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var bookmark = Bookmark.From(FakeABookmark(234));
                 await BoltV3.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
-                mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
+                mockConn.Verify(x=>x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
             
@@ -305,7 +183,8 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var mockConn = new Mock<IConnection>();
 
-                mockConn.Setup(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null))
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<ResultCursorBuilder>(), null))
+                    .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
                         (m0, r, m1) =>
                         {
@@ -313,20 +192,7 @@ namespace Neo4j.Driver.Tests.Connector
                             VerifyMetadata(msg.Metadata);
                         });
                 await BoltV3.BeginTransactionAsync(mockConn.Object, Bookmark, TxConfig);
-                mockConn.Verify(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null), Times.Once);
-            }
-        }
-
-        public class CommitTransactionMethod
-        {
-            [Fact]
-            public void EnqueueCommitAndSync()
-            {
-                var mockConn = new Mock<IConnection>();
-                BoltV3.CommitTransaction(mockConn.Object);
-
-                mockConn.Verify(x=>x.Enqueue(Commit, It.IsAny<BookmarkCollector>(), null), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<ResultCursorBuilder>(), null), Times.Once);
             }
         }
 
@@ -338,21 +204,8 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 await BoltV3.CommitTransactionAsync(mockConn.Object);
 
-                mockConn.Verify(x=>x.Enqueue(Commit, It.IsAny<BookmarkCollector>(), null), Times.Once);
+                mockConn.Verify(x=>x.EnqueueAsync(Commit, It.IsAny<BookmarkCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
-            }
-        }
-
-        public class RollbackTransactionMethod
-        {
-            [Fact]
-            public void ShouldEnqueueRollbackAndSync()
-            {
-                var mockConn = new Mock<IConnection>();
-                BoltV3.RollbackTransaction(mockConn.Object);
-
-                mockConn.Verify(x=>x.Enqueue(Rollback, It.IsAny<BookmarkCollector>(), null), Times.Once);
-                mockConn.Verify(x => x.Sync(), Times.Once);
             }
         }
 
@@ -364,33 +217,8 @@ namespace Neo4j.Driver.Tests.Connector
                 var mockConn = new Mock<IConnection>();
                 BoltV3.RollbackTransactionAsync(mockConn.Object);
 
-                mockConn.Verify(x=>x.Enqueue(Rollback, It.IsAny<BookmarkCollector>(), null), Times.Once);
+                mockConn.Verify(x=>x.EnqueueAsync(Rollback, It.IsAny<BookmarkCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
-            }
-        }
-
-        public class RunInExplicitTransactionMethod
-        {
-            [Fact]
-            public void ShouldRunPullAllSync()
-            {
-                var mockConn = new Mock<IConnection>();
-                var statement = new Statement("lalala");
-
-                BoltV3.RunInExplicitTransaction(mockConn.Object, statement);
-
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
-                mockConn.Verify(x => x.Send(), Times.Once);
-            }
-
-            [Fact]
-            public void ResultBuilderShouldObtainServerInfoFromConnection()
-            {
-                var mockConn = new Mock<IConnection>();
-                var statement = new Statement("lalala");
-
-                BoltV3.RunInExplicitTransaction(mockConn.Object, statement);
-                mockConn.Verify(x => x.Server, Times.Once);
             }
         }
 
@@ -404,7 +232,7 @@ namespace Neo4j.Driver.Tests.Connector
 
                 await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, statement);
 
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
 

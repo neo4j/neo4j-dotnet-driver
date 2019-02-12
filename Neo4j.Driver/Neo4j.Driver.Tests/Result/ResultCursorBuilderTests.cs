@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests
         public class CollectRecordMethod
         {
             [Fact]
-            public async void ShouldStreamResults()
+            public void ShouldStreamResults()
             {
                 var builder = GenerateBuilder();
                 var i = 0;
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tests
 
                     return TaskHelper.GetCompletedTask();
                 });
-                var result = await builder.PreBuildAsync();
+                var result = builder.PreBuild();
 
                 var t = AssertGetExpectResults(result, 3, new List<object> {124, 125, 126});
 
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldReturnNoResultsWhenNoneReceived()
+            public void ShouldReturnNoResultsWhenNoneReceived()
             {
                 var builder = GenerateBuilder();
                 builder.SetReceiveOneFunc(() =>
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Tests
 
                     return TaskHelper.GetCompletedTask();
                 });
-                var result = await builder.PreBuildAsync();
+                var result = builder.PreBuild();
 
                 var t = AssertGetExpectResults(result, 0);
 
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldReturnQueuedResultsWithExpectedValue()
+            public void ShouldReturnQueuedResultsWithExpectedValue()
             {
                 var builder = GenerateBuilder();
                 List<object> recordValues = new List<object>
@@ -121,14 +121,14 @@ namespace Neo4j.Driver.Tests
                 builder.CollectSummary(null);
                 builder.DoneSuccess();
 
-                var result = await builder.PreBuildAsync();
+                var result = builder.PreBuild();
 
                 var task = AssertGetExpectResults(result, recordValues.Count, recordValues);
                 task.Wait();
             }
 
             [Fact]
-            public async void ShouldStopStreamingWhenResultIsInvalid()
+            public void ShouldStopStreamingWhenResultIsInvalid()
             {
                 var builder = GenerateBuilder();
                 var i = 0;
@@ -145,7 +145,7 @@ namespace Neo4j.Driver.Tests
 
                     return TaskHelper.GetCompletedTask();
                 });
-                var result = await builder.PreBuildAsync();
+                var result = builder.PreBuild();
 
                 var t = AssertGetExpectResults(result, 3, new List<object> { 124, 125, 126 });
                 t.Wait();

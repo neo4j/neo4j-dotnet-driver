@@ -36,25 +36,6 @@ namespace Neo4j.Driver.Internal.Routing
             _errorHandler = errorHandler;
         }
 
-        public override void OnError(Exception error)
-        {
-            if (error is ServiceUnavailableException)
-            {
-                _errorHandler.OnConnectionError(_uri, error);
-                throw new SessionExpiredException(
-                    $"Server at {_uri} is no longer available due to error: {error.Message}.", error);
-            }
-            else if (error.IsDatabaseUnavailableError())
-            {
-                _errorHandler.OnConnectionError(_uri, error);
-            }
-            else
-            {
-                HandleClusterError(error);
-            }
-            throw error;
-        }
-
         public override async Task OnErrorAsync(Exception error)
         {
             if (error is ServiceUnavailableException)

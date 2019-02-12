@@ -36,12 +36,6 @@ namespace Neo4j.Driver.Tests.Connector
             {
             }
 
-            public override void Disconnect()
-            {
-                DisposeCalled = true;
-                base.Disconnect();
-            }
-
             public override Task DisconnectAsync()
             {
                 DisposeCalled = true;

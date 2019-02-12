@@ -39,12 +39,13 @@ namespace Neo4j.Driver.Internal.Routing
             IPooledConnectionFactory connectionFactory,
             RoutingSettings routingSettings,
             ConnectionPoolSettings poolSettings,
+            SyncExecutor syncExecutor,
             IDriverLogger logger)
         {
             _logger = logger;
 
             _clusterConnectionPool = new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
-            _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
+            _routingTableManager = new RoutingTableManager(routingSettings, this, syncExecutor, logger);
             _loadBalancingStrategy = CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, _logger);
         }
 
@@ -63,22 +64,6 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        public IConnection Acquire(AccessMode mode)
-        {
-            if (IsClosed)
-            {
-                ThrowObjectDisposedException();
-            }
-
-            IConnection conn = AcquireConnection(mode);
-
-            if (IsClosed)
-            {
-                ThrowObjectDisposedException();
-            }
-            return conn;
-        }
-
         public async Task<IConnection> AcquireAsync(AccessMode mode)
         {
             if (IsClosed)
@@ -95,13 +80,6 @@ namespace Neo4j.Driver.Internal.Routing
             return conn;
         }
 
-        public void OnConnectionError(Uri uri, Exception e)
-        {
-            _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
-            _routingTableManager.RoutingTable.Remove(uri);
-            _clusterConnectionPool.Deactivate(uri);
-        }
-
         public Task OnConnectionErrorAsync(Uri uri, Exception e)
         {
             _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
@@ -114,19 +92,9 @@ namespace Neo4j.Driver.Internal.Routing
             _routingTableManager.RoutingTable.RemoveWriter(uri);
         }
 
-        public void AddConnectionPool(IEnumerable<Uri> uris)
-        {
-            _clusterConnectionPool.Add(uris);
-        }
-
         public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
         {
             return _clusterConnectionPool.AddAsync(uris);
-        }
-
-        public void UpdateConnectionPool(IEnumerable<Uri> added, IEnumerable<Uri> removed)
-        {
-            _clusterConnectionPool.Update(added, removed);
         }
 
         public Task UpdateConnectionPoolAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
@@ -134,24 +102,10 @@ namespace Neo4j.Driver.Internal.Routing
             return _clusterConnectionPool.UpdateAsync(added, removed);
         }
 
-        public IConnection CreateClusterConnection(Uri uri)
-        {
-            return CreateClusterConnection(uri, AccessMode.Write);
-        }
-
         public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
         {
             return CreateClusterConnectionAsync(uri, AccessMode.Write);
 ;       }
-
-        public void Close()
-        {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-            {
-                _routingTableManager.RoutingTable.Clear();
-                _clusterConnectionPool.Close();
-            }
-        }
 
         public Task CloseAsync()
         {
@@ -162,57 +116,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             return TaskHelper.GetCompletedTask();
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (IsClosed)
-                return;
-
-            if (disposing)
-            {
-                Close();
-            }
-        }
-
-        public IConnection AcquireConnection(AccessMode mode)
-        {
-            _routingTableManager.EnsureRoutingTableForMode(mode);
-            while (true)
-            {
-                Uri uri;
-
-                switch (mode)
-                {
-                    case AccessMode.Read:
-                        uri = _loadBalancingStrategy.SelectReader(_routingTableManager.RoutingTable.Readers);
-                        break;
-                    case AccessMode.Write:
-                        uri = _loadBalancingStrategy.SelectWriter(_routingTableManager.RoutingTable.Writers);
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Unknown access mode {mode}");
-                }
-
-                if (uri == null)
-                {
-                    // no server known to routingTable
-                    break;
-                }
-                IConnection conn = CreateClusterConnection(uri, mode);
-                if (conn != null)
-                {
-                    return conn;
-                }
-                //else  connection already removed by clusterConnection onError method
-            }
-            throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
         }
 
         public async Task<IConnection> AcquireConnectionAsync(AccessMode mode)
@@ -247,26 +150,6 @@ namespace Neo4j.Driver.Internal.Routing
                 //else  connection already removed by clusterConnection onError method
             }
             throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
-        }
-
-        private IConnection CreateClusterConnection(Uri uri, AccessMode mode)
-        {
-            try
-            {
-                IConnection conn = _clusterConnectionPool.Acquire(uri);
-                if (conn != null)
-                {
-                    return new ClusterConnection(conn, uri, mode, this);
-                }
-                OnConnectionError(uri, new ArgumentException(
-                    $"Routing table {_routingTableManager.RoutingTable} contains a server '{uri}' " +
-                    $"that is not known to cluster connection pool {_clusterConnectionPool}."));
-            }
-            catch (ServiceUnavailableException e)
-            {
-                OnConnectionError(uri, e);
-            }
-            return null;
         }
 
         private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode)

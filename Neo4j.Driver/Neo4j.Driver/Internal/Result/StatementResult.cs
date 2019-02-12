@@ -17,6 +17,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
@@ -26,37 +27,23 @@ namespace Neo4j.Driver.Internal.Result
     /// </summary>
     internal class StatementResult : IStatementResult
     {
-        private readonly Func<List<string>> _keys;
-        private readonly Func<IResultSummary> _getSummary;
+        private readonly IStatementResultCursor _cursor;
         private readonly IRecordSet _recordSet;
+        private readonly SyncExecutor _syncExecutor;
 
-        private IResultSummary _summary;
-
-        public StatementResult(Func<List<string>> keys, IRecordSet recordSet, Func<IResultSummary> getSummary = null)
+        public StatementResult(IStatementResultCursor cursor, SyncExecutor syncExecutor)
         {
-            Throw.ArgumentNullException.IfNull(keys, nameof(keys));
-            Throw.ArgumentNullException.IfNull(recordSet, nameof(recordSet));
+            Throw.ArgumentNullException.IfNull(cursor, nameof(cursor));
+            Throw.ArgumentNullException.IfNull(syncExecutor, nameof(syncExecutor));
 
-            _keys = keys;
-            _recordSet = recordSet;
-            _getSummary = getSummary;
+            _cursor = cursor;
+            _recordSet = new RecordSet(cursor, syncExecutor);
+            _syncExecutor = syncExecutor;
         }
 
-        public IReadOnlyList<string> Keys => _keys();
+        public IReadOnlyList<string> Keys => _syncExecutor.RunSync(() => _cursor.KeysAsync());
 
-        public IResultSummary Summary
-        {
-            get
-            {
-                if (_summary == null && _getSummary != null)
-                {
-                    _summary = _getSummary();
-                }
-                return _summary;
-            }
-        }
-
-        internal bool AtEnd => _recordSet.AtEnd;
+        public IResultSummary Summary => _syncExecutor.RunSync(() => _cursor.SummaryAsync());
 
         public IRecord Peek()
         {
@@ -65,11 +52,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IResultSummary Consume()
         {
-            foreach (var record in _recordSet.Records())
-            {
-                // Do nothing, just consume the records
-            }
-            return Summary;
+            return _syncExecutor.RunSync(() => _cursor.ConsumeAsync());
         }
 
         public IEnumerator<IRecord> GetEnumerator()

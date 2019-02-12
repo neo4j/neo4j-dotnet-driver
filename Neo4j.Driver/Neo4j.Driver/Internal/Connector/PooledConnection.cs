@@ -47,16 +47,10 @@ namespace Neo4j.Driver.Internal.Connector
         }
         public Guid Id { get; } = Guid.NewGuid();
 
-        public void ClearConnection()
+        public async Task ClearConnectionAsync()
         {
-            Reset();
-            Sync();
-        }
-
-        public Task ClearConnectionAsync()
-        {
-            Reset();
-            return SyncAsync();
+            await ResetAsync().ConfigureAwait(false);
+            await SyncAsync().ConfigureAwait(false);
         }
 
         public void OnAcquire()
@@ -71,14 +65,6 @@ namespace Neo4j.Driver.Internal.Connector
 
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;
 
-        public override void Destroy()
-        {
-            // stops the timmer
-            IdleTimer.Reset();
-            LifetimeTimer.Reset();
-            base.Destroy();
-        }
-
         public override Task DestroyAsync()
         {
             // stops the timmer
@@ -86,11 +72,6 @@ namespace Neo4j.Driver.Internal.Connector
             LifetimeTimer.Reset();
 
             return base.DestroyAsync();
-        }
-
-        public override void Close()
-        {
-            _releaseManager?.Release(this);
         }
 
         public override Task CloseAsync()
@@ -104,7 +85,7 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
-        public override void OnError(Exception error)
+        public override Task OnErrorAsync(Exception error)
         {
             if (!error.IsRecoverableError())
             {

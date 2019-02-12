@@ -26,34 +26,21 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface IConnection
     {
-        void Init();
-
         Task InitAsync();
 
         // send all and receive all
-        void Sync();
-
         Task SyncAsync();
 
         // send all
-        void Send();
-
         Task SendAsync();
 
         // receive one
-        void ReceiveOne();
-
         Task ReceiveOneAsync();
 
-        void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null);
+        Task EnqueueAsync(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null);
 
         // Enqueue a reset message
-        void Reset();
-
-        /// <summary>
-        /// Close and release related resources
-        /// </summary>
-        void Destroy();
+        Task ResetAsync();
 
         /// <summary>
         /// Close and release related resources
@@ -63,8 +50,6 @@ namespace Neo4j.Driver.Internal.Connector
         /// <summary>
         /// Close connection
         /// </summary>
-        void Close();
-
         Task CloseAsync();
 
         /// <summary>
@@ -81,11 +66,6 @@ namespace Neo4j.Driver.Internal.Connector
         /// The Bolt protocol that the connection is talking with.
         /// </summary>
         IBoltProtocol BoltProtocol { get; }
-
-        /// <summary>
-        /// Downgrade message reader and writer to not be able to read and write byte array
-        /// </summary>
-        void ResetMessageReaderAndWriterForServerV3_1();
 
         void UpdateId(string newConnId);
     }
