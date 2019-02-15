@@ -14,7 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
@@ -26,6 +28,7 @@ using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Messaging.V4;
 using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
+using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -47,28 +50,57 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
-//        public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-//            Statement statement,
-//            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
-//        {
-//            var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
-//                connection.ReceiveOneAsync, resultResourceHandler);
-//            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder,
-//                new PullNMessage(All)).ConfigureAwait(false);
-//            await connection.SendAsync().ConfigureAwait(false);
-//            return resultBuilder.PreBuild();
-//        }
-//
-//        public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-//            Statement statement)
-//        {
-//            var resultBuilder = new ResultCursorBuilder(
-//                NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-//            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All))
-//                .ConfigureAwait(false);
-//            await connection.SendAsync().ConfigureAwait(false);
-//
-//            return resultBuilder.PreBuild();
-//        }
+        public override async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+            Statement statement, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
+            Bookmark bookmark, TransactionConfig txConfig)
+        {
+            var streamBuilder = new ResultStreamBuilder(statement, connection.Server,
+                connection.ReceiveOneAsync, RequestMore(connection, bookmarkTracker),
+                CancelRequest(connection, bookmarkTracker), CancellationToken.None, resultResourceHandler);
+            var runHandler = new V4.RunResponseHandler(streamBuilder);
+            await connection
+                .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), runHandler)
+                .ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
+            return streamBuilder.CreateCursor();
+        }
+
+        public override async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
+            Statement statement)
+        {
+            var streamBuilder = new ResultStreamBuilder(statement, connection.Server,
+                connection.ReceiveOneAsync, RequestMore(connection, null), CancelRequest(connection, null),
+                CancellationToken.None, null);
+            var runHandler = new V4.RunResponseHandler(streamBuilder);
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), runHandler)
+                .ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
+            return streamBuilder.CreateCursor();
+        }
+
+        private Func<ResultStreamBuilder, long, Task> RequestMore(IConnection connection,
+            IBookmarkTracker bookmarkTracker)
+        {
+            return async (streamBuilder, n) =>
+            {
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, bookmarkTracker);
+                await connection
+                    .EnqueueAsync(new PullNMessage(streamBuilder.StatementId, n), pullAllHandler)
+                    .ConfigureAwait(false);
+                await connection.SendAsync().ConfigureAwait(false);
+            };
+        }
+
+        private Func<ResultStreamBuilder, Task> CancelRequest(IConnection connection, IBookmarkTracker bookmarkTracker)
+        {
+            return async (streamBuilder) =>
+            {
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, bookmarkTracker);
+                await connection
+                    .EnqueueAsync(new DiscardNMessage(streamBuilder.StatementId, All), pullAllHandler)
+                    .ConfigureAwait(false);
+                await connection.SendAsync().ConfigureAwait(false);
+            };
+        }
     }
 }

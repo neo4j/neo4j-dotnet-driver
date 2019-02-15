@@ -142,26 +142,7 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            try
-            {
-                if (_state == State.MarkedSuccess)
-                {
-                    _syncExecutor.RunSync(CommitTxAsync);
-                }
-                else if (_state == State.MarkedFailed || _state == State.Active)
-                {
-                    _syncExecutor.RunSync(RollbackTxAsync);
-                }
-            }
-            finally
-            {
-                _syncExecutor.RunSync(() => _connection.CloseAsync());
-                if (_resourceHandler != null)
-                {
-                    _syncExecutor.RunSync(() => _resourceHandler.OnTransactionDisposeAsync(_bookmark));
-                    _resourceHandler = null;
-                }
-            }
+            _syncExecutor.RunSync(CloseAsync);
         }
 
         private async Task CloseAsync()

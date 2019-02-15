@@ -36,14 +36,24 @@ namespace Neo4j.Driver.Internal.MessageHandling
             return _exception is T;
         }
 
-        public bool Is(Func<Exception, bool> filter)
+        public bool Is(Func<Exception, bool> predicate)
         {
-            return filter(_exception);
+            return predicate(_exception);
         }
 
         public void EnsureThrown()
         {
-            if (_thrown) return;
+            EnsureThrownIf(e => true);
+        }
+
+        public void EnsureThrownIf<T>()
+        {
+            EnsureThrownIf(e => e is T);
+        }
+
+        public void EnsureThrownIf(Func<Exception, bool> predicate)
+        {
+            if (_thrown || !Is(predicate)) return;
 
             lock (this)
             {

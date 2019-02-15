@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
-        public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+        public virtual async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
             Bookmark bookmark, TransactionConfig txConfig)
         {
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
+        public virtual async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
             Statement statement)
         {
             var streamBuilder = new ResultStreamBuilder(statement, connection.Server,

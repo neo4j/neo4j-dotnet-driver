@@ -23,8 +23,12 @@ namespace Neo4j.Driver.Internal.MessageHandling
     {
         bool Is<T>();
 
-        bool Is(Func<Exception, bool> filter);
+        bool Is(Func<Exception, bool> predicate);
 
         void EnsureThrown();
+
+        void EnsureThrownIf<T>();
+
+        void EnsureThrownIf(Func<Exception, bool> predicate);
     }
 }

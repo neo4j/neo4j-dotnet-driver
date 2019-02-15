@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V3
+namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
     internal class PullResponseHandler : MetadataCollectingResponseHandler
     {
@@ -34,6 +34,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
             _bookmarkTracker = bookmarkTracker;
 
             AddMetadata<BookmarkCollector, Bookmark>();
+            AddMetadata<HasMoreCollector, bool>();
             AddMetadata<TimeToLastCollector, long>();
             AddMetadata<TypeCollector, StatementType>();
             AddMetadata<CountersCollector, ICounters>();
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
             _streamBuilder.Summary.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
             _streamBuilder.Summary.StatementType = GetMetadata<TypeCollector, StatementType>();
 
-            return _streamBuilder.PullCompletedAsync(null, false);
+            return _streamBuilder.PullCompletedAsync(null, GetMetadata<HasMoreCollector, bool>());
         }
 
         public override Task OnFailureAsync(IResponsePipelineError error)

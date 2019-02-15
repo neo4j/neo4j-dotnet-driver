@@ -64,10 +64,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
         public void AssertNoProtocolViolation()
         {
-            if (_error?.Is<ProtocolException>() ?? false)
-            {
-                _error?.EnsureThrown();
-            }
+            _error?.EnsureThrownIf<ProtocolException>();
         }
 
         public IResponseHandler Dequeue()

@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.MessageHandling.V3
+namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
     internal class DiscardResponseHandler : NoOpResponseHandler
     {
