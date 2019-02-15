@@ -17,7 +17,7 @@
 
 using Xunit;
 using static Neo4j.Driver.IntegrationTests.Internals.BoltkitHelper;
-using static Neo4j.Driver.Internal.Routing.ServerVersion;
+using static Neo4j.Driver.Internal.Util.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests
 {

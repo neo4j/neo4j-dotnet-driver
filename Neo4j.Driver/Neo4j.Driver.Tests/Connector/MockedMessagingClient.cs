@@ -24,6 +24,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Tests.Routing
 {
@@ -87,12 +88,12 @@ namespace Neo4j.Driver.Tests.Routing
                     }
                 });
 
-            ClientMock.Setup(x => x.ReceiveOneAsync(It.IsAny<IMessageResponseHandler>()))
-                .Callback<IMessageResponseHandler>(handler =>
+            ClientMock.Setup(x => x.ReceiveOneAsync(It.IsAny<IResponsePipeline>()))
+                .Callback<IResponsePipeline>(async pipeline =>
                 {
                     if (_responseCount < _responseMessages.Count)
                     {
-                        _responseMessages[_responseCount].Dispatch(handler);
+                        await _responseMessages[_responseCount].DispatchAsync(pipeline);
                         _responseCount++;
                     }
                     else

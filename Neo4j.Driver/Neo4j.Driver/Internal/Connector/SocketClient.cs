@@ -27,6 +27,7 @@ using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -106,19 +107,19 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task ReceiveAsync(IMessageResponseHandler responseHandler)
+        public async Task ReceiveAsync(IResponsePipeline responsePipeline)
         {
-            while (responseHandler.UnhandledMessageSize > 0)
+            while (!responsePipeline.HasNoPendingMessages)
             {
-                await ReceiveOneAsync(responseHandler).ConfigureAwait(false);
+                await ReceiveOneAsync(responsePipeline).ConfigureAwait(false);
             }
         }
 
-        public async Task ReceiveOneAsync(IMessageResponseHandler responseHandler)
+        public async Task ReceiveOneAsync(IResponsePipeline responsePipeline)
         {
             try
             {
-                await Reader.ReadAsync(responseHandler).ConfigureAwait(false);
+                await Reader.ReadAsync(responsePipeline).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -127,12 +128,17 @@ namespace Neo4j.Driver.Internal.Connector
                 throw;
             }
 
-            if (responseHandler.HasProtocolViolationError)
+            // We force ProtocolException's to be thrown here to shortcut the communication with the server
+            try
             {
-                _logger?.Warn(responseHandler.Error,
-                    $"Received bolt protocol error from server {_uri}, connection will be terminated.");
+                responsePipeline.AssertNoProtocolViolation();
+            }
+            catch (ProtocolException exc)
+            {
+                _logger?.Warn(exc, "A bolt protocol error has occurred with server {0}, connection will be terminated.",
+                    _uri.ToString());
                 await StopAsync().ConfigureAwait(false);
-                throw responseHandler.Error;
+                throw;
             }
         }
 
@@ -140,7 +146,6 @@ namespace Neo4j.Driver.Internal.Connector
         {
             Interlocked.CompareExchange(ref _closedMarker, 0, -1);
         }
-
 
         public Task StopAsync()
         {

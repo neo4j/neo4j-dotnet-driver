@@ -15,6 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.MessageHandling;
+
 namespace Neo4j.Driver.Internal.Messaging
 {
     internal interface IRequestMessage :IMessage
@@ -24,7 +27,7 @@ namespace Neo4j.Driver.Internal.Messaging
 
     internal interface IResponseMessage : IMessage
     {
-        void Dispatch(IMessageResponseHandler messageResponseHandler);
+        Task DispatchAsync(IResponsePipeline pipeline);
     }
 
     internal interface IMessage

@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
@@ -36,7 +37,9 @@ namespace Neo4j.Driver.Internal.Protocol
 
         //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
         private const int BoltIdentifier = 0x6060B017;
-        private static readonly int[] SupportedVersions = {ProtocolVersion.Version3, ProtocolVersion.Version2, ProtocolVersion.Version1, 0};
+
+        private static readonly int[] SupportedVersions =
+            {ProtocolVersion.Version4, ProtocolVersion.Version3, ProtocolVersion.Version2, ProtocolVersion.Version1};
 
         public static IBoltProtocol ForVersion(int version)
         {
@@ -66,7 +69,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public static byte[] PackSupportedVersions()
         {
-             return PackVersions(SupportedVersions);
+            return PackVersions(SupportedVersions);
         }
 
         public static int UnpackAgreedVersion(byte[] data)
@@ -83,6 +86,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 bytes.AddRange(PackStreamBitConverter.GetBytes(version));
             }
+
             return bytes.ToArray();
         }
     }

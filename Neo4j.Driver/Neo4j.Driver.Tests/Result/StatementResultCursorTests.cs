@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Tests
                 private readonly int _total = 0;
 
                 private readonly ITestOutputHelper _output;
-                public static List<string> Keys => new List<string> {"Test", "Keys"};
+                public static string[] Keys => new[] {"Test", "Keys"};
 
                 public TestRecordYielder(int count, int total, ITestOutputHelper output)
                 {

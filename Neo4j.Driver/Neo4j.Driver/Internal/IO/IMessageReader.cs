@@ -14,20 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal interface IMessageReader
     {
-
-        void Read(IMessageResponseHandler handler);
-
-        Task ReadAsync(IMessageResponseHandler handler);
-
+        Task ReadAsync(IResponsePipeline pipeline);
     }
 }

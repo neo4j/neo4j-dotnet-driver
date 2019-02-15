@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -27,6 +28,7 @@ using Neo4j.Driver.Internal.IO.MessageHandlers;
 using Neo4j.Driver.Internal.IO.ValueHandlers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
 
@@ -35,7 +37,6 @@ namespace Neo4j.Driver.Tests.IO
     [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
     public class BoltWriterTest
     {
-
         [Fact]
         public void ShouldThrowWhenWriterIsConstructedUsingNullStream()
         {
@@ -72,7 +73,7 @@ namespace Neo4j.Driver.Tests.IO
             var stream = new MemoryStream();
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
-            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> { { "x", 1L } }));
+            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> {{"x", 1L}}));
 
             Assert.Empty(stream.ToArray());
         }
@@ -96,7 +97,7 @@ namespace Neo4j.Driver.Tests.IO
             var stream = new MemoryStream();
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
-            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> { { "x", 1L } }));
+            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> {{"x", 1L}}));
 
             await writer.FlushAsync();
 
@@ -121,7 +122,7 @@ namespace Neo4j.Driver.Tests.IO
             var stream = new MemoryStream();
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
-            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> { { "x", 1L } }));
+            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> {{"x", 1L}}));
 
             writer.Flush();
 
@@ -147,80 +148,35 @@ namespace Neo4j.Driver.Tests.IO
         }
 
         [Fact]
-        public void ShouldThrowWhenReadMessageIsNotAResponseMessage()
-        {
-            var responseHandler = new Mock<IMessageResponseHandler>();
-
-            var reader = new MessageReader(new MemoryStream(CreateNodeMessage()), CreatePackStreamFactory());
-
-            var ex = Record.Exception(() => reader.Read(responseHandler.Object));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>().Subject.Message.Should().StartWith("Unknown response message type");
-        }
-
-        [Fact]
         public async void ShouldThrowWhenReadMessageIsNotAResponseMessageAsync()
         {
-            var responseHandler = new Mock<IMessageResponseHandler>();
-
+            var pipeline = new Mock<IResponsePipeline>();
             var reader = new MessageReader(new MemoryStream(CreateNodeMessage()), CreatePackStreamFactory());
 
-            var ex = await Record.ExceptionAsync(() => reader.ReadAsync(responseHandler.Object));
+            var ex = await Record.ExceptionAsync(() => reader.ReadAsync(pipeline.Object));
 
             ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>().Subject.Message.Should().StartWith("Unknown response message type");
+            ex.Should().BeOfType<ProtocolException>().Subject.Message.Should()
+                .StartWith("Unknown response message type");
         }
 
         [Fact]
-        public void ShouldReadMessage()
+        public async Task ShouldReadMessageAsync()
         {
-            var responseHandler = new Mock<IMessageResponseHandler>();
-
+            var pipeline = new Mock<IResponsePipeline>();
             var reader = new MessageReader(new MemoryStream(CreateSuccessMessage()), CreatePackStreamFactory());
-            reader.Read(responseHandler.Object);
 
-            responseHandler.Verify(
-                x => x.HandleSuccessMessage(
+            await reader.ReadAsync(pipeline.Object);
+
+            pipeline.Verify(
+                x => x.OnSuccessAsync(
                     It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))), Times.Once);
         }
 
         [Fact]
-        public async void ShouldReadMessageAsync()
+        public async Task ShouldReadConsecutiveMessagesAsync()
         {
-            var responseHandler = new Mock<IMessageResponseHandler>();
-
-            var reader = new MessageReader(new MemoryStream(CreateSuccessMessage()), CreatePackStreamFactory());
-            await reader.ReadAsync(responseHandler.Object);
-
-            responseHandler.Verify(
-                x => x.HandleSuccessMessage(
-                    It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))), Times.Once);
-        }
-
-        [Fact]
-        public void ShouldReadConsecutiveMessages()
-        {
-            var responseHandler = new Mock<IMessageResponseHandler>();
-            
-            var stream = new MemoryStream();
-            for (var i = 0; i < 5; i++)
-            {
-                stream.Write(CreateSuccessMessage());
-            }
-
-            var reader = new MessageReader(new MemoryStream(stream.ToArray()), CreatePackStreamFactory());
-            reader.Read(responseHandler.Object);
-
-            responseHandler.Verify(
-                x => x.HandleSuccessMessage(
-                    It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))), Times.Exactly(5));
-        }
-
-        [Fact]
-        public async void ShouldReadConsecutiveMessagesAsync()
-        {
-            var responseHandler = new Mock<IMessageResponseHandler>();
+            var pipeline = new Mock<IResponsePipeline>();
 
             var stream = new MemoryStream();
             for (var i = 0; i < 5; i++)
@@ -229,11 +185,12 @@ namespace Neo4j.Driver.Tests.IO
             }
 
             var reader = new MessageReader(new MemoryStream(stream.ToArray()), CreatePackStreamFactory());
-            await reader.ReadAsync(responseHandler.Object);
+            await reader.ReadAsync(pipeline.Object);
 
-            responseHandler.Verify(
-                x => x.HandleSuccessMessage(
-                    It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))), Times.Exactly(5));
+            pipeline.Verify(
+                x => x.OnSuccessAsync(
+                    It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))),
+                Times.Exactly(5));
         }
 
         private static IMessageFormat CreatePackStreamFactory()
@@ -283,7 +240,7 @@ namespace Neo4j.Driver.Tests.IO
             var writer = new PackStreamWriter(stream, null);
             writer.WriteStructHeader(3, NodeHandler.Node);
             writer.Write(1L);
-            writer.Write(new List<string> { "Label" });
+            writer.Write(new List<string> {"Label"});
             writer.Write(new Dictionary<string, object>());
 
             return CreateChunkedMessage(stream.ToArray());
@@ -308,8 +265,6 @@ namespace Neo4j.Driver.Tests.IO
 
         private class UnsupportedRequestMessage : IRequestMessage
         {
-
         }
-
     }
 }

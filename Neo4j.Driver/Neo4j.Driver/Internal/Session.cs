@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Result;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
@@ -70,7 +71,7 @@ namespace Neo4j.Driver.Internal
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
-                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this, _bookmark, txConfig)
+                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this, this, _bookmark, txConfig)
                     .ConfigureAwait(false);
             });
         }

@@ -18,6 +18,7 @@
 using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
@@ -60,14 +61,25 @@ namespace Neo4j.Driver.Tests.Routing
 
         [Theory]
         [InlineData("Neo4j/illegal")]
+        [InlineData("Neo4j/3-alpha2")]
+        [InlineData("Illegal")]
+        [InlineData("\t\r\n")]
+        public void ShouldThrowWhenVersionNotRecognized(string version)
+        {
+            var exc = Record.Exception(() => ServerVersion.Version(version));
+
+            exc.Should().BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
         [InlineData("")]
         [InlineData(null)]
-        public void ShouldDefaultToUnknownVersion(string version)
+        public void ShouldThrowWhenVersionIsNullOrEmpty(string version)
         {
-            var serverVersion = ServerVersion.Version(version);
-            serverVersion.Major.Should().Be(0);
-            serverVersion.Minor.Should().Be(0);
-            serverVersion.Patch.Should().Be(0);
+            var exc = Record.Exception(() => ServerVersion.Version(version));
+
+            exc.Should().BeOfType<ArgumentNullException>();
         }
+        
     }
 }

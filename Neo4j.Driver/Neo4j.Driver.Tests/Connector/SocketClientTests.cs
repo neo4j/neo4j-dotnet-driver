@@ -27,6 +27,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
@@ -128,13 +129,13 @@ namespace Neo4j.Driver.Tests
                 var readerMock = new Mock<IMessageReader>();
 
                 var client = new SocketClient(readerMock.Object, null);
-                var handlerMock = new Mock<IMessageResponseHandler>();
+                var pipeline = new Mock<IResponsePipeline>();
 
                 // When
-                await client.ReceiveOneAsync(handlerMock.Object);
+                await client.ReceiveOneAsync(pipeline.Object);
 
                 // Then
-                readerMock.Verify(x => x.ReadAsync(handlerMock.Object), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
             }
 
             [Fact]
@@ -147,12 +148,12 @@ namespace Neo4j.Driver.Tests
                 var client = new SocketClient(readerMock.Object, null, connMock.Object);
                 client.SetOpened();
 
-                var handlerMock = new Mock<IMessageResponseHandler>();
+                var pipeline = new Mock<IResponsePipeline>();
                 // Throw error when try to read
-                readerMock.Setup(x => x.ReadAsync(handlerMock.Object)).Throws<IOException>();
+                readerMock.Setup(x => x.ReadAsync(pipeline.Object)).Throws<IOException>();
 
                 // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(handlerMock.Object));
+                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
 
                 // Then
                 exception.Should().BeOfType<IOException>();
@@ -160,7 +161,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async Task ShouldCloseConnectionIfServerErrorAsync()
+            public async Task ShouldCloseConnectionOnProtocolException()
             {
                 // Given
                 var readerMock = new Mock<IMessageReader>();
@@ -169,16 +170,37 @@ namespace Neo4j.Driver.Tests
                 var client = new SocketClient(readerMock.Object, null, connMock.Object);
                 client.SetOpened();
 
-                var handlerMock = new Mock<IMessageResponseHandler>();
-                handlerMock.Setup(x => x.HasProtocolViolationError).Returns(true);
-                handlerMock.Setup(x => x.Error).Returns(new DatabaseException());
+                var pipeline = new Mock<IResponsePipeline>();
+                pipeline.Setup(x => x.AssertNoProtocolViolation()).Throws(new ProtocolException("some protocol error"));
 
                 // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(handlerMock.Object));
+                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+
+                // Then
+                exception.Should().BeOfType<ProtocolException>();
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
+                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async Task ShouldCloseConnectionWhenReaderThrowsException()
+            {
+                // Given
+                var readerMock = new Mock<IMessageReader>();
+                var connMock = new Mock<ITcpSocketClient>();
+                var pipeline = new Mock<IResponsePipeline>();
+
+                var client = new SocketClient(readerMock.Object, null, connMock.Object);
+                client.SetOpened();
+
+                readerMock.Setup(x => x.ReadAsync(pipeline.Object)).ThrowsAsync(new DatabaseException());
+
+                // When
+                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
 
                 // Then
                 exception.Should().BeOfType<DatabaseException>();
-                readerMock.Verify(x => x.ReadAsync(handlerMock.Object), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
                 connMock.Verify(x => x.DisconnectAsync(), Times.Once);
             }
         }

@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2019 "Neo4j,"
+﻿// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,25 +14,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.MessageHandling
 {
-    internal interface IMessageResponseHandler
+    internal interface IResponseHandler
     {
-        Neo4jException Error { get; set; }
-        bool HasError { get; }
-        bool HasProtocolViolationError { get; }
+        Task OnSuccessAsync(IDictionary<string, object> metadata);
 
-        void HandleSuccessMessage(IDictionary<string, object> meta);
-        void HandleFailureMessage(string code, string message);
-        void HandleIgnoredMessage();
-        void HandleRecordMessage(object[] fields);
+        Task OnRecordAsync(object[] fieldValues);
 
-        void EnqueueMessage(IRequestMessage requestMessage, IMessageResponseCollector responseCollector = null);
-        int UnhandledMessageSize { get; }
+        Task OnFailureAsync(IResponsePipelineError error);
+
+        Task OnIgnoredAsync();
     }
 }

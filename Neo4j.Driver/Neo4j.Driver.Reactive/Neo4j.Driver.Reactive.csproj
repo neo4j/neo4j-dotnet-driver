@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\common.props" />
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
+    <AssemblyName>Neo4j.Driver.Reactive</AssemblyName>
+    <PackageId>Neo4j.Driver.Reactive$(PackageIdSuffix)</PackageId>
+    <Authors>Neo4j</Authors>
+    <PackageLicenseUrl>https://github.com/neo4j/neo4j-dotnet-driver/blob/1.7/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Description>Reactive extensions for the official .NET driver.</Description>
+    <Copyright>Copyright 2002-2019</Copyright>
+    <PackageIconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</PackageIconUrl>
+    <PackageTags>Cypher NoSql Graph Bolt Neo4j Reactive</PackageTags>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+    <AssemblyFileVersion>2.0.0.0</AssemblyFileVersion>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+    <Version>0.0.0</Version>
+    <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Reactive.xml</DocumentationFile>
+    <RootNamespace>Neo4j.Driver</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Reactive" Version="4.1.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
+  </ItemGroup>
+</Project>

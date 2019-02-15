@@ -27,13 +27,13 @@ namespace Neo4j.Driver.Internal.Result
         public IReadOnlyDictionary<string, object> Values { get; }       
         public IReadOnlyList<string> Keys { get; }
 
-        public Record(List<string>keys, object[] values)
+        public Record(string[] keys, object[] values)
         {
-            Throw.ProtocolException.IfNotEqual(keys.Count, values.Length, nameof(keys), nameof(values));
+            Throw.ProtocolException.IfNotEqual(keys.Length, values.Length, nameof(keys), nameof(values));
 
             var valueKeys = new Dictionary<string, object>();
 
-            for (var i = 0; i < keys.Count; i++)
+            for (var i = 0; i < keys.Length; i++)
             {
                 valueKeys.Add(keys[i], values[i]);
             }

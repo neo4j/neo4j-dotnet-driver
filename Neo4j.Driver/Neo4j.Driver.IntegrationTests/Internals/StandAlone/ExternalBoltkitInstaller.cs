@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 using Org.BouncyCastle.Pkcs;
 using static Neo4j.Driver.IntegrationTests.Internals.Neo4jDefaultInstallation;
 using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;

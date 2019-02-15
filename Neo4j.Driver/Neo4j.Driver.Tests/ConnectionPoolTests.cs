@@ -418,7 +418,7 @@ namespace Neo4j.Driver.Tests
                 // but before Acquire put a new conn into inUseConn, Dispose get called.
                 // Note: Once dispose get called, it is forbidden to put anything into queue.
                 healthyMock.Setup(x => x.IsOpen).Returns(true)
-                    .Callback(async () => await pool.CloseAsync()); // Simulate Dispose get called at this time
+                    .Callback(() => pool.CloseAsync().Wait()); // Simulate Dispose get called at this time
                 idleConnections.Add(healthyMock.Object);
                 pool.NumberOfIdleConnections.Should().Be(1);
                 // When
@@ -681,7 +681,7 @@ namespace Neo4j.Driver.Tests
                 // but before Release put a new conn into availConns, Dispose get called.
                 // Note: Once dispose get called, it is forbidden to put anything into queue.
                 mock.Setup(x => x.IsOpen).Returns(true)
-                    .Callback(async () => await pool.CloseAsync()); // Simulate Dispose get called at this time
+                    .Callback(() => pool.CloseAsync().Wait()); // Simulate Dispose get called at this time
                 await pool.ReleaseAsync(mock.Object);
 
                 // Then
@@ -1380,7 +1380,7 @@ namespace Neo4j.Driver.Tests
                 // This is to simulate Acquire called first,
                 // but before Acquire put a new conn into inUseConn, Deactivate get called.
                 openConnMock.Setup(x => x.IsOpen).Returns(true)
-                    .Callback(async () => await pool.DeactivateAsync());
+                    .Callback(() => pool.DeactivateAsync().Wait());
                 idleConnections.Add(openConnMock.Object);
                 pool.NumberOfIdleConnections.Should().Be(1);
                 // When
@@ -1406,7 +1406,7 @@ namespace Neo4j.Driver.Tests
                 // but before Acquire put a new conn into inUseConn, Deactivate get called.
                 // However here, this connection is not healthy and will be destroyed directly
                 closedConnMock.Setup(x => x.IsOpen).Returns(false)
-                    .Callback(async () => await pool.DeactivateAsync());
+                    .Callback(() => pool.DeactivateAsync().Wait());
                 idleConnections.Add(closedConnMock.Object);
                 pool.NumberOfIdleConnections.Should().Be(1);
                 // When

@@ -16,19 +16,18 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Transaction : StatementRunner, ITransaction
+    internal class Transaction : StatementRunner, ITransaction, IBookmarkTracker
     {
-        private readonly TransactionConnection _connection;
+        private readonly IConnection _connection;
         private readonly SyncExecutor _syncExecutor;
         private readonly IBoltProtocol _protocol;
         private ITransactionResourceHandler _resourceHandler;
@@ -62,7 +61,8 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
-        public Transaction(IConnection connection, SyncExecutor syncExecutor, ITransactionResourceHandler resourceHandler = null,
+        public Transaction(IConnection connection, SyncExecutor syncExecutor,
+            ITransactionResourceHandler resourceHandler = null,
             IDriverLogger logger = null, Bookmark bookmark = null)
         {
             _connection = new TransactionConnection(this, connection);
@@ -88,14 +88,14 @@ namespace Neo4j.Driver.Internal
             return TryExecute(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
-                return new StatementResult(_syncExecutor.RunSync(() =>
+                return new StatementResult(_syncExecutor.RunSync<IStatementResultCursor>(() =>
                     _protocol.RunInExplicitTransactionAsync(_connection, statement)), _syncExecutor);
             });
         }
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
         {
-            return TryExecuteAsync(_logger, () =>
+            return TryExecuteAsync<IStatementResultCursor>(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
                 return _protocol.RunInExplicitTransactionAsync(_connection, statement);
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.Internal
 
         private async Task CommitTxAsync()
         {
-            _bookmark = await _protocol.CommitTransactionAsync(_connection).ConfigureAwait(false);
+            await _protocol.CommitTransactionAsync(_connection, this).ConfigureAwait(false);
             _state = State.Succeeded;
         }
 
@@ -210,13 +210,15 @@ namespace Neo4j.Driver.Internal
                     " transaction to run another statement."
                 );
             }
-            else if (_state == State.Succeeded)
+
+            if (_state == State.Succeeded)
             {
                 throw new ClientException(
-                    "Cannot run more sattements in this transaction, because the transaction has already been committed successfuly. " +
+                    "Cannot run more statements in this transaction, because the transaction has already been committed successfully. " +
                     "Please start a new transaction to run another statement.");
             }
-            else if (_state == State.Failed || _state == State.MarkedFailed)
+
+            if (_state == State.Failed || _state == State.MarkedFailed)
             {
                 throw new ClientException(
                     "Cannot run more statements in this transaction, because previous statements in the " +
@@ -224,6 +226,11 @@ namespace Neo4j.Driver.Internal
                     " transaction to run another statement."
                 );
             }
+        }
+
+        public void UpdateBookmark(Bookmark bookmark)
+        {
+            _bookmark = bookmark;
         }
 
         private class TransactionConnection : DelegatedConnection
@@ -247,7 +254,7 @@ namespace Neo4j.Driver.Internal
             public override Task OnErrorAsync(Exception error)
             {
                 _transaction.MarkToClose();
-                throw error;
+                return TaskHelper.GetFailedTask(error);
             }
         }
     }

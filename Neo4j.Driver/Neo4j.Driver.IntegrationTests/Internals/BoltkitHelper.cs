@@ -20,7 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using static System.Environment;
-using static Neo4j.Driver.Internal.Routing.ServerVersion;
+using static Neo4j.Driver.Internal.Util.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {

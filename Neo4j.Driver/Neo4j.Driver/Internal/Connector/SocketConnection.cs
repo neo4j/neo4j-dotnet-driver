@@ -26,16 +26,20 @@ using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketConnection : IConnection
     {
+        private readonly object _syncObject = new object();
+
         private readonly ISocketClient _client;
         private IBoltProtocol _boltProtocol;
         private readonly IAuthToken _authToken;
         private readonly string _userAgent;
-        private readonly IMessageResponseHandler _responseHandler;
+        private readonly IResponsePipeline _responsePipeline;
 
         private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
@@ -58,13 +62,13 @@ namespace Neo4j.Driver.Internal.Connector
             _userAgent = connectionSettings.UserAgent;
             Server = new ServerInfo(uri);
 
-            _responseHandler = new MessageResponseHandler(_logger);
+            _responsePipeline = new ResponsePipeline(_logger);
         }
 
         // for test only
         internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
             string userAgent, IDriverLogger logger, IServerInfo server,
-            IMessageResponseHandler messageResponseHandler = null)
+            IResponsePipeline responsePipeline = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
@@ -78,7 +82,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
-            _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
+            _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         }
 
         public AccessMode? Mode { get; set; }
@@ -111,23 +115,21 @@ namespace Neo4j.Driver.Internal.Connector
 
         private async Task ReceiveAsync()
         {
-            if (_responseHandler.UnhandledMessageSize == 0)
+            if (_responsePipeline.HasNoPendingMessages)
             {
-                // nothing to receive
                 return;
             }
 
-            // receive
-            await _client.ReceiveAsync(_responseHandler).ConfigureAwait(false);
+            await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
 
-            AssertNoServerFailure();
+            _responsePipeline.AssertNoFailure();
         }
 
         public async Task ReceiveOneAsync()
         {
-            await _client.ReceiveOneAsync(_responseHandler).ConfigureAwait(false);
+            await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
 
-            AssertNoServerFailure();
+            _responsePipeline.AssertNoFailure();
         }
 
         public Task ResetAsync()
@@ -151,6 +153,19 @@ namespace Neo4j.Driver.Internal.Connector
                 _id, newConnId);
             _id = newConnId;
             _logger.Prefix = FormatPrefix(_id);
+        }
+
+        public void UpdateVersion(ServerVersion newVersion)
+        {
+            if (Server is ServerInfo info)
+            {
+                info.Version = newVersion.ToString();
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Current Server instance of type {Server.GetType().Name} does not allow version updating.");
+            }
         }
 
         public Task DestroyAsync()
@@ -188,29 +203,22 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private void AssertNoServerFailure()
+        public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null,
+            IResponseHandler handler2 = null)
         {
-            if (_responseHandler.HasError)
+            lock (_syncObject)
             {
-                var error = _responseHandler.Error;
-                _responseHandler.Error = null;
-                throw error;
+                _messages.Enqueue(message1);
+                _responsePipeline.Enqueue(message1, handler1);
+
+                if (message2 != null)
+                {
+                    _messages.Enqueue(message2);
+                    _responsePipeline.Enqueue(message2, handler2);
+                }
+
+                return TaskHelper.GetCompletedTask();
             }
-        }
-
-        public Task EnqueueAsync(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
-            IRequestMessage requestStreamingMessage = null)
-        {
-            _messages.Enqueue(requestMessage);
-            _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
-
-            if (requestStreamingMessage != null)
-            {
-                _messages.Enqueue(requestStreamingMessage);
-                _responseHandler.EnqueueMessage(requestStreamingMessage, resultBuilder);
-            }
-
-            return TaskHelper.GetCompletedTask();
         }
 
         public override string ToString()
