@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 CancelRequest(connection, bookmarkTracker), CancellationToken.None, resultResourceHandler);
             var runHandler = new V4.RunResponseHandler(streamBuilder);
             await connection
-                .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), runHandler)
+                .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), runHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 connection.ReceiveOneAsync, RequestMore(connection, null), CancelRequest(connection, null),
                 CancellationToken.None, null);
             var runHandler = new V4.RunResponseHandler(streamBuilder);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), runHandler)
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), runHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();

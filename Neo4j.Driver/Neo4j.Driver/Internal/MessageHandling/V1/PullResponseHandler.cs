@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
             AddMetadata<CountersCollector, ICounters>();
             AddMetadata<PlanCollector, IPlan>();
             AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
-            AddMetadata<NotificationCollector, IList<INotification>>();
+            AddMetadata<NotificationsCollector, IList<INotification>>();
         }
 
         public override Task OnSuccessAsync(IDictionary<string, object> metadata)
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
 
             _streamBuilder.Summary.ResultConsumedAfter = GetMetadata<ResultConsumedAfterCollector, long>();
             _streamBuilder.Summary.Counters = GetMetadata<CountersCollector, ICounters>();
-            _streamBuilder.Summary.Notifications = GetMetadata<NotificationCollector, IList<INotification>>();
+            _streamBuilder.Summary.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
             _streamBuilder.Summary.Plan = GetMetadata<PlanCollector, IPlan>();
             _streamBuilder.Summary.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
             _streamBuilder.Summary.StatementType = GetMetadata<TypeCollector, StatementType>();

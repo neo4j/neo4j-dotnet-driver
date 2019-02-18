@@ -24,21 +24,27 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class ProfiledPlanCollector : IMetadataCollector<IProfiledPlan>
     {
-        private const string ProfiledPlanKey = "profile";
+        internal const string ProfiledPlanKey = "profile";
+
+        object IMetadataCollector.Collected => Collected;
 
         public IProfiledPlan Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(ProfiledPlanKey, out var profiledPlanValue))
+            if (metadata != null && metadata.TryGetValue(ProfiledPlanKey, out var profiledPlanValue))
             {
-                if (profiledPlanValue is IDictionary<string, object> profiledPlanDict)
+                switch (profiledPlanValue)
                 {
-                    Collected = CollectProfile(profiledPlanDict);
-                }
-                else
-                {
-                    throw new ProtocolException($"Unsupported {ProfiledPlanKey} type: {profiledPlanValue.GetType().Name}");
+                    case null:
+                        Collected = null;
+                        break;
+                    case IDictionary<string, object> profiledPlanDict:
+                        Collected = CollectProfile(profiledPlanDict);
+                        break;
+                    default:
+                        throw new ProtocolException(
+                            $"Expected '{ProfiledPlanKey}' metadata to be of type 'IDictionary<String,Object>', but got '{profiledPlanValue?.GetType().Name}'.");
                 }
             }
         }
@@ -50,11 +56,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 return null;
             }
 
-            var operationType = profileDictionary.GetMandatoryValue<string>("operatorType");
+            var operationType =
+                profileDictionary.GetMandatoryValue<string>("operatorType", m => new ProtocolException(m));
             var args = profileDictionary.GetValue("args", new Dictionary<string, object>());
             var identifiers = profileDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
-            var dbHits = profileDictionary.GetMandatoryValue<long>("dbHits");
-            var rows = profileDictionary.GetMandatoryValue<long>("rows");
+            var dbHits = profileDictionary.GetMandatoryValue<long>("dbHits", m => new ProtocolException(m));
+            var rows = profileDictionary.GetMandatoryValue<long>("rows", m => new ProtocolException(m));
             var children = profileDictionary.GetValue("children", new List<object>());
 
             var childPlans = children

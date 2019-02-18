@@ -16,20 +16,31 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class FieldsCollector : IMetadataCollector<string[]>
     {
-        private const string FieldsKey = "fields";
+        internal const string FieldsKey = "fields";
+
+        object IMetadataCollector.Collected => Collected;
 
         public string[] Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(FieldsKey, out var fieldsValue))
+            if (metadata != null && metadata.TryGetValue(FieldsKey, out var fieldsValue))
             {
-                Collected = fieldsValue.As<List<string>>().ToArray();
+                if (fieldsValue is List<object> fields)
+                {
+                    Collected = fields.Cast<string>().ToArray();
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{FieldsKey}' metadata to be of type 'List<Object>', but got '{fieldsValue?.GetType().Name}'.");
+                }
             }
         }
     }

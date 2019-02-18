@@ -29,20 +29,30 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             _key = key;
         }
 
+        object IMetadataCollector.Collected => Collected;
+
         public long Collected { get; private set; } = -1;
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(_key, out var durationValue))
+            if (metadata != null && metadata.TryGetValue(_key, out var durationValue))
             {
-                Collected = durationValue.As<long>();
+                if (durationValue is long duration)
+                {
+                    Collected = duration;
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{_key}' metadata to be of type 'Int64', but got '{durationValue?.GetType().Name}'.");
+                }
             }
         }
     }
 
     internal class ResultAvailableAfterCollector : DurationCollector
     {
-        public const string ResultAvailableAfterKey = "result_available_after";
+        internal const string ResultAvailableAfterKey = "result_available_after";
 
         public ResultAvailableAfterCollector()
             : base(ResultAvailableAfterKey)
@@ -52,7 +62,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
     internal class TimeToFirstCollector : DurationCollector
     {
-        public const string TimeToFirstKey = "t_first";
+        internal const string TimeToFirstKey = "t_first";
 
         public TimeToFirstCollector()
             : base(TimeToFirstKey)
@@ -62,7 +72,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
     internal class ResultConsumedAfterCollector : DurationCollector
     {
-        public const string ResultConsumedAfterKey = "result_consumed_after";
+        internal const string ResultConsumedAfterKey = "result_consumed_after";
 
         public ResultConsumedAfterCollector()
             : base(ResultConsumedAfterKey)
@@ -72,7 +82,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
     internal class TimeToLastCollector : DurationCollector
     {
-        public const string TimeToLastKey = "t_last";
+        internal const string TimeToLastKey = "t_last";
 
         public TimeToLastCollector()
             : base(TimeToLastKey)

@@ -21,15 +21,25 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class BookmarkCollector : IMetadataCollector<Bookmark>
     {
-        private const string BookmarkKey = "bookmark";
+        internal const string BookmarkKey = "bookmark";
+
+        object IMetadataCollector.Collected => Collected;
 
         public Bookmark Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(BookmarkKey, out var bookmarkValue))
+            if (metadata != null && metadata.TryGetValue(BookmarkKey, out var bookmarkValue))
             {
-                Collected = Bookmark.From(bookmarkValue.ToString());
+                if (bookmarkValue is string bookmark)
+                {
+                    Collected = Bookmark.From(bookmark);
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{BookmarkKey}' metadata to be of type 'String', but got '{bookmarkValue?.GetType().Name}'.");
+                }
             }
         }
     }

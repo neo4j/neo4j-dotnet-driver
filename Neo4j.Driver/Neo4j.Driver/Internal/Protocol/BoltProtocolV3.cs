@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
+using V1 = Neo4j.Driver.Internal.MessageHandling.V1;
 using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -73,7 +74,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), new V3.BeginResponseHandler())
+            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), new V1.BeginResponseHandler())
                 .ConfigureAwait(false);
             if (bookmark != null && !bookmark.IsEmpty())
             {
@@ -96,21 +97,21 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker)
         {
-            await connection.EnqueueAsync(CommitMessage.Commit, new V3.CommitResponseHandler(bookmarkTracker))
+            await connection.EnqueueAsync(CommitMessage.Commit, new V1.CommitResponseHandler(bookmarkTracker))
                 .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
         public async Task RollbackTransactionAsync(IConnection connection)
         {
-            await connection.EnqueueAsync(RollbackMessage.Rollback, new V3.RollbackResponseHandler())
+            await connection.EnqueueAsync(RollbackMessage.Rollback, new V1.RollbackResponseHandler())
                 .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
         public Task ResetAsync(IConnection connection)
         {
-            return connection.EnqueueAsync(ResetMessage.Reset, new V3.ResetResponseHandler());
+            return connection.EnqueueAsync(ResetMessage.Reset, new V1.ResetResponseHandler());
         }
 
         public async Task LogoutAsync(IConnection connection)

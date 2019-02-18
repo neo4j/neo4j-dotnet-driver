@@ -16,6 +16,7 @@
     <AssemblyFileVersion>1.7.0.0</AssemblyFileVersion>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <Version>0.0.0</Version>
+    <RootNamespace>Neo4j.Driver</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="App.config" />

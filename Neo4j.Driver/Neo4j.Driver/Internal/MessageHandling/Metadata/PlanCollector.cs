@@ -24,21 +24,28 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class PlanCollector : IMetadataCollector<IPlan>
     {
-        private const string PlanKey = "plan";
+        internal const string PlanKey = "plan";
+
+        object IMetadataCollector.Collected => Collected;
 
         public IPlan Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(PlanKey, out var planValue))
+            if (metadata != null && metadata.TryGetValue(PlanKey, out var planValue))
             {
-                if (planValue is IDictionary<string, object> planDict)
+                if (planValue == null)
+                {
+                    Collected = null;
+                }
+                else if (planValue is IDictionary<string, object> planDict)
                 {
                     Collected = CollectPlan(planDict);
                 }
                 else
                 {
-                    throw new ProtocolException($"Unsupported {PlanKey} type: {planValue.GetType().Name}");
+                    throw new ProtocolException(
+                        $"Expected '{PlanKey}' metadata to be of type 'IDictionary<String,Object>', but got '{planValue?.GetType().Name}'.");
                 }
             }
         }
@@ -50,7 +57,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 return null;
             }
 
-            var operationType = planDictionary.GetMandatoryValue<string>("operatorType");
+            var operationType = planDictionary.GetMandatoryValue<string>("operatorType", m => new ProtocolException(m));
             var args = planDictionary.GetValue("args", new Dictionary<string, object>());
             var identifiers = planDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
             var children = planDictionary.GetValue("children", new List<object>());

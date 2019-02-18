@@ -28,12 +28,13 @@ namespace Neo4j.Driver.Internal
     internal static class CollectionExtensions
     {
         private static readonly TypeInfo NeoValueTypeInfo = typeof(IValue).GetTypeInfo();
-        private const string DefalutItemSeparator = ", ";
+        private const string DefaultItemSeparator = ", ";
 
-        public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key)
+        public static T GetMandatoryValue<T>(this IDictionary<string, object> dictionary, string key,
+            Func<string, Exception> exceptionFact)
         {
             if (!dictionary.ContainsKey(key))
-                throw new Neo4jException($"Required property '{key}' is not in the response.");
+                throw exceptionFact($"Expected key '{key}' to be present in the dictionary, but could not find.");
 
             return (T) dictionary[key];
         }
@@ -56,7 +57,7 @@ namespace Neo4j.Driver.Internal
             return $"[{string.Join(separator, listStrings)}]";
         }
 
-        public static string ToContentString(this object o, string separator = DefalutItemSeparator)
+        public static string ToContentString(this object o, string separator = DefaultItemSeparator)
         {
             if (o == null)
             {

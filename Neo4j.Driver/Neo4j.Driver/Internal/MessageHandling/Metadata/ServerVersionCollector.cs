@@ -23,15 +23,25 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class ServerVersionCollector : IMetadataCollector<ServerVersion>
     {
-        private const string ServerKey = "server";
+        internal const string ServerKey = "server";
+
+        object IMetadataCollector.Collected => Collected;
 
         public ServerVersion Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(ServerKey, out var serverValue))
+            if (metadata != null && metadata.TryGetValue(ServerKey, out var serverValue))
             {
-                Collected = ServerVersion.Version(serverValue.As<string>());
+                if (serverValue is string server)
+                {
+                    Collected = ServerVersion.Version(server);
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{ServerKey}' metadata to be of type 'String', but got '{serverValue?.GetType().Name}'.");
+                }
             }
         }
     }

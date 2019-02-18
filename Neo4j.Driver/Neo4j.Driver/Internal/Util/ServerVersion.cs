@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Util
         private const string InDevVersionString = "Neo4j/dev";
 
         public static IComparer<ServerVersion> Comparer { get; } = new ServerVersionRelationalComparer();
-        public static readonly ServerVersion VInDev = new ServerVersion(Int32.MaxValue, Int32.MaxValue, Int32.MaxValue);
+        public static readonly ServerVersion VInDev = new ServerVersion(int.MaxValue, int.MaxValue, int.MaxValue);
         public static readonly ServerVersion V3_1_0 = new ServerVersion(3, 1, 0);
         public static readonly ServerVersion V3_2_0 = new ServerVersion(3, 2, 0);
         public static readonly ServerVersion V3_3_0 = new ServerVersion(3, 3, 0);
@@ -37,13 +37,16 @@ namespace Neo4j.Driver.Internal.Util
             new Regex($@"({Neo4jProduct}/)?(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?",
                 RegexOptions.IgnoreCase);
 
-        public ServerVersion(int major, int minor, int patch)
-            : this(Neo4jProduct, major, minor, patch)
+        private readonly string _versionStr;
+
+        public ServerVersion(int major, int minor, int patch, string versionStr = null)
+            : this(Neo4jProduct, major, minor, patch, versionStr)
         {
         }
 
-        public ServerVersion(string product, int major, int minor, int patch)
+        public ServerVersion(string product, int major, int minor, int patch, string versionStr = null)
         {
+            _versionStr = versionStr;
             Product = string.IsNullOrEmpty(product) ? Neo4jProduct : product;
             Major = major;
             Minor = minor;
@@ -65,7 +68,7 @@ namespace Neo4j.Driver.Internal.Util
                 return InDevVersionString;
             }
 
-            return $"{Product}/{Major}.{Minor}.{Patch}";
+            return _versionStr ?? $"{Product}/{Major}.{Minor}.{Patch}";
         }
 
         protected bool Equals(ServerVersion other)
@@ -130,7 +133,7 @@ namespace Neo4j.Driver.Internal.Util
                     patch = int.Parse(patchString);
                 }
 
-                return new ServerVersion(product, major, minor, patch);
+                return new ServerVersion(product, major, minor, patch, version);
             }
 
             throw new ArgumentOutOfRangeException($"Unexpected server version format: {version}");

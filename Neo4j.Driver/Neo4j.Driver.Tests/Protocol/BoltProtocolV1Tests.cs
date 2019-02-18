@@ -200,7 +200,7 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV1.CommitTransactionAsync(mockConn.Object, bookmarkTracker.Object);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(Commit, It.IsAny<V1.CommitResponseHandler>(), PullAll,
+                    x => x.EnqueueAsync(Commit, It.IsAny<V1.CommitResponseHandler>(), DiscardAll,
                         It.IsAny<V1.CommitResponseHandler>()), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }

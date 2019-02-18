@@ -23,15 +23,25 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class ConnectionIdCollector : IMetadataCollector<string>
     {
-        private const string ConnectionIdKey = "connection_id";
+        internal const string ConnectionIdKey = "connection_id";
+
+        object IMetadataCollector.Collected => Collected;
 
         public string Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(ConnectionIdKey, out var connectionIdValue))
+            if (metadata != null && metadata.TryGetValue(ConnectionIdKey, out var connectionIdValue))
             {
-                Collected = connectionIdValue.As<string>();
+                if (connectionIdValue is string connectionId)
+                {
+                    Collected = connectionId;
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{ConnectionIdKey}' metadata to be of type 'String', but got '{connectionIdValue?.GetType().Name}'.");
+                }
             }
         }
     }

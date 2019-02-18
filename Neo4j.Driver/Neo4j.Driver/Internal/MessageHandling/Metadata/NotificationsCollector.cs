@@ -22,24 +22,30 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    internal class NotificationCollector : IMetadataCollector<IList<INotification>>
+    internal class NotificationsCollector : IMetadataCollector<IList<INotification>>
     {
-        private const string NotificationsKey = "notifications";
+        internal const string NotificationsKey = "notifications";
+
+        object IMetadataCollector.Collected => Collected;
 
         public IList<INotification> Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(NotificationsKey, out var notificationsValue))
+            if (metadata != null && metadata.TryGetValue(NotificationsKey, out var notificationsValue))
             {
-                if (notificationsValue is List<object> notificationsList)
+                switch (notificationsValue)
                 {
-                    Collected = notificationsList.Cast<IDictionary<string, object>>().Select(CollectNotification)
-                        .ToList();
-                }
-                else
-                {
-                    throw new ProtocolException($"Unsupported {NotificationsKey} type: {notificationsValue.GetType().Name}");
+                    case null:
+                        Collected = null;
+                        break;
+                    case List<object> notificationsList:
+                        Collected = notificationsList.Cast<IDictionary<string, object>>().Select(CollectNotification)
+                            .ToList();
+                        break;
+                    default:
+                        throw new ProtocolException(
+                            $"Expected '{NotificationsKey}' metadata to be of type 'List<Object>', but got '{notificationsValue?.GetType().Name}'.");
                 }
             }
         }

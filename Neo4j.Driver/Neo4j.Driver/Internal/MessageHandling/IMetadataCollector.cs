@@ -21,11 +21,13 @@ namespace Neo4j.Driver.Internal.MessageHandling
 {
     internal interface IMetadataCollector
     {
+        object Collected { get; }
+
         void Collect(IDictionary<string, object> metadata);
     }
 
     internal interface IMetadataCollector<out TMetadata> : IMetadataCollector
     {
-        TMetadata Collected { get; }
+        new TMetadata Collected { get; }
     }
 }

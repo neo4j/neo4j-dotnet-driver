@@ -22,15 +22,25 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class StatementIdCollector : IMetadataCollector<long>
     {
-        private const string StatementIdKey = "stmt_id";
+        internal const string StatementIdKey = "stmt_id";
+
+        object IMetadataCollector.Collected => Collected;
 
         public long Collected { get; private set; } = -1;
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(StatementIdKey, out var stmtIdValue))
+            if (metadata != null && metadata.TryGetValue(StatementIdKey, out var stmtIdValue))
             {
-                Collected = stmtIdValue.As<long>();
+                if (stmtIdValue is long stmtId)
+                {
+                    Collected = stmtId;
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{StatementIdKey}' metadata to be of type 'Int64', but got '{stmtIdValue?.GetType().Name}'.");
+                }
             }
         }
     }

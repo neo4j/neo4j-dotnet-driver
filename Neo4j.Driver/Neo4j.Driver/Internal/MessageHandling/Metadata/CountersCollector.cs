@@ -23,33 +23,39 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class CountersCollector : IMetadataCollector<ICounters>
     {
-        private const string CountersKey = "stats";
+        internal const string CountersKey = "stats";
+
+        object IMetadataCollector.Collected => Collected;
 
         public ICounters Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(CountersKey, out var countersValue))
+            if (metadata != null && metadata.TryGetValue(CountersKey, out var countersValue))
             {
-                if (countersValue is IDictionary<string, object> countersDict)
+                switch (countersValue)
                 {
-                    Collected = new Counters(
-                        CountersValue(countersDict, "nodes-created"),
-                        CountersValue(countersDict, "nodes-deleted"),
-                        CountersValue(countersDict, "relationships-created"),
-                        CountersValue(countersDict, "relationships-deleted"),
-                        CountersValue(countersDict, "properties-set"),
-                        CountersValue(countersDict, "labels-added"),
-                        CountersValue(countersDict, "labels-removed"),
-                        CountersValue(countersDict, "indexes-added"),
-                        CountersValue(countersDict, "indexes-removed"),
-                        CountersValue(countersDict, "constraints-added"),
-                        CountersValue(countersDict, "constraints-removed")
-                    );
-                }
-                else
-                {
-                    throw new ProtocolException($"Unsupported {CountersKey} type: {countersValue.GetType().Name}");
+                    case null:
+                        Collected = null;
+                        break;
+                    case IDictionary<string, object> countersDict:
+                        Collected = new Counters(
+                            CountersValue(countersDict, "nodes-created"),
+                            CountersValue(countersDict, "nodes-deleted"),
+                            CountersValue(countersDict, "relationships-created"),
+                            CountersValue(countersDict, "relationships-deleted"),
+                            CountersValue(countersDict, "properties-set"),
+                            CountersValue(countersDict, "labels-added"),
+                            CountersValue(countersDict, "labels-removed"),
+                            CountersValue(countersDict, "indexes-added"),
+                            CountersValue(countersDict, "indexes-removed"),
+                            CountersValue(countersDict, "constraints-added"),
+                            CountersValue(countersDict, "constraints-removed")
+                        );
+                        break;
+                    default:
+                        throw new ProtocolException(
+                            $"Expected '{CountersKey}' metadata to be of type 'IDictionary<String,Object>', but got '{countersValue?.GetType().Name}'.");
                 }
             }
         }

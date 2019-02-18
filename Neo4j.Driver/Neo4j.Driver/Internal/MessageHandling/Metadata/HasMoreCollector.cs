@@ -24,15 +24,25 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class HasMoreCollector : IMetadataCollector<bool>
     {
-        private const string HasMoreKey = "has_more";
+        internal const string HasMoreKey = "has_more";
+
+        object IMetadataCollector.Collected => Collected;
 
         public bool Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(HasMoreKey, out var hasMoreValue))
+            if (metadata != null && metadata.TryGetValue(HasMoreKey, out var hasMoreValue))
             {
-                Collected = hasMoreValue.As<bool>();
+                if (hasMoreValue is bool hasMore)
+                {
+                    Collected = hasMore;
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{HasMoreKey}' metadata to be of type 'Boolean', but got '{hasMoreValue?.GetType().Name}'.");
+                }
             }
         }
     }

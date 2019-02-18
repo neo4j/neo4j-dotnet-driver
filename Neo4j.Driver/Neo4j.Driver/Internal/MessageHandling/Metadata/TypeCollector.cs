@@ -22,15 +22,25 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class TypeCollector : IMetadataCollector<StatementType>
     {
-        public const string TypeKey = "type";
+        internal const string TypeKey = "type";
+
+        object IMetadataCollector.Collected => Collected;
 
         public StatementType Collected { get; private set; } = StatementType.Unknown;
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata.TryGetValue(TypeKey, out var typeValue))
+            if (metadata != null && metadata.TryGetValue(TypeKey, out var typeValue))
             {
-                Collected = FromTypeCode(typeValue.As<string>());
+                if (typeValue is string type)
+                {
+                    Collected = FromTypeCode(type);
+                }
+                else
+                {
+                    throw new ProtocolException(
+                        $"Expected '{TypeKey}' metadata to be of type 'String', but got '{typeValue?.GetType().Name}'.");
+                }
             }
         }
 
@@ -47,7 +57,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 case "s":
                     return StatementType.SchemaWrite;
                 default:
-                    throw new ProtocolException($"Unsupported {TypeKey} type: {type}");
+                    throw new ProtocolException($"An invalid value of '{type}' was passed as '{TypeKey}' metadata.");
             }
         }
     }

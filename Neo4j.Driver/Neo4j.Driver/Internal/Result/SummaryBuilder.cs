@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
@@ -149,10 +150,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IList<string> Identifiers { get; }
 
-        IList<IPlan> IPlan.Children
-        {
-            get { throw new InvalidOperationException("This is a profiled plan."); }
-        }
+        IList<IPlan> IPlan.Children => Children.Cast<IPlan>().ToList();
 
         public IList<IProfiledPlan> Children { get; }
 
