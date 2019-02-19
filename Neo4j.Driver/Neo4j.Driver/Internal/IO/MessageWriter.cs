@@ -63,11 +63,6 @@ namespace Neo4j.Driver.Internal.IO
             _chunkWriter.CloseChunk();
         }
 
-        public void Flush()
-        {
-            _chunkWriter.Send();
-        }
-
         public Task FlushAsync()
         {
             return _chunkWriter.SendAsync();

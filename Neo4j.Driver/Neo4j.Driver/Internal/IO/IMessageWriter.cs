@@ -27,8 +27,6 @@ namespace Neo4j.Driver.Internal.IO
 
         void Write(IRequestMessage message);
 
-        void Flush();
-
         Task FlushAsync();
 
     }

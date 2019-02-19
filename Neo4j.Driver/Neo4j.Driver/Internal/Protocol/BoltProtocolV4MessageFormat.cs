@@ -15,9 +15,10 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageHandlers;
-using Neo4j.Driver.Internal.IO.MessageHandlers.V3;
-using Neo4j.Driver.Internal.IO.ValueHandlers;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V4;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -32,11 +33,11 @@ namespace Neo4j.Driver.Internal.Protocol
 
         internal BoltProtocolV4MessageFormat()
         {
-            RemoveHandler<PullAllMessageHandler>();
-            AddHandler<PullNMessageHandler>();
+            RemoveHandler<PullAllMessageSerializer>();
+            AddHandler<PullNMessageSerializer>();
 
-            RemoveHandler<DiscardAllMessageHandler>();
-            AddHandler<DiscardNMessageHandler>();
+            RemoveHandler<DiscardAllMessageSerializer>();
+            AddHandler<DiscardNMessageSerializer>();
         }
     }
 }

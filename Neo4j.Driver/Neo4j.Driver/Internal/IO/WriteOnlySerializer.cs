@@ -14,26 +14,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Linq;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal class PackStreamWriterBytesIncompatible: PackStreamWriter
+    internal abstract class WriteOnlySerializer : IPackStreamSerializer
     {
+        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
 
-        public PackStreamWriterBytesIncompatible(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandler)
-            : base(stream, structHandler)
+        public object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
-            
+            throw new ProtocolException(
+                $"{GetType().Name}: It is not expected to receive a struct of signature {signature:X2} from the server.");
         }
 
-        public override void Write(byte[] values)
-        {
-            throw new ProtocolException($"Cannot understand { nameof(values) } with type { values.GetType().FullName}");
-        }
+        public abstract IEnumerable<Type> WritableTypes { get; }
+
+        public abstract void Serialize(IPackStreamWriter writer, object value);
     }
 }

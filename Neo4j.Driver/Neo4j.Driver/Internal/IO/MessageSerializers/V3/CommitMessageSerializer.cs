@@ -1,5 +1,4 @@
-﻿// Copyright (c) 2002-2019 "Neo4j,"
-// Neo4j Sweden AB [http://neo4j.com]
+// Copyright (c) 2002-2019 Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -14,26 +13,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using Neo4j.Driver;
+using Neo4j.Driver.Internal.Messaging.V3;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
 {
-    internal class PackStreamWriterBytesIncompatible: PackStreamWriter
+    internal class CommitMessageSerializer: WriteOnlySerializer
     {
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(CommitMessage)};
 
-        public PackStreamWriterBytesIncompatible(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandler)
-            : base(stream, structHandler)
+        public override void Serialize(IPackStreamWriter writer, object value)
         {
-            
-        }
-
-        public override void Write(byte[] values)
-        {
-            throw new ProtocolException($"Cannot understand { nameof(values) } with type { values.GetType().FullName}");
+            writer.WriteStructHeader(0, MsgCommit);
         }
     }
 }

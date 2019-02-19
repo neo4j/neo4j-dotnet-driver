@@ -16,7 +16,8 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.ValueHandlers;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
+using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -25,20 +26,20 @@ namespace Neo4j.Driver.Internal.Protocol
         internal BoltProtocolV2MessageFormat()
         {
             // Add V2 Spatial Types
-            AddHandler<PointHandler>();
+            AddHandler<PointSerializer>();
 
             // Add V2 Temporal Types
-            AddHandler<LocalDateHandler>();
-            AddHandler<LocalTimeHandler>();
-            AddHandler<LocalDateTimeHandler>();
-            AddHandler<OffsetTimeHandler>();
-            AddHandler<ZonedDateTimeHandler>();
-            AddHandler<DurationHandler>();
+            AddHandler<LocalDateSerializer>();
+            AddHandler<LocalTimeSerializer>();
+            AddHandler<LocalDateTimeSerializer>();
+            AddHandler<OffsetTimeSerializer>();
+            AddHandler<ZonedDateTimeSerializer>();
+            AddHandler<DurationSerializer>();
 
             // Add BCL Handlers
-            AddHandler<SystemDateTimeHandler>();
+            AddHandler<SystemDateTimeSerializer>();
             AddHandler<SystemDateTimeOffsetHandler>();
-            AddHandler<SystemTimeSpanHandler>();
+            AddHandler<SystemTimeSpanSerializer>();
         }
 
     }

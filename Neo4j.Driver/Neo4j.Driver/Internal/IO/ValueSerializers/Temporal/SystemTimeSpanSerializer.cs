@@ -14,26 +14,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
-    internal class PackStreamWriterBytesIncompatible: PackStreamWriter
+    internal class SystemTimeSpanSerializer : WriteOnlySerializer
     {
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(TimeSpan)};
 
-        public PackStreamWriterBytesIncompatible(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandler)
-            : base(stream, structHandler)
+        public override void Serialize(IPackStreamWriter writer, object value)
         {
-            
-        }
+            var time = value.CastOrThrow<TimeSpan>();
 
-        public override void Write(byte[] values)
-        {
-            throw new ProtocolException($"Cannot understand { nameof(values) } with type { values.GetType().FullName}");
+            if (time.Ticks < 0 || time.Ticks >= TimeSpan.TicksPerDay)
+            {
+                throw new ProtocolException(
+                    $"TimeSpan instance ({time}) passed to {nameof(SystemDateTimeSerializer)} is not a valid time of day!");
+            }
+
+            writer.Write(new LocalTime(time));
         }
     }
 }

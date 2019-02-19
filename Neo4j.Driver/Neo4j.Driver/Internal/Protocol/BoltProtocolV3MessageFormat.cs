@@ -15,9 +15,10 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageHandlers;
-using Neo4j.Driver.Internal.IO.MessageHandlers.V3;
-using Neo4j.Driver.Internal.IO.ValueHandlers;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
+using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -36,46 +37,46 @@ namespace Neo4j.Driver.Internal.Protocol
         internal BoltProtocolV3MessageFormat()
         {
             // BoltV3 Request Message Types
-            AddHandler<HelloMessageHandler>();
-            AddHandler<RunWithMetadataMessageHandler>();
-            AddHandler<BeginMessageHandler>();
-            AddHandler<CommitMessageHandler>();
-            AddHandler<RollbackMessageHandler>();
+            AddHandler<HelloMessageSerializer>();
+            AddHandler<RunWithMetadataMessageSerializer>();
+            AddHandler<BeginMessageSerializer>();
+            AddHandler<CommitMessageSerializer>();
+            AddHandler<RollbackMessageSerializer>();
 
             // BoltV3 optional Goodbye
-            AddHandler<GoodbyeMessageHandler>();
+            AddHandler<GoodbyeMessageSerializer>();
             
-            AddHandler<PullAllMessageHandler>();
-            AddHandler<DiscardAllMessageHandler>();
-            AddHandler<ResetMessageHandler>();
+            AddHandler<PullAllMessageSerializer>();
+            AddHandler<DiscardAllMessageSerializer>();
+            AddHandler<ResetMessageSerializer>();
 
             // Response Message Types
-            AddHandler<FailureMessageHandler>();
-            AddHandler<IgnoredMessageHandler>();
-            AddHandler<RecordMessageHandler>();
-            AddHandler<SuccessMessageHandler>();
+            AddHandler<FailureMessageSerializer>();
+            AddHandler<IgnoredMessageSerializer>();
+            AddHandler<RecordMessageSerializer>();
+            AddHandler<SuccessMessageSerializer>();
 
             // Struct Data Types
-            AddHandler<NodeHandler>();
-            AddHandler<RelationshipHandler>();
-            AddHandler<UnboundRelationshipHandler>();
-            AddHandler<PathHandler>();
+            AddHandler<NodeSerializer>();
+            AddHandler<RelationshipSerializer>();
+            AddHandler<UnboundRelationshipSerializer>();
+            AddHandler<PathSerializer>();
             
             // Add V2 Spatial Types
-            AddHandler<PointHandler>();
+            AddHandler<PointSerializer>();
 
             // Add V2 Temporal Types
-            AddHandler<LocalDateHandler>();
-            AddHandler<LocalTimeHandler>();
-            AddHandler<LocalDateTimeHandler>();
-            AddHandler<OffsetTimeHandler>();
-            AddHandler<ZonedDateTimeHandler>();
-            AddHandler<DurationHandler>();
+            AddHandler<LocalDateSerializer>();
+            AddHandler<LocalTimeSerializer>();
+            AddHandler<LocalDateTimeSerializer>();
+            AddHandler<OffsetTimeSerializer>();
+            AddHandler<ZonedDateTimeSerializer>();
+            AddHandler<DurationSerializer>();
 
             // Add BCL Handlers
-            AddHandler<SystemDateTimeHandler>();
+            AddHandler<SystemDateTimeSerializer>();
             AddHandler<SystemDateTimeOffsetHandler>();
-            AddHandler<SystemTimeSpanHandler>();
+            AddHandler<SystemTimeSpanSerializer>();
         }
     }
 }

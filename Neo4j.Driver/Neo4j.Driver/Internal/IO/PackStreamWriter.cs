@@ -28,12 +28,12 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamWriter: IPackStreamWriter
     {
-        private static readonly IDictionary<Type, IPackStreamStructHandler> NoHandlers = new Dictionary<Type, IPackStreamStructHandler>();
+        private static readonly IDictionary<Type, IPackStreamSerializer> NoHandlers = new Dictionary<Type, IPackStreamSerializer>();
 
-        private readonly IDictionary<Type, IPackStreamStructHandler> _structHandlers;
+        private readonly IDictionary<Type, IPackStreamSerializer> _structHandlers;
         private readonly Stream _stream;
 
-        public PackStreamWriter(Stream stream, IDictionary<Type, IPackStreamStructHandler> structHandlers)
+        public PackStreamWriter(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandlers)
         {
             Throw.ArgumentNullException.IfNull(stream, nameof(stream));
             Throw.ArgumentOutOfRangeException.IfFalse(stream.CanWrite, nameof(stream));
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Internal.IO
                 default:
                     if (_structHandlers.TryGetValue(value.GetType(), out var structHandler))
                     {
-                        structHandler.Write(this, value);
+                        structHandler.Serialize(this, value);
                     }
                     else
                     {

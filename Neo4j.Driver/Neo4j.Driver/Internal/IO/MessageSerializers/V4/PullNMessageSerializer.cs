@@ -14,26 +14,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using Neo4j.Driver;
+using Neo4j.Driver.Internal.Messaging.V4;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 {
-    internal class PackStreamWriterBytesIncompatible: PackStreamWriter
+    internal class PullNMessageSerializer : WriteOnlySerializer
     {
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(PullNMessage)};
 
-        public PackStreamWriterBytesIncompatible(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandler)
-            : base(stream, structHandler)
+        public override void Serialize(IPackStreamWriter writer, object value)
         {
-            
-        }
+            var pullN = value.CastOrThrow<PullNMessage>();
 
-        public override void Write(byte[] values)
-        {
-            throw new ProtocolException($"Cannot understand { nameof(values) } with type { values.GetType().FullName}");
+            writer.WriteStructHeader(1, BoltProtocolV4MessageFormat.MsgPullN);
+            writer.Write(pullN.Metadata);
         }
     }
 }

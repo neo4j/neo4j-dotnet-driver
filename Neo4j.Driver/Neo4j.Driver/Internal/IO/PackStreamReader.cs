@@ -25,11 +25,11 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamReader: IPackStreamReader
     {
-        private static readonly IDictionary<byte, IPackStreamStructHandler> NoHandlers = new Dictionary<byte, IPackStreamStructHandler>();
+        private static readonly IDictionary<byte, IPackStreamSerializer> NoHandlers = new Dictionary<byte, IPackStreamSerializer>();
         private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
         private static readonly byte[] EmptyByteArray = new byte[0];
 
-        private readonly IDictionary<byte, IPackStreamStructHandler> _structHandlers;
+        private readonly IDictionary<byte, IPackStreamSerializer> _structHandlers;
 
         private readonly byte[] _byteBuffer = new byte[1];
         private readonly byte[] _shortBuffer = new byte[2];
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Internal.IO
 
         private readonly Stream _stream;
 
-        public PackStreamReader(Stream stream, IDictionary<byte, IPackStreamStructHandler> structHandlers)
+        public PackStreamReader(Stream stream, IDictionary<byte, IPackStreamSerializer> structHandlers)
         {
             Throw.ArgumentNullException.IfNull(stream, nameof(stream));
             Throw.ArgumentOutOfRangeException.IfFalse(stream.CanRead, nameof(stream));
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal.IO
 
             if (_structHandlers.TryGetValue(signature, out var handler))
             {
-                return handler.Read(this, signature, size);
+                return handler.Deserialize(this, signature, size);
             }
 
             throw new ProtocolException("Unknown structure type: " + signature);
