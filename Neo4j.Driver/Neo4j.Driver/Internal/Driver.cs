@@ -73,13 +73,13 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session(AccessMode defaultMode, string bookmark)
         {
-            return Session(defaultMode, Bookmark.From(bookmark, _logger));
+            return Session(defaultMode, Bookmark.From(bookmark));
         }
 
 
         public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
         {
-            return Session(defaultMode, Bookmark.From(bookmarks, _logger));
+            return Session(defaultMode, Bookmark.From(bookmarks));
         }
 
         public ISession Session(IEnumerable<string> bookmarks)

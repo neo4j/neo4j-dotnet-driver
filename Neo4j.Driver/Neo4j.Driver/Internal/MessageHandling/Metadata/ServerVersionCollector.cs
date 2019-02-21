@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             {
                 if (serverValue is string server)
                 {
-                    Collected = ServerVersion.Version(server);
+                    Collected = ServerVersion.From(server);
                 }
                 else
                 {

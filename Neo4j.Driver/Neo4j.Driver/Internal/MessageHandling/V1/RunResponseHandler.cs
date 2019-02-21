@@ -20,39 +20,42 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
+using static Neo4j.Driver.Internal.Messaging.V4.PullNMessage;
+using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V1
 {
     internal class RunResponseHandler : MetadataCollectingResponseHandler
     {
-        private readonly ResultStreamBuilder _streamBuilder;
+        private readonly IResultStreamBuilder _streamBuilder;
+        private readonly SummaryBuilder _summaryBuilder;
 
-        public RunResponseHandler(ResultStreamBuilder streamBuilder)
+        public RunResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder)
         {
             _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
+            _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
 
             AddMetadata<FieldsCollector, string[]>();
             AddMetadata<ResultAvailableAfterCollector, long>();
         }
 
-        public override Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override async Task OnSuccessAsync(IDictionary<string, object> metadata)
         {
-            var result = base.OnSuccessAsync(metadata);
+            await base.OnSuccessAsync(metadata);
 
-            _streamBuilder.Fields = GetMetadata<FieldsCollector, string[]>();
-            _streamBuilder.Summary.ResultAvailableAfter = GetMetadata<ResultAvailableAfterCollector, long>();
+            _summaryBuilder.ResultAvailableAfter = GetMetadata<ResultAvailableAfterCollector, long>();
 
-            return _streamBuilder.RunCompletedAsync(null);
+            await _streamBuilder.RunCompletedAsync(NoStatementId, GetMetadata<FieldsCollector, string[]>(), null);
         }
 
         public override Task OnFailureAsync(IResponsePipelineError error)
         {
-            return _streamBuilder.RunCompletedAsync(error).ContinueWith(t => true);
+            return _streamBuilder.RunCompletedAsync(NoStatementId, null, error);
         }
 
         public override Task OnIgnoredAsync()
         {
-            return _streamBuilder.RunCompletedAsync(null);
+            return _streamBuilder.RunCompletedAsync(NoStatementId, null, null);
         }
     }
 }

@@ -69,5 +69,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.ShouldBeEquivalentTo(Bookmark.From(bookmarkStr));
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var bookmarkStr = $"{Bookmark.BookmarkPrefix}455";
+            var metadata = new Dictionary<string, object> {{Key, bookmarkStr}};
+            var collector = new BookmarkCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, $"{Bookmark.BookmarkPrefix}455");
+
+        internal static Bookmark TestMetadataCollected => Bookmark.From((string) TestMetadata.Value);
     }
 }

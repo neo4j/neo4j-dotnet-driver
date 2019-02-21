@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
         private static IProfiledPlan CollectProfile(IDictionary<string, object> profileDictionary)
         {
-            if (profileDictionary == null || profileDictionary.Count == 0)
+            if (profileDictionary.Count == 0)
             {
                 return null;
             }

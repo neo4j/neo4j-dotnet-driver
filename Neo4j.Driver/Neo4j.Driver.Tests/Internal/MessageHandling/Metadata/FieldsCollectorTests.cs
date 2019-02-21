@@ -69,5 +69,21 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             collector.Collected.Should().HaveCount(3).And
                 .ContainInOrder("field-1", "field-2", "field-3");
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> {{Key, new List<object> {"field-1", "field-2", "field-3"}}};
+            var collector = new FieldsCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, new List<object> {"field-1", "field-2", "field-3", "field-4"});
+
+        internal static string[] TestMetadataCollected => new[] {"field-1", "field-2", "field-3", "field-4"};
     }
 }

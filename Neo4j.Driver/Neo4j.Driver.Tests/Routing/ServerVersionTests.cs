@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.Routing
         [InlineData("Neo4j/3.2")]
         public void ShouldHandleMajorMinorVersion(string version)
         {
-            var serverVersion = ServerVersion.Version(version);
+            var serverVersion = ServerVersion.From(version);
             serverVersion.Major.Should().Be(3);
             serverVersion.Minor.Should().Be(2);
             serverVersion.Patch.Should().Be(0);
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests.Routing
         [InlineData("Neo4j/3.2.1")]
         public void ShouldHandleMajorMinorPatchVersion(string version)
         {
-            var serverVersion = ServerVersion.Version(version);
+            var serverVersion = ServerVersion.From(version);
             serverVersion.Major.Should().Be(3);
             serverVersion.Minor.Should().Be(2);
             serverVersion.Patch.Should().Be(1);
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldHandleDevVersion()
         {
             var version = "Neo4j/dev";
-            var serverVersion = ServerVersion.Version(version);
+            var serverVersion = ServerVersion.From(version);
             serverVersion.Major.Should().Be(Int32.MaxValue);
             serverVersion.Minor.Should().Be(Int32.MaxValue);
             serverVersion.Patch.Should().Be(Int32.MaxValue);
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests.Routing
         [InlineData("\t\r\n")]
         public void ShouldThrowWhenVersionNotRecognized(string version)
         {
-            var exc = Record.Exception(() => ServerVersion.Version(version));
+            var exc = Record.Exception(() => ServerVersion.From(version));
 
             exc.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests.Routing
         [InlineData(null)]
         public void ShouldThrowWhenVersionIsNullOrEmpty(string version)
         {
-            var exc = Record.Exception(() => ServerVersion.Version(version));
+            var exc = Record.Exception(() => ServerVersion.From(version));
 
             exc.Should().BeOfType<ArgumentNullException>();
         }

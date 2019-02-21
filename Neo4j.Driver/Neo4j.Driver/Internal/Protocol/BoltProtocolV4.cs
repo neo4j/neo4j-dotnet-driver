@@ -54,10 +54,12 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
             Bookmark bookmark, TransactionConfig txConfig)
         {
-            var streamBuilder = new ResultStreamBuilder(statement, connection.Server,
-                connection.ReceiveOneAsync, RequestMore(connection, bookmarkTracker),
-                CancelRequest(connection, bookmarkTracker), CancellationToken.None, resultResourceHandler);
-            var runHandler = new V4.RunResponseHandler(streamBuilder);
+            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
+            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
+                RequestMore(connection, summaryBuilder, bookmarkTracker),
+                CancelRequest(connection, summaryBuilder, bookmarkTracker), CancellationToken.None,
+                resultResourceHandler);
+            var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
             await connection
                 .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), runHandler)
                 .ConfigureAwait(false);
@@ -68,36 +70,39 @@ namespace Neo4j.Driver.Internal.Protocol
         public override async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
             Statement statement)
         {
-            var streamBuilder = new ResultStreamBuilder(statement, connection.Server,
-                connection.ReceiveOneAsync, RequestMore(connection, null), CancelRequest(connection, null),
+            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
+            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
+                RequestMore(connection, summaryBuilder, null),
+                CancelRequest(connection, summaryBuilder, null),
                 CancellationToken.None, null);
-            var runHandler = new V4.RunResponseHandler(streamBuilder);
+            var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
             await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), runHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
-        private Func<ResultStreamBuilder, long, Task> RequestMore(IConnection connection,
-            IBookmarkTracker bookmarkTracker)
+        private Func<ResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
+            SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
-            return async (streamBuilder, n) =>
+            return async (streamBuilder, id, n) =>
             {
-                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, bookmarkTracker);
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
-                    .EnqueueAsync(new PullNMessage(streamBuilder.StatementId, n), pullAllHandler)
+                    .EnqueueAsync(new PullNMessage(id, n), pullAllHandler)
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };
         }
 
-        private Func<ResultStreamBuilder, Task> CancelRequest(IConnection connection, IBookmarkTracker bookmarkTracker)
+        private Func<ResultStreamBuilder, long, Task> CancelRequest(IConnection connection,
+            SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
-            return async (streamBuilder) =>
+            return async (streamBuilder, id) =>
             {
-                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, bookmarkTracker);
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
-                    .EnqueueAsync(new DiscardNMessage(streamBuilder.StatementId, All), pullAllHandler)
+                    .EnqueueAsync(new DiscardNMessage(id, All), pullAllHandler)
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };

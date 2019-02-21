@@ -58,6 +58,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         }
 
         [Fact]
+        public void ShouldNotCollectIfValueIsEmpty()
+        {
+            var collector = new PlanCollector();
+
+            collector.Collect(new Dictionary<string, object> {{Key, new Dictionary<string, object>()}});
+
+            collector.Collected.Should().BeNull();
+        }
+
+        [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
         {
             var metadata = new Dictionary<string, object> {{Key, true}};
@@ -254,5 +264,40 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                         })
                 }));
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object>
+            {
+                {
+                    Key, new Dictionary<string, object>
+                    {
+                        {"operatorType", "opType"}
+                    }
+                }
+            };
+            var collector = new PlanCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, new Dictionary<string, object>
+            {
+                {"operatorType", "opType"},
+                {"args", new Dictionary<string, object> {{"a", 1L}}},
+                {
+                    "identifiers", new List<object>
+                    {
+                        "a", "b", "c"
+                    }
+                }
+            });
+
+        internal static IPlan TestMetadataCollected => new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
+            new List<string> {"a", "b", "c"}, new List<IPlan>());
     }
 }

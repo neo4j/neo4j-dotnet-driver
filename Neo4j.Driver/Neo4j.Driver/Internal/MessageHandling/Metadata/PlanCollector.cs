@@ -34,25 +34,24 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         {
             if (metadata != null && metadata.TryGetValue(PlanKey, out var planValue))
             {
-                if (planValue == null)
+                switch (planValue)
                 {
-                    Collected = null;
-                }
-                else if (planValue is IDictionary<string, object> planDict)
-                {
-                    Collected = CollectPlan(planDict);
-                }
-                else
-                {
-                    throw new ProtocolException(
-                        $"Expected '{PlanKey}' metadata to be of type 'IDictionary<String,Object>', but got '{planValue?.GetType().Name}'.");
+                    case null:
+                        Collected = null;
+                        break;
+                    case IDictionary<string, object> planDict:
+                        Collected = CollectPlan(planDict);
+                        break;
+                    default:
+                        throw new ProtocolException(
+                            $"Expected '{PlanKey}' metadata to be of type 'IDictionary<String,Object>', but got '{planValue?.GetType().Name}'.");
                 }
             }
         }
 
         private static IPlan CollectPlan(IDictionary<string, object> planDictionary)
         {
-            if (planDictionary == null || planDictionary.Count == 0)
+            if (planDictionary.Count == 0)
             {
                 return null;
             }

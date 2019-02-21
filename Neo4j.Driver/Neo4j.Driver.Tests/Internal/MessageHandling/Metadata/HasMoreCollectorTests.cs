@@ -68,5 +68,21 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().BeTrue();
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> {{Key, true}};
+            var collector = new HasMoreCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, true);
+
+        internal static bool TestMetadataCollected => true;
     }
 }

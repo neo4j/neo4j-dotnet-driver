@@ -67,6 +67,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().Be(5L);
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var collector = new ResultAvailableAfterCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, 15L);
+
+        internal static long TestMetadataCollected => 15L;
     }
 
     public class ResultConsumedAfterCollectorTests
@@ -115,6 +131,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().Be(5L);
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var collector = new ResultConsumedAfterCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, 25L);
+
+        internal static long TestMetadataCollected => 25L;
     }
 
     public class TimeToFirstCollectorTests
@@ -163,6 +195,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().Be(5L);
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var collector = new TimeToFirstCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, 35L);
+
+        internal static long TestMetadataCollected => 35L;
     }
 
     public class TimeToLastCollectorTests
@@ -211,5 +259,21 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().Be(5L);
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var collector = new TimeToLastCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, 45L);
+
+        internal static long TestMetadataCollected => 45L;
     }
 }

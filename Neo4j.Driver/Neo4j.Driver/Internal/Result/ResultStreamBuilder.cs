@@ -24,44 +24,41 @@ using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultStreamBuilder
+    internal class ResultStreamBuilder : IResultStreamBuilder
     {
         private readonly long _batchSize = 5;
         private readonly Func<Task> _advanceFunction;
-        private readonly Func<ResultStreamBuilder, long, Task> _moreFunction;
-        private readonly Func<ResultStreamBuilder, Task> _cancelFunction;
+        private readonly Func<ResultStreamBuilder, long, long, Task> _moreFunction;
+        private readonly Func<ResultStreamBuilder, long, Task> _cancelFunction;
         private readonly CancellationToken _cancellation;
         private readonly IResultResourceHandler _resourceHandler;
+        private readonly SummaryBuilder _summaryBuilder;
 
         private readonly LinkedList<IRecord> _records;
 
         private State _state;
+        private long _statementId;
+        private string[] _fields;
 
-        public ResultStreamBuilder(Statement statement, IServerInfo serverInfo, Func<Task> advanceFunction,
-            Func<ResultStreamBuilder, long, Task> moreFunction, Func<ResultStreamBuilder, Task> cancelFunction,
-            CancellationToken cancellation, IResultResourceHandler resourceHandler)
+        public ResultStreamBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
+            Func<ResultStreamBuilder, long, long, Task> moreFunction,
+            Func<ResultStreamBuilder, long, Task> cancelFunction, CancellationToken cancellation,
+            IResultResourceHandler resourceHandler)
         {
+            _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
             _advanceFunction =
                 WrapAdvanceFunc(advanceFunction ?? throw new ArgumentNullException(nameof(advanceFunction)));
-            _moreFunction = moreFunction ?? ((s, n) => TaskHelper.GetCompletedTask());
-            _cancelFunction = cancelFunction ?? ((s) => TaskHelper.GetCompletedTask());
+            _moreFunction = moreFunction ?? ((s, id, n) => TaskHelper.GetCompletedTask());
+            _cancelFunction = cancelFunction ?? ((s, id) => TaskHelper.GetCompletedTask());
             _cancellation = cancellation;
             _resourceHandler = resourceHandler;
 
             _records = new LinkedList<IRecord>();
 
-            StatementId = NoStatementId;
-            Summary = new SummaryBuilder(statement, serverInfo);
-            Fields = null;
-
             _state = State.Running;
+            _statementId = NoStatementId;
+            _fields = null;
         }
-
-        internal SummaryBuilder Summary { get; }
-
-        internal string[] Fields { get; set; }
-
-        internal long StatementId { get; set; }
 
         public IStatementResultCursor CreateCursor()
         {
@@ -75,7 +72,7 @@ namespace Neo4j.Driver.Internal.Result
                 await _advanceFunction().ConfigureAwait(false);
             }
 
-            return Fields ?? new string[0];
+            return _fields ?? new string[0];
         }
 
         public async Task<IRecord> NextRecordAsync()
@@ -109,28 +106,27 @@ namespace Neo4j.Driver.Internal.Result
                 await _advanceFunction().ConfigureAwait(false);
             }
 
-            return Summary.Build();
+            return _summaryBuilder.Build();
         }
 
-        public Task RunCompletedAsync(IResponsePipelineError error)
+        public Task RunCompletedAsync(long statementId, string[] fields, IResponsePipelineError error)
         {
+            _statementId = statementId;
+            _fields = fields;
             _state = State.StreamingPaused;
 
-            if (_cancellation.IsCancellationRequested)
-            {
-                return _cancelFunction(this);
-            }
-
-            return TaskHelper.GetCompletedTask();
+            return _cancellation.IsCancellationRequested
+                ? _cancelFunction(this, _statementId)
+                : TaskHelper.GetCompletedTask();
         }
 
-        public Task PullCompletedAsync(IResponsePipelineError error, bool hasMoreRecords)
+        public Task PullCompletedAsync(bool hasMore, IResponsePipelineError error)
         {
-            _state = hasMoreRecords ? State.StreamingPaused : State.Finished;
+            _state = hasMore ? State.StreamingPaused : State.Finished;
 
             if (_cancellation.IsCancellationRequested && _state == State.StreamingPaused)
             {
-                return _cancelFunction(this);
+                return _cancelFunction(this, _statementId);
             }
 
             return TaskHelper.GetCompletedTask();
@@ -138,7 +134,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public Task PushRecordAsync(object[] fieldValues)
         {
-            _records.AddLast(new Record(Fields, fieldValues));
+            _records.AddLast(new Record(_fields, fieldValues));
             return TaskHelper.GetCompletedTask();
         }
 
@@ -150,11 +146,11 @@ namespace Neo4j.Driver.Internal.Result
                 {
                     if (_cancellation.IsCancellationRequested)
                     {
-                        await _cancelFunction(this);
+                        await _cancelFunction(this, _statementId);
                     }
                     else
                     {
-                        await _moreFunction(this, _batchSize);
+                        await _moreFunction(this, _statementId, _batchSize);
                         _state = State.Streaming;
                     }
                 }

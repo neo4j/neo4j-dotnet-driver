@@ -60,10 +60,11 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
             Bookmark bookmark, TransactionConfig txConfig)
         {
-            var streamBuilder = new ResultStreamBuilder(statement, connection.Server,
-                connection.ReceiveOneAsync, null, null, CancellationToken.None, resultResourceHandler);
-            var runHandler = new V3.RunResponseHandler(streamBuilder);
-            var pullAllHandler = new V3.PullResponseHandler(streamBuilder, bookmarkTracker);
+            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
+            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
+                CancellationToken.None, resultResourceHandler);
+            var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
+            var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection
                 .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), runHandler, PullAll,
                     pullAllHandler)
@@ -76,7 +77,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), new V1.BeginResponseHandler())
                 .ConfigureAwait(false);
-            if (bookmark != null && !bookmark.IsEmpty())
+            if (bookmark?.HasBookmark ?? false)
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
@@ -85,10 +86,11 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
             Statement statement)
         {
-            var streamBuilder = new ResultStreamBuilder(statement, connection.Server,
-                connection.ReceiveOneAsync, null, null, CancellationToken.None, null);
-            var runHandler = new V3.RunResponseHandler(streamBuilder);
-            var pullAllHandler = new V3.PullResponseHandler(streamBuilder, null);
+            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
+            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
+                CancellationToken.None, null);
+            var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
+            var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, null);
             await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), runHandler, PullAll, pullAllHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);

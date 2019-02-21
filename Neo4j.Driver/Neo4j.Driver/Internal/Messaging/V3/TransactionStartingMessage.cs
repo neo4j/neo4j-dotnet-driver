@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
         private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode)
         {
-            var bookmarksPresent = bookmark != null && !bookmark.IsEmpty();
+            var bookmarksPresent = bookmark?.HasBookmark ?? false;
             var txTimeoutPresent = txTimeout > TimeSpan.Zero;
             var txMetadataPresent = txMetadata != null && txMetadata.Count != 0;
 

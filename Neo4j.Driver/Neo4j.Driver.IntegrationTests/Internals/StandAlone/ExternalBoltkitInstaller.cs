@@ -67,7 +67,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             // which is lower than Driver's default max pool size setting of `500`. This is added because
             // soak tests were failing
             // TODO: Remove/Revise after 3.4.0 config defaults are finalised.
-            if (ServerVersion.Version(BoltkitHelper.ServerVersion()) >= ServerVersion.V3_4_0)
+            if (ServerVersion.From(BoltkitHelper.ServerVersion()) >= ServerVersion.V3_4_0)
             {
                 UpdateSettings(new Dictionary<string, string>
                 {

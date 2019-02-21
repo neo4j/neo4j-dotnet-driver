@@ -16,16 +16,13 @@
 // limitations under the License.
 
 using System;
-using System.IO;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver;
+using Neo4j.Driver.Tests;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Connector
+namespace Neo4j.Driver.Internal.Protocol
 {
     public class BoltProtocolFactoryTests
     {

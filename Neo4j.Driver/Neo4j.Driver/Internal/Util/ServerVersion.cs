@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Internal.Util
             return Comparer.Compare(v1, v2) >= 0;
         }
 
-        public static ServerVersion Version(string version)
+        public static ServerVersion From(string version)
         {
             if (string.IsNullOrEmpty(version))
             {

@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Internal
         /// <param name="bookmark">The new bookmark</param>
         public void UpdateBookmark(Bookmark bookmark)
         {
-            if (bookmark != null && !bookmark.IsEmpty())
+            if (bookmark?.HasBookmark ?? false)
             {
                 _bookmark = bookmark;
             }
@@ -149,6 +149,7 @@ namespace Neo4j.Driver.Internal
             {
                 await _connection.CloseAsync().ConfigureAwait(false);
             }
+
             _connection = null;
         }
 

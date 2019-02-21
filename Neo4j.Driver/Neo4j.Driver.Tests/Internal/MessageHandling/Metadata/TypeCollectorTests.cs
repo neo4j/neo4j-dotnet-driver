@@ -83,5 +83,21 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().Be(expectedValue);
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> {{Key, "rw"}};
+            var collector = new TypeCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, "rw");
+
+        internal static StatementType TestMetadataCollected => StatementType.ReadWrite;
     }
 }

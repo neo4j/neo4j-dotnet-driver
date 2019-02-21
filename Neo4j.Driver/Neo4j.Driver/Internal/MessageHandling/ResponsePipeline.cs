@@ -27,34 +27,34 @@ namespace Neo4j.Driver.Internal.MessageHandling
     {
         private const string MessagePattern = "S: {0}";
 
-        private readonly object _syncObject;
         private readonly LinkedList<IResponseHandler> _handlers;
         private readonly IDriverLogger _logger;
 
-        private volatile int _unHandledMessages;
-        private volatile ResponsePipelineError _error;
+        private int _unHandledMessages;
+        private IResponsePipelineError _error;
 
         public ResponsePipeline(IDriverLogger logger)
         {
-            _syncObject = new object();
             _handlers = new LinkedList<IResponseHandler>();
             _logger = logger;
             _unHandledMessages = 0;
             _error = null;
         }
 
-        private IResponseHandler Current =>
+        internal IResponseHandler Current =>
             _handlers.First?.Value ?? throw new InvalidOperationException("Handlers is empty.");
 
         public bool HasNoPendingMessages => _unHandledMessages == 0;
 
         public void Enqueue(IRequestMessage message, IResponseHandler handler)
         {
-            lock (_syncObject)
+            if (message == null)
             {
-                _handlers.AddLast(handler);
-                _unHandledMessages++;
+                throw new ArgumentNullException(nameof(message));
             }
+
+            _handlers.AddLast(handler ?? throw new ArgumentNullException(nameof(handler)));
+            _unHandledMessages++;
         }
 
         public void AssertNoFailure()
@@ -69,13 +69,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
         public IResponseHandler Dequeue()
         {
-            lock (_syncObject)
-            {
-                var first = _handlers.First?.Value;
-                _handlers.RemoveFirst();
-                _unHandledMessages--;
-                return first;
-            }
+            var first = _handlers.First?.Value;
+            _handlers.RemoveFirst();
+            _unHandledMessages--;
+            return first;
         }
 
         public async Task OnSuccessAsync(IDictionary<string, object> metadata)
@@ -148,34 +145,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
             if (_logger != null && _logger.IsDebugEnabled())
             {
                 _logger?.Debug(MessagePattern, IgnoredMessage.Ignored);
-            }
-        }
-
-        private class ExceptionStateHolder
-        {
-            private readonly Exception _exception;
-            private volatile bool _thrown;
-
-            public ExceptionStateHolder(Exception exception)
-            {
-                _exception = exception ?? throw new ArgumentNullException(nameof(exception));
-                _thrown = false;
-            }
-
-            public Exception Exception => _exception;
-
-            public void Handle()
-            {
-                if (_thrown) return;
-
-                lock (this)
-                {
-                    if (!_thrown)
-                    {
-                        _thrown = true;
-                        throw _exception;
-                    }
-                }
             }
         }
     }

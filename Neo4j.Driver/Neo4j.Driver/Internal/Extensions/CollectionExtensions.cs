@@ -104,6 +104,11 @@ namespace Neo4j.Driver.Internal
                 return dictIntRo.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             }
 
+            if (o is IEnumerable<KeyValuePair<string, object>> kvpSeq)
+            {
+                return kvpSeq.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            }
+
             return FillDictionary(o, new Dictionary<string, object>());
         }
 

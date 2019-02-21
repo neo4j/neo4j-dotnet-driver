@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.MessageHandling
 {
-    internal abstract class MetadataCollectingResponseHandler : IResponseHandler
+    internal abstract class MetadataCollectingResponseHandler : NoOpResponseHandler
     {
         private readonly IDictionary<Type, IMetadataCollector> _metadataCollectors;
 
@@ -33,6 +33,12 @@ namespace Neo4j.Driver.Internal.MessageHandling
         protected void AddMetadata<TCollector, TMetadata>()
             where TCollector : class, IMetadataCollector<TMetadata>, new()
         {
+            AddMetadata<TCollector, TMetadata>(new TCollector());
+        }
+
+        protected void AddMetadata<TCollector, TMetadata>(TCollector collector)
+            where TCollector : class, IMetadataCollector<TMetadata>
+        {
             var collectorType = typeof(TCollector);
             if (_metadataCollectors.ContainsKey(collectorType))
             {
@@ -40,11 +46,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     $"A metadata collector of type {typeof(TCollector).Name} is already registered.");
             }
 
-            _metadataCollectors.Add(collectorType, new TCollector());
+            _metadataCollectors.Add(collectorType, collector ?? throw new ArgumentNullException(nameof(collector)));
         }
 
         protected TCollector RemoveMetadata<TCollector, TMetadata>()
-            where TCollector : class, IMetadataCollector<TMetadata>, new()
+            where TCollector : class, IMetadataCollector<TMetadata>
         {
             var collectorType = typeof(TCollector);
             if (!_metadataCollectors.TryGetValue(collectorType, out var collector)) return null;
@@ -53,36 +59,20 @@ namespace Neo4j.Driver.Internal.MessageHandling
         }
 
         protected TMetadata GetMetadata<TCollector, TMetadata>()
-            where TCollector : class, IMetadataCollector<TMetadata>, new()
+            where TCollector : class, IMetadataCollector<TMetadata>
         {
             return _metadataCollectors.TryGetValue(typeof(TCollector), out var collector)
                 ? ((IMetadataCollector<TMetadata>) collector).Collected
                 : default(TMetadata);
         }
 
-        public virtual Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override Task OnSuccessAsync(IDictionary<string, object> metadata)
         {
             foreach (var collector in _metadataCollectors.Values)
             {
                 collector.Collect(metadata);
             }
 
-            return TaskHelper.GetCompletedTask();
-        }
-
-        public virtual Task OnRecordAsync(object[] fieldValues)
-        {
-            return TaskHelper.GetFailedTask(
-                new ProtocolException($"{nameof(OnRecordAsync)} is not expected at this time."));
-        }
-
-        public virtual Task OnFailureAsync(IResponsePipelineError error)
-        {
-            return TaskHelper.GetCompletedTask();
-        }
-
-        public virtual Task OnIgnoredAsync()
-        {
             return TaskHelper.GetCompletedTask();
         }
     }

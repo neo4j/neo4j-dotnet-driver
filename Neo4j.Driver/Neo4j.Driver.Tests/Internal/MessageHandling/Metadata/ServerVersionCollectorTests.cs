@@ -17,6 +17,7 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
@@ -72,5 +73,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             collector.Collected.Patch.Should().Be(12);
             collector.Collected.ToString().Should().Be(versionStr);
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var versionStr = "Neo4j/3.5.12-alpha1";
+            var metadata = new Dictionary<string, object> {{Key, versionStr}};
+            var collector = new ServerVersionCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, "Neo4j/3.5.2");
+
+        internal static ServerVersion TestMetadataCollected => ServerVersion.From("Neo4j/3.5.2");
     }
 }

@@ -19,21 +19,16 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
-using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.MessageHandling.Metadata;
+using Neo4j.Driver.Tests;
 using Xunit;
-using V1 = Neo4j.Driver.Internal.MessageHandling.V1;
-using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
-using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1;
-using static Neo4j.Driver.Tests.SessionTests;
+using V1 = Neo4j.Driver.Internal.MessageHandling.V1;
 
-namespace Neo4j.Driver.Tests.Connector
+namespace Neo4j.Driver.Internal.Protocol
 {
     public class BoltProtocolV1Tests
     {
@@ -74,7 +69,7 @@ namespace Neo4j.Driver.Tests.Connector
                     resourceHandler.Object, null, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAll,
+                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAllMessage.PullAll,
                         It.IsAny<V1.PullResponseHandler>()), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
             }
@@ -88,7 +83,7 @@ namespace Neo4j.Driver.Tests.Connector
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
                 mockConn.Setup(x =>
-                        x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAll,
+                        x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAllMessage.PullAll,
                             It.IsAny<V1.PullResponseHandler>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
@@ -114,7 +109,7 @@ namespace Neo4j.Driver.Tests.Connector
                 };
 
                 mockConn.Setup(x =>
-                        x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAll,
+                        x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAllMessage.PullAll,
                             It.IsAny<V1.PullResponseHandler>()))
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         async (msg1, h1, msg2, h2) => { await h1?.OnSuccessAsync(new Dictionary<string, object>()); });
@@ -138,7 +133,7 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV1.BeginTransactionAsync(mockConn.Object, null, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.BeginResponseHandler>(), PullAll,
+                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.BeginResponseHandler>(), PullAllMessage.PullAll,
                         It.IsAny<V1.BeginResponseHandler>()),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -152,7 +147,7 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.BeginResponseHandler>(), PullAll,
+                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.BeginResponseHandler>(), PullAllMessage.PullAll,
                         It.IsAny<V1.BeginResponseHandler>()),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -162,11 +157,11 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldSyncIfValidBookmarkGiven()
             {
                 var mockConn = new Mock<IConnection>();
-                var bookmark = Bookmark.From(FakeABookmark(234));
+                var bookmark = Bookmark.From(SessionTests.FakeABookmark(234));
                 await BoltV1.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.BeginResponseHandler>(), PullAll,
+                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.BeginResponseHandler>(), PullAllMessage.PullAll,
                         It.IsAny<V1.BeginResponseHandler>()),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
@@ -200,7 +195,7 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV1.CommitTransactionAsync(mockConn.Object, bookmarkTracker.Object);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(Commit, It.IsAny<V1.CommitResponseHandler>(), DiscardAll,
+                    x => x.EnqueueAsync(Commit, It.IsAny<V1.CommitResponseHandler>(), DiscardAllMessage.DiscardAll,
                         It.IsAny<V1.CommitResponseHandler>()), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
@@ -216,7 +211,7 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV1.RollbackTransactionAsync(mockConn.Object);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(Rollback, It.IsAny<V1.RollbackResponseHandler>(), DiscardAll,
+                    x => x.EnqueueAsync(Rollback, It.IsAny<V1.RollbackResponseHandler>(), DiscardAllMessage.DiscardAll,
                         It.IsAny<V1.RollbackResponseHandler>()), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
@@ -227,13 +222,13 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldRunPullAllSync()
             {
-                var mockConn = MockedConnectionWithSuccessResponse();
+                var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
                 var statement = new Statement("lalala");
 
                 await BoltV1.RunInExplicitTransactionAsync(mockConn.Object, statement);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAll,
+                    x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAllMessage.PullAll,
                         It.IsAny<V1.PullResponseHandler>()),
                     Times.Once);
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
@@ -242,7 +237,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = MockedConnectionWithSuccessResponse();
+                var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
                 var statement = new Statement("lalala");
 
                 await BoltV1.RunInExplicitTransactionAsync(mockConn.Object, statement);

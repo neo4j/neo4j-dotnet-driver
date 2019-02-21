@@ -71,7 +71,8 @@ namespace Neo4j.Driver.Internal
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
-                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this, this, _bookmark, txConfig)
+                return await protocol
+                    .RunInAutoCommitTransactionAsync(_connection, statement, this, this, _bookmark, txConfig)
                     .ConfigureAwait(false);
             });
         }
@@ -130,7 +131,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction(string bookmark)
         {
-            UpdateBookmark(Bookmark.From(bookmark, _logger));
+            UpdateBookmark(Bookmark.From(bookmark));
             return BeginTransaction();
         }
 

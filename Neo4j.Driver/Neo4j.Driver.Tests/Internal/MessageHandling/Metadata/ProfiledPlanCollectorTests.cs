@@ -23,7 +23,7 @@ using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    public class ProfiledProfiledPlanCollectorTests
+    public class ProfiledPlanCollectorTests
     {
         public const string Key = ProfiledPlanCollector.ProfiledPlanKey;
 
@@ -56,6 +56,17 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().BeNull();
         }
+
+        [Fact]
+        public void ShouldNotCollectIfValueIsEmpty()
+        {
+            var collector = new ProfiledPlanCollector();
+
+            collector.Collect(new Dictionary<string, object> {{Key, new Dictionary<string, object>()}});
+
+            collector.Collected.Should().BeNull();
+        }
+
 
         [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
@@ -316,5 +327,45 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                         }, 15, 20)
                 }, 5, 10));
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object>
+            {
+                {
+                    Key, new Dictionary<string, object>
+                    {
+                        {"operatorType", "opType"},
+                        {"dbHits", 5L},
+                        {"rows", 10L}
+                    }
+                }
+            };
+            var collector = new ProfiledPlanCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, new Dictionary<string, object>
+            {
+                {"operatorType", "opType"},
+                {"dbHits", 5L},
+                {"rows", 10L},
+                {"args", new Dictionary<string, object> {{"a", 1L}}},
+                {
+                    "identifiers", new List<object>
+                    {
+                        "a", "b", "c"
+                    }
+                }
+            });
+
+        internal static IProfiledPlan TestMetadataCollected => new ProfiledPlan("opType",
+            new Dictionary<string, object> {{"a", 1L}},
+            new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10);
     }
 }

@@ -17,7 +17,9 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Result;
 using Xunit;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
@@ -44,7 +46,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().BeNull();
         }
-        
+
         [Fact]
         public void ShouldNotCollectIfValueIsNull()
         {
@@ -143,5 +145,52 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             collector.Collected.ConstraintsAdded.Should().Be(6);
             collector.Collected.ConstraintsRemoved.Should().Be(0);
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object>
+            {
+                {
+                    Key, new Dictionary<string, object>
+                    {
+                        {"nodes-created", 1L},
+                        {"nodes-deleted", 2L},
+                        {"relationships-created", 3L},
+                        {"relationships-deleted", 4L},
+                        {"properties-set", 5L},
+                        {"labels-added", 6L},
+                        {"labels-removed", 7L},
+                        {"indexes-added", 8L},
+                        {"indexes-removed", 9L},
+                        {"constraints-added", 10L},
+                        {"constraints-removed", 11L},
+                    }
+                }
+            };
+            var collector = new CountersCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, new Dictionary<string, object>
+            {
+                {"nodes-created", 1L},
+                {"nodes-deleted", 2L},
+                {"relationships-created", 3L},
+                {"relationships-deleted", 4L},
+                {"properties-set", 5L},
+                {"labels-added", 6L},
+                {"labels-removed", 7L},
+                {"indexes-added", 8L},
+                {"indexes-removed", 9L},
+                {"constraints-added", 10L},
+                {"constraints-removed", 11L},
+            });
+
+        internal static ICounters TestMetadataCollected => new Counters(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
     }
 }

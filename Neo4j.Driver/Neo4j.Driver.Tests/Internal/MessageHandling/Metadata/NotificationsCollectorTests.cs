@@ -161,5 +161,61 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                     new InputPosition(4, 5, 0), "severity2")
             });
         }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object>
+            {
+                {
+                    Key, new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            {"code", "code1"},
+                            {"title", "title1"},
+                            {"description", "description1"},
+                            {"severity", "severity1"},
+                            {
+                                "position", new Dictionary<string, object>
+                                {
+                                    {"offset", 1L},
+                                    {"line", 2L},
+                                    {"column", 3L}
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            var collector = new NotificationsCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+        }
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, new List<object>
+            {
+                new Dictionary<string, object>
+                {
+                    {"code", "code1"},
+                    {"title", "title1"},
+                    {"description", "description1"},
+                    {"severity", "severity1"},
+                    {
+                        "position", new Dictionary<string, object>
+                        {
+                            {"offset", 1L},
+                            {"line", 2L},
+                            {"column", 3L}
+                        }
+                    }
+                }
+            });
+
+        internal static IList<INotification> TestMetadataCollected => new List<INotification>
+            {new Notification("code1", "title1", "description1", new InputPosition(1, 2, 3), "severity1")};
     }
 }

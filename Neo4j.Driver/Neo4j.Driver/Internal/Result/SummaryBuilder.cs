@@ -24,15 +24,16 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class SummaryBuilder
     {
-        public Statement Statement { private get; set; }
-        public StatementType StatementType { private get; set; }
-        public ICounters Counters { private get; set; }
-        public IPlan Plan { private get; set; }
-        public IProfiledPlan Profile { private get; set; }
-        public IList<INotification> Notifications { private get; set; }
-        public long ResultAvailableAfter { private get; set; } = -1L;
-        public long ResultConsumedAfter { private get; set; } = -1L;
-        public IServerInfo Server { private get; set; }
+        public Statement Statement { get; }
+        public IServerInfo Server { get; }
+
+        public virtual StatementType StatementType { get; set; }
+        public virtual ICounters Counters { get; set; }
+        public virtual IPlan Plan { get; set; }
+        public virtual IProfiledPlan Profile { get; set; }
+        public virtual IList<INotification> Notifications { get; set; }
+        public virtual long ResultAvailableAfter { get; set; } = -1L;
+        public virtual long ResultConsumedAfter { get; set; } = -1L;
 
         public SummaryBuilder(Statement statement, IServerInfo serverInfo)
         {

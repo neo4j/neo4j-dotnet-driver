@@ -25,11 +25,13 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
 {
     internal class PullResponseHandler : MetadataCollectingResponseHandler
     {
-        private readonly ResultStreamBuilder _streamBuilder;
+        private readonly IResultStreamBuilder _streamBuilder;
+        private readonly SummaryBuilder _summaryBuilder;
 
-        public PullResponseHandler(ResultStreamBuilder streamBuilder)
+        public PullResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder)
         {
             _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
+            _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
 
             AddMetadata<ResultConsumedAfterCollector, long>();
             AddMetadata<TypeCollector, StatementType>();
@@ -39,28 +41,28 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
             AddMetadata<NotificationsCollector, IList<INotification>>();
         }
 
-        public override Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override async Task OnSuccessAsync(IDictionary<string, object> metadata)
         {
-            var result = base.OnSuccessAsync(metadata);
+            await base.OnSuccessAsync(metadata);
 
-            _streamBuilder.Summary.ResultConsumedAfter = GetMetadata<ResultConsumedAfterCollector, long>();
-            _streamBuilder.Summary.Counters = GetMetadata<CountersCollector, ICounters>();
-            _streamBuilder.Summary.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
-            _streamBuilder.Summary.Plan = GetMetadata<PlanCollector, IPlan>();
-            _streamBuilder.Summary.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
-            _streamBuilder.Summary.StatementType = GetMetadata<TypeCollector, StatementType>();
+            _summaryBuilder.ResultConsumedAfter = GetMetadata<ResultConsumedAfterCollector, long>();
+            _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
+            _summaryBuilder.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
+            _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
+            _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
+            _summaryBuilder.StatementType = GetMetadata<TypeCollector, StatementType>();
 
-            return _streamBuilder.PullCompletedAsync(null, false);
+            await _streamBuilder.PullCompletedAsync(false, null);
         }
 
         public override Task OnFailureAsync(IResponsePipelineError error)
         {
-            return _streamBuilder.PullCompletedAsync(error, false).ContinueWith(t => true);
+            return _streamBuilder.PullCompletedAsync(false, error);
         }
 
         public override Task OnIgnoredAsync()
         {
-            return _streamBuilder.PullCompletedAsync(null, false);
+            return _streamBuilder.PullCompletedAsync(false, null);
         }
 
         public override Task OnRecordAsync(object[] fieldValues)

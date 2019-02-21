@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Runtime.ExceptionServices;
 
 namespace Neo4j.Driver.Internal.MessageHandling
 {

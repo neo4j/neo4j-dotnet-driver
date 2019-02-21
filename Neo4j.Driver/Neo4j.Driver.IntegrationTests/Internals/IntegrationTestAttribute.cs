@@ -54,7 +54,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 Skip = TestRequireBoltkit;
             }
-            if (!(Version(ServerVersion()) >= Version(version)))
+            if (!(From(ServerVersion()) >= From(version)))
             {
                 Skip = $"Require server version >= {version}, while current server version is {ServerVersion()}";
             }
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 Skip = TestRequireBoltkit;
             }
-            if (Version(ServerVersion()) >= Version(version))
+            if (From(ServerVersion()) >= From(version))
             {
                 Skip = $"Require server version < {version}, while current server version is {ServerVersion()}";
             }
