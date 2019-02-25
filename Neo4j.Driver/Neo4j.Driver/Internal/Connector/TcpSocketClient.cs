@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             InitClient();
 
-#if NET452
+#if NET46
             var connectTask = Task.Factory.FromAsync(_client.BeginConnect, _client.EndConnect, address, port, null);
 #else
             var connectTask = _client.ConnectAsync(address, port);
