@@ -33,9 +33,9 @@ namespace Neo4j.Driver.Internal.Messaging
             return "IGNORED";
         }
 
-        public Task DispatchAsync(IResponsePipeline pipeline)
+        public void Dispatch(IResponsePipeline pipeline)
         {
-            return pipeline.OnIgnoredAsync();
+            pipeline.OnIgnored();
         }
     }
 }

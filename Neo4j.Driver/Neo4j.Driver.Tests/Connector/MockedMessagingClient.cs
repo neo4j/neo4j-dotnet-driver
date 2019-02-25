@@ -89,11 +89,11 @@ namespace Neo4j.Driver.Tests.Routing
                 });
 
             ClientMock.Setup(x => x.ReceiveOneAsync(It.IsAny<IResponsePipeline>()))
-                .Callback<IResponsePipeline>(async pipeline =>
+                .Callback<IResponsePipeline>(pipeline =>
                 {
                     if (_responseCount < _responseMessages.Count)
                     {
-                        await _responseMessages[_responseCount].DispatchAsync(pipeline);
+                         _responseMessages[_responseCount].Dispatch(pipeline);
                         _responseCount++;
                     }
                     else

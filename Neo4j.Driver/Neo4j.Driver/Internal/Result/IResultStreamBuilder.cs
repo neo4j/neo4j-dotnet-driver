@@ -23,10 +23,10 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal interface IResultStreamBuilder
     {
-        Task RunCompletedAsync(long statementId, string[] fields, IResponsePipelineError error);
+        void RunCompleted(long statementId, string[] fields, IResponsePipelineError error);
 
-        Task PullCompletedAsync(bool hasMore, IResponsePipelineError error);
+        void PullCompleted(bool hasMore, IResponsePipelineError error);
 
-        Task PushRecordAsync(object[] fieldValues);
+        void PushRecord(object[] fieldValues);
     }
 }

@@ -41,9 +41,9 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
             AddMetadata<NotificationsCollector, IList<INotification>>();
         }
 
-        public override async Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override void OnSuccess(IDictionary<string, object> metadata)
         {
-            await base.OnSuccessAsync(metadata);
+            base.OnSuccess(metadata);
 
             _summaryBuilder.ResultConsumedAfter = GetMetadata<ResultConsumedAfterCollector, long>();
             _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
@@ -52,22 +52,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
             _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
             _summaryBuilder.StatementType = GetMetadata<TypeCollector, StatementType>();
 
-            await _streamBuilder.PullCompletedAsync(false, null);
+            _streamBuilder.PullCompleted(false, null);
         }
 
-        public override Task OnFailureAsync(IResponsePipelineError error)
+        public override void OnFailure(IResponsePipelineError error)
         {
-            return _streamBuilder.PullCompletedAsync(false, error);
+            _streamBuilder.PullCompleted(false, error);
         }
 
-        public override Task OnIgnoredAsync()
+        public override void OnIgnored()
         {
-            return _streamBuilder.PullCompletedAsync(false, null);
+            _streamBuilder.PullCompleted(false, null);
         }
 
-        public override Task OnRecordAsync(object[] fieldValues)
+        public override void OnRecord(object[] fieldValues)
         {
-            return _streamBuilder.PushRecordAsync(fieldValues);
+            _streamBuilder.PushRecord(fieldValues);
         }
     }
 }

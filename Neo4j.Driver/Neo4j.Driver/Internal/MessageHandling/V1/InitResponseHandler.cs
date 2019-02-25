@@ -36,13 +36,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
             AddMetadata<ServerVersionCollector, ServerVersion>();
         }
 
-        public override Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override void OnSuccess(IDictionary<string, object> metadata)
         {
-            var result = base.OnSuccessAsync(metadata);
+            base.OnSuccess(metadata);
 
             _connection.UpdateVersion(GetMetadata<ServerVersionCollector, ServerVersion>());
-
-            return result;
         }
     }
 }

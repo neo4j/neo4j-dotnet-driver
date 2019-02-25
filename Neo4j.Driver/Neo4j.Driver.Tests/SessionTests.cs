@@ -507,7 +507,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (m1, h1, m2, h2) => { await h1.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (m1, h1, m2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
                 await session.CloseAsync();
@@ -524,7 +524,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (m1, h1, m2, h2) => { await h1.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (m1, h1, m2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
 
@@ -545,7 +545,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (m1, h1, m2, h2) => { await h1.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (m1, h1, m2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");
 
@@ -567,12 +567,12 @@ namespace Neo4j.Driver.Tests
                     It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
                 .Returns(TaskHelper.GetCompletedTask())
                 .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                    async (m1, h1, m2, h2) =>
+                    (m1, h1, m2, h2) =>
                     {
-                        await h1.OnSuccessAsync(new Dictionary<string, object>());
+                         h1.OnSuccess(new Dictionary<string, object>());
                         if (m2 != null)
                         {
-                            await h2.OnSuccessAsync(new Dictionary<string, object>());
+                            h2.OnSuccess(new Dictionary<string, object>());
                         }
                     });
 

@@ -412,13 +412,14 @@ namespace Neo4j.Driver.Tests.Routing
                         }
                     });
                 _mockConn.Setup(x => x.ReceiveOneAsync())
-                    .Returns(async () =>
+                    .Returns(() =>
                     {
                         if (_responseCount < _responseMessages.Count)
                         {
-                            await _responseMessages[_responseCount].DispatchAsync(_pipeline);
+                             _responseMessages[_responseCount].Dispatch(_pipeline);
                             _responseCount++;
                             _pipeline.AssertNoFailure();
+                            return TaskHelper.GetCompletedTask();
                         }
                         else
                         {

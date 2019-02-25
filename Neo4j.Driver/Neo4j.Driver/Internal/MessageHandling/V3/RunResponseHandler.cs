@@ -38,23 +38,23 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
             AddMetadata<TimeToFirstCollector, long>();
         }
 
-        public override async Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override void OnSuccess(IDictionary<string, object> metadata)
         {
-            await base.OnSuccessAsync(metadata);
+            base.OnSuccess(metadata);
 
             _summaryBuilder.ResultAvailableAfter = GetMetadata<TimeToFirstCollector, long>();
 
-            await _streamBuilder.RunCompletedAsync(NoStatementId, GetMetadata<FieldsCollector, string[]>(), null);
+            _streamBuilder.RunCompleted(NoStatementId, GetMetadata<FieldsCollector, string[]>(), null);
         }
 
-        public override Task OnFailureAsync(IResponsePipelineError error)
+        public override void OnFailure(IResponsePipelineError error)
         {
-            return _streamBuilder.RunCompletedAsync(NoStatementId, null, error);
+            _streamBuilder.RunCompleted(NoStatementId, null, error);
         }
 
-        public override Task OnIgnoredAsync()
+        public override void OnIgnored()
         {
-            return _streamBuilder.RunCompletedAsync(NoStatementId, null, null);
+            _streamBuilder.RunCompleted(NoStatementId, null, null);
         }
     }
 }

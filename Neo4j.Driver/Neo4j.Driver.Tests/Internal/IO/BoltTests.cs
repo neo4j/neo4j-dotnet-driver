@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Internal.IO
             await reader.ReadAsync(pipeline.Object);
 
             pipeline.Verify(
-                x => x.OnSuccessAsync(
+                x => x.OnSuccess(
                     It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))), Times.Once);
         }
 
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.Internal.IO
             await reader.ReadAsync(pipeline.Object);
 
             pipeline.Verify(
-                x => x.OnSuccessAsync(
+                x => x.OnSuccess(
                     It.Is<IDictionary<string, object>>(m => m.ContainsKey("x") && m["x"].Equals(1L))),
                 Times.Exactly(5));
         }

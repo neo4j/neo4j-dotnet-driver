@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
     public class MetadataCollectingResponseHandlerTests
     {
         [Fact]
-        public async Task ShouldCallCollectOnCollector()
+        public void ShouldCallCollectOnCollector()
         {
             var collector = new Mock<IMetadataCollector<long>>();
 
@@ -36,13 +36,13 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
             var metadata = new Dictionary<string, object> {{"x", 1}, {"y", false}};
 
-            await handler.OnSuccessAsync(metadata);
+            handler.OnSuccess(metadata);
 
             collector.Verify(x => x.Collect(metadata), Times.Once);
         }
 
         [Fact]
-        public async Task ShouldAddRemoveCollector()
+        public void ShouldAddRemoveCollector()
         {
             var collector = new Mock<IMetadataCollector<long>>();
 
@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             handler.RemoveCollector<IMetadataCollector<long>, long>();
 
             var metadata = new Dictionary<string, object> {{"x", 1}, {"y", false}};
-            await handler.OnSuccessAsync(metadata);
+            handler.OnSuccess(metadata);
 
             collector.Verify(x => x.Collect(metadata), Times.Never);
         }

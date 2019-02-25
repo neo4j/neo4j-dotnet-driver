@@ -37,12 +37,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
         }
 
         [Fact]
-        public async Task ShouldUpdateBookmark()
+        public void ShouldUpdateBookmark()
         {
             var tracker = new Mock<IBookmarkTracker>();
             var handler = new CommitResponseHandler(tracker.Object);
 
-            await handler.OnSuccessAsync(new[] {BookmarkCollectorTests.TestMetadata}.ToDictionary());
+            handler.OnSuccess(new[] {BookmarkCollectorTests.TestMetadata}.ToDictionary());
 
             tracker.Verify(
                 x => x.UpdateBookmark(BookmarkCollectorTests.TestMetadataCollected),

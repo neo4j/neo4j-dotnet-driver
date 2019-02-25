@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task LogoutAsync(IConnection connection)
         {
-            await connection.EnqueueAsync(GoodbyeMessage.Goodbye, null);
+            await connection.EnqueueAsync(GoodbyeMessage.Goodbye, new NoOpResponseHandler());
             await connection.SendAsync();
         }
     }

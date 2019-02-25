@@ -37,14 +37,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
             AddMetadata<ConnectionIdCollector, string>();
         }
 
-        public override Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override void OnSuccess(IDictionary<string, object> metadata)
         {
-            var result = base.OnSuccessAsync(metadata);
+            base.OnSuccess(metadata);
 
             _connection.UpdateVersion(GetMetadata<ServerVersionCollector, ServerVersion>());
             _connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
-
-            return result;
         }
     }
 }

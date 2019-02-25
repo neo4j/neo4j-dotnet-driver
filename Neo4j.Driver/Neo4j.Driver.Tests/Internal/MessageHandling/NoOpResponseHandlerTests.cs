@@ -26,30 +26,30 @@ namespace Neo4j.Driver.Internal.MessageHandling
     public class NoOpResponseHandlerTests
     {
         [Fact]
-        public async Task ShouldCompleteOnSuccess()
+        public void ShouldCompleteOnSuccess()
         {
-            await new NoOpResponseHandler().OnSuccessAsync(new Dictionary<string, object>());
+            new NoOpResponseHandler().OnSuccess(new Dictionary<string, object>());
         }
 
         [Fact]
-        public async Task ShouldCompleteOnFailure()
+        public void ShouldCompleteOnFailure()
         {
-            await new NoOpResponseHandler().OnFailureAsync(new Mock<IResponsePipelineError>().Object);
+            new NoOpResponseHandler().OnFailure(new Mock<IResponsePipelineError>().Object);
         }
 
         [Fact]
-        public async Task ShouldCompleteOnIgnored()
+        public void ShouldCompleteOnIgnored()
         {
-            await new NoOpResponseHandler().OnIgnoredAsync();
+            new NoOpResponseHandler().OnIgnored();
         }
 
         [Fact]
-        public async Task ShouldThrowOnRecord()
+        public void ShouldThrowOnRecord()
         {
-            var ex = await Record.ExceptionAsync(() => new NoOpResponseHandler().OnRecordAsync(new object[0]));
+            var ex = Record.Exception(() => new NoOpResponseHandler().OnRecord(new object[0]));
 
             ex.Should().BeOfType<ProtocolException>().Which.Message.Should()
-                .Be("OnRecordAsync is not expected at this time.");
+                .Be("OnRecord is not expected at this time.");
         }
     }
 }

@@ -27,25 +27,21 @@ namespace Neo4j.Driver.Internal.MessageHandling
         {
         }
 
-        public virtual Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public virtual void OnSuccess(IDictionary<string, object> metadata)
         {
-            return TaskHelper.GetCompletedTask();
         }
 
-        public virtual Task OnRecordAsync(object[] fieldValues)
+        public virtual void OnRecord(object[] fieldValues)
         {
-            return TaskHelper.GetFailedTask(
-                new ProtocolException($"{nameof(OnRecordAsync)} is not expected at this time."));
+            throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
         }
 
-        public virtual Task OnFailureAsync(IResponsePipelineError error)
+        public virtual void OnFailure(IResponsePipelineError error)
         {
-            return TaskHelper.GetCompletedTask();
         }
 
-        public virtual Task OnIgnoredAsync()
+        public virtual void OnIgnored()
         {
-            return TaskHelper.GetCompletedTask();
         }
     }
 }

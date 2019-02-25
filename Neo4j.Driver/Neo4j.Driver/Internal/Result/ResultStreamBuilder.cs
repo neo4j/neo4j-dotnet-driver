@@ -109,33 +109,21 @@ namespace Neo4j.Driver.Internal.Result
             return _summaryBuilder.Build();
         }
 
-        public Task RunCompletedAsync(long statementId, string[] fields, IResponsePipelineError error)
+        public void RunCompleted(long statementId, string[] fields, IResponsePipelineError error)
         {
             _statementId = statementId;
             _fields = fields;
             _state = State.StreamingPaused;
-
-            return _cancellation.IsCancellationRequested
-                ? _cancelFunction(this, _statementId)
-                : TaskHelper.GetCompletedTask();
         }
 
-        public Task PullCompletedAsync(bool hasMore, IResponsePipelineError error)
+        public void PullCompleted(bool hasMore, IResponsePipelineError error)
         {
             _state = hasMore ? State.StreamingPaused : State.Finished;
-
-            if (_cancellation.IsCancellationRequested && _state == State.StreamingPaused)
-            {
-                return _cancelFunction(this, _statementId);
-            }
-
-            return TaskHelper.GetCompletedTask();
         }
 
-        public Task PushRecordAsync(object[] fieldValues)
+        public void PushRecord(object[] fieldValues)
         {
             _records.AddLast(new Record(_fields, fieldValues));
-            return TaskHelper.GetCompletedTask();
         }
 
         private Func<Task> WrapAdvanceFunc(Func<Task> advanceFunc)
@@ -151,11 +139,17 @@ namespace Neo4j.Driver.Internal.Result
                     else
                     {
                         await _moreFunction(this, _statementId, _batchSize);
-                        _state = State.Streaming;
+                        if (_state == State.StreamingPaused)
+                        {
+                            _state = State.Streaming;
+                        }
                     }
                 }
 
-                await advanceFunc().ConfigureAwait(false);
+                if (_state != State.Finished)
+                {
+                    await advanceFunc().ConfigureAwait(false);
+                }
 
                 if (_state == State.Finished && _resourceHandler != null)
                 {

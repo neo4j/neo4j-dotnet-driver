@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,7 +26,7 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal class ChunkReader: IChunkReader
+    internal class ChunkReader : IChunkReader
     {
         private readonly Stream _downStream;
         private readonly IDriverLogger _logger;
@@ -39,7 +40,6 @@ namespace Neo4j.Driver.Internal.IO
         public ChunkReader(Stream downStream)
             : this(downStream, null)
         {
-            
         }
 
         internal ChunkReader(Stream downStream, IDriverLogger logger)
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.IO
                 if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
                 {
                     _currentChunkSize = ReadChunkSize();
-                    
+
                     // If this is the zero-length message boundary chunk, cleanup and return true.
                     if (_currentChunkSize == 0)
                     {
@@ -95,7 +95,7 @@ namespace Neo4j.Driver.Internal.IO
 
             // Otherwise we need some more data.
             return false;
-        } 
+        }
 
         public int ReadNextMessages(Stream messageStream)
         {
@@ -145,122 +145,49 @@ namespace Neo4j.Driver.Internal.IO
             return messages;
         }
 
-        
-        public Task<int> ReadNextMessagesAsync(Stream messageStream)
-        {
-            var taskCompletionSource = new TaskCompletionSource<int>();
 
-            // Track and manage target stream's positions.
+        public async Task<int> ReadNextMessagesAsync(Stream messageStream)
+        {
+            var count = 0;
+
             var previousPosition = messageStream.Position;
             messageStream.Position = messageStream.Length;
 
-            ReadNextChunkLoopAsync(
-                messageStream,
-                taskCompletionSource,
-                TaskHelper.GetCompletedTask());
+            try
+            {
+                while (count == 0)
+                {
+                    var bytes = await _downStream
+                        .ReadAsync(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition)
+                        .ConfigureAwait(false);
 
-            return taskCompletionSource.Task.ContinueWith(t =>
+                    if (bytes <= 0)
+                    {
+                        throw new IOException($"Unexpected end of stream, read returned {bytes}.");
+                    }
+
+                    // Otherwise process it.
+                    LogBuffer(_buffer, _lastWritePosition, bytes);
+
+                    _lastWritePosition += bytes;
+
+                    if (TryReadOneCompleteMessageFromBuffer(messageStream))
+                    {
+                        count++;
+                    }
+                }
+
+                while (TryReadOneCompleteMessageFromBuffer(messageStream))
+                {
+                    count++;
+                }
+            }
+            finally
             {
                 messageStream.Position = previousPosition;
+            }
 
-                return t;
-            }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
-        }
-
-        private Task ReadNextChunkLoopAsync(Stream messageStream, TaskCompletionSource<int> taskCompletionSource,
-            Task previousTask)
-        {
-            return previousTask.ContinueWith(pt =>
-            {
-                try
-                {
-                    return
-                        // Read next available bytes from the down stream asynchronously.
-                        _downStream.ReadAsync(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition)
-                            .ContinueWith(t =>
-                            {
-                                // Is Read operation canceled?
-                                if (t.IsCanceled)
-                                {
-                                    taskCompletionSource.SetCanceled();
-
-                                    throw new OperationCanceledException();
-                                }
-
-                                // Is it faulted?
-                                if (t.IsFaulted)
-                                {
-                                    taskCompletionSource.SetException(t.Exception.GetBaseException());
-
-                                    throw new OperationCanceledException();
-                                }
-
-                                if (t.Result <= 0)
-                                {
-                                    throw new IOException($"Unexpected end of stream, read returned {t.Result}.");
-                                }
-
-                                // Otherwise process it.
-                                LogBuffer(_buffer, _lastWritePosition, t.Result);
-
-                                _lastWritePosition += t.Result;
-
-                                return TryReadOneCompleteMessageFromBuffer(messageStream);
-                            }, TaskContinuationOptions.ExecuteSynchronously)
-                            .ContinueWith(t =>
-                            {
-                                // Is buffer processing canceled?
-                                if (t.IsCanceled)
-                                {
-                                    taskCompletionSource.SetCanceled();
-
-                                    return TaskHelper.GetCompletedTask();
-                                }
-
-                                // Is buffer processing faulted?
-                                if (t.IsFaulted)
-                                {
-                                    var exc = t.Exception.GetBaseException();
-
-                                    if (!(exc is OperationCanceledException))
-                                    {
-                                        taskCompletionSource.SetException(exc);
-                                    }
-
-                                    return TaskHelper.GetCompletedTask();
-                                }
-
-                                // Could we read a whole message from what we have?
-                                if (t.Result)
-                                {
-                                    var messages = 1;
-
-                                    // Try to consume more messages from the left-over data in the buffer
-                                    var readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
-                                    while (readFromBuffer)
-                                    {
-                                        messages += 1;
-
-                                        readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
-                                    }
-
-                                    // Mark the asynchronous task as completed.
-                                    taskCompletionSource.SetResult(messages);
-
-                                    return TaskHelper.GetCompletedTask();
-                                }
-
-                                // We need some more data.
-                                return ReadNextChunkLoopAsync(messageStream, taskCompletionSource, t);
-                            }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
-                }
-                catch (Exception exc)
-                {
-                    taskCompletionSource.SetException(exc);
-                }
-
-                return TaskHelper.GetCompletedTask();
-            });
+            return count;
         }
 
         private bool HasBytesAvailable()
@@ -278,10 +205,10 @@ namespace Neo4j.Driver.Internal.IO
             Array.ConstrainedCopy(_buffer, _lastReadPosition, _chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
 
             _lastReadPosition += _chunkSizeBuffer.Length;
-            
+
             return PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
         }
-        
+
         private void CopyFromBuffer(Stream target, int count)
         {
             target.Write(_buffer, _lastReadPosition, count);
@@ -304,7 +231,8 @@ namespace Neo4j.Driver.Internal.IO
             {
                 var leftOverBytes = _lastWritePosition - _lastReadPosition;
 
-                LogTrace("{0} bytes left in chunk buffer [lastWritePosition: {1}, lastReadPosition: {2}], compacting.", leftWritableBytes, _lastWritePosition, _lastReadPosition);
+                LogTrace("{0} bytes left in chunk buffer [lastWritePosition: {1}, lastReadPosition: {2}], compacting.",
+                    leftWritableBytes, _lastWritePosition, _lastReadPosition);
 
                 if (leftOverBytes > 0)
                 {

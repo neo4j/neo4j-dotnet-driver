@@ -39,12 +39,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.V1
         }
 
         [Fact]
-        public async Task ShouldUpdateVersion()
+        public void ShouldUpdateVersion()
         {
             var tracker = new Mock<IConnection>();
             var handler = new InitResponseHandler(tracker.Object);
 
-            await handler.OnSuccessAsync(new[] {ServerVersionCollectorTests.TestMetadata}.ToDictionary());
+            handler.OnSuccess(new[] {ServerVersionCollectorTests.TestMetadata}.ToDictionary());
 
             tracker.Verify(x => x.UpdateVersion(ServerVersionCollectorTests.TestMetadataCollected), Times.Once);
         }

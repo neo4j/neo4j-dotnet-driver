@@ -20,18 +20,16 @@ using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
-    internal interface IRequestMessage :IMessage
+    internal interface IRequestMessage : IMessage
     {
-        
     }
 
     internal interface IResponseMessage : IMessage
     {
-        Task DispatchAsync(IResponsePipeline pipeline);
+        void Dispatch(IResponsePipeline pipeline);
     }
 
     internal interface IMessage
     {
-        
     }
 }

@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
         public class OnSuccessAsync
         {
             [Fact]
-            public async Task ShouldLog()
+            public void ShouldLog()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
@@ -126,13 +126,13 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = CreatePipelineWithHandler(log.Object);
                 var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
 
-                await pipeline.OnSuccessAsync(metadata);
+                pipeline.OnSuccess(metadata);
 
                 log.Verify(x => x.Debug("S: {0}", It.Is<SuccessMessage>(m => m.Meta.Equals(metadata))), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldNotLogIfDebugDisabled()
+            public void ShouldNotLogIfDebugDisabled()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
@@ -140,26 +140,26 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = CreatePipelineWithHandler(log.Object);
                 var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
 
-                await pipeline.OnSuccessAsync(metadata);
+                pipeline.OnSuccess(metadata);
 
                 log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
             }
 
             [Fact]
-            public async Task ShouldDequeue()
+            public void ShouldDequeue()
             {
                 var pipeline = CreatePipelineWithHandler(null);
                 var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
 
-                await pipeline.OnSuccessAsync(metadata);
+                pipeline.OnSuccess(metadata);
 
                 pipeline.HasNoPendingMessages.Should().BeTrue();
             }
 
             [Fact]
-            public async Task ShouldInvokeHandler()
+            public void ShouldInvokeHandler()
             {
                 var pipeline = new ResponsePipeline(null);
 
@@ -167,16 +167,16 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 pipeline.Enqueue(msg.Object, handler.Object);
 
                 var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
-                await pipeline.OnSuccessAsync(metadata);
+                pipeline.OnSuccess(metadata);
 
-                handler.Verify(x => x.OnSuccessAsync(metadata), Times.Once);
+                handler.Verify(x => x.OnSuccess(metadata), Times.Once);
             }
         }
 
         public class OnRecordAsync
         {
             [Fact]
-            public async Task ShouldLog()
+            public void ShouldLog()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
@@ -184,13 +184,13 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = CreatePipelineWithHandler(log.Object);
                 var fields = new object[] {1, true, "string"};
 
-                await pipeline.OnRecordAsync(fields);
+                pipeline.OnRecord(fields);
 
                 log.Verify(x => x.Debug("S: {0}", It.Is<RecordMessage>(m => m.Fields.Equals(fields))), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldNotLogIfDebugDisabled()
+            public void ShouldNotLogIfDebugDisabled()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
@@ -198,28 +198,28 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = CreatePipelineWithHandler(log.Object);
                 var fields = new object[] {1, true, "string"};
 
-                await pipeline.OnRecordAsync(fields);
+                pipeline.OnRecord(fields);
 
                 log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
             }
 
             [Fact]
-            public async Task ShouldNotDequeue()
+            public void ShouldNotDequeue()
             {
                 var pipeline = CreatePipelineWithHandler(null);
                 var fields = new object[] {1, true, "string"};
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
-                await pipeline.OnRecordAsync(fields);
+                pipeline.OnRecord(fields);
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
-                await pipeline.OnRecordAsync(fields);
+                pipeline.OnRecord(fields);
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
             }
 
             [Fact]
-            public async Task ShouldInvokeHandler()
+            public void ShouldInvokeHandler()
             {
                 var pipeline = new ResponsePipeline(null);
 
@@ -227,16 +227,16 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 pipeline.Enqueue(msg.Object, handler.Object);
 
                 var fields = new object[] {1, true, "string"};
-                await pipeline.OnRecordAsync(fields);
+                pipeline.OnRecord(fields);
 
-                handler.Verify(x => x.OnRecordAsync(fields), Times.Once);
+                handler.Verify(x => x.OnRecord(fields), Times.Once);
             }
         }
 
         public class OnFailureAsync
         {
             [Fact]
-            public async Task ShouldLog()
+            public void ShouldLog()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
@@ -244,7 +244,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = CreatePipelineWithHandler(log.Object);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 log.Verify(
                     x => x.Debug("S: {0}",
@@ -252,7 +252,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             }
 
             [Fact]
-            public async Task ShouldNotLogIfDebugDisabled()
+            public void ShouldNotLogIfDebugDisabled()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
@@ -260,26 +260,26 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = CreatePipelineWithHandler(log.Object);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
             }
 
             [Fact]
-            public async Task ShouldDequeue()
+            public void ShouldDequeue()
             {
                 var pipeline = CreatePipelineWithHandler(null);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
 
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 pipeline.HasNoPendingMessages.Should().BeTrue();
             }
 
             [Fact]
-            public async Task ShouldInvokeHandler()
+            public void ShouldInvokeHandler()
             {
                 var pipeline = new ResponsePipeline(null);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
@@ -287,21 +287,21 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
                 pipeline.Enqueue(msg.Object, handler.Object);
 
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 handler.Verify(
-                    x => x.OnFailureAsync(It.Is<IResponsePipelineError>(e =>
+                    x => x.OnFailure(It.Is<IResponsePipelineError>(e =>
                         e.Is(t => t is TransientException && t.Message.Equals("transaction terminated.")))),
                     Times.Once);
             }
 
             [Fact]
-            public async Task ShouldRecordErrorAndThrowOnAssertNoFailure()
+            public void ShouldRecordErrorAndThrowOnAssertNoFailure()
             {
                 var pipeline = CreatePipelineWithHandler(null);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 var exc = Record.Exception(() => pipeline.AssertNoFailure());
 
@@ -310,12 +310,12 @@ namespace Neo4j.Driver.Internal.MessageHandling
             }
 
             [Fact]
-            public async Task ShouldRecordErrorAndNotThrowOnAssertNoProtocolViolation()
+            public void ShouldRecordErrorAndNotThrowOnAssertNoProtocolViolation()
             {
                 var pipeline = CreatePipelineWithHandler(null);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 var exc = Record.Exception(() => pipeline.AssertNoProtocolViolation());
 
@@ -323,7 +323,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             }
 
             [Fact]
-            public async Task ShouldRecordErrorAndThrowOnAssertNoProtocolViolation()
+            public void ShouldRecordErrorAndThrowOnAssertNoProtocolViolation()
             {
                 var pipeline = new ResponsePipeline(null);
                 var (code, message) = ("Neo.ClientError.Request.Invalid", "protocol exception.");
@@ -331,7 +331,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
                 pipeline.Enqueue(msg.Object, handler.Object);
 
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 var exc = Record.Exception(() => pipeline.AssertNoProtocolViolation());
 
@@ -343,70 +343,70 @@ namespace Neo4j.Driver.Internal.MessageHandling
         public class OnIgnoredAsync
         {
             [Fact]
-            public async Task ShouldLog()
+            public void ShouldLog()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
 
-                await pipeline.OnIgnoredAsync();
+                pipeline.OnIgnored();
 
                 log.Verify(x => x.Debug("S: {0}", It.IsAny<IgnoredMessage>()), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldNotLogIfDebugDisabled()
+            public void ShouldNotLogIfDebugDisabled()
             {
                 var log = new Mock<IDriverLogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
 
-                await pipeline.OnIgnoredAsync();
+                pipeline.OnIgnored();
 
                 log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
             }
 
             [Fact]
-            public async Task ShouldDequeue()
+            public void ShouldDequeue()
             {
                 var pipeline = CreatePipelineWithHandler(null);
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
 
-                await pipeline.OnIgnoredAsync();
+                pipeline.OnIgnored();
 
                 pipeline.HasNoPendingMessages.Should().BeTrue();
             }
 
             [Fact]
-            public async Task ShouldInvokeHandler()
+            public void ShouldInvokeHandler()
             {
                 var pipeline = new ResponsePipeline(null);
 
                 var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
                 pipeline.Enqueue(msg.Object, handler.Object);
 
-                await pipeline.OnIgnoredAsync();
+                pipeline.OnIgnored();
 
-                handler.Verify(x => x.OnIgnoredAsync(), Times.Once);
+                handler.Verify(x => x.OnIgnored(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldInvokeOnFailureAsyncOfHandlerIfHasRecordedError()
+            public void ShouldInvokeOnFailureAsyncOfHandlerIfHasRecordedError()
             {
                 var pipeline = CreatePipelineWithHandler(null);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-                await pipeline.OnFailureAsync(code, message);
+                pipeline.OnFailure(code, message);
 
                 var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
                 pipeline.Enqueue(msg.Object, handler.Object);
 
-                await pipeline.OnIgnoredAsync();
+                pipeline.OnIgnored();
 
                 handler.Verify(
-                    x => x.OnFailureAsync(It.Is<IResponsePipelineError>(e =>
+                    x => x.OnFailure(It.Is<IResponsePipelineError>(e =>
                         e.Is(t => t is TransientException && t.Message.Equals("transaction terminated.")))),
                     Times.Once);
             }

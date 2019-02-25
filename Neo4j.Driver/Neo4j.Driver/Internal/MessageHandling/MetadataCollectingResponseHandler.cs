@@ -66,14 +66,12 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 : default(TMetadata);
         }
 
-        public override Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public override void OnSuccess(IDictionary<string, object> metadata)
         {
             foreach (var collector in _metadataCollectors.Values)
             {
                 collector.Collect(metadata);
             }
-
-            return TaskHelper.GetCompletedTask();
         }
     }
 }

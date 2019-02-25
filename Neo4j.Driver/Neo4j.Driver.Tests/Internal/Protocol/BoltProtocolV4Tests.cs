@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (msg1, h1, msg2, h2) => { await h1.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
                     resourceHandler.Object, null, null);
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (msg1, h1, msg2, h2) => { await h1.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
                     resourceHandler.Object, null, null);
@@ -107,9 +107,9 @@ namespace Neo4j.Driver.Internal.Protocol
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (m1, h1, m2, h2) =>
+                        (m1, h1, m2, h2) =>
                         {
-                            await h1.OnSuccessAsync(new Dictionary<string, object>());
+                            h1.OnSuccess(new Dictionary<string, object>());
                             VerifyMetadata(m1.CastOrThrow<RunWithMetadataMessage>().Metadata);
                         });
 

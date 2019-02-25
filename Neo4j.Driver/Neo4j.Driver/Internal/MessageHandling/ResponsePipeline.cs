@@ -75,21 +75,21 @@ namespace Neo4j.Driver.Internal.MessageHandling
             return first;
         }
 
-        public async Task OnSuccessAsync(IDictionary<string, object> metadata)
+        public void OnSuccess(IDictionary<string, object> metadata)
         {
             LogSuccess(metadata);
             var currentHandler = Current;
             Dequeue();
-            await currentHandler.OnSuccessAsync(metadata);
+            currentHandler.OnSuccess(metadata);
         }
 
-        public async Task OnRecordAsync(object[] fieldValues)
+        public void OnRecord(object[] fieldValues)
         {
             LogRecord(fieldValues);
-            await Current.OnRecordAsync(fieldValues);
+            Current.OnRecord(fieldValues);
         }
 
-        public async Task OnFailureAsync(string code, string message)
+        public void OnFailure(string code, string message)
         {
             LogFailure(code, message);
             var currentHandler = Current;
@@ -97,10 +97,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
             _error = new ResponsePipelineError(ErrorExtensions.ParseServerException(code, message));
 
-            await currentHandler.OnFailureAsync(_error);
+            currentHandler.OnFailure(_error);
         }
 
-        public async Task OnIgnoredAsync()
+        public void OnIgnored()
         {
             LogIgnored();
             var currentHandler = Current;
@@ -108,11 +108,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
             if (_error != null)
             {
-                await currentHandler.OnFailureAsync(_error);
+                currentHandler.OnFailure(_error);
             }
             else
             {
-                await currentHandler.OnIgnoredAsync();
+                currentHandler.OnIgnored();
             }
         }
 

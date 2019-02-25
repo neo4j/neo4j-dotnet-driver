@@ -62,16 +62,16 @@ namespace Neo4j.Driver.Internal.IO
         public async Task ReadAsync(IResponsePipeline pipeline)
         {
             var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream);
-            await ConsumeMessages(pipeline, messageCount).ConfigureAwait(false);
+            ConsumeMessages(pipeline, messageCount);
         }
 
-        private async Task ConsumeMessages(IResponsePipeline pipeline, int messages)
+        private void ConsumeMessages(IResponsePipeline pipeline, int messages)
         {
             var leftMessages = messages;
 
             while (_bufferStream.Length > _bufferStream.Position && leftMessages > 0)
             {
-                await ProcessMessageAsync(pipeline);
+                ProcessMessage(pipeline);
 
                 leftMessages -= 1;
             }
@@ -99,18 +99,17 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        private Task ProcessMessageAsync(IResponsePipeline pipeline)
+        private void ProcessMessage(IResponsePipeline pipeline)
         {
             var message = _packStreamReader.Read();
 
             if (message is IResponseMessage response)
             {
-                return response.DispatchAsync(pipeline);
+                response.Dispatch(pipeline);
             }
             else
             {
-                return TaskHelper.GetFailedTask(
-                    new ProtocolException($"Unknown response message type {message.GetType().FullName}"));
+                throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
             }
         }
     }

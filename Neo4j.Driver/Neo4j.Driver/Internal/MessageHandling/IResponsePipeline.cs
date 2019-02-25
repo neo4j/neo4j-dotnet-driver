@@ -28,13 +28,13 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
         void Enqueue(IRequestMessage message, IResponseHandler handler);
 
-        Task OnSuccessAsync(IDictionary<string, object> metadata);
+        void OnSuccess(IDictionary<string, object> metadata);
 
-        Task OnRecordAsync(object[] fieldValues);
+        void OnRecord(object[] fieldValues);
 
-        Task OnFailureAsync(string code, string message);
+        void OnFailure(string code, string message);
 
-        Task OnIgnoredAsync();
+        void OnIgnored();
 
         void AssertNoFailure();
 

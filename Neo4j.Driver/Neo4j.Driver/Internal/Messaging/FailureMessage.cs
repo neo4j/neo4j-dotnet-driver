@@ -41,9 +41,9 @@ namespace Neo4j.Driver.Internal.Messaging
             return $"FAILURE code={Code}, message={Message}";
         }
 
-        public Task DispatchAsync(IResponsePipeline pipeline)
+        public void Dispatch(IResponsePipeline pipeline)
         {
-            return pipeline.OnFailureAsync(Code, Message);
+            pipeline.OnFailure(Code, Message);
         }
     }
 }

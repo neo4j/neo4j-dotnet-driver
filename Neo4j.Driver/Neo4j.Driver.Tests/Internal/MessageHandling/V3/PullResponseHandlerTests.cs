@@ -51,11 +51,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
         }
 
         [Fact]
-        public async Task ShouldCallPullCompletedOnSuccess()
+        public void ShouldCallPullCompletedOnSuccess()
         {
             var handler = CreateHandler(out var streamBuilder, out var summaryBuilder, out var bookmarkTracker);
 
-            await handler.OnSuccessAsync(new[]
+            handler.OnSuccess(new[]
             {
                 BookmarkCollectorTests.TestMetadata, CountersCollectorTests.TestMetadata,
                 NotificationsCollectorTests.TestMetadata,
@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
                 TimeToLastCollectorTests.TestMetadata, TypeCollectorTests.TestMetadata
             }.ToDictionary());
 
-            streamBuilder.Verify(x => x.PullCompletedAsync(false, null), Times.Once);
+            streamBuilder.Verify(x => x.PullCompleted(false, null), Times.Once);
 
             bookmarkTracker.Verify(x => x.UpdateBookmark(BookmarkCollectorTests.TestMetadataCollected), Times.Once);
 
@@ -82,35 +82,35 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
         }
 
         [Fact]
-        public async Task ShouldCallPullCompletedOnFailure()
+        public void ShouldCallPullCompletedOnFailure()
         {
             var error = new Mock<IResponsePipelineError>();
             var handler = CreateHandler(out var streamBuilder, out _, out _);
 
-            await handler.OnFailureAsync(error.Object);
+            handler.OnFailure(error.Object);
 
-            streamBuilder.Verify(x => x.PullCompletedAsync(false, error.Object), Times.Once);
+            streamBuilder.Verify(x => x.PullCompleted(false, error.Object), Times.Once);
         }
 
         [Fact]
-        public async Task ShouldCallPullCompletedOnIgnored()
+        public void ShouldCallPullCompletedOnIgnored()
         {
             var handler = CreateHandler(out var streamBuilder, out _, out _);
 
-            await handler.OnIgnoredAsync();
+            handler.OnIgnored();
 
-            streamBuilder.Verify(x => x.PullCompletedAsync(false, null), Times.Once);
+            streamBuilder.Verify(x => x.PullCompleted(false, null), Times.Once);
         }
 
         [Fact]
-        public async Task ShouldCallPushRecordOnRecord()
+        public void ShouldCallPushRecordOnRecord()
         {
             var handler = CreateHandler(out var streamBuilder, out _, out _);
             var fields = new object[] {1, "2", false};
 
-            await handler.OnRecordAsync(fields);
+            handler.OnRecord(fields);
 
-            streamBuilder.Verify(x => x.PushRecordAsync(fields), Times.Once);
+            streamBuilder.Verify(x => x.PushRecord(fields), Times.Once);
         }
 
         private static PullResponseHandler CreateHandler(out Mock<IResultStreamBuilder> streamBuilder,

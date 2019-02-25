@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Messaging;
@@ -33,7 +34,8 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketConnection : IConnection
     {
-        private readonly object _syncObject = new object();
+        private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _recvLock = new SemaphoreSlim(1, 1);
 
         private readonly ISocketClient _client;
         private IBoltProtocol _boltProtocol;
@@ -89,7 +91,16 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task InitAsync()
         {
-            _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
+            _sendLock.Wait();
+            try
+            {
+                _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _sendLock.Release();
+            }
+
             await _boltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
         }
 
@@ -107,29 +118,59 @@ namespace Neo4j.Driver.Internal.Connector
                 return;
             }
 
-            // send
-            await _client.SendAsync(_messages).ConfigureAwait(false);
+            _sendLock.Wait();
+            try
+            {
+                // send
+                await _client.SendAsync(_messages).ConfigureAwait(false);
 
-            _messages.Clear();
+                _messages.Clear();
+            }
+            finally
+            {
+                _sendLock.Release();
+            }
         }
 
         private async Task ReceiveAsync()
         {
-            if (_responsePipeline.HasNoPendingMessages)
+            _recvLock.Wait();
+
+            try
             {
-                return;
+                if (_responsePipeline.HasNoPendingMessages)
+                {
+                    return;
+                }
+
+                await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
+
+                _responsePipeline.AssertNoFailure();
             }
-
-            await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
-
-            _responsePipeline.AssertNoFailure();
+            finally
+            {
+                _recvLock.Release();
+            }
         }
 
         public async Task ReceiveOneAsync()
         {
-            await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
+            _recvLock.Wait();
+            try
+            {
+                if (_responsePipeline.HasNoPendingMessages)
+                {
+                    return;
+                }
 
-            _responsePipeline.AssertNoFailure();
+                await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
+
+                _responsePipeline.AssertNoFailure();
+            }
+            finally
+            {
+                _recvLock.Release();
+            }
         }
 
         public Task ResetAsync()
@@ -203,10 +244,13 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null,
+        public async Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
+            IRequestMessage message2 = null,
             IResponseHandler handler2 = null)
         {
-            lock (_syncObject)
+            _sendLock.Wait();
+
+            try
             {
                 _messages.Enqueue(message1);
                 _responsePipeline.Enqueue(message1, handler1);
@@ -216,8 +260,10 @@ namespace Neo4j.Driver.Internal.Connector
                     _messages.Enqueue(message2);
                     _responsePipeline.Enqueue(message2, handler2);
                 }
-
-                return TaskHelper.GetCompletedTask();
+            }
+            finally
+            {
+                _sendLock.Release();
             }
         }
 

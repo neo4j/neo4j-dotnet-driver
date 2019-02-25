@@ -38,9 +38,9 @@ namespace Neo4j.Driver.Internal.Messaging
             return $"RECORD {Fields.ToContentString()}";
         }
 
-        public Task DispatchAsync(IResponsePipeline pipeline)
+        public void Dispatch(IResponsePipeline pipeline)
         {
-            return pipeline.OnRecordAsync(Fields);
+            pipeline.OnRecord(Fields);
         }
     }
 }

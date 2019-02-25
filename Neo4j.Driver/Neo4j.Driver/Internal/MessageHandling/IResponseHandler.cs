@@ -23,12 +23,12 @@ namespace Neo4j.Driver.Internal.MessageHandling
 {
     internal interface IResponseHandler
     {
-        Task OnSuccessAsync(IDictionary<string, object> metadata);
+        void OnSuccess(IDictionary<string, object> metadata);
 
-        Task OnRecordAsync(object[] fieldValues);
+        void OnRecord(object[] fieldValues);
 
-        Task OnFailureAsync(IResponsePipelineError error);
+        void OnFailure(IResponsePipelineError error);
 
-        Task OnIgnoredAsync();
+        void OnIgnored();
     }
 }

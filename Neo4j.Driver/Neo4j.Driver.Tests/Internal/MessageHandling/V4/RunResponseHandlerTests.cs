@@ -50,18 +50,18 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
         }
 
         [Fact]
-        public async Task ShouldCallRunCompletedOnSuccess()
+        public void ShouldCallRunCompletedOnSuccess()
         {
             var handler = CreateHandler(out var streamBuilder, out var summaryBuilder);
 
-            await handler.OnSuccessAsync(new[]
+            handler.OnSuccess(new[]
             {
                 FieldsCollectorTests.TestMetadata, TimeToFirstCollectorTests.TestMetadata,
                 StatementIdCollectorTests.TestMetadata
             }.ToDictionary());
 
             streamBuilder.Verify(
-                x => x.RunCompletedAsync(StatementIdCollectorTests.TestMetadataCollected,
+                x => x.RunCompleted(StatementIdCollectorTests.TestMetadataCollected,
                     FieldsCollectorTests.TestMetadataCollected, null),
                 Times.Once);
 
@@ -70,24 +70,24 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
         }
 
         [Fact]
-        public async Task ShouldCallRunCompletedOnFailure()
+        public void ShouldCallRunCompletedOnFailure()
         {
             var error = new Mock<IResponsePipelineError>();
             var handler = CreateHandler(out var streamBuilder, out _);
 
-            await handler.OnFailureAsync(error.Object);
+            handler.OnFailure(error.Object);
 
-            streamBuilder.Verify(x => x.RunCompletedAsync(-1, null, error.Object), Times.Once);
+            streamBuilder.Verify(x => x.RunCompleted(-1, null, error.Object), Times.Once);
         }
 
         [Fact]
-        public async Task ShouldCallRunCompletedOnIgnored()
+        public void ShouldCallRunCompletedOnIgnored()
         {
             var handler = CreateHandler(out var streamBuilder, out _);
 
-            await handler.OnIgnoredAsync();
+            handler.OnIgnored();
 
-            streamBuilder.Verify(x => x.RunCompletedAsync(-1, null, null), Times.Once);
+            streamBuilder.Verify(x => x.RunCompleted(-1, null, null), Times.Once);
         }
 
         private static RunResponseHandler CreateHandler(out Mock<IResultStreamBuilder> streamBuilder,

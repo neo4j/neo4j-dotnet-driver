@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (msg1, h1, msg2, h2) => { await h1?.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (msg1, h1, msg2, h2) => { h1?.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
                     resourceHandler.Object, null, null);
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<V1.PullResponseHandler>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (msg1, h1, msg2, h2) => { await h1?.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (msg1, h1, msg2, h2) => { h1?.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
                     resourceHandler.Object, null, null);
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAllMessage.PullAll,
                             It.IsAny<V1.PullResponseHandler>()))
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        async (msg1, h1, msg2, h2) => { await h1?.OnSuccessAsync(new Dictionary<string, object>()); });
+                        (msg1, h1, msg2, h2) => { h1?.OnSuccess(new Dictionary<string, object>()); });
 
                 var error = await Xunit.Record.ExceptionAsync(() =>
                     BoltV1.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
