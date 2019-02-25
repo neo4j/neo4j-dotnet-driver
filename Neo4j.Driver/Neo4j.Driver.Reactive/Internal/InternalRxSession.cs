@@ -68,17 +68,50 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<IRxTransaction> BeginTransaction(TransactionConfig txConfig)
         {
-//            return Observable.FromAsync(() => _session.BeginTransactionAsync(txConfig))
-//                .Select(tx => new InternalRxTransaction());
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(txConfig))
+                .Select(tx =>
+                    new InternalRxTransaction(tx));
+        }
+
+        #endregion
+
+        #region Transaction Functions
+
+        public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
+        {
+            return ReadTransaction(work, TransactionConfig.Empty);
+        }
+
+        public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig)
+        {
+            return RunTransaction(AccessMode.Read, work, txConfig);
+        }
+
+        public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
+        {
+            return WriteTransaction(work, TransactionConfig.Empty);
+        }
+
+        public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig)
+        {
+            return RunTransaction(AccessMode.Write, work, txConfig);
+        }
+
+        private IObservable<T> RunTransaction<T>(AccessMode mode, Func<IRxTransaction, IObservable<T>> work,
+            TransactionConfig txConfig)
+        {
             throw new NotImplementedException();
         }
 
         #endregion
 
+        #region Cleanup
 
         public IObservable<T> Close<T>()
         {
             return Observable.FromAsync(() => _session.CloseAsync()).Select(x => x.As<T>());
         }
+
+        #endregion
     }
 }

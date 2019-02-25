@@ -24,11 +24,11 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxTransaction : IRxTransaction
     {
-        private readonly IObservable<ITransaction> _transaction;
+        private readonly ITransaction _transaction;
 
-        public InternalRxTransaction(IObservable<ITransaction> transaction)
+        public InternalRxTransaction(ITransaction transaction)
         {
-            _transaction = transaction.Publish().AutoConnect();
+            _transaction = transaction;
         }
 
         #region Run Methods
@@ -45,20 +45,19 @@ namespace Neo4j.Driver.Internal
 
         public IRxResult Run(Statement statement)
         {
-            return new InternalRxResult(_transaction.Select(t => Observable.FromAsync(() => t.RunAsync(statement)))
-                .SelectMany(r => r));
+            return new InternalRxResult(Observable.FromAsync(() => _transaction.RunAsync(statement)));
         }
 
         #endregion
 
         public IObservable<T> Commit<T>()
         {
-            return _transaction.Select(t => t.CommitAsync().ToObservable()).Cast<T>();
+            return Observable.FromAsync(() => _transaction.CommitAsync()).SelectMany(x => Observable.Empty<T>());
         }
 
         public IObservable<T> Rollback<T>()
         {
-            return _transaction.Select(t => t.RollbackAsync().ToObservable()).Cast<T>();
+            return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(x => Observable.Empty<T>());
         }
     }
 }

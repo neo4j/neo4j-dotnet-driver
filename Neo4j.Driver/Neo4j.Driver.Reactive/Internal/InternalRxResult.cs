@@ -28,17 +28,16 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxResult : IRxResult
     {
-        private readonly IConnectableObservable<IStatementResultCursor> _resultCursor;
+        private readonly IObservable<IStatementResultCursor> _resultCursor;
 
         public InternalRxResult(IObservable<IStatementResultCursor> resultCursor)
         {
-            _resultCursor = resultCursor.Publish();
-            _resultCursor.AutoConnect(1);
+            _resultCursor = resultCursor.Publish().AutoConnect().Replay().AutoConnect();
         }
 
         public IObservable<string[]> Keys()
         {
-            return _resultCursor.SelectMany(s => s.KeysAsync());
+            return _resultCursor.SelectMany(r => r.KeysAsync());
         }
 
         public IObservable<IRecord> Records()
@@ -69,7 +68,7 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<IResultSummary> Summary()
         {
-            return _resultCursor.SelectMany(s => s.ConsumeAsync());
+            return _resultCursor.SelectMany(r => r.ConsumeAsync());
         }
     }
 }

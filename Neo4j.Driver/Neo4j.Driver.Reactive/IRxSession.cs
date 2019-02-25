@@ -31,6 +31,14 @@ namespace Neo4j.Driver
 
         IRxResult Run(Statement statement, TransactionConfig txConfig);
 
+        IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work);
+
+        IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig);
+
+        IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work);
+
+        IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig);
+
         IObservable<T> Close<T>();
     }
 }
