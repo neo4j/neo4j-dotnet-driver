@@ -21,18 +21,43 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// Provides extension methods on <see cref="Neo4j.Driver.IDriver"/> for acquiring reactive
+    /// session instance.
+    /// </summary>
     public static class DriverExtensions
     {
+        /// <summary>
+        /// Obtain a session which is designed to be used through <see cref="System.Reactive"/> with
+        /// access mode <see cref="AccessMode.Write"/>.
+        /// </summary>
+        /// <param name="driver">driver instance</param>
+        /// <returns>A reactive session instance</returns>
         public static IRxSession RxSession(this IDriver driver)
         {
             return RxSession(driver, AccessMode.Write);
         }
 
+        /// <summary>
+        /// Obtain a session which is designed to be used through <see cref="System.Reactive"/> with
+        /// the specified access mode.
+        /// </summary>
+        /// <param name="driver">driver instance</param>
+        /// <param name="mode">access mode for the returned session</param>
+        /// <returns>A reactive session instance</returns>
         public static IRxSession RxSession(this IDriver driver, AccessMode mode)
         {
             return RxSession(driver, mode, Enumerable.Empty<string>());
         }
 
+        /// <summary>
+        /// Obtain a session which is designed to be used through <see cref="System.Reactive"/> with
+        /// the specified access mode and bookmarks.
+        /// </summary>
+        /// <param name="driver">driver instance</param>
+        /// <param name="mode">access mode for the returned session</param>
+        /// <param name="bookmarks">bookmarks to establish causal chaining</param>
+        /// <returns>A reactive session instance</returns>
         public static IRxSession RxSession(this IDriver driver, AccessMode mode, IEnumerable<string> bookmarks)
         {
             return new InternalRxSession(driver.Session(mode, bookmarks));

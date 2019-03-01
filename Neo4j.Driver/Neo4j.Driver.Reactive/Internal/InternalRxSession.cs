@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> Close<T>()
         {
-            return Observable.FromAsync(() => _session.CloseAsync()).Select(x => x.As<T>());
+            return Observable.FromAsync(() => _session.CloseAsync()).SelectMany(x => Observable.Empty<T>());
         }
 
         #endregion

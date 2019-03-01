@@ -29,11 +29,21 @@ namespace Neo4j.Driver.Internal
     internal class InternalRxResult : IRxResult
     {
         private readonly IObservable<IStatementResultCursor> _resultCursor;
+        private readonly CancellationTokenSource _cts;
+        private readonly ReplaySubject<IResultSummary> _summary;
+        private readonly Subject<IRecord> _records;
+
+        private int _streaming = 0;
 
         public InternalRxResult(IObservable<IStatementResultCursor> resultCursor)
         {
             _resultCursor = resultCursor.Publish().AutoConnect().Replay().AutoConnect();
+            _cts = new CancellationTokenSource();
+            _summary = new ReplaySubject<IResultSummary>(1);
+            _records = new Subject<IRecord>();
         }
+
+        private bool IsStreaming => Volatile.Read(ref _streaming) > 0;
 
         public IObservable<string[]> Keys()
         {
@@ -44,31 +54,58 @@ namespace Neo4j.Driver.Internal
         {
             return Observable.Create(async (IObserver<IRecord> o) =>
             {
-                var cts = new CancellationTokenSource();
+                _records.Subscribe(o);
+                await Stream(_cts.Token);
+                return new CancellationDisposable(_cts);
+            });
+        }
 
+        public IObservable<IResultSummary> Summary()
+        {
+            return Observable.Create(async (IObserver<IResultSummary> o) =>
+            {
+                var subscription = _summary.Subscribe(o);
+                if (!IsStreaming)
+                {
+                    _cts.Cancel();
+                }
+
+                await Stream(_cts.Token).ConfigureAwait(false);
+                return new CancellationDisposable(_cts);
+            });
+        }
+
+        private async Task Stream(CancellationToken cts)
+        {
+            if (Interlocked.Increment(ref _streaming) == 1)
+            {
                 try
                 {
                     var cursor = await _resultCursor.GetAwaiter();
 
                     while (await cursor.FetchAsync() && !cts.IsCancellationRequested)
                     {
-                        o.OnNext(cursor.Current);
+                        _records.OnNext(cursor.Current);
                     }
 
-                    o.OnCompleted();
+                    _records.OnCompleted();
+
+                    try
+                    {
+                        _summary.OnNext(await cursor.ConsumeAsync().ConfigureAwait(false));
+                        _summary.OnCompleted();
+                    }
+                    catch (Exception exc)
+                    {
+                        _summary.OnError(exc);
+                    }
                 }
                 catch (Exception exc)
                 {
-                    o.OnError(exc);
+                    _records.OnError(exc);
+                    _summary.OnError(exc);
                 }
-
-                return new CancellationDisposable(cts);
-            });
-        }
-
-        public IObservable<IResultSummary> Summary()
-        {
-            return _resultCursor.SelectMany(r => r.ConsumeAsync());
+            }
         }
     }
 }
