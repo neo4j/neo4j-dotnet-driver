@@ -26,6 +26,7 @@ using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests;
 using Xunit;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3;
 using V1 = Neo4j.Driver.Internal.MessageHandling.V1;
 using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
@@ -100,7 +101,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldEnqueueRunAndPullAllAndSend()
             {
-                var mockConn = NewConnectionWithMode();
+                var mockConn =  NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
@@ -302,11 +303,5 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        private static Mock<IConnection> NewConnectionWithMode(AccessMode mode = AccessMode.Write)
-        {
-            var mockConn = new Mock<IConnection>();
-            mockConn.SetupGet(x => x.Mode).Returns(mode);
-            return mockConn;
-        }
     }
 }

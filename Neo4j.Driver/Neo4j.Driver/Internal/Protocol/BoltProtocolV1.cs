@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker)
         {
             var handler = new V1.CommitResponseHandler(bookmarkTracker);
-            await connection.EnqueueAsync(Commit, handler, DiscardAll, handler)
+            await connection.EnqueueAsync(Commit, handler, PullAll, handler)
                 .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }

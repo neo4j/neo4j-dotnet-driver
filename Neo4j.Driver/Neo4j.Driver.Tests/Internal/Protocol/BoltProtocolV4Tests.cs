@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Tests;
 using Xunit;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolV4;
 using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldEnqueueRunAndSend()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
@@ -78,7 +79,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
@@ -98,7 +99,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();

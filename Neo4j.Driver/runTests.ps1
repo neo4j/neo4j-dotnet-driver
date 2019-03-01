@@ -1,19 +1,25 @@
-If ($args.Length -ne 0)
+Param( 
+    [Parameter(Mandatory=$False,Position=1)]
+    [string]$ServerVersion,
+    [Parameter(Mandatory=$False,Position=2)]
+    [string]$Framework
+)
+
+If ($ServerVersion -ne '') 
 {
-	$env:NeoctrlArgs="$args"
-	echo $Env:NeoctrlArgs
-}
-$scriptpath = $MyInvocation.MyCommand.Path
-$dir = Split-Path $scriptpath
-
-If (Test-Path $dir\Target) {
-	Remove-Item -Path $dir\Target -Recurse -Force	
+	$env:NEOCTRLARGS="$ServerVersion"
 }
 
-If (Test-Path $dir\..\Target) {
-	Remove-Item -Path $dir\..\Target -Recurse -Force	
+If ($Framework -eq '')
+{
+	$Framework="net46"
 }
 
-Invoke-Expression "cd $dir\Neo4j.Driver.Tests; dotnet test -f net46 --no-build"
-Invoke-Expression "cd $dir\Neo4j.Driver.IntegrationTests; dotnet test -f net46 --no-build"
+$RootDir = Split-Path -parent $PSCommandPath
+If (Test-Path $RootDir\..\Target) {
+	Remove-Item -Path $RootDir\..\Target -Recurse -Force
+}
+
+Invoke-Expression "pushd $RootDir\Neo4j.Driver.Tests; dotnet test -f $Framework --no-build; popd"
+Invoke-Expression "pushd $RootDir\Neo4j.Driver.IntegrationTests; dotnet test -f $Framework --no-build; popd"
 

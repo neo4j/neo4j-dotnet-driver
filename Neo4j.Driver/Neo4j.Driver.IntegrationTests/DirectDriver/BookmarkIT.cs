@@ -87,7 +87,7 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
-        public void ShouldIgnoreButLogInvalidBookmark()
+        public void ShouldIgnoreInvalidBookmark()
         {
             var invalidBookmark = "invalid bookmark format";
             var loggerMock = new Mock<IDriverLogger>();
@@ -97,8 +97,6 @@ namespace Neo4j.Driver.IntegrationTests
                 session.BeginTransaction(invalidBookmark);
                 session.LastBookmark.Should().BeNull(); // ignored
             }
-            loggerMock.Verify(x=>x.Info("Failed to recognize bookmark '{0}' and this bookmark is ignored.",
-                invalidBookmark), Times.Once); // but logged
         }
 
         [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
