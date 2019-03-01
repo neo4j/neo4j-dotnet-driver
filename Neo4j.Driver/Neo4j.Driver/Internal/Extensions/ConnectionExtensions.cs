@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2019 "Neo4j,"
+﻿// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -16,26 +16,17 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.V1;
 
-namespace Neo4j.Driver.Internal.Messaging.V3
+namespace Neo4j.Driver.Internal
 {
-    internal class BeginMessage : TransactionStartingMessage
+    internal static class ConnectionExtensions
     {
-        public BeginMessage(Bookmark bookmark, TransactionConfig txConfig, AccessMode mode)
-            : this(bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
+        public static AccessMode GetEnforcedAccessMode(this IConnection connection)
         {
-        }
-
-        public BeginMessage(Bookmark bookmark, TimeSpan? txTimeout, IDictionary<string, object> txMetadata, AccessMode mode)
-            : base(bookmark, txTimeout, txMetadata, mode)
-        {
-        }
-
-        public override string ToString()
-        {
-            return $"BEGIN {Metadata.ToContentString()}";
+            return connection.Mode ??
+                   throw new InvalidOperationException("Connection should have its Mode property set.");
         }
     }
 }

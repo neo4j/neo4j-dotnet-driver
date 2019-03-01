@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers.V3
                 new Dictionary<string, object>
                 {
                     {"username", "MollyMostlyWhite"}
-                }));
+                }, AccessMode.Write));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Tests.IO.MessageHandlers.V3
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new BeginMessage(null, null));
+            writer.Write(new BeginMessage(null, null, AccessMode.Write));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();

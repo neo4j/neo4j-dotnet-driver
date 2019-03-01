@@ -534,6 +534,7 @@ namespace Neo4j.Driver.Tests
             }
 
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
+            mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Write);
             return mockConn;
         }
 

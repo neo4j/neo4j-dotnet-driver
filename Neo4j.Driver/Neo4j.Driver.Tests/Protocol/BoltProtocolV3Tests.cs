@@ -44,14 +44,26 @@ namespace Neo4j.Driver.Tests.Connector
         
         internal static readonly Bookmark Bookmark = Bookmark.From(FakeABookmark(123));
 
-        internal static void VerifyMetadata(IDictionary<string, object> metadata)
+        internal static bool VerifyMetadata(IDictionary<string, object> metadata, AccessMode mode)
         {
-            metadata.Should().HaveCount(3).And
-                .ContainKeys(new List<string> {"bookmarks", "tx_timeout", "tx_metadata"});
-            metadata["bookmarks"].CastOrThrow<string[]>().Should().HaveCount(1).And.Contain("neo4j:bookmark:v1:tx123");
+            var keys = new List<string> {"bookmarks", "tx_timeout", "tx_metadata"};
+            if (mode == AccessMode.Read)
+            {
+                keys.Add("mode");
+            }
+
+            metadata.Should().HaveCount(keys.Count).And.ContainKeys(keys);
+            metadata["bookmarks"].Should().BeOfType<string[]>().Which.Should().HaveCount(1).And
+                .Contain("neo4j:bookmark:v1:tx123");
             metadata["tx_timeout"].Should().Be(60000L);
-            var txMeta = metadata["tx_metadata"].CastOrThrow<Dictionary<string, object>>();
-            txMeta.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key1", "value1"));
+            metadata["tx_metadata"].Should().BeOfType<Dictionary<string, object>>().Which.Should().HaveCount(1).And
+                .Contain(new KeyValuePair<string, object>("key1", "value1"));
+            if (mode == AccessMode.Read)
+            {
+                metadata["mode"].Should().BeOfType<string>().Which.Should().Be("r");
+            }
+
+            return true;
         }
         
         public class LoginMethod
@@ -115,7 +127,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldEnqueueRunAndPullAllAndSend()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
                 BoltV3.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
@@ -127,7 +139,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
                 BoltV3.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object, null, null);
@@ -135,24 +147,28 @@ namespace Neo4j.Driver.Tests.Connector
                 mockConn.Verify(x => x.Server, Times.Once);
             }
             
-            [Fact]
-            public void ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
+            [Theory]
+            [InlineData(AccessMode.Read)]
+            [InlineData(AccessMode.Write)]
+            public void ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage(AccessMode mode)
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode(mode);
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultBuilder>(), PullAll))
+                mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), It.IsAny<IRequestMessage>()))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (m0, r, m1) =>
+                        (msg1, h, msg2) =>
                         {
-                            var msg = m0.CastOrThrow<RunWithMetadataMessage>();
-                            VerifyMetadata(msg.Metadata);
+                            h?.DoneSuccess();
                         });
+
                 BoltV3.RunInAutoCommitTransaction(mockConn.Object, statement, mockHandler.Object,
                     Bookmark, TxConfig);
-                
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultBuilder>(), PullAll), Times.Once);
+
+                mockConn.Verify(
+                    x => x.Enqueue(It.Is<RunWithMetadataMessage>(m => VerifyMetadata(m.Metadata, mode)),
+                        It.IsAny<ResultBuilder>(), PullAll), Times.Once);
             }
         }
 
@@ -161,7 +177,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldEnqueueRunAndPullAllAndSend()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
 
@@ -180,7 +196,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
                 mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
@@ -194,24 +210,28 @@ namespace Neo4j.Driver.Tests.Connector
                 mockConn.Verify(x => x.Server, Times.Once);
             }
             
-            [Fact]
-            public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
+            [Theory]
+            [InlineData(AccessMode.Read)]
+            [InlineData(AccessMode.Write)]
+            public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage(AccessMode mode)
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode(mode);
                 var statement = new Statement("A cypher query");
                 var mockHandler = new Mock<IResultResourceHandler>();
 
                 mockConn.Setup(x => x.Enqueue(It.IsAny<IRequestMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll))
                     .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (m0, h, m1) =>
+                        (msg1, h, msg2) =>
                         {
                             h?.DoneSuccess();
-                            VerifyMetadata(m0.CastOrThrow<RunWithMetadataMessage>().Metadata);
                         });
+
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, mockHandler.Object,
                     Bookmark, TxConfig);
-                
-                mockConn.Verify(x => x.Enqueue(It.IsAny<RunWithMetadataMessage>(), It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
+
+                mockConn.Verify(
+                    x => x.Enqueue(It.Is<RunWithMetadataMessage>(m => VerifyMetadata(m.Metadata, mode)),
+                        It.IsAny<ResultCursorBuilder>(), PullAll), Times.Once);
             }
         }
 
@@ -220,7 +240,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldNotSyncIfBookmarkIsNull()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 BoltV3.BeginTransaction(mockConn.Object, null, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
@@ -230,7 +250,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldNotSyncIfInvalidBookmarkGiven()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var bookmark = Bookmark.From((string)null);
                 BoltV3.BeginTransaction(mockConn.Object, bookmark, null);
 
@@ -241,28 +261,26 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldSyncIfValidBookmarkGiven()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var bookmark = Bookmark.From(FakeABookmark(234));
                 BoltV3.BeginTransaction(mockConn.Object, bookmark,null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
                 mockConn.Verify(x => x.Sync(), Times.Once);
             }
-            
-            [Fact]
-            public void ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
+
+            [Theory]
+            [InlineData(AccessMode.Read)]
+            [InlineData(AccessMode.Write)]
+            public void ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage(AccessMode mode)
             {
-                var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null))
-                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (m0, r, m1) =>
-                        {
-                            var msg = m0.CastOrThrow<BeginMessage>();
-                            VerifyMetadata(msg.Metadata);
-                        });
+                var mockConn = NewConnectionWithMode(mode);
+
                 BoltV3.BeginTransaction(mockConn.Object, Bookmark, TxConfig);
-                
-                mockConn.Verify(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null), Times.Once);
+
+                mockConn.Verify(
+                    x => x.Enqueue(It.Is<BeginMessage>(m => VerifyMetadata(m.Metadata, mode)),
+                        It.IsAny<ResultBuilder>(), null), Times.Once);
             }
         }
 
@@ -271,7 +289,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldNotSyncIfBookmarkIsNull()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 await BoltV3.BeginTransactionAsync(mockConn.Object, null, null);
 
                 mockConn.Verify(x=>x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<IMessageResponseCollector>(), null), Times.Once);
@@ -281,7 +299,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldNotSyncIfInvalidBookmarkGiven()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var bookmark = Bookmark.From((string)null);
                 await BoltV3.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
@@ -292,7 +310,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldSyncIfValidBookmarkGiven()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var bookmark = Bookmark.From(FakeABookmark(234));
                 await BoltV3.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
@@ -300,20 +318,16 @@ namespace Neo4j.Driver.Tests.Connector
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
             
-            [Fact]
-            public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
+            [Theory]
+            [InlineData(AccessMode.Read)]
+            [InlineData(AccessMode.Write)]
+            public async Task ShouldPassBookmarkTxConfigAndModeToRunWithMetadataMessage(AccessMode mode)
             {
-                var mockConn = new Mock<IConnection>();
-
-                mockConn.Setup(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null))
-                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>(
-                        (m0, r, m1) =>
-                        {
-                            var msg = m0.CastOrThrow<BeginMessage>();
-                            VerifyMetadata(msg.Metadata);
-                        });
+                var mockConn = NewConnectionWithMode(mode);
                 await BoltV3.BeginTransactionAsync(mockConn.Object, Bookmark, TxConfig);
-                mockConn.Verify(x => x.Enqueue(It.IsAny<BeginMessage>(), It.IsAny<ResultBuilder>(), null), Times.Once);
+                mockConn.Verify(
+                    x => x.Enqueue(It.Is<BeginMessage>(m => VerifyMetadata(m.Metadata, mode)),
+                        It.IsAny<ResultBuilder>(), null), Times.Once);
             }
         }
 
@@ -322,7 +336,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void EnqueueCommitAndSync()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 BoltV3.CommitTransaction(mockConn.Object);
 
                 mockConn.Verify(x=>x.Enqueue(Commit, It.IsAny<BookmarkCollector>(), null), Times.Once);
@@ -335,7 +349,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task EnqueueCommitAndSync()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 await BoltV3.CommitTransactionAsync(mockConn.Object);
 
                 mockConn.Verify(x=>x.Enqueue(Commit, It.IsAny<BookmarkCollector>(), null), Times.Once);
@@ -348,7 +362,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldEnqueueRollbackAndSync()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 BoltV3.RollbackTransaction(mockConn.Object);
 
                 mockConn.Verify(x=>x.Enqueue(Rollback, It.IsAny<BookmarkCollector>(), null), Times.Once);
@@ -361,7 +375,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldEnqueueRollbackAndSync()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 BoltV3.RollbackTransactionAsync(mockConn.Object);
 
                 mockConn.Verify(x=>x.Enqueue(Rollback, It.IsAny<BookmarkCollector>(), null), Times.Once);
@@ -374,7 +388,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ShouldRunPullAllSync()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("lalala");
 
                 BoltV3.RunInExplicitTransaction(mockConn.Object, statement);
@@ -386,7 +400,7 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public void ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = new Mock<IConnection>();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("lalala");
 
                 BoltV3.RunInExplicitTransaction(mockConn.Object, statement);
@@ -417,6 +431,13 @@ namespace Neo4j.Driver.Tests.Connector
                 await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, statement);
                 mockConn.Verify(x => x.Server, Times.Once);
             }
+        }
+
+        private static Mock<IConnection> NewConnectionWithMode(AccessMode mode = AccessMode.Write)
+        {
+            var mockConn = new Mock<IConnection>();
+            mockConn.SetupGet(x => x.Mode).Returns(mode);
+            return mockConn;
         }
     }
 }

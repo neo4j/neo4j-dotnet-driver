@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -31,6 +32,12 @@ namespace Neo4j.Driver.Internal.Connector
         protected DelegatedConnection(IConnection connection)
         {
             Delegate = connection;
+        }
+
+        public AccessMode? Mode
+        {
+            get => Delegate.Mode;
+            set => Delegate.Mode = value;
         }
 
         public abstract void OnError(Exception error);
@@ -55,7 +62,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task SyncAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.SyncAsync());
+            return TaskWithErrorHandling(() => Delegate.SyncAsync());
         }
 
         public void Send()
@@ -72,7 +79,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task SendAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.SendAsync());
+            return TaskWithErrorHandling(() => Delegate.SendAsync());
         }
 
         public void ReceiveOne()
@@ -89,7 +96,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task ReceiveOneAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.ReceiveOneAsync());
+            return TaskWithErrorHandling(() => Delegate.ReceiveOneAsync());
         }
 
         public void Init()
@@ -106,10 +113,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task InitAsync()
         {
-            return TaskWithErrorHandling(()=>Delegate.InitAsync());
+            return TaskWithErrorHandling(() => Delegate.InitAsync());
         }
 
-        public void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null)
+        public void Enqueue(IRequestMessage message1, IMessageResponseCollector responseCollector,
+            IRequestMessage message2 = null)
         {
             try
             {
@@ -137,6 +145,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public IServerInfo Server => Delegate.Server;
         public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
+
         public void ResetMessageReaderAndWriterForServerV3_1()
         {
             Delegate.ResetMessageReaderAndWriterForServerV3_1();

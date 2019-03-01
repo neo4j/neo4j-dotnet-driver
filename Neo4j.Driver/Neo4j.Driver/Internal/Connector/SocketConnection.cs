@@ -79,6 +79,8 @@ namespace Neo4j.Driver.Internal.Connector
             _responseHandler = messageResponseHandler ?? new MessageResponseHandler(logger);
         }
 
+        public AccessMode? Mode { get; set; }
+
         public void Init()
         {
             try
