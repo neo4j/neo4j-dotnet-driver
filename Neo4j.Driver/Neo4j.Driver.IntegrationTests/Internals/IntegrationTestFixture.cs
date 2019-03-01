@@ -26,7 +26,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public IStandAlone StandAlone { get; }
 
-        private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
+        private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER_XXX";
 
         public StandAloneIntegrationTestFixture()
         {

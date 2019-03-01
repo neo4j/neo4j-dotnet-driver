@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
                 connection.ReceiveOneAsync, resultResourceHandler);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig), resultBuilder,
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), resultBuilder,
                 new PullNMessage(All)).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return resultBuilder.PreBuild();
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig), null).ConfigureAwait(false);
+            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), null).ConfigureAwait(false);
             if (bookmark != null && !bookmark.IsEmpty())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var resultBuilder = new ResultCursorBuilder(
                 NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement), resultBuilder, new PullNMessage(All))
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), resultBuilder, new PullNMessage(All))
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
 

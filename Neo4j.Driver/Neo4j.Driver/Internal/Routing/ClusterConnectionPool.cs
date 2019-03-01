@@ -69,15 +69,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        public Task<IConnection> AcquireAsync(Uri uri)
+        public Task<IConnection> AcquireAsync(Uri uri, AccessMode mode = AccessMode.Write)
         {
             if (!_pools.TryGetValue(uri, out var pool))
             {
-                return Task.FromResult((IConnection)null);
+                return Task.FromResult((IConnection) null);
             }
 
-            AccessMode ignored = AccessMode.Write;
-            return pool.AcquireAsync(ignored);
+            return pool.AcquireAsync(mode);
         }
 
         private void Add(IEnumerable<Uri> servers)
@@ -90,7 +89,10 @@ namespace Neo4j.Driver.Internal.Routing
 
         public async Task AddAsync(IEnumerable<Uri> servers)
         {
-            Add(servers);
+            foreach (var uri in servers)
+            {
+                _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
+            }
 
             if (IsClosed)
             {
@@ -123,6 +125,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 return pool.DeactivateAsync();
             }
+
             return TaskHelper.GetCompletedTask();
         }
 
@@ -132,6 +135,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 return pool.NumberOfInUseConnections;
             }
+
             return 0;
         }
 

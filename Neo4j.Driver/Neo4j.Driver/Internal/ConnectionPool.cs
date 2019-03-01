@@ -230,7 +230,7 @@ namespace Neo4j.Driver.Internal
             var acquireEvent = new SimpleTimerEvent();
             _poolMetricsListener?.PoolAcquiring(acquireEvent);
             var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
-            var task = AcquireAsync(timeOutTokenSource.Token).ContinueWith(t =>
+            var task = AcquireAsync(mode, timeOutTokenSource.Token).ContinueWith(t =>
             {
                 timeOutTokenSource.Dispose();
                 if (t.Status == TaskStatus.RanToCompletion)
@@ -247,7 +247,7 @@ namespace Neo4j.Driver.Internal
             return task;
         }
 
-        private Task<IConnection> AcquireAsync(CancellationToken cancellationToken)
+        private Task<IConnection> AcquireAsync(AccessMode mode, CancellationToken cancellationToken)
         {
             return TryExecuteAsync(_logger, async () =>
             {
@@ -320,6 +320,11 @@ namespace Neo4j.Driver.Internal
                     ThrowConnectionAcquisitionTimedOutException(ex);
                 }
 
+                if (connection != null)
+                {
+                    connection.Mode = mode;
+                }
+
                 return (IConnection) connection;
             }, "Failed to acquire a connection from connection pool asynchronously.");
         }
@@ -358,6 +363,8 @@ namespace Neo4j.Driver.Internal
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
                     return;
                 }
+
+                connection.Mode = null;
 
                 // Add back to idle pool
                 _idleConnections.Add(connection);

@@ -23,14 +23,16 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 {
     internal class BeginMessage : TransactionStartingMessage
     {
-        public BeginMessage(Bookmark bookmark, TimeSpan txTimeout, IDictionary<string, object> txMetadata) : base(bookmark, txTimeout, txMetadata)
+        public BeginMessage(Bookmark bookmark, TransactionConfig txConfig, AccessMode mode)
+            : this(bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
         {
         }
 
-        public BeginMessage(Bookmark bookmark, TransactionConfig txConfig) : base(bookmark, txConfig)
+        public BeginMessage(Bookmark bookmark, TimeSpan? txTimeout, IDictionary<string, object> txMetadata, AccessMode mode)
+            : base(bookmark, txTimeout, txMetadata, mode)
         {
         }
-        
+
         public override string ToString()
         {
             return $"BEGIN {Metadata.ToContentString()}";

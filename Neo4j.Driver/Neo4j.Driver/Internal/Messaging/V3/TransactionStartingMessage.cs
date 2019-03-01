@@ -24,22 +24,18 @@ namespace Neo4j.Driver.Internal.Messaging.V3
     {
         private const string TxTimeoutMetadataKey = "tx_timeout";
         private const string TxMetadataMetadataKey = "tx_metadata";
+        private const string AccessModeKey = "mode";
+
+        protected TransactionStartingMessage(Bookmark bookmark, TimeSpan? txTimeout,
+            IDictionary<string, object> txMetadata, AccessMode mode)
+        {
+            Metadata = BuildMetadata(bookmark, txTimeout ?? TimeSpan.Zero, txMetadata, mode);
+        }
 
         public IDictionary<string, object> Metadata { get; }
 
-        protected TransactionStartingMessage(Bookmark bookmark, TimeSpan txTimeout,
-            IDictionary<string, object> txMetadata)
-        {
-            Metadata = BuildMetadata(bookmark, txTimeout, txMetadata);
-        }
-
-        protected TransactionStartingMessage(Bookmark bookmark, TransactionConfig txConfig)
-        {
-            Metadata = BuildMetadata(bookmark, txConfig?.Timeout ?? TimeSpan.Zero, txConfig?.Metadata);
-        }
-
         private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan txTimeout,
-            IDictionary<string, object> txMetadata)
+            IDictionary<string, object> txMetadata, AccessMode mode)
         {
             var bookmarksPresent = bookmark != null && !bookmark.IsEmpty();
             var txTimeoutPresent = txTimeout > TimeSpan.Zero;
@@ -54,13 +50,21 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
             if (txTimeoutPresent)
             {
-                var txTimeoutInMs = Math.Max(0L, (long)txTimeout.TotalMilliseconds);
+                var txTimeoutInMs = Math.Max(0L, (long) txTimeout.TotalMilliseconds);
                 result.Add(TxTimeoutMetadataKey, txTimeoutInMs);
             }
 
             if (txMetadataPresent)
             {
                 result.Add(TxMetadataMetadataKey, txMetadata);
+            }
+
+            switch (mode)
+            {
+                // We don't add a key for Write, treating it as a default
+                case AccessMode.Read:
+                    result.Add(AccessModeKey, "r");
+                    break;
             }
 
             return result;

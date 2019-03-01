@@ -33,6 +33,12 @@ namespace Neo4j.Driver.Internal.Connector
             Delegate = connection;
         }
 
+        public AccessMode? Mode
+        {
+            get => Delegate.Mode;
+            set => Delegate.Mode = value;
+        }
+
         public virtual Task OnErrorAsync(Exception error)
         {
             return TaskHelper.GetCompletedTask();

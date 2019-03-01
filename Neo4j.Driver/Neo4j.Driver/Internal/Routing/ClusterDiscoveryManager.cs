@@ -158,6 +158,7 @@ namespace Neo4j.Driver.Internal.Routing
             public Task<IConnection> AcquireAsync(AccessMode mode)
             {
                 var conn = _connection;
+                conn.Mode = mode;
                 _connection = null;
                 return Task.FromResult(conn);
             }

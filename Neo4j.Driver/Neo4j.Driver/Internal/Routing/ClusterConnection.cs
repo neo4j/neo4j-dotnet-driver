@@ -25,14 +25,12 @@ namespace Neo4j.Driver.Internal.Routing
     internal class ClusterConnection : DelegatedConnection
     {
         private readonly Uri _uri;
-        private readonly AccessMode _mode;
         private readonly IClusterErrorHandler _errorHandler;
 
-        public ClusterConnection(IConnection connection, Uri uri, AccessMode mode, IClusterErrorHandler errorHandler)
-        :base(connection)
+        public ClusterConnection(IConnection connection, Uri uri, IClusterErrorHandler errorHandler)
+            : base(connection)
         {
             _uri = uri;
-            _mode = mode;
             _errorHandler = errorHandler;
         }
 
@@ -52,6 +50,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 HandleClusterError(error);
             }
+
             throw error;
         }
 
@@ -59,7 +58,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (error.IsClusterError())
             {
-                switch (_mode)
+                switch (Mode)
                 {
                     case AccessMode.Read:
                         // The user was trying to run a write in a read session
@@ -72,7 +71,7 @@ namespace Neo4j.Driver.Internal.Routing
                         _errorHandler.OnWriteError(_uri);
                         throw new SessionExpiredException($"Server at {_uri} no longer accepts writes");
                     default:
-                        throw new ArgumentOutOfRangeException($"Unsupported mode type {_mode}");
+                        throw new ArgumentOutOfRangeException($"Unsupported mode type {Mode}");
                 }
             }
         }

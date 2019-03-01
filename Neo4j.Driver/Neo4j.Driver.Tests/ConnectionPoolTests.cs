@@ -471,6 +471,26 @@ namespace Neo4j.Driver.Tests
                 exception.Should().BeOfType<ClientException>();
                 exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
             }
+
+            [Theory]
+            [InlineData(AccessMode.Read)]
+            [InlineData(AccessMode.Write)]
+            public async Task ShouldManageModePropertyAsync(AccessMode mode)
+            {
+                var connection = new Mock<IPooledConnection>().SetupProperty(x => x.Mode);
+                var idleConnections = new BlockingCollection<IPooledConnection>() { connection.Object };
+
+                var pool = NewConnectionPool(idleConnections);
+
+                var acquired = await pool.AcquireAsync(mode);
+                acquired.Mode.Should().Be(mode);
+
+                await pool.ReleaseAsync((IPooledConnection)acquired);
+                acquired.Mode.Should().BeNull();
+
+                connection.VerifySet(x => x.Mode = mode);
+                connection.VerifySet(x => x.Mode = null);
+            }
         }
 
         public class ReleaseMethod
