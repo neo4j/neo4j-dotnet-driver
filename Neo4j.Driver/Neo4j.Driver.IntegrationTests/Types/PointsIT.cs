@@ -76,8 +76,8 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
                 var matched = session.Run("MATCH (n:Node) RETURN n.location1, n.location2").Single();
 
-                matched[0].ShouldBeEquivalentTo(point1);
-                matched[1].ShouldBeEquivalentTo(point2);
+                matched[0].Should().BeEquivalentTo(point1);
+                matched[1].Should().BeEquivalentTo(point2);
             }
         }
 
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 var result = 
                     session.Run("CREATE (n { point: $point}) RETURN n.point", new {point}).Single();
 
-                result[0].ShouldBeEquivalentTo(point);
+                result[0].Should().BeEquivalentTo(point);
             }
         }
 
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 var result =
                     session.Run("CREATE (n { points: $points}) RETURN n.points", new { points }).Single();
 
-                result[0].ShouldBeEquivalentTo(points);
+                result[0].Should().BeEquivalentTo(points);
             }
         }
 

@@ -260,7 +260,7 @@ namespace Neo4j.Driver.Tests.Types
 
             foreach (var testAction in conversions)
             {
-                testAction.ShouldThrow<InvalidCastException>();
+                testAction.Should().Throw<InvalidCastException>();
             }
         }
     }

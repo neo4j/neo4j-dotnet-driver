@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new[]
+            collector.Collected.Should().BeEquivalentTo(new[]
             {
                 new Notification("code1", "title1", "description1",
                     new InputPosition(1, 2, 3), "severity1")
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             collector.Collect(metadata);
 
 
-            collector.Collected.ShouldBeEquivalentTo(new[]
+            collector.Collected.Should().BeEquivalentTo(new[]
             {
                 new Notification("code1", "title1", "description1",
                     new InputPosition(1, 2, 3), "severity1"),

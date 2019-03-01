@@ -117,7 +117,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new Plan("opType", new Dictionary<string, object>(),
+            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object>(),
                 new List<string>(), new List<IPlan>()));
         }
 
@@ -144,7 +144,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
+            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
                 new List<string> {"a", "b", "c"}, new List<IPlan>()));
         }
 
@@ -187,7 +187,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
+            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
                 new List<string> {"a", "b", "c"},
                 new List<IPlan>
                 {
@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
+            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
                 new List<string> {"a", "b", "c"},
                 new List<IPlan>
                 {

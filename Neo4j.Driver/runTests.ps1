@@ -14,6 +14,6 @@ If (Test-Path $dir\..\Target) {
 	Remove-Item -Path $dir\..\Target -Recurse -Force	
 }
 
-Invoke-Expression "cd $dir\Neo4j.Driver.Tests; dotnet xunit -f net452 -nobuild"
-Invoke-Expression "cd $dir\Neo4j.Driver.IntegrationTests; dotnet xunit -f net452 -nobuild -parallel none"
+Invoke-Expression "cd $dir\Neo4j.Driver.Tests; dotnet test -f net46 --no-build"
+Invoke-Expression "cd $dir\Neo4j.Driver.IntegrationTests; dotnet test -f net46 --no-build"
 

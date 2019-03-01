@@ -163,7 +163,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new ProfiledPlan("opType", new Dictionary<string, object>(),
+            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType", new Dictionary<string, object>(),
                 new List<string>(), new List<IProfiledPlan>(), 5, 10));
         }
 
@@ -192,7 +192,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new ProfiledPlan("opType",
+            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType",
                 new Dictionary<string, object> {{"a", 1L}},
                 new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10));
         }
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new ProfiledPlan("opType",
+            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType",
                 new Dictionary<string, object> {{"a", 1L}},
                 new List<string> {"a", "b", "c"},
                 new List<IProfiledPlan>
@@ -312,7 +312,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(new ProfiledPlan("opType",
+            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType",
                 new Dictionary<string, object> {{"a", 1L}},
                 new List<string> {"a", "b", "c"},
                 new List<IProfiledPlan>

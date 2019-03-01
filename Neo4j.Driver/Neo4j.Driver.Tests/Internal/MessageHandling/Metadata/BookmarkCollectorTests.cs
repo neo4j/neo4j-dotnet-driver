@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(metadata);
 
-            collector.Collected.ShouldBeEquivalentTo(Bookmark.From(bookmarkStr));
+            collector.Collected.Should().BeEquivalentTo(Bookmark.From(bookmarkStr));
         }
 
         [Fact]

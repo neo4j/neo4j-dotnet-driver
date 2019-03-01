@@ -603,7 +603,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 var record = session.Run("CREATE (n:Node {value: $value}) RETURN n.value", new { value = valueAsList }).Single();
 
                 record.Keys.Should().HaveCount(1);
-                record[0].ShouldBeEquivalentTo(actualAsList);
+                record[0].Should().BeEquivalentTo(actualAsList);
                 record[0].ValueAs<IList<TSent>>().Should().BeEquivalentTo(valueAsList);
             }
         }
