@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -41,11 +42,12 @@ namespace Neo4j.Driver.Tests
         private static IServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
-        internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null, IMessageResponseHandler handler = null, IServerInfo server = null)
+        internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null,
+            IMessageResponseHandler handler = null, IServerInfo server = null, IDriverLogger logger = null)
         {
             socketClient = socketClient ?? SocketClient;
             server = server ?? Server;
-            return new SocketConnection(socketClient, AuthToken, UserAgent, Logger, server, handler);
+            return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, handler);
         }
 
         public class InitMethod
@@ -64,7 +66,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 mockClient.Verify(c => c.Connect(), Times.Once);
-                mockProtocol.Verify(p=>p.Login(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
+                mockProtocol.Verify(p => p.Login(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
             }
 
             [Fact]
@@ -72,11 +74,12 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.Connect()).Throws(new IOException("I will stop socket conn from initialization"));
+                mockClient.Setup(x => x.Connect())
+                    .Throws(new IOException("I will stop socket conn from initialization"));
                 // ReSharper disable once ObjectCreationAsStatement
                 var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
                 // When
-                var error = Exception(()=>conn.Init());
+                var error = Exception(() => conn.Init());
                 // Then
                 error.Should().BeOfType<IOException>();
                 error.Message.Should().Be("I will stop socket conn from initialization");
@@ -143,11 +146,12 @@ namespace Neo4j.Driver.Tests
             public void ShouldEnqueueResultBuilderOnResponseHandler()
             {
                 var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = NewSocketConnection(handler:mockResponseHandler.Object);
+                var con = NewSocketConnection(handler: mockResponseHandler.Object);
 
                 con.Enqueue(new RunMessage("statement"), NoOpResponseCollector);
 
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector), Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector),
+                    Times.Once);
             }
 
             [Fact]
@@ -173,8 +177,10 @@ namespace Neo4j.Driver.Tests
 
                 con.Enqueue(new RunMessage("statement"), NoOpResponseCollector, PullAll);
 
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector), Times.Once);
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<PullAllMessage>(), NoOpResponseCollector), Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector),
+                    Times.Once);
+                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<PullAllMessage>(), NoOpResponseCollector),
+                    Times.Once);
             }
         }
 
@@ -212,7 +218,7 @@ namespace Neo4j.Driver.Tests
                 conn.Close();
 
                 // Then
-                mockProtocol.Verify(p=>p.Logout(conn));
+                mockProtocol.Verify(p => p.Logout(conn));
                 mockClient.Verify(c => c.Stop());
             }
 
@@ -240,7 +246,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockClient = new Mock<ISocketClient>();
                 mockClient.Setup(x => x.Stop()).Throws<InvalidOperationException>();
-                
+
                 var mockProtocol = new Mock<IBoltProtocol>();
                 mockProtocol.Setup(x => x.Logout(It.IsAny<SocketConnection>())).Throws<InvalidOperationException>();
 
@@ -269,7 +275,7 @@ namespace Neo4j.Driver.Tests
                 await conn.CloseAsync();
 
                 // Then
-                mockProtocol.Verify(p=>p.LogoutAsync(conn));
+                mockProtocol.Verify(p => p.LogoutAsync(conn));
                 mockClient.Verify(c => c.StopAsync());
             }
 
@@ -281,7 +287,8 @@ namespace Neo4j.Driver.Tests
                 var conn = NewSocketConnection(mockClient.Object);
 
                 var mockProtocol = new Mock<IBoltProtocol>();
-                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>())).Throws<InvalidOperationException>();
+                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>()))
+                    .Throws<InvalidOperationException>();
                 conn.BoltProtocol = mockProtocol.Object;
 
                 // When
@@ -299,7 +306,8 @@ namespace Neo4j.Driver.Tests
                 mockClient.Setup(x => x.StopAsync()).Throws<InvalidOperationException>();
 
                 var mockProtocol = new Mock<IBoltProtocol>();
-                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>())).Throws<InvalidOperationException>();
+                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>()))
+                    .Throws<InvalidOperationException>();
 
                 var conn = NewSocketConnection(mockClient.Object);
                 conn.BoltProtocol = mockProtocol.Object;
@@ -310,6 +318,78 @@ namespace Neo4j.Driver.Tests
                 // Then
                 mockClient.Verify(c => c.StopAsync());
                 mockProtocol.Verify(c => c.LogoutAsync(It.IsAny<SocketConnection>()));
+            }
+
+            [Fact]
+            public void ShouldNotThrowIfBoltProtocolIsNull()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object);
+
+                conn.BoltProtocol.Should().BeNull();
+
+                var ex = Xunit.Record.Exception(() => conn.Close());
+
+                ex.Should().BeNull();
+            }
+
+            [Fact]
+            public async void ShouldNotThrowIfBoltProtocolIsNullAsync()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object);
+
+                conn.BoltProtocol.Should().BeNull();
+
+                var ex = await Xunit.Record.ExceptionAsync(() => conn.CloseAsync());
+
+                ex.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldNotThrowAndLogIfSocketDisposed()
+            {
+                // Given
+                var logger = new Mock<IDriverLogger>();
+
+                var protocol = new Mock<IBoltProtocol>();
+                protocol.Setup(x => x.Logout(It.IsAny<IConnection>()))
+                    .Throws(new ObjectDisposedException("client"));
+
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
+                conn.BoltProtocol = protocol.Object;
+
+                var ex = Xunit.Record.Exception(() => conn.Close());
+
+                ex.Should().BeNull();
+                logger.Verify(x => x.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+                logger.Verify(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()),
+                    Times.Never);
+            }
+
+            [Fact]
+            public async void ShouldNotThrowAndLogIfSocketDisposedAsync()
+            {
+                // Given
+                var logger = new Mock<IDriverLogger>();
+
+                var protocol = new Mock<IBoltProtocol>();
+                protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>()))
+                    .ThrowsAsync(new ObjectDisposedException("client"));
+
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
+                conn.BoltProtocol = protocol.Object;
+
+                var ex = await Xunit.Record.ExceptionAsync(() => conn.CloseAsync());
+
+                ex.Should().BeNull();
+                logger.Verify(x => x.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+                logger.Verify(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()),
+                    Times.Never);
             }
         }
     }
