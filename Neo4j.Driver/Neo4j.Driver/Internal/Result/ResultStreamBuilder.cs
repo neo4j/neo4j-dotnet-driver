@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class ResultStreamBuilder : IResultStreamBuilder
     {
-        private readonly long _batchSize = 5;
+        private readonly long _batchSize;
         private readonly Func<Task> _advanceFunction;
         private readonly Func<ResultStreamBuilder, long, long, Task> _moreFunction;
         private readonly Func<ResultStreamBuilder, long, Task> _cancelFunction;
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Result
         public ResultStreamBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
             Func<ResultStreamBuilder, long, long, Task> moreFunction,
             Func<ResultStreamBuilder, long, Task> cancelFunction, CancellationToken cancellation,
-            IResultResourceHandler resourceHandler)
+            IResultResourceHandler resourceHandler, long batchSize = All)
         {
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
             _advanceFunction =
@@ -58,6 +58,7 @@ namespace Neo4j.Driver.Internal.Result
             _state = State.Running;
             _statementId = NoStatementId;
             _fields = null;
+            _batchSize = batchSize;
         }
 
         public IStatementResultCursor CreateCursor()

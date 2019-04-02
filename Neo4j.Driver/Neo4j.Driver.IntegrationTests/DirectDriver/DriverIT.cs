@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Metrics;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -34,7 +35,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.2.0")]
+        [RequireServerFact("3.2.0", GreaterThanOrEqualTo)]
         public void ShouldPackAndUnpackBytes()
         {
             // Given
@@ -54,7 +55,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void ShouldConnectIPv6AddressIfEnabled()
         {
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config { Ipv6Enabled = true }))
@@ -65,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void ShouldNotConnectIPv6AddressIfDisabled()
         {
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken))

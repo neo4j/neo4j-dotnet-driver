@@ -30,6 +30,7 @@ using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
 using static Neo4j.Driver.IntegrationTests.Reactive.ReactiveUtils;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.Tests.Assertions;
 using Notification = Neo4j.Driver.Internal.Result.Notification;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -440,6 +441,20 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnError<IResultSummary>(0,
                         MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
                 }, summaryObserver.Messages);
+            }
+
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            public void ShouldStreamRecordsOnDemand()
+            {
+                var session = NewSession();
+                var result = session.Run("UNWIND RANGE(1, $x) AS n RETURN n", new {x = 10000});
+                var recordsObserver = CreateObserver<int>();
+
+                result.Records().Select(r => r[0].As<int>()).Take(999).SubscribeAndWait(recordsObserver);
+
+                AreElementsEqual(
+                    Enumerable.Range(1, 999).Select(i => OnNext(0, i)).Concat(new[] {OnCompleted<int>(0)}),
+                    recordsObserver.Messages);
             }
         }
 

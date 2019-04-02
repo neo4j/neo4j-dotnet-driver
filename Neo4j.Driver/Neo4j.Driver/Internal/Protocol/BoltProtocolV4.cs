@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.MessageHandling.V1;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
@@ -34,6 +35,7 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV4 : BoltProtocolV3
     {
+        public const long DefaultBatchSize = 100;
         public static readonly BoltProtocolV4 BoltV4 = new BoltProtocolV4();
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
@@ -58,7 +60,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
                 RequestMore(connection, summaryBuilder, bookmarkTracker),
                 CancelRequest(connection, summaryBuilder, bookmarkTracker), CancellationToken.None,
-                resultResourceHandler);
+                resultResourceHandler, DefaultBatchSize);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
             await connection
                 .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), runHandler)
@@ -74,7 +76,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
                 RequestMore(connection, summaryBuilder, null),
                 CancelRequest(connection, summaryBuilder, null),
-                CancellationToken.None, null);
+                CancellationToken.None, null, DefaultBatchSize);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
             await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), runHandler)
                 .ConfigureAwait(false);
