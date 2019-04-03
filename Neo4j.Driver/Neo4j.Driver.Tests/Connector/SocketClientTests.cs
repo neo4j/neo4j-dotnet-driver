@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,12 +31,48 @@ using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
 using static Xunit.Record;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
     public class SocketClientTests
     {
         private static Uri FakeUri => new Uri("bolt://foo.bar:7878");
+
+        public class ConnectMethod
+        {
+            [Fact]
+            public void ShouldThrowIOExceptionIfFailedToReadOnHandshake()
+            {
+                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+
+                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
+
+                var ex = Record.Exception(() => client.Connect());
+
+                ex.Should().NotBeNull().And.BeOfType<IOException>();
+            }
+
+            [Fact]
+            public async void ShouldThrowIOExceptionIfFailedToReadOnHandshakeAsync()
+            {
+                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+
+                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
+
+                var ex = await Record.ExceptionAsync(() => client.ConnectAsync());
+
+                ex.Should().NotBeNull().And.BeOfType<IOException>();
+            }
+        }
 
         public class StartMethod
         {
@@ -53,7 +90,7 @@ namespace Neo4j.Driver.Tests
                 client.Connect();
 
                 // Then
-                connMock.Verify(x=>x.Connect(FakeUri), Times.Once);
+                connMock.Verify(x => x.Connect(FakeUri), Times.Once);
             }
 
             [Fact]
@@ -70,7 +107,7 @@ namespace Neo4j.Driver.Tests
                 await client.ConnectAsync();
 
                 // Then
-                connMock.Verify(x=>x.ConnectAsync(FakeUri), Times.Once);
+                connMock.Verify(x => x.ConnectAsync(FakeUri), Times.Once);
             }
         }
 
@@ -91,9 +128,9 @@ namespace Neo4j.Driver.Tests
                 client.Send(messages);
 
                 // Then
-                writerMock.Verify(x=>x.Write(m1), Times.Once);
-                writerMock.Verify(x=>x.Write(m2), Times.Once);
-                writerMock.Verify(x=>x.Flush(), Times.Once);
+                writerMock.Verify(x => x.Write(m1), Times.Once);
+                writerMock.Verify(x => x.Write(m2), Times.Once);
+                writerMock.Verify(x => x.Flush(), Times.Once);
             }
 
             [Fact]
@@ -111,9 +148,9 @@ namespace Neo4j.Driver.Tests
                 await client.SendAsync(messages);
 
                 // Then
-                writerMock.Verify(x=>x.Write(m1), Times.Once);
-                writerMock.Verify(x=>x.Write(m2), Times.Once);
-                writerMock.Verify(x=>x.FlushAsync(), Times.Once);
+                writerMock.Verify(x => x.Write(m1), Times.Once);
+                writerMock.Verify(x => x.Write(m2), Times.Once);
+                writerMock.Verify(x => x.FlushAsync(), Times.Once);
             }
 
             [Fact]
@@ -126,11 +163,11 @@ namespace Neo4j.Driver.Tests
                 client.SetOpened();
 
                 // When
-                var exception = Exception(()=>client.Send(null /*cause null point exception in send method*/));
+                var exception = Exception(() => client.Send(null /*cause null point exception in send method*/));
 
                 // Then
                 exception.Should().BeOfType<NullReferenceException>();
-                connMock.Verify(x=>x.Disconnect(), Times.Once);
+                connMock.Verify(x => x.Disconnect(), Times.Once);
             }
 
             [Fact]
@@ -143,11 +180,12 @@ namespace Neo4j.Driver.Tests
                 client.SetOpened();
 
                 // When
-                var exception = await ExceptionAsync(()=>client.SendAsync(null /*cause null point exception in send method*/));
+                var exception = await ExceptionAsync(() =>
+                    client.SendAsync(null /*cause null point exception in send method*/));
 
                 // Then
                 exception.Should().BeOfType<NullReferenceException>();
-                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
+                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
             }
         }
 
@@ -166,7 +204,7 @@ namespace Neo4j.Driver.Tests
                 client.ReceiveOne(handlerMock.Object);
 
                 // Then
-                readerMock.Verify(x=>x.Read(handlerMock.Object), Times.Once);
+                readerMock.Verify(x => x.Read(handlerMock.Object), Times.Once);
             }
 
             [Fact]
@@ -182,7 +220,7 @@ namespace Neo4j.Driver.Tests
                 await client.ReceiveOneAsync(handlerMock.Object);
 
                 // Then
-                readerMock.Verify(x=>x.ReadAsync(handlerMock.Object), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(handlerMock.Object), Times.Once);
             }
 
             [Fact]
@@ -200,11 +238,11 @@ namespace Neo4j.Driver.Tests
                 readerMock.Setup(x => x.Read(handlerMock.Object)).Throws<IOException>();
 
                 // When
-                var exception = Exception(()=>client.ReceiveOne(handlerMock.Object));
+                var exception = Exception(() => client.ReceiveOne(handlerMock.Object));
 
                 // Then
                 exception.Should().BeOfType<IOException>();
-                connMock.Verify(x=>x.Disconnect(), Times.Once);
+                connMock.Verify(x => x.Disconnect(), Times.Once);
             }
 
             [Fact]
@@ -222,11 +260,11 @@ namespace Neo4j.Driver.Tests
                 readerMock.Setup(x => x.ReadAsync(handlerMock.Object)).Throws<IOException>();
 
                 // When
-                var exception = await ExceptionAsync(()=>client.ReceiveOneAsync(handlerMock.Object));
+                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(handlerMock.Object));
 
                 // Then
                 exception.Should().BeOfType<IOException>();
-                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
+                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
             }
 
             [Fact]
@@ -244,12 +282,12 @@ namespace Neo4j.Driver.Tests
                 handlerMock.Setup(x => x.Error).Returns(new DatabaseException());
 
                 // When
-                var exception = Exception(()=>client.ReceiveOne(handlerMock.Object));
+                var exception = Exception(() => client.ReceiveOne(handlerMock.Object));
 
                 // Then
                 exception.Should().BeOfType<DatabaseException>();
-                readerMock.Verify(x=>x.Read(handlerMock.Object), Times.Once);
-                connMock.Verify(x=>x.Disconnect(), Times.Once);
+                readerMock.Verify(x => x.Read(handlerMock.Object), Times.Once);
+                connMock.Verify(x => x.Disconnect(), Times.Once);
             }
 
             [Fact]
@@ -267,18 +305,17 @@ namespace Neo4j.Driver.Tests
                 handlerMock.Setup(x => x.Error).Returns(new DatabaseException());
 
                 // When
-                var exception = await ExceptionAsync(()=>client.ReceiveOneAsync(handlerMock.Object));
+                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(handlerMock.Object));
 
                 // Then
                 exception.Should().BeOfType<DatabaseException>();
-                readerMock.Verify(x=>x.ReadAsync(handlerMock.Object), Times.Once);
-                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(handlerMock.Object), Times.Once);
+                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
             }
         }
 
         public class DisposeAndStopMethods
         {
-
             [Fact]
             public void ShouldCallDisconnectOnTheTcpSocketClientWhenDisposed()
             {
@@ -290,7 +327,7 @@ namespace Neo4j.Driver.Tests
                 client.Dispose();
 
                 // Then
-                connMock.Verify(x=>x.Disconnect(), Times.Once);
+                connMock.Verify(x => x.Disconnect(), Times.Once);
                 client.IsOpen.Should().BeFalse();
             }
 
@@ -305,7 +342,7 @@ namespace Neo4j.Driver.Tests
                 client.Stop();
 
                 // Then
-                connMock.Verify(x=>x.Disconnect(), Times.Once);
+                connMock.Verify(x => x.Disconnect(), Times.Once);
                 client.IsOpen.Should().BeFalse();
             }
 
@@ -320,7 +357,7 @@ namespace Neo4j.Driver.Tests
                 await client.StopAsync();
 
                 // Then
-                connMock.Verify(x=>x.DisconnectAsync(), Times.Once);
+                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
                 client.IsOpen.Should().BeFalse();
             }
         }
