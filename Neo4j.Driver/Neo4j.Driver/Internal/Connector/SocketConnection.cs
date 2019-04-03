@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -51,7 +52,8 @@ namespace Neo4j.Driver.Internal.Connector
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-            _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener, _logger);
+            _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener,
+                _logger);
             _authToken = connectionSettings.AuthToken;
             _userAgent = connectionSettings.UserAgent;
             Server = new ServerInfo(uri);
@@ -103,7 +105,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             // send
             await _client.SendAsync(_messages).ConfigureAwait(false);
-            
+
             _messages.Clear();
         }
 
@@ -117,7 +119,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             // receive
             await _client.ReceiveAsync(_responseHandler).ConfigureAwait(false);
-            
+
             AssertNoServerFailure();
         }
 
@@ -144,7 +146,9 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void UpdateId(string newConnId)
         {
-            _logger.Debug("Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.", _id, newConnId);
+            _logger.Debug(
+                "Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.",
+                _id, newConnId);
             _id = newConnId;
             _logger.Prefix = FormatPrefix(_id);
         }
@@ -160,18 +164,27 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 try
                 {
-                    await _boltProtocol.LogoutAsync(this);
+                    if (_boltProtocol != null)
+                    {
+                        await _boltProtocol.LogoutAsync(this);
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // we'll ignore this error since the underlying socket is disposed earlier,
+                    // mostly because of an error.
                 }
                 catch (Exception e)
                 {
                     _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
                 }
+
                 await _client.StopAsync();
             }
             catch (Exception e)
             {
                 // only log the exception if failed to close connection
-                _logger.Error(e, $"Failed to close connection properly.");
+                _logger.Warn(e, $"Failed to close connection properly.");
             }
         }
 
@@ -188,7 +201,6 @@ namespace Neo4j.Driver.Internal.Connector
         public Task EnqueueAsync(IRequestMessage requestMessage, IMessageResponseCollector resultBuilder = null,
             IRequestMessage requestStreamingMessage = null)
         {
-
             _messages.Enqueue(requestMessage);
             _responseHandler.EnqueueMessage(requestMessage, resultBuilder);
 

@@ -31,12 +31,32 @@ using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
 using static Xunit.Record;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
     public class SocketClientTests
     {
         private static Uri FakeUri => new Uri("bolt://foo.bar:7878");
+
+        public class ConnectMethod
+        {
+            [Fact]
+            public async void ShouldThrowIOExceptionIfFailedToReadOnHandshakeAsync()
+            {
+                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+
+                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
+
+                var ex = await Record.ExceptionAsync(() => client.ConnectAsync());
+
+                ex.Should().NotBeNull().And.BeOfType<IOException>();
+            }
+        }
 
         public class StartMethod
         {

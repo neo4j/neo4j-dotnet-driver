@@ -14,9 +14,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
@@ -45,7 +47,8 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly IListenerEvent _connEvent;
 
         public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings,
-            IConnectionListener connMetricsListener = null, IDriverLogger logger = null, ITcpSocketClient socketClient = null)
+            IConnectionListener connMetricsListener = null, IDriverLogger logger = null,
+            ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
@@ -70,53 +73,17 @@ namespace Neo4j.Driver.Internal.Connector
         public bool IsOpen => _closedMarker == 0;
         private bool IsClosed => _closedMarker > 0;
 
-        public Task<IBoltProtocol> ConnectAsync()
+        public async Task<IBoltProtocol> ConnectAsync()
         {
-            TaskCompletionSource<IBoltProtocol> tcs = new TaskCompletionSource<IBoltProtocol>();
-
             _connMetricsListener?.ConnectionConnecting(_connEvent);
-            _tcpSocketClient.ConnectAsync(_uri)
-                .ContinueWith(t =>
-                    {
-                        if (t.IsFaulted)
-                        {
-                            tcs.SetException(t.Exception.GetBaseException());
-                        }
-                        else if (t.IsCanceled)
-                        {
-                            tcs.SetCanceled();
-                        }
-                        else
-                        {
-                            SetOpened();
-                            _logger?.Debug($"~~ [CONNECT] {_uri}");
-                            _connMetricsListener?.ConnectionConnected(_connEvent);
-                            return DoHandshakeAsync();
-                        }
-                        return Task.FromResult(-1);
-                    }, TaskContinuationOptions.ExecuteSynchronously).Unwrap()
-                .ContinueWith(t =>
-                {
-                    int version = t.Result;
+            await _tcpSocketClient.ConnectAsync(_uri).ConfigureAwait(false);
 
-                    if (version != -1)
-                    {
-                        try
-                        {
-                            tcs.SetResult(SelectBoltProtocol(version));
-                        }
-                        catch (AggregateException exc)
-                        {
-                            tcs.SetException(exc.GetBaseException());
-                        }
-                        catch (Exception exc)
-                        {
-                            tcs.SetException(exc);
-                        }
-                    }   
-                }, TaskContinuationOptions.ExecuteSynchronously);
+            SetOpened();
+            _logger?.Debug($"~~ [CONNECT] {_uri}");
+            _connMetricsListener?.ConnectionConnected(_connEvent);
 
-            return tcs.Task;
+            var version = await DoHandshakeAsync().ConfigureAwait(false);
+            return SelectBoltProtocol(version);
         }
 
         public async Task SendAsync(IEnumerable<IRequestMessage> messages)
@@ -128,6 +95,7 @@ namespace Neo4j.Driver.Internal.Connector
                     Writer.Write(message);
                     LogDebug(MessagePattern, message);
                 }
+
                 await Writer.FlushAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -158,13 +126,15 @@ namespace Neo4j.Driver.Internal.Connector
                 await StopAsync().ConfigureAwait(false);
                 throw;
             }
+
             if (responseHandler.HasProtocolViolationError)
             {
-                _logger?.Warn(responseHandler.Error, $"Received bolt protocol error from server {_uri}, connection will be terminated.");
+                _logger?.Warn(responseHandler.Error,
+                    $"Received bolt protocol error from server {_uri}, connection will be terminated.");
                 await StopAsync().ConfigureAwait(false);
                 throw responseHandler.Error;
             }
-       }
+        }
 
         internal void SetOpened()
         {
@@ -190,7 +160,11 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
 
             data = new byte[4];
-            await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
+            var read = await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
+            if (read <= 0)
+            {
+                throw new IOException($"Unexpected end of stream, read returned {read}");
+            }
 
             var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
             _logger?.Debug("S: [HANDSHAKE] {0}", agreedVersion);

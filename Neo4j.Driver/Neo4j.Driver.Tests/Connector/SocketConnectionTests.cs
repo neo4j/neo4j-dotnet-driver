@@ -44,11 +44,11 @@ namespace Neo4j.Driver.Tests
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
         internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null,
-            IMessageResponseHandler handler = null, IServerInfo server = null)
+            IMessageResponseHandler handler = null, IServerInfo server = null, IDriverLogger logger = null)
         {
             socketClient = socketClient ?? SocketClient;
             server = server ?? Server;
-            return new SocketConnection(socketClient, AuthToken, UserAgent, Logger, server, handler);
+            return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, handler);
         }
 
         public class InitMethod
@@ -263,6 +263,42 @@ namespace Neo4j.Driver.Tests
                 // Then
                 mockClient.Verify(c => c.StopAsync());
                 mockProtocol.Verify(c => c.LogoutAsync(It.IsAny<SocketConnection>()));
+            }
+
+            [Fact]
+            public async void ShouldNotThrowIfBoltProtocolIsNullAsync()
+            {
+                // Given
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object);
+
+                conn.BoltProtocol.Should().BeNull();
+
+                var ex = await Xunit.Record.ExceptionAsync(() => conn.CloseAsync());
+
+                ex.Should().BeNull();
+            }
+
+            [Fact]
+            public async void ShouldNotThrowAndLogIfSocketDisposedAsync()
+            {
+                // Given
+                var logger = new Mock<IDriverLogger>();
+
+                var protocol = new Mock<IBoltProtocol>();
+                protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>()))
+                    .ThrowsAsync(new ObjectDisposedException("client"));
+
+                var mockClient = new Mock<ISocketClient>();
+                var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
+                conn.BoltProtocol = protocol.Object;
+
+                var ex = await Xunit.Record.ExceptionAsync(() => conn.CloseAsync());
+
+                ex.Should().BeNull();
+                logger.Verify(x => x.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+                logger.Verify(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()),
+                    Times.Never);
             }
         }
     }
