@@ -28,13 +28,14 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly AddressSet<Uri> _routers = new AddressSet<Uri>();
         private readonly AddressSet<Uri> _readers = new AddressSet<Uri>();
         private readonly AddressSet<Uri> _writers = new AddressSet<Uri>();
+        private readonly long _expireAfterSeconds;
 
         public IList<Uri> Routers => _routers.Snaphost;
         public IList<Uri> Readers => _readers.Snaphost;
         public IList<Uri> Writers => _writers.Snaphost;
+        public long ExpireAfterSeconds => _expireAfterSeconds;
 
         private readonly Stopwatch _stopwatch;
-        private readonly long _expireAfterSeconds;
 
         public RoutingTable(IEnumerable<Uri> routers, long expireAfterSeconds = 0)
         :this(routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)
