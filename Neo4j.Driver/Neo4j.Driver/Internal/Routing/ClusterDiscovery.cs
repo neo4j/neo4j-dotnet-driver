@@ -57,20 +57,13 @@ namespace Neo4j.Driver.Internal.Routing
         {
             var table = default(RoutingTable);
 
-            try
+            using (var provider = new SingleConnectionBasedConnectionProvider(connection))
+            using (var session = new Session(provider, _logger))
             {
-                using (var provider = new SingleConnectionBasedConnectionProvider(connection))
-                using (var session = new Session(provider, _logger))
-                {
-                    var result = session.Run(DiscoveryProcedure(connection));
-                    var record = result.Single();
+                var result = session.Run(DiscoveryProcedure(connection));
+                var record = result.Single();
 
-                    table = ParseDiscoveryResult(record);
-                }
-            }
-            catch (Exception e)
-            {
-                HandleDiscoveryException(e);
+                table = ParseDiscoveryResult(record);
             }
 
             return table;
@@ -89,10 +82,6 @@ namespace Neo4j.Driver.Internal.Routing
 
                 table = ParseDiscoveryResult(record);
             }
-            catch (Exception e)
-            {
-                HandleDiscoveryException(e);
-            }
             finally
             {
                 try
@@ -108,11 +97,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             return table;
-        }
-
-        private void HandleDiscoveryException(Exception e)
-        {
-            throw new ServiceUnavailableException($"Error performing discovery: {e.Message}.", e);
         }
 
         private static RoutingTable ParseDiscoveryResult(IRecord record)

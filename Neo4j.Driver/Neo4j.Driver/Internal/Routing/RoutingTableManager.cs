@@ -278,6 +278,12 @@ namespace Neo4j.Driver.Internal.Routing
                         }
                     }
                 }
+                catch (SecurityException e)
+                {
+                    _logger?.Error(e,
+                        "Failed to update routing table from server '{0}' because of a security exception.", router);
+                    throw;
+                }
                 catch (Exception e)
                 {
                     _logger?.Warn(e, "Failed to update routing table from server '{0}'.", router);
@@ -308,6 +314,12 @@ namespace Neo4j.Driver.Internal.Routing
                             return newRoutingTable;
                         }
                     }
+                }
+                catch (SecurityException e)
+                {
+                    _logger?.Error(e,
+                        "Failed to update routing table from server '{0}' because of a security exception.", router);
+                    throw;
                 }
                 catch (Exception e)
                 {

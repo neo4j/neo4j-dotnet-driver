@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Fact]
-            public void ShouldServiceUnavailableWhenProcedureNotFound()
+            public void ShouldThrowWhenProcedureNotFound()
             {
                 // Given
                 var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
@@ -166,14 +166,13 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = Record.Exception(() => manager.Discover(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ServiceUnavailableException>().Which.Message.Should()
-                    .StartWith("Error performing discovery: ").And
+                exception.Should().BeOfType<ClientException>().Which.Message.Should()
                     .Contain("not found");
                 connMock.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
-            public void ShouldProtocolErrorWhenNoRecord()
+            public void ShouldThrowWhenNoRecord()
             {
                 // Given
                 var connMock = SetupSocketConnection(new List<object[]>());
@@ -183,13 +182,13 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = Record.Exception(() => manager.Discover(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ServiceUnavailableException>().Which.Message.Should()
-                    .Be("Error performing discovery: Sequence contains no elements.");
+                exception.Should().BeOfType<InvalidOperationException>().Which.Message.Should()
+                    .Be("Sequence contains no elements");
                 connMock.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
-            public void ShouldProtocolErrorWhenMultipleRecord()
+            public void ShouldThrowWhenMultipleRecord()
             {
                 // Given
                 var connMock = SetupSocketConnection(new List<object[]>
@@ -203,13 +202,13 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = Record.Exception(() => manager.Discover(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ServiceUnavailableException>().Which.Message.Should()
-                    .Be("Error performing discovery: Sequence contains more than one element.");
+                exception.Should().BeOfType<InvalidOperationException>().Which.Message.Should()
+                    .Be("Sequence contains more than one element");
                 connMock.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
-            public void ShouldProtocolErrorWhenRecordUnparsable()
+            public void ShouldThrowWhenRecordUnparsable()
             {
                 // Given
                 var connMock = SetupSocketConnection(new object[] {1});
@@ -219,13 +218,13 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = Record.Exception(() => manager.Discover(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ServiceUnavailableException>().Which.Message.Should()
-                    .Be("Error performing discovery: keys (2) does not equal to values (1).");
+                exception.Should().BeOfType<ProtocolException>().Which.Message.Should()
+                    .Be("keys (2) does not equal to values (1)");
                 connMock.Verify(x => x.Close(), Times.Once);
             }
 
             [Fact]
-            public void ShouldThrowExceptionIfRouterIsEmpty()
+            public void ShouldThrowIfRouterIsEmpty()
             {
                 // Given
                 var recordFields = CreateGetServersResponseRecordFields(0, 2, 1);
@@ -236,8 +235,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = Record.Exception(() => manager.Discover(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ServiceUnavailableException>().Which.Message.Should()
-                    .StartWith("Error performing discovery:").And
+                exception.Should().BeOfType<ProtocolException>().Which.Message.Should()
                     .Contain("0 routers, 2 writers and 1 readers.");
                 connMock.Verify(x => x.Close(), Times.Once);
             }
@@ -254,8 +252,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = Record.Exception(() => manager.Discover(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ServiceUnavailableException>().Which.Message.Should()
-                    .StartWith("Error performing discovery:").And
+                exception.Should().BeOfType<ProtocolException>().Which.Message.Should()
                     .Contain("3 routers, 1 writers and 0 readers.");
                 connMock.Verify(x => x.Close(), Times.Once);
             }

@@ -281,6 +281,31 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Fact]
+            public void ShouldPropagateSecurityException()
+            {
+                var error = new AuthenticationException("Procedure not found");
+                var uri = new Uri("bolt+routing://123:456");
+                var routingTable = new RoutingTable(new List<Uri> {uri});
+                var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
+                poolManagerMock.Setup(x => x.CreateClusterConnection(uri))
+                    .Returns(new Mock<IConnection>().Object);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.Discover(It.IsAny<IConnection>())).Throws(error);
+
+                var logger = new Mock<IDriverLogger>();
+                logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
+
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
+                    logger: logger.Object);
+
+                var exc = Record.Exception(() =>  manager.UpdateRoutingTable());
+
+                exc.Should().Be(error);
+                logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
+            }
+
+            [Fact]
             public void ShouldTryNextRouterIfNoReader()
             {
                 // Given
