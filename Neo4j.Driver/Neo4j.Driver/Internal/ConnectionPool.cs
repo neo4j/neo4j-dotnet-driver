@@ -55,6 +55,7 @@ namespace Neo4j.Driver.Internal
         private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
         private bool IsInactiveOrClosed => AtomicRead(ref _poolStatus) != Active;
 
+        private readonly object _poolSizeSync = new object();
         private int _poolSize = 0;
         private readonly int _maxPoolSize;
         private readonly int _maxIdlePoolSize;
@@ -234,14 +235,27 @@ namespace Neo4j.Driver.Internal
         /// <returns>true if pool size is successfully increased, otherwise false.</returns>
         private bool TryIncrementPoolSize()
         {
-            if (_maxPoolSize != Config.Infinite && PoolSize >= _maxPoolSize)
+            if (_maxPoolSize == Config.Infinite)
             {
-                return false;
+                Interlocked.Increment(ref _poolSize);
+
+                return true;
             }
 
-            Interlocked.Increment(ref _poolSize);
+            if (PoolSize < _maxPoolSize)
+            {
+                lock (_poolSizeSync)
+                {
+                    if (PoolSize < _maxPoolSize)
+                    {
+                        Interlocked.Increment(ref _poolSize);
 
-            return true;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private void DecrementPoolSize()
