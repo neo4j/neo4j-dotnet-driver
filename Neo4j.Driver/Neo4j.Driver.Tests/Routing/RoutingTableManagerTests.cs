@@ -347,7 +347,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Fact]
-            public void ShouldTryNextRouterOnError()
+            public void ShouldTryNextRouterOnDiscoveryError()
             {
                 // Given
                 var uriA = new Uri("bolt://server1");
@@ -382,10 +382,57 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // Then
                 result.Should().Be(routingTable);
+                discovery.Verify(x => x.Discover(It.Is<IConnection>(c => c != connE)), Times.Exactly(4));
+                discovery.Verify(x => x.Discover(connE), Times.Once);
                 logger.Verify(
                     x => x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()),
                     Times.Exactly(4));
             }
+
+            [Fact]
+            public void ShouldTryNextRouterOnConnectionError()
+            {
+                // Given
+                var uriA = new Uri("bolt://server1");
+                var uriB = new Uri("bolt://server2");
+                var uriC = new Uri("bolt://server3");
+                var uriD = new Uri("bolt://server4");
+                var uriE = new Uri("bolt://server5");
+
+                var connE = Mock.Of<IConnection>();
+
+                var routingTable = Mock.Of<IRoutingTable>();
+
+                var poolManager = new Mock<IClusterConnectionPoolManager>();
+                poolManager.Setup(x => x.CreateClusterConnection(It.IsAny<Uri>()))
+                    .Throws(new ClientException("timed out"));
+                poolManager.Setup(x => x.CreateClusterConnection(uriE)).Returns(connE);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.Discover(It.IsAny<IConnection>()))
+                    .Throws(new ServiceUnavailableException("something went wrong"));
+                discovery.Setup(x => x.Discover(connE)).Returns(routingTable);
+
+                var logger = new Mock<IDriverLogger>();
+                logger.Setup(x =>
+                    x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()));
+
+                var manager =
+                    NewRoutingTableManager(new RoutingTable(new[] {uriA, uriB, uriC, uriD, uriE}), poolManager.Object,
+                        discovery.Object, logger: logger.Object);
+
+                // When
+                var result = manager.UpdateRoutingTable();
+
+                // Then
+                result.Should().Be(routingTable);
+                discovery.Verify(x => x.Discover(It.Is<IConnection>(c => c != connE)), Times.Never);
+                discovery.Verify(x => x.Discover(connE), Times.Once);
+                logger.Verify(
+                    x => x.Warn(It.IsAny<ClientException>(), It.IsAny<string>(), It.IsAny<object[]>()),
+                    Times.Exactly(4));
+            }
+
         }
     }
 }

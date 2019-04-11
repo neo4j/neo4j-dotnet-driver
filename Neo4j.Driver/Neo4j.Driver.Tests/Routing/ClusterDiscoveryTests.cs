@@ -34,7 +34,7 @@ using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests.Routing
 {
-    public class ClusterDiscoveryManagerTests
+    public class ClusterDiscoveryTests
     {
         public class Constructor
         {
