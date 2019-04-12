@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             _clusterConnectionPool =
                 new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
-            _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
+            _routingTableManager = new RoutingTableManager(routingSettings, this,  logger);
             _loadBalancingStrategy =
                 CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, _logger);
         }
