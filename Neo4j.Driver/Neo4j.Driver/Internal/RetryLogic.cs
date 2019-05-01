@@ -58,10 +58,9 @@ namespace Neo4j.Driver.Internal
         {
             var exceptions = new List<Exception>();
             var timer = new Stopwatch();
-            timer.Start();
             var delayMs = _initialRetryDelayMs;
             var counter = 0;
-            do
+            while (true)
             {
                 counter++;
                 try
@@ -70,14 +69,25 @@ namespace Neo4j.Driver.Internal
                 }
                 catch (Exception e) when (e.IsRetriableError())
                 {
-                    exceptions.Add(e);
+                    if (!timer.IsRunning)
+                    {
+                        timer.Start();
+                    }
 
-                    var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
-                    Thread.Sleep(delay);
-                    delayMs = delayMs * _multiplier;
+                    if (timer.ElapsedMilliseconds < _maxRetryTimeMs)
+                    {
+                        var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
+                        _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
+                        Thread.Sleep(delay);
+                        delayMs = delayMs * _multiplier;
+                        exceptions.Add(e);
+                        continue;
+                    }
+
+                    exceptions.Add(e);
+                    break;
                 }
-            } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
+            }
 
             timer.Stop();
             throw new ServiceUnavailableException(
@@ -89,10 +99,9 @@ namespace Neo4j.Driver.Internal
         {
             var exceptions = new List<Exception>();
             var timer = new Stopwatch();
-            timer.Start();
             var delayMs = _initialRetryDelayMs;
             var counter = 0;
-            do
+            while (true)
             {
                 counter++;
                 try
@@ -101,20 +110,30 @@ namespace Neo4j.Driver.Internal
                 }
                 catch (Exception e) when (e.IsRetriableError())
                 {
-                    exceptions.Add(e);
+                    if (!timer.IsRunning)
+                    {
+                        timer.Start();
+                    }
 
-                    var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
-                    await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
-                    delayMs = delayMs * _multiplier;
+                    if (timer.ElapsedMilliseconds < _maxRetryTimeMs)
+                    {
+                        var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
+                        _logger?.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
+                        await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
+                        delayMs = delayMs * _multiplier;
+                        exceptions.Add(e);
+                        continue;
+                    }
+
+                    exceptions.Add(e);
+                    break;
                 }
-            } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
+            }
 
             timer.Stop();
             throw new ServiceUnavailableException(
                 $"Failed after retried for {counter} times in {_maxRetryTimeMs} ms. " +
                 "Make sure that your database is online and retry again.", new AggregateException(exceptions));
-
         }
 
         private double ComputeDelayWithJitter(double delayMs)
