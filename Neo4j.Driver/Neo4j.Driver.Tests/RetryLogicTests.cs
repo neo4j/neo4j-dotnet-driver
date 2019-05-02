@@ -51,8 +51,11 @@ namespace Neo4j.Driver.Tests
             var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
             Parallel.For(0, numberOfParallelRetries, i => Retry(i, retryLogic));
 
+            // we don't log last loop of failed retries, so let's recompute our expectation
+            var warningsLogged = Interlocked.Read(ref _globalCounter) - (1 * numberOfParallelRetries);
+
             mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()),
-                Times.Exactly((int) Interlocked.Read(ref _globalCounter)));
+                Times.Exactly((int) warningsLogged));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
@@ -94,6 +97,51 @@ namespace Neo4j.Driver.Tests
             count.Should().Be(1);
             mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()), Times.Never);
         }
+
+        [Fact]
+        public void ShouldLogExactlyAsTheNumberOfRetries()
+        {
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+
+            var counter = 0;
+            var exc = Record.Exception(() => retryLogic.Retry<int>(() =>
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(250));
+                counter++;
+                throw new SessionExpiredException("session expired");
+            }));
+
+            exc.Should().BeOfType<ServiceUnavailableException>().Which
+                .Message.Should().StartWith($"Failed after retried for {counter} times");
+            logger.Verify(
+                l => l.Warn(It.IsAny<SessionExpiredException>(),
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))),
+                Times.Exactly(counter - 1));
+        }
+
+        [Fact]
+        public async Task ShouldLogExactlyAsTheNumberOfRetriesAsync()
+        {
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+
+            var counter = 0;
+            var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync<int>(async () =>
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
+                counter++;
+                throw new SessionExpiredException("session expired");
+            }));
+
+            exc.Should().BeOfType<ServiceUnavailableException>().Which
+                .Message.Should().StartWith($"Failed after retried for {counter} times");
+            logger.Verify(
+                l => l.Warn(It.IsAny<SessionExpiredException>(),
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))),
+                Times.Exactly(counter - 1));
+        }
+
 
         [Fact]
         public void ShouldRetryEvenOriginalTaskTakesLongerThanMaxRetryDuration()
