@@ -348,15 +348,15 @@ namespace Neo4j.Driver.Tests
                 ex.Should().BeNull();
             }
 
-            [Fact]
-            public void ShouldNotThrowAndLogIfSocketDisposed()
+            [Theory]
+            [MemberData(nameof(GenerateObjectDisposedExceptions))]
+            public void ShouldNotThrowAndLogIfSocketDisposed(Exception exc)
             {
                 // Given
                 var logger = new Mock<IDriverLogger>();
 
                 var protocol = new Mock<IBoltProtocol>();
-                protocol.Setup(x => x.Logout(It.IsAny<IConnection>()))
-                    .Throws(new ObjectDisposedException("client"));
+                protocol.Setup(x => x.Logout(It.IsAny<IConnection>())).Throws(exc);
 
                 var mockClient = new Mock<ISocketClient>();
                 var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
@@ -370,15 +370,15 @@ namespace Neo4j.Driver.Tests
                     Times.Never);
             }
 
-            [Fact]
-            public async void ShouldNotThrowAndLogIfSocketDisposedAsync()
+            [Theory]
+            [MemberData(nameof(GenerateObjectDisposedExceptions))]
+            public async void ShouldNotThrowAndLogIfSocketDisposedAsync(Exception exc)
             {
                 // Given
                 var logger = new Mock<IDriverLogger>();
 
                 var protocol = new Mock<IBoltProtocol>();
-                protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>()))
-                    .ThrowsAsync(new ObjectDisposedException("client"));
+                protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>())).ThrowsAsync(exc);
 
                 var mockClient = new Mock<ISocketClient>();
                 var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
@@ -390,6 +390,16 @@ namespace Neo4j.Driver.Tests
                 logger.Verify(x => x.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
                 logger.Verify(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()),
                     Times.Never);
+            }
+
+            public static TheoryData<Exception> GenerateObjectDisposedExceptions()
+            {
+                return new TheoryData<Exception>()
+                {
+                    new ObjectDisposedException("socket"),
+                    new IOException("io", new ObjectDisposedException("socket")),
+                    new AggregateException(new IOException("io", new ObjectDisposedException("socket")))
+                };
             }
         }
     }

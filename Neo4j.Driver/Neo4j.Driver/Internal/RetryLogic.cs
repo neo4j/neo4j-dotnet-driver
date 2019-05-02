@@ -58,12 +58,15 @@ namespace Neo4j.Driver.Internal
         {
             var exceptions = new List<Exception>();
             var timer = new Stopwatch();
-            timer.Start();
+            var delay = TimeSpan.Zero;
             var delayMs = _initialRetryDelayMs;
-            var counter = 0;
+            var retryCount = 0;
+            var shouldRetry = false;
+
+            timer.Start();
             do
             {
-                counter++;
+                retryCount++;
                 try
                 {
                     return runTxFunc();
@@ -72,16 +75,22 @@ namespace Neo4j.Driver.Internal
                 {
                     exceptions.Add(e);
 
-                    var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
-                    Thread.Sleep(delay);
-                    delayMs = delayMs * _multiplier;
+                    // we want the retry to happen at least twice and as much as the max retry time allows 
+                    shouldRetry = retryCount < 2 || timer.ElapsedMilliseconds < _maxRetryTimeMs;
+
+                    if (shouldRetry)
+                    {
+                        delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
+                        _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
+                        Thread.Sleep(delay);
+                        delayMs *= _multiplier;
+                    }
                 }
-            } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
+            } while (shouldRetry);
 
             timer.Stop();
             throw new ServiceUnavailableException(
-                $"Failed after retried for {counter} times in {_maxRetryTimeMs}ms. " +
+                $"Failed after retried for {retryCount} times in {_maxRetryTimeMs}ms. " +
                 "Make sure that your database is online and retry again.", new AggregateException(exceptions));
         }
 
@@ -89,12 +98,15 @@ namespace Neo4j.Driver.Internal
         {
             var exceptions = new List<Exception>();
             var timer = new Stopwatch();
-            timer.Start();
+            var delay = TimeSpan.Zero;
             var delayMs = _initialRetryDelayMs;
-            var counter = 0;
+            var retryCount = 0;
+            var shouldRetry = false;
+
+            timer.Start();
             do
             {
-                counter++;
+                retryCount++;
                 try
                 {
                     return await runTxAsyncFunc().ConfigureAwait(false);
@@ -103,19 +115,25 @@ namespace Neo4j.Driver.Internal
                 {
                     exceptions.Add(e);
 
-                    var delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
-                    await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
-                    delayMs = delayMs * _multiplier;
+                    // we want the retry to happen at least twice and as much as the max retry time allows 
+                    shouldRetry = retryCount < 2 || timer.ElapsedMilliseconds < _maxRetryTimeMs;
+
+                    if (shouldRetry)
+                    {
+                        delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
+                        _logger?.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
+                        await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
+                        delayMs *= _multiplier;
+                    }
                 }
-            } while (timer.Elapsed.TotalMilliseconds < _maxRetryTimeMs);
+            } while (shouldRetry);
 
             timer.Stop();
             throw new ServiceUnavailableException(
-                $"Failed after retried for {counter} times in {_maxRetryTimeMs} ms. " +
+                $"Failed after retried for {retryCount} times in {_maxRetryTimeMs} ms. " +
                 "Make sure that your database is online and retry again.", new AggregateException(exceptions));
-
         }
+
 
         private double ComputeDelayWithJitter(double delayMs)
         {

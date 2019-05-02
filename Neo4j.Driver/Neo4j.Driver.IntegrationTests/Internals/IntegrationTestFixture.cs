@@ -14,10 +14,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using Neo4j.Driver.IntegrationTests.Internals;
 using System;
 using Xunit;
-using static System.Boolean;
 using static System.Environment;
 
 namespace Neo4j.Driver.IntegrationTests
@@ -31,7 +31,8 @@ namespace Neo4j.Driver.IntegrationTests
         public StandAloneIntegrationTestFixture()
         {
             // If a system flag is set, then we use the local single server instead
-            if (TryParse(GetEnvironmentVariable(UsingLocalServer), out _))
+            if (bool.TryParse(GetEnvironmentVariable(UsingLocalServer), out var usingLocalServer) &&
+                usingLocalServer)
             {
                 StandAlone = new LocalStandAloneInstance();
             }
@@ -82,6 +83,7 @@ namespace Neo4j.Driver.IntegrationTests
                 throw;
             }
         }
+
         public void Dispose()
         {
             Cluster?.Dispose();
