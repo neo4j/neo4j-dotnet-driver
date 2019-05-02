@@ -54,6 +54,8 @@
     <None Update="Resources\accessmode_writer_explicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Update="Resources\accessmode_writer_func.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Update="Resources\accessmode_writer_implicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\connection_error_on_commit_v1.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\connection_error_on_commit_v3.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Update="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Update="Resources\get_routing_table_only.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Update="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
