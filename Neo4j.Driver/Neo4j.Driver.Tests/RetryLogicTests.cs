@@ -51,11 +51,8 @@ namespace Neo4j.Driver.Tests
             var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
             Parallel.For(0, numberOfParallelRetries, i => Retry(i, retryLogic));
 
-            // we don't log last loop of failed retries, so let's recompute our expectation
-            var warningsLogged = Interlocked.Read(ref _globalCounter) - (1 * numberOfParallelRetries);
-
             mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()),
-                Times.Exactly((int) warningsLogged));
+                Times.Exactly((int) Interlocked.Read(ref _globalCounter)));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
