@@ -36,7 +36,7 @@ using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests.Routing
 {
-    public class ClusterDiscoveryManagerTests
+    public class ClusterDiscoveryTests
     {
         public class Constructor
         {
@@ -48,15 +48,16 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldUseGetServersProcedure(string version)
             {
                 // Given
+                var discovery = new ClusterDiscovery(new SyncExecutor(), null, null);
                 var mock = new Mock<IConnection>();
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
                 // When
-                var discoveryManager = new ClusterDiscoveryManager(mock.Object, new SyncExecutor(), null, null);
+                var statement = discovery.DiscoveryProcedure(mock.Object);
                 // Then
-                discoveryManager.DiscoveryProcedure.Text.Should().Be("CALL dbms.cluster.routing.getServers");
-                discoveryManager.DiscoveryProcedure.Parameters.Should().BeEmpty();
+                statement.Text.Should().Be("CALL dbms.cluster.routing.getServers");
+                statement.Parameters.Should().BeEmpty();
             }
 
             [Theory]
@@ -67,17 +68,18 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldUseGetRoutingTableProcedure(string version)
             {
                 // Given
+                var context = new Dictionary<string, string> {{"context", string.Empty}};
+                var discovery = new ClusterDiscovery(new SyncExecutor(), context, null);
                 var mock = new Mock<IConnection>();
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
                 // When
-                var context = new Dictionary<string, string> {{"context", string.Empty}};
-                var discoveryManager = new ClusterDiscoveryManager(mock.Object, new SyncExecutor(),  context, null);
+                var statement = discovery.DiscoveryProcedure(mock.Object);
                 // Then
-                discoveryManager.DiscoveryProcedure.Text.Should()
+                statement.Text.Should()
                     .Be("CALL dbms.cluster.routing.getRoutingTable({context})");
-                discoveryManager.DiscoveryProcedure.Parameters["context"].Should().Be(context);
+                statement.Parameters["context"].Should().Be(context);
             }
         }
 
@@ -105,17 +107,16 @@ namespace Neo4j.Driver.Tests.Routing
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var mockConn = Setup32SocketConnection(routingContext, recordFields);
-                var manager = CreateDiscoveryManager(mockConn.Object,
-                    routingContext);
+                var manager = new ClusterDiscovery(new SyncExecutor(), routingContext, null);
 
                 // When
-                await manager.RediscoveryAsync();
+                var table = await manager.DiscoverAsync(mockConn.Object);
 
                 // Then
-                manager.Readers.Count().Should().Be(readerCount);
-                manager.Writers.Count().Should().Be(writerCount);
-                manager.Routers.Count().Should().Be(routerCount);
-                manager.ExpireAfterSeconds = 9223372036854775807;
+                table.Readers.Count().Should().Be(readerCount);
+                table.Writers.Count().Should().Be(writerCount);
+                table.Routers.Count().Should().Be(routerCount);
+                table.ExpireAfterSeconds.Should().Be(9223372036854775807);
                 mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
@@ -135,21 +136,21 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var connMock = SetupSocketConnection(recordFields);
-                var manager = CreateDiscoveryManager(connMock.Object);
+                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
 
                 // When
-                await manager.RediscoveryAsync();
+                var table = await manager.DiscoverAsync(connMock.Object);
 
                 // Then
-                manager.Readers.Count().Should().Be(readerCount);
-                manager.Writers.Count().Should().Be(writerCount);
-                manager.Routers.Count().Should().Be(routerCount);
-                manager.ExpireAfterSeconds = 9223372036854775807;
+                table.Readers.Count().Should().Be(readerCount);
+                table.Writers.Count().Should().Be(writerCount);
+                table.Routers.Count().Should().Be(routerCount);
+                table.ExpireAfterSeconds.Should().Be(9223372036854775807);
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldServiceUnavailableWhenProcedureNotFound()
+            public async Task ShouldThrowWhenProcedureNotFound()
             {
                 // Given
                 var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
@@ -161,30 +162,30 @@ namespace Neo4j.Driver.Tests.Routing
                 };
 
                 var connMock = new MockedConnection(pairs).MockConn;
-                var manager = CreateDiscoveryManager(connMock.Object);
+                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
 
                 // When
-                var exception = await Record.ExceptionAsync(() => manager.RediscoveryAsync());
+                var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ServiceUnavailableException>();
-                exception.Message.Should().StartWith("Error when calling `getServers` procedure: ");
+                exception.Should().BeOfType<ClientException>().Which.Message.Should()
+                    .Contain("not found");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldProtocolErrorWhenNoRecord()
+            public async Task ShouldThrowWhenNoRecord()
             {
                 // Given
                 var connMock = SetupSocketConnection(new List<object[]>());
-                var manager = CreateDiscoveryManager(connMock.Object);
+                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
 
                 // When
-                var exception = await Record.ExceptionAsync(() => manager.RediscoveryAsync());
+                var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should().Be("Error when parsing `getServers` result: The result is empty.");
+                exception.Should().BeOfType<InvalidOperationException>().Which.Message.Should()
+                    .Be("The result is empty.");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
 
@@ -197,52 +198,47 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateGetServersResponseRecordFields(3, 2, 1),
                     CreateGetServersResponseRecordFields(3, 2, 1)
                 });
-                var manager = CreateDiscoveryManager(connMock.Object);
+                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
 
                 // When
-                var exception = await Record.ExceptionAsync(() => manager.RediscoveryAsync());
+                var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should()
-                    .StartWith("Error when parsing `getServers` result: The result contains more than one element.");
+                exception.Should().BeOfType<InvalidOperationException>().Which.Message.Should()
+                    .Be("The result contains more than one element.");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldProtocolErrorWhenRecordUnparsable()
+            public async Task ShouldThrowWhenRecordUnparsable()
             {
                 // Given
                 var connMock = SetupSocketConnection(new object[] {1});
-                var manager = CreateDiscoveryManager(connMock.Object);
+                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
 
                 // When
-                var exception = await Record.ExceptionAsync(() => manager.RediscoveryAsync());
+                var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
 
                 // Then
-                exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should()
-                    .Be("Error when parsing `getServers` result: keys (2) does not equal to values (1).");
+                exception.Should().BeOfType<ProtocolException>().Which.Message.Should()
+                    .Be("keys (2) does not equal to values (1)");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
 
             [Fact]
-            public async Task ShouldThrowExceptionIfRouterIsEmpty()
+            public async Task ShouldThrowIfRouterIsEmpty()
             {
                 // Given
                 var recordFields = CreateGetServersResponseRecordFields(0, 2, 1);
                 var connMock = SetupSocketConnection(recordFields);
-                var manager = CreateDiscoveryManager(connMock.Object);
+                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
 
                 // When
-                var exception = await Record.ExceptionAsync(() => manager.RediscoveryAsync());
+                var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
 
                 // Then
-                manager.Readers.Count().Should().Be(1);
-                manager.Writers.Count().Should().Be(2);
-                manager.Routers.Count().Should().Be(0);
-                exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should().Contain("0 routers, 2 writers and 1 readers.");
+                exception.Should().BeOfType<ProtocolException>().Which.Message.Should()
+                    .Contain("0 routers, 2 writers and 1 readers.");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
 
@@ -252,17 +248,14 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var procedureReplyRecordFields = CreateGetServersResponseRecordFields(3, 1, 0);
                 var connMock = SetupSocketConnection(procedureReplyRecordFields);
-                var manager = CreateDiscoveryManager(connMock.Object);
+                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
 
                 // When
-                var exception = await Record.ExceptionAsync(() => manager.RediscoveryAsync());
+                var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
 
                 // Then
-                manager.Readers.Count().Should().Be(0);
-                manager.Writers.Count().Should().Be(1);
-                manager.Routers.Count().Should().Be(3);
-                exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should().Contain("3 routers, 1 writers and 0 readers.");
+                exception.Should().BeOfType<ProtocolException>().Which.Message.Should()
+                    .Contain("3 routers, 1 writers and 0 readers.");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
         }
@@ -291,7 +284,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData("[ff0a::101%8]:4040", "[ff0a::101]", 4040)]
             public void ShouldHaveLocalhost(string input, string host, int port)
             {
-                var uri = ClusterDiscoveryManager.BoltRoutingUri(input);
+                var uri = ClusterDiscovery.BoltRoutingUri(input);
                 uri.Scheme.Should().Be("bolt+routing");
                 uri.Host.Should().Be(host);
                 uri.Port.Should().Be(port);
@@ -452,12 +445,6 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             public Mock<IConnection> MockConn => _mockConn;
-        }
-
-        private static ClusterDiscoveryManager CreateDiscoveryManager(IConnection connection,
-            IDictionary<string, string> context = null, IDriverLogger logger = null)
-        {
-            return new ClusterDiscoveryManager(connection, new SyncExecutor(),  context, logger);
         }
     }
 }

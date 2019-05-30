@@ -204,7 +204,7 @@ namespace Neo4j.Driver.IntegrationTests.DirectDriver
         {
             using (var session = Driver.Session())
             {
-                var result = session.Run("CALL dbms.queryJmx($query) yield name", new { query = "org.neo4j:*" });
+                var result = session.Run("CALL dbms.queryJmx($query) yield name", new { query = "*:*" });
                 var names = result.Select(r => r[0]);
 
                 names.Should().HaveCount(c => c > 0);

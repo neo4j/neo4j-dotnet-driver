@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2019 "Neo4j,"
+﻿// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,23 +14,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using System.Collections.Generic;
-using Neo4j.Driver;
+
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal interface IRoutingTable
+    internal interface IDiscovery
     {
-        bool IsStale(AccessMode mode);
-        IList<Uri> Readers { get; }
-        IList<Uri> Writers { get; }
-        IList<Uri> Routers { get; }
-        long ExpireAfterSeconds { get; }
-        void Remove(Uri uri);
-        void RemoveWriter(Uri uri);
-        ISet<Uri> All();
-        void Clear();
-        void PrependRouters(IEnumerable<Uri> uris);
+        Task<IRoutingTable> DiscoverAsync(IConnection connection);
     }
 }

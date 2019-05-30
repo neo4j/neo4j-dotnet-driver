@@ -169,7 +169,7 @@ namespace Neo4j.Driver.Internal.Connector
                         await _boltProtocol.LogoutAsync(this);
                     }
                 }
-                catch (ObjectDisposedException)
+                catch (Exception e) when (e.HasCause<ObjectDisposedException>())
                 {
                     // we'll ignore this error since the underlying socket is disposed earlier,
                     // mostly because of an error.

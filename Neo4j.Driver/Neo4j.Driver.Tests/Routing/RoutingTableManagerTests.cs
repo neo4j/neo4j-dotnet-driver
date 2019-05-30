@@ -35,15 +35,22 @@ namespace Neo4j.Driver.Tests.Routing
 
         internal static RoutingTableManager NewRoutingTableManager(
             IRoutingTable routingTable,
-            IClusterConnectionPoolManager poolManager, IInitialServerAddressProvider addressProvider = null)
+            IClusterConnectionPoolManager poolManager, IDiscovery discovery = null,
+            IInitialServerAddressProvider addressProvider = null,
+            IDriverLogger logger = null)
         {
             if (addressProvider == null)
             {
                 addressProvider = new InitialServerAddressProvider(InitialUri, new PassThroughServerAddressResolver());
             }
 
-            return new RoutingTableManager(addressProvider, new Dictionary<string, string>(), routingTable, poolManager,
-                new SyncExecutor(), null);
+            if (discovery == null)
+            {
+                discovery = Mock.Of<IDiscovery>();
+            }
+
+            return new RoutingTableManager(addressProvider, discovery, routingTable, poolManager, new SyncExecutor(),
+                logger);
         }
 
         internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri)
@@ -102,9 +109,11 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldPrependInitialRouterIfWriterIsAbsent()
             {
                 // Given
+                var routers = new List<Uri>();
                 var routingTableMock = new Mock<IRoutingTable>();
                 routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
+                routingTableMock.Setup(x => x.Routers).Returns(routers);
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()))
@@ -113,14 +122,11 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
                 manager.IsReadingInAbsenceOfWriter = true;
-                var routingTableReturnMock = new Mock<IRoutingTable>();
 
                 // When
                 // should throw an exception as the initial routers should not be tried again
                 var exception = await Record.ExceptionAsync(() =>
-                    manager.UpdateRoutingTableWithInitialUriFallbackAsync(c => Task.FromResult(c != null
-                        ? null
-                        : routingTableReturnMock.Object)));
+                    manager.UpdateRoutingTableWithInitialUriFallbackAsync());
                 exception.Should().BeOfType<ServiceUnavailableException>();
 
                 // Then
@@ -132,22 +138,27 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldAddInitialUriWhenNoAvailableRouters()
             {
                 // Given
+                var routers = new List<Uri>();
                 var routingTableMock = new Mock<IRoutingTable>();
                 routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
-                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
+                    .Callback<IEnumerable<Uri>>(r => { routers.AddRange(r); });
+                routingTableMock.Setup(x => x.Routers).Returns(routers);
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(InitialUri))
+                    .ReturnsAsync(Mock.Of<IConnection>());
 
-                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
-                var routingTableReturnMock = new Mock<IRoutingTable>();
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>()))
+                    .ReturnsAsync(Mock.Of<IRoutingTable>());
+
+                var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, discovery.Object);
 
                 // When
-                await manager.UpdateRoutingTableWithInitialUriFallbackAsync(c => Task.FromResult(c != null
-                    ? null
-                    : routingTableReturnMock.Object));
+                await manager.UpdateRoutingTableWithInitialUriFallbackAsync();
 
                 // Then
                 poolManagerMock.Verify(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()), Times.Once);
@@ -163,42 +174,37 @@ namespace Neo4j.Driver.Tests.Routing
                 var s = a; // should not be retried
                 var t = new Uri("bolt+routing://222:123"); // this should be retried
 
+                var routers = new List<Uri>(new[] {a, b});
                 var routingTableMock = new Mock<IRoutingTable>();
                 routingTableMock.Setup(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()))
-                    .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(t));
+                    .Callback<IEnumerable<Uri>>(r => { routers.AddRange(r); });
+                routingTableMock.Setup(x => x.Routers).Returns(routers);
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()))
                     .Returns(TaskHelper.GetCompletedTask())
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(t));
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(t)).ReturnsAsync(Mock.Of<IConnection>());
 
                 var initialUriSet = new HashSet<Uri> {s, t};
                 var mockProvider = new Mock<IInitialServerAddressProvider>();
                 mockProvider.Setup(x => x.Get()).Returns(initialUriSet);
 
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>()))
+                    .ReturnsAsync(Mock.Of<IRoutingTable>());
+
                 var manager =
-                    NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, mockProvider.Object);
-
-                Task<IRoutingTable> UpdateRoutingTableFunc(ISet<Uri> set)
-                {
-                    if (set != null)
-                    {
-                        set.Add(a);
-                        set.Add(b);
-                        return Task.FromResult((IRoutingTable) null);
-                    }
-
-                    return Task.FromResult(new Mock<IRoutingTable>().Object);
-                }
+                    NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, discovery.Object,
+                        mockProvider.Object);
 
                 // When
-
-                await manager.UpdateRoutingTableWithInitialUriFallbackAsync(UpdateRoutingTableFunc);
+                await manager.UpdateRoutingTableWithInitialUriFallbackAsync();
 
                 // Then
                 // verify the method is actually called
-                poolManagerMock.Verify(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()), Times.Once);
-                routingTableMock.Verify(x => x.PrependRouters(It.IsAny<IEnumerable<Uri>>()), Times.Once);
+                poolManagerMock.Verify(x => x.AddConnectionPoolAsync(new[] {t}), Times.Once);
+                routingTableMock.Verify(x => x.PrependRouters(new[] {t}), Times.Once);
             }
         }
 
@@ -216,11 +222,15 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
                     .ReturnsAsync((ClusterConnection) null);
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>()))
+                    .Throws<NotSupportedException>();
+
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
                 // When
-                var newRoutingTable = await manager.UpdateRoutingTableAsync(null, connection =>
-                    throw new NotSupportedException($"Unknown uri: {connection.Server.Address}"));
+                var newRoutingTable = await manager.UpdateRoutingTableAsync(null);
 
                 // Then
                 newRoutingTable.Should().BeNull();
@@ -241,26 +251,19 @@ namespace Neo4j.Driver.Tests.Routing
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
                     .ReturnsAsync(connA).ReturnsAsync(connB);
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>())).Callback((IConnection c) =>
+                    throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
+                discovery.Setup(x => x.DiscoverAsync(connA)).Callback((IConnection c) => routingTable.Remove(uriA))
+                    .Throws(new SessionExpiredException("failed init"));
+                discovery.Setup(x => x.DiscoverAsync(connB))
+                    .ReturnsAsync(NewRoutingTable(new[] {uriA}, new[] {uriA}, new[] {uriA}));
+
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
                 // When
-                var newRoutingTable = await manager.UpdateRoutingTableAsync(null, connection =>
-                {
-                    // the second connection will give a new routingTable
-                    if (connection.Equals(connA)) // uriA
-                    {
-                        routingTable.Remove(uriA);
-                        return TaskHelper.GetFailedTask<IRoutingTable>(new SessionExpiredException("failed init"));
-                    }
-
-                    if (connection.Equals(connB)) // uriB
-                    {
-                        return Task.FromResult(NewRoutingTable(new[] {uriA}, new[] {uriA}, new[] {uriA}));
-                    }
-
-                    return TaskHelper.GetFailedTask<IRoutingTable>(
-                        new NotSupportedException($"Unknown uri: {connection.Server.Address}"));
-                });
+                var newRoutingTable = await manager.UpdateRoutingTableAsync(null);
 
                 // Then
                 newRoutingTable.All().Should().ContainInOrder(uriA);
@@ -268,63 +271,52 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Fact]
-            public async Task ShouldPropagateServiceUnavailable()
+            public async Task ShouldLogServiceUnavailable()
             {
+                var error = new ServiceUnavailableException("Procedure not found");
                 var uri = new Uri("bolt+routing://123:456");
                 var routingTable = new RoutingTable(new List<Uri> {uri});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
                     .Returns(Task.FromResult(new Mock<IConnection>().Object));
 
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>())).Throws(error);
 
-                var exception = await Record.ExceptionAsync(() => manager.UpdateRoutingTableAsync(null,
-                    conn => throw new ServiceUnavailableException("Procedure not found")));
+                var logger = new Mock<IDriverLogger>();
+                logger.Setup(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
-                exception.Should().BeOfType<ServiceUnavailableException>();
-                exception.Message.Should().Be("Procedure not found");
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
+                    logger: logger.Object);
+
+                await manager.UpdateRoutingTableAsync();
+
+                logger.Verify(x => x.Warn(error, It.IsAny<string>(), It.IsAny<object[]>()));
             }
 
-
             [Fact]
-            public async Task ShouldPropagateProtocolError()
+            public async Task ShouldPropagateSecurityException()
             {
+                var error = new AuthenticationException("Procedure not found");
                 var uri = new Uri("bolt+routing://123:456");
                 var routingTable = new RoutingTable(new List<Uri> {uri});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
-                    .Returns(Task.FromResult(new Mock<IConnection>().Object));
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
+                    .ReturnsAsync(new Mock<IConnection>().Object);
 
-                var exception = await Record.ExceptionAsync(() =>
-                    manager.UpdateRoutingTableAsync(null,
-                        conn => throw new ProtocolException("Cannot parse procedure result")));
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>())).Throws(error);
 
-                exception.Should().BeOfType<ProtocolException>();
-                exception.Message.Should().Be("Cannot parse procedure result");
-            }
+                var logger = new Mock<IDriverLogger>();
+                logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
-            [Fact]
-            public async Task ShouldPropagateAuthenticationException()
-            {
-                // Given
-                var uri = new Uri("bolt+routing://123:456");
-                var routingTable = new RoutingTable(new List<Uri> {uri});
-                var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
-                    .Returns(TaskHelper.GetFailedTask<IConnection>(
-                        new AuthenticationException("Failed to auth the client to the server.")));
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
+                    logger: logger.Object);
 
-                // When
-                var error = await Record.ExceptionAsync(() => manager.UpdateRoutingTableAsync());
+                var exc = await Record.ExceptionAsync(() => manager.UpdateRoutingTableAsync());
 
-                // Then
-                error.Should().BeOfType<AuthenticationException>();
-                error.Message.Should().Contain("Failed to auth the client to the server.");
-
-                // while the server is not removed
-                routingTable.All().Should().ContainInOrder(uri);
+                exc.Should().Be(error);
+                logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
             }
 
             [Fact]
@@ -342,26 +334,22 @@ namespace Neo4j.Driver.Tests.Routing
                 var routingTable = new RoutingTable(new List<Uri> {uriA, uriB});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
-                    .Returns(Task.FromResult(connA)).Returns(Task.FromResult(connB));
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
+                    .ReturnsAsync(connA).ReturnsAsync(connB);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>())).Callback((IConnection c) =>
+                    throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
+                discovery.Setup(x => x.DiscoverAsync(connA))
+                    .ReturnsAsync(NewRoutingTable(new[] {uriX}, new Uri[0], new[] {uriX}));
+                discovery.Setup(x => x.DiscoverAsync(connB))
+                    .ReturnsAsync(NewRoutingTable(new[] {uriY}, new[] {uriY}, new[] {uriY}));
+
+
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
 
                 // When
-                var updateRoutingTable = await manager.UpdateRoutingTableAsync(null, conn =>
-                {
-                    if (conn.Equals(connA))
-                    {
-                        return Task.FromResult(NewRoutingTable(new[] {uriX}, new Uri[0], new[] {uriX}));
-                    }
-
-                    if (conn.Equals(connB))
-                    {
-                        return Task.FromResult(NewRoutingTable(new[] {uriY}, new[] {uriY}, new[] {uriY}));
-                    }
-
-                    return TaskHelper.GetFailedTask<IRoutingTable>(
-                        new NotSupportedException($"Unknown uri: {conn.Server.Address}"));
-                });
+                var updateRoutingTable = await manager.UpdateRoutingTableAsync(null);
 
                 // Then
                 updateRoutingTable.All().Should().ContainInOrder(uriY);
@@ -379,23 +367,110 @@ namespace Neo4j.Driver.Tests.Routing
                 var routingTable = new RoutingTable(new List<Uri> {uriA});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
-                    .Returns(Task.FromResult(connA));
-                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object);
+                    .ReturnsAsync(connA);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>())).Callback((IConnection c) =>
+                    throw new NotSupportedException($"Unknown uri: {c.Server?.Address}"));
+                discovery.Setup(x => x.DiscoverAsync(connA))
+                    .ReturnsAsync(NewRoutingTable(new[] {uriX}, new[] {uriX}));
+
+                var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
                 // When
-                var updateRoutingTable = await manager.UpdateRoutingTableAsync(null, conn =>
-                {
-                    if (conn.Equals(connA))
-                    {
-                        return Task.FromResult(NewRoutingTable(new[] {uriX}, new[] {uriX}));
-                    }
-
-                    return TaskHelper.GetFailedTask<IRoutingTable>(new NotSupportedException($"Unknown uri: {conn.Server.Address}"));
-                });
+                var updateRoutingTable = await manager.UpdateRoutingTableAsync(null);
 
                 // Then
                 updateRoutingTable.All().Should().ContainInOrder(uriX);
                 manager.IsReadingInAbsenceOfWriter.Should().BeTrue();
+            }
+
+            [Fact]
+            public async Task ShouldTryNextRouterOnDiscoveryError()
+            {
+                // Given
+                var uriA = new Uri("bolt://server1");
+                var uriB = new Uri("bolt://server2");
+                var uriC = new Uri("bolt://server3");
+                var uriD = new Uri("bolt://server4");
+                var uriE = new Uri("bolt://server5");
+
+                var connE = Mock.Of<IConnection>();
+
+                var routingTable = Mock.Of<IRoutingTable>();
+
+                var poolManager = new Mock<IClusterConnectionPoolManager>();
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                    .ReturnsAsync(Mock.Of<IConnection>());
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(uriE)).ReturnsAsync(connE);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>()))
+                    .Throws(new ServiceUnavailableException("something went wrong"));
+                discovery.Setup(x => x.DiscoverAsync(connE)).ReturnsAsync(routingTable);
+
+                var logger = new Mock<IDriverLogger>();
+                logger.Setup(x =>
+                    x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()));
+
+                var manager =
+                    NewRoutingTableManager(new RoutingTable(new[] {uriA, uriB, uriC, uriD, uriE}), poolManager.Object,
+                        discovery.Object, logger: logger.Object);
+
+                // When
+                var result = await manager.UpdateRoutingTableAsync();
+
+                // Then
+                result.Should().Be(routingTable);
+                discovery.Verify(x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE)), Times.Exactly(4));
+                discovery.Verify(x => x.DiscoverAsync(connE), Times.Once);
+                logger.Verify(
+                    x => x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()),
+                    Times.Exactly(4));
+            }
+
+            [Fact]
+            public async Task ShouldTryNextRouterOnConnectionError()
+            {
+                // Given
+                var uriA = new Uri("bolt://server1");
+                var uriB = new Uri("bolt://server2");
+                var uriC = new Uri("bolt://server3");
+                var uriD = new Uri("bolt://server4");
+                var uriE = new Uri("bolt://server5");
+
+                var connE = Mock.Of<IConnection>();
+
+                var routingTable = Mock.Of<IRoutingTable>();
+
+                var poolManager = new Mock<IClusterConnectionPoolManager>();
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                    .Throws(new ClientException("timed out"));
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(uriE)).ReturnsAsync(connE);
+
+                var discovery = new Mock<IDiscovery>();
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>()))
+                    .Throws(new ServiceUnavailableException("something went wrong"));
+                discovery.Setup(x => x.DiscoverAsync(connE)).ReturnsAsync(routingTable);
+
+                var logger = new Mock<IDriverLogger>();
+                logger.Setup(x =>
+                    x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()));
+
+                var manager =
+                    NewRoutingTableManager(new RoutingTable(new[] {uriA, uriB, uriC, uriD, uriE}), poolManager.Object,
+                        discovery.Object, logger: logger.Object);
+
+                // When
+                var result = await manager.UpdateRoutingTableAsync();
+
+                // Then
+                result.Should().Be(routingTable);
+                discovery.Verify(x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE)), Times.Never);
+                discovery.Verify(x => x.DiscoverAsync(connE), Times.Once);
+                logger.Verify(
+                    x => x.Warn(It.IsAny<ClientException>(), It.IsAny<string>(), It.IsAny<object[]>()),
+                    Times.Exactly(4));
             }
         }
     }

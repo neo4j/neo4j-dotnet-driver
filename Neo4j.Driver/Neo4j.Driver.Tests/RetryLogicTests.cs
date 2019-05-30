@@ -44,15 +44,18 @@ namespace Neo4j.Driver.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(20)]
-        public void ShouldRetry(int index)
+        public void ShouldRetry(int numberOfParallelRetries)
         {
             var mockLogger = new Mock<IDriverLogger>();
 
             var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
-            Parallel.For(0, index, i => Retry(i, retryLogic));
+            Parallel.For(0, numberOfParallelRetries, i => Retry(i, retryLogic));
+
+            // we don't log last loop of failed retries, so let's recompute our expectation
+            var warningsLogged = Interlocked.Read(ref _globalCounter) - (1 * numberOfParallelRetries);
 
             mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()),
-                Times.Exactly((int) Interlocked.Read(ref _globalCounter)));
+                Times.Exactly((int) warningsLogged));
         }
 
         private void Retry(int index, IRetryLogic retryLogic)
@@ -69,11 +72,9 @@ namespace Neo4j.Driver.Tests
             }));
             timer.Stop();
 
-            e.Should().BeOfType<ServiceUnavailableException>();
-            var error = e.InnerException as AggregateException;
-            var innerErrors = error.Flatten().InnerExceptions;
-
-            innerErrors.Count.Should().Be(runCounter);
+            e.Should().BeOfType<ServiceUnavailableException>()
+                .Which.InnerException.Should().BeOfType<AggregateException>()
+                .Which.Flatten().InnerExceptions.Should().HaveCount(runCounter);
             timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(5);
         }
 
@@ -92,10 +93,104 @@ namespace Neo4j.Driver.Tests
                 throw ParseServerException(errorCode, "an error");
             }));
 
-            e.Should().BeOfType<TransientException>();
-            (e as TransientException).Code.Should().Be(errorCode);
+            e.Should().BeOfType<TransientException>().Which.Code.Should().Be(errorCode);
             count.Should().Be(1);
             mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public void ShouldLogExactlyAsTheNumberOfRetries()
+        {
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+
+            var counter = 0;
+            var exc = Record.Exception(() => retryLogic.Retry<int>(() =>
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(250));
+                counter++;
+                throw new SessionExpiredException("session expired");
+            }));
+
+            exc.Should().BeOfType<ServiceUnavailableException>().Which
+                .Message.Should().StartWith($"Failed after retried for {counter} times");
+            logger.Verify(
+                l => l.Warn(It.IsAny<SessionExpiredException>(),
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))),
+                Times.Exactly(counter - 1));
+        }
+
+        [Fact]
+        public async Task ShouldLogExactlyAsTheNumberOfRetriesAsync()
+        {
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+
+            var counter = 0;
+            var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync<int>(async () =>
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
+                counter++;
+                throw new SessionExpiredException("session expired");
+            }));
+
+            exc.Should().BeOfType<ServiceUnavailableException>().Which
+                .Message.Should().StartWith($"Failed after retried for {counter} times");
+            logger.Verify(
+                l => l.Warn(It.IsAny<SessionExpiredException>(),
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))),
+                Times.Exactly(counter - 1));
+        }
+
+
+        [Fact]
+        public void ShouldRetryEvenOriginalTaskTakesLongerThanMaxRetryDuration()
+        {
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+
+            var counter = 0;
+            var result = retryLogic.Retry(() =>
+            {
+                if (counter == 0)
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(3));
+                    counter++;
+                    throw new SessionExpiredException("session expired");
+                }
+
+                return counter;
+            });
+
+            result.Should().Be(1);
+            logger.Verify(
+                l => l.Warn(It.IsAny<SessionExpiredException>(),
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShouldRetryEvenOriginalTaskTakesLongerThanMaxRetryDurationAsync()
+        {
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+
+            var counter = 0;
+            var result = await retryLogic.RetryAsync(async () =>
+            {
+                if (counter == 0)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                    counter++;
+                    throw new SessionExpiredException("session expired");
+                }
+
+                return counter;
+            });
+
+            result.Should().Be(1);
+            logger.Verify(
+                l => l.Warn(It.IsAny<SessionExpiredException>(),
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))), Times.Once);
         }
     }
 }

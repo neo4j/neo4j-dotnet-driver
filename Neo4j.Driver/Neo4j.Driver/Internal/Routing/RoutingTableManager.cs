@@ -28,17 +28,14 @@ namespace Neo4j.Driver.Internal.Routing
     internal class RoutingTableManager : IRoutingTableManager
     {
         private readonly IDriverLogger _logger;
+        private readonly IDiscovery _discovery;
         private readonly SyncExecutor _syncExecutor;
 
-        private readonly IDictionary<string, string> _routingContext;
-        private IRoutingTable _routingTable;
         private readonly IClusterConnectionPoolManager _poolManager;
-
         private readonly IInitialServerAddressProvider _initialServerAddressProvider;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        private readonly object _syncLock = new object();
-        readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-
+        private IRoutingTable _routingTable;
 
         public bool IsReadingInAbsenceOfWriter { get; set; } = false;
 
@@ -47,21 +44,22 @@ namespace Neo4j.Driver.Internal.Routing
             IClusterConnectionPoolManager poolManager,
             SyncExecutor syncExecutor,
             IDriverLogger logger) :
-            this(routingSettings.InitialServerAddressProvider, routingSettings.RoutingContext,
+            this(routingSettings.InitialServerAddressProvider,
+                new ClusterDiscovery(syncExecutor, routingSettings.RoutingContext, logger),
                 new RoutingTable(Enumerable.Empty<Uri>()), poolManager, syncExecutor, logger)
         {
         }
 
         public RoutingTableManager(
             IInitialServerAddressProvider initialServerAddressProvider,
-            IDictionary<string, string> routingContext,
+            IDiscovery discovery,
             IRoutingTable routingTable,
             IClusterConnectionPoolManager poolManager,
             SyncExecutor syncExecutor,
             IDriverLogger logger)
         {
             _initialServerAddressProvider = initialServerAddressProvider;
-            _routingContext = routingContext;
+            _discovery = discovery;
             _routingTable = routingTable;
             _poolManager = poolManager;
             _syncExecutor = syncExecutor;
@@ -140,7 +138,6 @@ namespace Neo4j.Driver.Internal.Routing
             Func<ISet<Uri>, Task<IRoutingTable>> updateRoutingTableFunc = null)
         {
             _logger?.Debug("Updating routing table.");
-            updateRoutingTableFunc = updateRoutingTableFunc ?? (u => UpdateRoutingTableAsync(u));
 
             var hasPrependedInitialRouters = false;
             if (IsReadingInAbsenceOfWriter)
@@ -151,7 +148,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             var triedUris = new HashSet<Uri>();
-            var routingTable = await updateRoutingTableFunc(triedUris).ConfigureAwait(false);
+            var routingTable = await UpdateRoutingTableAsync(triedUris).ConfigureAwait(false);
             if (routingTable != null)
             {
                 return routingTable;
@@ -164,7 +161,7 @@ namespace Neo4j.Driver.Internal.Routing
                 if (uris.Count != 0)
                 {
                     await PrependRoutersAsync(uris).ConfigureAwait(false);
-                    routingTable = await updateRoutingTableFunc(null).ConfigureAwait(false);
+                    routingTable = await UpdateRoutingTableAsync(null).ConfigureAwait(false);
                     if (routingTable != null)
                     {
                         return routingTable;
@@ -182,53 +179,39 @@ namespace Neo4j.Driver.Internal.Routing
         public async Task<IRoutingTable> UpdateRoutingTableAsync(ISet<Uri> triedUris = null,
             Func<IConnection, Task<IRoutingTable>> rediscoveryFunc = null)
         {
-            rediscoveryFunc = rediscoveryFunc ?? RediscoveryAsync;
-
             var knownRouters = _routingTable.Routers;
             foreach (var router in knownRouters)
             {
                 triedUris?.Add(router);
-                IConnection conn = await _poolManager.CreateClusterConnectionAsync(router).ConfigureAwait(false);
-                if (conn == null)
+                try
                 {
-                    _routingTable.Remove(router);
+                    var conn = await _poolManager.CreateClusterConnectionAsync(router).ConfigureAwait(false);
+                    if (conn == null)
+                    {
+                        _routingTable.Remove(router);
+                    }
+                    else
+                    {
+                        var newRoutingTable = await _discovery.DiscoverAsync(conn).ConfigureAwait(false);
+                        if (!IsRoutingTableStale(newRoutingTable))
+                        {
+                            return newRoutingTable;
+                        }
+                    }
                 }
-                else
+                catch (SecurityException e)
                 {
-                    try
-                    {
-                        var roundRobinRoutingTable = await rediscoveryFunc(conn).ConfigureAwait(false);
-                        if (!IsRoutingTableStale(roundRobinRoutingTable))
-                        {
-                            return roundRobinRoutingTable;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        _logger?.Warn(e,
-                            "Failed to update routing table with server uri={0}.", router);
-                        if (e is SessionExpiredException)
-                        {
-                            // ignored
-                            // Already handled by clusterConn.OnConnectionError to remove from load balancer
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
+                    _logger?.Error(e,
+                        "Failed to update routing table from server '{0}' because of a security exception.", router);
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    _logger?.Warn(e, "Failed to update routing table from server '{0}'.", router);
                 }
             }
 
             return null;
-        }
-
-        private async Task<IRoutingTable> RediscoveryAsync(IConnection conn)
-        {
-            var discoveryManager = new ClusterDiscoveryManager(conn, _syncExecutor, _routingContext, _logger);
-            await discoveryManager.RediscoveryAsync().ConfigureAwait(false);
-            return new RoutingTable(discoveryManager.Routers, discoveryManager.Readers,
-                discoveryManager.Writers, discoveryManager.ExpireAfterSeconds);
         }
     }
 }
