@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Messaging.V4
         {
             Metadata = id == NoStatementId
                 ? new Dictionary<string, object> {{"n", n}}
-                : new Dictionary<string, object> {{"n", n}, {"stmt_id", id}};
+                : new Dictionary<string, object> {{"n", n}, {"qid", id}};
         }
 
         protected abstract string Name { get; }

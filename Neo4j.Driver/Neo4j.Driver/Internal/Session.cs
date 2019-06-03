@@ -66,13 +66,18 @@ namespace Neo4j.Driver.Internal
 
         public Task<IStatementResultCursor> RunAsync(Statement statement, TransactionConfig txConfig)
         {
+            return RunAsync(statement, true, txConfig);
+        }
+
+        internal Task<IStatementResultCursor> RunAsync(Statement statement, bool pullAll, TransactionConfig txConfig)
+        {
             return TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
                 return await protocol
-                    .RunInAutoCommitTransactionAsync(_connection, statement, this, this, _bookmark, txConfig)
+                    .RunInAutoCommitTransactionAsync(_connection, statement, pullAll, this, this, _bookmark, txConfig)
                     .ConfigureAwait(false);
             });
         }

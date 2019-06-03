@@ -32,12 +32,12 @@ namespace Neo4j.Driver.Internal.Protocol
         Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
         Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
-            IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler, Bookmark bookmark,
+            bool pullAll, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler, Bookmark bookmark,
             TransactionConfig txConfig);
 
         Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig);
 
-        Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement);
+        Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement, bool pullAll);
 
         Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker);
 

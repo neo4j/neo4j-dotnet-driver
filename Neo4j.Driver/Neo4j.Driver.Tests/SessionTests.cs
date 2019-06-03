@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
                     .Returns(TaskHelper.GetCompletedTask());
-                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
+                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), true,
                         It.IsAny<IBookmarkTracker>(),
                         It.IsAny<IResultResourceHandler>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests
                             It.IsAny<TransactionConfig>()))
                     .Returns(TaskHelper.GetCompletedTask());
                 protocol.Setup(x =>
-                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>()))
+                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), true))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
                 protocol.Setup(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<IBookmarkTracker>()))
                     .Returns(TaskHelper.GetCompletedTask());
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
                 mockProtocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(),
-                        It.IsAny<Statement>(), It.IsAny<IBookmarkTracker>(), It.IsAny<IResultResourceHandler>(),
+                        It.IsAny<Statement>(), true, It.IsAny<IBookmarkTracker>(), It.IsAny<IResultResourceHandler>(),
                         It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
 
@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Tests
                 session.Run("lalalal");
 
                 mockProtocol.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), session,
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), true, session,
                         session,
                         It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalalal");
 
                 mockProtocol.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), session,
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), true, session,
                         session, It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 mockProtocol.Setup(x =>
-                        x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
+                        x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), true,
                             It.IsAny<IBookmarkTracker>(),
                             It.IsAny<IResultResourceHandler>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))

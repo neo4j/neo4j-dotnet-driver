@@ -57,7 +57,8 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
+            Statement statement, bool pullAll, IBookmarkTracker bookmarkTracker,
+            IResultResourceHandler resultResourceHandler,
             Bookmark bookmark, TransactionConfig txConfig)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
@@ -84,7 +85,7 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Statement statement)
+            Statement statement, bool pullAll)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,

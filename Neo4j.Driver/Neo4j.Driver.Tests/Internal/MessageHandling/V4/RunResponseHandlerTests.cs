@@ -57,11 +57,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             handler.OnSuccess(new[]
             {
                 FieldsCollectorTests.TestMetadata, TimeToFirstCollectorTests.TestMetadata,
-                StatementIdCollectorTests.TestMetadata
+                QueryIdCollectorTests.TestMetadata
             }.ToDictionary());
 
             streamBuilder.Verify(
-                x => x.RunCompleted(StatementIdCollectorTests.TestMetadataCollected,
+                x => x.RunCompleted(QueryIdCollectorTests.TestMetadataCollected,
                     FieldsCollectorTests.TestMetadataCollected, null),
                 Times.Once);
 

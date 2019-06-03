@@ -23,9 +23,9 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxSession : IRxSession
     {
-        private readonly ISession _session;
+        private readonly Session _session;
 
-        public InternalRxSession(ISession session)
+        public InternalRxSession(Session session)
         {
             _session = session;
         }
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal
 
         public IRxResult Run(Statement statement, TransactionConfig txConfig)
         {
-            return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(statement, txConfig)));
+            return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(statement, false, txConfig)));
         }
 
         #endregion
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal
         {
             return Observable.FromAsync(() => _session.BeginTransactionAsync(txConfig))
                 .Select(tx =>
-                    new InternalRxTransaction(tx));
+                    new InternalRxTransaction((Transaction) tx));
         }
 
         #endregion

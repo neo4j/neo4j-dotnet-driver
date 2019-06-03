@@ -34,10 +34,10 @@ namespace Neo4j.Driver.Internal.Protocol
         internal BoltProtocolV4MessageFormat()
         {
             RemoveHandler<PullAllMessageSerializer>();
-            AddHandler<PullNMessageSerializer>();
+            AddHandler<PullMessageSerializer>();
 
             RemoveHandler<DiscardAllMessageSerializer>();
-            AddHandler<DiscardNMessageSerializer>();
+            AddHandler<DiscardMessageSerializer>();
         }
     }
 }

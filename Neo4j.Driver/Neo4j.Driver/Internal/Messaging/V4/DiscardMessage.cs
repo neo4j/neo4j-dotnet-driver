@@ -17,18 +17,18 @@
 
 namespace Neo4j.Driver.Internal.Messaging.V4
 {
-    internal class PullNMessage : ResultHandleMessage
+    internal class DiscardMessage : ResultHandleMessage
     {
-        public PullNMessage(long n)
+        public DiscardMessage(long n)
             : this(NoStatementId, n)
         {
         }
 
-        public PullNMessage(long id, long n)
+        public DiscardMessage(long id, long n)
             : base(id, n)
         {
         }
 
-        protected override string Name => "PULL_N";
+        protected override string Name => "DISCARD";
     }
 }

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,32 +54,56 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public override async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
+            Statement statement, bool pullAll, IBookmarkTracker bookmarkTracker,
+            IResultResourceHandler resultResourceHandler,
             Bookmark bookmark, TransactionConfig txConfig)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
-                RequestMore(connection, summaryBuilder, bookmarkTracker),
-                CancelRequest(connection, summaryBuilder, bookmarkTracker), CancellationToken.None,
-                resultResourceHandler, DefaultBatchSize);
+                pullAll ? null : RequestMore(connection, summaryBuilder, bookmarkTracker),
+                pullAll ? null : CancelRequest(connection, summaryBuilder, bookmarkTracker), CancellationToken.None,
+                resultResourceHandler,
+                pullAll ? All : DefaultBatchSize);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
+
+            var pullMessage = default(PullMessage);
+            var pullHandler = default(V4.PullResponseHandler);
+            if (pullAll)
+            {
+                pullMessage = new PullMessage(All);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+            }
+
             await connection
-                .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), runHandler)
+                .EnqueueAsync(
+                    new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()),
+                    runHandler, pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
         public override async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Statement statement)
+            Statement statement, bool pullAll)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
-                RequestMore(connection, summaryBuilder, null),
-                CancelRequest(connection, summaryBuilder, null),
-                CancellationToken.None, null, DefaultBatchSize);
+                pullAll ? null : RequestMore(connection, summaryBuilder, null),
+                pullAll ? null : CancelRequest(connection, summaryBuilder, null),
+                CancellationToken.None, null, 
+                pullAll ? All : DefaultBatchSize);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), runHandler)
+
+            var pullMessage = default(PullMessage);
+            var pullHandler = default(V4.PullResponseHandler);
+            if (pullAll)
+            {
+                pullMessage = new PullMessage(All);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);
+            }
+
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()),
+                    runHandler, pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
@@ -91,7 +116,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
-                    .EnqueueAsync(new PullNMessage(id, n), pullAllHandler)
+                    .EnqueueAsync(new PullMessage(id, n), pullAllHandler)
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };
@@ -104,7 +129,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
-                    .EnqueueAsync(new DiscardNMessage(id, All), pullAllHandler)
+                    .EnqueueAsync(new DiscardMessage(id, All), pullAllHandler)
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };

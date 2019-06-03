@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldDelegateToBoltProtocol()
             {
                 var protocol = new Mock<IBoltProtocol>();
-                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>()))
+                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), true))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
 
                 var mockConn = NewMockedConnection(protocol.Object);
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests
                 var statement = new Statement("lalala");
                 tx.Run(statement);
 
-                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement), Times.Once);
+                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, true), Times.Once);
             }
 
             [Fact]
@@ -128,7 +128,7 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, new SyncExecutor());
                 var statement = new Statement("lala");
 
-                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement))
+                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, true))
                     .Returns(TaskHelper.GetFailedTask<IStatementResultCursor>(new Neo4jException()));
 
                 var error = Exception(() => tx.Run(statement));
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests
                 var statement = new Statement("lala");
                 await tx.RunAsync(statement);
 
-                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement));
+                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, true));
             }
 
             [Fact]
@@ -170,7 +170,7 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, new SyncExecutor());
                 var statement = new Statement("lala");
 
-                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement))
+                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, true))
                     .Throws<Neo4jException>();
 
                 var error = await ExceptionAsync(() => tx.RunAsync(statement));

@@ -23,9 +23,9 @@ using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 {
-    public class DiscardNMessageSerializerTests : PackStreamSerializerTests
+    public class DiscardMessageSerializerTests : PackStreamSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new DiscardNMessageSerializer();
+        internal override IPackStreamSerializer SerializerUnderTest => new DiscardMessageSerializer();
 
         [Fact]
         public void ShouldThrowOnDeserialize()
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new DiscardNMessage(2, 5));
+            writer.Write(new DiscardMessage(2, 5));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
             reader.ReadStructSignature().Should().Be(BoltProtocolV4MessageFormat.MsgDiscardN);
-            reader.ReadMap().Should().HaveCount(2).And.Contain("n", 5L).And.Contain("stmt_id", 2L);
+            reader.ReadMap().Should().HaveCount(2).And.Contain("n", 5L).And.Contain("qid", 2L);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new DiscardNMessage(5));
+            writer.Write(new DiscardMessage(5));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();

@@ -21,14 +21,14 @@ using Xunit;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    public class StatementIdCollectorTests
+    public class QueryIdCollectorTests
     {
-        private const string Key = StatementIdCollector.StatementIdKey;
+        private const string Key = QueryIdCollector.QueryIdKey;
 
         [Fact]
         public void ShouldNotCollectIfMetadataIsNull()
         {
-            var collector = new StatementIdCollector();
+            var collector = new QueryIdCollector();
 
             collector.Collect(null);
 
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldNotCollectIfNoValueIsGiven()
         {
-            var collector = new StatementIdCollector();
+            var collector = new QueryIdCollector();
 
             collector.Collect(new Dictionary<string, object>());
 
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         public void ShouldThrowIfValueIsOfWrongType()
         {
             var metadata = new Dictionary<string, object> {{Key, false}};
-            var collector = new StatementIdCollector();
+            var collector = new QueryIdCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         public void ShouldCollect()
         {
             var metadata = new Dictionary<string, object> {{Key, 5L}};
-            var collector = new StatementIdCollector();
+            var collector = new QueryIdCollector();
 
             collector.Collect(metadata);
 
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         public void ShouldReturnSameCollected()
         {
             var metadata = new Dictionary<string, object> {{Key, 5L}};
-            var collector = new StatementIdCollector();
+            var collector = new QueryIdCollector();
 
             collector.Collect(metadata);
 

@@ -22,16 +22,16 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 {
-    internal class PullNMessageSerializer : WriteOnlySerializer
+    internal class DiscardMessageSerializer : WriteOnlySerializer
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(PullNMessage)};
+        public override IEnumerable<Type> WritableTypes => new[] {typeof(DiscardMessage)};
 
         public override void Serialize(IPackStreamWriter writer, object value)
         {
-            var pullN = value.CastOrThrow<PullNMessage>();
+            var discardN = value.CastOrThrow<DiscardMessage>();
 
-            writer.WriteStructHeader(1, BoltProtocolV4MessageFormat.MsgPullN);
-            writer.Write(pullN.Metadata);
+            writer.WriteStructHeader(1, BoltProtocolV4MessageFormat.MsgDiscardN);
+            writer.Write(discardN.Metadata);
         }
     }
 }

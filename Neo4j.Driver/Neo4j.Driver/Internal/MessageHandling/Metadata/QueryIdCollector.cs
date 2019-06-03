@@ -20,9 +20,9 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    internal class StatementIdCollector : IMetadataCollector<long>
+    internal class QueryIdCollector : IMetadataCollector<long>
     {
-        internal const string StatementIdKey = "stmt_id";
+        internal const string QueryIdKey = "qid";
 
         object IMetadataCollector.Collected => Collected;
 
@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata != null && metadata.TryGetValue(StatementIdKey, out var stmtIdValue))
+            if (metadata != null && metadata.TryGetValue(QueryIdKey, out var stmtIdValue))
             {
                 if (stmtIdValue is long stmtId)
                 {
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 else
                 {
                     throw new ProtocolException(
-                        $"Expected '{StatementIdKey}' metadata to be of type 'Int64', but got '{stmtIdValue?.GetType().Name}'.");
+                        $"Expected '{QueryIdKey}' metadata to be of type 'Int64', but got '{stmtIdValue?.GetType().Name}'.");
                 }
             }
         }

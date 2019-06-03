@@ -89,16 +89,21 @@ namespace Neo4j.Driver.Internal
             {
                 EnsureCanRunMoreStatements();
                 return new StatementResult(_syncExecutor.RunSync<IStatementResultCursor>(() =>
-                    _protocol.RunInExplicitTransactionAsync(_connection, statement)), _syncExecutor);
+                    _protocol.RunInExplicitTransactionAsync(_connection, statement, true)), _syncExecutor);
             });
         }
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
         {
+            return RunAsync(statement, true);
+        }
+
+        internal Task<IStatementResultCursor> RunAsync(Statement statement, bool pullAll)
+        {
             return TryExecuteAsync<IStatementResultCursor>(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
-                return _protocol.RunInExplicitTransactionAsync(_connection, statement);
+                return _protocol.RunInExplicitTransactionAsync(_connection, statement, pullAll);
             });
         }
 

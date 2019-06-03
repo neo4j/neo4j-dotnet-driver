@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
-using static Neo4j.Driver.Internal.Messaging.V4.PullNMessage;
+using static Neo4j.Driver.Internal.Messaging.V4.PullMessage;
 using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
 
             AddMetadata<FieldsCollector, string[]>();
-            AddMetadata<StatementIdCollector, long>();
+            AddMetadata<QueryIdCollector, long>();
             AddMetadata<TimeToFirstCollector, long>();
         }
 
@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
 
             _summaryBuilder.ResultAvailableAfter = GetMetadata<TimeToFirstCollector, long>();
 
-            _streamBuilder.RunCompleted(GetMetadata<StatementIdCollector, long>(),
+            _streamBuilder.RunCompleted(GetMetadata<QueryIdCollector, long>(),
                 GetMetadata<FieldsCollector, string[]>(), null);
         }
 

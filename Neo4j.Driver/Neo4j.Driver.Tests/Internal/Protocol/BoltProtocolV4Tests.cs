@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
-                await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
+                await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
                     resourceHandler.Object, null, null);
 
                 mockConn.Verify(
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
-                await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
+                await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
                     resourceHandler.Object, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             VerifyMetadata(m1.CastOrThrow<RunWithMetadataMessage>().Metadata);
                         });
 
-                await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, bookmarkTracker.Object,
+                await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
                     resourceHandler.Object, Bookmark, TxConfig);
 
                 mockConn.Verify(
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
                 var statement = new Statement("lalala");
 
-                await BoltV4.RunInExplicitTransactionAsync(mockConn.Object, statement);
+                await BoltV4.RunInExplicitTransactionAsync(mockConn.Object, statement, true);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
@@ -147,7 +147,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
                 var statement = new Statement("lalala");
 
-                await BoltV4.RunInExplicitTransactionAsync(mockConn.Object, statement);
+                await BoltV4.RunInExplicitTransactionAsync(mockConn.Object, statement, true);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
