@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FluentAssertions;
 //The only imported needed for using this driver
@@ -33,6 +34,7 @@ namespace Neo4j.Driver.Examples
     /// </summary>
     public class Examples
     {
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class AutocommitTransactionExample : BaseExample
         {
             public AutocommitTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -264,6 +266,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class ConfigCustomResolverExample
         {
             private const string Username = "neo4j";
@@ -683,6 +686,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class SessionExample : BaseExample
         {
             public SessionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -710,6 +714,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class TransactionFunctionExample : BaseExample
         {
             public TransactionFunctionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -737,6 +742,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class PassBookmarksExample : BaseExample
         {
             public PassBookmarksExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
