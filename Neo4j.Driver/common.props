@@ -6,7 +6,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <XunitVersion>2.4.1</XunitVersion>
-    <MSTestVersion>16.0.0</MSTestVersion>
+    <MSTestVersion>16.1.1</MSTestVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned' OR '$(Configuration)'=='ReleaseSigned'">
     <PackageIdSuffix>.Signed</PackageIdSuffix>
