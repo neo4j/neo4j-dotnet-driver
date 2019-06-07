@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Tests
             }
 
             var hasNext = _enum.MoveNext();
-            _record = _enum.Current;
+            _record = hasNext ? _enum.Current : null;
             return Task.FromResult(hasNext);
         }
 

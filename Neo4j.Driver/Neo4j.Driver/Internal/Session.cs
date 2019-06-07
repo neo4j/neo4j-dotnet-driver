@@ -46,14 +46,17 @@ namespace Neo4j.Driver.Internal
         private readonly SyncExecutor _syncExecutor;
         public string LastBookmark => _bookmark?.MaxBookmark;
 
+        private readonly bool _reactive;
+
         public Session(IConnectionProvider provider, IDriverLogger logger, SyncExecutor syncExecutor,
-            IRetryLogic retryLogic = null,
-            AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null)
+            IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null,
+            bool reactive = false)
         {
             _logger = logger;
             _connectionProvider = provider;
             _retryLogic = retryLogic;
             _syncExecutor = syncExecutor;
+            _reactive = reactive;
 
             _defaultMode = defaultMode;
             UpdateBookmark(bookmark);
@@ -66,18 +69,13 @@ namespace Neo4j.Driver.Internal
 
         public Task<IStatementResultCursor> RunAsync(Statement statement, TransactionConfig txConfig)
         {
-            return RunAsync(statement, true, txConfig);
-        }
-
-        internal Task<IStatementResultCursor> RunAsync(Statement statement, bool pullAll, TransactionConfig txConfig)
-        {
             return TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
                 return await protocol
-                    .RunInAutoCommitTransactionAsync(_connection, statement, pullAll, this, this, _bookmark, txConfig)
+                    .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _bookmark, txConfig)
                     .ConfigureAwait(false);
             });
         }

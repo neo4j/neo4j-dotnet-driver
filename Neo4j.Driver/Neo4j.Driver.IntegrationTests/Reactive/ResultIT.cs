@@ -26,11 +26,12 @@ using Microsoft.Reactive.Testing;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
-using static Neo4j.Driver.IntegrationTests.Reactive.ReactiveUtils;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
 using Notification = Neo4j.Driver.Internal.Result.Notification;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -55,11 +56,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Keys().Concat(session.Close<string[]>()).SubscribeAndWait(observer);
 
-                AreElementsEqual(new[]
-                {
+                observer.Messages.AssertEqual(
                     OnNext(0, MatchesKeys("f1", "f2", "f3")),
-                    OnCompleted<string[]>(0),
-                }, observer.Messages);
+                    OnCompleted<string[]>(0)
+                );
             }
 
             [RequireServerFact]
@@ -71,11 +71,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Summary().SubscribeAndWait(observer);
 
-                AreElementsEqual(new[]
-                {
+                observer.Messages.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
-                    OnCompleted<IResultSummary>(0),
-                }, observer.Messages);
+                    OnCompleted<IResultSummary>(0)
+                );
             }
 
             [RequireServerFact]
@@ -90,21 +89,18 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Keys().SubscribeAndWait(keysObserver);
                 result.Records().SubscribeAndWait(recordsObserver);
 
-                AreElementsEqual(new[]
-                {
+                keysObserver.Messages.AssertEqual(
                     OnNext(0, MatchesKeys("number", "text")),
-                    OnCompleted<string[]>(0),
-                }, keysObserver.Messages);
-
-                AreElementsEqual(new[]
-                {
+                    OnCompleted<string[]>(0)
+                );
+                recordsObserver.Messages.AssertEqual(
                     OnNext(0, MatchesRecord(keys, 1, "t1")),
                     OnNext(0, MatchesRecord(keys, 2, "t2")),
                     OnNext(0, MatchesRecord(keys, 3, "t3")),
                     OnNext(0, MatchesRecord(keys, 4, "t4")),
                     OnNext(0, MatchesRecord(keys, 5, "t5")),
-                    OnCompleted<IRecord>(0),
-                }, recordsObserver.Messages);
+                    OnCompleted<IRecord>(0)
+                );
             }
 
             [RequireServerFact]
@@ -121,27 +117,22 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Records().SubscribeAndWait(recordsObserver);
                 result.Summary().SubscribeAndWait(summaryObserver);
 
-                AreElementsEqual(new[]
-                {
+                keysObserver.Messages.AssertEqual(
                     OnNext(0, MatchesKeys("number", "text")),
-                    OnCompleted<string[]>(0),
-                }, keysObserver.Messages);
-
-                AreElementsEqual(new[]
-                {
+                    OnCompleted<string[]>(0)
+                );
+                recordsObserver.Messages.AssertEqual(
                     OnNext(0, MatchesRecord(keys, 1, "t1")),
                     OnNext(0, MatchesRecord(keys, 2, "t2")),
                     OnNext(0, MatchesRecord(keys, 3, "t3")),
                     OnNext(0, MatchesRecord(keys, 4, "t4")),
                     OnNext(0, MatchesRecord(keys, 5, "t5")),
-                    OnCompleted<IRecord>(0),
-                }, recordsObserver.Messages);
-
-                AreElementsEqual(new[]
-                {
+                    OnCompleted<IRecord>(0)
+                );
+                summaryObserver.Messages.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
-                    OnCompleted<IResultSummary>(0),
-                }, summaryObserver.Messages);
+                    OnCompleted<IResultSummary>(0)
+                );
             }
 
             [RequireServerFact]
@@ -160,22 +151,17 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 countDown.Wait();
 
-                AreElementsEqual(new[]
-                {
+                keysObserver.Messages.AssertEqual(
                     OnNext(0, MatchesKeys("number", "text")),
-                    OnCompleted<string[]>(0),
-                }, keysObserver.Messages);
-
-                AreElementsEqual(new[]
-                {
+                    OnCompleted<string[]>(0)
+                );
+                summaryObserver.Messages.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
-                    OnCompleted<IResultSummary>(0),
-                }, summaryObserver.Messages);
-
-                AreElementsEqual(new[]
-                {
-                    OnCompleted<IRecord>(0),
-                }, recordsObserver.Messages);
+                    OnCompleted<IResultSummary>(0)
+                );
+                recordsObserver.Messages.AssertEqual(
+                    OnCompleted<IRecord>(0)
+                );
             }
 
             [RequireServerFact]
@@ -188,22 +174,21 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var recordsObserver = CreateObserver<IRecord>();
 
                 result.Records().SubscribeAndWait(recordsObserver);
-                AreElementsEqual(new[]
-                {
+
+                recordsObserver.Messages.AssertEqual(
                     OnNext(0, MatchesRecord(keys, 1, "t1")),
                     OnNext(0, MatchesRecord(keys, 2, "t2")),
                     OnNext(0, MatchesRecord(keys, 3, "t3")),
                     OnNext(0, MatchesRecord(keys, 4, "t4")),
                     OnNext(0, MatchesRecord(keys, 5, "t5")),
-                    OnCompleted<IRecord>(0),
-                }, recordsObserver.Messages);
+                    OnCompleted<IRecord>(0)
+                );
 
                 result.Keys().SubscribeAndWait(keysObserver);
-                AreElementsEqual(new[]
-                {
+                keysObserver.Messages.AssertEqual(
                     OnNext(0, MatchesKeys("number", "text")),
-                    OnCompleted<string[]>(0),
-                }, keysObserver.Messages);
+                    OnCompleted<string[]>(0)
+                );
             }
 
             [RequireServerFact]
@@ -216,22 +201,20 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var summaryObserver = CreateObserver<IResultSummary>();
 
                 result.Records().SubscribeAndWait(recordsObserver);
-                AreElementsEqual(new[]
-                {
+                recordsObserver.Messages.AssertEqual(
                     OnNext(0, MatchesRecord(keys, 1, "t1")),
                     OnNext(0, MatchesRecord(keys, 2, "t2")),
                     OnNext(0, MatchesRecord(keys, 3, "t3")),
                     OnNext(0, MatchesRecord(keys, 4, "t4")),
                     OnNext(0, MatchesRecord(keys, 5, "t5")),
-                    OnCompleted<IRecord>(0),
-                }, recordsObserver.Messages);
+                    OnCompleted<IRecord>(0)
+                );
 
                 result.Summary().SubscribeAndWait(summaryObserver);
-                AreElementsEqual(new[]
-                {
+                summaryObserver.Messages.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
-                    OnCompleted<IResultSummary>(0),
-                }, summaryObserver.Messages);
+                    OnCompleted<IResultSummary>(0)
+                );
             }
 
             [RequireServerFact]
@@ -243,18 +226,16 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var summaryObserver = CreateObserver<IResultSummary>();
 
                 result.Summary().SubscribeAndWait(summaryObserver);
-                AreElementsEqual(new[]
-                {
+                summaryObserver.Messages.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
-                    OnCompleted<IResultSummary>(0),
-                }, summaryObserver.Messages);
+                    OnCompleted<IResultSummary>(0)
+                );
 
                 result.Keys().SubscribeAndWait(keysObserver);
-                AreElementsEqual(new[]
-                {
+                keysObserver.Messages.AssertEqual(
                     OnNext(0, MatchesKeys("number", "text")),
-                    OnCompleted<string[]>(0),
-                }, keysObserver.Messages);
+                    OnCompleted<string[]>(0)
+                );
             }
 
             [RequireServerFact]
@@ -272,13 +253,12 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Keys().SubscribeAndWait(keysObserver2);
                 result.Keys().SubscribeAndWait(keysObserver3);
 
-                AreElementsEqual(new[]
-                {
+                keysObserver1.Messages.AssertEqual(
                     OnNext(0, MatchesKeys("number", "text")),
-                    OnCompleted<string[]>(0),
-                }, keysObserver1.Messages);
-                AreElementsEqual(keysObserver1.Messages, keysObserver2.Messages);
-                AreElementsEqual(keysObserver1.Messages, keysObserver3.Messages);
+                    OnCompleted<string[]>(0)
+                );
+                keysObserver1.Messages.AssertEqual(keysObserver2.Messages);
+                keysObserver1.Messages.AssertEqual(keysObserver3.Messages);
             }
 
             [RequireServerFact]
@@ -294,13 +274,12 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Summary().SubscribeAndWait(summaryObserver2);
                 result.Summary().SubscribeAndWait(summaryObserver3);
 
-                AreElementsEqual(new[]
-                {
+                summaryObserver1.Messages.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
-                    OnCompleted<IResultSummary>(0),
-                }, summaryObserver1.Messages);
-                AreElementsEqual(summaryObserver1.Messages, summaryObserver2.Messages);
-                AreElementsEqual(summaryObserver1.Messages, summaryObserver3.Messages);
+                    OnCompleted<IResultSummary>(0)
+                );
+                summaryObserver1.Messages.AssertEqual(summaryObserver2.Messages);
+                summaryObserver1.Messages.AssertEqual(summaryObserver3.Messages);
             }
 
             [RequireServerFact]
@@ -313,21 +292,19 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var recordsObserver2 = CreateObserver<IRecord>();
 
                 result.Records().SubscribeAndWait(recordsObserver1);
-                AreElementsEqual(new[]
-                {
+                recordsObserver1.Messages.AssertEqual(
                     OnNext(0, MatchesRecord(keys, 1, "t1")),
                     OnNext(0, MatchesRecord(keys, 2, "t2")),
                     OnNext(0, MatchesRecord(keys, 3, "t3")),
                     OnNext(0, MatchesRecord(keys, 4, "t4")),
                     OnNext(0, MatchesRecord(keys, 5, "t5")),
-                    OnCompleted<IRecord>(0),
-                }, recordsObserver1.Messages);
+                    OnCompleted<IRecord>(0)
+                );
 
                 result.Records().SubscribeAndWait(recordsObserver2);
-                AreElementsEqual(new[]
-                {
-                    OnCompleted<IRecord>(0),
-                }, recordsObserver2.Messages);
+                recordsObserver2.Messages.AssertEqual(
+                    OnCompleted<IRecord>(0)
+                );
             }
 
             [RequireServerFact]
@@ -339,11 +316,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Keys().Concat(session.Close<string[]>()).SubscribeAndWait(keysObserver);
 
-                AreElementsEqual(new[]
-                {
-                    OnNext(0, MatchesKeys(new string[0])),
+                keysObserver.Messages.AssertEqual(
+                    OnNext(0, MatchesKeys()),
                     OnCompleted<string[]>(0)
-                }, keysObserver.Messages);
+                );
             }
 
             [RequireServerFact]
@@ -355,10 +331,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Records().SubscribeAndWait(recordsObserver);
 
-                AreElementsEqual(new[]
-                {
+                recordsObserver.Messages.AssertEqual(
                     OnCompleted<IRecord>(0)
-                }, recordsObserver.Messages);
+                );
             }
 
             [RequireServerFact]
@@ -370,13 +345,12 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Summary().SubscribeAndWait(summaryObserver);
 
-                AreElementsEqual(new[]
-                {
+                summaryObserver.Messages.AssertEqual(
                     OnNext(0,
                         MatchesSummary(new
                             {Counters = new {NodesCreated = 1}, StatementType = StatementType.WriteOnly})),
                     OnCompleted<IResultSummary>(0)
-                }, summaryObserver.Messages);
+                );
             }
 
             [RequireServerFact]
@@ -388,10 +362,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Keys().Concat(session.Close<string[]>()).SubscribeAndWait(keysObserver);
 
-                AreElementsEqual(new[]
-                {
+                keysObserver.Messages.AssertEqual(
                     OnError<string[]>(0, MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
-                }, keysObserver.Messages);
+                );
             }
 
             [RequireServerFact]
@@ -405,11 +378,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Keys().SubscribeAndWait(keysObserver1);
                 result.Keys().SubscribeAndWait(keysObserver2);
 
-                AreElementsEqual(new[]
-                {
+                keysObserver1.Messages.AssertEqual(
                     OnError<string[]>(0, MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
-                }, keysObserver1.Messages);
-                AreElementsEqual(keysObserver1.Messages, keysObserver2.Messages);
+                );
+                keysObserver1.Messages.AssertEqual(keysObserver2.Messages);
             }
 
             [RequireServerFact]
@@ -421,10 +393,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Records().Concat(session.Close<IRecord>()).SubscribeAndWait(recordsObserver);
 
-                AreElementsEqual(new[]
-                {
+                recordsObserver.Messages.AssertEqual(
                     OnError<IRecord>(0, MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
-                }, recordsObserver.Messages);
+                );
             }
 
             [RequireServerFact]
@@ -436,11 +407,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Summary().Concat(session.Close<IResultSummary>()).SubscribeAndWait(summaryObserver);
 
-                AreElementsEqual(new[]
-                {
+                summaryObserver.Messages.AssertEqual(
                     OnError<IResultSummary>(0,
                         MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
-                }, summaryObserver.Messages);
+                );
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -452,9 +422,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Records().Select(r => r[0].As<int>()).Take(999).SubscribeAndWait(recordsObserver);
 
-                AreElementsEqual(
-                    Enumerable.Range(1, 999).Select(i => OnNext(0, i)).Concat(new[] {OnCompleted<int>(0)}),
-                    recordsObserver.Messages);
+                recordsObserver.Messages.AssertEqual(
+                    Enumerable.Range(1, 999).Select(i => OnNext(0, i)).Concat(new[] {OnCompleted<int>(0)})
+                );
             }
         }
 
@@ -473,11 +443,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Summary().SubscribeAndWait(observer);
 
-                AreElementsEqual(new[]
-                {
+                observer.Messages.AssertEqual(
                     OnNext<IResultSummary>(0, s => s != null),
-                    OnCompleted<IResultSummary>(0),
-                }, observer.Messages);
+                    OnCompleted<IResultSummary>(0)
+                );
             }
 
             [RequireServerFact]
@@ -591,22 +560,23 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     Matches<IResultSummary>(s => s.Notifications.Should().BeEmpty()));
             }
 
-//            Seems to be flaky
-//            [RequireServerFact]
-//            public void ShouldReturnNotifications()
-//            {
-//                VerifySummary("EXPLAIN MATCH (n),(m) RETURN n,m", null,
-//                    Matches<IResultSummary>(s => s.ShouldBeEquivalentTo(new
-//                    {
-//                        Notifications = new[]
-//                        {
-//                            new Notification("Neo.ClientNotification.Statement.CartesianProductWarning",
-//                                "This query builds a cartesian product between disconnected patterns.",
-//                                "If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m))",
-//                                null, "WARNING")
-//                        }
-//                    }, options => options.ExcludingMissingMembers().Excluding(x => x.Notifications[0].Position))));
-//            }
+            [RequireServerFact(Skip = "Seems to be flaky")]
+            public void ShouldReturnNotifications()
+            {
+                VerifySummary("EXPLAIN MATCH (n),(m) RETURN n,m", null,
+                    MatchesSummary(new
+                        {
+                            Notifications = new[]
+                            {
+                                new Notification("Neo.ClientNotification.Statement.CartesianProductWarning",
+                                    "This query builds a cartesian product between disconnected patterns.",
+                                    "If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m))",
+                                    null, "WARNING")
+                            }
+                        },
+                        options => options.ExcludingMissingMembers()
+                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")));
+            }
 
             private void VerifySummaryStatementTextAndParams(string statement, object parameters)
             {
@@ -621,11 +591,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 result.Summary().SubscribeAndWait(observer);
 
-                AreElementsEqual(new[]
-                {
-                    OnNext<IResultSummary>(0, predicate),
-                    OnCompleted<IResultSummary>(0),
-                }, observer.Messages);
+                observer.Messages.AssertEqual(
+                    OnNext(0, predicate),
+                    OnCompleted<IResultSummary>(0)
+                );
             }
         }
     }

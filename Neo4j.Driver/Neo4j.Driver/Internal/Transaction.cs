@@ -30,12 +30,13 @@ namespace Neo4j.Driver.Internal
         private readonly IConnection _connection;
         private readonly SyncExecutor _syncExecutor;
         private readonly IBoltProtocol _protocol;
+        private readonly bool _reactive;
         private ITransactionResourceHandler _resourceHandler;
 
         private Bookmark _bookmark;
 
         private State _state = State.Active;
-        private IDriverLogger _logger;
+        private readonly IDriverLogger _logger;
 
         private enum State
         {
@@ -63,7 +64,7 @@ namespace Neo4j.Driver.Internal
 
         public Transaction(IConnection connection, SyncExecutor syncExecutor,
             ITransactionResourceHandler resourceHandler = null,
-            IDriverLogger logger = null, Bookmark bookmark = null)
+            IDriverLogger logger = null, Bookmark bookmark = null, bool reactive = false)
         {
             _connection = new TransactionConnection(this, connection);
             _syncExecutor = syncExecutor;
@@ -71,6 +72,7 @@ namespace Neo4j.Driver.Internal
             _resourceHandler = resourceHandler;
             _bookmark = bookmark;
             _logger = logger;
+            _reactive = reactive;
         }
 
         public void BeginTransaction(TransactionConfig txConfig)
@@ -88,22 +90,17 @@ namespace Neo4j.Driver.Internal
             return TryExecute(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
-                return new StatementResult(_syncExecutor.RunSync<IStatementResultCursor>(() =>
+                return new StatementResult(_syncExecutor.RunSync(() =>
                     _protocol.RunInExplicitTransactionAsync(_connection, statement, true)), _syncExecutor);
             });
         }
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
         {
-            return RunAsync(statement, true);
-        }
-
-        internal Task<IStatementResultCursor> RunAsync(Statement statement, bool pullAll)
-        {
-            return TryExecuteAsync<IStatementResultCursor>(_logger, () =>
+            return TryExecuteAsync(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
-                return _protocol.RunInExplicitTransactionAsync(_connection, statement, pullAll);
+                return _protocol.RunInExplicitTransactionAsync(_connection, statement, _reactive);
             });
         }
 

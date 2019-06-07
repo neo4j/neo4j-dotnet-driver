@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Neo4j.Driver;
 using System.Threading.Tasks;
@@ -73,13 +74,14 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session(AccessMode defaultMode, string bookmark)
         {
-            return Session(defaultMode, Bookmark.From(bookmark));
+            return Session(defaultMode, string.IsNullOrEmpty(bookmark) ? Enumerable.Empty<string>() : new[] {bookmark},
+                false);
         }
 
 
         public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
         {
-            return Session(defaultMode, Bookmark.From(bookmarks));
+            return Session(defaultMode, bookmarks, false);
         }
 
         public ISession Session(IEnumerable<string> bookmarks)
@@ -87,14 +89,15 @@ namespace Neo4j.Driver.Internal
             return Session(AccessMode.Write, bookmarks);
         }
 
-        private ISession Session(AccessMode defaultMode, Bookmark bookmark)
+        internal ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var session = new Session(_connectionProvider, _logger, _syncExecutor, _retryLogic, defaultMode, bookmark);
+            var session = new Session(_connectionProvider, _logger, _syncExecutor, _retryLogic, defaultMode,
+                Bookmark.From(bookmarks), reactive);
 
             if (IsClosed)
             {

@@ -21,9 +21,9 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 
-namespace Neo4j.Driver.IntegrationTests.Reactive
+namespace Neo4j.Driver.Reactive
 {
-    internal static class ReactiveExtensions
+    public static class Extensions
     {
         public static void SubscribeAndDiscard<T>(this IObservable<T> observable, int millisecondsTimeout = -1)
         {

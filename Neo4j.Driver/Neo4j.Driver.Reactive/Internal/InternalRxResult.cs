@@ -33,11 +33,11 @@ namespace Neo4j.Driver.Internal
         private readonly ReplaySubject<IResultSummary> _summary;
         private readonly Subject<IRecord> _records;
 
-        private int _streaming = 0;
+        private int _streaming;
 
         public InternalRxResult(IObservable<IStatementResultCursor> resultCursor)
         {
-            _resultCursor = resultCursor.Publish().AutoConnect().Replay().AutoConnect();
+            _resultCursor = resultCursor.Replay().AutoConnect();
             _cts = new CancellationTokenSource();
             _summary = new ReplaySubject<IResultSummary>(1);
             _records = new Subject<IRecord>();
@@ -82,6 +82,9 @@ namespace Neo4j.Driver.Internal
                 try
                 {
                     var cursor = await _resultCursor.GetAwaiter();
+
+                    // Ensure that we propagate any errors from the KeysAsync call
+                    await cursor.KeysAsync();
 
                     while (await cursor.FetchAsync() && !cts.IsCancellationRequested)
                     {

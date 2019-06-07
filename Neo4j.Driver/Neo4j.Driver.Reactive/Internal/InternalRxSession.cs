@@ -23,9 +23,9 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxSession : IRxSession
     {
-        private readonly Session _session;
+        private readonly ISession _session;
 
-        public InternalRxSession(Session session)
+        public InternalRxSession(ISession session)
         {
             _session = session;
         }
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal
 
         public IRxResult Run(Statement statement, TransactionConfig txConfig)
         {
-            return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(statement, false, txConfig)));
+            return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(statement, txConfig)));
         }
 
         #endregion
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal
         {
             return Observable.FromAsync(() => _session.BeginTransactionAsync(txConfig))
                 .Select(tx =>
-                    new InternalRxTransaction((Transaction) tx));
+                    new InternalRxTransaction(tx));
         }
 
         #endregion
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return ReadTransaction(work, TransactionConfig.Empty);
+            return ReadTransaction(work, null);
         }
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig)
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return WriteTransaction(work, TransactionConfig.Empty);
+            return WriteTransaction(work, null);
         }
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig)

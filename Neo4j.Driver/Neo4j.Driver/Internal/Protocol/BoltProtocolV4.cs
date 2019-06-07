@@ -54,21 +54,21 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public override async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement, bool pullAll, IBookmarkTracker bookmarkTracker,
+            Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
             Bookmark bookmark, TransactionConfig txConfig)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
-                pullAll ? null : RequestMore(connection, summaryBuilder, bookmarkTracker),
-                pullAll ? null : CancelRequest(connection, summaryBuilder, bookmarkTracker), CancellationToken.None,
+                reactive ? RequestMore(connection, summaryBuilder, bookmarkTracker) : null,
+                reactive ? CancelRequest(connection, summaryBuilder, bookmarkTracker) : null, CancellationToken.None,
                 resultResourceHandler,
-                pullAll ? All : DefaultBatchSize);
+                reactive ? All : DefaultBatchSize);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
 
             var pullMessage = default(PullMessage);
             var pullHandler = default(V4.PullResponseHandler);
-            if (pullAll)
+            if (!reactive)
             {
                 pullMessage = new PullMessage(All);
                 pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
@@ -84,19 +84,19 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public override async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Statement statement, bool pullAll)
+            Statement statement, bool reactive)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
-                pullAll ? null : RequestMore(connection, summaryBuilder, null),
-                pullAll ? null : CancelRequest(connection, summaryBuilder, null),
-                CancellationToken.None, null, 
-                pullAll ? All : DefaultBatchSize);
+                reactive ? RequestMore(connection, summaryBuilder, null) : null,
+                reactive ? CancelRequest(connection, summaryBuilder, null) : null,
+                CancellationToken.None, null,
+                reactive ? All : DefaultBatchSize);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
 
             var pullMessage = default(PullMessage);
             var pullHandler = default(V4.PullResponseHandler);
-            if (pullAll)
+            if (!reactive)
             {
                 pullMessage = new PullMessage(All);
                 pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);

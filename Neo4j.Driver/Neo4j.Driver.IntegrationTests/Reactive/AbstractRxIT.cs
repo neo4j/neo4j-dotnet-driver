@@ -16,50 +16,76 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Reactive.Testing.ReactiveAssert;
+using static Neo4j.Driver.Reactive.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive
 {
     [Collection(SAIntegrationCollection.CollectionName)]
-    public abstract class AbstractRxIT : ReactiveTest
+    public abstract class AbstractRxIT : AbstractRxTest, IDisposable
     {
-        private IRxSession _session;
+        private readonly List<IRxSession> _sessions = new List<IRxSession>();
 
-        protected ITestOutputHelper Output { get; }
         protected IStandAlone Server { get; }
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
-        protected TestScheduler Scheduler { get; }
 
         protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            : base(output)
         {
-            Output = output;
             Server = fixture.StandAlone;
             ServerEndPoint = Server.BoltUri;
             AuthToken = Server.AuthToken;
-            Scheduler = new TestScheduler();
         }
-
-        protected ITestableObserver<T> CreateObserver<T>() => Scheduler.CreateObserver<T>();
 
         protected IRxSession NewSession()
         {
-            return (_session = Server.Driver.RxSession());
+            var session = Server.Driver.RxSession();
+            _sessions.Add(session);
+            return session;
         }
 
         public void Dispose()
         {
-            _session?.Close<Unit>().SubscribeAndDiscard();
+            _sessions.ForEach(x => x.Close<Unit>().SubscribeAndDiscard());
+            _sessions.Clear();
 
             // clean database after each test run
             using (var session = Server.Driver.Session())
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
+        }
+
+        protected void ExecuteAndVerify(IRxSession session, string statement, object parameters, string[] expectedKeys,
+            params IEnumerable<object>[] expectedRecords)
+        {
+            var result = session.Run(statement, parameters);
+            var keysObserver = CreateObserver<string[]>();
+            var recordsObserver = CreateObserver<IRecord>();
+
+            result.Keys().SubscribeAndWait(keysObserver);
+            AreElementsEqual(new[]
+            {
+                OnNext(0, MatchesKeys(expectedKeys)),
+                OnCompleted<string[]>(0)
+            }, keysObserver.Messages);
+
+            result.Records().SubscribeAndWait(recordsObserver);
+            AreElementsEqual(
+                expectedRecords.Select(r => OnNext(0, MatchesRecord(expectedKeys, r.ToArray())))
+                    .Concat(new[] {OnCompleted<IRecord>(0)}),
+                recordsObserver.Messages
+            );
         }
     }
 }

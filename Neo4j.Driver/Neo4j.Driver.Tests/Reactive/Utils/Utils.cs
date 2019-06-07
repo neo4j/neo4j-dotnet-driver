@@ -24,9 +24,9 @@ using FluentAssertions.Equivalency;
 using Neo4j.Driver.Internal;
 using static Neo4j.Driver.Tests.Assertions;
 
-namespace Neo4j.Driver.IntegrationTests.Reactive
+namespace Neo4j.Driver.Reactive
 {
-    internal static class ReactiveUtils
+    public static class Utils
     {
         public static object Record(string[] keys, params object[] fields)
         {
