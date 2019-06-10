@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
+using Neo4j.Driver.Internal.Messaging.V4;
 using Neo4j.Driver.Tests;
 using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
@@ -73,6 +74,29 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
                         null), Times.Once);
+                mockConn.Verify(x => x.SendAsync());
+            }
+
+            [Fact]
+            public async Task ShouldEnqueueRunPullAndSendIfNotReactive()
+            {
+                var mockConn = NewConnectionWithMode();
+                var statement = new Statement("A cypher query");
+                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var resourceHandler = new Mock<IResultResourceHandler>();
+
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
+                        It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
+                    .Returns(TaskHelper.GetCompletedTask())
+                    .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
+                        (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
+
+                await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, false, bookmarkTracker.Object,
+                    resourceHandler.Object, null, null);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(),
+                        It.IsAny<PullMessage>(), It.IsAny<V4.PullResponseHandler>()), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
             }
 

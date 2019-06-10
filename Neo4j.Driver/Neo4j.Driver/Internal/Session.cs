@@ -291,7 +291,7 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            var tx = new Transaction(_connection, _syncExecutor, this, _logger, _bookmark);
+            var tx = new Transaction(_connection, _syncExecutor, this, _logger, _bookmark, _reactive);
             await tx.BeginTransactionAsync(txConfig ?? TransactionConfig.Empty).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;

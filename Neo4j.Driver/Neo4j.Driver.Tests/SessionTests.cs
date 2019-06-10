@@ -43,13 +43,14 @@ namespace Neo4j.Driver.Tests
         }
 
         internal static Session NewSession(IBoltProtocol protocol, IDriverLogger logger = null,
-            IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
+            IRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null,
+            bool reactive = false)
         {
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
             return new Session(new TestConnectionProvider(mockConn.Object), logger, new SyncExecutor(), retryLogic,
-                mode, Bookmark.From(bookmark));
+                mode, Bookmark.From(bookmark), reactive);
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
@@ -61,7 +62,8 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
                     .Returns(TaskHelper.GetCompletedTask());
-                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), false,
+                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
+                        false,
                         It.IsAny<IBookmarkTracker>(),
                         It.IsAny<IResultResourceHandler>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
@@ -95,37 +97,41 @@ namespace Neo4j.Driver.Tests
 
         public class RunMethod
         {
-            [Fact]
-            public void ShouldDelegateToProtocolRunAutoCommitTx()
+            [Theory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void ShouldDelegateToProtocolRunAutoCommitTx(bool reactive)
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
                 mockProtocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(),
-                        It.IsAny<Statement>(), false, It.IsAny<IBookmarkTracker>(), It.IsAny<IResultResourceHandler>(),
+                        It.IsAny<Statement>(), reactive, It.IsAny<IBookmarkTracker>(),
+                        It.IsAny<IResultResourceHandler>(),
                         It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
 
-                var session = NewSession(mockProtocol.Object);
+                var session = NewSession(mockProtocol.Object, reactive: reactive);
                 session.Run("lalalal");
 
                 mockProtocol.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), false, session,
-                        session,
-                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), reactive,
+                        session, session, It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
 
         public class RunAsyncMethod
         {
-            [Fact]
-            public async Task ShouldDelegateToProtocolRunAutoCommitTxAsync()
+            [Theory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public async Task ShouldDelegateToProtocolRunAutoCommitTxAsync(bool reactive)
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
-                var session = NewSession(mockProtocol.Object);
+                var session = NewSession(mockProtocol.Object, reactive: reactive);
                 await session.RunAsync("lalalal");
 
                 mockProtocol.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), false, session,
-                        session, It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), reactive,
+                        session, session, It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
 
@@ -569,7 +575,7 @@ namespace Neo4j.Driver.Tests
                 .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                     (m1, h1, m2, h2) =>
                     {
-                         h1.OnSuccess(new Dictionary<string, object>());
+                        h1.OnSuccess(new Dictionary<string, object>());
                         if (m2 != null)
                         {
                             h2.OnSuccess(new Dictionary<string, object>());

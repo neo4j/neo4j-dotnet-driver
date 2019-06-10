@@ -93,20 +93,24 @@ namespace Neo4j.Driver.Tests
 
         public class RunMethod
         {
-            [Fact]
-            public void ShouldDelegateToBoltProtocol()
+            [Theory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void ShouldDelegateToBoltProtocol(bool reactive)
             {
                 var protocol = new Mock<IBoltProtocol>();
-                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), true))
+                protocol.Setup(x =>
+                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), reactive))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
 
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object, new SyncExecutor());
+                var tx = new Transaction(mockConn.Object, new SyncExecutor(), reactive: reactive);
 
                 var statement = new Statement("lalala");
                 tx.Run(statement);
 
-                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, true), Times.Once);
+                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, reactive),
+                    Times.Once);
             }
 
             [Fact]
@@ -128,7 +132,8 @@ namespace Neo4j.Driver.Tests
                 var tx = new Transaction(mockConn.Object, new SyncExecutor());
                 var statement = new Statement("lala");
 
-                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, true))
+                protocol.Setup(x =>
+                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, It.IsAny<bool>()))
                     .Returns(TaskHelper.GetFailedTask<IStatementResultCursor>(new Neo4jException()));
 
                 var error = Exception(() => tx.Run(statement));

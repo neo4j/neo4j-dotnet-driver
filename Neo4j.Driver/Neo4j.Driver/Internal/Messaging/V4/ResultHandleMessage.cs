@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.Messaging.V4
     internal abstract class ResultHandleMessage : IRequestMessage
     {
         public const long NoStatementId = -1;
-        public const long All = long.MaxValue;
+        public const long All = -1;
 
         protected ResultHandleMessage(long id, long n)
         {

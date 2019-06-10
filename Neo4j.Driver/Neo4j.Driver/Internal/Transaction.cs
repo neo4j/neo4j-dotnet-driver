@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Internal
             {
                 EnsureCanRunMoreStatements();
                 return new StatementResult(_syncExecutor.RunSync(() =>
-                    _protocol.RunInExplicitTransactionAsync(_connection, statement, true)), _syncExecutor);
+                    _protocol.RunInExplicitTransactionAsync(_connection, statement, _reactive)), _syncExecutor);
             });
         }
 

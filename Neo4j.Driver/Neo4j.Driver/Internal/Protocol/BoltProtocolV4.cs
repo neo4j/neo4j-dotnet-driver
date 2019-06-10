@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 reactive ? RequestMore(connection, summaryBuilder, bookmarkTracker) : null,
                 reactive ? CancelRequest(connection, summaryBuilder, bookmarkTracker) : null, CancellationToken.None,
                 resultResourceHandler,
-                reactive ? All : DefaultBatchSize);
+                reactive ? DefaultBatchSize : All);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
 
             var pullMessage = default(PullMessage);
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 reactive ? RequestMore(connection, summaryBuilder, null) : null,
                 reactive ? CancelRequest(connection, summaryBuilder, null) : null,
                 CancellationToken.None, null,
-                reactive ? All : DefaultBatchSize);
+                reactive ? DefaultBatchSize : All);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
 
             var pullMessage = default(PullMessage);
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        private Func<ResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
+        private static Func<ResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
             return async (streamBuilder, id, n) =>
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Internal.Protocol
             };
         }
 
-        private Func<ResultStreamBuilder, long, Task> CancelRequest(IConnection connection,
+        private static Func<ResultStreamBuilder, long, Task> CancelRequest(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
             return async (streamBuilder, id) =>
