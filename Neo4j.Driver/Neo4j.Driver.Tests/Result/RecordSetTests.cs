@@ -34,10 +34,9 @@ namespace Neo4j.Driver.Tests
         private readonly Func<IEnumerable<IRecord>> _recordsFunc;
 
         private IResultSummary _summary;
-        private int _count = 0;
-        private IEnumerator<IRecord> _enum = null;
-        private IRecord _record = null;
-        private IRecord _peeked = null;
+        private IEnumerator<IRecord> _enum;
+        private IRecord _record;
+        private IRecord _peeked;
 
         public ListBasedRecordCursor(IEnumerable<string> keys, Func<IEnumerable<IRecord>> recordsFunc,
             Func<IResultSummary> summaryFunc = null)

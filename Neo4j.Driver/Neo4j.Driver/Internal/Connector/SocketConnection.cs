@@ -244,7 +244,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        public async Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
+        public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
             IRequestMessage message2 = null,
             IResponseHandler handler2 = null)
         {
@@ -265,6 +265,8 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 _sendLock.Release();
             }
+
+            return TaskHelper.GetCompletedTask();
         }
 
         public override string ToString()

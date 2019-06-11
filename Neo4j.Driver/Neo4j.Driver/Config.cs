@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
@@ -31,6 +32,7 @@ namespace Neo4j.Driver
         /// No encryption at all.
         /// </summary>
         None,
+
         /// <summary>
         /// Always encrypted.
         /// </summary>
@@ -46,6 +48,7 @@ namespace Neo4j.Driver
         /// Trust all servers.
         /// </summary>
         TrustAllCertificates,
+
         /// <summary>
         /// Trust the servers whose certificate is trusted by OS.
         /// </summary>
@@ -72,7 +75,7 @@ namespace Neo4j.Driver
     /// Use this class to config the <see cref="IDriver"/>.
     /// </summary>
     public class Config
-    {        
+    {
         /// <summary>
         /// This const defines the value of infinite interval in terms of configuration properties.
         /// </summary>
@@ -82,7 +85,7 @@ namespace Neo4j.Driver
         /// This const defines the value of infinite in terms of configuration properties.
         /// </summary>
         public const int Infinite = -1;
-        
+
         /// <summary>
         /// This const is deprecated.
         /// </summary>
@@ -156,7 +159,11 @@ namespace Neo4j.Driver
         public ILogger Logger
         {
             get => _legacyLogger;
-            set { _legacyLogger = value; DriverLogger = new LegacyLoggerAdapter(_legacyLogger); }
+            set
+            {
+                _legacyLogger = value;
+                DriverLogger = new LegacyLoggerAdapter(_legacyLogger);
+            }
         }
 
         /// <summary>
@@ -179,7 +186,8 @@ namespace Neo4j.Driver
         /// Setting this value to <see cref="Infinite"/> results in the idle pool size to be assigned the same value as <see cref="MaxConnectionPoolSize"/>.
         /// </remarks>
         /// <remarks>Also see <see cref="MaxConnectionPoolSize"/></remarks>
-        public int MaxIdleConnectionPoolSize {
+        public int MaxIdleConnectionPoolSize
+        {
             get => _maxIdleConnPoolSize == Infinite ? MaxConnectionPoolSize : _maxIdleConnPoolSize;
             set => _maxIdleConnPoolSize = value;
         }
@@ -191,7 +199,8 @@ namespace Neo4j.Driver
         /// This property is deprecated. Use <see cref="MaxIdleConnectionPoolSize"/> instead.
         /// </summary>
         [Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
-        public int MaxIdleSessionPoolSize {
+        public int MaxIdleSessionPoolSize
+        {
             get => MaxIdleConnectionPoolSize;
             set => MaxIdleConnectionPoolSize = value;
         }
@@ -428,6 +437,7 @@ namespace Neo4j.Driver
             }
         }
     }
+
     /// <summary>
     /// Provides a way to generate a <see cref="Config"/> instance fluently.
     /// </summary>
@@ -441,7 +451,7 @@ namespace Neo4j.Driver
         /// </remarks>
         /// <returns>A <see cref="Config"/> instance.</returns>
         Config ToConfig();
-        
+
         /// <summary>
         /// Sets the <see cref="Config"/> to use TLS if <paramref name="level"/> is <c>true</c>.
         /// </summary>
@@ -540,8 +550,12 @@ namespace Neo4j.Driver
         IConfigBuilder WithSocketKeepAliveEnabled(bool enable);
 
         /// <summary>
-        /// Specify the maximum time transactions are allowed to retry via <see cref="ISession.ReadTransaction"/> and <see cref="ISession.WriteTransaction"/>.
-        /// These methods will retry the given unit of work on <see cref="SessionExpiredException"/>, <see cref="TransientException"/> and <see cref="ServiceUnavailableException"/>
+        /// Specify the maximum time transactions are allowed to retry via
+        /// <see cref="ISession.ReadTransaction{T}(System.Func{Neo4j.Driver.ITransaction,T})"/> and
+        /// <see cref="ISession.WriteTransaction{T}(System.Func{Neo4j.Driver.ITransaction,T})"/>.
+        /// 
+        /// These methods will retry the given unit of work on <see cref="SessionExpiredException"/>,
+        /// <see cref="TransientException"/> and <see cref="ServiceUnavailableException"/>
         /// with exponential backoff using initial delay of 1 second.
         /// Default value is 30 seconds.
         /// </summary>
@@ -624,6 +638,5 @@ namespace Neo4j.Driver
         /// <remarks>If writing large values and experiencing too much garbage collection 
         /// consider increasing this size to a reasonable amount depending on your data.</remarks>
         IConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize);
-
     }
 }

@@ -193,7 +193,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 tx.Success();
                 tx.Dispose();
 
@@ -209,7 +209,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 tx.Success();
                 // Even if success is called, but if failure is called afterwards, then we rollback
                 tx.Failure();
@@ -227,7 +227,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 tx.Dispose();
                 protocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Once);
                 mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmark>()), Times.Once);
@@ -241,7 +241,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 tx.Dispose();
                 tx.Dispose();
                 mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmark>()), Times.Once);
@@ -258,7 +258,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 await tx.CommitAsync();
 
                 protocol.Verify(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), tx));
@@ -273,7 +273,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 await tx.RollbackAsync();
                 protocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()));
                 mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmark>()), Times.Once);
@@ -287,7 +287,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 await tx.CommitAsync();
                 await tx.RollbackAsync();
                 protocol.Verify(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), tx));
@@ -303,7 +303,7 @@ namespace Neo4j.Driver.Tests
                 var mockHandler = new Mock<ITransactionResourceHandler>();
                 var tx = new Transaction(mockConn.Object, new SyncExecutor(), mockHandler.Object);
 
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
                 await tx.CommitAsync();
                 tx.Dispose();
                 mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmark>()), Times.Once);
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new Transaction(mockConn.Object, new SyncExecutor());
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
                 tx.Dispose();
@@ -333,7 +333,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new Transaction(mockConn.Object, new SyncExecutor());
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
 
@@ -351,7 +351,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new Transaction(mockConn.Object, new SyncExecutor());
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
                 await tx.CommitAsync();
@@ -365,7 +365,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new Transaction(mockConn.Object, new SyncExecutor());
-                mockConn.ResetCalls();
+                mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
                 await tx.RollbackAsync();
