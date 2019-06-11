@@ -15,14 +15,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
+
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// Common interface that enables execution of Neo4j statements using Reactive API.
+    /// </summary>
+    /// 
+    /// <seealso cref="IRxSession"/>
+    /// <seealso cref="IRxTransaction"/>
     public interface IRxRunnable
     {
+        /// <summary>
+        /// Create <see cref="IRxResult">a reactive result</see> that will execute the statement.
+        /// </summary>
+        /// <param name="statement">statement to be executed</param>
+        /// <returns>a reactive result</returns>
+        ///
+        /// <see cref="Run(Statement)"/>
         IRxResult Run(string statement);
 
+        /// <summary>
+        /// Create <see cref="IRxResult">a reactive result</see> that will execute the statement
+        /// with the specified parameters.
+        /// </summary>
+        /// <param name="statement">statement to be executed</param>
+        /// <param name="parameters">a parameter dictionary, can be an
+        ///     <see cref="IDictionary{String,Object}" /> or an anonymous object</param>
+        /// <returns>a reactive result</returns>
+        ///
+        /// <see cref="Run(Statement)"/>
         IRxResult Run(string statement, object parameters);
 
+        /// <summary>
+        /// Create <see cref="IRxResult">a reactive result</see> that will execute the given statement.
+        ///
+        /// The statement is only executed when an <see cref="IObserver{T}"/> is subscribed to one of the
+        /// reactive streams that can be accessed through the returned reactive result. 
+        /// 
+        /// </summary>
+        /// <param name="statement">statement to be executed</param>
+        /// <returns>a reactive result</returns>
         IRxResult Run(Statement statement);
     }
 }

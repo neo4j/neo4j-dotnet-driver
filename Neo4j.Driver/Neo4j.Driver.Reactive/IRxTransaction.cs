@@ -20,10 +20,28 @@ using System.Reactive;
 
 namespace Neo4j.Driver
 {
+    /// <summary>
+    /// A reactive transaction, which provides the same functionality as <see cref="Neo4j.Driver.ITransaction"/>
+    /// but with reactive API.
+    /// </summary>
     public interface IRxTransaction : IRxRunnable
     {
+        /// <summary>
+        /// Commits the transaction and returns an empty reactive stream.
+        /// 
+        /// The type parameter makes it easier to chain this method to other reactive streams.
+        /// </summary>
+        /// <typeparam name="T">the desired return type</typeparam>
+        /// <returns>an empty reactive stream</returns>
         IObservable<T> Commit<T>();
 
+        /// <summary>
+        /// Rollbacks the transaction and returns an empty reactive stream.
+        /// 
+        /// The type parameter makes it easier to chain this method to other reactive streams.
+        /// </summary>
+        /// <typeparam name="T">the desired return type</typeparam>
+        /// <returns>an empty reactive stream</returns>
         IObservable<T> Rollback<T>();
     }
 }

@@ -49,6 +49,11 @@ namespace Neo4j.Driver.Internal
             return Run(statement, null);
         }
 
+        public IRxResult Run(string statement, TransactionConfig txConfig)
+        {
+            return Run(new Statement(statement), txConfig);
+        }
+
         public IRxResult Run(string statement, object parameters, TransactionConfig txConfig)
         {
             return Run(new Statement(statement, parameters.ToDictionary()), txConfig);
