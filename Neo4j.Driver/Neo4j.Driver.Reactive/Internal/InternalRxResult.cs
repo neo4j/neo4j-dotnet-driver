@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal
             return Observable.Create(async (IObserver<IRecord> o) =>
             {
                 _records.Subscribe(o);
-                await Stream(_cts.Token);
+                await Stream(_cts.Token, false).ConfigureAwait(false);
                 return new CancellationDisposable(_cts);
             });
         }
@@ -70,19 +70,19 @@ namespace Neo4j.Driver.Internal
                     _cts.Cancel();
                 }
 
-                await Stream(_cts.Token).ConfigureAwait(false);
+                await Stream(_cts.Token, true).ConfigureAwait(false);
                 return new CancellationDisposable(_cts);
             });
         }
 
-        private async Task Stream(CancellationToken cts)
+        private async Task Stream(CancellationToken cts, bool fromSummary)
         {
             if (Interlocked.Increment(ref _streaming) == 1)
             {
+                var cursor = await _resultCursor.GetAwaiter();
+
                 try
                 {
-                    var cursor = await _resultCursor.GetAwaiter();
-
                     // Ensure that we propagate any errors from the KeysAsync call
                     await cursor.KeysAsync();
 
@@ -92,20 +92,24 @@ namespace Neo4j.Driver.Internal
                     }
 
                     _records.OnCompleted();
-
-                    try
-                    {
-                        _summary.OnNext(await cursor.ConsumeAsync().ConfigureAwait(false));
-                        _summary.OnCompleted();
-                    }
-                    catch (Exception exc)
-                    {
-                        _summary.OnError(exc);
-                    }
                 }
                 catch (Exception exc)
                 {
                     _records.OnError(exc);
+
+                    if (fromSummary)
+                    {
+                        _summary.OnError(exc);
+                    }
+                }
+
+                try
+                {
+                    _summary.OnNext(await cursor.ConsumeAsync().ConfigureAwait(false));
+                    _summary.OnCompleted();
+                }
+                catch (Exception exc)
+                {
                     _summary.OnError(exc);
                 }
             }

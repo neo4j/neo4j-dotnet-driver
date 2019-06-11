@@ -23,6 +23,8 @@ namespace Neo4j.Driver
 {
     public interface IRxSession : IRxRunnable
     {
+        String LastBookmark { get; }
+
         IObservable<IRxTransaction> BeginTransaction();
 
         IObservable<IRxTransaction> BeginTransaction(TransactionConfig txConfig);

@@ -18,7 +18,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
+using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Moq;
 using Neo4j.Driver.Internal;
@@ -289,7 +291,7 @@ namespace Neo4j.Driver.Reactive.Internal
             }
 
             [Fact]
-            public void ShouldErrorOnKeysRecordsAndSummary()
+            public void ShouldErrorOnKeysRecordsAndButNotOnSummary()
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
@@ -297,7 +299,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 VerifyError(result.Keys(), exc);
                 VerifyError(result.Records(), exc);
-                VerifyError(result.Summary(), exc);
+                VerifyNoError(result.Summary());
             }
 
             private void VerifyError<T>(IObservable<T> observable, Exception exc)
@@ -305,6 +307,16 @@ namespace Neo4j.Driver.Reactive.Internal
                 var observer = CreateObserver<T>();
                 observable.SubscribeAndWait(observer);
                 observer.Messages.AssertEqual(OnError<T>(0, exc));
+            }
+
+            private void VerifyNoError<T>(IObservable<T> observable)
+            {
+                observable
+                    .SubscribeAndWait(CreateObserver<T>())
+                    .Messages
+                    .Should()
+                    .NotContain(e => e.Value.Kind == NotificationKind.OnError).And
+                    .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
             }
 
             private static IStatementResultCursor CreateFailingResultCursor(Exception exc)
@@ -384,7 +396,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var result = new InternalRxResult(Observable.Return(cursor));
 
                 VerifyRecordsAndError(result, keys, 5, failure);
-                VerifyError(result.Summary(), failure);
+                VerifyNoError(result.Summary());
             }
 
             private void VerifyKeys(IRxResult result, params string[] keys)
@@ -416,6 +428,16 @@ namespace Neo4j.Driver.Reactive.Internal
                 var observer = CreateObserver<T>();
                 observable.SubscribeAndWait(observer);
                 observer.Messages.AssertEqual(OnError<T>(0, exc));
+            }
+
+            private void VerifyNoError<T>(IObservable<T> observable)
+            {
+                observable
+                    .SubscribeAndWait(CreateObserver<T>())
+                    .Messages
+                    .Should()
+                    .NotContain(e => e.Value.Kind == NotificationKind.OnError).And
+                    .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
             }
 
             private static IStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,

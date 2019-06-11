@@ -30,6 +30,8 @@ namespace Neo4j.Driver.Internal
             _session = session;
         }
 
+        public String LastBookmark => _session.LastBookmark;
+
         #region Run Methods
 
         public IRxResult Run(string statement)

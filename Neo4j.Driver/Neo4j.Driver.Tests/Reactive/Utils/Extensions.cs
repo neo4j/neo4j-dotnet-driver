@@ -20,6 +20,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
+using Microsoft.Reactive.Testing;
 
 namespace Neo4j.Driver.Reactive
 {
@@ -27,23 +28,41 @@ namespace Neo4j.Driver.Reactive
     {
         public static void SubscribeAndDiscard<T>(this IObservable<T> observable, int millisecondsTimeout = -1)
         {
-            SubscribeAndWait(observable, Observer.Create<T>(t => { }), millisecondsTimeout);
+            var waiter = new ManualResetEventSlim(false);
+            using (observable.Finally(() => waiter.Set()).Subscribe(Observer.Create<T>(t => { })))
+            {
+                waiter.Wait(millisecondsTimeout);
+            }
         }
 
-        public static void SubscribeAndWait<T>(this IObservable<T> observable, IObserver<T> observer,
-            int millisecondsTimeout = -1)
+        public static ITestableObserver<T> SubscribeAndWait<T>(this IObservable<T> observable,
+            ITestableObserver<T> observer, int millisecondsTimeout = -1)
         {
             var waiter = new ManualResetEventSlim(false);
             using (observable.Finally(() => waiter.Set()).Subscribe(observer))
             {
                 waiter.Wait(millisecondsTimeout);
             }
+
+            return observer;
         }
 
         public static void SubscribeAndCountDown<T>(this IObservable<T> observable, IObserver<T> observer,
             CountdownEvent countdown)
         {
             observable.Finally(() => countdown.Signal()).Subscribe(observer);
+        }
+
+        public static void AssertEqual<T>(this ITestableObserver<T> observer,
+            params Recorded<Notification<T>>[] notifications)
+        {
+            observer.Messages.AssertEqual(notifications);
+        }
+
+        public static void AssertEqual<T>(this ITestableObserver<T> observer1,
+            ITestableObserver<T> observer2)
+        {
+            observer1.Messages.AssertEqual(observer2.Messages);
         }
     }
 }

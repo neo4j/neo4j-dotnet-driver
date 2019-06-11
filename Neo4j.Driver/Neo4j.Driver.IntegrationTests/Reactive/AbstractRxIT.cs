@@ -54,7 +54,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             return session;
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             _sessions.ForEach(x => x.Close<Unit>().SubscribeAndDiscard());
             _sessions.Clear();

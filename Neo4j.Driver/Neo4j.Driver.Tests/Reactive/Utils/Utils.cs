@@ -58,11 +58,17 @@ namespace Neo4j.Driver.Reactive
         {
             return r => Matches(() => r.Should().BeEquivalentTo(Record(keys, fields)));
         }
-
+        
         public static Func<IResultSummary, bool> MatchesSummary(object sample,
             Func<EquivalencyAssertionOptions<object>, EquivalencyAssertionOptions<object>> options = null)
         {
             return s => Matches(() => s.Should().BeEquivalentTo<object>(sample, options ?? (o => o)));
+        }
+
+        public static Func<Exception, bool> MatchesException<TExpected>()
+            where TExpected : Exception
+        {
+            return MatchesException<TExpected>(exc => true);
         }
 
         public static Func<Exception, bool> MatchesException<TExpected>(Expression<Func<TExpected, bool>> predicate)
