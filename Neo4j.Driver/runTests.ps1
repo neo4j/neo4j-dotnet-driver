@@ -20,6 +20,6 @@ If (Test-Path $RootDir\..\Target) {
 	Remove-Item -Path $RootDir\..\Target -Recurse -Force
 }
 
-Invoke-Expression "pushd $RootDir\Neo4j.Driver.Tests; dotnet test -f $Framework --no-build; popd"
-Invoke-Expression "pushd $RootDir\Neo4j.Driver.IntegrationTests; dotnet test -f $Framework --no-build; popd"
+Invoke-Expression "pushd $RootDir\Neo4j.Driver.Tests; dotnet test -f $Framework; popd"
+Invoke-Expression "pushd $RootDir\Neo4j.Driver.IntegrationTests; dotnet test -f $Framework; popd"
 
