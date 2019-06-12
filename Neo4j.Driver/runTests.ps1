@@ -1,25 +1,69 @@
 Param( 
     [Parameter(Mandatory=$False,Position=1)]
     [string]$ServerVersion,
-    [Parameter(Mandatory=$False,Position=2)]
+    [Parameter(Mandatory=$False)]
     [string]$Framework
 )
 
-If ($ServerVersion -ne '') 
+Function Write-TeamCity($Text) 
 {
-	$env:NEOCTRLARGS="$ServerVersion"
-}
-
-If ($Framework -eq '')
-{
-	$Framework="net46"
+    If ($env:TEAMCITY_PROJECT_NAME) 
+    {
+        Echo $Text
+    } 
 }
 
 $RootDir = Split-Path -parent $PSCommandPath
-If (Test-Path $RootDir\..\Target) {
-	Remove-Item -Path $RootDir\..\Target -Recurse -Force
+
+$ErrorCode = 0
+try
+{
+    # Clean-up previous downloaded artifacts
+    If (Test-Path $RootDir\..\Target) {
+        Remove-Item -Path $RootDir\..\Target -Recurse -Force
+    }
+
+    $ServerVersionText = 'default'
+    If ($ServerVersion -ne '') 
+    {
+        $ServerVersionText = "$ServerVersion"
+        $env:NEOCTRLARGS = "$ServerVersion"
+    }
+    $TestArgs = ''
+    If ($Framework -ne '')
+    {
+        $TestArgs += "--framework $Framework"
+    }
+
+    Write-TeamCity "##teamcity[progressStart 'Running dotnet restore ($ServerVersionText)']"
+    Invoke-Expression "pushd $RootDir\..\Neo4j.Driver; dotnet restore; popd" -ErrorAction Stop
+    If ($LastExitCode -ne 0) {
+        throw "dotnet restore failed"
+    }
+    Write-TeamCity "##teamcity[progressFinish 'Completed dotnet restore ($ServerVersionText)']"
+
+    Write-TeamCity "##teamcity[progressStart 'Running unit tests ($ServerVersionText)']"
+    Invoke-Expression "pushd $RootDir\..\Neo4j.Driver\Neo4j.Driver.Tests; dotnet test $TestArgs; popd" -ErrorAction Stop
+    If ($LastExitCode -ne 0) {
+        throw "unit tests failed"
+    }
+    Write-TeamCity "##teamcity[progressFinish 'Completed unit tests ($ServerVersionText)']"
+
+    Write-TeamCity "##teamcity[progressStart 'Running integration tests ($ServerVersionText)']"
+    Invoke-Expression "pushd $RootDir\..\Neo4j.Driver\Neo4j.Driver.IntegrationTests; dotnet test $TestArgs; popd" -ErrorAction Stop
+    If ($LastExitCode -ne 0) {
+        throw "integration tests failed"
+    }
+    Write-TeamCity "##teamcity[progressFinish 'Completed integration tests ($ServerVersionText)']"
+} 
+catch
+{
+    $ErrorCode = 1
+    Write-TeamCity "##teamcity[buildStatus status='FAILURE' text='$_']"
+}
+finally
+{
+    Invoke-Expression "dotnet build-server shutdown" -ErrorAction Ignore
 }
 
-Invoke-Expression "pushd $RootDir\Neo4j.Driver.Tests; dotnet test -f $Framework; popd"
-Invoke-Expression "pushd $RootDir\Neo4j.Driver.IntegrationTests; dotnet test -f $Framework; popd"
-
+Exit $ErrorCode

@@ -25,6 +25,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MSTestVersion)" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
     <PackageReference Include="System.Reactive" Version="4.1.5" />
+    <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.15" />
     <PackageReference Include="xunit" Version="$(XunitVersion)" />
     <PackageReference Include="xunit.runner.console" Version="$(XunitVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />
