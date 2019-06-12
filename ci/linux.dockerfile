@@ -21,4 +21,4 @@ ENV TEAMCITY_HOST="" TEAMCITY_USER="" TEAMCITY_PASSWORD="" TEAMCITY_PROJECT_NAME
 ADD . /dotnet-driver
 WORKDIR /dotnet-driver
 
-CMD PYTHON=python3 JAVA_HOME=/java/jdk-`echo $NEOCTRLARGS | sed -E 's/-e\s*//g' | cut -d. -f1,2` pwsh -f ./Neo4j.Driver/runTests.ps1
+CMD PYTHON=python3 JAVA_HOME=/java/jdk-`echo $NEOCTRLARGS | sed -E 's/-e\s*//g' | cut -d. -f1,2` pwsh -f ./Neo4j.Driver/runTests.ps1 -ServerVersion "$NEOCTRLARGS"
