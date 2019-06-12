@@ -65,7 +65,6 @@ jobs:
         testRunTitle: 'IntegrationTests-3.5'
       env:
         NEOCTRLARGS: "-e 3.5"
-        JAVA_HOME: $(JAVA_HOME_8_X64)
         TEAMCITY_HOST: $(TEAMCITY_HOST)
         TEAMCITY_USER: $(TEAMCITY_USER)
         TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
