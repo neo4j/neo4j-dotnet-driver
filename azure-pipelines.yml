@@ -3,11 +3,10 @@
 #    include:
 #      - 2.0
 
-trigger:
-  batch: 'true'
-  branches:
-    include:
-      - azure-pipelines
+pr:
+    branches:
+        include:
+            - 2.0
 
 jobs:
 - job: Windows
