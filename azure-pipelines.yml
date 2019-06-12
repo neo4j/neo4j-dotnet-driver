@@ -11,15 +11,19 @@ pr:
 strategy:
   matrix:
     linux-3.5:
+        javaVersion: 8
         serverVersion: '-e 3.5'
         imageName: 'ubuntu-16.04'
     linux-4.0:
+        javaVersion: 11
         serverVersion: '-e 4.0'
         imageName: 'ubuntu-16.04'        
     windows-3.5:
+        javaVersion: 8
         serverVersion: '-e 3.5'
         imageName: 'vs2017-win2016'
     windows-4.0:
+        javaVersion: 11
         serverVersion: '-e 4.0'
         imageName: 'vs2017-win2016'
 
@@ -37,6 +41,10 @@ steps:
     versionSpec: '3.x' 
     addToPath: true 
     architecture: 'x64'
+
+- pwsh: |
+    echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_$(javaVersion)_X64"
+  displayName: 'Setup Java'
 
 - script: python -m pip install --upgrade boltkit==1.2.0
   displayName: 'Install boltkit'
@@ -59,16 +67,6 @@ steps:
     command: test
     projects: '**/Neo4j.Driver.Tests/*.csproj'
     testRunTitle: 'UnitTests'
-
-- pwsh: |
-    echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_11_X64"
-  displayName: 'Use Java 11'
-  condition: and(succeeded(), startsWith(variables['serverVersion'], '-e 4'))
-
-- pwsh: |
-    echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_8_X64"
-  displayName: 'Use Java 8'
-  condition: and(succeeded(), startsWith(variables['serverVersion'], '-e 3'))
 
 - task: DotNetCoreCLI@2
   displayName: 'Run integration tests'
