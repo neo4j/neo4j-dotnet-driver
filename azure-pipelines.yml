@@ -39,6 +39,8 @@ jobs:
       inputs:
         command: test
         projects: '**/Neo4j.Driver.Tests/*.csproj'
+    - pwsh: |
+        echo '##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_11_X64'
     - task: DotNetCoreCLI@2
       displayName: 'Run integration tests with 4.0 server'
       inputs:
@@ -46,10 +48,11 @@ jobs:
         projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
       env:
         NEOCTRLARGS: "-e 4.0"
-        JAVA_HOME: $(JAVA_HOME_10_X64)
         TEAMCITY_HOST: $(TEAMCITY_HOST)
         TEAMCITY_USER: $(TEAMCITY_USER)
         TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
+    - pwsh: |
+        echo '##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_11_X64'
     - task: DotNetCoreCLI@2
       displayName: 'Run integration tests with 3.5 server'
       inputs:
