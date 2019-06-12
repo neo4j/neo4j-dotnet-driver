@@ -47,6 +47,9 @@ jobs:
       env:
         NEOCTRLARGS: "-e 4.0"
         JAVA_HOME: $(JAVA_HOME_10_X64)
+        TEAMCITY_HOST: $(TEAMCITY_HOST)
+        TEAMCITY_USER: $(TEAMCITY_USER)
+        TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
     - task: DotNetCoreCLI@2
       displayName: 'Run integration tests with 3.5 server'
       inputs:
@@ -55,4 +58,7 @@ jobs:
       env:
         NEOCTRLARGS: "-e 3.5"
         JAVA_HOME: $(JAVA_HOME_8_X64)
+        TEAMCITY_HOST: $(TEAMCITY_HOST)
+        TEAMCITY_USER: $(TEAMCITY_USER)
+        TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
     
