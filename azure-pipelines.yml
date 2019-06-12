@@ -17,27 +17,30 @@ jobs:
     group: teamcity
   steps:
     - task: UsePythonVersion@0
+      displayName: 'Setup python'
       inputs:
         versionSpec: '3.x' 
         addToPath: true 
         architecture: 'x64'
+    - script: python -m pip install --upgrade boltkit==1.2.0
+      displayName: 'Install boltkit'
     - task: DotNetCoreCLI@2
-      displayName: restore
+      displayName: 'Restore'
       inputs:
         command: restore
         projects: '**/*.csproj'
     - task: DotNetCoreCLI@2
-      displayName: build
+      displayName: 'Build'
       inputs:
         command: build
         projects: '**/*.csproj'
     - task: DotNetCoreCLI@2
-      displayName: unit tests
+      displayName: 'Run unit tests'
       inputs:
         command: test
         projects: '**/Neo4j.Driver.Tests/*.csproj'
     - task: DotNetCoreCLI@2
-      displayName: integration tests with 4.0 server
+      displayName: 'Run integration tests with 4.0 server'
       inputs:
         command: test
         projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
@@ -45,7 +48,7 @@ jobs:
         NEOCTRLARGS: "-e 4.0"
         JAVA_HOME: $(JAVA_HOME_10_X64)
     - task: DotNetCoreCLI@2
-      displayName: integration tests with 3.5 server
+      displayName: 'Run integration tests with 3.5 server'
       inputs:
         command: test
         projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
