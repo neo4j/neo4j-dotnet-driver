@@ -1,5 +1,5 @@
 Param( 
-    [Parameter(Mandatory=$False,Position=1)]
+    [Parameter(Mandatory=$False)]
     [string]$ServerVersion,
     [Parameter(Mandatory=$False)]
     [string]$Framework
