@@ -1,0 +1,55 @@
+# pr:
+#  branches:
+#    include:
+#      - 2.0
+
+trigger:
+  batch: 'true'
+  branches:
+    include:
+      - azure-pipelines
+
+jobs:
+- job: Windows
+  pool:
+    vmImage: 'vs2017-win2016'
+  variables:
+    group: teamcity
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x' 
+        addToPath: true 
+        architecture: 'x64'
+    - task: DotNetCoreCLI@2
+      displayName: restore
+      inputs:
+        command: restore
+        projects: '**/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: build
+      inputs:
+        command: build
+        projects: '**/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: unit tests
+      inputs:
+        command: test
+        projects: '**/Neo4j.Driver.Tests/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: integration tests with 4.0 server
+      inputs:
+        command: test
+        projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
+      env:
+        NEOCTRLARGS: "-e 4.0"
+        JAVA_HOME: $(JAVA_HOME_10_X64)
+    - task: DotNetCoreCLI@2
+      displayName: integration tests with 3.5 server
+      inputs:
+        command: test
+        projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
+      env:
+        NEOCTRLARGS: "-e 3.5"
+        JAVA_HOME: $(JAVA_HOME_8_X64)
+    
