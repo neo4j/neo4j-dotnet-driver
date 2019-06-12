@@ -32,5 +32,5 @@ If ($InstallDotnet -and !(Test-Path -Path $DotnetDir -PathType Container)) {
     Write-TeamCity "##teamcity[progressFinish 'Installed dotnet']"
 }
 
-Invoke-Expression "$RootDir\..\Neo4j.Driver\runTests.ps1 $(If ($ServerVersion) {"-ServerVersion $ServerVersion"}) $(If ($Framework) {"-Framework $Framework"})"
+Invoke-Expression "$RootDir\..\Neo4j.Driver\runTests.ps1 $(If ($ServerVersion) {"-ServerVersion '$ServerVersion'"}) $(If ($Framework) {"-Framework '$Framework'"})"
 Exit $LastExitCode
