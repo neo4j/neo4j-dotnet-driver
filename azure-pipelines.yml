@@ -1,0 +1,66 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+pr:
+  branches:
+    include:
+      - 2.0
+
+jobs:
+- job: Windows
+  pool:
+    vmImage: 'vs2017-win2016'
+  variables:
+    group: teamcity
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x' 
+        addToPath: true 
+        architecture: 'x64'
+    - task: JavaToolInstaller@0
+      inputs:
+        versionSpec: '8' 
+        jdkArchitectureOption: 'x64'
+        jdkSourceOption: # Options: azureStorage, localDirectory
+        #jdkFile: # Required when jdkSourceOption == LocalDirectory
+        #azureResourceManagerEndpoint: # Required when jdkSourceOption == AzureStorage
+        #azureStorageAccountName: # Required when jdkSourceOption == AzureStorage
+        #azureContainerName: # Required when jdkSourceOption == AzureStorage
+        #azureCommonVirtualFile: # Required when jdkSourceOption == AzureStorage
+        jdkDestinationDirectory: 
+        #cleanDestinationDirectory: true         
+    - task: DotNetCoreCLI@2
+      displayName: restore
+      inputs:
+        command: restore
+        projects: '**/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: build
+      inputs:
+        command: build
+        projects: '**/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: unit tests
+      inputs:
+        command: test
+        projects: '**/Neo4j.Driver.Tests/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: integration tests with 4.0 server
+      inputs:
+        command: test
+        projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
+      env:
+        NEOCTRLARGS: "-e 4.0"
+        JAVA_HOME: $(JAVA_HOME_10_X64)
+    - task: DotNetCoreCLI@2
+      displayName: integration tests with 3.5 server
+      inputs:
+        command: test
+        projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
+      env:
+        NEOCTRLARGS: "-e 3.5"
+        JAVA_HOME: $(JAVA_HOME_8_X64)
+    
