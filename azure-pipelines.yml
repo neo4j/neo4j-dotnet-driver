@@ -7,6 +7,7 @@ pr:
     branches:
         include:
             - 2.0
+    autoCancel: 'true'
 
 jobs:
 - job: Windows
@@ -67,9 +68,3 @@ jobs:
         TEAMCITY_HOST: $(TEAMCITY_HOST)
         TEAMCITY_USER: $(TEAMCITY_USER)
         TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
-    - task: PublishTestResults@2
-      displayName: 'Publish test results'
-      condition: succeededOrFailed()
-      inputs:
-        testRunner: VSTest
-        testResultsFiles: '**/*.trx'
