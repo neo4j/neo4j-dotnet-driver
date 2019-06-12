@@ -1,0 +1,81 @@
+# disable CI builds
+trigger: none
+
+# Only trigger for PR's targeting 2.0
+pr:
+    branches:
+        include:
+            - 2.0
+    autoCancel: 'true'
+
+strategy:
+  matrix:
+    linux-3.5:
+        javaVersion: 8
+        serverVersion: '-e 3.5'
+        imageName: 'ubuntu-16.04'
+    linux-4.0:
+        javaVersion: 11
+        serverVersion: '-e 4.0'
+        imageName: 'ubuntu-16.04'        
+    windows-3.5:
+        javaVersion: 8
+        serverVersion: '-e 3.5'
+        imageName: 'vs2017-win2016'
+    windows-4.0:
+        javaVersion: 11
+        serverVersion: '-e 4.0'
+        imageName: 'vs2017-win2016'
+
+pool:
+  vmImage: $(imageName)
+
+variables:
+  group: teamcity
+  
+steps:
+
+- task: UsePythonVersion@0
+  displayName: 'Setup python'
+  inputs:
+    versionSpec: '3.x' 
+    addToPath: true 
+    architecture: 'x64'
+
+- pwsh: |
+    echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_$(javaVersion)_X64"
+  displayName: 'Setup Java'
+
+- script: python -m pip install --upgrade boltkit==1.2.0
+  displayName: 'Install boltkit'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore'
+  inputs:
+    command: restore
+    projects: '**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build'
+  inputs:
+    command: build
+    projects: '**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Run unit tests'
+  inputs:
+    command: test
+    projects: '**/Neo4j.Driver.Tests/*.csproj'
+    testRunTitle: 'UnitTests'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Run integration tests'
+  inputs:
+    command: test
+    projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
+    testRunTitle: 'IntegrationTests-4.0'
+  env:
+    NEOCTRLARGS: $(serverVersion)
+    TEAMCITY_HOST: $(TEAMCITY_HOST)
+    TEAMCITY_USER: $(TEAMCITY_USER)
+    TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
