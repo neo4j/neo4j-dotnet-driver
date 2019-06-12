@@ -3,6 +3,11 @@
 #    include:
 #      - 2.0
 
+trigger:
+    branches:
+        exclude:
+            - azure-pipelines
+
 pr:
     branches:
         include:
