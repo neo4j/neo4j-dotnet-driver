@@ -51,6 +51,12 @@ steps:
     displayName: "Setup java"
 
   - pwsh: |
+      # This script is here because neo4j server with IPv6 enabled failed to start up with
+      # the hosted ubuntu-16.04 image. The machine indeed had IPv6 enabled, but it seems that
+      # it makes difference for Java how the running process is launched to discover whether
+      # IPv6 is enabled or disabled, so this script makes best effort to discover whether the
+      # the server can start-up with IPv6 and if failed, it defines an `NEOCTRL_DISABLE_IPV6`
+      # environment variable so that the further tests could behave based on that.
       $Target = "TestServerTarget"
 
       $env:NEOCTRL_LOCAL_PACKAGE = & neoctrl-download $(serverVersion) "$Target"
