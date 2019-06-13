@@ -115,13 +115,13 @@ steps:
     inputs:
       command: test
       projects: "**/Neo4j.Driver.Tests/*.csproj"
-      testRunTitle: "UnitTests"
+      testRunTitle: "UnitTests-$(Agent.JobName)"
 
   - task: DotNetCoreCLI@2
     displayName: "Run integration tests"
     inputs:
       command: test
       projects: "**/Neo4j.Driver.IntegrationTests/*.csproj"
-      testRunTitle: "IntegrationTests"
+      testRunTitle: "IntegrationTests-$(Agent.JobName)"
     env:
       NEOCTRLARGS: $(serverVersion)
