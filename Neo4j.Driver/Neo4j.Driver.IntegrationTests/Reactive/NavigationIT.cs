@@ -26,7 +26,7 @@ using static Neo4j.Driver.Reactive.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive
 {
-    public class NavigationIT
+    public static class NavigationIT
     {
         public abstract class Specs : AbstractRxIT
         {

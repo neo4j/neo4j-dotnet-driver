@@ -47,12 +47,6 @@ namespace Neo4j.Driver.Reactive
             return observer;
         }
 
-        public static void SubscribeAndCountDown<T>(this IObservable<T> observable, IObserver<T> observer,
-            CountdownEvent countdown)
-        {
-            observable.Finally(() => countdown.Signal()).Subscribe(observer);
-        }
-
         public static void AssertEqual<T>(this ITestableObserver<T> observer,
             params Recorded<Notification<T>>[] notifications)
         {
