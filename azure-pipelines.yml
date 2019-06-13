@@ -57,6 +57,8 @@ steps:
       # IPv6 is enabled or disabled, so this script makes best effort to discover whether the
       # the server can start-up with IPv6 and if failed, it defines an `NEOCTRL_DISABLE_IPV6`
       # environment variable so that the further tests could behave based on that.
+      #
+      # See https://bugs.openjdk.java.net/browse/JDK-8211842 for more information.
       $Target = "TestServerTarget"
 
       $env:NEOCTRL_LOCAL_PACKAGE = & neoctrl-download $(serverVersion) "$Target"
