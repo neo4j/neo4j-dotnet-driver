@@ -55,10 +55,10 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerWithIPv6Fact("3.1.0", GreaterThanOrEqualTo)]
         public void ShouldConnectIPv6AddressIfEnabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config { Ipv6Enabled = true }))
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = true}))
             using (var session = driver.Session())
             {
                 var ret = session.Run("RETURN 1").Single();
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void ShouldNotConnectIPv6AddressIfDisabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken))
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = false}))
             using (var session = driver.Session())
             {
                 var exception = Record.Exception(() => session.Run("RETURN 1"));
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact]
+        [RequireServerWithIPv6Fact]
         public void ShouldConnectIPv4AddressIfIpv6Enabled()
         {
             using (
@@ -200,6 +200,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 tasks.Add(workItem.RunAsync());
             }
+
             await Task.WhenAll(tasks);
 
             var m = metrics.ConnectionPoolMetrics.Single().Value;

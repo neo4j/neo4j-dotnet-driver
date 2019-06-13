@@ -108,6 +108,26 @@ namespace Neo4j.Driver.IntegrationTests
         }
     }
 
+    public class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
+    {
+        public RequireServerWithIPv6FactAttribute(string versionText = null,
+            VersionComparison versionCompare = VersionComparison.EqualTo)
+            : base(versionText, versionCompare)
+        {
+            if (string.IsNullOrEmpty(Skip))
+            {
+                if (!BoltkitHelper.IPV6Available())
+                {
+                    Skip = "IPv6 is not available";
+                }
+                else if (!BoltkitHelper.IPV6Enabled())
+                {
+                    Skip = "IPv6 is disabled";
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Use `RequireServerTheory` tag for the tests that require a single instance
     /// </summary>

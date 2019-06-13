@@ -126,6 +126,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return _isClusterSupported;
         }
 
+        public static bool IPV6Available()
+        {
+            return NetworkInterface.GetAllNetworkInterfaces().Any(nic => nic.Supports(NetworkInterfaceComponent.IPv6));
+        }
+
         public static bool IPV6Enabled()
         {
             if (bool.TryParse(GetEnvironmentVariable("NEOCTRL_DISABLE_IPV6"), out var disableIPv6) && disableIPv6)
@@ -133,7 +138,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 return false;
             }
 
-            return NetworkInterface.GetAllNetworkInterfaces().Any(nic => nic.Supports(NetworkInterfaceComponent.IPv6));
+            return true;
         }
 
         public static string ServerVersion()

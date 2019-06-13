@@ -59,7 +59,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
 
             _commandRunner.RunCommand("neoctrl-create-user", $"\"{HomeDir}\"", "neo4j", Password);
-            if (BoltkitHelper.IPV6Enabled())
+            if (BoltkitHelper.IPV6Available() && BoltkitHelper.IPV6Enabled())
             {
                 UpdateSettings(new Dictionary<string, string>
                 {
