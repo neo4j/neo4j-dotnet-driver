@@ -3,79 +3,114 @@ trigger: none
 
 # Only trigger for PR's targeting 2.0
 pr:
-    branches:
-        include:
-            - 2.0
-    autoCancel: 'true'
+  branches:
+    include:
+      - 2.0
+  autoCancel: "true"
 
 strategy:
   matrix:
     linux-3.5:
-        javaVersion: 8
-        serverVersion: '-e 3.5'
-        imageName: 'ubuntu-16.04'
-    linux-4.0:
-        javaVersion: 11
-        serverVersion: '-e 4.0'
-        imageName: 'ubuntu-16.04'        
-    windows-3.5:
-        javaVersion: 8
-        serverVersion: '-e 3.5'
-        imageName: 'vs2017-win2016'
-    windows-4.0:
-        javaVersion: 11
-        serverVersion: '-e 4.0'
-        imageName: 'vs2017-win2016'
+      javaVersion: 8
+      serverVersion: "-e 3.5"
+      imageName: "ubuntu-16.04"
+#    linux-4.0:
+#      javaVersion: 11
+#      serverVersion: "-e 4.0"
+#      imageName: "ubuntu-16.04"
+#    windows-3.5:
+#      javaVersion: 8
+#      serverVersion: "-e 3.5"
+#      imageName: "vs2017-win2016"
+#    windows-4.0:
+#      javaVersion: 11
+#      serverVersion: "-e 4.0"
+#      imageName: "vs2017-win2016"
 
 pool:
   vmImage: $(imageName)
 
 variables:
   group: teamcity
-  
+
 steps:
+  - task: UsePythonVersion@0
+    displayName: "Setup python"
+    inputs:
+      versionSpec: "3.x"
+      addToPath: true
+      architecture: "x64"
 
-- task: UsePythonVersion@0
-  displayName: 'Setup python'
-  inputs:
-    versionSpec: '3.x' 
-    addToPath: true 
-    architecture: 'x64'
+  - script: python -m pip install --upgrade boltkit==1.2.0
+    displayName: "Install boltkit"
 
-- pwsh: |
-    echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_$(javaVersion)_X64"
-  displayName: 'Setup Java'
+  - pwsh: |
+      echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_$(javaVersion)_X64"
+    displayName: "Setup java"
 
-- script: python -m pip install --upgrade boltkit==1.2.0
-  displayName: 'Install boltkit'
+  - pwsh: |
+      $Target = "TestServerTarget"
 
-- task: DotNetCoreCLI@2
-  displayName: 'Restore'
-  inputs:
-    command: restore
-    projects: '**/*.csproj'
+      $env:NEOCTRL_LOCAL_PACKAGE = & neoctrl-download $(serverVersion) "$Target"
+      echo "##vso[task.setvariable variable=NEOCTRL_LOCAL_PACKAGE]$env:NEOCTRL_LOCAL_PACKAGE"
 
-- task: DotNetCoreCLI@2
-  displayName: 'Build'
-  inputs:
-    command: build
-    projects: '**/*.csproj'
+      $Server = & neoctrl-install $(serverVersion) "$Target"
+      If ($LastExitCode -ne 0)
+      {
+        throw "Unable to install server"
+      }
 
-- task: DotNetCoreCLI@2
-  displayName: 'Run unit tests'
-  inputs:
-    command: test
-    projects: '**/Neo4j.Driver.Tests/*.csproj'
-    testRunTitle: 'UnitTests'
+      & neoctrl-configure "$Server" dbms.connectors.default_listen_address=::
+      If ($LastExitCode -ne 0)
+      {
+        throw "Unable to enable IPV6"
+      }
 
-- task: DotNetCoreCLI@2
-  displayName: 'Run integration tests'
-  inputs:
-    command: test
-    projects: '**/Neo4j.Driver.IntegrationTests/*.csproj'
-    testRunTitle: 'IntegrationTests-4.0'
-  env:
-    NEOCTRLARGS: $(serverVersion)
-    TEAMCITY_HOST: $(TEAMCITY_HOST)
-    TEAMCITY_USER: $(TEAMCITY_USER)
-    TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
+      try
+      {
+        & neoctrl-start "$Server"
+        if ( $LastExitCode -ne 0 )
+        {
+            throw "Unable to start server"
+        }
+
+        & neoctrl-stop "$Server"
+      }
+      catch
+      {
+         echo "##vso[task.setvariable variable=NEOCTRL_DISABLE_IPV6]true"
+         Exit 0
+      }
+    displayName: "Download server and test for IPv6"
+    env:
+      TEAMCITY_HOST: $(TEAMCITY_HOST)
+      TEAMCITY_USER: $(TEAMCITY_USER)
+      TEAMCITY_PASSWORD: $(TEAMCITY_PASSWORD)
+
+  - task: DotNetCoreCLI@2
+    displayName: "Restore"
+    inputs:
+      command: restore
+      projects: "**/*.csproj"
+
+  - task: DotNetCoreCLI@2
+    displayName: "Build"
+    inputs:
+      command: build
+      projects: "**/*.csproj"
+
+  - task: DotNetCoreCLI@2
+    displayName: "Run unit tests"
+    inputs:
+      command: test
+      projects: "**/Neo4j.Driver.Tests/*.csproj"
+      testRunTitle: "UnitTests"
+
+  - task: DotNetCoreCLI@2
+    displayName: "Run integration tests"
+    inputs:
+      command: test
+      projects: "**/Neo4j.Driver.IntegrationTests/*.csproj"
+      testRunTitle: "IntegrationTests-4.0"
+    env:
+      NEOCTRLARGS: $(serverVersion)

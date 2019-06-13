@@ -18,6 +18,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using static System.Environment;
 using static Neo4j.Driver.Internal.Util.ServerVersion;
@@ -45,6 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 {
                     return _boltkitArgs;
                 }
+
                 // User could always overwrite the env var
                 var envVar = GetEnvironmentVariable("NEOCTRLARGS");
                 if (envVar != null)
@@ -65,13 +67,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                         _boltkitArgs = DefaultServerVersion;
                     }
                 }
+
                 return _boltkitArgs;
             }
         }
 
         private enum BoltkitStatus
         {
-            Unknown, Installed, Unavailable
+            Unknown,
+            Installed,
+            Unavailable
         }
 
         public static bool IsBoltkitAvailable()
@@ -87,6 +92,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     }
                 }
             }
+
             return _boltkitAvailable == BoltkitStatus.Installed;
         }
 
@@ -120,6 +126,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return _isClusterSupported;
         }
 
+        public static bool IPV6Enabled()
+        {
+            if (bool.TryParse(GetEnvironmentVariable("NEOCTRL_DISABLE_IPV6"), out var disableIPv6) && disableIPv6)
+            {
+                return false;
+            }
+
+            return NetworkInterface.GetAllNetworkInterfaces().Any(nic => nic.Supports(NetworkInterfaceComponent.IPv6));
+        }
+
         public static string ServerVersion()
         {
             // the last of the args is the version to installed
@@ -138,6 +154,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 return BoltkitStatus.Unavailable;
             }
+
             return BoltkitStatus.Installed;
         }
 
@@ -152,7 +169,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             var codeBase = typeof(BoltkitHelper).GetTypeInfo().Assembly.CodeBase;
             var localPath = new Uri(codeBase).LocalPath;
             var localFile = new FileInfo(localPath);
-            var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName, string.Format("..{0}..{0}..{0}..{0}..{0}Target", Path.DirectorySeparatorChar)));
+            var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName,
+                string.Format("..{0}..{0}..{0}..{0}..{0}Target", Path.DirectorySeparatorChar)));
             return sourcePath.FullName;
         }
     }
