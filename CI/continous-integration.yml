@@ -1,7 +1,7 @@
 name: continous-integration
 
 # Build for 2.0
-trigger: none
+trigger:
   branches:
     include:
       - 2.0
