@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Moq;
@@ -165,6 +166,19 @@ namespace Neo4j.Driver.Reactive.Internal
                 VerifySummary(result, "my statement");
             }
 
+            [Fact]
+            public void ShouldNotAllowConcurrentRecordObservers()
+            {
+                var keys = new[] {"key01", "key02", "key03"};
+                var cursor = CreateResultCursor(3, 20, "my statement", 1000);
+                var result = new InternalRxResult(Observable.Return(cursor));
+
+                result.Records().Merge(result.Records())
+                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .AssertEqual(
+                        OnError<IRecord>(0, MatchesException<ClientException>()));
+            }
+
 
             private void VerifyKeys(IRxResult result, params string[] keys)
             {
@@ -207,18 +221,29 @@ namespace Neo4j.Driver.Reactive.Internal
                     OnCompleted<IResultSummary>(0));
             }
 
+            private static IEnumerable<IRecord> CreateRecords(string[] fields, int recordCount, int delayMs = 0)
+            {
+                for (var i = 1; i <= recordCount; i++)
+                {
+                    if (delayMs > 0)
+                    {
+                        Thread.Sleep(delayMs);
+                    }
+
+                    yield return new Record(fields,
+                        Enumerable.Range(1, fields.Length).Select(f => $"{i:D3}_{f:D2}").Cast<object>().ToArray());
+                }
+            }
+
             private static IStatementResultCursor CreateResultCursor(int keyCount, int recordCount,
-                string statement = "fake")
+                string statement = "fake", int delayMs = 0)
             {
                 var fields = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();
-                var records = Enumerable.Range(1, recordCount).Select(
-                    r => new Record(fields,
-                        Enumerable.Range(1, keyCount).Select(f => $"{r:D3}_{f:D2}").Cast<object>().ToArray())
-                );
                 var summaryBuilder =
                     new SummaryBuilder(new Statement(statement), new ServerInfo(new Uri("bolt://localhost")));
 
-                return new ListBasedRecordCursor(fields, () => records, () => summaryBuilder.Build());
+                return new ListBasedRecordCursor(fields, () => CreateRecords(fields, recordCount, delayMs),
+                    () => summaryBuilder.Build());
             }
         }
 
