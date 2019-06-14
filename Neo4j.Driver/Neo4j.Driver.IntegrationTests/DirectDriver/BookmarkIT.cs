@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -36,7 +37,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void ShouldContainLastBookmarkAfterTx()
         {
             using (var session = Driver.Session())
@@ -50,7 +51,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void BookmarkUnchangedAfterRolledBackTx()
         {
             using (var session = Driver.Session())
@@ -68,7 +69,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void BookmarkUnchangedAfterTxFailure()
         {
             using (var session = Driver.Session())
@@ -86,8 +87,8 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
-        public void ShouldIgnoreButLogInvalidBookmark()
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        public void ShouldIgnoreInvalidBookmark()
         {
             var invalidBookmark = "invalid bookmark format";
             var loggerMock = new Mock<IDriverLogger>();
@@ -97,11 +98,9 @@ namespace Neo4j.Driver.IntegrationTests
                 session.BeginTransaction(invalidBookmark);
                 session.LastBookmark.Should().BeNull(); // ignored
             }
-            loggerMock.Verify(x=>x.Info("Failed to recognize bookmark '{0}' and this bookmark is ignored.",
-                invalidBookmark), Times.Once); // but logged
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void ShouldThrowForUnreachableBookmark()
         {
             using (var session = (Session)Driver.Session())
@@ -115,8 +114,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-
-        [RequireServerVersionGreaterThanOrEqualToFact("3.1.0")]
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
         public void ShouldWaitOnBookmark()
         {
             using (var session = Driver.Session())

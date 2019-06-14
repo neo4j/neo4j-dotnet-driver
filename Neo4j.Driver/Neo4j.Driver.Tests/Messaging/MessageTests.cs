@@ -53,10 +53,10 @@ namespace Neo4j.Driver.Tests
                     }),
                     "RUN `A statement` [{key1, 1}, {key2, [2, 4]}]"
                 },
-                new object[] {new PullNMessage(1, 2), "PULL_N [{n, 2}, {stmt_id, 1}]"},
-                new object[] {new PullNMessage(2), "PULL_N [{n, 2}]"},
-                new object[] {new DiscardNMessage(1, 2), "DISCARD_N [{n, 2}, {stmt_id, 1}]"},
-                new object[] {new DiscardNMessage(2), "DISCARD_N [{n, 2}]"},
+                new object[] {new PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},
+                new object[] {new PullMessage(2), "PULL [{n, 2}]"},
+                new object[] {new DiscardMessage(1, 2), "DISCARD [{n, 2}, {qid, 1}]"},
+                new object[] {new DiscardMessage(2), "DISCARD [{n, 2}]"},
             };
 
             [Theory, MemberData(nameof(MessageData))]

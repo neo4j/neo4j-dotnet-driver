@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO
     internal class PackStreamWriterBytesIncompatible: PackStreamWriter
     {
 
-        public PackStreamWriterBytesIncompatible(Stream stream, IDictionary<Type, IPackStreamStructHandler> structHandler)
+        public PackStreamWriterBytesIncompatible(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandler)
             : base(stream, structHandler)
         {
             

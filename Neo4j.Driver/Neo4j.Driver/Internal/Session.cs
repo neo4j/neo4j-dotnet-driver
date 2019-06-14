@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Result;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
@@ -45,14 +46,17 @@ namespace Neo4j.Driver.Internal
         private readonly SyncExecutor _syncExecutor;
         public string LastBookmark => _bookmark?.MaxBookmark;
 
+        private readonly bool _reactive;
+
         public Session(IConnectionProvider provider, IDriverLogger logger, SyncExecutor syncExecutor,
-            IRetryLogic retryLogic = null,
-            AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null)
+            IRetryLogic retryLogic = null, AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null,
+            bool reactive = false)
         {
             _logger = logger;
             _connectionProvider = provider;
             _retryLogic = retryLogic;
             _syncExecutor = syncExecutor;
+            _reactive = reactive;
 
             _defaultMode = defaultMode;
             UpdateBookmark(bookmark);
@@ -70,7 +74,8 @@ namespace Neo4j.Driver.Internal
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
-                return await protocol.RunInAutoCommitTransactionAsync(_connection, statement, this, _bookmark, txConfig)
+                return await protocol
+                    .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _bookmark, txConfig)
                     .ConfigureAwait(false);
             });
         }
@@ -129,7 +134,7 @@ namespace Neo4j.Driver.Internal
 
         public ITransaction BeginTransaction(string bookmark)
         {
-            UpdateBookmark(Bookmark.From(bookmark, _logger));
+            UpdateBookmark(Bookmark.From(bookmark));
             return BeginTransaction();
         }
 
@@ -286,7 +291,7 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            var tx = new Transaction(_connection, _syncExecutor, this, _logger, _bookmark);
+            var tx = new Transaction(_connection, _syncExecutor, this, _logger, _bookmark, _reactive);
             await tx.BeginTransactionAsync(txConfig ?? TransactionConfig.Empty).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;

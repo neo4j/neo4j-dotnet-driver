@@ -15,9 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Text;
+using Neo4j.Driver.IntegrationTests.Internals;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
-using static Neo4j.Driver.IntegrationTests.Internals.BoltkitHelper;
-using static Neo4j.Driver.Internal.Routing.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -25,9 +27,9 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireBoltStubServerFactAttribute()
         {
-            if (!IsBoltkitAvailable())
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
-                Skip = TestRequireBoltkit;
+                Skip = BoltkitHelper.TestRequireBoltkit;
             }
         }
     }
@@ -36,59 +38,92 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireBoltStubServerTheoryAttribute()
         {
-            if (!IsBoltkitAvailable())
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
-                Skip = TestRequireBoltkit;
+                Skip = BoltkitHelper.TestRequireBoltkit;
             }
         }
     }
 
-    /// <summary>
-    /// Use `RequireServerVersionGreaterThanOrEqualToFact` tag for the tests that require a server with version equals to or greater than given version
-    /// </summary>
-    public class RequireServerVersionGreaterThanOrEqualToFact : FactAttribute
+    public enum VersionComparison
     {
-        public RequireServerVersionGreaterThanOrEqualToFact(string version)
-        {
-            if (!IsBoltkitAvailable())
-            {
-                Skip = TestRequireBoltkit;
-            }
-            if (!(Version(ServerVersion()) >= Version(version)))
-            {
-                Skip = $"Require server version >= {version}, while current server version is {ServerVersion()}";
-            }
-        }
+        LessThan,
+        LessThanOrEqualTo,
+        EqualTo,
+        GreaterThanOrEqualTo,
+        GreaterThan,
     }
 
-    /// <summary>
-    /// Use `RequireServerVersionLessThanFact` tag for the tests that require a server with version less than the given version
-    /// </summary>
-    public class RequireServerVersionLessThanFact : FactAttribute
-    {
-        public RequireServerVersionLessThanFact(string version)
-        {
-            if (!IsBoltkitAvailable())
-            {
-                Skip = TestRequireBoltkit;
-            }
-            if (Version(ServerVersion()) >= Version(version))
-            {
-                Skip = $"Require server version < {version}, while current server version is {ServerVersion()}";
-            }
-        }
-    }
 
     /// <summary>
     /// Use `RequireServerFact` tag for the tests that require a single instance
     /// </summary>
     public class RequireServerFactAttribute : FactAttribute
     {
-        public RequireServerFactAttribute()
+        public RequireServerFactAttribute(string versionText = null,
+            VersionComparison versionCompare = VersionComparison.EqualTo)
         {
-            if (!IsBoltkitAvailable())
+            var skipText = new StringBuilder();
+
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
-                Skip = TestRequireBoltkit;
+                skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
+            }
+
+            if (!string.IsNullOrWhiteSpace(versionText))
+            {
+                var version = ServerVersion.From(versionText);
+                var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+
+                var satisfy = false;
+                switch (versionCompare)
+                {
+                    case VersionComparison.LessThan:
+                        satisfy = availableVersion.CompareTo(version) < 0;
+                        break;
+                    case VersionComparison.LessThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) <= 0;
+                        break;
+                    case VersionComparison.EqualTo:
+                        satisfy = availableVersion.CompareTo(version) == 0;
+                        break;
+                    case VersionComparison.GreaterThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) >= 0;
+                        break;
+                    case VersionComparison.GreaterThan:
+                        satisfy = availableVersion.CompareTo(version) > 0;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
+                }
+
+                if (!satisfy)
+                {
+                    skipText.AppendLine(
+                        $"Test requires available server version {availableVersion} to be {versionCompare.ToString()} {version}.");
+                }
+            }
+
+            Skip = skipText.ToString();
+        }
+    }
+
+    public class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
+    {
+        public RequireServerWithIPv6FactAttribute(string versionText = null,
+            VersionComparison versionCompare = VersionComparison.EqualTo)
+            : base(versionText, versionCompare)
+        {
+            if (string.IsNullOrEmpty(Skip))
+            {
+                if (!BoltkitHelper.IPV6Available())
+                {
+                    Skip = "IPv6 is not available";
+                }
+                else if (!BoltkitHelper.IPV6Enabled())
+                {
+                    Skip = "IPv6 is disabled";
+                }
             }
         }
     }
@@ -98,11 +133,50 @@ namespace Neo4j.Driver.IntegrationTests
     /// </summary>
     public class RequireServerTheoryAttribute : TheoryAttribute
     {
-        public RequireServerTheoryAttribute()
+        public RequireServerTheoryAttribute(string versionText = null,
+            VersionComparison versionCompare = VersionComparison.EqualTo)
         {
-            if (!IsBoltkitAvailable())
+            var skipText = new StringBuilder();
+
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
-                Skip = TestRequireBoltkit;
+                skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
+            }
+
+            if (!string.IsNullOrWhiteSpace(versionText))
+            {
+                var version = ServerVersion.From(versionText);
+                var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+
+                var satisfy = false;
+                switch (versionCompare)
+                {
+                    case VersionComparison.LessThan:
+                        satisfy = availableVersion.CompareTo(version) < 0;
+                        break;
+                    case VersionComparison.LessThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) <= 0;
+                        break;
+                    case VersionComparison.EqualTo:
+                        satisfy = availableVersion.CompareTo(version) == 0;
+                        break;
+                    case VersionComparison.GreaterThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) >= 0;
+                        break;
+                    case VersionComparison.GreaterThan:
+                        satisfy = availableVersion.CompareTo(version) > 0;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
+                }
+
+                if (!satisfy)
+                {
+                    skipText.AppendLine(
+                        $"Test requires available server version {availableVersion} to be {versionCompare} {version}.");
+                }
+
+                Skip = skipText.ToString();
             }
         }
     }
@@ -114,7 +188,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterFactAttribute()
         {
-            var isClusterSupported = IsClusterSupported();
+            var isClusterSupported = BoltkitHelper.IsClusterSupported();
             if (!isClusterSupported.Item1)
             {
                 Skip = isClusterSupported.Item2;
@@ -129,7 +203,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterTheoryAttribute()
         {
-            var isClusterSupported = IsClusterSupported();
+            var isClusterSupported = BoltkitHelper.IsClusterSupported();
             if (!isClusterSupported.Item1)
             {
                 Skip = isClusterSupported.Item2;

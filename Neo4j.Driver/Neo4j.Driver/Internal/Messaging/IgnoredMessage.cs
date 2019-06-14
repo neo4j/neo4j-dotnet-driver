@@ -15,6 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.MessageHandling;
+
 namespace Neo4j.Driver.Internal.Messaging
 {
     internal class IgnoredMessage : IResponseMessage
@@ -30,9 +33,9 @@ namespace Neo4j.Driver.Internal.Messaging
             return "IGNORED";
         }
 
-        public void Dispatch(IMessageResponseHandler messageResponseHandler)
+        public void Dispatch(IResponsePipeline pipeline)
         {
-            messageResponseHandler.HandleIgnoredMessage();
+            pipeline.OnIgnored();
         }
     }
 }

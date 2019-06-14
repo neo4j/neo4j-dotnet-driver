@@ -16,8 +16,8 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageHandlers;
-using Neo4j.Driver.Internal.IO.ValueHandlers;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -42,23 +42,23 @@ namespace Neo4j.Driver.Internal.Protocol
         internal BoltProtocolV1MessageFormat()
         {
             // Request Message Types
-            AddHandler<InitMessageHandler>();
-            AddHandler<RunMessageHandler>();
-            AddHandler<PullAllMessageHandler>();
-            AddHandler<DiscardAllMessageHandler>();
-            AddHandler<ResetMessageHandler>();
+            AddHandler<InitMessageSerializer>();
+            AddHandler<RunMessageSerializer>();
+            AddHandler<PullAllMessageSerializer>();
+            AddHandler<DiscardAllMessageSerializer>();
+            AddHandler<ResetMessageSerializer>();
 
             // Response Message Types
-            AddHandler<FailureMessageHandler>();
-            AddHandler<IgnoredMessageHandler>();
-            AddHandler<RecordMessageHandler>();
-            AddHandler<SuccessMessageHandler>();
+            AddHandler<FailureMessageSerializer>();
+            AddHandler<IgnoredMessageSerializer>();
+            AddHandler<RecordMessageSerializer>();
+            AddHandler<SuccessMessageSerializer>();
 
             // Struct Data Types
-            AddHandler<NodeHandler>();
-            AddHandler<RelationshipHandler>();
-            AddHandler<UnboundRelationshipHandler>();
-            AddHandler<PathHandler>();
+            AddHandler<NodeSerializer>();
+            AddHandler<RelationshipSerializer>();
+            AddHandler<UnboundRelationshipSerializer>();
+            AddHandler<PathSerializer>();
         }
     }
 }

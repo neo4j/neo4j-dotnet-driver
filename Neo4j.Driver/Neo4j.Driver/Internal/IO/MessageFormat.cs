@@ -24,11 +24,11 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal abstract class MessageFormat : IMessageFormat
     {
-        private readonly IDictionary<byte, IPackStreamStructHandler> _readerStructHandlers =
-            new Dictionary<byte, IPackStreamStructHandler>();
+        private readonly IDictionary<byte, IPackStreamSerializer> _readerStructHandlers =
+            new Dictionary<byte, IPackStreamSerializer>();
 
-        private readonly IDictionary<Type, IPackStreamStructHandler> _writerStructHandlers =
-            new Dictionary<Type, IPackStreamStructHandler>();
+        private readonly IDictionary<Type, IPackStreamSerializer> _writerStructHandlers =
+            new Dictionary<Type, IPackStreamSerializer>();
 
         protected MessageFormat()
         {
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         protected void AddHandler<T>()
-            where T : IPackStreamStructHandler, new()
+            where T : IPackStreamSerializer, new()
         {
             var handler = new T();
 

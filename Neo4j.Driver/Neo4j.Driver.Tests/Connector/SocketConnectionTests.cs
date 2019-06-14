@@ -27,9 +27,9 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
-using static Neo4j.Driver.Internal.Result.NoOperationCollector;
 using static Xunit.Record;
 using Record = Xunit.Record;
 
@@ -37,6 +37,7 @@ namespace Neo4j.Driver.Tests
 {
     public class SocketConnectionTests
     {
+        private static readonly IResponseHandler NoOpHandler = new NoOpResponseHandler();
         private static IAuthToken AuthToken => AuthTokens.None;
         private static string UserAgent => ConnectionSettings.DefaultUserAgent;
         private static IDriverLogger Logger => new Mock<IDriverLogger>().Object;
@@ -44,11 +45,11 @@ namespace Neo4j.Driver.Tests
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
         internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null,
-            IMessageResponseHandler handler = null, IServerInfo server = null, IDriverLogger logger = null)
+            IResponsePipeline pipeline = null, IServerInfo server = null, IDriverLogger logger = null)
         {
             socketClient = socketClient ?? SocketClient;
             server = server ?? Server;
-            return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, handler);
+            return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, pipeline);
         }
 
         public class InitMethod
@@ -120,7 +121,7 @@ namespace Neo4j.Driver.Tests
                 var mock = new Mock<ISocketClient>();
                 var con = NewSocketConnection(mock.Object);
 
-                await con.EnqueueAsync(new RunMessage("A statement"));
+                await con.EnqueueAsync(new RunMessage("A statement"), NoOpHandler);
                 await con.SyncAsync();
 
                 mock.Verify(c => c.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
@@ -137,7 +138,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunMessage("a statement"), NoOpResponseCollector);
+                await con.EnqueueAsync(new RunMessage("a statement"), NoOpHandler);
 
                 // Then
                 con.Messages.Count.Should().Be(1); // Run
@@ -147,13 +148,12 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldEnqueueResultBuilderOnResponseHandler()
             {
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = NewSocketConnection(handler: mockResponseHandler.Object);
+                var pipeline = new Mock<IResponsePipeline>();
+                var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunMessage("statement"), NoOpResponseCollector);
+                await con.EnqueueAsync(new RunMessage("statement"), NoOpHandler);
 
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector),
-                    Times.Once);
+                pipeline.Verify(h => h.Enqueue(It.IsAny<RunMessage>(), NoOpHandler), Times.Once);
             }
 
             [Fact]
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunMessage("a statement"), NoOpResponseCollector, PullAll);
+                await con.EnqueueAsync(new RunMessage("a statement"), NoOpHandler, PullAll, NoOpHandler);
 
                 // Then
                 con.Messages.Count.Should().Be(2); // Run + PullAll
@@ -174,14 +174,14 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldEnqueueResultBuildersOnResponseHandler()
             {
-                var mockResponseHandler = new Mock<IMessageResponseHandler>();
-                var con = NewSocketConnection(handler: mockResponseHandler.Object);
+                var pipeline = new Mock<IResponsePipeline>();
+                var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunMessage("statement"), NoOpResponseCollector, PullAll);
+                await con.EnqueueAsync(new RunMessage("statement"), NoOpHandler, PullAll, NoOpHandler);
 
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<RunMessage>(), NoOpResponseCollector),
+                pipeline.Verify(h => h.Enqueue(It.IsAny<RunMessage>(), NoOpHandler),
                     Times.Once);
-                mockResponseHandler.Verify(h => h.EnqueueMessage(It.IsAny<PullAllMessage>(), NoOpResponseCollector),
+                pipeline.Verify(h => h.Enqueue(It.IsAny<PullAllMessage>(), NoOpHandler),
                     Times.Once);
             }
         }

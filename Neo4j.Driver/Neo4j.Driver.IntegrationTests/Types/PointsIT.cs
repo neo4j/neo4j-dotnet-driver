@@ -22,6 +22,7 @@ using Neo4j.Driver;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Types
 {
@@ -40,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public void ShouldReceive()
         {
             using (var session = Server.Driver.Session(AccessMode.Read))
@@ -63,7 +64,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public void ShouldSend()
         {
             using (var session = Server.Driver.Session(AccessMode.Read))
@@ -76,12 +77,12 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
                 var matched = session.Run("MATCH (n:Node) RETURN n.location1, n.location2").Single();
 
-                matched[0].ShouldBeEquivalentTo(point1);
-                matched[1].ShouldBeEquivalentTo(point2);
+                matched[0].Should().BeEquivalentTo(point1);
+                matched[1].Should().BeEquivalentTo(point2);
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public void ShouldSendAndReceive()
         {
             TestSendAndReceive(new Point(WGS84SrId, 51.24923585, 0.92723724));
@@ -90,7 +91,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             TestSendAndReceive(new Point(Cartesian3DSrId, 39.111748, -76.775635, 19.2937302840));
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public void ShouldSendAndReceiveRandom()
         {
             var randomPoints = Enumerable.Range(0, 1000).Select(GenerateRandomPoint).ToList();
@@ -98,7 +99,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             randomPoints.ForEach(TestSendAndReceive);
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.4.0")]
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public void ShouldSendAndReceiveListRandom()
         {
             var randomPointLists = Enumerable.Range(0, 1000).Select(i => GenerateRandomPointList(i, 100)).ToList();
@@ -113,7 +114,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 var result = 
                     session.Run("CREATE (n { point: $point}) RETURN n.point", new {point}).Single();
 
-                result[0].ShouldBeEquivalentTo(point);
+                result[0].Should().BeEquivalentTo(point);
             }
         }
 
@@ -124,7 +125,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 var result =
                     session.Run("CREATE (n { points: $points}) RETURN n.points", new { points }).Single();
 
-                result[0].ShouldBeEquivalentTo(points);
+                result[0].Should().BeEquivalentTo(points);
             }
         }
 

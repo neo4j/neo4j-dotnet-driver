@@ -21,6 +21,8 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -64,12 +66,12 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskWithErrorHandling(() => Delegate.InitAsync());
         }
 
-        public Task EnqueueAsync(IRequestMessage message1, IMessageResponseCollector responseCollector,
-            IRequestMessage message2 = null)
+        public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
+            IRequestMessage message2 = null, IResponseHandler handler2 = null)
         {
             try
             {
-                return Delegate.EnqueueAsync(message1, responseCollector, message2);
+                return Delegate.EnqueueAsync(message1, handler1, message2, handler2);
             }
             catch (Exception e)
             {
@@ -97,6 +99,11 @@ namespace Neo4j.Driver.Internal.Connector
         public void UpdateId(string newConnId)
         {
             Delegate.UpdateId(newConnId);
+        }
+
+        public void UpdateVersion(ServerVersion newVersion)
+        {
+            Delegate.UpdateVersion(newVersion);
         }
 
         public virtual Task DestroyAsync()

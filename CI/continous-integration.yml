@@ -1,0 +1,62 @@
+name: continous-integration
+
+# Build for 2.0
+trigger: none
+  branches:
+    include:
+      - 2.0
+
+# disable PR builds
+pr: none
+
+strategy:
+  matrix:
+    macos-3.4:
+      javaVersion: 8
+      serverVersion: "-e 3.4"
+      imageName: "macOS-10.14"
+    macos-3.5:
+      javaVersion: 8
+      serverVersion: "-e 3.5"
+      imageName: "macOS-10.14"
+    macos-4.0:
+      javaVersion: 11
+      serverVersion: "-e 4.0"
+      imageName: "macOS-10.14"
+    linux-3.4:
+      javaVersion: 8
+      serverVersion: "-e 3.4"
+      imageName: "ubuntu-16.04"
+    linux-3.5:
+      javaVersion: 8
+      serverVersion: "-e 3.5"
+      imageName: "ubuntu-16.04"
+    linux-4.0:
+      javaVersion: 11
+      serverVersion: "-e 4.0"
+      imageName: "ubuntu-16.04"
+    windows-3.4:
+      javaVersion: 8
+      serverVersion: "-e 3.4"
+      imageName: "vs2017-win2016"
+    windows-3.5:
+      javaVersion: 8
+      serverVersion: "-e 3.5"
+      imageName: "vs2017-win2016"
+    windows-4.0:
+      javaVersion: 11
+      serverVersion: "-e 4.0"
+      imageName: "vs2017-win2016"
+
+pool:
+  vmImage: $(imageName)
+
+variables:
+  group: teamcity
+
+steps:
+  - template: "steps.yml"
+    parameters:
+      name: $(Agent.JobName)
+      javaVersion: $(javaVersion)
+      serverVersion: $(serverVersion)

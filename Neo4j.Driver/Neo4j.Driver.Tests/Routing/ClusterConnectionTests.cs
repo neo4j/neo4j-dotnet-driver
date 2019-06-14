@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var inError = new TransientException("Neo.TransientError.General.DatabaseUnavailable", "Store copying");
                 var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
-                outError.ShouldBeEquivalentTo(inError);
+                outError.Should().BeEquivalentTo(inError);
 
                 handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError));
             }

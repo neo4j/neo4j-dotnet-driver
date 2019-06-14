@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal
 
         static RuntimeHelper()
         {
-#if NET452
+#if NET46
             FrameworkDescription = ".NET Framework";
 #else
             FrameworkDescription = RuntimeInformation.FrameworkDescription ?? string.Empty;

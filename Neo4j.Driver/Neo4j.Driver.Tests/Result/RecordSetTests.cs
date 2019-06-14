@@ -34,10 +34,9 @@ namespace Neo4j.Driver.Tests
         private readonly Func<IEnumerable<IRecord>> _recordsFunc;
 
         private IResultSummary _summary;
-        private int _count = 0;
-        private IEnumerator<IRecord> _enum = null;
-        private IRecord _record = null;
-        private IRecord _peeked = null;
+        private IEnumerator<IRecord> _enum;
+        private IRecord _record;
+        private IRecord _peeked;
 
         public ListBasedRecordCursor(IEnumerable<string> keys, Func<IEnumerable<IRecord>> recordsFunc,
             Func<IResultSummary> summaryFunc = null)
@@ -104,7 +103,7 @@ namespace Neo4j.Driver.Tests
             }
 
             var hasNext = _enum.MoveNext();
-            _record = _enum.Current;
+            _record = hasNext ? _enum.Current : null;
             return Task.FromResult(hasNext);
         }
 
@@ -113,15 +112,9 @@ namespace Neo4j.Driver.Tests
 
     internal static class RecordCreator
     {
-        public static List<string> CreateKeys(int keySize = 1)
+        public static string[] CreateKeys(int keySize = 1)
         {
-            var keys = new List<string>(keySize);
-            for (int i = 0; i < keySize; i++)
-            {
-                keys.Add($"key{i}");
-            }
-
-            return keys;
+            return Enumerable.Range(0, keySize).Select(i => $"key{i}").ToArray();
         }
 
         public static IList<IRecord> CreateRecords(int recordSize, int keySize = 1)
@@ -130,23 +123,11 @@ namespace Neo4j.Driver.Tests
             return CreateRecords(recordSize, keys);
         }
 
-        public static IList<IRecord> CreateRecords(int recordSize, List<string> keys)
+        public static IList<IRecord> CreateRecords(int recordSize, string[] keys)
         {
-            var records = new List<IRecord>(recordSize);
-
-
-            for (int j = 0; j < recordSize; j++)
-            {
-                var values = new List<object>();
-                for (int i = 0; i < keys.Count; i++)
-                {
-                    values.Add($"record{j}:key{i}");
-                }
-
-                records.Add(new Record(keys, values.ToArray()));
-            }
-
-            return records;
+            return Enumerable.Range(0, recordSize)
+                .Select(i => new Record(keys, keys.Select(k => $"record{i}:{k}").Cast<object>().ToArray()))
+                .Cast<IRecord>().ToList();
         }
     }
 

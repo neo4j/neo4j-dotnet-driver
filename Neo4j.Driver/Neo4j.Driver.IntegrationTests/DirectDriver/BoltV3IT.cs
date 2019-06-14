@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -31,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public void ShouldRunWithTxConfig()
         {
             // Given
@@ -49,7 +50,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public async Task ShouldRunWithTxConfigAsync()
         {
             // Given
@@ -65,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public void ShouldRunWithTxTimeout()
         {
             // Given
@@ -96,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public async Task ShouldRunWithTxTimeoutAsync()
         {
             // Given
@@ -128,25 +129,25 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public void ShouldReadWithTxConfig()
         {
             RunWithTxConfig(true);
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public async Task ShouldReadWithTxConfigAsync()
         {
             await RunWithTxConfigAsync(true);
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public void ShouldWriteWithTxConfig()
         {
             RunWithTxConfig(false);
         }
 
-        [RequireServerVersionGreaterThanOrEqualToFact("3.5.0")]
+        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public async Task ShouldWriteWithTxConfigAsync()
         {
             await RunWithTxConfigAsync(false);

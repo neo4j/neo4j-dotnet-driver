@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -43,7 +44,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         internal Statement DiscoveryProcedure(IConnection connection)
         {
-            if (ServerVersion.Version(connection.Server.Version) >= ServerVersion.V3_2_0)
+            if (ServerVersion.From(connection.Server.Version) >= ServerVersion.V3_2_0)
             {
                 return new Statement($"CALL {GetRoutingTableProcedure}({{context}})",
                     new Dictionary<string, object> {{"context", _context}});

@@ -14,106 +14,125 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
+using Neo4j.Driver.Internal.MessageHandling.V1;
+using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Messaging.V4;
 using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
+using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV4 : IBoltProtocol
+    internal class BoltProtocolV4 : BoltProtocolV3
     {
+        public const long DefaultBatchSize = 100;
         public static readonly BoltProtocolV4 BoltV4 = new BoltProtocolV4();
 
-        public IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
+        public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
             IDriverLogger logger = null)
         {
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
                 bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
-        public IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, IDriverLogger logger = null)
+        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
+            IDriverLogger logger = null)
         {
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
-        public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public override async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+            Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
+            IResultResourceHandler resultResourceHandler,
+            Bookmark bookmark, TransactionConfig txConfig)
         {
-            var collector = new HelloMessageResponseCollector();
-            await connection.EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()), collector)
-                .ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
-            ((ServerInfo) connection.Server).Version = collector.Server;
-            connection.UpdateId(collector.ConnectionId);
-        }
+            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
+            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
+                reactive ? RequestMore(connection, summaryBuilder, bookmarkTracker) : null,
+                reactive ? CancelRequest(connection, summaryBuilder, bookmarkTracker) : null, CancellationToken.None,
+                resultResourceHandler,
+                reactive ? DefaultBatchSize : All);
+            var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
 
-        public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement,
-            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig)
-        {
-            var resultBuilder = new ResultCursorBuilder(NewSummaryCollector(statement, connection.Server),
-                connection.ReceiveOneAsync, resultResourceHandler);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), resultBuilder,
-                new PullNMessage(All)).ConfigureAwait(false);
-            await connection.SendAsync().ConfigureAwait(false);
-            return resultBuilder.PreBuild();
-        }
-
-        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
-        {
-            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), null).ConfigureAwait(false);
-            if (bookmark != null && !bookmark.IsEmpty())
+            var pullMessage = default(PullMessage);
+            var pullHandler = default(V4.PullResponseHandler);
+            if (!reactive)
             {
-                await connection.SyncAsync().ConfigureAwait(false);
+                pullMessage = new PullMessage(All);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             }
-        }
 
-        public async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Statement statement)
-        {
-            var resultBuilder = new ResultCursorBuilder(
-                NewSummaryCollector(statement, connection.Server), connection.ReceiveOneAsync);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), resultBuilder, new PullNMessage(All))
+            await connection
+                .EnqueueAsync(
+                    new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()),
+                    runHandler, pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
-
-            return resultBuilder.PreBuild();
+            return streamBuilder.CreateCursor();
         }
 
-        public async Task<Bookmark> CommitTransactionAsync(IConnection connection)
+        public override async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
+            Statement statement, bool reactive)
         {
-            var bookmarkCollector = new BookmarkCollector();
-            await connection.EnqueueAsync(CommitMessage.Commit, bookmarkCollector).ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
-            return bookmarkCollector.Bookmark;
+            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
+            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
+                reactive ? RequestMore(connection, summaryBuilder, null) : null,
+                reactive ? CancelRequest(connection, summaryBuilder, null) : null,
+                CancellationToken.None, null,
+                reactive ? DefaultBatchSize : All);
+            var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
+
+            var pullMessage = default(PullMessage);
+            var pullHandler = default(V4.PullResponseHandler);
+            if (!reactive)
+            {
+                pullMessage = new PullMessage(All);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);
+            }
+
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()),
+                    runHandler, pullMessage, pullHandler)
+                .ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
+            return streamBuilder.CreateCursor();
         }
 
-        public async Task RollbackTransactionAsync(IConnection connection)
+        private static Func<ResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
+            SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
-            await connection.EnqueueAsync(RollbackMessage.Rollback, null).ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
+            return async (streamBuilder, id, n) =>
+            {
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+                await connection
+                    .EnqueueAsync(new PullMessage(id, n), pullAllHandler)
+                    .ConfigureAwait(false);
+                await connection.SendAsync().ConfigureAwait(false);
+            };
         }
 
-        public Task ResetAsync(IConnection connection)
+        private static Func<ResultStreamBuilder, long, Task> CancelRequest(IConnection connection,
+            SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
-            return connection.EnqueueAsync(ResetMessage.Reset, null);
-        }
-
-        public async Task LogoutAsync(IConnection connection)
-        {
-            await connection.EnqueueAsync(GoodbyeMessage.Goodbye, null);
-            await connection.SendAsync();
-        }
-
-        private SummaryCollector NewSummaryCollector(Statement statement, IServerInfo serverInfo)
-        {
-            return new SummaryCollectorV3(statement, serverInfo);
+            return async (streamBuilder, id) =>
+            {
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+                await connection
+                    .EnqueueAsync(new DiscardMessage(id, All), pullAllHandler)
+                    .ConfigureAwait(false);
+                await connection.SendAsync().ConfigureAwait(false);
+            };
         }
     }
 }

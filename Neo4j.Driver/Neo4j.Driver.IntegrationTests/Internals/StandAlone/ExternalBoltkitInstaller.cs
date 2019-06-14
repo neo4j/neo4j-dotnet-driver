@@ -14,12 +14,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 using Org.BouncyCastle.Pkcs;
 using static Neo4j.Driver.IntegrationTests.Internals.Neo4jDefaultInstallation;
 using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;
@@ -57,16 +59,19 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
 
             _commandRunner.RunCommand("neoctrl-create-user", $"\"{HomeDir}\"", "neo4j", Password);
-            UpdateSettings(new Dictionary<string, string>
+            if (BoltkitHelper.IPV6Available() && BoltkitHelper.IPV6Enabled())
             {
-                {ListenAddr, Ipv6EnabledAddr}
-            });
+                UpdateSettings(new Dictionary<string, string>
+                {
+                    {ListenAddr, Ipv6EnabledAddr}
+                });
+            }
 
             // This is added because current default for `dbms.connector.bolt.thread_pool_max_size` is `400`
             // which is lower than Driver's default max pool size setting of `500`. This is added because
             // soak tests were failing
             // TODO: Remove/Revise after 3.4.0 config defaults are finalised.
-            if (ServerVersion.Version(BoltkitHelper.ServerVersion()) >= ServerVersion.V3_4_0)
+            if (ServerVersion.From(BoltkitHelper.ServerVersion()) >= ServerVersion.V3_4_0)
             {
                 UpdateSettings(new Dictionary<string, string>
                 {
@@ -80,7 +85,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             _commandRunner.Debug("Starting server...");
             _commandRunner.RunCommand("neoctrl-start", $"\"{HomeDir}\"");
             _commandRunner.Debug("Server started.");
-            return new HashSet<ISingleInstance> { new SingleInstance(HttpUri, BoltUri, HomeDir, Password) };
+            return new HashSet<ISingleInstance> {new SingleInstance(HttpUri, BoltUri, HomeDir, Password)};
         }
 
         public void Stop()
@@ -137,7 +142,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             var certDir = Path.Combine(HomeDir, "certificates");
             Directory.CreateDirectory(certDir);
-            
+
             var certFile = Path.Combine(certDir, "neo4j.cert");
             var keyFile = Path.Combine(certDir, "neo4j.key");
             if (store == null)

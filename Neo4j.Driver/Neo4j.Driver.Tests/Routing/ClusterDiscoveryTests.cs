@@ -28,6 +28,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
@@ -373,7 +374,7 @@ namespace Neo4j.Driver.Tests.Routing
             private readonly Mock<IConnection> _mockConn = new Mock<IConnection>();
             private readonly IList<IRequestMessage> _requestMessages = new List<IRequestMessage>();
             private int _requestCount;
-            private readonly IMessageResponseHandler _handler = new MessageResponseHandler(null);
+            private readonly IResponsePipeline _pipeline = new ResponsePipeline(null);
 
             private readonly IList<IResponseMessage> _responseMessages = new List<IResponseMessage>();
             private int _responseCount;
@@ -394,36 +395,31 @@ namespace Neo4j.Driver.Tests.Routing
                     }
                 }
 
-                _mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IMessageResponseCollector>(),
-                        It.IsAny<IRequestMessage>()))
+                _mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
                     .Returns(TaskHelper.GetCompletedTask())
-                    .Callback<IRequestMessage, IMessageResponseCollector, IRequestMessage>((msg1, collector, msg2) =>
+                    .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>((msg1, handler1, msg2, handler2) =>
                     {
                         msg1.ToString().Should().Be(_requestMessages[_requestCount].ToString());
                         _requestCount++;
-                        _handler.EnqueueMessage(msg1, collector);
+                        _pipeline.Enqueue(msg1, handler1);
 
                         if (msg2 != null)
                         {
                             msg2.ToString().Should().Be(_requestMessages[_requestCount].ToString());
                             _requestCount++;
-                            _handler.EnqueueMessage(msg1, collector);
+                            _pipeline.Enqueue(msg2, handler2);
                         }
                     });
                 _mockConn.Setup(x => x.ReceiveOneAsync())
-                    .Returns(TaskHelper.GetCompletedTask())
-                    .Callback(() =>
+                    .Returns(() =>
                     {
                         if (_responseCount < _responseMessages.Count)
                         {
-                            _responseMessages[_responseCount].Dispatch(_handler);
+                             _responseMessages[_responseCount].Dispatch(_pipeline);
                             _responseCount++;
-                            if (_handler.HasError)
-                            {
-                                var error = _handler.Error;
-                                _handler.Error = null;
-                                throw error;
-                            }
+                            _pipeline.AssertNoFailure();
+                            return TaskHelper.GetCompletedTask();
                         }
                         else
                         {

@@ -22,6 +22,8 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -38,7 +40,7 @@ namespace Neo4j.Driver.Internal.Connector
         // receive one
         Task ReceiveOneAsync();
 
-        Task EnqueueAsync(IRequestMessage message1, IMessageResponseCollector responseCollector, IRequestMessage message2 = null);
+        Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null, IResponseHandler handler2 = null);
 
         // Enqueue a reset message
         Task ResetAsync();
@@ -74,5 +76,7 @@ namespace Neo4j.Driver.Internal.Connector
         AccessMode? Mode { get; set; }
 
         void UpdateId(string newConnId);
+
+        void UpdateVersion(ServerVersion newVersion);
     }
 }

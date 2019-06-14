@@ -14,112 +14,110 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal
 {
     internal class Bookmark
     {
+        internal const string BookmarkPrefix = "neo4j:bookmark:v1:tx";
         internal const string BookmarkKey = "bookmark";
         internal const string BookmarksKey = "bookmarks";
+        internal const long UnknownBookmarkValue = -1;
 
-        private const long UnknownBookmarkValue = -1;
-        internal const string BookmarkPrefix = "neo4j:bookmark:v1:tx";
+        private readonly IEnumerable<string> _values; // nullable or contain null items
+        private readonly string _maxBookmark;
 
-        private readonly IEnumerable<string> _values;// nullable or contain null items
-        private readonly string _maxBookmark;        // nullable
-        private readonly IDriverLogger _logger;
-
-        private Bookmark(IEnumerable<string> values, IDriverLogger logger)
+        private Bookmark(string[] values)
         {
-            _logger = logger;
             _values = values;
-            _maxBookmark = ComputeMaxBookmark(values);
+            _maxBookmark = values?.Select(x => (bookmark: x, value: BookmarkValue(x)))
+                .Where(vt => vt.value > UnknownBookmarkValue)
+                .OrderByDescending(vt => vt.value)
+                .Select(vt => vt.bookmark)
+                .FirstOrDefault();
         }
 
-        public static Bookmark From(string bookmark, IDriverLogger logger = null)
+        public static Bookmark From(string bookmark)
         {
-            if (bookmark == null)
-            {
-                return new Bookmark(null, logger);
-            }
-            return new Bookmark(new []{bookmark}, logger);
+            return string.IsNullOrEmpty(bookmark) ? new Bookmark(null) : new Bookmark(new[] {bookmark});
         }
 
-        public static Bookmark From(IEnumerable<string> values, IDriverLogger logger = null)
+        public static Bookmark From(IEnumerable<string> values)
         {
-            return new Bookmark(values, logger);
+            return new Bookmark(values.ToArray());
         }
 
         public string MaxBookmark => _maxBookmark;
 
         public IEnumerable<string> Bookmarks => _values;
-        
-        public bool IsEmpty()
+
+        public bool HasBookmark => _values != null && _maxBookmark != null;
+
+        protected bool Equals(Bookmark other)
         {
-            return _values == null || _maxBookmark == null;
+            if (_values == null && other._values == null)
+            {
+                return true;
+            }
+
+            if (_values == null || other._values == null)
+            {
+                return false;
+            }
+
+            return _values.SequenceEqual(other._values);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Bookmark) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (_values != null ? _values.GetHashCode() : 0);
         }
 
         public IDictionary<string, object> AsBeginTransactionParameters()
         {
-            if (IsEmpty())
+            if (HasBookmark)
             {
-                return null;
-            }
-            return new Dictionary<string, object>
-            {
-                {BookmarksKey, _values}, {BookmarkKey, _maxBookmark}
-            };
-        }
-
-        private string ComputeMaxBookmark(IEnumerable<string> values)
-        {
-            if (values == null)
-            {
-                return null;
-            }
-            var maxValue = UnknownBookmarkValue;
-            foreach (var value in values)
-            {
-                var curValue = BookmarkValue(value);
-                if (curValue > maxValue)
+                return new Dictionary<string, object>
                 {
-                    maxValue = curValue;
-                }
+                    {BookmarksKey, _values}, {BookmarkKey, _maxBookmark}
+                };
             }
-            if (maxValue != UnknownBookmarkValue)
-            {
-                return $"{BookmarkPrefix}{maxValue}";
-            }
+
             return null;
         }
 
-        private long BookmarkValue(string value)
+        private static long BookmarkValue(string value)
         {
             if (value == null)
             {
                 return UnknownBookmarkValue;
             }
+
             if (!value.StartsWith(BookmarkPrefix))
             {
-                LogIllegalBookmark(value);
                 return UnknownBookmarkValue;
             }
+
             try
             {
                 return Convert.ToInt64(value.Substring(BookmarkPrefix.Length));
             }
             catch (FormatException)
             {
-                LogIllegalBookmark(value);
                 return UnknownBookmarkValue;
             }
-        }
-
-        private void LogIllegalBookmark(string value)
-        {
-            _logger?.Info("Failed to recognize bookmark '{0}' and this bookmark is ignored.", value);
         }
     }
 }

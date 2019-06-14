@@ -14,14 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.IO
 {
-    internal class MessageReader: IMessageReader
+    internal class MessageReader : IMessageReader
     {
         private readonly IChunkReader _chunkReader;
         private readonly IPackStreamReader _packStreamReader;
@@ -35,16 +37,16 @@ namespace Neo4j.Driver.Internal.IO
         public MessageReader(Stream stream, IMessageFormat messageFormat)
             : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, messageFormat)
         {
-
         }
 
-        public MessageReader(Stream stream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger, IMessageFormat messageFormat)
+        public MessageReader(Stream stream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger,
+            IMessageFormat messageFormat)
             : this(new ChunkReader(stream, logger), defaultBufferSize, maxBufferSize, logger, messageFormat)
         {
-
         }
 
-        public MessageReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, IDriverLogger logger, IMessageFormat messageFormat)
+        public MessageReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, IDriverLogger logger,
+            IMessageFormat messageFormat)
         {
             Throw.ArgumentNullException.IfNull(chunkReader, nameof(chunkReader));
             Throw.ArgumentNullException.IfNull(messageFormat, nameof(messageFormat));
@@ -57,30 +59,19 @@ namespace Neo4j.Driver.Internal.IO
             _packStreamReader = messageFormat.CreateReader(_bufferStream);
         }
 
-        public void Read(IMessageResponseHandler responseHandler)
+        public async Task ReadAsync(IResponsePipeline pipeline)
         {
-            var messages = _chunkReader.ReadNextMessages(_bufferStream);
-
-            ConsumeMessages(responseHandler, messages);
+            var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream);
+            ConsumeMessages(pipeline, messageCount);
         }
 
-        public Task ReadAsync(IMessageResponseHandler responseHandler)
-        {
-            return
-                _chunkReader.ReadNextMessagesAsync(_bufferStream)
-                    .ContinueWith(t =>
-                    {
-                        ConsumeMessages(responseHandler, t.Result);
-                    }, TaskContinuationOptions.ExecuteSynchronously);
-        }
-
-        private void ConsumeMessages(IMessageResponseHandler responseHandler, int messages)
+        private void ConsumeMessages(IResponsePipeline pipeline, int messages)
         {
             var leftMessages = messages;
 
             while (_bufferStream.Length > _bufferStream.Position && leftMessages > 0)
             {
-                ProcessMessage(responseHandler);
+                ProcessMessage(pipeline);
 
                 leftMessages -= 1;
             }
@@ -108,19 +99,18 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
 
-        private void ProcessMessage(IMessageResponseHandler responseHandler)
+        private void ProcessMessage(IResponsePipeline pipeline)
         {
             var message = _packStreamReader.Read();
 
             if (message is IResponseMessage response)
             {
-                response.Dispatch(responseHandler);
+                response.Dispatch(pipeline);
             }
             else
             {
                 throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
             }
         }
-
     }
 }

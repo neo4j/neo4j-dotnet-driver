@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26114.2
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -11,12 +12,15 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{622A94AD-BC4D-4162-AE43-A5CA055F24FC}"
 	ProjectSection(SolutionItems) = preProject
 		..\LICENSE = ..\LICENSE
+		..\Neo4j.Driver.Docs.shfbproj = ..\Neo4j.Driver.Docs.shfbproj
 		..\NOTICE = ..\NOTICE
 		..\README.md = ..\README.md
-		..\Neo4j.Driver.Docs.shfbproj = ..\Neo4j.Driver.Docs.shfbproj
+		common.props = common.props
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Metrics", "Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj", "{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Reactive", "Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj", "{FC537A38-3DD9-4C6D-8127-003F59E405AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,6 +62,14 @@ Global
 		{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
 		{F5F689DC-352C-4C0C-8F07-466CF7FBF7B8}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.DebugDelaySigned|Any CPU.ActiveCfg = DebugDelaySigned|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.DebugDelaySigned|Any CPU.Build.0 = DebugDelaySigned|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
+		{FC537A38-3DD9-4C6D-8127-003F59E405AC}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

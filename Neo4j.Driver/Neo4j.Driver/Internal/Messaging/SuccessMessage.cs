@@ -14,7 +14,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Messaging
 {
@@ -32,9 +35,9 @@ namespace Neo4j.Driver.Internal.Messaging
             return $"SUCCESS {Meta.ToContentString()}";
         }
 
-        public void Dispatch(IMessageResponseHandler messageResponseHandler)
+        public void Dispatch(IResponsePipeline pipeline)
         {
-            messageResponseHandler.HandleSuccessMessage(Meta);
+            pipeline.OnSuccess(Meta);
         }
     }
 }

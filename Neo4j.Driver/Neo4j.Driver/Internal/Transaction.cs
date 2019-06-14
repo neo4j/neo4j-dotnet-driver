@@ -16,27 +16,27 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Transaction : StatementRunner, ITransaction
+    internal class Transaction : StatementRunner, ITransaction, IBookmarkTracker
     {
-        private readonly TransactionConnection _connection;
+        private readonly IConnection _connection;
         private readonly SyncExecutor _syncExecutor;
         private readonly IBoltProtocol _protocol;
+        private readonly bool _reactive;
         private ITransactionResourceHandler _resourceHandler;
 
         private Bookmark _bookmark;
 
         private State _state = State.Active;
-        private IDriverLogger _logger;
+        private readonly IDriverLogger _logger;
 
         private enum State
         {
@@ -62,8 +62,9 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
-        public Transaction(IConnection connection, SyncExecutor syncExecutor, ITransactionResourceHandler resourceHandler = null,
-            IDriverLogger logger = null, Bookmark bookmark = null)
+        public Transaction(IConnection connection, SyncExecutor syncExecutor,
+            ITransactionResourceHandler resourceHandler = null,
+            IDriverLogger logger = null, Bookmark bookmark = null, bool reactive = false)
         {
             _connection = new TransactionConnection(this, connection);
             _syncExecutor = syncExecutor;
@@ -71,6 +72,7 @@ namespace Neo4j.Driver.Internal
             _resourceHandler = resourceHandler;
             _bookmark = bookmark;
             _logger = logger;
+            _reactive = reactive;
         }
 
         public void BeginTransaction(TransactionConfig txConfig)
@@ -89,7 +91,7 @@ namespace Neo4j.Driver.Internal
             {
                 EnsureCanRunMoreStatements();
                 return new StatementResult(_syncExecutor.RunSync(() =>
-                    _protocol.RunInExplicitTransactionAsync(_connection, statement)), _syncExecutor);
+                    _protocol.RunInExplicitTransactionAsync(_connection, statement, _reactive)), _syncExecutor);
             });
         }
 
@@ -98,7 +100,7 @@ namespace Neo4j.Driver.Internal
             return TryExecuteAsync(_logger, () =>
             {
                 EnsureCanRunMoreStatements();
-                return _protocol.RunInExplicitTransactionAsync(_connection, statement);
+                return _protocol.RunInExplicitTransactionAsync(_connection, statement, _reactive);
             });
         }
 
@@ -142,26 +144,7 @@ namespace Neo4j.Driver.Internal
                 return;
             }
 
-            try
-            {
-                if (_state == State.MarkedSuccess)
-                {
-                    _syncExecutor.RunSync(CommitTxAsync);
-                }
-                else if (_state == State.MarkedFailed || _state == State.Active)
-                {
-                    _syncExecutor.RunSync(RollbackTxAsync);
-                }
-            }
-            finally
-            {
-                _syncExecutor.RunSync(() => _connection.CloseAsync());
-                if (_resourceHandler != null)
-                {
-                    _syncExecutor.RunSync(() => _resourceHandler.OnTransactionDisposeAsync(_bookmark));
-                    _resourceHandler = null;
-                }
-            }
+            _syncExecutor.RunSync(CloseAsync);
         }
 
         private async Task CloseAsync()
@@ -190,7 +173,7 @@ namespace Neo4j.Driver.Internal
 
         private async Task CommitTxAsync()
         {
-            _bookmark = await _protocol.CommitTransactionAsync(_connection).ConfigureAwait(false);
+            await _protocol.CommitTransactionAsync(_connection, this).ConfigureAwait(false);
             _state = State.Succeeded;
         }
 
@@ -210,13 +193,15 @@ namespace Neo4j.Driver.Internal
                     " transaction to run another statement."
                 );
             }
-            else if (_state == State.Succeeded)
+
+            if (_state == State.Succeeded)
             {
                 throw new ClientException(
-                    "Cannot run more sattements in this transaction, because the transaction has already been committed successfuly. " +
+                    "Cannot run more statements in this transaction, because the transaction has already been committed successfully. " +
                     "Please start a new transaction to run another statement.");
             }
-            else if (_state == State.Failed || _state == State.MarkedFailed)
+
+            if (_state == State.Failed || _state == State.MarkedFailed)
             {
                 throw new ClientException(
                     "Cannot run more statements in this transaction, because previous statements in the " +
@@ -224,6 +209,11 @@ namespace Neo4j.Driver.Internal
                     " transaction to run another statement."
                 );
             }
+        }
+
+        public void UpdateBookmark(Bookmark bookmark)
+        {
+            _bookmark = bookmark;
         }
 
         private class TransactionConnection : DelegatedConnection
@@ -247,7 +237,7 @@ namespace Neo4j.Driver.Internal
             public override Task OnErrorAsync(Exception error)
             {
                 _transaction.MarkToClose();
-                throw error;
+                return TaskHelper.GetFailedTask(error);
             }
         }
     }

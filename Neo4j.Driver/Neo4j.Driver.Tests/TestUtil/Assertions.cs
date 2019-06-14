@@ -21,21 +21,45 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
+using FluentAssertions.Execution;
 using FluentAssertions.Numeric;
 
 namespace Neo4j.Driver.Tests
 {
     public static class Assertions
     {
-
         public static AndConstraint<NumericAssertions<T>> BeGreaterOrEqualTo<T>(this NumericAssertions<T> assertion,
             T expected, T accuracy, string because = "", params object[] becauseArgs)
-            where T: struct, IConvertible
+            where T : struct, IConvertible
         {
             var expectedAsDouble = Convert.ToDouble(expected);
             var accuracyAsDouble = Convert.ToDouble(accuracy);
 
-            return assertion.BeGreaterOrEqualTo((T)Convert.ChangeType(expectedAsDouble - accuracyAsDouble, typeof(T)), because, becauseArgs);
+            return assertion.BeGreaterOrEqualTo((T) Convert.ChangeType(expectedAsDouble - accuracyAsDouble, typeof(T)),
+                because, becauseArgs);
+        }
+
+        public static bool Matches(Action assertion)
+        {
+            using (new AssertionScope())
+            {
+                assertion();
+            }
+
+            return true;
+        }
+
+        public static Func<T, bool> Matches<T>(Action<T> assertion)
+        {
+            return subject =>
+            {
+                using (var scope = new AssertionScope())
+                {
+                    assertion(subject);
+                }
+
+                return true;
+            };
         }
     }
 }

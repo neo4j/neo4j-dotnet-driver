@@ -14,23 +14,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {
     internal class SummaryBuilder
     {
-        public Statement Statement { private get; set; }
-        public StatementType StatementType { private get; set; }
-        public ICounters Counters { private get; set; }
-        public IPlan Plan { private get; set; }
-        public IProfiledPlan Profile { private get; set; }
-        public IList<INotification> Notifications { private get; set; }
-        public long ResultAvailableAfter { private get; set; } = -1L;
-        public long ResultConsumedAfter { private get; set; } = -1L;
-        public IServerInfo Server { private get; set; }
+        public Statement Statement { get; }
+        public IServerInfo Server { get; }
+
+        public virtual StatementType StatementType { get; set; }
+        public virtual ICounters Counters { get; set; }
+        public virtual IPlan Plan { get; set; }
+        public virtual IProfiledPlan Profile { get; set; }
+        public virtual IList<INotification> Notifications { get; set; }
+        public virtual long ResultAvailableAfter { get; set; } = -1L;
+        public virtual long ResultConsumedAfter { get; set; } = -1L;
 
         public SummaryBuilder(Statement statement, IServerInfo serverInfo)
         {
@@ -43,7 +46,7 @@ namespace Neo4j.Driver.Internal.Result
             return new ResultSummary(this);
         }
 
-        private class ResultSummary:IResultSummary
+        private class ResultSummary : IResultSummary
         {
             public ResultSummary(SummaryBuilder builder)
             {
@@ -58,7 +61,6 @@ namespace Neo4j.Driver.Internal.Result
                 ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
                 ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
                 Server = builder.Server;
-
             }
 
             public Statement Statement { get; }
@@ -107,7 +109,8 @@ namespace Neo4j.Driver.Internal.Result
 
     internal class Plan : IPlan
     {
-        public Plan(string operationType, IDictionary<string, object> args, IList<string> identifiers, IList<IPlan> childPlans)
+        public Plan(string operationType, IDictionary<string, object> args, IList<string> identifiers,
+            IList<IPlan> childPlans)
         {
             OperatorType = operationType;
             Arguments = args;
@@ -131,7 +134,8 @@ namespace Neo4j.Driver.Internal.Result
 
     internal class ProfiledPlan : IProfiledPlan
     {
-        public ProfiledPlan(string operatorType, IDictionary<string, object> arguments, IList<string> identifiers, IList<IProfiledPlan> children, long dbHits, long records)
+        public ProfiledPlan(string operatorType, IDictionary<string, object> arguments, IList<string> identifiers,
+            IList<IProfiledPlan> children, long dbHits, long records)
         {
             OperatorType = operatorType;
             Arguments = arguments;
@@ -147,7 +151,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IList<string> Identifiers { get; }
 
-        IList<IPlan> IPlan.Children { get { throw new InvalidOperationException("This is a profiled plan.");} }
+        IList<IPlan> IPlan.Children => Children.Cast<IPlan>().ToList();
 
         public IList<IProfiledPlan> Children { get; }
 
@@ -180,6 +184,7 @@ namespace Neo4j.Driver.Internal.Result
             || IsPositive(IndexesRemoved)
             || IsPositive(ConstraintsAdded)
             || IsPositive(ConstraintsRemoved));
+
         public int NodesCreated { get; }
         public int NodesDeleted { get; }
         public int RelationshipsCreated { get; }
@@ -192,10 +197,13 @@ namespace Neo4j.Driver.Internal.Result
         public int ConstraintsAdded { get; }
         public int ConstraintsRemoved { get; }
 
-        public Counters():this(0,0,0,0,0,0,0,0,0,0,0)
-        { }
+        public Counters() : this(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        {
+        }
 
-        public Counters(int nodesCreated, int nodesDeleted, int relationshipsCreated, int relationshipsDeleted, int propertiesSet, int labelsAdded, int labelsRemoved, int indexesAdded, int indexesRemoved, int constraintsAdded, int constraintsRemoved)
+        public Counters(int nodesCreated, int nodesDeleted, int relationshipsCreated, int relationshipsDeleted,
+            int propertiesSet, int labelsAdded, int labelsRemoved, int indexesAdded, int indexesRemoved,
+            int constraintsAdded, int constraintsRemoved)
         {
             NodesCreated = nodesCreated;
             NodesDeleted = nodesDeleted;
@@ -214,6 +222,7 @@ namespace Neo4j.Driver.Internal.Result
         {
             return value > 0;
         }
+
         public override string ToString()
         {
             return $"{GetType().Name}{{{nameof(NodesCreated)}={NodesCreated}, " +
@@ -228,7 +237,6 @@ namespace Neo4j.Driver.Internal.Result
                    $"{nameof(ConstraintsAdded)}={ConstraintsAdded}, " +
                    $"{nameof(ConstraintsRemoved)}={ConstraintsRemoved}}}";
         }
-
     }
 
     /// <summary>
@@ -259,7 +267,6 @@ namespace Neo4j.Driver.Internal.Result
                    $"{nameof(Position)}={Position}, " +
                    $"{nameof(Severity)}={Severity}}}";
         }
-
     }
 
     internal class InputPosition : IInputPosition

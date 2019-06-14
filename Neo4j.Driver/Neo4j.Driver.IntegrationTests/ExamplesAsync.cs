@@ -18,6 +18,7 @@ using FluentAssertions;
 using Neo4j.Driver;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -190,6 +191,7 @@ namespace Neo4j.Driver.ExamplesAsync
             
         }
         
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class AutocommitTransactionExample : BaseAsyncExample
         {
             public AutocommitTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -774,6 +776,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class SessionExample : BaseAsyncExample
         {
             public SessionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -805,7 +808,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-
+        [SuppressMessage("ReSharper", "xUnit1013")]
         public class TransactionFunctionExample : BaseAsyncExample
         {
             public TransactionFunctionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)

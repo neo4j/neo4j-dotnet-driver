@@ -18,11 +18,12 @@ using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
-    internal partial class Session : IResultResourceHandler, ITransactionResourceHandler
+    internal partial class Session : IResultResourceHandler, ITransactionResourceHandler, IBookmarkTracker
     {
         protected override void Dispose(bool isDisposing)
         {
@@ -49,12 +50,11 @@ namespace Neo4j.Driver.Internal
         }
 
         /// <summary>
-        ///  This method will be called back by <see cref="ResultCursorBuilder"/> after it consumed result
+        ///  This method will be called back by <see cref="ResultStreamBuilder"/> after it consumed result
         /// </summary>
-        public Task OnResultConsumedAsync(Bookmark bookmark)
+        public Task OnResultConsumedAsync()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-            UpdateBookmark(bookmark);
             return DisposeConnectionAsync();
         }
 
@@ -76,9 +76,9 @@ namespace Neo4j.Driver.Internal
         /// Only set the bookmark to a new value if the new value is not null
         /// </summary>
         /// <param name="bookmark">The new bookmark</param>
-        private void UpdateBookmark(Bookmark bookmark)
+        public void UpdateBookmark(Bookmark bookmark)
         {
-            if (bookmark != null && !bookmark.IsEmpty())
+            if (bookmark?.HasBookmark ?? false)
             {
                 _bookmark = bookmark;
             }
@@ -149,6 +149,7 @@ namespace Neo4j.Driver.Internal
             {
                 await _connection.CloseAsync().ConfigureAwait(false);
             }
+
             _connection = null;
         }
 

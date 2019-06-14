@@ -18,6 +18,7 @@
 using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
@@ -31,7 +32,7 @@ namespace Neo4j.Driver.Tests.Routing
         [InlineData("Neo4j/3.2")]
         public void ShouldHandleMajorMinorVersion(string version)
         {
-            var serverVersion = ServerVersion.Version(version);
+            var serverVersion = ServerVersion.From(version);
             serverVersion.Major.Should().Be(3);
             serverVersion.Minor.Should().Be(2);
             serverVersion.Patch.Should().Be(0);
@@ -42,7 +43,7 @@ namespace Neo4j.Driver.Tests.Routing
         [InlineData("Neo4j/3.2.1")]
         public void ShouldHandleMajorMinorPatchVersion(string version)
         {
-            var serverVersion = ServerVersion.Version(version);
+            var serverVersion = ServerVersion.From(version);
             serverVersion.Major.Should().Be(3);
             serverVersion.Minor.Should().Be(2);
             serverVersion.Patch.Should().Be(1);
@@ -52,7 +53,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldHandleDevVersion()
         {
             var version = "Neo4j/dev";
-            var serverVersion = ServerVersion.Version(version);
+            var serverVersion = ServerVersion.From(version);
             serverVersion.Major.Should().Be(Int32.MaxValue);
             serverVersion.Minor.Should().Be(Int32.MaxValue);
             serverVersion.Patch.Should().Be(Int32.MaxValue);
@@ -60,14 +61,25 @@ namespace Neo4j.Driver.Tests.Routing
 
         [Theory]
         [InlineData("Neo4j/illegal")]
+        [InlineData("Neo4j/3-alpha2")]
+        [InlineData("Illegal")]
+        [InlineData("\t\r\n")]
+        public void ShouldThrowWhenVersionNotRecognized(string version)
+        {
+            var exc = Record.Exception(() => ServerVersion.From(version));
+
+            exc.Should().BeOfType<ArgumentOutOfRangeException>();
+        }
+
+        [Theory]
         [InlineData("")]
         [InlineData(null)]
-        public void ShouldDefaultToUnknownVersion(string version)
+        public void ShouldThrowWhenVersionIsNullOrEmpty(string version)
         {
-            var serverVersion = ServerVersion.Version(version);
-            serverVersion.Major.Should().Be(0);
-            serverVersion.Minor.Should().Be(0);
-            serverVersion.Patch.Should().Be(0);
+            var exc = Record.Exception(() => ServerVersion.From(version));
+
+            exc.Should().BeOfType<ArgumentNullException>();
         }
+        
     }
 }

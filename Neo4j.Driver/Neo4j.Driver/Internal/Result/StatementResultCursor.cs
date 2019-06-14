@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public async Task<IResultSummary> ConsumeAsync()
         {
-            IRecord nextRecord = await _nextRecordFunc().ConfigureAwait(false);
+            var nextRecord = await _nextRecordFunc().ConfigureAwait(false);
             while (nextRecord != null)
             {
                 nextRecord = await _nextRecordFunc().ConfigureAwait(false);

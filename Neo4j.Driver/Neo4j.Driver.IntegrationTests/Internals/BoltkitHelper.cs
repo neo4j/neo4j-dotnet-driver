@@ -18,9 +18,10 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using static System.Environment;
-using static Neo4j.Driver.Internal.Routing.ServerVersion;
+using static Neo4j.Driver.Internal.Util.ServerVersion;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
@@ -31,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public const string TestRequireBoltkit = "Test is skipped due to Boltkit not accessible";
         private const string TestRequireEnterprise = "Test is skipped due to enterprise server is not accessible";
 
-        private static readonly string DefaultServerVersion = "3.5";
+        private static readonly string DefaultServerVersion = "4.0";
         private static string _boltkitArgs;
         private static BoltkitStatus _boltkitAvailable = BoltkitStatus.Unknown;
         private static Tuple<bool, string> _isClusterSupported;
@@ -45,6 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 {
                     return _boltkitArgs;
                 }
+
                 // User could always overwrite the env var
                 var envVar = GetEnvironmentVariable("NEOCTRLARGS");
                 if (envVar != null)
@@ -65,13 +67,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                         _boltkitArgs = DefaultServerVersion;
                     }
                 }
+
                 return _boltkitArgs;
             }
         }
 
         private enum BoltkitStatus
         {
-            Unknown, Installed, Unavailable
+            Unknown,
+            Installed,
+            Unavailable
         }
 
         public static bool IsBoltkitAvailable()
@@ -87,6 +92,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     }
                 }
             }
+
             return _boltkitAvailable == BoltkitStatus.Installed;
         }
 
@@ -110,7 +116,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 supported = false;
                 message = TestRequireEnterprise;
             }
-            else if (!(Version(ServerVersion()) >= V3_1_0))
+            else if (!(From(ServerVersion()) >= V3_1_0))
             {
                 supported = false;
                 message = $"Server {ServerVersion()} does not support causal cluster";
@@ -118,6 +124,21 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             _isClusterSupported = new Tuple<bool, string>(supported, message);
             return _isClusterSupported;
+        }
+
+        public static bool IPV6Available()
+        {
+            return NetworkInterface.GetAllNetworkInterfaces().Any(nic => nic.Supports(NetworkInterfaceComponent.IPv6));
+        }
+
+        public static bool IPV6Enabled()
+        {
+            if (bool.TryParse(GetEnvironmentVariable("NEOCTRL_DISABLE_IPV6"), out var disableIPv6) && disableIPv6)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public static string ServerVersion()
@@ -138,6 +159,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 return BoltkitStatus.Unavailable;
             }
+
             return BoltkitStatus.Installed;
         }
 
@@ -152,7 +174,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             var codeBase = typeof(BoltkitHelper).GetTypeInfo().Assembly.CodeBase;
             var localPath = new Uri(codeBase).LocalPath;
             var localFile = new FileInfo(localPath);
-            var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName, string.Format("..{0}..{0}..{0}..{0}..{0}Target", Path.DirectorySeparatorChar)));
+            var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName,
+                string.Format("..{0}..{0}..{0}..{0}..{0}Target", Path.DirectorySeparatorChar)));
             return sourcePath.FullName;
         }
     }

@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -31,13 +32,15 @@ namespace Neo4j.Driver.Internal.Protocol
         Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
         Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
-            IResultResourceHandler resultResourceHandler, Bookmark bookmark, TransactionConfig txConfig);
+            bool reactive, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
+            Bookmark bookmark, TransactionConfig txConfig);
 
         Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig);
 
-        Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement);
+        Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement,
+            bool reactive);
 
-        Task<Bookmark> CommitTransactionAsync(IConnection connection);
+        Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker);
 
         Task RollbackTransactionAsync(IConnection connection);
 

@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null,
             IConnectionListener connMetricsListener = null)
-            :base (conn)
+            : base(conn)
         {
             _releaseManager = releaseManager;
             // IdleTimer starts to count when the connection is put back to the pool.
@@ -45,6 +46,7 @@ namespace Neo4j.Driver.Internal.Connector
                 _connEvent = new SimpleTimerEvent();
             }
         }
+
         public Guid Id { get; } = Guid.NewGuid();
 
         public async Task ClearConnectionAsync()
@@ -81,7 +83,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         /// <summary>
         /// Return true if unrecoverable error has been received on this connection, otherwise false.
-        /// The connection that has been marked as has unrecoverable errors will be eventally closed when returning back to the pool.
+        /// The connection that has been marked as has unrecoverable errors will be eventually closed when returning back to the pool.
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
@@ -94,12 +96,12 @@ namespace Neo4j.Driver.Internal.Connector
 
             if (error.IsConnectionError())
             {
-                throw new ServiceUnavailableException(
-                    $"Connection with the server breaks due to {error.GetType().Name}: {error.Message}", error);
+                return TaskHelper.GetFailedTask(new ServiceUnavailableException(
+                    $"Connection with the server breaks due to {error.GetType().Name}: {error.Message}", error));
             }
             else
             {
-                throw error;
+                return TaskHelper.GetFailedTask(error);
             }
         }
 
@@ -110,12 +112,14 @@ namespace Neo4j.Driver.Internal.Connector
     internal class StopwatchBasedTimer : ITimer
     {
         private readonly Stopwatch _stopwatch;
+
         public StopwatchBasedTimer()
         {
             _stopwatch = new Stopwatch();
         }
 
         public long ElapsedMilliseconds => _stopwatch.ElapsedMilliseconds;
+
         public void Reset()
         {
             _stopwatch.Reset();

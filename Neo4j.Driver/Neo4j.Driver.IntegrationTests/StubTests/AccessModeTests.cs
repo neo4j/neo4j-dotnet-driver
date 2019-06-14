@@ -128,7 +128,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         }
 
         [RequireBoltStubServerFactAttribute]
-        public void RunOnWriteModeTransactionShouldGoToReader()
+        public void RunOnWriteModeTransactionShouldGoToWriter()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {
@@ -157,7 +157,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         [RequireBoltStubServerTheoryAttribute]
         [InlineData(AccessMode.Read)]
         [InlineData(AccessMode.Write)]
-        public void WriteTransactionOnSessionShouldGoToReader(AccessMode mode)
+        public void WriteTransactionOnSessionShouldGoToWriter(AccessMode mode)
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {

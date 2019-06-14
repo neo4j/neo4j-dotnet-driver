@@ -31,57 +31,57 @@ namespace Neo4j.Driver.Tests
         {
             public static IEnumerable<object[]> MultipleBookmarks => new[]
             {
-                new object[] {new[] {null, "illegalBookmark", FakeABookmark(123)}, FakeABookmark(123), false},
-                new object[] {new[] {null, "illegalBookmark"}, null, true},
-                new object[] {new string[] {null}, null, true},
-                new object[] {new[] {"illegalBookmark"}, null, true},
-                new object[] {new[] {FakeABookmark(123), FakeABookmark(234)}, FakeABookmark(234), false},
-                new object[] {new[] {FakeABookmark(123), FakeABookmark(-234)}, FakeABookmark(123), false},
+                new object[] {new[] {null, "illegalBookmark", FakeABookmark(123)}, FakeABookmark(123), true},
+                new object[] {new[] {null, "illegalBookmark"}, null, false},
+                new object[] {new string[] {null}, null, false},
+                new object[] {new[] {"illegalBookmark"}, null, false},
+                new object[] {new[] {FakeABookmark(123), FakeABookmark(234)}, FakeABookmark(234), true},
+                new object[] {new[] {FakeABookmark(123), FakeABookmark(-234)}, FakeABookmark(123), true},
             };
 
             [Theory, MemberData(nameof(MultipleBookmarks))]
-            public void ShouldCreateFromMultipleBookmarks(IEnumerable<string> bookmarks, string maxBookmark,
-                bool isEmpty)
+            public void ShouldCreateFromMultipleBookmarks(string[] bookmarks, string maxBookmark,
+                bool hasBookmark)
             {
                 var bookmark = Bookmark.From(bookmarks);
                 bookmark.MaxBookmark.Should().Be(maxBookmark);
-                bookmark.IsEmpty().Should().Be(isEmpty);
+                bookmark.HasBookmark.Should().Be(hasBookmark);
                 var parameters = bookmark.AsBeginTransactionParameters();
-                if (isEmpty)
-                {
-                    parameters.Should().BeNull();
-                }
-                else
+                if (hasBookmark)
                 {
                     parameters["bookmark"].Should().Be(maxBookmark);
                     parameters["bookmarks"].ValueAs<List<string>>().Should().Contain(bookmarks);
+                }
+                else
+                {
+                    parameters.Should().BeNull();
                 }
             }
 
             public static IEnumerable<object[]> SingleBookmark => new[]
             {
-                new object[] {null, null, true},
-                new object[] {"illegalBookmark", null, true},
-                new object[] {FakeABookmark(-234), null, true},
-                new object[] {FakeABookmark(123), FakeABookmark(123), false},
+                new object[] {null, null, false},
+                new object[] {"illegalBookmark", null, false},
+                new object[] {FakeABookmark(-234), null, false},
+                new object[] {FakeABookmark(123), FakeABookmark(123), true},
             };
 
             [Theory, MemberData(nameof(SingleBookmark))]
-            public void ShouldCreateFromSingleBookmark(string aBookmark, string maxBookmark, bool isEmpty)
+            public void ShouldCreateFromSingleBookmark(string aBookmark, string maxBookmark, bool hasBookmark)
             {
                 var bookmark = Bookmark.From(aBookmark);
                 bookmark.MaxBookmark.Should().Be(maxBookmark);
-                bookmark.IsEmpty().Should().Be(isEmpty);
+                bookmark.HasBookmark.Should().Be(hasBookmark);
                 var parameters = bookmark.AsBeginTransactionParameters();
-                if (isEmpty)
-                {
-                    parameters.Should().BeNull();
-                }
-                else
+                if (hasBookmark)
                 {
                     parameters["bookmark"].Should().Be(maxBookmark);
                     var bookmarks = parameters["bookmarks"].ValueAs<List<string>>();
                     bookmarks.Single().Should().Be(aBookmark);
+                }
+                else
+                {
+                    parameters.Should().BeNull();
                 }
             }
         }

@@ -21,6 +21,7 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Linq;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -54,7 +55,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var serverInfo = result.Summary.Server;
 
                 serverInfo.Address.Should().Be("localhost:7687");
-                if (ServerVersion.Version(serverInfo.Version) >= ServerVersion.V3_1_0)
+                if (ServerVersion.From(serverInfo.Version) >= ServerVersion.V3_1_0)
                 {
                     result.Summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
                     result.Summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
