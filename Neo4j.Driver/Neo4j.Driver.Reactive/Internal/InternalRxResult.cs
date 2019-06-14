@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxResult : IRxResult
     {
-        private readonly IObservable<IStatementResultCursor> _resultCursor;
+        private readonly IObservable<ICancellableStatementResultCursor> _resultCursor;
         private readonly CancellationTokenSource _cts;
         private readonly IObservable<string[]> _keys;
         private readonly ReplaySubject<IResultSummary> _summary;
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal
 
         private int _streaming;
 
-        public InternalRxResult(IObservable<IStatementResultCursor> resultCursor)
+        public InternalRxResult(IObservable<ICancellableStatementResultCursor> resultCursor)
         {
             _resultCursor = resultCursor.Replay().AutoConnect();
             _cts = new CancellationTokenSource();
@@ -62,14 +62,18 @@ namespace Neo4j.Driver.Internal
                 Observable.Create<IResultSummary>(observer => StartStreaming(cursor, null, observer)));
         }
 
-        private IDisposable StartStreaming(IStatementResultCursor cursor, IObserver<IRecord> recordObserver,
+        private IDisposable StartStreaming(ICancellableStatementResultCursor cursor, IObserver<IRecord> recordObserver,
             IObserver<IResultSummary> summaryObserver)
         {
             var result = Disposable.Empty;
 
             if (recordObserver != null && EnsureNoRecordsObservers(recordObserver))
             {
-                result = _records.Subscribe(recordObserver);
+                result = Disposable.Create(_records.Subscribe(recordObserver), subscription =>
+                {
+                    cursor.Cancel();
+                    subscription.Dispose();
+                });
             }
 
             if (summaryObserver != null)

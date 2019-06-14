@@ -24,13 +24,13 @@ using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultStreamBuilder : IResultStreamBuilder
+    internal class StatementResultCursorBuilder : IResultStreamBuilder
     {
         private readonly long _batchSize;
         private readonly Func<Task> _advanceFunction;
-        private readonly Func<ResultStreamBuilder, long, long, Task> _moreFunction;
-        private readonly Func<ResultStreamBuilder, long, Task> _cancelFunction;
-        private readonly CancellationToken _cancellation;
+        private readonly Func<StatementResultCursorBuilder, long, long, Task> _moreFunction;
+        private readonly Func<StatementResultCursorBuilder, long, Task> _cancelFunction;
+        private readonly CancellationTokenSource _cancellationSource;
         private readonly IResultResourceHandler _resourceHandler;
         private readonly SummaryBuilder _summaryBuilder;
 
@@ -40,17 +40,17 @@ namespace Neo4j.Driver.Internal.Result
         private long _statementId;
         private string[] _fields;
 
-        public ResultStreamBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
-            Func<ResultStreamBuilder, long, long, Task> moreFunction,
-            Func<ResultStreamBuilder, long, Task> cancelFunction, CancellationToken cancellation,
-            IResultResourceHandler resourceHandler, long batchSize = All)
+        public StatementResultCursorBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
+            Func<StatementResultCursorBuilder, long, long, Task> moreFunction,
+            Func<StatementResultCursorBuilder, long, Task> cancelFunction, IResultResourceHandler resourceHandler,
+            long batchSize = All)
         {
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
             _advanceFunction =
                 WrapAdvanceFunc(advanceFunction ?? throw new ArgumentNullException(nameof(advanceFunction)));
             _moreFunction = moreFunction ?? ((s, id, n) => TaskHelper.GetCompletedTask());
             _cancelFunction = cancelFunction ?? ((s, id) => TaskHelper.GetCompletedTask());
-            _cancellation = cancellation;
+            _cancellationSource = new CancellationTokenSource();
             _resourceHandler = resourceHandler;
 
             _records = new LinkedList<IRecord>();
@@ -61,9 +61,11 @@ namespace Neo4j.Driver.Internal.Result
             _batchSize = batchSize;
         }
 
-        public IStatementResultCursor CreateCursor()
+        internal State CurrentState => _state;
+
+        public ICancellableStatementResultCursor CreateCursor()
         {
-            return new StatementResultCursor(GetKeysAsync, NextRecordAsync, SummaryAsync);
+            return new StatementResultCursor(GetKeysAsync, NextRecordAsync, SummaryAsync, _cancellationSource);
         }
 
         public async Task<string[]> GetKeysAsync()
@@ -125,6 +127,7 @@ namespace Neo4j.Driver.Internal.Result
         public void PushRecord(object[] fieldValues)
         {
             _records.AddLast(new Record(_fields, fieldValues));
+            _state = State.Streaming;
         }
 
         private Func<Task> WrapAdvanceFunc(Func<Task> advanceFunc)
@@ -133,17 +136,13 @@ namespace Neo4j.Driver.Internal.Result
             {
                 if (_state == State.StreamingPaused)
                 {
-                    if (_cancellation.IsCancellationRequested)
+                    if (_cancellationSource.IsCancellationRequested)
                     {
-                        await _cancelFunction(this, _statementId);
+                        await _cancelFunction(this, _statementId).ConfigureAwait(false);
                     }
                     else
                     {
-                        await _moreFunction(this, _statementId, _batchSize);
-                        if (_state == State.StreamingPaused)
-                        {
-                            _state = State.Streaming;
-                        }
+                        await _moreFunction(this, _statementId, _batchSize).ConfigureAwait(false);
                     }
                 }
 
@@ -154,13 +153,13 @@ namespace Neo4j.Driver.Internal.Result
 
                 if (_state == State.Finished && _resourceHandler != null)
                 {
-                    await _resourceHandler.OnResultConsumedAsync();
+                    await _resourceHandler.OnResultConsumedAsync().ConfigureAwait(false);
                 }
             };
         }
 
 
-        private enum State
+        internal enum State
         {
             Running,
             StreamingPaused,

@@ -222,7 +222,7 @@ namespace Neo4j.Driver.Internal.Connector
                 {
                     if (_boltProtocol != null)
                     {
-                        await _boltProtocol.LogoutAsync(this);
+                        await _boltProtocol.LogoutAsync(this).ConfigureAwait(false);
                     }
                 }
                 catch (Exception e) when (e.HasCause<ObjectDisposedException>())
@@ -235,7 +235,7 @@ namespace Neo4j.Driver.Internal.Connector
                     _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
                 }
 
-                await _client.StopAsync();
+                await _client.StopAsync().ConfigureAwait(false);
             }
             catch (Exception e)
             {

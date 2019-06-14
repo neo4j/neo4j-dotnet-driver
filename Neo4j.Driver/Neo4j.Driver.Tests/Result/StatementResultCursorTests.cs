@@ -21,42 +21,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Xunit.Abstractions;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
     public class StatementResultCursorTests
     {
-        private static Task<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
-        {
-            if (resultEnum.MoveNext())
-            {
-                return Task.FromResult(resultEnum.Current);
-            }
-            else
-            {
-                return Task.FromResult((IRecord) null);
-            }
-        }
-
-        private static class ResultCursorCreator
-        {
-            public static StatementResultCursor CreateResultReader(int keySize, int recordSize = 1,
-                Func<Task<IResultSummary>> getSummaryFunc = null)
-            {
-                var keys = RecordCreator.CreateKeys(keySize);
-                var records = RecordCreator.CreateRecords(recordSize, keys);
-                var recordsEnum = records.GetEnumerator();
-
-                return new StatementResultCursor(() => Task.FromResult(keys.ToArray()),
-                    () => NextRecordFromEnum(recordsEnum), getSummaryFunc);
-            }
-        }
-
         public class Constructor
         {
             [Fact]
@@ -162,77 +135,6 @@ namespace Neo4j.Driver.Tests
         {
             private readonly ITestOutputHelper _output;
 
-            private class TestRecordYielder
-            {
-                private readonly IList<Record> _records = new List<Record>();
-                private readonly int _total = 0;
-
-                private readonly ITestOutputHelper _output;
-                public static string[] Keys => new[] {"Test", "Keys"};
-
-                public TestRecordYielder(int count, int total, ITestOutputHelper output)
-                {
-                    Add(count);
-                    _total = total;
-                    _output = output;
-                }
-
-                public void AddNew(int count)
-                {
-                    Add(count);
-                }
-
-                private void Add(int count)
-                {
-                    for (int i = 0; i < count; i++)
-                    {
-                        _records.Add(new Record(Keys, new object[] {"Test", 123}));
-                    }
-                }
-
-                public IEnumerable<Record> Records
-                {
-                    get
-                    {
-                        int i = 0;
-                        while (i < _total)
-                        {
-                            while (i == _records.Count)
-                            {
-                                _output.WriteLine(
-                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
-                                Thread.Sleep(50);
-                            }
-
-                            yield return _records[i];
-                            i++;
-                        }
-                    }
-                }
-
-                public IEnumerable<Record> RecordsWithAutoLoad
-                {
-                    get
-                    {
-                        int i = 0;
-                        while (i < _total)
-                        {
-                            while (i == _records.Count)
-                            {
-                                _output.WriteLine(
-                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
-                                Thread.Sleep(500);
-                                AddNew(1);
-                                _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
-                            }
-
-                            yield return _records[i];
-                            i++;
-                        }
-                    }
-                }
-            }
-
             public StreamingRecords(ITestOutputHelper output)
             {
                 _output = output;
@@ -305,6 +207,77 @@ namespace Neo4j.Driver.Tests
 
                 records.Count.Should().Be(5);
             }
+
+            private class TestRecordYielder
+            {
+                private readonly IList<Record> _records = new List<Record>();
+                private readonly int _total = 0;
+
+                private readonly ITestOutputHelper _output;
+                public static string[] Keys => new[] {"Test", "Keys"};
+
+                public TestRecordYielder(int count, int total, ITestOutputHelper output)
+                {
+                    Add(count);
+                    _total = total;
+                    _output = output;
+                }
+
+                public void AddNew(int count)
+                {
+                    Add(count);
+                }
+
+                private void Add(int count)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        _records.Add(new Record(Keys, new object[] {"Test", 123}));
+                    }
+                }
+
+                public IEnumerable<Record> Records
+                {
+                    get
+                    {
+                        int i = 0;
+                        while (i < _total)
+                        {
+                            while (i == _records.Count)
+                            {
+                                _output.WriteLine(
+                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                Thread.Sleep(50);
+                            }
+
+                            yield return _records[i];
+                            i++;
+                        }
+                    }
+                }
+
+                public IEnumerable<Record> RecordsWithAutoLoad
+                {
+                    get
+                    {
+                        int i = 0;
+                        while (i < _total)
+                        {
+                            while (i == _records.Count)
+                            {
+                                _output.WriteLine(
+                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                Thread.Sleep(500);
+                                AddNew(1);
+                                _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
+                            }
+
+                            yield return _records[i];
+                            i++;
+                        }
+                    }
+                }
+            }
         }
 
         public class ResultNavigation
@@ -323,20 +296,6 @@ namespace Neo4j.Driver.Tests
                 record = result.Current;
                 record[0].ValueAs<string>().Should().Be("record1:key0");
             }
-
-            //[Fact]
-            //public void ShouldAlwaysAdvanceRecordPosition()
-            //{
-            //    var result = ResultCursorCreator.CreateResultReader(1, 3);
-            //    var enumerable = result.Take(1);
-            //    var records = result.Take(2).ToList();
-
-            //    records[0][0].ValueAs<string>().Should().Be("record0:key0");
-            //    records[1][0].ValueAs<string>().Should().Be("record1:key0");
-
-            //    records = enumerable.ToList();
-            //    records[0][0].ValueAs<string>().Should().Be("record2:key0");
-            //}
         }
 
         public class SummaryAsyncMethod
@@ -484,6 +443,23 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class CancelMethod
+        {
+            [Fact]
+            public void ShouldCancelTokenWhenCancel()
+            {
+                var cancellationTokenSource = new CancellationTokenSource();
+                var result =
+                    ResultCursorCreator.CreateResultReader(1, 0, cancellationTokenSource: cancellationTokenSource);
+
+                cancellationTokenSource.IsCancellationRequested.Should().BeFalse();
+
+                result.Cancel();
+
+                cancellationTokenSource.IsCancellationRequested.Should().BeTrue();
+            }
+        }
+
         private class FakeSummary : IResultSummary
         {
             public Statement Statement { get; }
@@ -497,6 +473,33 @@ namespace Neo4j.Driver.Tests
             public TimeSpan ResultAvailableAfter { get; }
             public TimeSpan ResultConsumedAfter { get; }
             public IServerInfo Server { get; }
+        }
+
+        private static Task<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
+        {
+            if (resultEnum.MoveNext())
+            {
+                return Task.FromResult(resultEnum.Current);
+            }
+            else
+            {
+                return Task.FromResult((IRecord) null);
+            }
+        }
+
+        private static class ResultCursorCreator
+        {
+            public static StatementResultCursor CreateResultReader(int keySize, int recordSize = 1,
+                Func<Task<IResultSummary>> getSummaryFunc = null,
+                CancellationTokenSource cancellationTokenSource = null)
+            {
+                var keys = RecordCreator.CreateKeys(keySize);
+                var records = RecordCreator.CreateRecords(recordSize, keys);
+                var recordsEnum = records.GetEnumerator();
+
+                return new StatementResultCursor(() => Task.FromResult(keys.ToArray()),
+                    () => NextRecordFromEnum(recordsEnum), getSummaryFunc, cancellationTokenSource);
+            }
         }
     }
 }

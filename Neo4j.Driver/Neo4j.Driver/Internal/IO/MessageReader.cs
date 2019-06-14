@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.IO
 
         public async Task ReadAsync(IResponsePipeline pipeline)
         {
-            var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream);
+            var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream).ConfigureAwait(false);
             ConsumeMessages(pipeline, messageCount);
         }
 

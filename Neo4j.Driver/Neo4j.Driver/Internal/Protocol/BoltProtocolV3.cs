@@ -62,12 +62,14 @@ namespace Neo4j.Driver.Internal.Protocol
             Bookmark bookmark, TransactionConfig txConfig)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
-                CancellationToken.None, resultResourceHandler);
+            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
+                resultResourceHandler);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection
-                .EnqueueAsync(new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()), runHandler, PullAll,
+                .EnqueueAsync(
+                    new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()),
+                    runHandler, PullAll,
                     pullAllHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
@@ -76,7 +78,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
         {
-            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()), new V1.BeginResponseHandler())
+            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()),
+                    new V1.BeginResponseHandler())
                 .ConfigureAwait(false);
             if (bookmark?.HasBookmark ?? false)
             {
@@ -88,11 +91,11 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, bool reactive)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
-                CancellationToken.None, null);
+            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, null);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()), runHandler, PullAll, pullAllHandler)
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()),
+                    runHandler, PullAll, pullAllHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
@@ -119,8 +122,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task LogoutAsync(IConnection connection)
         {
-            await connection.EnqueueAsync(GoodbyeMessage.Goodbye, new NoOpResponseHandler());
-            await connection.SendAsync();
+            await connection.EnqueueAsync(GoodbyeMessage.Goodbye, new NoOpResponseHandler()).ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
         }
     }
 }

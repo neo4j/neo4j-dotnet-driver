@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (!TryGetCached(hostname, out var entry))
             {
-                await _lock.WaitAsync();
+                await _lock.WaitAsync().ConfigureAwait(false);
                 try
                 {
                     if (!TryGetCached(hostname, out entry))

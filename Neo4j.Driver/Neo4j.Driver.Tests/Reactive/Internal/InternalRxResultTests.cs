@@ -33,7 +33,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Reactive.Internal
 {
-    public class InternalRxResultTests
+    public static class InternalRxResultTests
     {
         public class Streaming : AbstractRxTest
         {
@@ -235,7 +235,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 }
             }
 
-            private static IStatementResultCursor CreateResultCursor(int keyCount, int recordCount,
+            private static ICancellableStatementResultCursor CreateResultCursor(int keyCount, int recordCount,
                 string statement = "fake", int delayMs = 0)
             {
                 var fields = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();
@@ -344,9 +344,9 @@ namespace Neo4j.Driver.Reactive.Internal
                     .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
             }
 
-            private static IStatementResultCursor CreateFailingResultCursor(Exception exc)
+            private static ICancellableStatementResultCursor CreateFailingResultCursor(Exception exc)
             {
-                var cursor = new Mock<IStatementResultCursor>();
+                var cursor = new Mock<ICancellableStatementResultCursor>();
 
                 cursor.Setup(x => x.KeysAsync()).ThrowsAsync(exc ?? throw new ArgumentNullException(nameof(exc)));
 
@@ -465,7 +465,7 @@ namespace Neo4j.Driver.Reactive.Internal
                     .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
             }
 
-            private static IStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
+            private static ICancellableStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
                 int recordCount)
             {
                 var keys = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();
@@ -571,7 +571,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 observer.Messages.AssertEqual(OnError<T>(0, exc));
             }
 
-            private static IStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
+            private static ICancellableStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
                 int recordCount)
             {
                 var fields = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();

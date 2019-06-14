@@ -14,28 +14,32 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class StatementResultCursor: IStatementResultCursor
+    internal class StatementResultCursor : ICancellableStatementResultCursor
     {
         private readonly Func<Task<string[]>> _keysFunc;
         private readonly Func<Task<IRecord>> _nextRecordFunc;
         private readonly Func<Task<IResultSummary>> _summaryFunc;
+        private readonly CancellationTokenSource _cancellationSource;
 
-        private bool _atEnd = false;
-        private IRecord _peeked = null;
-        private IRecord _current = null;
+        private bool _atEnd;
+        private IRecord _peeked;
+        private IRecord _current;
 
         private Task<string[]> _keys;
         private Task<IResultSummary> _summary;
 
-        public StatementResultCursor(Func<Task<string[]>> keysFunc, Func<Task<IRecord>> nextRecordFunc, Func<Task<IResultSummary>> summaryFunc = null)
+        public StatementResultCursor(Func<Task<string[]>> keysFunc, Func<Task<IRecord>> nextRecordFunc,
+            Func<Task<IResultSummary>> summaryFunc = null, CancellationTokenSource cancellationSource = null)
         {
             Throw.ArgumentNullException.IfNull(keysFunc, nameof(keysFunc));
             Throw.ArgumentNullException.IfNull(nextRecordFunc, nameof(nextRecordFunc));
@@ -43,6 +47,7 @@ namespace Neo4j.Driver.Internal.Result
             _keysFunc = keysFunc;
             _nextRecordFunc = nextRecordFunc;
             _summaryFunc = summaryFunc;
+            _cancellationSource = cancellationSource;
         }
 
         public Task<string[]> KeysAsync()
@@ -65,7 +70,7 @@ namespace Neo4j.Driver.Internal.Result
                 }
                 else
                 {
-                    _summary = Task.FromResult((IResultSummary)null);
+                    _summary = Task.FromResult((IResultSummary) null);
                 }
             }
 
@@ -142,6 +147,11 @@ namespace Neo4j.Driver.Internal.Result
 
                 return _current;
             }
+        }
+
+        public void Cancel()
+        {
+            _cancellationSource?.Cancel();
         }
     }
 }

@@ -30,7 +30,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    public class StatementResultTests
+    public static class StatementResultTests
     {
         private static class ResultCreator
         {
