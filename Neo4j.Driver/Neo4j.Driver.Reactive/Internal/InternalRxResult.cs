@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
@@ -98,8 +99,12 @@ namespace Neo4j.Driver.Internal
                         {
                             cursor.Discard();
                         }
+                        else
+                        {
+                            ct.Register(cursor.Discard);
+                        }
 
-                        while (await cursor.FetchAsync().ConfigureAwait(false) && !ct.IsCancellationRequested)
+                        while (await cursor.FetchAsync().ConfigureAwait(false))
                         {
                             _records.OnNext(cursor.Current);
                         }
