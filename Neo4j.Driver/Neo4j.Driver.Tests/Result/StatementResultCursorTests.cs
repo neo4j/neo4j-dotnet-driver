@@ -454,7 +454,7 @@ namespace Neo4j.Driver.Tests
 
                 cancellationTokenSource.IsCancellationRequested.Should().BeFalse();
 
-                result.Cancel();
+                result.Discard();
 
                 cancellationTokenSource.IsCancellationRequested.Should().BeTrue();
             }

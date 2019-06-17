@@ -235,7 +235,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 }
             }
 
-            private static ICancellableStatementResultCursor CreateResultCursor(int keyCount, int recordCount,
+            private static IDiscardableStatementResultCursor CreateResultCursor(int keyCount, int recordCount,
                 string statement = "fake", int delayMs = 0)
             {
                 var fields = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();
@@ -344,9 +344,9 @@ namespace Neo4j.Driver.Reactive.Internal
                     .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
             }
 
-            private static ICancellableStatementResultCursor CreateFailingResultCursor(Exception exc)
+            private static IDiscardableStatementResultCursor CreateFailingResultCursor(Exception exc)
             {
-                var cursor = new Mock<ICancellableStatementResultCursor>();
+                var cursor = new Mock<IDiscardableStatementResultCursor>();
 
                 cursor.Setup(x => x.KeysAsync()).ThrowsAsync(exc ?? throw new ArgumentNullException(nameof(exc)));
 
@@ -465,7 +465,7 @@ namespace Neo4j.Driver.Reactive.Internal
                     .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
             }
 
-            private static ICancellableStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
+            private static IDiscardableStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
                 int recordCount)
             {
                 var keys = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();
@@ -571,7 +571,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 observer.Messages.AssertEqual(OnError<T>(0, exc));
             }
 
-            private static ICancellableStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
+            private static IDiscardableStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
                 int recordCount)
             {
                 var fields = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();

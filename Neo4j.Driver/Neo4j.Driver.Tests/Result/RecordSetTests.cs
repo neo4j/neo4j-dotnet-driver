@@ -28,7 +28,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    internal class ListBasedRecordCursor : ICancellableStatementResultCursor
+    internal class ListBasedRecordCursor : IDiscardableStatementResultCursor
     {
         private readonly string[] _keys;
         private readonly Func<IResultSummary> _summaryFunc;
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tests
 
         public IRecord Current => _record;
 
-        public void Cancel()
+        public void Discard()
         {
         }
     }

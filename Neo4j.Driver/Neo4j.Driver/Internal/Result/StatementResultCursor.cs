@@ -24,7 +24,7 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class StatementResultCursor : ICancellableStatementResultCursor
+    internal class StatementResultCursor : IDiscardableStatementResultCursor
     {
         private readonly Func<Task<string[]>> _keysFunc;
         private readonly Func<Task<IRecord>> _nextRecordFunc;
@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
-        public void Cancel()
+        public void Discard()
         {
             _cancellationSource?.Cancel();
         }

@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal
         public IRxResult Run(Statement statement, TransactionConfig txConfig)
         {
             return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(statement, txConfig))
-                .Cast<ICancellableStatementResultCursor>());
+                .Cast<IDiscardableStatementResultCursor>());
         }
 
         #endregion
