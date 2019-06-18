@@ -16,6 +16,8 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -26,37 +28,9 @@ namespace Neo4j.Driver.Reactive
 {
     public static class Extensions
     {
-        public static void SubscribeAndDiscard<T>(this IObservable<T> observable, int millisecondsTimeout = -1)
+        public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
         {
-            var waiter = new ManualResetEventSlim(false);
-            using (observable.Finally(() => waiter.Set()).Subscribe(Observer.Create<T>(t => { })))
-            {
-                waiter.Wait(millisecondsTimeout);
-            }
-        }
-
-        public static ITestableObserver<T> SubscribeAndWait<T>(this IObservable<T> observable,
-            ITestableObserver<T> observer, int millisecondsTimeout = -1)
-        {
-            var waiter = new ManualResetEventSlim(false);
-            using (observable.Finally(() => waiter.Set()).Subscribe(observer))
-            {
-                waiter.Wait(millisecondsTimeout);
-            }
-
-            return observer;
-        }
-
-        public static void AssertEqual<T>(this ITestableObserver<T> observer,
-            params Recorded<Notification<T>>[] notifications)
-        {
-            observer.Messages.AssertEqual(notifications);
-        }
-
-        public static void AssertEqual<T>(this ITestableObserver<T> observer1,
-            ITestableObserver<T> observer2)
-        {
-            observer1.Messages.AssertEqual(observer2.Messages);
+            return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
         }
     }
 }

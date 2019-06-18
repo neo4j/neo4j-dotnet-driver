@@ -17,10 +17,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
@@ -48,7 +51,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             session.BeginTransaction()
                 .SelectMany(tx => tx.Commit<int>())
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
 
@@ -65,7 +68,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             session.BeginTransaction()
                 .SelectMany(tx => tx.Rollback<int>())
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
 
@@ -85,7 +88,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         .Select(r => r["n"].As<INode>()["id"].As<int>())
                         .Concat(txc.Commit<int>())
                         .Catch(txc.Rollback<int>()))
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, 42),
                     OnCompleted<int>(0));
@@ -121,7 +124,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRolledback(txc, commit);
+            VerifyCommittedOrRolledback(commit);
         }
 
         [RequireServerTheory]
@@ -138,7 +141,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRolledback(txc, commit);
+            VerifyCommittedOrRolledback(commit);
         }
 
         [RequireServerTheory]
@@ -155,7 +158,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRolledback(txc, commit);
+            VerifyCommittedOrRolledback(commit);
         }
 
         [RequireServerFact(Skip = BehaviourDifferenceWJavaDriver)]
@@ -166,7 +169,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyFailsWithWrongStatement(txc);
 
             txc.Commit<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<int>(0, MatchesException<ClientException>()));
         }
@@ -179,7 +182,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyFailsWithWrongStatement(txc);
 
             txc.Rollback<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
         }
@@ -194,7 +197,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyFailsWithWrongStatement(txc);
 
             txc.Commit<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<int>(0, MatchesException<ClientException>()));
         }
@@ -209,7 +212,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyFailsWithWrongStatement(txc);
 
             txc.Rollback<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
         }
@@ -223,7 +226,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             txc.Run("CREATE ()")
                 .Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRecord>(0,
                         Matches<Exception>(exc =>
@@ -235,10 +238,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         [RequireServerFact(Skip = BehaviourDifferenceWJavaDriver)]
         public void ShouldFailToBeginTxcWithInvalidBookmark()
         {
-            var session = Server.Driver.RxSession(AccessMode.Read, new[] {"InvalidBookmark"});
-
-            session.BeginTransaction()
-                .SubscribeAndWait(CreateObserver<IRxTransaction>())
+            Server.Driver
+                .RxSession(AccessMode.Read, new[] {"InvalidBookmark"})
+                .BeginTransaction()
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRxTransaction>(0,
                         Matches<Exception>(exc => exc.Message.Should().Contain("InvalidBookmark"))));
@@ -253,7 +256,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanCommit(txc);
 
             txc.Commit<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
         }
@@ -267,7 +270,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanRollback(txc);
 
             txc.Rollback<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
         }
@@ -281,7 +284,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanRollback(txc);
 
             txc.Commit<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<int>(0,
                         Matches<Exception>(exc => exc.Message.Should().Contain("transaction has been rolled back"))));
@@ -296,7 +299,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanCommit(txc);
 
             txc.Rollback<string>()
-                .SubscribeAndWait(CreateObserver<string>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<string>(0,
                         Matches<Exception>(exc => exc.Message.Should().Contain("transaction has been committed"))));
@@ -315,7 +318,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             txc.Run("CREATE ()")
                 .Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRecord>(0,
                         Matches<Exception>(exc => exc.Message.Should().Contain("Cannot run more statements in this"))));
@@ -358,7 +361,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     result2.Records(),
                     result3.Records(),
                     result4.Records())
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, MatchesRecord(new[] {"n"}, 1)),
                     OnNext(0, MatchesRecord(new[] {"n"}, 2)),
@@ -383,7 +386,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     result2.Records(),
                     result1.Records())
                 .Select(r => r[0].As<int>())
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, 4),
                     OnNext(0, 3),
@@ -410,12 +413,12 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             var result = txc.Run("RETURN Wrong");
 
             result.Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRecord>(0, MatchesException<ClientException>()));
 
             result.Summary()
-                .SubscribeAndWait(CreateObserver<IResultSummary>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, Matches<IResultSummary>(x => x.Should().NotBeNull())),
                     OnCompleted<IResultSummary>(0));
@@ -433,35 +436,43 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     txc.Run("UNWIND range(1, $size) AS x RETURN x", new {size})
                         .Records()
                         .Select(r => r[0].As<int>())
+                        .Do(x => Output.WriteLine("First: {0}", x))
                         .Buffer(50)
+                        .Do(x => Output.WriteLine("Buffered: {0}", x))
                         .SelectMany(x =>
                             txc.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new {x}).Records())
                         .Select(r => r[0].As<int>())
+                        .Do(x => Output.WriteLine("Nested: {0}", x))
                         .Concat(txc.Commit<int>())
                         .Catch(txc.Rollback<int>()))
-                .SubscribeAndWait(CreateObserver<int>()).Messages;
+                .WaitForCompletion()
+                .ToList();
 
-            messages.Should().HaveCount(size + 1).And.NotContain(n => n.Value.Kind == NotificationKind.OnError);
+            messages.Should()
+                .HaveCount(size + 1,
+                    messages.Aggregate(
+                        new StringBuilder(), (s, item) => s.AppendFormat("{0}, ", item)).ToString()).And
+                .NotContain(n => n.Value.Kind == NotificationKind.OnError);
         }
 
 
-        private void VerifyCanCommit(IRxTransaction txc)
+        private static void VerifyCanCommit(IRxTransaction txc)
         {
             txc.Commit<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
         }
 
-        private void VerifyCanRollback(IRxTransaction txc)
+        private static void VerifyCanRollback(IRxTransaction txc)
         {
             txc.Rollback<int>()
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnCompleted<int>(0));
         }
 
-        private void VerifyCanCommitOrRollback(IRxTransaction txc, bool commit)
+        private static void VerifyCanCommitOrRollback(IRxTransaction txc, bool commit)
         {
             if (commit)
             {
@@ -473,13 +484,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
         }
 
-        private void VerifyCanCreateNode(IRxTransaction txc, int id)
+        private static void VerifyCanCreateNode(IRxTransaction txc, int id)
         {
             txc.Run("CREATE (n:Node {id: $id}) RETURN n", new {id})
                 .Records()
                 .Select(r => r["n"].As<INode>())
                 .SingleAsync()
-                .SubscribeAndWait(CreateObserver<INode>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, Matches<INode>(node => node.Should().BeEquivalentTo(new
                     {
@@ -492,27 +503,27 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnCompleted<INode>(0));
         }
 
-        private void VerifyCanReturnOne(IRxTransaction txc)
+        private static void VerifyCanReturnOne(IRxTransaction txc)
         {
             txc.Run("RETURN 1")
                 .Records()
                 .Select(r => r[0].As<int>())
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, 1),
                     OnCompleted<int>(0));
         }
 
-        private void VerifyFailsWithWrongStatement(IRxTransaction txc)
+        private static void VerifyFailsWithWrongStatement(IRxTransaction txc)
         {
             txc.Run("RETURN")
                 .Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRecord>(0, MatchesException<ClientException>(e => e.Code.Contains("SyntaxError"))));
         }
 
-        private void VerifyCommittedOrRolledback(IRxTransaction txc, bool commit)
+        private void VerifyCommittedOrRolledback(bool commit)
         {
             if (commit)
             {
@@ -528,7 +539,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
         private int CountNodes(int id)
         {
-            return session.Run("MATCH (n:Node {id: $id}) RETURN count(n)", new {id})
+            return NewSession()
+                .Run("MATCH (n:Node {id: $id}) RETURN count(n)", new {id})
                 .Records()
                 .Select(r => r[0].As<int>())
                 .SingleAsync()

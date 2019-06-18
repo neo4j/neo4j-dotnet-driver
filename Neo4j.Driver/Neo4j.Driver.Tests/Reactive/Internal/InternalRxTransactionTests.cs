@@ -41,19 +41,19 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeTxcRunAsyncOnKeys()
             {
-                VerifyLazyRunAsync(r => r.Keys().SubscribeAndDiscard());
+                VerifyLazyRunAsync(r => r.Keys().WaitForCompletion());
             }
 
             [Fact]
             public void ShouldInvokeTxcRunAsyncOnRecords()
             {
-                VerifyLazyRunAsync(r => r.Records().SubscribeAndDiscard());
+                VerifyLazyRunAsync(r => r.Records().WaitForCompletion());
             }
 
             [Fact]
             public void ShouldInvokeTxcRunAsyncOnSummary()
             {
-                VerifyLazyRunAsync(r => r.Summary().SubscribeAndDiscard());
+                VerifyLazyRunAsync(r => r.Summary().WaitForCompletion());
             }
 
             [Fact]
@@ -61,9 +61,9 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 VerifyLazyRunAsync(r =>
                 {
-                    r.Keys().SubscribeAndDiscard();
-                    r.Records().SubscribeAndDiscard();
-                    r.Summary().SubscribeAndDiscard();
+                    r.Keys().WaitForCompletion();
+                    r.Records().WaitForCompletion();
+                    r.Summary().WaitForCompletion();
                 });
             }
 
@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 asyncTxc.Verify(x => x.CommitAsync(), Times.Never);
 
-                commit.SubscribeAndDiscard();
+                commit.WaitForCompletion();
 
                 asyncTxc.Verify(x => x.CommitAsync(), Times.Once);
             }
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 asyncTxc.Verify(x => x.RollbackAsync(), Times.Never);
 
-                rollback.SubscribeAndDiscard();
+                rollback.WaitForCompletion();
 
                 asyncTxc.Verify(x => x.RollbackAsync(), Times.Once);
             }

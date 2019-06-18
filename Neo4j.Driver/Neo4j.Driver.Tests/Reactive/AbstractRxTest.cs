@@ -38,7 +38,5 @@ namespace Neo4j.Driver.Reactive
             Output = output;
             Scheduler = new TestScheduler();
         }
-
-        protected ITestableObserver<T> CreateObserver<T>() => Scheduler.CreateObserver<T>();
     }
 }

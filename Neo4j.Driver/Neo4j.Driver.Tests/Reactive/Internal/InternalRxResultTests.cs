@@ -169,12 +169,12 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldNotAllowConcurrentRecordObservers()
             {
-                var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 20, "my statement", 1000);
                 var result = new InternalRxResult(Observable.Return(cursor));
 
-                result.Records().Merge(result.Records())
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                result.Records()
+                    .Merge(result.Records())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnError<IRecord>(0, MatchesException<ClientException>()));
             }
@@ -182,26 +182,24 @@ namespace Neo4j.Driver.Reactive.Internal
 
             private void VerifyKeys(IRxResult result, params string[] keys)
             {
-                var keysObserver = CreateObserver<string[]>();
-
-                result.Keys().SubscribeAndWait(keysObserver);
-                keysObserver.Messages.AssertEqual(
-                    OnNext(0, MatchesKeys(keys)),
-                    OnCompleted<string[]>(0));
+                result.Keys()
+                    .WaitForCompletion()
+                    .AssertEqual(
+                        OnNext(0, MatchesKeys(keys)),
+                        OnCompleted<string[]>(0));
             }
 
             private void VerifyRecords(IRxResult result, string[] keys, int recordsCount)
             {
-                var recordsObserver = CreateObserver<IRecord>();
-
-                result.Records().SubscribeAndWait(recordsObserver);
-                recordsObserver.Messages.AssertEqual(
-                    Enumerable.Range(1, recordsCount).Select(r =>
-                            OnNext(0,
-                                MatchesRecord(keys,
-                                    Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
-                                        .ToArray())))
-                        .Concat(new[] {OnCompleted<IRecord>(0)}));
+                result.Records()
+                    .WaitForCompletion()
+                    .AssertEqual(
+                        Enumerable.Range(1, recordsCount).Select(r =>
+                                OnNext(0,
+                                    MatchesRecord(keys,
+                                        Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
+                                            .ToArray())))
+                            .Concat(new[] {OnCompleted<IRecord>(0)}));
             }
 
             private void VerifyNoRecords(IRxResult result)
@@ -211,14 +209,13 @@ namespace Neo4j.Driver.Reactive.Internal
 
             private void VerifySummary(IRxResult result, string statement = "fake")
             {
-                var summaryObserver = CreateObserver<IResultSummary>();
-
-                result.Summary().SubscribeAndWait(summaryObserver);
-                summaryObserver.Messages.AssertEqual(
-                    OnNext(0,
-                        MatchesSummary(new {Statement = new Statement(statement)},
-                            opts => opts.ExcludingMissingMembers())),
-                    OnCompleted<IResultSummary>(0));
+                result.Summary()
+                    .WaitForCompletion()
+                    .AssertEqual(
+                        OnNext(0,
+                            MatchesSummary(new {Statement = new Statement(statement)},
+                                opts => opts.ExcludingMissingMembers())),
+                        OnCompleted<IResultSummary>(0));
             }
 
             private static IEnumerable<IRecord> CreateRecords(string[] fields, int recordCount, int delayMs = 0)
@@ -329,16 +326,14 @@ namespace Neo4j.Driver.Reactive.Internal
 
             private void VerifyError<T>(IObservable<T> observable, Exception exc)
             {
-                var observer = CreateObserver<T>();
-                observable.SubscribeAndWait(observer);
-                observer.Messages.AssertEqual(OnError<T>(0, exc));
+                observable.WaitForCompletion()
+                    .AssertEqual(OnError<T>(0, exc));
             }
 
             private void VerifyNoError<T>(IObservable<T> observable)
             {
                 observable
-                    .SubscribeAndWait(CreateObserver<T>())
-                    .Messages
+                    .WaitForCompletion()
                     .Should()
                     .NotContain(e => e.Value.Kind == NotificationKind.OnError).And
                     .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
@@ -426,40 +421,37 @@ namespace Neo4j.Driver.Reactive.Internal
 
             private void VerifyKeys(IRxResult result, params string[] keys)
             {
-                var keysObserver = CreateObserver<string[]>();
-
-                result.Keys().SubscribeAndWait(keysObserver);
-                keysObserver.Messages.AssertEqual(
-                    OnNext(0, MatchesKeys(keys)),
-                    OnCompleted<string[]>(0));
+                result.Keys()
+                    .WaitForCompletion()
+                    .AssertEqual(
+                        OnNext(0, MatchesKeys(keys)),
+                        OnCompleted<string[]>(0));
             }
 
             private void VerifyRecordsAndError(IRxResult result, string[] keys, int recordsCount, Exception failure)
             {
-                var recordsObserver = CreateObserver<IRecord>();
-
-                result.Records().SubscribeAndWait(recordsObserver);
-                recordsObserver.Messages.AssertEqual(
-                    Enumerable.Range(1, recordsCount).Select(r =>
-                            OnNext(0,
-                                MatchesRecord(keys,
-                                    Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
-                                        .ToArray())))
-                        .Concat(new[] {OnError<IRecord>(0, failure)}));
+                result.Records()
+                    .WaitForCompletion()
+                    .AssertEqual(
+                        Enumerable.Range(1, recordsCount).Select(r =>
+                                OnNext(0,
+                                    MatchesRecord(keys,
+                                        Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
+                                            .ToArray())))
+                            .Concat(new[] {OnError<IRecord>(0, failure)}));
             }
 
             private void VerifyError<T>(IObservable<T> observable, Exception exc)
             {
-                var observer = CreateObserver<T>();
-                observable.SubscribeAndWait(observer);
-                observer.Messages.AssertEqual(OnError<T>(0, exc));
+                observable.WaitForCompletion()
+                    .AssertEqual(
+                        OnError<T>(0, exc));
             }
 
             private void VerifyNoError<T>(IObservable<T> observable)
             {
                 observable
-                    .SubscribeAndWait(CreateObserver<T>())
-                    .Messages
+                    .WaitForCompletion()
                     .Should()
                     .NotContain(e => e.Value.Kind == NotificationKind.OnError).And
                     .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
@@ -542,33 +534,30 @@ namespace Neo4j.Driver.Reactive.Internal
 
             private void VerifyKeys(IRxResult result, params string[] keys)
             {
-                var keysObserver = CreateObserver<string[]>();
-
-                result.Keys().SubscribeAndWait(keysObserver);
-                keysObserver.Messages.AssertEqual(
-                    OnNext(0, MatchesKeys(keys)),
-                    OnCompleted<string[]>(0));
+                result.Keys()
+                    .WaitForCompletion()
+                    .AssertEqual(
+                        OnNext(0, MatchesKeys(keys)),
+                        OnCompleted<string[]>(0));
             }
 
             private void VerifyRecords(IRxResult result, string[] keys, int recordsCount)
             {
-                var recordsObserver = CreateObserver<IRecord>();
-
-                result.Records().SubscribeAndWait(recordsObserver);
-                recordsObserver.Messages.AssertEqual(
-                    Enumerable.Range(1, recordsCount).Select(r =>
-                            OnNext(0,
-                                MatchesRecord(keys,
-                                    Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
-                                        .ToArray())))
-                        .Concat(new[] {OnCompleted<IRecord>(0)}));
+                result.Records()
+                    .WaitForCompletion()
+                    .AssertEqual(
+                        Enumerable.Range(1, recordsCount).Select(r =>
+                                OnNext(0,
+                                    MatchesRecord(keys,
+                                        Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
+                                            .ToArray())))
+                            .Concat(new[] {OnCompleted<IRecord>(0)}));
             }
 
             private void VerifyError<T>(IObservable<T> observable, Exception exc)
             {
-                var observer = CreateObserver<T>();
-                observable.SubscribeAndWait(observer);
-                observer.Messages.AssertEqual(OnError<T>(0, exc));
+                observable.WaitForCompletion()
+                    .AssertEqual(OnError<T>(0, exc));
             }
 
             private static IDiscardableStatementResultCursor CreateFailingResultCursor(Exception exc, int keyCount,

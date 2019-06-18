@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal
         private readonly Subject<IRecord> _records;
         private readonly ReplaySubject<IResultSummary> _summary;
 
-        private volatile int _streaming;
+        private volatile int _streaming = (int) StreamingState.Ready;
 
         public InternalRxResult(IObservable<IDiscardableStatementResultCursor> resultCursor)
         {
@@ -63,32 +63,37 @@ namespace Neo4j.Driver.Internal
         public IObservable<IRecord> Records()
         {
             return _resultCursor.SelectMany(cursor =>
-                Observable.Create<IRecord>((recordObserver, ct) => StartStreaming(cursor, ct, recordObserver)));
+                Observable.Create<IRecord>(recordObserver => StartStreaming(cursor, recordObserver)));
         }
 
         public IObservable<IResultSummary> Summary()
         {
             return _resultCursor.SelectMany(cursor =>
-                Observable.Create<IResultSummary>((summaryObserver, ct) =>
-                    StartStreaming(cursor, ct, summaryObserver: summaryObserver)));
+                Observable.Create<IResultSummary>(summaryObserver =>
+                    StartStreaming(cursor, summaryObserver: summaryObserver)));
         }
 
-        private Task StartStreaming(IDiscardableStatementResultCursor cursor, CancellationToken ct,
+        private IDisposable StartStreaming(IDiscardableStatementResultCursor cursor,
             IObserver<IRecord> recordObserver = null, IObserver<IResultSummary> summaryObserver = null)
         {
+            var cancellation = new CompositeDisposable(2);
+
             if (summaryObserver != null)
             {
-                _summary.Subscribe(summaryObserver, ct);
+                cancellation.Add(_summary.Subscribe(summaryObserver));
             }
 
             if (recordObserver != null && !_records.HasObservers)
             {
-                _records.Subscribe(recordObserver, ct);
+                cancellation.Add(_records.Subscribe(recordObserver));
             }
 
             if (StartStreaming())
             {
-                return Task.Run(async () =>
+                var streamingCancellation = new CancellationDisposable();
+                cancellation.Add(streamingCancellation);
+
+                Task.Run(async () =>
                 {
                     try
                     {
@@ -101,7 +106,7 @@ namespace Neo4j.Driver.Internal
                         }
                         else
                         {
-                            ct.Register(cursor.Discard);
+                            streamingCancellation.Token.Register(cursor.Discard);
                         }
 
                         while (await cursor.FetchAsync().ConfigureAwait(false))
@@ -132,17 +137,16 @@ namespace Neo4j.Driver.Internal
                     }
 
                     CompleteStreaming();
-                }, ct);
+                }, streamingCancellation.Token);
             }
-
-            if (State == StreamingState.Streaming)
+            else if (State == StreamingState.Streaming)
             {
                 recordObserver?.OnError(
                     new ClientException(
                         "Streaming has already started with a previous Records or Summary subscription."));
             }
 
-            return Task.CompletedTask;
+            return cancellation;
         }
 
         private bool StartStreaming()

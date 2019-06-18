@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .Records()
                 .Select(r => r["n"].As<int>())
                 .OnErrorResumeNext(session.Close<int>())
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, 1),
                     OnNext(0, 2),
@@ -57,13 +57,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             session.Run("INVALID STATEMENT")
                 .Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRecord>(0, MatchesException<ClientException>()));
 
             session.Run("RETURN 1")
                 .Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, MatchesRecord(new[] {"1"}, 1)),
                     OnCompleted<IRecord>(0));

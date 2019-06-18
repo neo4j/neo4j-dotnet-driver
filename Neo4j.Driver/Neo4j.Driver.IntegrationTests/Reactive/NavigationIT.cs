@@ -43,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("RETURN 1 as f1, true as f2, 'string' as f3")
                     .Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesKeys("f1", "f2", "f3")),
                         OnCompleted<string[]>(0)
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("RETURN 1 as f1, true as f2, 'string' as f3")
                     .Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
@@ -70,14 +70,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
                 result.Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesKeys("number", "text")),
                         OnCompleted<string[]>(0)
                     );
 
                 result.Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesRecord(keys, 1, "t1")),
                         OnNext(0, MatchesRecord(keys, 2, "t2")),
@@ -95,14 +95,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
                 result.Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesKeys(keys)),
                         OnCompleted<string[]>(0)
                     );
 
                 result.Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesRecord(keys, 1, "t1")),
                         OnNext(0, MatchesRecord(keys, 2, "t2")),
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
 
                 result.Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
@@ -127,14 +127,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 // When
                 result.Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesKeys("number", "text")),
                         OnCompleted<string[]>(0)
                     );
 
                 result.Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
@@ -142,7 +142,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 // Then
                 result.Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnCompleted<IRecord>(0)
                     );
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
                 result.Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesRecord(keys, 1, "t1")),
                         OnNext(0, MatchesRecord(keys, 2, "t2")),
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
 
                 result.Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesKeys(keys)),
                         OnCompleted<string[]>(0)
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
                 result.Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesRecord(keys, 1, "t1")),
                         OnNext(0, MatchesRecord(keys, 2, "t2")),
@@ -191,7 +191,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
 
                 result.Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
@@ -204,14 +204,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
                 result.Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
                     );
 
                 result.Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesKeys("number", "text")),
                         OnCompleted<string[]>(0)
@@ -222,42 +222,36 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldReturnKeysForEachObserver()
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
-                var keysObserver1 = CreateObserver<string[]>();
-                var keysObserver2 = CreateObserver<string[]>();
-                var keysObserver3 = CreateObserver<string[]>();
 
-                result.Keys().SubscribeAndWait(keysObserver1);
-                result.Summary().SubscribeAndDiscard();
+                var keys1 = result.Keys().WaitForCompletion();
+                result.Summary().WaitForCompletion();
 
-                result.Keys().SubscribeAndWait(keysObserver2);
-                result.Keys().SubscribeAndWait(keysObserver3);
+                var keys2 = result.Keys().WaitForCompletion();
+                var keys3 = result.Keys().WaitForCompletion();
 
-                keysObserver1.AssertEqual(
+                keys1.AssertEqual(
                     OnNext(0, MatchesKeys("number", "text")),
                     OnCompleted<string[]>(0)
                 );
-                keysObserver1.AssertEqual(keysObserver2);
-                keysObserver1.AssertEqual(keysObserver3);
+                keys1.AssertEqual(keys2);
+                keys1.AssertEqual(keys3);
             }
 
             [RequireServerFact]
             public void ShouldReturnSummaryForEachObserver()
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
-                var summaryObserver1 = CreateObserver<IResultSummary>();
-                var summaryObserver2 = CreateObserver<IResultSummary>();
-                var summaryObserver3 = CreateObserver<IResultSummary>();
 
-                result.Summary().SubscribeAndWait(summaryObserver1);
-                result.Summary().SubscribeAndWait(summaryObserver2);
-                result.Summary().SubscribeAndWait(summaryObserver3);
+                var summary1 = result.Summary().WaitForCompletion();
+                var summary2 = result.Summary().WaitForCompletion();
+                var summary3 = result.Summary().WaitForCompletion();
 
-                summaryObserver1.AssertEqual(
+                summary1.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
                     OnCompleted<IResultSummary>(0)
                 );
-                summaryObserver1.AssertEqual(summaryObserver2);
-                summaryObserver1.AssertEqual(summaryObserver3);
+                summary1.AssertEqual(summary2);
+                summary1.AssertEqual(summary3);
             }
 
             [RequireServerFact]
@@ -267,7 +261,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
                 result.Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesRecord(keys, 1, "t1")),
                         OnNext(0, MatchesRecord(keys, 2, "t2")),
@@ -278,7 +272,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
 
                 result.Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnCompleted<IRecord>(0)
                     );
@@ -290,7 +284,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("CREATE ({ id: $id })", new {id = 5})
                     .Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesKeys()),
                         OnCompleted<string[]>(0)
@@ -303,7 +297,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("CREATE ({ id: $id })", new {id = 5})
                     .Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnCompleted<IRecord>(0)
                     );
@@ -315,7 +309,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("CREATE ({ id: $id })", new {id = 5})
                     .Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0,
                             MatchesSummary(new
@@ -330,7 +324,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("THIS IS NOT A CYPHER")
                     .Keys()
-                    .SubscribeAndWait(CreateObserver<string[]>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnError<string[]>(0,
                             MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
@@ -341,16 +335,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldFailOnSubsequentKeysWhenRunFails()
             {
                 var result = NewRunnable().Run("THIS IS NOT A CYPHER");
-                var keysObserver1 = CreateObserver<string[]>();
-                var keysObserver2 = CreateObserver<string[]>();
 
-                result.Keys().SubscribeAndWait(keysObserver1);
-                result.Keys().SubscribeAndWait(keysObserver2);
+                var keys1 = result.Keys().WaitForCompletion();
+                var keys2 = result.Keys().WaitForCompletion();
 
-                keysObserver1.AssertEqual(
+                keys1.AssertEqual(
                     OnError<string[]>(0, MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
                 );
-                keysObserver1.AssertEqual(keysObserver2);
+                keys1.AssertEqual(keys2);
             }
 
             [RequireServerFact]
@@ -359,7 +351,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("THIS IS NOT A CYPHER")
                     .Records()
-                    .SubscribeAndWait(CreateObserver<IRecord>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnError<IRecord>(0,
                             MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
@@ -372,7 +364,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("THIS IS NOT A CYPHER");
 
                 result.Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnError<IResultSummary>(0,
                             MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
@@ -387,7 +379,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Records()
                     .Select(r => r[0].As<int>())
                     .Take(999)
-                    .SubscribeAndWait(CreateObserver<int>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         Enumerable.Range(1, 999).Select(i => OnNext(0, i)).Concat(new[] {OnCompleted<int>(0)}).ToArray()
                     );
@@ -411,7 +403,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             public override void Dispose()
             {
-                rxSession.Close<int>().SubscribeAndDiscard();
+                rxSession.Close<int>().WaitForCompletion();
 
                 base.Dispose();
             }
@@ -436,8 +428,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             public override void Dispose()
             {
-                rxTransaction.Commit<int>().SubscribeAndDiscard();
-                rxSession.Close<int>().SubscribeAndDiscard();
+                rxTransaction.Commit<int>().WaitForCompletion();
+                rxSession.Close<int>().WaitForCompletion();
 
                 base.Dispose();
             }

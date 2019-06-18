@@ -45,19 +45,19 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeSessionRunAsyncOnKeys()
             {
-                VerifyLazyRunAsync(r => r.Keys().SubscribeAndDiscard());
+                VerifyLazyRunAsync(r => r.Keys().WaitForCompletion());
             }
 
             [Fact]
             public void ShouldInvokeSessionRunAsyncOnRecords()
             {
-                VerifyLazyRunAsync(r => r.Records().SubscribeAndDiscard());
+                VerifyLazyRunAsync(r => r.Records().WaitForCompletion());
             }
 
             [Fact]
             public void ShouldInvokeSessionRunAsyncOnSummary()
             {
-                VerifyLazyRunAsync(r => r.Summary().SubscribeAndDiscard());
+                VerifyLazyRunAsync(r => r.Summary().WaitForCompletion());
             }
 
             [Fact]
@@ -65,9 +65,9 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 VerifyLazyRunAsync(r =>
                 {
-                    r.Keys().SubscribeAndDiscard();
-                    r.Records().SubscribeAndDiscard();
-                    r.Summary().SubscribeAndDiscard();
+                    r.Keys().WaitForCompletion();
+                    r.Records().WaitForCompletion();
+                    r.Summary().WaitForCompletion();
                 });
             }
 
@@ -100,13 +100,11 @@ namespace Neo4j.Driver.Reactive.Internal
                     .ReturnsAsync(Mock.Of<ITransaction>());
 
                 var rxSession = new InternalRxSession(session.Object);
-                var txcObserver = CreateObserver<IRxTransaction>();
 
-                rxSession.BeginTransaction().SubscribeAndWait(txcObserver);
-
-                txcObserver.Messages.AssertEqual(
-                    OnNext(0, Matches<IRxTransaction>(t => t.Should().BeOfType<InternalRxTransaction>())),
-                    OnCompleted<IRxTransaction>(0));
+                rxSession.BeginTransaction().WaitForCompletion()
+                    .AssertEqual(
+                        OnNext(0, Matches<IRxTransaction>(t => t.Should().BeOfType<InternalRxTransaction>())),
+                        OnCompleted<IRxTransaction>(0));
                 session.Verify(x => x.BeginTransactionAsync(It.IsAny<TransactionConfig>()), Times.Once);
             }
         }
@@ -146,7 +144,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 asyncSession.Verify(x => x.CloseAsync(), Times.Never);
 
-                close.SubscribeAndDiscard();
+                close.WaitForCompletion();
 
                 asyncSession.Verify(x => x.CloseAsync(), Times.Once);
             }

@@ -56,7 +56,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
         public virtual void Dispose()
         {
-            _sessions.ForEach(x => x.Close<Unit>().SubscribeAndDiscard());
+            _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
             _sessions.Clear();
 
             // clean database after each test run
@@ -64,28 +64,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
-        }
-
-        protected void ExecuteAndVerify(IRxSession session, string statement, object parameters, string[] expectedKeys,
-            params IEnumerable<object>[] expectedRecords)
-        {
-            var result = session.Run(statement, parameters);
-            var keysObserver = CreateObserver<string[]>();
-            var recordsObserver = CreateObserver<IRecord>();
-
-            result.Keys().SubscribeAndWait(keysObserver);
-            AreElementsEqual(new[]
-            {
-                OnNext(0, MatchesKeys(expectedKeys)),
-                OnCompleted<string[]>(0)
-            }, keysObserver.Messages);
-
-            result.Records().SubscribeAndWait(recordsObserver);
-            AreElementsEqual(
-                expectedRecords.Select(r => OnNext(0, MatchesRecord(expectedKeys, r.ToArray())))
-                    .Concat(new[] {OnCompleted<IRecord>(0)}),
-                recordsObserver.Messages
-            );
         }
     }
 }
