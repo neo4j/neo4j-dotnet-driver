@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.Result
 
         private readonly LinkedList<IRecord> _records;
 
-        private State _state;
+        private volatile int _state;
         private long _statementId;
         private string[] _fields;
 
@@ -55,13 +55,13 @@ namespace Neo4j.Driver.Internal.Result
 
             _records = new LinkedList<IRecord>();
 
-            _state = State.Running;
+            _state = (int) State.RunRequested;
             _statementId = NoStatementId;
             _fields = null;
             _batchSize = batchSize;
         }
 
-        internal State CurrentState => _state;
+        internal State CurrentState => (State) _state;
 
         public IDiscardableStatementResultCursor CreateCursor()
         {
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public async Task<string[]> GetKeysAsync()
         {
-            while (_state == State.Running)
+            while (CurrentState < State.RunCompleted)
             {
                 await _advanceFunction().ConfigureAwait(false);
             }
@@ -87,8 +87,7 @@ namespace Neo4j.Driver.Internal.Result
                 return first.Value;
             }
 
-            while ((_state == State.Running || _state == State.Streaming || _state == State.StreamingPaused) &&
-                   _records.First == null)
+            while (CurrentState < State.Completed && _records.First == null)
             {
                 await _advanceFunction().ConfigureAwait(false);
             }
@@ -104,7 +103,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public async Task<IResultSummary> SummaryAsync()
         {
-            while (_state != State.Finished)
+            while (CurrentState < State.Completed)
             {
                 await _advanceFunction().ConfigureAwait(false);
             }
@@ -116,25 +115,26 @@ namespace Neo4j.Driver.Internal.Result
         {
             _statementId = statementId;
             _fields = fields;
-            _state = State.StreamingPaused;
+
+            UpdateState(State.RunCompleted);
         }
 
         public void PullCompleted(bool hasMore, IResponsePipelineError error)
         {
-            _state = hasMore ? State.StreamingPaused : State.Finished;
+            UpdateState(hasMore ? State.RunCompleted : State.Completed);
         }
 
         public void PushRecord(object[] fieldValues)
         {
             _records.AddLast(new Record(_fields, fieldValues));
-            _state = State.Streaming;
+            UpdateState(State.RecordsStreaming);
         }
 
         private Func<Task> WrapAdvanceFunc(Func<Task> advanceFunc)
         {
             return async () =>
             {
-                if (_state == State.StreamingPaused)
+                if (CheckAndUpdateState(State.RecordsRequested, State.RunCompleted))
                 {
                     if (_cancellationSource.IsCancellationRequested)
                     {
@@ -146,25 +146,43 @@ namespace Neo4j.Driver.Internal.Result
                     }
                 }
 
-                if (_state != State.Finished)
+                if (CurrentState < State.Completed)
                 {
                     await advanceFunc().ConfigureAwait(false);
                 }
 
-                if (_state == State.Finished && _resourceHandler != null)
+                if (CurrentState == State.Completed && _resourceHandler != null)
                 {
                     await _resourceHandler.OnResultConsumedAsync().ConfigureAwait(false);
                 }
             };
         }
 
+        private bool CheckAndUpdateState(State desired, State current)
+        {
+            var desiredState = (int) desired;
+            var currentState = (int) current;
+            if (Interlocked.CompareExchange(ref _state, desiredState, currentState) == currentState)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void UpdateState(State desired)
+        {
+            var desiredState = (int) desired;
+            Interlocked.Exchange(ref _state, desiredState);
+        }
 
         internal enum State
         {
-            Running,
-            StreamingPaused,
-            Streaming,
-            Finished,
+            RunRequested,
+            RunCompleted,
+            RecordsRequested,
+            RecordsStreaming,
+            Completed
         }
     }
 }

@@ -436,22 +436,17 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     txc.Run("UNWIND range(1, $size) AS x RETURN x", new {size})
                         .Records()
                         .Select(r => r[0].As<int>())
-                        .Do(x => Output.WriteLine("First: {0}", x))
                         .Buffer(50)
-                        .Do(x => Output.WriteLine("Buffered: {0}", x))
                         .SelectMany(x =>
                             txc.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new {x}).Records())
                         .Select(r => r[0].As<int>())
-                        .Do(x => Output.WriteLine("Nested: {0}", x))
                         .Concat(txc.Commit<int>())
-                        .Catch(txc.Rollback<int>()))
+                        .Catch((Exception exc) => txc.Rollback<int>().Concat(Observable.Throw<int>(exc))))
                 .WaitForCompletion()
                 .ToList();
 
             messages.Should()
-                .HaveCount(size + 1,
-                    messages.Aggregate(
-                        new StringBuilder(), (s, item) => s.AppendFormat("{0}, ", item)).ToString()).And
+                .HaveCount(size + 1).And
                 .NotContain(n => n.Value.Kind == NotificationKind.OnError);
         }
 

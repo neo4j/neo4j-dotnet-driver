@@ -16,7 +16,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
@@ -27,24 +29,19 @@ namespace Neo4j.Driver.Internal.MessageHandling
     {
         private const string MessagePattern = "S: {0}";
 
-        private readonly LinkedList<IResponseHandler> _handlers;
+        private readonly ConcurrentQueue<IResponseHandler> _handlers;
         private readonly IDriverLogger _logger;
 
-        private int _unHandledMessages;
         private IResponsePipelineError _error;
 
         public ResponsePipeline(IDriverLogger logger)
         {
-            _handlers = new LinkedList<IResponseHandler>();
+            _handlers = new ConcurrentQueue<IResponseHandler>();
             _logger = logger;
-            _unHandledMessages = 0;
             _error = null;
         }
 
-        internal IResponseHandler Current =>
-            _handlers.First?.Value ?? throw new InvalidOperationException("Handlers is empty.");
-
-        public bool HasNoPendingMessages => _unHandledMessages == 0;
+        public bool HasNoPendingMessages => _handlers.IsEmpty;
 
         public void Enqueue(IRequestMessage message, IResponseHandler handler)
         {
@@ -53,8 +50,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 throw new ArgumentNullException(nameof(message));
             }
 
-            _handlers.AddLast(handler ?? throw new ArgumentNullException(nameof(handler)));
-            _unHandledMessages++;
+            _handlers.Enqueue(handler ?? throw new ArgumentNullException(nameof(handler)));
         }
 
         public void AssertNoFailure()
@@ -69,50 +65,58 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
         public IResponseHandler Dequeue()
         {
-            var first = _handlers.First?.Value;
-            _handlers.RemoveFirst();
-            _unHandledMessages--;
-            return first;
+            if (_handlers.TryDequeue(out var handler))
+            {
+                return handler;
+            }
+
+            throw new InvalidOperationException("No handlers registered");
+        }
+
+        internal IResponseHandler Peek()
+        {
+            if (_handlers.TryPeek(out var handler))
+            {
+                return handler;
+            }
+
+            throw new InvalidOperationException("No handlers registered");
         }
 
         public void OnSuccess(IDictionary<string, object> metadata)
         {
             LogSuccess(metadata);
-            var currentHandler = Current;
-            Dequeue();
-            currentHandler.OnSuccess(metadata);
+            var handler = Dequeue();
+            handler.OnSuccess(metadata);
         }
 
         public void OnRecord(object[] fieldValues)
         {
             LogRecord(fieldValues);
-            Current.OnRecord(fieldValues);
+            var handler = Peek();
+            handler.OnRecord(fieldValues);
         }
 
         public void OnFailure(string code, string message)
         {
             LogFailure(code, message);
-            var currentHandler = Current;
-            Dequeue();
-
+            var handler = Dequeue();
             _error = new ResponsePipelineError(ErrorExtensions.ParseServerException(code, message));
-
-            currentHandler.OnFailure(_error);
+            handler.OnFailure(_error);
         }
 
         public void OnIgnored()
         {
             LogIgnored();
-            var currentHandler = Current;
-            Dequeue();
+            var handler = Dequeue();
 
             if (_error != null)
             {
-                currentHandler.OnFailure(_error);
+                handler.OnFailure(_error);
             }
             else
             {
-                currentHandler.OnIgnored();
+                handler.OnIgnored();
             }
         }
 

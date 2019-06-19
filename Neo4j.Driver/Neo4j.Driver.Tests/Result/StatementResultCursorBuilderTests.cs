@@ -30,93 +30,104 @@ namespace Neo4j.Driver.Tests
     public class StatementResultCursorBuilderTests
     {
         [Fact]
-        public void ShouldStartInRunningState()
+        public void ShouldStartInRunRequestedState()
         {
             var builder =
                 new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Running);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunRequested);
         }
 
         [Fact]
-        public void ShouldTransitionToStreamingPausedWhenRunCompleted()
+        public void ShouldTransitionToRunCompletedWhenRunCompleted()
         {
             var builder =
                 new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Running);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunRequested);
 
             builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.StreamingPaused);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunCompleted);
         }
 
         [Fact]
-        public async Task ShouldTransitionToStreamingWhenRecordIsPushed()
+        public async Task ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushed()
         {
             var builder =
                 new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Running);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunRequested);
 
             builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.StreamingPaused);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunCompleted);
 
             builder.PushRecord(new object[] {1, 2, 3});
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Streaming);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RecordsStreaming);
         }
 
         [Fact]
-        public async Task ShouldTransitionToStreamingPausedWhenPullCompletedWithHasMore()
+        public async Task ShouldTransitionToRunCompletedWhenPullCompletedWithHasMore()
         {
             var builder =
                 new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Running);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunRequested);
 
             builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.StreamingPaused);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunCompleted);
 
             builder.PushRecord(new object[] {1, 2, 3});
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Streaming);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RecordsStreaming);
 
             builder.PullCompleted(true, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.StreamingPaused);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunCompleted);
         }
 
         [Fact]
-        public void ShouldTransitionToFinishedWhenPullCompleted()
+        public void ShouldTransitionToCompletedWhenPullCompleted()
         {
             var builder =
                 new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Running);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunRequested);
 
             builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.StreamingPaused);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RunCompleted);
 
             builder.PushRecord(new object[] {1, 2, 3});
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Streaming);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.RecordsStreaming);
 
             builder.PullCompleted(false, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Finished);
+            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Completed);
         }
 
         [Fact]
-        public void ShouldInvokeResourceHandlerWhenFinished()
+        public async Task ShouldInvokeResourceHandlerWhenCompleted()
         {
+            var actions = new Queue<Action>();
             var resourceHandler = new Mock<IResultResourceHandler>();
             var builder =
-                new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null,
+                new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(actions), null, null,
                     resourceHandler.Object);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Running);
 
-            builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.StreamingPaused);
+            actions.Enqueue(() => builder.RunCompleted(0, new[] {"a"}, null));
+            actions.Enqueue(() => builder.PushRecord(new object[] {1}));
+            actions.Enqueue(() => builder.PushRecord(new object[] {2}));
+            actions.Enqueue(() => builder.PushRecord(new object[] {3}));
+            actions.Enqueue(() => builder.PullCompleted(false, null));
 
-            builder.PushRecord(new object[] {1, 2, 3});
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Streaming);
+            var cursor = builder.CreateCursor();
 
+            var hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
             resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
 
-            builder.PullCompleted(false, null);
-            builder.CurrentState.Should().Be(StatementResultCursorBuilder.State.Finished);
-
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
             resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
+
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
+
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeFalse();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Once);
         }
 
         public class Reactive
