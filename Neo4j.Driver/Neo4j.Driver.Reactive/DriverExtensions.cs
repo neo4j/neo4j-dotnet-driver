@@ -60,7 +60,10 @@ namespace Neo4j.Driver
         /// <returns>A reactive session instance</returns>
         public static IRxSession RxSession(this IDriver driver, AccessMode mode, IEnumerable<string> bookmarks)
         {
-            return new InternalRxSession(driver.CastOrThrow<Internal.Driver>().Session(mode, bookmarks, true));
+            var reactiveDriver = driver.CastOrThrow<IReactiveDriver>();
+
+            return new InternalRxSession(reactiveDriver.Session(mode, bookmarks, true),
+                new RxRetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.DriverLogger));
         }
     }
 }

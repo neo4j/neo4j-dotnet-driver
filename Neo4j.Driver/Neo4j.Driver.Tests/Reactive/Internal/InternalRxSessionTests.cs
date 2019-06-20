@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnInternalRxResult()
             {
-                var rxSession = new InternalRxSession(Mock.Of<ISession>());
+                var rxSession = new InternalRxSession(Mock.Of<IReactiveSession>(), Mock.Of<IRxRetryLogic>());
 
                 rxSession.Run("RETURN 1").Should().BeOfType<InternalRxResult>();
             }
@@ -73,11 +73,11 @@ namespace Neo4j.Driver.Reactive.Internal
 
             private static void VerifyLazyRunAsync(Action<IRxResult> action)
             {
-                var asyncSession = new Mock<ISession>();
+                var asyncSession = new Mock<IReactiveSession>();
                 asyncSession.Setup(x => x.RunAsync(It.IsAny<Statement>(), It.IsAny<TransactionConfig>()))
                     .ReturnsAsync(new ListBasedRecordCursor(new[] {"x"}, Enumerable.Empty<IRecord>,
                         Mock.Of<IResultSummary>));
-                var session = new InternalRxSession(asyncSession.Object);
+                var session = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
                 var result = session.Run("RETURN 1");
 
                 asyncSession.Verify(
@@ -95,11 +95,11 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnObservable()
             {
-                var session = new Mock<ISession>();
+                var session = new Mock<IReactiveSession>();
                 session.Setup(x => x.BeginTransactionAsync(It.IsAny<TransactionConfig>()))
                     .ReturnsAsync(Mock.Of<ITransaction>());
 
-                var rxSession = new InternalRxSession(session.Object);
+                var rxSession = new InternalRxSession(session.Object, Mock.Of<IRxRetryLogic>());
 
                 rxSession.BeginTransaction().WaitForCompletion()
                     .AssertEqual(
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldThrowOnReadTransaction()
             {
-                var rxSession = new InternalRxSession(Mock.Of<ISession>());
+                var rxSession = new InternalRxSession(Mock.Of<IReactiveSession>(), Mock.Of<IRxRetryLogic>());
                 var exc = Record.Exception(() =>
                     rxSession.ReadTransaction(txc => Observable.Empty<string>()));
 
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldThrowOnWriteTransaction()
             {
-                var rxSession = new InternalRxSession(Mock.Of<ISession>());
+                var rxSession = new InternalRxSession(Mock.Of<IReactiveSession>(), Mock.Of<IRxRetryLogic>());
                 var exc = Record.Exception(() =>
                     rxSession.WriteTransaction(txc => Observable.Empty<string>()));
 
@@ -137,8 +137,8 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeSessionCloseAsync()
             {
-                var asyncSession = new Mock<ISession>();
-                var rxSession = new InternalRxSession(asyncSession.Object);
+                var asyncSession = new Mock<IReactiveSession>();
+                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
 
                 var close = rxSession.Close<Unit>();
 

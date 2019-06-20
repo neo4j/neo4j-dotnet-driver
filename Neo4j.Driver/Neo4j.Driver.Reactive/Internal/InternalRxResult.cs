@@ -38,14 +38,14 @@ namespace Neo4j.Driver.Internal
             Completed = 2
         }
 
-        private readonly IObservable<IDiscardableStatementResultCursor> _resultCursor;
+        private readonly IObservable<IReactiveStatementResultCursor> _resultCursor;
         private readonly IObservable<string[]> _keys;
         private readonly Subject<IRecord> _records;
         private readonly ReplaySubject<IResultSummary> _summary;
 
         private volatile int _streaming = (int) StreamingState.Ready;
 
-        public InternalRxResult(IObservable<IDiscardableStatementResultCursor> resultCursor)
+        public InternalRxResult(IObservable<IReactiveStatementResultCursor> resultCursor)
         {
             _resultCursor = resultCursor.Replay().AutoConnect();
             _keys = _resultCursor.SelectMany(x => x.KeysAsync().ToObservable()).Replay().AutoConnect();
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal
                     StartStreaming(cursor, summaryObserver: summaryObserver)));
         }
 
-        private IDisposable StartStreaming(IDiscardableStatementResultCursor cursor,
+        private IDisposable StartStreaming(IReactiveStatementResultCursor cursor,
             IObserver<IRecord> recordObserver = null, IObserver<IResultSummary> summaryObserver = null)
         {
             var cancellation = new CompositeDisposable(2);

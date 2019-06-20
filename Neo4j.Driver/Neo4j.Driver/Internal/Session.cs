@@ -26,7 +26,7 @@ using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
-    internal partial class Session : StatementRunner, ISession
+    internal partial class Session : StatementRunner, IReactiveSession
     {
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
@@ -130,6 +130,11 @@ namespace Neo4j.Driver.Internal
         public Task<ITransaction> BeginTransactionAsync(TransactionConfig txConfig)
         {
             return TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig));
+        }
+
+        public Task<ITransaction> BeginTransactionAsync(AccessMode mode, TransactionConfig txConfig)
+        {
+            return BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig);
         }
 
         public ITransaction BeginTransaction(string bookmark)

@@ -16,6 +16,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 
@@ -23,11 +26,13 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxSession : IRxSession
     {
-        private readonly ISession _session;
+        private readonly IReactiveSession _session;
+        private readonly IRxRetryLogic _retryLogic;
 
-        public InternalRxSession(ISession session)
+        public InternalRxSession(IReactiveSession session, IRxRetryLogic retryLogic)
         {
             _session = session;
+            _retryLogic = retryLogic;
         }
 
         public String LastBookmark => _session.LastBookmark;
@@ -62,7 +67,7 @@ namespace Neo4j.Driver.Internal
         public IRxResult Run(Statement statement, TransactionConfig txConfig)
         {
             return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(statement, txConfig))
-                .Cast<IDiscardableStatementResultCursor>());
+                .Cast<IReactiveStatementResultCursor>());
         }
 
         #endregion
@@ -81,6 +86,13 @@ namespace Neo4j.Driver.Internal
                     new InternalRxTransaction(tx));
         }
 
+        private IObservable<IRxTransaction> BeginTransaction(AccessMode mode, TransactionConfig txConfig)
+        {
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, txConfig))
+                .Select(tx =>
+                    new InternalRxTransaction(tx));
+        }
+
         #endregion
 
         #region Transaction Functions
@@ -90,7 +102,8 @@ namespace Neo4j.Driver.Internal
             return ReadTransaction(work, null);
         }
 
-        public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig)
+        public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
+            TransactionConfig txConfig)
         {
             return RunTransaction(AccessMode.Read, work, txConfig);
         }
@@ -100,15 +113,21 @@ namespace Neo4j.Driver.Internal
             return WriteTransaction(work, null);
         }
 
-        public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig)
+        public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
+            TransactionConfig txConfig)
         {
             return RunTransaction(AccessMode.Write, work, txConfig);
         }
 
-        private IObservable<T> RunTransaction<T>(AccessMode mode, Func<IRxTransaction, IObservable<T>> work,
+        private IObservable<T> RunTransaction<T>(AccessMode mode,
+            Func<IRxTransaction, IObservable<T>> work,
             TransactionConfig txConfig)
         {
-            throw new NotImplementedException();
+            return _retryLogic.Retry(
+                BeginTransaction(mode, txConfig)
+                    .SelectMany(txc =>
+                        work(txc).CatchAndThrow(exc => txc.Rollback<T>()).Concat(txc.Commit<T>()))
+            );
         }
 
         #endregion
@@ -119,6 +138,11 @@ namespace Neo4j.Driver.Internal
         {
             return Observable.FromAsync(() => _session.CloseAsync()).SelectMany(x => Observable.Empty<T>());
         }
+
+        #endregion
+
+
+        #region Reactive Extensions
 
         #endregion
     }

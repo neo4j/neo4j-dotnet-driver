@@ -117,7 +117,8 @@ namespace Neo4j.Driver
         /// <param name="txConfig">configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
-        IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig);
+        IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
+            TransactionConfig txConfig);
 
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Write">Read</see>
@@ -137,7 +138,8 @@ namespace Neo4j.Driver
         /// <param name="txConfig">configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
-        IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work, TransactionConfig txConfig);
+        IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
+            TransactionConfig txConfig);
 
         /// <summary>
         /// Closes this session and returns an empty reactive stream.

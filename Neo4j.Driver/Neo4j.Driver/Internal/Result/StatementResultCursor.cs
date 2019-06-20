@@ -24,7 +24,7 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class StatementResultCursor : IDiscardableStatementResultCursor
+    internal class StatementResultCursor : IReactiveStatementResultCursor
     {
         private readonly Func<Task<string[]>> _keysFunc;
         private readonly Func<Task<IRecord>> _nextRecordFunc;

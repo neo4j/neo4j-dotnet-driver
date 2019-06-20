@@ -28,7 +28,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    internal class ListBasedRecordCursor : IDiscardableStatementResultCursor
+    internal class ListBasedRecordCursor : IReactiveStatementResultCursor
     {
         private readonly string[] _keys;
         private readonly Func<IResultSummary> _summaryFunc;

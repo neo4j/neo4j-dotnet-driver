@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Internal.Result
 
         internal State CurrentState => (State) _state;
 
-        public IDiscardableStatementResultCursor CreateCursor()
+        public IReactiveStatementResultCursor CreateCursor()
         {
             return new StatementResultCursor(GetKeysAsync, NextRecordAsync, SummaryAsync, _cancellationSource);
         }
