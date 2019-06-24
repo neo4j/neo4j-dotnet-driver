@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -39,6 +40,8 @@ namespace Neo4j.Driver.Internal.Result
         private volatile int _state;
         private long _statementId;
         private string[] _fields;
+
+        private IResponsePipelineError _pendingError;
 
         public StatementResultCursorBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
             Func<StatementResultCursorBuilder, long, long, Task> moreFunction,
@@ -75,6 +78,8 @@ namespace Neo4j.Driver.Internal.Result
                 await _advanceFunction().ConfigureAwait(false);
             }
 
+            _pendingError?.EnsureThrown();
+
             return _fields ?? new string[0];
         }
 
@@ -96,9 +101,12 @@ namespace Neo4j.Driver.Internal.Result
             if (first != null)
             {
                 _records.RemoveFirst();
+                return first.Value;
             }
 
-            return first?.Value;
+            _pendingError?.EnsureThrown();
+
+            return null;
         }
 
         public async Task<IResultSummary> SummaryAsync()
@@ -107,6 +115,8 @@ namespace Neo4j.Driver.Internal.Result
             {
                 await _advanceFunction().ConfigureAwait(false);
             }
+
+            _pendingError?.EnsureThrown();
 
             return _summaryBuilder.Build();
         }
@@ -148,7 +158,18 @@ namespace Neo4j.Driver.Internal.Result
 
                 if (CurrentState < State.Completed)
                 {
-                    await advanceFunc().ConfigureAwait(false);
+                    try
+                    {
+                        await advanceFunc().ConfigureAwait(false);
+                    }
+                    catch (ProtocolException)
+                    {
+                        throw;
+                    }
+                    catch (Exception exc)
+                    {
+                        _pendingError = new ResponsePipelineError(exc);
+                    }
                 }
 
                 if (CurrentState == State.Completed && _resourceHandler != null)

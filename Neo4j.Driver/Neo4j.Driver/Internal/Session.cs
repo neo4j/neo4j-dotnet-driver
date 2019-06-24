@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Internal
 
         public Task<ITransaction> BeginTransactionAsync(AccessMode mode, TransactionConfig txConfig)
         {
-            return BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig);
+            return BeginTransactionWithoutLoggingAsync(mode, txConfig);
         }
 
         public ITransaction BeginTransaction(string bookmark)

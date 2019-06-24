@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return ReadTransaction(work, null);
+            return ReadTransaction(work, TransactionConfig.Empty);
         }
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return WriteTransaction(work, null);
+            return WriteTransaction(work, TransactionConfig.Empty);
         }
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
@@ -119,14 +119,24 @@ namespace Neo4j.Driver.Internal
             return RunTransaction(AccessMode.Write, work, txConfig);
         }
 
-        private IObservable<T> RunTransaction<T>(AccessMode mode,
+        internal IObservable<T> RunTransaction<T>(AccessMode mode,
             Func<IRxTransaction, IObservable<T>> work,
             TransactionConfig txConfig)
         {
             return _retryLogic.Retry(
                 BeginTransaction(mode, txConfig)
                     .SelectMany(txc =>
-                        work(txc).CatchAndThrow(exc => txc.Rollback<T>()).Concat(txc.Commit<T>()))
+                        Observable.Defer(() =>
+                        {
+                            try
+                            {
+                                return work(txc);
+                            }
+                            catch (Exception exc)
+                            {
+                                return Observable.Throw<T>(exc);
+                            }
+                        }).CatchAndThrow(exc => txc.Rollback<T>()).Concat(txc.Commit<T>()))
             );
         }
 
@@ -138,11 +148,6 @@ namespace Neo4j.Driver.Internal
         {
             return Observable.FromAsync(() => _session.CloseAsync()).SelectMany(x => Observable.Empty<T>());
         }
-
-        #endregion
-
-
-        #region Reactive Extensions
 
         #endregion
     }

@@ -329,9 +329,9 @@ namespace Neo4j.Driver.Tests.Routing
             return list;
         }
 
-        internal static Mock<IConnection> SetupSocketConnection(object[] recordFileds)
+        internal static Mock<IConnection> SetupSocketConnection(object[] recordFields)
         {
-            return SetupSocketConnection(new List<object[]> {recordFileds});
+            return SetupSocketConnection(new List<object[]> {recordFields});
         }
 
         internal static Mock<IConnection> Setup32SocketConnection(IDictionary<string, string> routingContext,
