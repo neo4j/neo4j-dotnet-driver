@@ -138,7 +138,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             CountNodes("WithSyncFailure").Should().Be(1);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", VersionComparison.GreaterThanOrEqualTo)]
         public void ShouldFailOnTransactionThatCannotBeRetried()
         {
             var work = new ConfigurableTransactionWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");

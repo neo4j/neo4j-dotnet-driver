@@ -32,14 +32,14 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             var config = Config.DefaultConfig;
             var configuredLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
-            if (Enum.TryParse<ExtendedLogLevel>(string.IsNullOrEmpty(configuredLevelStr) ? "ERROR" : configuredLevelStr,
-                true, out var configuredLevel))
+            if (Enum.TryParse<ExtendedLogLevel>(configuredLevelStr ?? "", true, out var configuredLevel))
             {
                 config.DriverLogger = new TestDriverLogger(s => Console.WriteLine(s), configuredLevel);
             }
             else
             {
-                config.DriverLogger = new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s));
+                config.DriverLogger =
+                    new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s), ExtendedLogLevel.Debug);
             }
 
             return GraphDatabase.Driver(boltUri, authToken, config);
