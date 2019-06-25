@@ -16,8 +16,7 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -35,7 +34,7 @@ namespace Neo4j.Driver.Internal.Result
         private readonly IResultResourceHandler _resourceHandler;
         private readonly SummaryBuilder _summaryBuilder;
 
-        private readonly LinkedList<IRecord> _records;
+        private readonly ConcurrentQueue<IRecord> _records;
 
         private volatile int _state;
         private long _statementId;
@@ -56,7 +55,7 @@ namespace Neo4j.Driver.Internal.Result
             _cancellationSource = new CancellationTokenSource();
             _resourceHandler = resourceHandler;
 
-            _records = new LinkedList<IRecord>();
+            _records = new ConcurrentQueue<IRecord>();
 
             _state = (int) State.RunRequested;
             _statementId = NoStatementId;
@@ -85,23 +84,19 @@ namespace Neo4j.Driver.Internal.Result
 
         public async Task<IRecord> NextRecordAsync()
         {
-            var first = _records.First;
-            if (first != null)
+            if (_records.TryDequeue(out var record))
             {
-                _records.RemoveFirst();
-                return first.Value;
+                return record;
             }
 
-            while (CurrentState < State.Completed && _records.First == null)
+            while (CurrentState < State.Completed && _records.IsEmpty)
             {
                 await _advanceFunction().ConfigureAwait(false);
             }
 
-            first = _records.First;
-            if (first != null)
+            if (_records.TryDequeue(out record))
             {
-                _records.RemoveFirst();
-                return first.Value;
+                return record;
             }
 
             _pendingError?.EnsureThrown();
@@ -136,7 +131,8 @@ namespace Neo4j.Driver.Internal.Result
 
         public void PushRecord(object[] fieldValues)
         {
-            _records.AddLast(new Record(_fields, fieldValues));
+            _records.Enqueue(new Record(_fields, fieldValues));
+
             UpdateState(State.RecordsStreaming);
         }
 
