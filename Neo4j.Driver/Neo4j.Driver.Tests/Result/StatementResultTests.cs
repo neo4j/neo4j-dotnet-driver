@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests
                 var records = RecordCreator.CreateRecords(recordSize, keys);
 
                 return new InternalStatementResult(new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
-                    new SyncExecutor());
+                    new BlockingExecutor());
             }
         }
 
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfCursorIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new InternalStatementResult(null, new SyncExecutor()));
+                var ex = Xunit.Record.Exception(() => new InternalStatementResult(null, new BlockingExecutor()));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -221,7 +221,7 @@ namespace Neo4j.Driver.Tests
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var cursor =
                     new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys,
-                        () => recordYielder.RecordsWithAutoLoad), new SyncExecutor());
+                        () => recordYielder.RecordsWithAutoLoad), new BlockingExecutor());
                 var records = cursor.ToList();
                 records.Count.Should().Be(10);
             }
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.Tests
                 int count = 0;
                 var cursor =
                     new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
-                        new SyncExecutor());
+                        new BlockingExecutor());
                 var t = Task.Factory.StartNew(() =>
                 {
                     // ReSharper disable once LoopCanBeConvertedToQuery
@@ -261,7 +261,7 @@ namespace Neo4j.Driver.Tests
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var result =
                     new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
-                        new SyncExecutor());
+                        new BlockingExecutor());
                 var temp = result.Take(5);
                 var records = temp.ToList();
                 records.Count.Should().Be(5);

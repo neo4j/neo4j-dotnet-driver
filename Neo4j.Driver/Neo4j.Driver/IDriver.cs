@@ -23,10 +23,10 @@ namespace Neo4j.Driver
 {
     /// <summary>
     ///     The <see cref="IDriver"/> instance maintains the connections with a Neo4j database, providing an access point via the
-    ///     <see cref="ISession" /> method.
+    ///     <see cref="IAsyncSession" /> method.
     /// </summary>
     /// <remarks>
-    ///     The Driver maintains a session pool buffering the <see cref="ISession" />s created by the user. 
+    ///     The Driver maintains a session pool buffering the <see cref="IAsyncSession" />s created by the user. 
     ///     The size of the buffer can be configured by the <see cref="Config.MaxIdleConnectionPoolSize" /> property on the <see cref="Config" /> when creating the Driver.
     /// </remarks>
     public interface IDriver : IDisposable
@@ -34,8 +34,8 @@ namespace Neo4j.Driver
         /// <summary>
         /// Obtain a session with the default access mode <see cref="AccessMode.Write"/>.
         /// </summary>
-        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
-        ISession Session();
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        IAsyncSession AsyncSession();
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/>.
@@ -43,8 +43,8 @@ namespace Neo4j.Driver
         /// <param name="defaultMode">The default access mode of the session. 
         /// If no access mode is specified when using the statement running methods inside this session,
         /// the statement will be executed in connections satisfying the default access mode.</param>
-        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
-        ISession Session(AccessMode defaultMode);
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        IAsyncSession AsyncSession(AccessMode defaultMode);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode.Write"/> and start bookmark.
@@ -52,8 +52,8 @@ namespace Neo4j.Driver
         /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
         /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
-        ISession Session(string bookmark);
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        IAsyncSession AsyncSession(string bookmark);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/> and start bookmark.
@@ -64,8 +64,8 @@ namespace Neo4j.Driver
         /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
         /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
-        ISession Session(AccessMode defaultMode, string bookmark);
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        IAsyncSession AsyncSession(AccessMode defaultMode, string bookmark);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/> and a series of start bookmarks.
@@ -76,8 +76,8 @@ namespace Neo4j.Driver
         /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
         /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
-        ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks);
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<string> bookmarks);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode.Write"/> access mode and a series of start bookmarks.
@@ -85,8 +85,8 @@ namespace Neo4j.Driver
         /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
         /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="ISession"/> that could be used to execute statements.</returns>
-        ISession Session(IEnumerable<string> bookmarks);
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        IAsyncSession AsyncSession(IEnumerable<string> bookmarks);
 
         /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.

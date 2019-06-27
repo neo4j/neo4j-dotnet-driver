@@ -1,0 +1,72 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\common.props" />
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+    <RootNamespace>Neo4j.Driver.IntegrationTests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="App.config" />
+    <PackageReference Include="Castle.Core" Version="4.4.0" />
+    <PackageReference Include="FluentAssertions" Version="5.6.0" />
+    <PackageReference Include="Microsoft.Reactive.Testing" Version="4.1.5" />
+    <PackageReference Include="Moq" Version="4.11.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MSTestVersion)" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
+    <PackageReference Include="System.Reactive" Version="4.1.5" />
+    <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.15" />
+    <PackageReference Include="xunit" Version="$(XunitVersion)" />
+    <PackageReference Include="xunit.runner.console" Version="$(XunitVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj" />
+    <ProjectReference Include="..\Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj" />
+    <ProjectReference Include="..\Neo4j.Driver.Tests\Neo4j.Driver.Tests.csproj" />
+    <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
+    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
+    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
+    <PackageReference Include="System.Net.Security" Version="4.3.2" />
+    <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Tasks" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Resources\accessmode_reader_explicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_reader_func.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_reader_implicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_router.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_writer_explicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_writer_func.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\accessmode_writer_implicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\connection_error_on_commit_v1.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\connection_error_on_commit_v3.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\get_routing_table_only.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\return_1.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="Resources\rollback_error.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnInternalRxResult()
             {
-                var rxTxc = new InternalRxTransaction(Mock.Of<ITransaction>());
+                var rxTxc = new InternalRxTransaction(Mock.Of<IAsyncTransaction>());
 
                 rxTxc.Run("RETURN 1").Should().BeOfType<InternalRxResult>();
             }
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
             private static void VerifyLazyRunAsync(Action<IRxResult> action)
             {
-                var asyncTxc = new Mock<ITransaction>();
+                var asyncTxc = new Mock<IAsyncTransaction>();
                 asyncTxc.Setup(x => x.RunAsync(It.IsAny<Statement>()))
                     .ReturnsAsync(new ListBasedRecordCursor(new[] {"x"}, Enumerable.Empty<IRecord>,
                         Mock.Of<IResultSummary>));
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeTxcCommitAsync()
             {
-                var asyncTxc = new Mock<ITransaction>();
+                var asyncTxc = new Mock<IAsyncTransaction>();
                 var rxTxc = new InternalRxTransaction(asyncTxc.Object);
 
                 var commit = rxTxc.Commit<Unit>();
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeTxcRollbackAsync()
             {
-                var asyncTxc = new Mock<ITransaction>();
+                var asyncTxc = new Mock<IAsyncTransaction>();
                 var rxTxc = new InternalRxTransaction(asyncTxc.Object);
 
                 var rollback = rxTxc.Rollback<Unit>();

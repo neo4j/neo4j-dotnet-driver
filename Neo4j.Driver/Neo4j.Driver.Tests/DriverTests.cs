@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tests
             var driver = GraphDatabase.Driver("bolt://localhost");
             driver.Dispose();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests
             var driver = GraphDatabase.Driver("bolt://localhost");
             await driver.CloseAsync();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests
             var driver = GraphDatabase.Driver("bolt://localhost");
             await driver.CloseAsync();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }
@@ -125,7 +125,7 @@ namespace Neo4j.Driver.Tests
             driver.Dispose();
             await driver.CloseAsync();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }

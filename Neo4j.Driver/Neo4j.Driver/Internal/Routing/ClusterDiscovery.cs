@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Internal.Routing
             var table = default(RoutingTable);
 
             var provider = new SingleConnectionBasedConnectionProvider(connection);
-            var session = new Session(provider, _logger);
+            var session = new AsyncSession(provider, _logger);
             try
             {
                 var result = await session.RunAsync(DiscoveryProcedure(connection)).ConfigureAwait(false);

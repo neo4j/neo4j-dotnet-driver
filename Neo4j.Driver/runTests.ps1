@@ -50,7 +50,7 @@ try
     Write-TeamCity "##teamcity[progressFinish 'Completed unit tests ($ServerVersionText)']"
 
     Write-TeamCity "##teamcity[progressStart 'Running integration tests ($ServerVersionText)']"
-    Invoke-Expression "pushd $RootDir\..\Neo4j.Driver\Neo4j.Driver.IntegrationTests; dotnet test $TestArgs; popd" -ErrorAction Stop
+    Invoke-Expression "pushd $RootDir\..\Neo4j.Driver\Neo4j.Driver.Tests.Integration; dotnet test $TestArgs; popd" -ErrorAction Stop
     If ($LastExitCode -ne 0) {
         throw "integration tests failed"
     }

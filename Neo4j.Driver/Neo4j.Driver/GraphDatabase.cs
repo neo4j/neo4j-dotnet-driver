@@ -222,7 +222,7 @@ namespace Neo4j.Driver
             var metrics = config.MetricsFactory?.CreateMetrics(config);
             var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
 
-            var retryLogic = new RetryLogic(config.MaxTransactionRetryTime, logger);
+            var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
 
             IConnectionProvider connectionProvider = null;
             switch (parsedUri.Scheme.ToLower())

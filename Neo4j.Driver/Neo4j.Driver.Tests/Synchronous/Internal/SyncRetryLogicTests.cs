@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Synchronous.Internal
         [MemberData(nameof(NonTransientErrors))]
         public void ShouldNotRetryOnNonTransientErrors(Exception error)
         {
-            var retryLogic = new SyncRetryLogic(TimeSpan.FromSeconds(5), null);
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(5), null);
             var work = CreateFailingWork(0, error);
 
             var exc = Record.Exception(() => retryLogic.Retry(() => work.Work(null)));
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Synchronous.Internal
         [MemberData(nameof(TransientErrors))]
         public void ShouldRetryOnTransientErrors(Exception error)
         {
-            var retryLogic = new SyncRetryLogic(TimeSpan.FromSeconds(5), null);
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(5), null);
             var work = CreateFailingWork(5, error);
 
             var result = retryLogic.Retry(() => work.Work(null));
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Synchronous.Internal
         [Fact]
         public void ShouldNotRetryOnSuccess()
         {
-            var retryLogic = new SyncRetryLogic(TimeSpan.FromSeconds(5), null);
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(5), null);
             var work = CreateFailingWork(5);
 
             var result = retryLogic.Retry(() => work.Work(null));
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Synchronous.Internal
         {
             var error = new TransientException("code", "message");
             var logger = new Mock<IDriverLogger>();
-            var retryLogic = new SyncRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
+            var retryLogic = new RetryLogic(TimeSpan.FromMinutes(1), logger.Object);
             var work = CreateFailingWork(1,
                 Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray());
 
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Synchronous.Internal
         {
             var error = new TransientException("code", "message");
             var logger = new Mock<IDriverLogger>();
-            var retryLogic = new SyncRetryLogic(TimeSpan.FromSeconds(1), logger.Object);
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(1), logger.Object);
             var work = CreateFailingWork(TimeSpan.FromSeconds(2), 1, error);
 
             var result = retryLogic.Retry(() => work.Work(null));
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Synchronous.Internal
             var exceptions = Enumerable.Range(1, errorCount).Select(i => new TransientException($"{i}", $"{i}"))
                 .Cast<Exception>().ToArray();
             var logger = new Mock<IDriverLogger>();
-            var retryLogic = new SyncRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(2), logger.Object);
             var work = CreateFailingWork(TimeSpan.FromSeconds(1), 1, exceptions);
 
             var exc = Record.Exception(() => retryLogic.Retry(() => work.Work(null)));
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Synchronous.Internal
                 set => _failures = (value ?? Enumerable.Empty<Exception>()).GetEnumerator();
             }
 
-            public T Work(ISyncTransaction txc)
+            public T Work(ITransaction txc)
             {
                 Interlocked.Increment(ref _invocations);
 

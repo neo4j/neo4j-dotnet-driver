@@ -26,10 +26,10 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxSession : IRxSession
     {
-        private readonly IReactiveSession _session;
+        private readonly IInternalAsyncSession _session;
         private readonly IRxRetryLogic _retryLogic;
 
-        public InternalRxSession(IReactiveSession session, IRxRetryLogic retryLogic)
+        public InternalRxSession(IInternalAsyncSession session, IRxRetryLogic retryLogic)
         {
             _session = session;
             _retryLogic = retryLogic;
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal
         public IRxResult Run(Statement statement, TransactionConfig txConfig)
         {
             return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(statement, txConfig))
-                .Cast<IReactiveStatementResultCursor>());
+                .Cast<IInternalStatementResultCursor>());
         }
 
         #endregion

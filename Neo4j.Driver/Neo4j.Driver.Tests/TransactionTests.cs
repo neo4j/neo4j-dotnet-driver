@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldObtainProtocolFromConnection()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
 
                 mockConn.Verify(x => x.BoltProtocol);
             }
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.BoltProtocol).Returns(mockProtocol.Object);
 
                 var bookmark = Bookmark.From(FakeABookmark(123));
-                var tx = new Transaction(mockConn.Object, null, null, bookmark);
+                var tx = new AsyncTransaction(mockConn.Object, null, null, bookmark);
 
                 await tx.BeginTransactionAsync(null);
                 mockProtocol.Verify(
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
 
                 await tx.BeginTransactionAsync(TransactionConfig.Empty);
                 protocol.Verify(
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
 
                 var statement = new Statement("lala");
                 await tx.RunAsync(statement);
@@ -93,7 +93,7 @@ namespace Neo4j.Driver.Tests
             public async void ShouldThrowExceptionIfPreviousTxFailed()
             {
                 var mockConn = new Mock<IConnection>();
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
                 tx.MarkToClose();
 
                 var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
                 var statement = new Statement("lala");
 
                 protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, false))
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var mockHandler = new Mock<ITransactionResourceHandler>();
-                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+                var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.Invocations.Clear();
                 await tx.CommitAsync();
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var mockHandler = new Mock<ITransactionResourceHandler>();
-                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+                var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.Invocations.Clear();
                 await tx.RollbackAsync();
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var mockHandler = new Mock<ITransactionResourceHandler>();
-                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+                var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.Invocations.Clear();
                 await tx.CommitAsync();
@@ -169,7 +169,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var mockHandler = new Mock<ITransactionResourceHandler>();
-                var tx = new Transaction(mockConn.Object, mockHandler.Object);
+                var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
                 mockConn.Invocations.Clear();
                 await tx.CommitAsync();
@@ -185,7 +185,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
                 mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
@@ -200,7 +200,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
                 mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
@@ -218,7 +218,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
                 mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
-                var tx = new Transaction(mockConn.Object);
+                var tx = new AsyncTransaction(mockConn.Object);
                 mockConn.Invocations.Clear();
 
                 tx.MarkToClose();
