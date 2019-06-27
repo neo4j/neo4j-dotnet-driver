@@ -20,12 +20,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class BoltV3IT : DirectDriverTestBase
     {
@@ -33,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.5.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldRunWithTxConfigAsync()
         {
             // Given
@@ -55,7 +53,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.5.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldRunWithTxTimeoutAsync()
         {
             // Given
@@ -103,13 +101,13 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.5.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldReadWithTxConfigAsync()
         {
             await RunWithTxConfigAsync(true);
         }
 
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.5.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldWriteWithTxConfigAsync()
         {
             await RunWithTxConfigAsync(false);

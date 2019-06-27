@@ -15,17 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.DirectDriver
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class CypherParametersIT : DirectDriverTestBase
     {

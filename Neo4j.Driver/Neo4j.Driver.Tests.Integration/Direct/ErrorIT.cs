@@ -16,14 +16,12 @@
 // limitations under the License.
 
 using System;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class ErrorIT : DirectDriverTestBase
     {

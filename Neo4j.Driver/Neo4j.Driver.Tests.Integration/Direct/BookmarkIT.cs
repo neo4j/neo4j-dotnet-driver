@@ -16,19 +16,12 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Moq;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class BookmarkIT : DirectDriverTestBase
     {
@@ -40,7 +33,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldContainLastBookmarkAfterTx()
         {
             var session = Driver.AsyncSession();
@@ -60,7 +53,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task BookmarkUnchangedAfterRolledBackTx()
         {
             var session = Driver.AsyncSession();
@@ -89,7 +82,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task BookmarkUnchangedAfterTxFailure()
         {
             var session = Driver.AsyncSession();
@@ -116,7 +109,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldIgnoreInvalidBookmark()
         {
             var session = Driver.AsyncSession("invalid bookmark format");
@@ -131,7 +124,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldThrowForUnreachableBookmark()
         {
             string bookmark;
@@ -161,7 +154,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldWaitOnBookmark()
         {
             var session = Driver.AsyncSession();

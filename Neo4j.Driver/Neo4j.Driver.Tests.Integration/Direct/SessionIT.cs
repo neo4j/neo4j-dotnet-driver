@@ -17,15 +17,13 @@
 
 using System;
 using System.Collections.Generic;
-using FluentAssertions;
-using Neo4j.Driver;
-using Xunit;
-using Xunit.Abstractions;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using FluentAssertions;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class SessionIT : DirectDriverTestBase
     {

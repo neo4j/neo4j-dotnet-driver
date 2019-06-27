@@ -26,7 +26,7 @@ using Neo4j.Driver.Internal.Connector.Trust;
 using Org.BouncyCastle.Pkcs;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTrustIntegrationTestFixture>
     {

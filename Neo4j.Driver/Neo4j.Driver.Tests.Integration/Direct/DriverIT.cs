@@ -25,9 +25,8 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Metrics;
 using Xunit;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class DriverIT : DirectDriverTestBase
     {
@@ -35,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
         }
 
-        [RequireServerFact("3.2.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.2.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldPackAndUnpackBytes()
         {
             // Given
@@ -58,7 +57,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerWithIPv6Fact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerWithIPv6Fact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldConnectIPv6AddressIfEnabled()
         {
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = true}))
@@ -78,7 +77,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldNotConnectIPv6AddressIfDisabled()
         {
             using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = false}))

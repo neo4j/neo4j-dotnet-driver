@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,11 +24,10 @@ using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Routing
 {
     public class RoutingDriverStressIT : RoutingDriverTestBase
     {

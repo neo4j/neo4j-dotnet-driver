@@ -14,22 +14,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.SoakRunWorkItem;
-using static Xunit.Record;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Routing
 {
     public class RoutingDriverAsyncIT : RoutingDriverTestBase
     {
@@ -46,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var session = driver.AsyncSession();
                 try
                 {
-                    exception = await ExceptionAsync(() => session.RunAsync("RETURN 1"));
+                    exception = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
                 }
                 finally
                 {
@@ -89,7 +84,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var session = driver.AsyncSession();
                 try
                 {
-                    error = await ExceptionAsync(() => session.RunAsync("RETURN 1"));
+                    error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
                 }
                 finally
                 {
@@ -110,7 +105,7 @@ namespace Neo4j.Driver.IntegrationTests
             result.Current[0].ValueAs<int>().Should().Be(1);
 
             driver.Dispose();
-            var error = await ExceptionAsync(() => session.RunAsync("RETURN 1"));
+            var error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
             error.Should().BeOfType<ObjectDisposedException>();
             error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
@@ -127,7 +122,7 @@ namespace Neo4j.Driver.IntegrationTests
             driver.Dispose();
             await session.CloseAsync();
 
-            var error = Exception(() => driver.AsyncSession());
+            var error = Record.Exception(() => driver.AsyncSession());
             error.Should().BeOfType<ObjectDisposedException>();
             error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
         }

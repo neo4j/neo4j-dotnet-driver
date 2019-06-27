@@ -16,17 +16,12 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Routing
 {
     [Collection(CCIntegrationCollection.CollectionName)]
     public class RoutingDriverIT : RoutingDriverTestBase

@@ -17,16 +17,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.IntegrationTests.Shared;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Stub
 {
     public class BoltStubServerTests
     {

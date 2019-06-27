@@ -17,11 +17,10 @@
 
 using System;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests.Direct
 {
     [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class DirectDriverTestBase : IDisposable
