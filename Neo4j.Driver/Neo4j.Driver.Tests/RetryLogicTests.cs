@@ -16,7 +16,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -31,166 +33,168 @@ namespace Neo4j.Driver.Tests
 {
     public class RetryLogicTests
     {
-        private readonly ITestOutputHelper _output;
-        private long _globalCounter;
-
-        public RetryLogicTests(ITestOutputHelper output)
+        [Theory]
+        [MemberData(nameof(NonTransientErrors))]
+        public async Task ShouldNotRetryOnNonTransientErrors(Exception error)
         {
-            _output = output;
-            _globalCounter = 0;
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(5), null);
+            var work = CreateFailingWork(0, error);
+
+            var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync(() => work.Work(null)));
+
+            exc.Should().Be(error);
+            work.Invocations.Should().Be(1);
+        }
+
+        [Theory]
+        [MemberData(nameof(TransientErrors))]
+        public async Task ShouldRetryOnTransientErrors(Exception error)
+        {
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(5), null);
+            var work = CreateFailingWork(5, error);
+
+            var result = await retryLogic.RetryAsync(() => work.Work(null));
+
+            result.Should().Be(5);
+            work.Invocations.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task ShouldNotRetryOnSuccess()
+        {
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(5), null);
+            var work = CreateFailingWork(5);
+
+            var result = await retryLogic.RetryAsync(() => work.Work(null));
+
+            result.Should().Be(5);
+            work.Invocations.Should().Be(1);
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(2)]
-        [InlineData(20)]
-        public void ShouldRetry(int numberOfParallelRetries)
+        [InlineData(5)]
+        public async Task ShouldLogRetries(int errorCount)
         {
-            var mockLogger = new Mock<IDriverLogger>();
+            var error = new TransientException("code", "message");
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new RetryLogic(TimeSpan.FromMinutes(1), logger.Object);
+            var work = CreateFailingWork(1,
+                Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray());
 
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(5), mockLogger.Object);
-            Parallel.For(0, numberOfParallelRetries, i => Retry(i, retryLogic));
+            var result = await retryLogic.RetryAsync(() => work.Work(null));
 
-            // we don't log last loop of failed retries, so let's recompute our expectation
-            var warningsLogged = Interlocked.Read(ref _globalCounter) - (1 * numberOfParallelRetries);
-
-            mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()),
-                Times.Exactly((int) warningsLogged));
+            result.Should().Be(1);
+            logger.Verify(x => x.Warn(error,
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried in"))),
+                Times.Exactly(errorCount));
         }
 
-        private void Retry(int index, IRetryLogic retryLogic)
+        [Fact]
+        public async Task ShouldRetryAtLeastTwice()
         {
-            var timer = new Stopwatch();
-            timer.Start();
-            var runCounter = 0;
-            var e = Record.Exception(() => retryLogic.Retry<int>(() =>
-            {
-                runCounter++;
-                Interlocked.Increment(ref _globalCounter);
-                var errorMessage = $"Thread {index} Failed at {timer.Elapsed}";
-                throw new SessionExpiredException(errorMessage);
-            }));
-            timer.Stop();
+            var error = new TransientException("code", "message");
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(1), logger.Object);
+            var work = CreateFailingWork(TimeSpan.FromSeconds(2), 1, error);
 
-            e.Should().BeOfType<ServiceUnavailableException>()
+            var result = await retryLogic.RetryAsync(() => work.Work(null));
+
+            result.Should().Be(1);
+            logger.Verify(x => x.Warn(error,
+                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried in"))),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task ShouldThrowServiceUnavailableWhenRetriesTimedOut()
+        {
+            var errorCount = 3;
+            var exceptions = Enumerable.Range(1, errorCount).Select(i => new TransientException($"{i}", $"{i}"))
+                .Cast<Exception>().ToArray();
+            var logger = new Mock<IDriverLogger>();
+            var retryLogic = new RetryLogic(TimeSpan.FromSeconds(2), logger.Object);
+            var work = CreateFailingWork(TimeSpan.FromSeconds(1), 1, exceptions);
+
+            var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync(() => work.Work(null)));
+
+            exc.Should().BeOfType<ServiceUnavailableException>()
                 .Which.InnerException.Should().BeOfType<AggregateException>()
-                .Which.Flatten().InnerExceptions.Should().HaveCount(runCounter);
-            timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(5);
+                .Which.InnerExceptions.Should().BeSubsetOf(exceptions);
         }
 
-        [Theory]
-        [InlineData("Neo.TransientError.Transaction.Terminated")]
-        [InlineData("Neo.TransientError.Transaction.LockClientStopped")]
-        public void ShouldNotRetryOnError(string errorCode)
+        private static ConfigurableTransactionWork<T> CreateFailingWork<T>(T success, params Exception[] exceptions)
         {
-            var mockLogger = new Mock<IDriverLogger>();
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(30), mockLogger.Object);
-
-            int count = 0;
-            var e = Record.Exception(() => retryLogic.Retry<int>(() =>
-            {
-                count++;
-                throw ParseServerException(errorCode, "an error");
-            }));
-
-            e.Should().BeOfType<TransientException>().Which.Code.Should().Be(errorCode);
-            count.Should().Be(1);
-            mockLogger.Verify(l => l.Warn(It.IsAny<Exception>(), It.IsAny<string>()), Times.Never);
+            return CreateFailingWork(TimeSpan.Zero, success, exceptions);
         }
 
-        [Fact]
-        public void ShouldLogExactlyAsTheNumberOfRetries()
+        private static ConfigurableTransactionWork<T> CreateFailingWork<T>(TimeSpan delay, T success,
+            params Exception[] exceptions)
         {
-            var logger = new Mock<IDriverLogger>();
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
-
-            var counter = 0;
-            var exc = Record.Exception(() => retryLogic.Retry<int>(() =>
+            return new ConfigurableTransactionWork<T>(delay, success)
             {
-                Thread.Sleep(TimeSpan.FromMilliseconds(250));
-                counter++;
-                throw new SessionExpiredException("session expired");
-            }));
-
-            exc.Should().BeOfType<ServiceUnavailableException>().Which
-                .Message.Should().StartWith($"Failed after retried for {counter} times");
-            logger.Verify(
-                l => l.Warn(It.IsAny<SessionExpiredException>(),
-                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))),
-                Times.Exactly(counter - 1));
+                Failures = exceptions
+            };
         }
 
-        [Fact]
-        public async Task ShouldLogExactlyAsTheNumberOfRetriesAsync()
+        public static TheoryData<Exception> NonTransientErrors()
         {
-            var logger = new Mock<IDriverLogger>();
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
-
-            var counter = 0;
-            var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync<int>(async () =>
+            return new TheoryData<Exception>
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(250));
-                counter++;
-                throw new SessionExpiredException("session expired");
-            }));
-
-            exc.Should().BeOfType<ServiceUnavailableException>().Which
-                .Message.Should().StartWith($"Failed after retried for {counter} times");
-            logger.Verify(
-                l => l.Warn(It.IsAny<SessionExpiredException>(),
-                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))),
-                Times.Exactly(counter - 1));
+                new ArgumentOutOfRangeException("error"),
+                new ClientException("invalid"),
+                new InvalidOperationException("invalid operation"),
+                new DatabaseException("Neo.TransientError.Transaction.Terminated", "transaction terminated"),
+                new DatabaseException("Neo.TransientError.Transaction.LockClientStopped", "lock client stopped")
+            };
         }
 
-
-        [Fact]
-        public void ShouldRetryEvenOriginalTaskTakesLongerThanMaxRetryDuration()
+        public static TheoryData<Exception> TransientErrors()
         {
-            var logger = new Mock<IDriverLogger>();
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
-
-            var counter = 0;
-            var result = retryLogic.Retry(() =>
+            return new TheoryData<Exception>
             {
-                if (counter == 0)
+                new TransientException("Neo.TransientError.Database.Unavailable", "database unavailable"),
+                new SessionExpiredException("session expired"),
+                new ServiceUnavailableException("service unavailable"),
+            };
+        }
+
+        private class ConfigurableTransactionWork<T>
+        {
+            private readonly TimeSpan _delay;
+            private readonly T _result;
+            private int _invocations;
+            private IEnumerator<Exception> _failures;
+
+            public ConfigurableTransactionWork(TimeSpan delay, T result)
+            {
+                _delay = delay;
+                _result = result;
+                _invocations = 0;
+                _failures = Enumerable.Empty<Exception>().GetEnumerator();
+            }
+
+            public int Invocations => _invocations;
+
+            public IEnumerable<Exception> Failures
+            {
+                set => _failures = (value ?? Enumerable.Empty<Exception>()).GetEnumerator();
+            }
+
+            public Task<T> Work(ITransaction txc)
+            {
+                Interlocked.Increment(ref _invocations);
+
+                Thread.Sleep(_delay);
+
+                if (_failures.MoveNext())
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(3));
-                    counter++;
-                    throw new SessionExpiredException("session expired");
+                    return Task.FromException<T>(_failures.Current);
                 }
 
-                return counter;
-            });
-
-            result.Should().Be(1);
-            logger.Verify(
-                l => l.Warn(It.IsAny<SessionExpiredException>(),
-                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))), Times.Once);
-        }
-
-        [Fact]
-        public async Task ShouldRetryEvenOriginalTaskTakesLongerThanMaxRetryDurationAsync()
-        {
-            var logger = new Mock<IDriverLogger>();
-            var retryLogic = new ExponentialBackoffRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
-
-            var counter = 0;
-            var result = await retryLogic.RetryAsync(async () =>
-            {
-                if (counter == 0)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(3));
-                    counter++;
-                    throw new SessionExpiredException("session expired");
-                }
-
-                return counter;
-            });
-
-            result.Should().Be(1);
-            logger.Verify(
-                l => l.Warn(It.IsAny<SessionExpiredException>(),
-                    It.Is<string>(s => s.StartsWith("Transaction failed and will be retried"))), Times.Once);
+                return Task.FromResult(_result);
+            }
         }
     }
 }

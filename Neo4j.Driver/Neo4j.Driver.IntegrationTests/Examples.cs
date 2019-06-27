@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Examples
             // tag::autocommit-transaction[]
             public void AddPerson(string name)
             {
-                using (var session = Driver.Session())
+                using (var session = Driver.SyncSession())
                 {
                     session.Run("CREATE (a:Person {name: $name})", new {name});
                 }
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithBasicAuth(Uri, User, Password))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithCustomizedConnectionPool(Uri, User, Password))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -146,7 +146,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithCustomizedLoadBalancingStrategy(Uri, User, Password))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithCustomizedConnectionTimeout(Uri, User, Password))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithCustomizedMaxRetryTime(Uri, User, Password))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -230,7 +230,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -258,7 +258,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithCustomizedSecurityStrategy(Uri, User, Password))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -287,7 +287,7 @@ namespace Neo4j.Driver.Examples
                     ServerAddress.From("a.acme.com", 7687), ServerAddress.From("b.acme.com", 7877),
                     ServerAddress.From("c.acme.com", 9092)))
                 {
-                    using (var session = driver.Session())
+                    using (var session = driver.SyncSession())
                     {
                         session.Run("CREATE (a:Person {name: $name})", new {name});
                     }
@@ -321,7 +321,7 @@ namespace Neo4j.Driver.Examples
                             CreateDriverWithCustomResolver("bolt+routing://x.acme.com", AuthTokens.None,
                                 ServerAddress.From("localhost", 9001)))
                         {
-                            using (var session = driver.Session(AccessMode.Read))
+                            using (var session = driver.SyncSession(AccessMode.Read))
                             {
                                 // When & Then
                                 session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -354,7 +354,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 using (var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", "basic", null))
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -399,13 +399,13 @@ namespace Neo4j.Driver.Examples
             // tag::cypher-error[]
             public int GetEmployeeNumber(string name)
             {
-                using (var session = Driver.Session())
+                using (var session = Driver.SyncSession())
                 {
                     return session.ReadTransaction(tx => SelectEmployee(tx, name));
                 }
             }
 
-            private int SelectEmployee(ITransaction tx, string name)
+            private int SelectEmployee(ISyncTransaction tx, string name)
             {
                 try
                 {
@@ -457,7 +457,7 @@ namespace Neo4j.Driver.Examples
             {
                 // Given
                 var driver = new DriverLifecycleExample(Uri, User, Password).Driver;
-                using (var session = driver.Session())
+                using (var session = driver.SyncSession())
                 {
                     // When & Then
                     session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -495,7 +495,7 @@ namespace Neo4j.Driver.Examples
 
                 public void PrintGreeting(string message)
                 {
-                    using (var session = _driver.Session())
+                    using (var session = _driver.SyncSession())
                     {
                         var greeting = session.WriteTransaction(tx =>
                         {
@@ -543,19 +543,19 @@ namespace Neo4j.Driver.Examples
             // tag::read-write-transaction[]
             public long AddPerson(string name)
             {
-                using (var session = Driver.Session())
+                using (var session = Driver.SyncSession())
                 {
                     session.WriteTransaction(tx => CreatePersonNode(tx, name));
                     return session.ReadTransaction(tx => MatchPersonNode(tx, name));
                 }
             }
 
-            private static void CreatePersonNode(ITransaction tx, string name)
+            private static IStatementResult CreatePersonNode(ISyncTransaction tx, string name)
             {
-                tx.Run("CREATE (a:Person {name: $name})", new {name});
+                return tx.Run("CREATE (a:Person {name: $name})", new {name});
             }
 
-            private static long MatchPersonNode(ITransaction tx, string name)
+            private static long MatchPersonNode(ISyncTransaction tx, string name)
             {
                 var result = tx.Run("MATCH (a:Person {name: $name}) RETURN id(a)", new {name});
                 return result.Single()[0].As<long>();
@@ -574,7 +574,7 @@ namespace Neo4j.Driver.Examples
             // tag::result-consume[]
             public List<string> GetPeople()
             {
-                using (var session = Driver.Session())
+                using (var session = Driver.SyncSession())
                 {
                     return session.ReadTransaction(tx =>
                     {
@@ -606,7 +606,7 @@ namespace Neo4j.Driver.Examples
             // tag::result-retain[]
             public int AddEmployees(string companyName)
             {
-                using (var session = Driver.Session())
+                using (var session = Driver.SyncSession())
                 {
                     var persons =
                         session.ReadTransaction(tx => tx.Run("MATCH (a:Person) RETURN a.name AS name").ToList());
@@ -661,7 +661,7 @@ namespace Neo4j.Driver.Examples
             {
                 try
                 {
-                    using (var session = Driver.Session())
+                    using (var session = Driver.SyncSession())
                     {
                         return session.WriteTransaction(
                             tx =>
@@ -697,7 +697,7 @@ namespace Neo4j.Driver.Examples
             // tag::session[]
             public void AddPerson(string name)
             {
-                using (var session = Driver.Session())
+                using (var session = Driver.SyncSession())
                 {
                     session.Run("CREATE (a:Person {name: $name})", new {name});
                 }
@@ -725,7 +725,7 @@ namespace Neo4j.Driver.Examples
             // tag::transaction-function[]
             public void AddPerson(string name)
             {
-                using (var session = Driver.Session())
+                using (var session = Driver.SyncSession())
                 {
                     session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}));
                 }
@@ -752,43 +752,47 @@ namespace Neo4j.Driver.Examples
 
             // tag::pass-bookmarks[]
             // Create a company node
-            private void AddCompany(ITransaction tx, string name)
+            private IStatementResult AddCompany(ISyncTransaction tx, string name)
             {
-                tx.Run("CREATE (a:Company {name: $name})", new {name});
+                return tx.Run("CREATE (a:Company {name: $name})", new {name});
             }
 
             // Create a person node
-            private void AddPerson(ITransaction tx, string name)
+            private IStatementResult AddPerson(ISyncTransaction tx, string name)
             {
-                tx.Run("CREATE (a:Person {name: $name})", new {name});
+                return tx.Run("CREATE (a:Person {name: $name})", new {name});
             }
 
             // Create an employment relationship to a pre-existing company node.
             // This relies on the person first having been created.
-            private void Employ(ITransaction tx, string personName, string companyName)
+            private IStatementResult Employ(ISyncTransaction tx, string personName, string companyName)
             {
-                tx.Run(@"MATCH (person:Person {name: $personName}) 
+                return tx.Run(@"MATCH (person:Person {name: $personName}) 
                          MATCH (company:Company {name: $companyName}) 
                          CREATE (person)-[:WORKS_FOR]->(company)", new {personName, companyName});
             }
 
             // Create a friendship between two people.
-            private void MakeFriends(ITransaction tx, string name1, string name2)
+            private IStatementResult MakeFriends(ISyncTransaction tx, string name1, string name2)
             {
-                tx.Run(@"MATCH (a:Person {name: $name1}) 
+                return tx.Run(@"MATCH (a:Person {name: $name1}) 
                          MATCH (b:Person {name: $name2})
                          MERGE (a)-[:KNOWS]->(b)", new {name1, name2});
             }
 
             // Match and display all friendships.
-            private void PrintFriendships(ITransaction tx)
+            private int PrintFriendships(ISyncTransaction tx)
             {
                 var result = tx.Run("MATCH (a)-[:KNOWS]->(b) RETURN a.name, b.name");
 
+                var count = 0;
                 foreach (var record in result)
                 {
+                    count++;
                     Console.WriteLine($"{record["a.name"]} knows {record["b.name"]}");
                 }
+
+                return count;
             }
 
             public void AddEmployAndMakeFriends()
@@ -797,7 +801,7 @@ namespace Neo4j.Driver.Examples
                 var savedBookmarks = new List<string>();
 
                 // Create the first person and employment relationship.
-                using (var session1 = Driver.Session(AccessMode.Write))
+                using (var session1 = Driver.SyncSession(AccessMode.Write))
                 {
                     session1.WriteTransaction(tx => AddCompany(tx, "Wayne Enterprises"));
                     session1.WriteTransaction(tx => AddPerson(tx, "Alice"));
@@ -807,7 +811,7 @@ namespace Neo4j.Driver.Examples
                 }
 
                 // Create the second person and employment relationship.
-                using (var session2 = Driver.Session(AccessMode.Write))
+                using (var session2 = Driver.SyncSession(AccessMode.Write))
                 {
                     session2.WriteTransaction(tx => AddCompany(tx, "LexCorp"));
                     session2.WriteTransaction(tx => AddPerson(tx, "Bob"));
@@ -817,7 +821,7 @@ namespace Neo4j.Driver.Examples
                 }
 
                 // Create a friendship between the two people created above.
-                using (var session3 = Driver.Session(AccessMode.Write, savedBookmarks))
+                using (var session3 = Driver.SyncSession(AccessMode.Write, savedBookmarks))
                 {
                     session3.WriteTransaction(tx => MakeFriends(tx, "Alice", "Bob"));
 
@@ -877,7 +881,7 @@ namespace Neo4j.Driver.Examples
             if (!isDisposing)
                 return;
 
-            using (var session = Driver.Session())
+            using (var session = Driver.SyncSession())
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
@@ -890,7 +894,7 @@ namespace Neo4j.Driver.Examples
 
         protected int CountNodes(string label, string property, string value)
         {
-            using (var session = Driver.Session())
+            using (var session = Driver.SyncSession())
             {
                 return session.ReadTransaction(
                     tx => tx.Run($"MATCH (a:{label} {{{property}: $value}}) RETURN count(a)",
@@ -905,7 +909,7 @@ namespace Neo4j.Driver.Examples
 
         protected void Write(string statement, object parameters = null)
         {
-            using (var session = Driver.Session())
+            using (var session = Driver.SyncSession())
             {
                 session.WriteTransaction(tx =>
                     tx.Run(statement, parameters));
@@ -914,7 +918,7 @@ namespace Neo4j.Driver.Examples
 
         protected IStatementResult Read(string statement, object parameters = null)
         {
-            using (var session = Driver.Session())
+            using (var session = Driver.SyncSession())
             {
                 return session.ReadTransaction(tx =>
                     tx.Run(statement, parameters));

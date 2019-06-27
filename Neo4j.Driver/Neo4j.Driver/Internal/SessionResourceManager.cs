@@ -25,16 +25,6 @@ namespace Neo4j.Driver.Internal
 {
     internal partial class Session : IResultResourceHandler, ITransactionResourceHandler, IBookmarkTracker
     {
-        protected override void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-            {
-                return;
-            }
-
-            _syncExecutor.RunSync(CloseAsync);
-        }
-
         public Task CloseAsync()
         {
             return TryExecuteAsync(_logger, async () =>
@@ -59,7 +49,7 @@ namespace Neo4j.Driver.Internal
         }
 
         /// <summary>
-        /// Called back in <see cref="Transaction.Dispose"/>
+        /// Called back when transaction is closed
         /// </summary>
         public Task OnTransactionDisposeAsync(Bookmark bookmark)
         {

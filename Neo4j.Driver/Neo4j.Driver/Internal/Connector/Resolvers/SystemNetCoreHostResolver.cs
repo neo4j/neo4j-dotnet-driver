@@ -26,7 +26,6 @@ namespace Neo4j.Driver.Internal.Connector
     internal class SystemNetCoreHostResolver: IHostResolver
     {
         private readonly IHostResolver _fallBackResolver;
-        private readonly TypeInfo _dnsType;
         private readonly MethodInfo _getHostByNameMethod;
 
         public SystemNetCoreHostResolver()
@@ -41,9 +40,9 @@ namespace Neo4j.Driver.Internal.Connector
             Dns.GetHostName();
 
             _fallBackResolver = fallBackResolver;
-            _dnsType = typeof(Dns).GetTypeInfo();
+            var dnsType = typeof(Dns).GetTypeInfo();
             _getHostByNameMethod =
-                DiscoverMethod(_dnsType, "InternalGetHostByName", new[] { typeof(string), typeof(bool) });
+                DiscoverMethod(dnsType, "InternalGetHostByName", new[] { typeof(string), typeof(bool) });
         }
 
         private static MethodInfo DiscoverMethod(TypeInfo type, string name, Type[] parameters)

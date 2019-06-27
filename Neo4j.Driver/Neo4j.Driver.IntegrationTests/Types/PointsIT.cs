@@ -18,18 +18,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver;
+using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal.Types;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Types
 {
-    public class PointsIT: DirectDriverTestBase
+    public class PointsIT : DirectDriverTestBase
     {
-        private const int WGS84SrId = 4326;
-        private const int WGS843DSrId = 4979;
+        private const int Wgs84SrId = 4326;
+        private const int Wgs843DSrId = 4979;
         private const int CartesianSrId = 7203;
         private const int Cartesian3DSrId = 9157;
 
@@ -38,15 +37,18 @@ namespace Neo4j.Driver.IntegrationTests.Types
         public PointsIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output, fixture)
         {
-
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceive()
+        public async Task ShouldReceive()
         {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var record = session.Run("RETURN point({x: 39.111748, y:-76.775635}), point({x: 39.111748, y:-76.775635, z:35.120})").Single();
+                var cursor = await session
+                    .RunAsync(
+                        "RETURN point({x: 39.111748, y:-76.775635}), point({x: 39.111748, y:-76.775635, z:35.120})");
+                var record = await cursor.SingleAsync();
                 var point1 = record[0];
                 var point2 = record[1];
 
@@ -62,74 +64,96 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 point2.Should().BeAssignableTo<Point>().Which.Y.Should().Be(-76.775635);
                 point2.Should().BeAssignableTo<Point>().Which.Z.Should().Be(35.120);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSend()
+        public async Task ShouldSend()
         {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var point1 = new Point(WGS84SrId, 51.5044585, -0.105658);
-                var point2 = new Point(WGS843DSrId, 51.5044585, -0.105658, 35.120);
-                var created = session.Run("CREATE (n:Node { location1: $point1, location2: $point2 }) RETURN 1", new {point1, point2}).Single();
+                var point1 = new Point(Wgs84SrId, 51.5044585, -0.105658);
+                var point2 = new Point(Wgs843DSrId, 51.5044585, -0.105658, 35.120);
+                var createdCursor = await session.RunAsync(
+                    "CREATE (n:Node { location1: $point1, location2: $point2 }) RETURN 1",
+                    new {point1, point2});
+                var created = await createdCursor.SingleAsync();
 
                 created[0].Should().Be(1L);
 
-                var matched = session.Run("MATCH (n:Node) RETURN n.location1, n.location2").Single();
+                var matchedCursor = await session.RunAsync("MATCH (n:Node) RETURN n.location1, n.location2");
+                var matched = await matchedCursor.SingleAsync();
 
                 matched[0].Should().BeEquivalentTo(point1);
                 matched[1].Should().BeEquivalentTo(point2);
             }
-        }
-
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceive()
-        {
-            TestSendAndReceive(new Point(WGS84SrId, 51.24923585, 0.92723724));
-            TestSendAndReceive(new Point(WGS843DSrId, 22.86211019, 171.61820439, 0.1230987));
-            TestSendAndReceive(new Point(CartesianSrId, 39.111748, -76.775635));
-            TestSendAndReceive(new Point(Cartesian3DSrId, 39.111748, -76.775635, 19.2937302840));
-        }
-
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandom()
-        {
-            var randomPoints = Enumerable.Range(0, 1000).Select(GenerateRandomPoint).ToList();
-
-            randomPoints.ForEach(TestSendAndReceive);
-        }
-
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveListRandom()
-        {
-            var randomPointLists = Enumerable.Range(0, 1000).Select(i => GenerateRandomPointList(i, 100)).ToList();
-
-            randomPointLists.ForEach(TestSendAndReceiveList);
-        }
-
-        private void TestSendAndReceive(Point point)
-        {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            finally
             {
-                var result = 
-                    session.Run("CREATE (n { point: $point}) RETURN n.point", new {point}).Single();
+                await session.CloseAsync();
+            }
+        }
+
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        public async Task ShouldSendAndReceive()
+        {
+            await TestSendAndReceive(new Point(Wgs84SrId, 51.24923585, 0.92723724));
+            await TestSendAndReceive(new Point(Wgs843DSrId, 22.86211019, 171.61820439, 0.1230987));
+            await TestSendAndReceive(new Point(CartesianSrId, 39.111748, -76.775635));
+            await TestSendAndReceive(new Point(Cartesian3DSrId, 39.111748, -76.775635, 19.2937302840));
+        }
+
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        public async Task ShouldSendAndReceiveRandom()
+        {
+            await Task.WhenAll(Enumerable.Range(0, 1000).Select(GenerateRandomPoint).Select(TestSendAndReceive));
+        }
+
+        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        public async Task ShouldSendAndReceiveListRandom()
+        {
+            await Task.WhenAll(
+                Enumerable.Range(0, 1000).Select(i => GenerateRandomPointList(i, 100)).Select(TestSendAndReceiveList));
+        }
+
+        private async Task TestSendAndReceive(Point point)
+        {
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
+            {
+                var cursor = await
+                    session.RunAsync("CREATE (n { point: $point}) RETURN n.point", new {point});
+                var result = await cursor.SingleAsync();
 
                 result[0].Should().BeEquivalentTo(point);
             }
-        }
-
-        private void TestSendAndReceiveList(IEnumerable<Point> points)
-        {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            finally
             {
-                var result =
-                    session.Run("CREATE (n { points: $points}) RETURN n.points", new { points }).Single();
-
-                result[0].Should().BeEquivalentTo(points);
+                await session.CloseAsync();
             }
         }
 
-        private IEnumerable<Point> GenerateRandomPointList(int sequence, int count)
+        private async Task TestSendAndReceiveList(IList<Point> points)
+        {
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
+            {
+                var cursor =
+                    await session.RunAsync("CREATE (n { points: $points}) RETURN n.points", new {points});
+                var result = await cursor.SingleAsync();
+
+                result[0].Should().BeEquivalentTo(points);
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+        }
+
+        private IList<Point> GenerateRandomPointList(int sequence, int count)
         {
             return Enumerable.Range(0, count).Select(i => GenerateRandomPoint(sequence)).ToList();
         }
@@ -139,9 +163,9 @@ namespace Neo4j.Driver.IntegrationTests.Types
             switch (sequence % 4)
             {
                 case 0:
-                    return new Point(WGS84SrId, GenerateRandomDouble(), GenerateRandomDouble());
+                    return new Point(Wgs84SrId, GenerateRandomDouble(), GenerateRandomDouble());
                 case 1:
-                    return new Point(WGS843DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
+                    return new Point(Wgs843DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
                         GenerateRandomDouble());
                 case 2:
                     return new Point(CartesianSrId, GenerateRandomDouble(), GenerateRandomDouble());
@@ -157,6 +181,5 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             return _random.Next(-179, 179) + _random.NextDouble();
         }
-
     }
 }

@@ -25,10 +25,9 @@ using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Transaction : StatementRunner, ITransaction, IBookmarkTracker
+    internal class Transaction : StatementRunner, IReactiveTransaction, IBookmarkTracker
     {
         private readonly IConnection _connection;
-        private readonly SyncExecutor _syncExecutor;
         private readonly IBoltProtocol _protocol;
         private readonly bool _reactive;
         private ITransactionResourceHandler _resourceHandler;
@@ -62,12 +61,10 @@ namespace Neo4j.Driver.Internal
             RolledBack
         }
 
-        public Transaction(IConnection connection, SyncExecutor syncExecutor,
-            ITransactionResourceHandler resourceHandler = null,
+        public Transaction(IConnection connection, ITransactionResourceHandler resourceHandler = null,
             IDriverLogger logger = null, Bookmark bookmark = null, bool reactive = false)
         {
             _connection = new TransactionConnection(this, connection);
-            _syncExecutor = syncExecutor;
             _protocol = _connection.BoltProtocol;
             _resourceHandler = resourceHandler;
             _bookmark = bookmark;
@@ -75,24 +72,9 @@ namespace Neo4j.Driver.Internal
             _reactive = reactive;
         }
 
-        public void BeginTransaction(TransactionConfig txConfig)
-        {
-            _syncExecutor.RunSync(() => _protocol.BeginTransactionAsync(_connection, _bookmark, txConfig));
-        }
-
         public Task BeginTransactionAsync(TransactionConfig txConfig)
         {
             return _protocol.BeginTransactionAsync(_connection, _bookmark, txConfig);
-        }
-
-        public override IStatementResult Run(Statement statement)
-        {
-            return TryExecute(_logger, () =>
-            {
-                EnsureCanRunMoreStatements();
-                return new StatementResult(_syncExecutor.RunSync(() =>
-                    _protocol.RunInExplicitTransactionAsync(_connection, statement, _reactive)), _syncExecutor);
-            });
         }
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
@@ -137,17 +119,7 @@ namespace Neo4j.Driver.Internal
             _state = State.Failed;
         }
 
-        protected override void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-            {
-                return;
-            }
-
-            _syncExecutor.RunSync(CloseAsync);
-        }
-
-        private async Task CloseAsync()
+        public async Task CloseAsync()
         {
             try
             {

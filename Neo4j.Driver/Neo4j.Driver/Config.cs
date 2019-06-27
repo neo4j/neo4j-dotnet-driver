@@ -550,9 +550,7 @@ namespace Neo4j.Driver
         IConfigBuilder WithSocketKeepAliveEnabled(bool enable);
 
         /// <summary>
-        /// Specify the maximum time transactions are allowed to retry via
-        /// <see cref="ISession.ReadTransaction{T}(System.Func{Neo4j.Driver.ITransaction,T})"/> and
-        /// <see cref="ISession.WriteTransaction{T}(System.Func{Neo4j.Driver.ITransaction,T})"/>.
+        /// Specify the maximum time transactions are allowed to retry via transaction functions.
         /// 
         /// These methods will retry the given unit of work on <see cref="SessionExpiredException"/>,
         /// <see cref="TransientException"/> and <see cref="ServiceUnavailableException"/>

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver;
 using Xunit;
@@ -95,10 +96,10 @@ namespace Neo4j.Driver.Tests
         }
 
         [Fact]
-        public void CloseClosesDriver()
+        public async Task CloseClosesDriver()
         {
             var driver = GraphDatabase.Driver("bolt://localhost");
-            driver.Close();
+            await driver.CloseAsync();
 
             var ex = Record.Exception(() => driver.Session());
             ex.Should().NotBeNull();
@@ -116,12 +117,13 @@ namespace Neo4j.Driver.Tests
             ex.Should().BeOfType<ObjectDisposedException>();
         }
 
-        [Fact] public async void MultipleCloseAndDisposeIsValidOnDriver()
+        [Fact] 
+        public async void MultipleCloseAndDisposeIsValidOnDriver()
         {
             var driver = GraphDatabase.Driver("bolt://localhost");
-            driver.Close();
             await driver.CloseAsync();
             driver.Dispose();
+            await driver.CloseAsync();
 
             var ex = Record.Exception(() => driver.Session());
             ex.Should().NotBeNull();

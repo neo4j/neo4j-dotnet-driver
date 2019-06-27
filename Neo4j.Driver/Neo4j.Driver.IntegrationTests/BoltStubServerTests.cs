@@ -14,9 +14,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.IntegrationTests.Shared;
@@ -36,24 +38,33 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireBoltStubServerFact]
-        public void SendRoutingContextToServer()
+        public async Task SendRoutingContextToServer()
         {
             using (BoltStubServer.Start("get_routing_table_with_context", 9001))
             {
                 var uri = new Uri("bolt+routing://127.0.0.1:9001/?policy=my_policy&region=china");
                 using (var driver = GraphDatabase.Driver(uri, Config))
-                using (var session = driver.Session())
                 {
-                    var records = session.Run("MATCH (n) RETURN n.name AS name").ToList();
-                    records.Count.Should().Be(2);
-                    records[0]["name"].ValueAs<string>().Should().Be("Alice");
-                    records[1]["name"].ValueAs<string>().Should().Be("Bob");
+                    var session = driver.Session();
+                    try
+                    {
+                        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
+                        var records = await cursor.ToListAsync();
+
+                        records.Count.Should().Be(2);
+                        records[0]["name"].ValueAs<string>().Should().Be("Alice");
+                        records[1]["name"].ValueAs<string>().Should().Be("Bob");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
                 }
             }
         }
 
         [RequireBoltStubServerFact]
-        public void ShouldLogServerAddress()
+        public async Task ShouldLogServerAddress()
         {
             var logs = new List<string>();
             var config = new Config
@@ -65,10 +76,17 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
                 {
-                    using (var session = driver.Session(AccessMode.Read))
+                    var session = driver.Session(AccessMode.Read);
+                    try
                     {
-                        var list = session.Run("RETURN $x", new {x = 1}).Select(r => Convert.ToInt32(r[0])).ToList();
+                        var cursor = await session.RunAsync("RETURN $x", new {x = 1});
+                        var list = await cursor.ToListAsync(r => Convert.ToInt32(r[0]));
+
                         list.Should().HaveCount(1).And.Contain(1);
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
                     }
                 }
             }
@@ -83,25 +101,34 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireBoltStubServerFact]
-        public void InvokeProcedureGetRoutingTableWhenServerVersionPermits()
+        public async Task InvokeProcedureGetRoutingTableWhenServerVersionPermits()
         {
             using (BoltStubServer.Start("get_routing_table", 9001))
             {
                 var uri = new Uri("bolt+routing://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))
-                using (var session = driver.Session())
                 {
-                    var records = session.Run("MATCH (n) RETURN n.name AS name").ToList();
-                    records.Count.Should().Be(3);
-                    records[0]["name"].ValueAs<string>().Should().Be("Alice");
-                    records[1]["name"].ValueAs<string>().Should().Be("Bob");
-                    records[2]["name"].ValueAs<string>().Should().Be("Eve");
+                    var session = driver.Session();
+                    try
+                    {
+                        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
+                        var records = await cursor.ToListAsync();
+
+                        records.Count.Should().Be(3);
+                        records[0]["name"].ValueAs<string>().Should().Be("Alice");
+                        records[1]["name"].ValueAs<string>().Should().Be("Bob");
+                        records[2]["name"].ValueAs<string>().Should().Be("Eve");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
                 }
             }
         }
 
         [RequireBoltStubServerFact]
-        public void CanSendMultipleBookmarks()
+        public async Task CanSendMultipleBookmarks()
         {
             var bookmarks = new[]
             {
@@ -113,32 +140,60 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))
-                using (var session = driver.Session(bookmarks))
                 {
-                    using (var tx = session.BeginTransaction())
+                    var session = driver.Session(bookmarks);
+                    try
                     {
-                        tx.Run("CREATE (n {name:'Bob'})");
-                        tx.Success();
+                        var txc = await session.BeginTransactionAsync();
+                        try
+                        {
+                            await txc.RunAsync("CREATE (n {name:'Bob'})");
+                            await txc.CommitAsync();
+                        }
+                        catch
+                        {
+                            await txc.RollbackAsync();
+                            throw;
+                        }
                     }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
+
                     session.LastBookmark.Should().Be("neo4j:bookmark:v1:tx95");
                 }
             }
         }
 
         [RequireBoltStubServerFact]
-        public void ShouldOnlyResetAfterError()
+        public async Task ShouldOnlyResetAfterError()
         {
             using (BoltStubServer.Start("rollback_error", 9001))
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))
-                using (var session = driver.Session())
                 {
-                    var tx = session.BeginTransaction();
-                    var result = tx.Run("CREATE (n {name:'Alice'}) RETURN n.name AS name");
-                    var exception = Record.Exception(() => result.Consume());
-                    exception.Should().BeOfType<TransientException>();
-                    tx.Dispose();
+                    var session = driver.Session();
+                    try
+                    {
+                        var txc = await session.BeginTransactionAsync();
+                        try
+                        {
+                            var result = await txc.RunAsync("CREATE (n {name:'Alice'}) RETURN n.name AS name");
+                            var exception = await Record.ExceptionAsync(() => result.ConsumeAsync());
+
+                            exception.Should().BeOfType<TransientException>();
+                        }
+                        finally
+                        {
+                            await txc.RollbackAsync();
+                        }
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
                 }
             }
         }

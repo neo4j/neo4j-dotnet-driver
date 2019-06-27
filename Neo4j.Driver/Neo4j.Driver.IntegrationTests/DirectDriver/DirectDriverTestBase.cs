@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver;
@@ -41,7 +42,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void Dispose()
         {
             // clean database after each test run
-            using (var session = Server.Driver.Session())
+            using (var session = Server.Driver.SyncSession())
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }

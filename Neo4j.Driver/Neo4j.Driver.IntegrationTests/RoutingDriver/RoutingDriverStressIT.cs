@@ -71,7 +71,7 @@ namespace Neo4j.Driver.IntegrationTests
 
             PrintStatistics();
 
-            _driver.Close();
+            _driver.Dispose();
         }
 
         [RequireClusterTheory]
@@ -195,7 +195,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             base.Dispose();
 
-            _driver?.Close();
+            _driver?.Dispose();
         }
 
         private class MonitoredPooledConnectionFactory : IPooledConnectionFactory

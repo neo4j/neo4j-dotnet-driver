@@ -21,7 +21,7 @@ using System.Reactive;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// A reactive transaction, which provides the same functionality as <see cref="Neo4j.Driver.ITransaction"/>
+    /// A reactive transaction, which provides the same functionality as <see cref="ITransaction"/>
     /// but with reactive API.
     /// </summary>
     public interface IRxTransaction : IRxRunnable

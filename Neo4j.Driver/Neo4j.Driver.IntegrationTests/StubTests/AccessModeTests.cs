@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver;
@@ -32,7 +33,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             Config.Builder.WithEncryptionLevel(EncryptionLevel.None).ToConfig();
 
         [RequireBoltStubServerFactAttribute]
-        public void RunOnReadModeSessionShouldGoToReader()
+        public async Task RunOnReadModeSessionShouldGoToReader()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {
@@ -41,12 +42,16 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        using (var session = driver.Session(AccessMode.Read))
+                        var session = driver.Session(AccessMode.Read);
+                        try
                         {
-                            var list = session.Run("RETURN $x", new {x = 1}).Select(r => Convert.ToInt32(r[0]))
-                                .ToList();
+                            var result = await session.RunAndSingleAsync("RETURN $x", new {x = 1}, r => r[0].As<int>());
 
-                            list.Should().HaveCount(1).And.Contain(1);
+                            result.Should().Be(1);
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
                         }
                     }
                 }
@@ -54,7 +59,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         }
 
         [RequireBoltStubServerFactAttribute]
-        public void RunOnReadModeTransactionShouldGoToReader()
+        public async Task RunOnReadModeTransactionShouldGoToReader()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {
@@ -63,17 +68,19 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        using (var session = driver.Session(AccessMode.Read))
+                        var session = driver.Session(AccessMode.Read);
+                        try
                         {
-                            using (var tx = session.BeginTransaction())
-                            {
-                                var list = tx.Run("RETURN $x", new {x = 1}).Select(r => Convert.ToInt32(r[0]))
-                                    .ToList();
+                            var tx = await session.BeginTransactionAsync();
+                            var result = await tx.RunAndSingleAsync("RETURN $x", new {x = 1}, r => r[0].As<int>());
 
-                                list.Should().HaveCount(1).And.Contain(1);
+                            result.Should().Be(1);
 
-                                tx.Success();
-                            }
+                            await tx.CommitAsync();
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
                         }
                     }
                 }
@@ -83,7 +90,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         [RequireBoltStubServerTheoryAttribute]
         [InlineData(AccessMode.Read)]
         [InlineData(AccessMode.Write)]
-        public void ReadTransactionOnSessionShouldGoToReader(AccessMode mode)
+        public async Task ReadTransactionOnSessionShouldGoToReader(AccessMode mode)
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {
@@ -92,13 +99,17 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        using (var session = driver.Session(mode))
+                        var session = driver.Session(mode);
+                        try
                         {
-                            var list = session.ReadTransaction(tx => tx.Run("RETURN $x", new {x = 1})
-                                .Select(r => Convert.ToInt32(r[0]))
-                                .ToList());
+                            var result = await session.ReadTransactionAsync(tx =>
+                                tx.RunAndSingleAsync("RETURN $x", new {x = 1}, r => r[0].As<int>()));
 
-                            list.Should().HaveCount(1).And.Contain(1);
+                            result.Should().Be(1);
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
                         }
                     }
                 }
@@ -106,7 +117,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         }
 
         [RequireBoltStubServerFactAttribute]
-        public void RunOnWriteModeSessionShouldGoToWriter()
+        public async Task RunOnWriteModeSessionShouldGoToWriter()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {
@@ -115,12 +126,17 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        using (var session = driver.Session(AccessMode.Write))
+                        var session = driver.Session(AccessMode.Write);
+                        try
                         {
-                            var list = session.Run("CREATE (n: { id: $x }) RETURN $x", new { x = 1 }).Select(r => Convert.ToInt32(r[0]))
-                                .ToList();
+                            var result = await session.RunAndSingleAsync("CREATE (n: { id: $x }) RETURN $x",
+                                new {x = 1}, r => r[0].As<int>());
 
-                            list.Should().HaveCount(1).And.Contain(1);
+                            result.Should().Be(1);
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
                         }
                     }
                 }
@@ -128,7 +144,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         }
 
         [RequireBoltStubServerFactAttribute]
-        public void RunOnWriteModeTransactionShouldGoToWriter()
+        public async Task RunOnWriteModeTransactionShouldGoToWriter()
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {
@@ -137,17 +153,21 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        using (var session = driver.Session(AccessMode.Write))
+                        var session = driver.Session(AccessMode.Write);
+                        try
                         {
-                            using (var tx = session.BeginTransaction())
-                            {
-                                var list = tx.Run("CREATE (n: { id: $x }) RETURN $x", new { x = 1 }).Select(r => Convert.ToInt32(r[0]))
-                                    .ToList();
+                            var tx = await session.BeginTransactionAsync();
 
-                                list.Should().HaveCount(1).And.Contain(1);
+                            var result = await tx.RunAndSingleAsync("CREATE (n: { id: $x }) RETURN $x", new {x = 1},
+                                r => r[0].As<int>());
 
-                                tx.Success();
-                            }
+                            result.Should().Be(1);
+
+                            await tx.CommitAsync();
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
                         }
                     }
                 }
@@ -157,7 +177,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         [RequireBoltStubServerTheoryAttribute]
         [InlineData(AccessMode.Read)]
         [InlineData(AccessMode.Write)]
-        public void WriteTransactionOnSessionShouldGoToWriter(AccessMode mode)
+        public async Task WriteTransactionOnSessionShouldGoToWriter(AccessMode mode)
         {
             using (BoltStubServer.Start("accessmode_router", 9001))
             {
@@ -166,18 +186,22 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        using (var session = driver.Session(mode))
+                        var session = driver.Session(mode);
+                        try
                         {
-                            var list = session.WriteTransaction(tx => tx.Run("CREATE (n: { id: $x }) RETURN $x", new { x = 1 })
-                                .Select(r => Convert.ToInt32(r[0]))
-                                .ToList());
+                            var result = await session.WriteTransactionAsync(tx =>
+                                tx.RunAndSingleAsync("CREATE (n: { id: $x }) RETURN $x", new {x = 1},
+                                    r => r[0].As<int>()));
 
-                            list.Should().HaveCount(1).And.Contain(1);
+                            result.Should().Be(1);
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
                         }
                     }
                 }
             }
         }
-
     }
 }

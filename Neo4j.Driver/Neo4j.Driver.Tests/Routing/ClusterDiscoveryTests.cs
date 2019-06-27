@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldUseGetServersProcedure(string version)
             {
                 // Given
-                var discovery = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var discovery = new ClusterDiscovery(null, null);
                 var mock = new Mock<IConnection>();
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var context = new Dictionary<string, string> {{"context", string.Empty}};
-                var discovery = new ClusterDiscovery(new SyncExecutor(), context, null);
+                var discovery = new ClusterDiscovery(context, null);
                 var mock = new Mock<IConnection>();
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Tests.Routing
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var mockConn = Setup32SocketConnection(routingContext, recordFields);
-                var manager = new ClusterDiscovery(new SyncExecutor(), routingContext, null);
+                var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
                 var table = await manager.DiscoverAsync(mockConn.Object);
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var connMock = SetupSocketConnection(recordFields);
-                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var manager = new ClusterDiscovery(null, null);
 
                 // When
                 var table = await manager.DiscoverAsync(connMock.Object);
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.Tests.Routing
                 };
 
                 var connMock = new MockedConnection(pairs).MockConn;
-                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var manager = new ClusterDiscovery(null, null);
 
                 // When
                 var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
@@ -179,7 +179,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var connMock = SetupSocketConnection(new List<object[]>());
-                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var manager = new ClusterDiscovery(null, null);
 
                 // When
                 var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
@@ -199,7 +199,7 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateGetServersResponseRecordFields(3, 2, 1),
                     CreateGetServersResponseRecordFields(3, 2, 1)
                 });
-                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var manager = new ClusterDiscovery(null, null);
 
                 // When
                 var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
@@ -215,7 +215,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var connMock = SetupSocketConnection(new object[] {1});
-                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var manager = new ClusterDiscovery(null, null);
 
                 // When
                 var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var recordFields = CreateGetServersResponseRecordFields(0, 2, 1);
                 var connMock = SetupSocketConnection(recordFields);
-                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var manager = new ClusterDiscovery(null, null);
 
                 // When
                 var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));
@@ -249,7 +249,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var procedureReplyRecordFields = CreateGetServersResponseRecordFields(3, 1, 0);
                 var connMock = SetupSocketConnection(procedureReplyRecordFields);
-                var manager = new ClusterDiscovery(new SyncExecutor(), null, null);
+                var manager = new ClusterDiscovery(null, null);
 
                 // When
                 var exception = await Record.ExceptionAsync(() => manager.DiscoverAsync(connMock.Object));

@@ -14,12 +14,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using FluentAssertions;
 using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 
@@ -30,16 +32,20 @@ namespace Neo4j.Driver.IntegrationTests
         private IDriver Driver => Server.Driver;
 
         public ResultIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
-        {}
+        {
+        }
 
         [RequireServerFact]
-        public void GetSummary()
+        public async Task GetSummary()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("CREATE (p:Person { Name: 'Test'})");
-                var summary = result.Consume();
-                result.Peek().Should().BeNull();
+                var cursor = await session.RunAsync("CREATE (p:Person { Name: 'Test'})");
+                var summary = await cursor.ConsumeAsync();
+
+                var peeked = await cursor.PeekAsync();
+                peeked.Should().BeNull();
 
                 summary.Statement.Text.Should().Be("CREATE (p:Person { Name: 'Test'})");
                 summary.Statement.Parameters.Count.Should().Be(0);
@@ -47,34 +53,39 @@ namespace Neo4j.Driver.IntegrationTests
                 var stats = summary.Counters;
                 stats.ToString().Should()
                     .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
-                    "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
-                    "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
+                        "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
+                        "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
 
                 summary.StatementType.Should().Be(StatementType.WriteOnly);
 
-                var serverInfo = result.Summary.Server;
+                var serverInfo = summary.Server;
 
                 serverInfo.Address.Should().Be("localhost:7687");
                 if (ServerVersion.From(serverInfo.Version) >= ServerVersion.V3_1_0)
                 {
-                    result.Summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
-                    result.Summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
+                    summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
+                    summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
                 }
                 else
                 {
-                    result.Summary.ResultAvailableAfter.Should().BeLessThan(TimeSpan.Zero);
-                    result.Summary.ResultConsumedAfter.Should().BeLessThan(TimeSpan.Zero);
+                    summary.ResultAvailableAfter.Should().BeLessThan(TimeSpan.Zero);
+                    summary.ResultConsumedAfter.Should().BeLessThan(TimeSpan.Zero);
                 }
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void GetPlan()
+        public async Task GetPlan()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("EXPLAIN MATCH (n) RETURN 1");
-                var summary = result.Consume();
+                var cursor = await session.RunAsync("EXPLAIN MATCH (n) RETURN 1");
+                var summary = await cursor.ConsumeAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeFalse();
@@ -85,15 +96,20 @@ namespace Neo4j.Driver.IntegrationTests
                 plan.Children.Count.Should().BePositive();
                 plan.OperatorType.Should().NotBeNullOrEmpty();
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact]
-        public void GetProfile()
+        public async Task GetProfile()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("PROFILE RETURN 1");
-                var summary = result.Consume();
+                var cursor = await session.RunAsync("PROFILE RETURN 1");
+                var summary = await cursor.ConsumeAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeTrue();
@@ -104,15 +120,20 @@ namespace Neo4j.Driver.IntegrationTests
                 profile.DbHits.Should().Be(0L);
                 profile.Records.Should().Be(1L);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact]
-        public void GetNotification()
+        public async Task GetNotification()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("EXPLAIN MATCH (n), (m) RETURN n, m");
-                var summary = result.Consume();
+                var cursor = await session.RunAsync("EXPLAIN MATCH (n), (m) RETURN n, m");
+                var summary = await cursor.ConsumeAsync();
 
                 var notifications = summary.Notifications;
                 notifications.Should().NotBeNull();
@@ -125,115 +146,175 @@ namespace Neo4j.Driver.IntegrationTests
                 notification.Severity.Should().NotBeNullOrEmpty();
                 notification.Position.Should().NotBeNull();
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact]
-        public void AccessSummaryAfterFailure()
+        public async Task AccessSummaryAfterFailure()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("Invalid");
-                var error = Record.Exception(() => result.Consume());
+                var cursor = await session.RunAsync("Invalid");
+                var error = await Record.ExceptionAsync(() => cursor.ConsumeAsync());
                 error.Should().BeOfType<ClientException>();
-                var summary = result.Summary;
+
+                var summary = await cursor.SummaryAsync();
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
                 summary.Server.Address.Should().Contain("localhost:7687");
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact]
-        public void BufferRecordsAfterSummary()
+        public async Task BufferRecordsAfterSummary()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("UNWIND [1,2] AS a RETURN a");
-                var summary = result.Summary;
+                var cursor = await session.RunAsync("UNWIND [1,2] AS a RETURN a");
+                var summary = await cursor.SummaryAsync();
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
                 summary.Server.Address.Should().Contain("localhost:7687");
 
-                result.First()["a"].ValueAs<int>().Should().Be(1);
-                result.First()["a"].ValueAs<int>().Should().Be(2);
+                var next = await cursor.FetchAsync();
+                next.Should().BeTrue();
+                cursor.Current["a"].Should().BeEquivalentTo(1);
+
+                next = await cursor.FetchAsync();
+                next.Should().BeTrue();
+                cursor.Current["a"].Should().BeEquivalentTo(2);
+
+                next = await cursor.FetchAsync();
+                next.Should().BeFalse();
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void DiscardRecordsAfterConsume()
+        public async Task DiscardRecordsAfterConsume()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("UNWIND [1,2] AS a RETURN a");
-                var summary = result.Consume();
+                var cursor = await session.RunAsync("UNWIND [1,2] AS a RETURN a");
+                var summary = await cursor.ConsumeAsync();
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
                 summary.Server.Address.Should().Contain("localhost:7687");
 
-                result.ToList().Count.Should().Be(0);
+                var list = await cursor.ToListAsync();
+                list.Should().BeEmpty();
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void BuffersResultsOfRunSoTheyCanBeReadAfterAnotherSubsequentRun()
+        public async Task BuffersResultsOfRunSoTheyCanBeReadAfterAnotherSubsequentRun()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result1 = session.Run("unwind range(1,3) as n RETURN n");
-                var result2 = session.Run("unwind range(4,6) as n RETURN n");
+                var cursor1 = await session.RunAsync("unwind range(1,3) as n RETURN n");
+                var cursor2 = await session.RunAsync("unwind range(4,6) as n RETURN n");
 
-                var result2All = result2.ToList();
-                var result1All = result1.ToList();
+                var list2 = await cursor2.ToListAsync(r => r["n"].As<int>());
+                var list1 = await cursor1.ToListAsync(r => r["n"].As<int>());
 
-                result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
+                list2.Should().ContainInOrder(4, 5, 6);
+                list1.Should().ContainInOrder(1, 2, 3);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void BufferResultAfterSessionClose()
+        public async Task BufferResultAfterSessionClose()
         {
-            IStatementResult result;
-            using (var session = Driver.Session())
+            IStatementResultCursor cursor;
+            var session = Driver.Session();
+            try
             {
-                result = session.Run("unwind range(1,3) as n RETURN n");
+                cursor = await session.RunAsync("unwind range(1,3) as n RETURN n");
             }
-            var resultAll = result.ToList();
+            finally
+
+            {
+                await session.CloseAsync();
+            }
+
+            var resultAll = await cursor.ToListAsync(r => r["n"].As<int>());
 
             // Records that has not been read inside session still saved
             resultAll.Count.Should().Be(3);
-            resultAll.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
+            resultAll.Should().ContainInOrder(1, 2, 3);
 
             // Summary is still saved
-            result.Summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
-            result.Summary.StatementType.Should().Be(StatementType.ReadOnly);
+            var summary = await cursor.SummaryAsync();
+            summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
+            summary.StatementType.Should().Be(StatementType.ReadOnly);
         }
 
         [RequireServerFact]
-        public void BuffersResultsAfterTxCloseSoTheyCanBeReadAfterAnotherSubsequentTx()
+        public async Task BuffersResultsAfterTxCloseSoTheyCanBeReadAfterAnotherSubsequentTx()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                IStatementResult result1, result2;
-                using (var tx = session.BeginTransaction())
+                IStatementResultCursor result1, result2;
+
+                var tx1 = await session.BeginTransactionAsync();
+                try
                 {
-                    result1 = tx.Run("unwind range(1,3) as n RETURN n");
-                    tx.Success();
+                    result1 = await tx1.RunAsync("unwind range(1,3) as n RETURN n");
+                    await tx1.CommitAsync();
+                }
+                catch
+                {
+                    await tx1.RollbackAsync();
+                    throw;
                 }
 
-                using (var tx = session.BeginTransaction())
+                var tx2 = await session.BeginTransactionAsync();
+                try
                 {
-                    result2 = tx.Run("unwind range(4,6) as n RETURN n");
-                    tx.Success();
+                    result2 = await tx2.RunAsync("unwind range(4,6) as n RETURN n");
+                    await tx2.CommitAsync();
+                }
+                catch
+                {
+                    await tx2.RollbackAsync();
+                    throw;
                 }
 
-                var result2All = result2.ToList();
-                var result1All = result1.ToList();
+                var result2All = await result2.ToListAsync(r => r["n"].As<int>());
+                var result1All = await result1.ToListAsync(r => r["n"].As<int>());
 
-                result2All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(4, 5, 6);
-                result1All.Select(r => r.Values["n"].ValueAs<int>()).Should().ContainInOrder(1, 2, 3);
+                result2All.Should().ContainInOrder(4, 5, 6);
+                result1All.Should().ContainInOrder(1, 2, 3);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
     }

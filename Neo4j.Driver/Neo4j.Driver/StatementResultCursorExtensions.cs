@@ -34,7 +34,20 @@ namespace Neo4j.Driver
         /// <returns>The only record in the result stream.</returns>
         /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
         /// if the result contains more than one record or the result is empty.</remarks>
-        public static async Task<IRecord> SingleAsync(this IStatementResultCursor result)
+        public static Task<IRecord> SingleAsync(this IStatementResultCursor result)
+        {
+            return SingleAsync(result, record => record);
+        }
+
+        /// <summary>
+        /// Return the only record in the result stream.
+        /// </summary>
+        /// <param name="result">The result stream</param>
+        /// <param name="operation">The operation to carry out on each record.</param>
+        /// <returns>The only record in the result stream.</returns>
+        /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
+        /// if the result contains more than one record or the result is empty.</remarks>
+        public static async Task<T> SingleAsync<T>(this IStatementResultCursor result, Func<IRecord, T> operation)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));
             if (await result.FetchAsync().ConfigureAwait(false))
@@ -42,11 +55,11 @@ namespace Neo4j.Driver
                 var record = result.Current;
                 if (!await result.FetchAsync().ConfigureAwait(false))
                 {
-                    return record;
+                    return operation(record);
                 }
                 else
                 {
-                    throw new InvalidOperationException( "The result contains more than one element." );
+                    throw new InvalidOperationException("The result contains more than one element.");
                 }
             }
             else
@@ -68,6 +81,7 @@ namespace Neo4j.Driver
             {
                 list.Add(result.Current);
             }
+
             return list;
         }
 
@@ -87,6 +101,7 @@ namespace Neo4j.Driver
                 var record = result.Current;
                 list.Add(operation(record));
             }
+
             return list;
         }
 
@@ -96,7 +111,8 @@ namespace Neo4j.Driver
         /// <param name="result">The result stream.</param>
         /// <param name="operation">The operation is carried out on each record.</param>
         /// <returns>The result summary after all records have been processed.</returns>
-        public static async Task<IResultSummary> ForEachAsync(this IStatementResultCursor result, Action<IRecord> operation)
+        public static async Task<IResultSummary> ForEachAsync(this IStatementResultCursor result,
+            Action<IRecord> operation)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));
             while (await result.FetchAsync().ConfigureAwait(false))
@@ -104,6 +120,7 @@ namespace Neo4j.Driver
                 var record = result.Current;
                 operation(record);
             }
+
             return await result.SummaryAsync().ConfigureAwait(false);
         }
     }

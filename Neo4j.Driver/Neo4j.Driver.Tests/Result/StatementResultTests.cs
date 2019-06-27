@@ -34,13 +34,13 @@ namespace Neo4j.Driver.Tests
     {
         private static class ResultCreator
         {
-            public static StatementResult CreateResult(int keySize, int recordSize = 1,
+            public static InternalStatementResult CreateResult(int keySize, int recordSize = 1,
                 Func<IResultSummary> getSummaryFunc = null)
             {
                 var keys = RecordCreator.CreateKeys(keySize);
                 var records = RecordCreator.CreateRecords(recordSize, keys);
 
-                return new StatementResult(new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
+                return new InternalStatementResult(new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
                     new SyncExecutor());
             }
         }
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfCursorIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new StatementResult(null, new SyncExecutor()));
+                var ex = Xunit.Record.Exception(() => new InternalStatementResult(null, new SyncExecutor()));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -220,7 +220,7 @@ namespace Neo4j.Driver.Tests
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var cursor =
-                    new StatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys,
+                    new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys,
                         () => recordYielder.RecordsWithAutoLoad), new SyncExecutor());
                 var records = cursor.ToList();
                 records.Count.Should().Be(10);
@@ -233,7 +233,7 @@ namespace Neo4j.Driver.Tests
 
                 int count = 0;
                 var cursor =
-                    new StatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                         new SyncExecutor());
                 var t = Task.Factory.StartNew(() =>
                 {
@@ -260,7 +260,7 @@ namespace Neo4j.Driver.Tests
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var result =
-                    new StatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                         new SyncExecutor());
                 var temp = result.Take(5);
                 var records = temp.ToList();

@@ -17,13 +17,15 @@
 
 using System;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class ErrorIT: DirectDriverTestBase
+    public class ErrorIT : DirectDriverTestBase
     {
         private IDriver Driver => Server.Driver;
 
@@ -32,58 +34,99 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact]
-        public void ErrorToRunSessionInTransaction()
+        public async Task ErrorToRunSessionInTransaction()
         {
-            using(var session = Driver.Session())
-            using (var tx = session.BeginTransaction())
+            var session = Driver.Session();
+            try
             {
-                var ex = Xunit.Record.Exception(() => session.Run("RETURN 1"));
-                ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Please close the currently open transaction object");
+                var tx = await session.BeginTransactionAsync();
+                try
+                {
+                    var ex = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+
+                    ex.Should().BeOfType<ClientException>().Which
+                        .Message.Should().StartWith("Please close the currently open transaction object");
+                }
+                finally
+                {
+                    await tx.RollbackAsync();
+                }
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void ErrorToRunTransactionInTransaction()
+        public async Task ErrorToRunTransactionInTransaction()
         {
-            using(var session = Driver.Session())
-            using (var tx = session.BeginTransaction())
+            var session = Driver.Session();
+            try
             {
-                var ex = Xunit.Record.Exception(() => session.BeginTransaction());
-                ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Please close the currently open transaction object");
+                var tx = await session.BeginTransactionAsync();
+                try
+                {
+                    var ex = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+
+                    ex.Should().BeOfType<ClientException>().Which
+                        .Message.Should().StartWith("Please close the currently open transaction object");
+                }
+                finally
+                {
+                    await tx.RollbackAsync();
+                }
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void ErrorToRunInvalidCypher()
+        public async Task ErrorToRunInvalidCypher()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("Invalid Cypher");
-                var ex = Xunit.Record.Exception(() => result.Consume());
-                ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input");
+                var result = await session.RunAsync("Invalid Cypher");
+                var ex = await Record.ExceptionAsync(() => result.ConsumeAsync());
+
+                ex.Should().BeOfType<ClientException>().Which
+                    .Message.Should().StartWith("Invalid input");
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void ShouldFailToConnectIncorrectPort()
+        public async Task ShouldFailToConnectIncorrectPort()
         {
             using (var driver = GraphDatabase.Driver("bolt://localhost:1234"))
-            using (var session = driver.Session())
             {
-                var ex = Xunit.Record.Exception(() => session.Run("RETURN 1"));
-                ex.Should().BeOfType<ServiceUnavailableException>();
+                var session = driver.Session();
+                try
+                {
+                    var ex = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+
+                    ex.Should().BeOfType<ServiceUnavailableException>();
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
             }
         }
 
         [RequireServerFact]
         public void ShouldReportWrongScheme()
         {
-            var ex = Xunit.Record.Exception(() => GraphDatabase.Driver("http://localhost"));
-            ex.Should().BeOfType<NotSupportedException>();
-            ex.Message.Should().Be("Unsupported URI scheme: http");
+            var ex = Record.Exception(() => GraphDatabase.Driver("http://localhost"));
+
+            ex.Should().BeOfType<NotSupportedException>().Which
+                .Message.Should().Be("Unsupported URI scheme: http");
         }
     }
 }

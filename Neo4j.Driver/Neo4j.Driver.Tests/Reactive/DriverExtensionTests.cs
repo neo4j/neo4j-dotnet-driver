@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Xunit;
 

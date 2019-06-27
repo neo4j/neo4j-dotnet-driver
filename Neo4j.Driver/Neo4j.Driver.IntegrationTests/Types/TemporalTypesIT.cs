@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver;
@@ -27,7 +28,7 @@ using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Types
 {
-    public class TemporalTypesIT: DirectDriverTestBase
+    public class TemporalTypesIT : DirectDriverTestBase
     {
         private const int NumberOfRandomSequences = 2000;
         private const int MinArrayLength = 5;
@@ -38,65 +39,66 @@ namespace Neo4j.Driver.IntegrationTests.Types
             "Africa/Harare", "America/Aruba", "Africa/Nairobi", "America/Dawson", "Asia/Beirut", "Asia/Tashkent",
             "Canada/Eastern", "Europe/Malta", "Europe/Volgograd", "Indian/Kerguelen", "Etc/GMT+3"
         };
+
         private readonly Random _random = new Random();
 
         public TemporalTypesIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output, fixture)
         {
-
         }
 
         #region Receive Only Tests
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDuration()
+        public async Task ShouldReceiveDuration()
         {
-            TestReceiveData("RETURN duration({ months: 16, days: 45, seconds: 120, nanoseconds: 187309812 })",
+            await TestReceiveData("RETURN duration({ months: 16, days: 45, seconds: 120, nanoseconds: 187309812 })",
                 new Duration(16, 45, 120, 187309812));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDate()
+        public async Task ShouldReceiveDate()
         {
-            TestReceiveData("RETURN date({ year: 1994, month: 11, day: 15 })",
+            await TestReceiveData("RETURN date({ year: 1994, month: 11, day: 15 })",
                 new LocalDate(1994, 11, 15));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveTime()
+        public async Task ShouldReceiveTime()
         {
-            TestReceiveData("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999999 })",
+            await TestReceiveData("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999999 })",
                 new LocalTime(23, 49, 59, 999999999));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveTimeWithOffset()
+        public async Task ShouldReceiveTimeWithOffset()
         {
-            TestReceiveData(
+            await TestReceiveData(
                 "RETURN time({ hour: 23, minute: 49, second: 59, nanosecond: 999999999, timezone:'+03:00' })",
-                new OffsetTime(23, 49, 59, 999999999, (int)TimeSpan.FromHours(3).TotalSeconds));
+                new OffsetTime(23, 49, 59, 999999999, (int) TimeSpan.FromHours(3).TotalSeconds));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDateTime()
+        public async Task ShouldReceiveDateTime()
         {
-            TestReceiveData(
+            await TestReceiveData(
                 "RETURN localdatetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999999 })",
                 new LocalDateTime(1859, 5, 31, 23, 49, 59, 999999999));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDateTimeWithOffset()
+        public async Task ShouldReceiveDateTimeWithOffset()
         {
-            TestReceiveData(
+            await TestReceiveData(
                 "RETURN datetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999999, timezone:'+02:30' })",
-                new ZonedDateTime(1859, 5, 31, 23, 49, 59, 999999999, Zone.Of((int)TimeSpan.FromMinutes(150).TotalSeconds)));
+                new ZonedDateTime(1859, 5, 31, 23, 49, 59, 999999999,
+                    Zone.Of((int) TimeSpan.FromMinutes(150).TotalSeconds)));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDateTimeWithZoneId()
+        public async Task ShouldReceiveDateTimeWithZoneId()
         {
-            TestReceiveData(
+            await TestReceiveData(
                 "RETURN datetime({ year: 1959, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999999, timezone:'Europe/London' })",
                 new ZonedDateTime(1959, 5, 31, 23, 49, 59, 999999999, Zone.Of("Europe/London")));
         }
@@ -106,11 +108,11 @@ namespace Neo4j.Driver.IntegrationTests.Types
         #region Send and Receive Tests
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveDuration()
+        public async Task ShouldSendAndReceiveDuration()
         {
             var data = new Duration(14, 35, 75, 789012587);
 
-            TestSendAndReceiveData(
+            await TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.months, x.days, x.seconds, x.millisecondsOfSecond, x.microsecondsOfSecond, x.nanosecondsOfSecond",
                 data,
                 new object[]
@@ -126,11 +128,11 @@ namespace Neo4j.Driver.IntegrationTests.Types
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveDate()
+        public async Task ShouldSendAndReceiveDate()
         {
             var data = new LocalDate(1976, 6, 13);
 
-            TestSendAndReceiveData(
+            await TestSendAndReceiveData(
                 "CYPHER runtime = interpreted WITH $x AS x RETURN x, x.year, x.month, x.day",
                 data,
                 new object[]
@@ -143,11 +145,11 @@ namespace Neo4j.Driver.IntegrationTests.Types
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveTime()
+        public async Task ShouldSendAndReceiveTime()
         {
             var data = new LocalTime(12, 34, 56, 789012587);
 
-            TestSendAndReceiveData(
+            await TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond",
                 data,
                 new object[]
@@ -163,11 +165,11 @@ namespace Neo4j.Driver.IntegrationTests.Types
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveTimeWithOffset()
+        public async Task ShouldSendAndReceiveTimeWithOffset()
         {
-            var data = new OffsetTime(12, 34, 56, 789012587, (int)TimeSpan.FromMinutes(90).TotalSeconds);
+            var data = new OffsetTime(12, 34, 56, 789012587, (int) TimeSpan.FromMinutes(90).TotalSeconds);
 
-            TestSendAndReceiveData(
+            await TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond, x.offset",
                 data,
                 new object[]
@@ -184,11 +186,11 @@ namespace Neo4j.Driver.IntegrationTests.Types
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveDateTime()
+        public async Task ShouldSendAndReceiveDateTime()
         {
             var data = new LocalDateTime(1976, 6, 13, 12, 34, 56, 789012587);
 
-            TestSendAndReceiveData(
+            await TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.year, x.month, x.day, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond",
                 data,
                 new object[]
@@ -207,11 +209,12 @@ namespace Neo4j.Driver.IntegrationTests.Types
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveDateTimeWithOffset()
+        public async Task ShouldSendAndReceiveDateTimeWithOffset()
         {
-            var data = new ZonedDateTime(1976, 6, 13, 12, 34, 56, 789012587, Zone.Of((int)TimeSpan.FromMinutes(-90).TotalSeconds));
+            var data = new ZonedDateTime(1976, 6, 13, 12, 34, 56, 789012587,
+                Zone.Of((int) TimeSpan.FromMinutes(-90).TotalSeconds));
 
-            TestSendAndReceiveData(
+            await TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.year, x.month, x.day, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond, x.offset",
                 data,
                 new object[]
@@ -231,11 +234,11 @@ namespace Neo4j.Driver.IntegrationTests.Types
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveDateTimeWithZoneId()
+        public async Task ShouldSendAndReceiveDateTimeWithZoneId()
         {
             var data = new ZonedDateTime(1959, 5, 31, 23, 49, 59, 999999999, Zone.Of("US/Pacific"));
 
-            TestSendAndReceiveData(
+            await TestSendAndReceiveData(
                 "CYPHER runtime=interpreted WITH $x AS x RETURN x, x.year, x.month, x.day, x.hour, x.minute, x.second, x.millisecond, x.microsecond, x.nanosecond, x.timezone",
                 data,
                 new object[]
@@ -259,52 +262,59 @@ namespace Neo4j.Driver.IntegrationTests.Types
         #region Randomized Send and Receive Tests
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandomDuration()
+        public async Task ShouldSendAndReceiveRandomDuration()
         {
-            Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomDuration()).AsParallel()
-                .ForAll(TestSendAndReceive);
+            await Task.WhenAll(
+                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomDuration())
+                    .Select(TestSendAndReceive));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandomLocalDate()
+        public async Task ShouldSendAndReceiveRandomLocalDate()
         {
-            Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomLocalDate()).AsParallel()
-                .ForAll(TestSendAndReceive);
+            await Task.WhenAll(
+                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomLocalDate())
+                    .Select(TestSendAndReceive));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandomLocalDateTime()
+        public async Task ShouldSendAndReceiveRandomLocalDateTime()
         {
-            Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomLocalDateTime()).AsParallel()
-                .ForAll(TestSendAndReceive);
+            await Task.WhenAll(
+                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomLocalDateTime())
+                    .Select(TestSendAndReceive));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandomLocalTime()
+        public async Task ShouldSendAndReceiveRandomLocalTime()
         {
-            Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomLocalTime()).AsParallel()
-                .ForAll(TestSendAndReceive);
+            await Task.WhenAll(
+                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomLocalTime())
+                    .Select(TestSendAndReceive));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandomOffsetTime()
+        public async Task ShouldSendAndReceiveRandomOffsetTime()
         {
-            Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomOffsetTime()).AsParallel()
-                .ForAll(TestSendAndReceive);
+            await Task.WhenAll(
+                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomOffsetTime())
+                    .Select(TestSendAndReceive));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandomOffsetDateTime()
+        public async Task ShouldSendAndReceiveRandomOffsetDateTime()
         {
-            Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomOffsetDateTime()).AsParallel()
-                .ForAll(TestSendAndReceive);
+            await Task.WhenAll(
+                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomOffsetDateTime())
+                    .Select(TestSendAndReceive));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveRandomZonedDateTime()
+        public async Task ShouldSendAndReceiveRandomZonedDateTime()
         {
-            Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomZonedDateTime()).AsParallel()
-                .ForAll(TestSendAndReceive);
+            await Task.WhenAll(
+                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomZonedDateTime())
+                    .Select(TestSendAndReceive));
         }
 
         #endregion
@@ -312,51 +322,51 @@ namespace Neo4j.Driver.IntegrationTests.Types
         #region Randomized Send And Receive Array Tests
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfDuration()
+        public async Task ShouldSendAndReceiveArrayOfDuration()
         {
-            TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomDuration()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfLocalDate()
+        public async Task ShouldSendAndReceiveArrayOfLocalDate()
         {
-            TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomLocalDate()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfLocalDateTime()
+        public async Task ShouldSendAndReceiveArrayOfLocalDateTime()
         {
-            TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomLocalDateTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfLocalTime()
+        public async Task ShouldSendAndReceiveArrayOfLocalTime()
         {
-            TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomLocalTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfOffsetTime()
+        public async Task ShouldSendAndReceiveArrayOfOffsetTime()
         {
-            TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomOffsetTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfOffsetDateTime()
+        public async Task ShouldSendAndReceiveArrayOfOffsetDateTime()
         {
-            TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomOffsetDateTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfZonedDateTime()
+        public async Task ShouldSendAndReceiveArrayOfZonedDateTime()
         {
-            TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomZonedDateTime()));
         }
 
@@ -365,67 +375,72 @@ namespace Neo4j.Driver.IntegrationTests.Types
         #region Receive System Types through As Methods
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDateAsDateTime()
+        public async Task ShouldReceiveDateAsDateTime()
         {
-            TestReceiveDataWithType("RETURN date({ year: 1994, month: 11, day: 15 })", new DateTime(1994, 11, 15));
+            await TestReceiveDataWithType("RETURN date({ year: 1994, month: 11, day: 15 })",
+                new DateTime(1994, 11, 15));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveLocalTimeAsDateTimeMilliseconds()
+        public async Task ShouldReceiveLocalTimeAsDateTimeMilliseconds()
         {
-            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
+            await TestReceiveDataWithType(
+                "RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
                 DateTime.Today.Add(new TimeSpan(0, 23, 49, 59, 999)));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveLocalTimeAsDateTimeTicks()
+        public async Task ShouldReceiveLocalTimeAsDateTimeTicks()
         {
-            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
+            await TestReceiveDataWithType(
+                "RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
                 DateTime.Today.Add(new TimeSpan(0, 23, 49, 59, 0).Add(TimeSpan.FromTicks(9999999))));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveLocalDateTimeAsDateTimeMilliseconds()
+        public async Task ShouldReceiveLocalDateTimeAsDateTimeMilliseconds()
         {
-            TestReceiveDataWithType(
+            await TestReceiveDataWithType(
                 "RETURN localdatetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
                 new DateTime(1859, 5, 31, 23, 49, 59, 999));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveLocalDateTimeAsDateTimeTicks()
+        public async Task ShouldReceiveLocalDateTimeAsDateTimeTicks()
         {
-            TestReceiveDataWithType(
+            await TestReceiveDataWithType(
                 "RETURN localdatetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
                 new DateTime(1859, 5, 31, 23, 49, 59, 0).AddTicks(9999999));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveLocalTimeAsTimeSpanMilliseconds()
+        public async Task ShouldReceiveLocalTimeAsTimeSpanMilliseconds()
         {
-            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
+            await TestReceiveDataWithType(
+                "RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999000000 })",
                 new TimeSpan(0, 23, 49, 59, 999));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveLocalTimeAsTimeSpanTicks()
+        public async Task ShouldReceiveLocalTimeAsTimeSpanTicks()
         {
-            TestReceiveDataWithType("RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
+            await TestReceiveDataWithType(
+                "RETURN localtime({ hour: 23, minute: 49, second: 59, nanosecond: 999999900 })",
                 new TimeSpan(0, 23, 49, 59, 0).Add(TimeSpan.FromTicks(9999999)));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDateTimeAsDateTimeOffsetMilliseconds()
+        public async Task ShouldReceiveDateTimeAsDateTimeOffsetMilliseconds()
         {
-            TestReceiveDataWithType(
+            await TestReceiveDataWithType(
                 "RETURN datetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999000000, timezone:'+01:30' })",
                 new DateTimeOffset(new DateTime(1859, 5, 31, 23, 49, 59, 999), TimeSpan.FromMinutes(90)));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldReceiveDateTimeAsDateTimeOffsetTicks()
+        public async Task ShouldReceiveDateTimeAsDateTimeOffsetTicks()
         {
-            TestReceiveDataWithType(
+            await TestReceiveDataWithType(
                 "RETURN datetime({ year: 1859, month: 5, day: 31, hour: 23, minute: 49, second: 59, nanosecond: 999999900,  timezone:'-02:30' })",
                 new DateTimeOffset(new DateTime(1859, 5, 31, 23, 49, 59, 0).AddTicks(9999999),
                     TimeSpan.FromMinutes(-150)));
@@ -436,52 +451,52 @@ namespace Neo4j.Driver.IntegrationTests.Types
         #region Send and Receive System Types
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveSystemDateTimeMilliseconds()
+        public async Task ShouldSendAndReceiveSystemDateTimeMilliseconds()
         {
             var data = new DateTime(1979, 2, 15, 7, 5, 25, 748);
 
-            TestSendAndReceiveWithType(data, new LocalDateTime(data));
+            await TestSendAndReceiveWithType(data, new LocalDateTime(data));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveSystemDateTimeNanoseconds()
+        public async Task ShouldSendAndReceiveSystemDateTimeNanoseconds()
         {
             var data = new DateTime(1979, 2, 15, 7, 5, 25).AddTicks(748999900);
 
-            TestSendAndReceiveWithType(data, new LocalDateTime(data));
+            await TestSendAndReceiveWithType(data, new LocalDateTime(data));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveSystemDateTimeOffsetMilliseconds()
+        public async Task ShouldSendAndReceiveSystemDateTimeOffsetMilliseconds()
         {
             var data = new DateTimeOffset(new DateTime(1979, 2, 15, 7, 5, 25, 748), TimeSpan.FromMinutes(90));
 
-            TestSendAndReceiveWithType(data, new ZonedDateTime(data));
+            await TestSendAndReceiveWithType(data, new ZonedDateTime(data));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveSystemDateTimeOffsetNanoseconds()
+        public async Task ShouldSendAndReceiveSystemDateTimeOffsetNanoseconds()
         {
             var data = new DateTimeOffset(new DateTime(1979, 2, 15, 7, 5, 25).AddTicks(748999900),
                 TimeSpan.FromMinutes(-150));
 
-            TestSendAndReceiveWithType(data, new ZonedDateTime(data));
+            await TestSendAndReceiveWithType(data, new ZonedDateTime(data));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveSystemTimeSpanMilliseconds()
+        public async Task ShouldSendAndReceiveSystemTimeSpanMilliseconds()
         {
             var data = new TimeSpan(0, 7, 5, 25, 748);
 
-            TestSendAndReceiveWithType(data, new LocalTime(data));
+            await TestSendAndReceiveWithType(data, new LocalTime(data));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveSystemTimeSpanNanoseconds()
+        public async Task ShouldSendAndReceiveSystemTimeSpanNanoseconds()
         {
             var data = new TimeSpan(0, 7, 5, 25).Add(TimeSpan.FromTicks(748999900));
 
-            TestSendAndReceiveWithType(data, new LocalTime(data));
+            await TestSendAndReceiveWithType(data, new LocalTime(data));
         }
 
         #endregion
@@ -489,66 +504,80 @@ namespace Neo4j.Driver.IntegrationTests.Types
         #region Send and Receive Arrays Of System Types
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfSystemDateTime()
+        public async Task ShouldSendAndReceiveArrayOfSystemDateTime()
         {
             var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomSystemDateTime()).ToList();
             var actual = array.Select(v => new LocalDateTime(v)).ToList();
 
-            TestSendAndReceiveArrayWithType(array, actual);
+            await TestSendAndReceiveArrayWithType(array, actual);
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfSystemDateTimeOffset()
+        public async Task ShouldSendAndReceiveArrayOfSystemDateTimeOffset()
         {
             var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomSystemDateTimeOffset()).ToList();
             var actual = array.Select(v => new ZonedDateTime(v)).ToList();
 
-            TestSendAndReceiveArrayWithType(array, actual);
+            await TestSendAndReceiveArrayWithType(array, actual);
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
-        public void ShouldSendAndReceiveArrayOfSystemTimeSpan()
+        public async Task ShouldSendAndReceiveArrayOfSystemTimeSpan()
         {
             var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomSystemTime()).ToList();
             var actual = array.Select(v => new LocalTime(v)).ToList();
 
-            TestSendAndReceiveArrayWithType(array, actual);
+            await TestSendAndReceiveArrayWithType(array, actual);
         }
 
         #endregion
 
         #region Helper Methods
 
-        private void TestReceiveData(string query, object expected)
+        private async Task TestReceiveData(string query, object expected)
         {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var record = session.Run(query).Single();
+                var cursor = await session.RunAsync(query);
+                var record = await cursor.SingleAsync();
                 var received = record[0];
 
                 received.Should().Be(expected);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
-        private void TestReceiveDataWithType<T>(string query, T expected)
+        private async Task TestReceiveDataWithType<T>(string query, T expected)
         {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var record = session.Run(query).Single();
+                var cursor = await session.RunAsync(query);
+                var record = await cursor.SingleAsync();
                 var received = record[0].ValueAs<T>();
 
                 received.Should().Be(expected);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
-        private void TestSendAndReceiveData(string query, object toBeSent, object[] expectedValues)
+        private async Task TestSendAndReceiveData(string query, object toBeSent, object[] expectedValues)
         {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var record = session.Run(query, new { x = toBeSent }).Single();
+                var cursor = await session.RunAsync(query, new {x = toBeSent});
+                var record = await cursor.SingleAsync();
 
                 record.Keys.Count.Should().Be(expectedValues.Length);
                 for (var i = 0; i < expectedValues.Length; i++)
@@ -556,56 +585,88 @@ namespace Neo4j.Driver.IntegrationTests.Types
                     record[i].Should().Be(expectedValues[i]);
                 }
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
-        private void TestSendAndReceive(object value)
+        private async Task TestSendAndReceive(object value)
         {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var record = session.Run("CREATE (n:Node {value: $value}) RETURN n.value", new { value }).Single();
+                var cursor = await session.RunAsync("CREATE (n:Node {value: $value}) RETURN n.value", new {value});
+                var record = await cursor.SingleAsync();
 
                 record.Keys.Should().HaveCount(1);
                 record[0].Should().Be(value);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
-        private void TestSendAndReceiveWithType<TSent, TRecv>(TSent value, TRecv actual)
+        private async Task TestSendAndReceiveWithType<TSent, TRecv>(TSent value, TRecv actual)
         {
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+
+            try
             {
-                var record = session.Run("CREATE (n:Node {value: $value}) RETURN n.value", new { value }).Single();
+                var cursor = await session.RunAsync("CREATE (n:Node {value: $value}) RETURN n.value", new {value});
+                var record = await cursor.SingleAsync();
 
                 record.Keys.Should().HaveCount(1);
                 record[0].Should().Be(actual);
                 record[0].ValueAs<TSent>().Should().Be(value);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
-        private void TestSendAndReceiveArray(IEnumerable<object> array)
+        private async Task TestSendAndReceiveArray(IEnumerable<object> array)
         {
             var list = array.ToList();
 
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var record = session.Run("CREATE (n:Node {value: $value}) RETURN n.value", new { value = list }).Single();
+                var cursor =
+                    await session.RunAsync("CREATE (n:Node {value: $value}) RETURN n.value", new {value = list});
+                var record = await cursor.SingleAsync();
 
                 record.Keys.Should().HaveCount(1);
                 record[0].Should().BeAssignableTo<IEnumerable<object>>().Which.Should().BeEquivalentTo(list);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
-        private void TestSendAndReceiveArrayWithType<TSent, TRecv>(IEnumerable<TSent> value, IEnumerable<TRecv> actual)
+        private async Task TestSendAndReceiveArrayWithType<TSent, TRecv>(IEnumerable<TSent> value,
+            IEnumerable<TRecv> actual)
         {
             var valueAsList = value.ToList();
             var actualAsList = actual.ToList();
 
-            using (var session = Server.Driver.Session(AccessMode.Read))
+            var session = Server.Driver.Session(AccessMode.Read);
+            try
             {
-                var record = session.Run("CREATE (n:Node {value: $value}) RETURN n.value", new { value = valueAsList }).Single();
+                var cursor = await session.RunAsync("CREATE (n:Node {value: $value}) RETURN n.value",
+                    new {value = valueAsList});
+                var record = await cursor.SingleAsync();
 
                 record.Keys.Should().HaveCount(1);
                 record[0].Should().BeEquivalentTo(actualAsList);
                 record[0].ValueAs<IList<TSent>>().Should().BeEquivalentTo(valueAsList);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
@@ -681,7 +742,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 _random.Next(TemporalHelpers.MinHour, TemporalHelpers.MaxHour),
                 _random.Next(TemporalHelpers.MinMinute, TemporalHelpers.MaxMinute),
                 _random.Next(TemporalHelpers.MinSecond, TemporalHelpers.MaxSecond),
-                (int)(_random.Next(TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond) / 100) * 100
+                _random.Next(TemporalHelpers.MinNanosecond, TemporalHelpers.MaxNanosecond) / 100 * 100
             ).ToTimeSpan();
         }
 
@@ -713,16 +774,15 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             return new ZonedDateTime(
                 RandomLocalDateTime(true),
-                Zone.Of(RandomTZName())
+                Zone.Of(RandomTzName())
             );
         }
 
-        private string RandomTZName()
+        private string RandomTzName()
         {
             return _tzNames.ElementAt(_random.Next(0, _tzNames.Count()));
         }
 
         #endregion
-
     }
 }

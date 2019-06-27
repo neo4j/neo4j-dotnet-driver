@@ -14,27 +14,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal
 {
-    /// <summary>
-    /// The result returned from the Neo4j instance
-    /// </summary>
-    internal class StatementResult : IStatementResult
+    internal class InternalStatementResult : IStatementResult
     {
         private readonly IStatementResultCursor _cursor;
         private readonly IRecordSet _recordSet;
         private readonly SyncExecutor _syncExecutor;
 
-        public StatementResult(IStatementResultCursor cursor, SyncExecutor syncExecutor)
+        public InternalStatementResult(IStatementResultCursor cursor, SyncExecutor syncExecutor)
         {
-            Throw.ArgumentNullException.IfNull(cursor, nameof(cursor));
-            Throw.ArgumentNullException.IfNull(syncExecutor, nameof(syncExecutor));
+            _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
+            _syncExecutor = syncExecutor ?? throw new ArgumentNullException(nameof(syncExecutor));
 
             _cursor = cursor;
             _recordSet = new RecordSet(cursor, syncExecutor);
@@ -64,6 +60,5 @@ namespace Neo4j.Driver.Internal.Result
         {
             return GetEnumerator();
         }
-        
     }
 }

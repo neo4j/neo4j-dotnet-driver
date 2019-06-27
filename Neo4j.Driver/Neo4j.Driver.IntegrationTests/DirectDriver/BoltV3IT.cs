@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver;
+using Xunit;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
@@ -33,67 +34,24 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
-        public void ShouldRunWithTxConfig()
-        {
-            // Given
-            var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
-
-            // When
-            using (var session = Server.Driver.Session())
-            {
-                var result = session.Run("CALL dbms.listTransactions()", txConfig);
-                // Then
-                var value = result.Single()["metaData"].ValueAs<IDictionary<string, object>>();
-                value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
-                result.Summary.ToString().Should().Contain("ResultAvailableAfter");
-                result.Summary.ToString().Should().Contain("ResultConsumedAfter");
-            }
-        }
-
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public async Task ShouldRunWithTxConfigAsync()
         {
             // Given
             var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
 
             // When
-            using (var session = Server.Driver.Session())
+            var session = Server.Driver.Session();
+            try
             {
-                var result = await session.RunAsync("CALL dbms.listTransactions()", txConfig);
+                var cursor = await session.RunAsync("CALL dbms.listTransactions()", txConfig);
+                var records = await cursor.ToListAsync(r => r["metaData"].As<IDictionary<string, object>>());
+
                 // Then
-                var value = (await result.SingleAsync())["metaData"].ValueAs<IDictionary<string, object>>();
-                value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
+                records.Single().Should().HaveCount(1).And.Contain("name", "Molly");
             }
-        }
-
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
-        public void ShouldRunWithTxTimeout()
-        {
-            // Given
-            using (var session = Server.Driver.Session())
+            finally
             {
-                session.Run("CREATE (:Node)").Consume();
-            }
-
-            using (var otherSession = Server.Driver.Session())
-            {
-                using (var otherTx = otherSession.BeginTransaction())
-                {
-                    // lock dummy node but keep the transaction open
-                    otherTx.Run("MATCH (n:Node) SET n.prop = 1").Consume();
-
-                    // When
-                    // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                    var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
-                    using (var session = Server.Driver.Session())
-                    {
-                        var error = Xunit.Record.Exception(() =>
-                            session.Run("MATCH (n:Node) SET n.prop = 2", txConfig).Consume());
-                        // Then
-                        error.Should().BeOfType<TransientException>();
-                        error.Message.Should().Contain("terminated");
-                    }
-                }
+                await session.CloseAsync();
             }
         }
 
@@ -101,38 +59,48 @@ namespace Neo4j.Driver.IntegrationTests
         public async Task ShouldRunWithTxTimeoutAsync()
         {
             // Given
-            using (var session = Server.Driver.Session())
+            using (var session = Server.Driver.SyncSession())
             {
                 session.Run("CREATE (:Node)").Consume();
             }
 
-            using (var otherSession = Server.Driver.Session())
+            var otherSession = Server.Driver.Session();
+            try
             {
-                using (var otherTx = otherSession.BeginTransaction())
+                var otherTx = await otherSession.BeginTransactionAsync();
+                try
                 {
                     // lock dummy node but keep the transaction open
-                    otherTx.Run("MATCH (n:Node) SET n.prop = 1").Consume();
+                    await otherTx.RunAsync("MATCH (n:Node) SET n.prop = 1").ContinueWith(t => t.Result.ConsumeAsync())
+                        .Unwrap();
 
                     // When
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
                     var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
-                    using (var session = Server.Driver.Session())
+                    var session = Server.Driver.Session();
+                    try
                     {
-                        var error = await Xunit.Record.ExceptionAsync(() =>
+                        var error = await Record.ExceptionAsync(() =>
                             session.RunAsync("MATCH (n:Node) SET n.prop = 2", txConfig)
-                                .ContinueWith(t => t.Result.ConsumeAsync()).Unwrap());
+                                .ContinueWith(c => c.Result.ConsumeAsync()).Unwrap());
+
                         // Then
-                        error.Should().BeOfType<TransientException>();
-                        error.Message.Should().Contain("terminated");
+                        error.Should().BeOfType<TransientException>().Which.Message.Should().Contain("terminated");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
                     }
                 }
+                finally
+                {
+                    await otherTx.CommitAsync();
+                }
             }
-        }
-
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
-        public void ShouldReadWithTxConfig()
-        {
-            RunWithTxConfig(true);
+            finally
+            {
+                await otherSession.CloseAsync();
+            }
         }
 
         [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
@@ -142,32 +110,9 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
-        public void ShouldWriteWithTxConfig()
-        {
-            RunWithTxConfig(false);
-        }
-
-        [RequireServerFact("3.5.0", GreaterThanOrEqualTo)]
         public async Task ShouldWriteWithTxConfigAsync()
         {
             await RunWithTxConfigAsync(false);
-        }
-
-        private void RunWithTxConfig(bool read)
-        {
-            // Given
-            var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
-
-            // When
-            using (var session = Server.Driver.Session())
-            {
-                var result = read
-                    ? session.ReadTransaction(tx => tx.Run("CALL dbms.listTransactions()"), txConfig)
-                    : session.WriteTransaction(tx => tx.Run("CALL dbms.listTransactions()"), txConfig);
-                // Then
-                var value = result.Single()["metaData"].ValueAs<IDictionary<string, object>>();
-                value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
-            }
         }
 
         private async Task RunWithTxConfigAsync(bool read)
@@ -176,7 +121,8 @@ namespace Neo4j.Driver.IntegrationTests
             var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
 
             // When
-            using (var session = Server.Driver.Session())
+            var session = Server.Driver.Session();
+            try
             {
                 var result = read
                     ? await session.ReadTransactionAsync(tx => tx.RunAsync("CALL dbms.listTransactions()"), txConfig)
@@ -185,6 +131,10 @@ namespace Neo4j.Driver.IntegrationTests
                 // Then
                 var value = (await result.SingleAsync())["metaData"].ValueAs<IDictionary<string, object>>();
                 value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
     }

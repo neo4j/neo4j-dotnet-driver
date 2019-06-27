@@ -21,7 +21,7 @@ using System.Collections.Generic;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// A reactive session, which provides the same functionality as <see cref="Neo4j.Driver.ISession"/>
+    /// A reactive session, which provides the same functionality as <see cref="ISession"/>
     /// but with reactive API.
     /// </summary>
     public interface IRxSession : IRxRunnable

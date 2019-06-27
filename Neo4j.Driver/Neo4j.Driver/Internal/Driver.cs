@@ -33,7 +33,6 @@ namespace Neo4j.Driver.Internal
         private readonly IRetryLogic _retryLogic;
         private readonly IDriverLogger _logger;
         private readonly IMetrics _metrics;
-        private readonly SyncExecutor _syncExecutor;
         private readonly Config _config;
 
         public Uri Uri { get; }
@@ -42,17 +41,15 @@ namespace Neo4j.Driver.Internal
         private const string NullBookmark = null;
 
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, IDriverLogger logger,
-            SyncExecutor syncExecutor, IMetrics metrics = null, Config config = null)
+            IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
-            Throw.ArgumentNullException.IfNull(syncExecutor, nameof(syncExecutor));
 
             Uri = uri;
             _logger = logger;
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
             _metrics = metrics;
-            _syncExecutor = syncExecutor;
             _config = config;
         }
 
@@ -78,7 +75,8 @@ namespace Neo4j.Driver.Internal
 
         public ISession Session(AccessMode defaultMode, string bookmark)
         {
-            return Session(defaultMode, string.IsNullOrEmpty(bookmark) ? Enumerable.Empty<string>() : new[] {bookmark},
+            return Session(defaultMode,
+                string.IsNullOrEmpty(bookmark) ? Enumerable.Empty<string>() : new[] {bookmark},
                 false);
         }
 
@@ -100,21 +98,24 @@ namespace Neo4j.Driver.Internal
                 ThrowDriverClosedException();
             }
 
-            var session = new Session(_connectionProvider, _logger, _syncExecutor, _retryLogic, defaultMode,
-                Bookmark.From(bookmarks), reactive);
+            var session = new Session(_connectionProvider, _logger, _retryLogic, defaultMode, Bookmark.From(bookmarks),
+                reactive);
 
             if (IsClosed)
             {
-                session.Dispose();
                 ThrowDriverClosedException();
             }
 
             return session;
         }
 
-        public void Close()
+        private void Close()
         {
-            _syncExecutor.RunSync(CloseAsync);
+            Task.Factory
+                .StartNew(CloseAsync, TaskCreationOptions.None)
+                .Unwrap()
+                .GetAwaiter()
+                .GetResult();
         }
 
         public Task CloseAsync()

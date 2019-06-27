@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -31,6 +32,8 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class BookmarkIT : DirectDriverTestBase
     {
+        private const string BookmarkHeader = "neo4j:bookmark:v1:tx";
+
         private IDriver Driver => Server.Driver;
 
         public BookmarkIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
@@ -38,135 +41,210 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
-        public void ShouldContainLastBookmarkAfterTx()
+        public async Task ShouldContainLastBookmarkAfterTx()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+
+            try
             {
                 session.LastBookmark.Should().BeNull();
 
-                CreateNodeInTx(session, 1);
+                await CreateNodeInTx(session, 1);
 
                 session.LastBookmark.Should().NotBeNull();
                 session.LastBookmark.Should().StartWith("neo4j:bookmark:v1:tx");
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
-        public void BookmarkUnchangedAfterRolledBackTx()
+        public async Task BookmarkUnchangedAfterRolledBackTx()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                CreateNodeInTx(session, 1);
+                await CreateNodeInTx(session, 1);
+
                 var bookmark = session.LastBookmark;
                 bookmark.Should().NotBeNullOrEmpty();
 
-                using (var tx = session.BeginTransaction())
+                var tx = await session.BeginTransactionAsync();
+                try
                 {
-                    tx.Run("CREATE (a:Person)");
-                    tx.Failure();
+                    await tx.RunAsync("CREATE (a:Person)");
                 }
+                finally
+                {
+                    await tx.RollbackAsync();
+                }
+
                 session.LastBookmark.Should().Be(bookmark);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
-        public void BookmarkUnchangedAfterTxFailure()
+        public async Task BookmarkUnchangedAfterTxFailure()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                CreateNodeInTx(session, 1);
+                await CreateNodeInTx(session, 1);
+
                 var bookmark = session.LastBookmark;
                 bookmark.Should().NotBeNullOrEmpty();
 
-                var tx = session.BeginTransaction();
-                tx.Run("RETURN");
-                tx.Success();
-                var exception = Record.Exception(() => tx.Dispose());
-                exception.Should().BeOfType<ClientException>();
+                var tx = await session.BeginTransactionAsync();
+                var exc = await Record.ExceptionAsync(async () =>
+                {
+                    await tx.RunAsync("RETURN");
+                    await tx.CommitAsync();
+                });
+                exc.Should().BeOfType<ClientException>();
+
                 session.LastBookmark.Should().Be(bookmark);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
-        public void ShouldIgnoreInvalidBookmark()
+        public async Task ShouldIgnoreInvalidBookmark()
         {
-            var invalidBookmark = "invalid bookmark format";
-            var loggerMock = new Mock<IDriverLogger>();
-            using(var driver = GraphDatabase.Driver(Server.BoltUri, Server.AuthToken, new Config {DriverLogger = loggerMock.Object}))
-            using (var session = (Session)driver.Session())
+            var session = Driver.Session("invalid bookmark format");
+            try
             {
-                session.BeginTransaction(invalidBookmark);
+                await session.BeginTransactionAsync();
                 session.LastBookmark.Should().BeNull(); // ignored
             }
-        }
-
-        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
-        public void ShouldThrowForUnreachableBookmark()
-        {
-            using (var session = (Session)Driver.Session())
+            finally
             {
-                CreateNodeInTx(session, 1);
-
-                // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
-                var exception = Record.Exception(() => session.BeginTransaction(session.LastBookmark + "0"));
-                exception.Should().BeOfType<TransientException>();
-                exception.Message.Should().Contain("Database not up to the requested version:");
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
-        public void ShouldWaitOnBookmark()
+        public async Task ShouldThrowForUnreachableBookmark()
         {
-            using (var session = Driver.Session())
+            string bookmark;
+            var session = Driver.Session();
+            try
+            {
+                await CreateNodeInTx(session, 1);
+                bookmark = session.LastBookmark;
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+
+            // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
+            session = Driver.Session(bookmark + "0");
+            try
+            {
+                var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+
+                exc.Should().BeOfType<TransientException>().Which
+                    .Message.Should().Contain("Database not up to the requested version:");
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+        }
+
+        [RequireServerFact("3.1.0", GreaterThanOrEqualTo)]
+        public async Task ShouldWaitOnBookmark()
+        {
+            var session = Driver.Session();
+            try
             {
                 // get a bookmark
                 session.LastBookmark.Should().BeNull();
-                CreateNodeInTx(session, 1);
+                await CreateNodeInTx(session, 1);
 
-                session.LastBookmark.Should().NotBeNull();
-                session.LastBookmark.Should().StartWith(BookmarkHeader);
+                session.LastBookmark.Should().NotBeNull().And.StartWith(BookmarkHeader);
                 var lastBookmarkNum = BookmarkNum(session.LastBookmark);
 
                 // start a thread to create lastBookmark + 1 tx 
-                Task.Factory.StartNew(() =>
+#pragma warning disable 4014
+                Task.Factory.StartNew(async () =>
+#pragma warning restore 4014
                 {
-                    Thread.Sleep(500);
-                    using (var anotherSession = Driver.Session())
+                    await Task.Delay(500);
+                    var anotherSession = Driver.Session();
+                    try
                     {
-                        CreateNodeInTx(anotherSession, 2);
+                        await CreateNodeInTx(anotherSession, 2);
+                    }
+                    finally
+                    {
+                        await anotherSession.CloseAsync();
                     }
                 });
 
                 // wait for lastBookmark + 1
                 var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
-                CountNodeInTx(session, 2, waitForBookmark).Should().Be(1);
+                var count = await CountNodeInTx(Driver, 2, waitForBookmark);
+                count.Should().Be(1);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
-        private const string BookmarkHeader = "neo4j:bookmark:v1:tx";
+        private static async Task CreateNodeInTx(ISession session, int id)
+        {
+            var tx = await session.BeginTransactionAsync();
+            try
+            {
+                await tx.RunAsync("CREATE (a:Person {id: $id})", new {id});
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
 
-        private long BookmarkNum(string bookmark)
+        private static async Task<int> CountNodeInTx(IDriver driver, int id, string bookmark = null)
+        {
+            var session = driver.Session(bookmark);
+            try
+            {
+                var tx = await session.BeginTransactionAsync();
+                try
+                {
+                    var cursor = await tx.RunAsync("MATCH (a:Person {id: $id}) RETURN a", new {id});
+                    var records = await cursor.ToListAsync();
+                    await tx.CommitAsync();
+                    return records.Count;
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+        }
+
+        private static long BookmarkNum(string bookmark)
         {
             return Convert.ToInt64(bookmark.Substring(BookmarkHeader.Length));
-        }
-
-        private static void CreateNodeInTx(ISession session, int id, string bookmark = null)
-        {
-            using (var tx = ((Session)session).BeginTransaction(bookmark))
-            {
-                tx.Run("CREATE (a:Person {id: $id})", new {id});
-                tx.Success();
-            }
-        }
-
-        private static int CountNodeInTx(ISession session, int id, string bookmark = null)
-        {
-            using (var tx = ((Session)session).BeginTransaction(bookmark))
-            {
-                var result = tx.Run("MATCH (a:Person {id: $id}) RETURN a", new { id });
-                tx.Success();
-                return result.Count();
-            }
         }
     }
 }

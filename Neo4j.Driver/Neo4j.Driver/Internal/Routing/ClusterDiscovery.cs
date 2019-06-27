@@ -27,7 +27,6 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterDiscovery : IDiscovery
     {
-        private readonly SyncExecutor _syncExecutor;
         private readonly IDriverLogger _logger;
         private readonly IDictionary<string, string> _context;
 
@@ -35,10 +34,9 @@ namespace Neo4j.Driver.Internal.Routing
         private const string GetRoutingTableProcedure = "dbms.cluster.routing.getRoutingTable";
 
 
-        public ClusterDiscovery(SyncExecutor syncExecutor, IDictionary<string, string> context, IDriverLogger logger)
+        public ClusterDiscovery(IDictionary<string, string> context, IDriverLogger logger)
         {
             _context = context;
-            _syncExecutor = syncExecutor;
             _logger = logger;
         }
 
@@ -62,7 +60,7 @@ namespace Neo4j.Driver.Internal.Routing
             var table = default(RoutingTable);
 
             var provider = new SingleConnectionBasedConnectionProvider(connection);
-            var session = new Session(provider, _logger, _syncExecutor);
+            var session = new Session(provider, _logger);
             try
             {
                 var result = await session.RunAsync(DiscoveryProcedure(connection)).ConfigureAwait(false);

@@ -22,14 +22,15 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     public class LocalStandAloneInstance : SingleInstance, IStandAlone
     {
         public LocalStandAloneInstance() :
-            base(Neo4jDefaultInstallation.HttpUri, Neo4jDefaultInstallation.BoltUri, null, Neo4jDefaultInstallation.Password)
+            base(Neo4jDefaultInstallation.HttpUri, Neo4jDefaultInstallation.BoltUri, null,
+                Neo4jDefaultInstallation.Password)
         {
             Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
         }
 
         public void Dispose()
         {
-            Driver.Close();
+            Driver.Dispose();
         }
 
         public IDriver Driver { get; }

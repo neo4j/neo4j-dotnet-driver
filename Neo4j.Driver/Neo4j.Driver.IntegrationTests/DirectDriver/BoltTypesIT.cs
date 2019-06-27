@@ -15,29 +15,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Extensions;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class BoltTypesIT: DirectDriverTestBase
+    public class BoltTypesIT : DirectDriverTestBase
     {
         private IDriver Driver => Server.Driver;
 
         public BoltTypesIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
-        {}
+        {
+        }
 
         [RequireServerFact]
-        public void ShouldEchoVeryLongString()
+        public async Task ShouldEchoVeryLongString()
         {
-            string input = new string('*', 10000);
-            VerifyCanEcho(input);
+            await VerifyCanEcho(new string('*', 10000));
         }
 
         [RequireServerTheory]
@@ -46,14 +44,9 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(1.1d)]
         [InlineData("hello")]
         [InlineData(true)]
-        public void ShouldEchoVeryLongList(object item)
+        public async Task ShouldEchoVeryLongList(object item)
         {
-            var input = new List<object>();
-            for (int i = 0; i < 1000; i++)
-            {
-                input.Add(item);
-            }
-            VerifyCanEcho(input);
+            await VerifyCanEcho(Enumerable.Range(1, 1000).Select(i => item).ToList());
         }
 
         [RequireServerTheory]
@@ -62,14 +55,10 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(1.1d)]
         [InlineData("hello")]
         [InlineData(true)]
-        public void ShouldEchoVeryLongMap(object item)
+        public async Task ShouldEchoVeryLongMap(object item)
         {
-            var input = new Dictionary<string, object>();
-            for (int i = 0; i < 1000; i++)
-            {
-                input.Add(i.ToString(), item);
-            }
-            VerifyCanEcho(input);
+            await VerifyCanEcho(Enumerable.Range(1, 1000).Select(i => (key: i.ToString(), value: item))
+                .ToDictionary(x => x.key, x => x.value));
         }
 
         [RequireServerTheory]
@@ -93,13 +82,13 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData("-17∂ßå®")]
         [InlineData("String")]
         [InlineData("")]
-        public void ShouldEchoBack(object item)
+        public async Task ShouldEchoBack(object item)
         {
-            VerifyCanEcho(item);
+            await VerifyCanEcho(item);
         }
 
         [RequireServerFact]
-        public void ShouldEchoListAndNestedList()
+        public async Task ShouldEchoListAndNestedList()
         {
             var listOfItems = new List<object>
             {
@@ -113,14 +102,14 @@ namespace Neo4j.Driver.IntegrationTests
 
             foreach (var item in listOfItems)
             {
-                VerifyCanEcho(item);
+                await VerifyCanEcho(item);
             }
 
-            VerifyCanEcho(listOfItems);
+            await VerifyCanEcho(listOfItems);
         }
 
         [RequireServerFact]
-        public void ShouldEchoMapAndNestedMap()
+        public async Task ShouldEchoMapAndNestedMap()
         {
             var dictOfDict = new Dictionary<string, object>
             {
@@ -134,47 +123,25 @@ namespace Neo4j.Driver.IntegrationTests
 
             foreach (var item in dictOfDict.Values)
             {
-                VerifyCanEcho(item);
+                await VerifyCanEcho(item);
             }
 
-            VerifyCanEcho(dictOfDict);
+            await VerifyCanEcho(dictOfDict);
         }
 
-        private void VerifyCanEcho(object input)
+        private async Task VerifyCanEcho(object input)
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var record = session.Run("RETURN {x} as y", new Dictionary<string, object> {{"x", input}}).Single();
-                AssertEqual(record["y"], input);
-            }
-        }
+                var cursor = await session.RunAsync("RETURN {x} as y", new Dictionary<string, object> {{"x", input}});
+                var record = await cursor.SingleAsync();
 
-        private static void AssertEqual(object value, object other)
-        {
-            if (value == null || value is bool || value is long || value is double || value is string)
-            {
-                Assert.Equal(value, other);
+                record["y"].Should().BeEquivalentTo(input);
             }
-            else if (value is IList)
+            finally
             {
-                var valueList = (IList)value;
-                var otherList = (IList)other;
-                AssertEqual(valueList.Count, otherList.Count);
-                for (var i = 0; i < valueList.Count; i++)
-                {
-                    AssertEqual(valueList[i], otherList[i]);
-                }
-            }
-            else if (value is IDictionary)
-            {
-                var valueDic = (IDictionary<string, object>)value;
-                var otherDic = (IDictionary<string, object>)other;
-                AssertEqual(valueDic.Count, otherDic.Count);
-                foreach (var key in valueDic.Keys)
-                {
-                    otherDic.ContainsKey(key).Should().BeTrue();
-                    AssertEqual(valueDic[key], otherDic[key]);
-                }
+                await session.CloseAsync();
             }
         }
     }

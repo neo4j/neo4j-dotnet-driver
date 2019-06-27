@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,7 +57,7 @@ namespace Neo4j.Driver.IntegrationTests
             var query = queries[currentIteration % queries.Length];
             var accessMode = accessModes[currentIteration % accessModes.Length];
 
-            using (var session = _driver.Session(accessMode))
+            using (var session = _driver.SyncSession(accessMode))
             {
                 try
                 {
@@ -87,12 +88,12 @@ namespace Neo4j.Driver.IntegrationTests
             var session = _driver.Session(accessMode);
             try
             {
-
                 var result = await session.RunAsync(query);
                 if (currentIteration % 1000 == 0)
                 {
                     _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
                 }
+
                 await result.SummaryAsync();
             }
             catch (Exception e)
@@ -118,11 +119,11 @@ namespace Neo4j.Driver.IntegrationTests
                     var query = queries[currentIteration % queries.Length];
                     var accessMode = accessModes[currentIteration % accessModes.Length];
 
-                    using (var session = _driver.Session())
+                    using (var session = _driver.SyncSession())
                     {
                         try
                         {
-                            Action<ITransaction> runTx = (tx) => tx.Run(query).Consume();
+                            Func<ISyncTransaction, IResultSummary> runTx = tx => tx.Run(query).Consume();
 
                             if (accessMode == AccessMode.Read)
                             {
@@ -161,7 +162,6 @@ namespace Neo4j.Driver.IntegrationTests
                 var session = _driver.Session(accessMode);
                 try
                 {
-
                     Func<ITransaction, Task> runTxAsync = async (txc) =>
                         await (await txc.RunAsync(query)).ConsumeAsync();
 
@@ -178,7 +178,6 @@ namespace Neo4j.Driver.IntegrationTests
                     {
                         _output.WriteLine(_metrics.ConnectionPoolMetrics.ToContentString());
                     }
-
                 }
                 catch (Exception e)
                 {
@@ -194,5 +193,4 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
     }
-
 }

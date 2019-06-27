@@ -23,7 +23,6 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Connector.Trust;
-using Neo4j.Driver;
 using Org.BouncyCastle.Pkcs;
 using Xunit;
 
@@ -31,7 +30,7 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTrustIntegrationTestFixture>
     {
-        public StandAlone Server { get; set; }
+        public StandAlone Server { get; }
         public Pkcs12Store Pkcs12 { get; }
 
         public CertificateTrustIT(CertificateTrustIntegrationTestFixture fixture)
@@ -41,28 +40,29 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Fact]
-        public void CertificateTrustManager_ShouldTrust()
+        public async Task CertificateTrustManager_ShouldTrust()
         {
-            VerifySuccess(Server.BoltUri, new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
+            await VerifySuccess(Server.BoltUri,
+                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
         }
 
         [Fact]
-        public void CertificateTrustManager_ShouldNotTrustIfHostnameDiffers()
+        public async Task CertificateTrustManager_ShouldNotTrustIfHostnameDiffers()
         {
-            VerifyFailure(new Uri("bolt://another.host.domain:7687"),
-                new CertificateTrustManager(true, new[] { Pkcs12.GetDotnetCertificate()}));
+            await VerifyFailure(new Uri("bolt://another.host.domain:7687"),
+                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
         }
 
         [Fact]
-        public void
+        public async Task
             CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
         {
-            VerifySuccess(new Uri("bolt://another.host.domain:7687"),
-                new CertificateTrustManager(false, new[] { Pkcs12.GetDotnetCertificate()}));
+            await VerifySuccess(new Uri("bolt://another.host.domain:7687"),
+                new CertificateTrustManager(false, new[] {Pkcs12.GetDotnetCertificate()}));
         }
 
         [Fact]
-        public void CertificateTrustManager_ShouldNotTrustIfNotValid()
+        public async Task CertificateTrustManager_ShouldNotTrustIfNotValid()
         {
             try
             {
@@ -72,7 +72,8 @@ namespace Neo4j.Driver.IntegrationTests
 
                 Server.RestartServerWithCertificate(pkcs12);
 
-                VerifyFailure(Server.BoltUri, new CertificateTrustManager(true, new[] {pkcs12.GetDotnetCertificate()}));
+                await VerifyFailure(Server.BoltUri,
+                    new CertificateTrustManager(true, new[] {pkcs12.GetDotnetCertificate()}));
             }
             finally
             {
@@ -81,58 +82,66 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [Fact]
-        public void CertificateTrustManager_ShouldNotTrustIfCertificateIsNotTrusted()
+        public async Task CertificateTrustManager_ShouldNotTrustIfCertificateIsNotTrusted()
         {
             var pkcs12Untrusted = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
                 DateTime.Now.AddYears(1),
                 null, null, null);
 
-            VerifyFailure(Server.BoltUri,
+            await VerifyFailure(Server.BoltUri,
                 new CertificateTrustManager(true, new[] {pkcs12Untrusted.GetDotnetCertificate()}));
         }
 
         [Fact]
-        public void InsecureTrustManager_ShouldTrust()
+        public async Task InsecureTrustManager_ShouldTrust()
         {
-            VerifySuccess(Server.BoltUri, new InsecureTrustManager(true));
+            await VerifySuccess(Server.BoltUri, new InsecureTrustManager(true));
         }
 
         [Fact]
-        public void InsecureTrustManager_ShouldNotTrustIfHostnameDiffers()
+        public async Task InsecureTrustManager_ShouldNotTrustIfHostnameDiffers()
         {
-            VerifyFailure(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(true));
+            await VerifyFailure(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(true));
         }
 
         [Fact]
-        public void InsecureTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
+        public async Task InsecureTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
         {
-            VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false));
+            await VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false));
         }
 
-        private void VerifyFailure(Uri target, TrustManager trustManager)
+        private async Task VerifyFailure(Uri target, TrustManager trustManager)
         {
-            var ex = Record.Exception(() => TestConnectivity(target,
+            var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
                 Config.Builder.WithTrustManager(trustManager).ToConfig()
             ));
             ex.Should().BeOfType<SecurityException>().Which.Message.Should()
                 .Contain("Failed to establish encrypted connection with server");
         }
 
-        private void VerifySuccess(Uri target, TrustManager trustManager)
+        private async Task VerifySuccess(Uri target, TrustManager trustManager)
         {
-            var ex = Record.Exception(() => TestConnectivity(target,
+            var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
                 Config.Builder.WithTrustManager(trustManager).ToConfig()
             ));
             ex.Should().BeNull();
         }
 
-        private void TestConnectivity(Uri target, Config config)
+        private async Task TestConnectivity(Uri target, Config config)
         {
             using (var driver = SetupWithCustomResolver(target, config))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
-                    session.Run("RETURN 1").Consume();
+                    var cursor = await session.RunAsync("RETURN 1");
+                    var records = await cursor.ToListAsync(r => r[0].As<int>());
+
+                    records.Should().BeEquivalentTo(1);
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
@@ -143,7 +152,8 @@ namespace Neo4j.Driver.IntegrationTests
             connectionSettings.SocketSettings.HostResolver =
                 new CustomHostResolver(Server.BoltUri, connectionSettings.SocketSettings.HostResolver);
             var bufferSettings = new BufferSettings(config);
-            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger);
+            var connectionFactory =
+                new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger);
 
             return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory);
         }
@@ -184,7 +194,8 @@ namespace Neo4j.Driver.IntegrationTests
 
                 try
                 {
-                    Pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1), DateTime.Now.AddYears(1),
+                    Pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
+                        DateTime.Now.AddYears(1),
                         null, null, null);
                     StandAlone = new StandAlone(Pkcs12);
                 }

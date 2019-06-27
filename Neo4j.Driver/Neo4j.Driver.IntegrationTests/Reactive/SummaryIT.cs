@@ -103,7 +103,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldReturnUpdateStatisticsWithIndexRemove()
             {
                 // Ensure that an index exists
-                using (var session = Server.Driver.Session())
+                using (var session = Server.Driver.SyncSession())
                 {
                     session.Run("CREATE INDEX on :Label(prop)").Consume();
                 }
@@ -123,7 +123,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldReturnUpdateStatisticsWithConstraintRemove()
             {
                 // Ensure that a constraint exists
-                using (var session = Server.Driver.Session())
+                using (var session = Server.Driver.SyncSession())
                 {
                     session.Run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE").Consume();
                 }
@@ -214,7 +214,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             public override void Dispose()
             {
-                using (var session = Server.Driver.Session())
+                using (var session = Server.Driver.SyncSession())
                 {
                     foreach (var drop in session.Run(
                         "CALL db.constraints() yield description RETURN 'DROP ' + description"))

@@ -28,11 +28,10 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IRetryLogic
     {
-        T Retry<T>(Func<T> runTxFunc);
         Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc);
     }
 
-    internal class ExponentialBackoffRetryLogic : IRetryLogic
+    internal class RetryLogic : IRetryLogic
     {
         private readonly double _maxRetryTimeMs;
         private readonly double _initialRetryDelayMs;
@@ -45,53 +44,13 @@ namespace Neo4j.Driver.Internal
 
         private readonly IDriverLogger _logger;
 
-        public ExponentialBackoffRetryLogic(TimeSpan maxRetryTimeout, IDriverLogger logger)
+        public RetryLogic(TimeSpan maxRetryTimeout, IDriverLogger logger)
         {
             _maxRetryTimeMs = maxRetryTimeout.TotalMilliseconds;
             _logger = logger;
             _initialRetryDelayMs = InitialRetryDelayMs;
             _multiplier = RetryDelayMultiplier;
             _jitterFactor = RetryDelayJitterFactor;
-        }
-
-        public T Retry<T>(Func<T> runTxFunc)
-        {
-            var exceptions = new List<Exception>();
-            var timer = new Stopwatch();
-            var delay = TimeSpan.Zero;
-            var delayMs = _initialRetryDelayMs;
-            var retryCount = 0;
-            var shouldRetry = false;
-
-            timer.Start();
-            do
-            {
-                retryCount++;
-                try
-                {
-                    return runTxFunc();
-                }
-                catch (Exception e) when (e.IsRetriableError())
-                {
-                    exceptions.Add(e);
-
-                    // we want the retry to happen at least twice and as much as the max retry time allows 
-                    shouldRetry = retryCount < 2 || timer.ElapsedMilliseconds < _maxRetryTimeMs;
-
-                    if (shouldRetry)
-                    {
-                        delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                        _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
-                        Thread.Sleep(delay);
-                        delayMs *= _multiplier;
-                    }
-                }
-            } while (shouldRetry);
-
-            timer.Stop();
-            throw new ServiceUnavailableException(
-                $"Failed after retried for {retryCount} times in {_maxRetryTimeMs}ms. " +
-                "Make sure that your database is online and retry again.", new AggregateException(exceptions));
         }
 
         public async Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc)
@@ -133,7 +92,6 @@ namespace Neo4j.Driver.Internal
                 $"Failed after retried for {retryCount} times in {_maxRetryTimeMs} ms. " +
                 "Make sure that your database is online and retry again.", new AggregateException(exceptions));
         }
-
 
         private double ComputeDelayWithJitter(double delayMs)
         {

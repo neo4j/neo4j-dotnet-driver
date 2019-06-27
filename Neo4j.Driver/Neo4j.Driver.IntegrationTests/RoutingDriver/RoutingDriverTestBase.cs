@@ -51,7 +51,7 @@ namespace Neo4j.Driver.IntegrationTests
 
         public virtual void Dispose()
         {
-            Driver.Close();
+            Driver.Dispose();
             // put some code that you want to run after each unit test
         }
     }

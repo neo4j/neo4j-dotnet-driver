@@ -863,10 +863,9 @@ namespace Neo4j.Driver.ExamplesAsync
             if (!isDisposing)
                 return;
 
-            using (var session = Driver.Session())
+            using (var session = Driver.SyncSession())
             {
-                var result = session.Run("MATCH (n) DETACH DELETE n");
-                result.Consume();
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 

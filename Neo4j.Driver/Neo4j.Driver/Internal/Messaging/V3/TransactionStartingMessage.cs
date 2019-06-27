@@ -65,6 +65,8 @@ namespace Neo4j.Driver.Internal.Messaging.V3
                 case AccessMode.Read:
                     result.Add(AccessModeKey, "r");
                     break;
+                case AccessMode.Write:
+                    break;
             }
 
             return result;

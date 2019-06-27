@@ -14,8 +14,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver;
@@ -28,76 +30,77 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public AuthenticationIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output, fixture)
-        { }
+        {
+        }
 
         [RequireServerFact]
-        public void AuthenticationErrorIfWrongAuthToken()
+        public async Task AuthenticationErrorIfWrongAuthToken()
         {
-            Exception exception;
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("fake", "fake")))
-            using (var session = driver.Session())
             {
-                exception = Record.Exception(() =>session.Run("Return 1"));
+                var session = driver.Session();
+                try
+                {
+                    var exc = await Record.ExceptionAsync(() => session.RunAsync("Return 1"));
+
+                    exc.Should().BeOfType<AuthenticationException>().Which
+                        .Message.Should().Contain("The client is unauthorized due to authentication failure.");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
             }
-            exception.Should().BeOfType<AuthenticationException>();
-            exception.Message.Should().Contain("The client is unauthorized due to authentication failure.");
         }
 
         [RequireServerFact]
-        public void ShouldProvideRealmWithBasicAuthToken()
+        public async Task ShouldProvideRealmWithBasicAuthToken()
         {
             var oldAuthToken = AuthToken.AsDictionary();
-            var newAuthToken = AuthTokens.Basic(oldAuthToken["principal"].ValueAs<string>(),
-                oldAuthToken["credentials"].ValueAs<string>(), "native");
+            var newAuthToken = AuthTokens.Basic(oldAuthToken["principal"].As<string>(),
+                oldAuthToken["credentials"].As<string>(), "native");
 
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, newAuthToken))
-            using (var session = driver.Session())
-            {
-                var result = session.Run("RETURN 2 as Number");
-                result.Consume();
-                result.Keys.Should().Contain("Number");
-                result.Keys.Count.Should().Be(1);
-            }
+            await VerifyConnectivity(ServerEndPoint, newAuthToken);
         }
 
         [RequireServerFact]
-        public void ShouldCreateCustomAuthToken()
+        public async Task ShouldCreateCustomAuthToken()
         {
             var oldAuthToken = AuthToken.AsDictionary();
-            var newAuthToken = AuthTokens.Custom(
-                oldAuthToken["principal"].ValueAs<string>(),
-                oldAuthToken["credentials"].ValueAs<string>(),
-                "native",
-                "basic");
+            var newAuthToken = AuthTokens.Custom(oldAuthToken["principal"].As<string>(),
+                oldAuthToken["credentials"].As<string>(), "native", "basic");
 
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, newAuthToken))
-            using (var session = driver.Session())
-            {
-                var result = session.Run("RETURN 2 as Number");
-                result.Consume();
-                result.Keys.Should().Contain("Number");
-                result.Keys.Count.Should().Be(1);
-            }
+            await VerifyConnectivity(ServerEndPoint, newAuthToken);
         }
 
         [RequireServerFact]
-        public void ShouldCreateCustomAuthTokenWithAdditionalParameters()
+        public async Task ShouldCreateCustomAuthTokenWithAdditionalParameters()
         {
             var oldAuthToken = AuthToken.AsDictionary();
             var newAuthToken = AuthTokens.Custom(
-                oldAuthToken["principal"].ValueAs<string>(),
-                oldAuthToken["credentials"].ValueAs<string>(),
-                "native",
-                "basic",
-                new Dictionary<string, object> { { "secret", 42 } });
+                oldAuthToken["principal"].As<string>(), oldAuthToken["credentials"].As<string>(), "native", "basic",
+                new Dictionary<string, object> {{"secret", 42}});
 
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, newAuthToken))
-            using (var session = driver.Session())
+            await VerifyConnectivity(ServerEndPoint, newAuthToken);
+        }
+
+        private static async Task VerifyConnectivity(Uri address, IAuthToken token)
+        {
+            using (var driver = GraphDatabase.Driver(address, token))
             {
-                var result = session.Run("RETURN 2 as Number");
-                result.Consume();
-                result.Keys.Should().Contain("Number");
-                result.Keys.Count.Should().Be(1);
+                var session = driver.Session();
+
+                try
+                {
+                    var cursor = await session.RunAsync("RETURN 2 as Number");
+                    var records = await cursor.ToListAsync(r => r["Number"].As<int>());
+
+                    records.Should().BeEquivalentTo(2);
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
             }
         }
     }

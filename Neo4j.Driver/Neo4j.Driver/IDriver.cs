@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -30,12 +31,6 @@ namespace Neo4j.Driver
     /// </remarks>
     public interface IDriver : IDisposable
     {
-        /// <summary>
-        ///     Gets the <see cref="Uri" /> of the Neo4j database.
-        /// </summary>
-        [Obsolete("Use Result.Summary.Server.Address instead.")]
-        Uri Uri { get; }
-
         /// <summary>
         /// Obtain a session with the default access mode <see cref="AccessMode.Write"/>.
         /// </summary>
@@ -94,17 +89,12 @@ namespace Neo4j.Driver
         ISession Session(IEnumerable<string> bookmarks);
 
         /// <summary>
-        /// Releases all resources (connection pools, connections, etc) associated with this IDriver instance.
-        /// </summary>
-        void Close();
-
-        /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
         /// </summary>
         /// <returns>The close task.</returns>
         Task CloseAsync();
-
     }
+
     /// <summary>
     /// Used by driver to route a cypher statement to a write server or a read server.
     /// </summary>
@@ -114,6 +104,7 @@ namespace Neo4j.Driver
         /// Requires cypher statement to be carried out on a read server
         /// </summary>
         Read,
+
         /// <summary>
         /// Requires cypher statement to be executed on a write server
         /// </summary>

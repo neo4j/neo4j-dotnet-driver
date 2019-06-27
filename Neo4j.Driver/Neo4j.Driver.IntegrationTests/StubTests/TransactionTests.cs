@@ -47,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
-                        using (var session = driver.Session(AccessMode.Write))
+                        using (var session = driver.SyncSession(AccessMode.Write))
                         {
                             var txc = session.BeginTransaction();
                             var result = txc.Run("CREATE (n {name: 'Bob'})");
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
-                        var session = driver.Session(AccessMode.Write);
+                        var session = driver.SyncSession(AccessMode.Write);
                         try
                         {
                             var exc = Record.Exception(() =>

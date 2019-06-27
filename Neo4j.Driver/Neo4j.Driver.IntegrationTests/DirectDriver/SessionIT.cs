@@ -14,13 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver;
 using Xunit;
 using Xunit.Abstractions;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.IntegrationTests
 {
@@ -33,345 +36,414 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact]
-        public void ServiceUnavailableErrorWhenFailedToConn()
+        public async Task ServiceUnavailableErrorWhenFailedToConn()
         {
-            Exception exception;
             using (var driver = GraphDatabase.Driver("bolt://localhost:123"))
-            using (var session = driver.Session())
             {
-                exception = Record.Exception(() => session.Run("RETURN 1"));
+                var session = driver.Session();
+                try
+                {
+                    var exc = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+
+                    exc.Should().BeOfType<ServiceUnavailableException>();
+                    exc.Message.Should().Contain("Connection with the server breaks");
+                    exc.GetBaseException().Should().BeAssignableTo<SocketException>();
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
             }
-            exception.Should().BeOfType<ServiceUnavailableException>();
-            exception.Message.Should().Contain("Connection with the server breaks");
-            exception.GetBaseException().Should().BeAssignableTo<SocketException>();
         }
 
         [RequireServerFact]
-        public void DisallowNewSessionAfterDriverDispose()
+        public async Task DisallowNewSessionAfterDriverDispose()
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
             var session = driver.Session();
-            session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
+            try
+            {
+                await VerifyRunsQuery(session);
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
 
+            // When
             driver.Dispose();
-            session.Dispose();
 
+            // Then
             var error = Record.Exception(() => driver.Session());
-            error.Should().BeOfType<ObjectDisposedException>();
-            error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
+            error.Should().BeOfType<ObjectDisposedException>().Which
+                .Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
         }
 
         [RequireServerFact]
-        public void DisallowRunInSessionAfterDriverDispose()
+        public async Task DisallowRunInSessionAfterDriverDispose()
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
+
             var session = driver.Session();
-            session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
+            await VerifyRunsQuery(session);
 
             driver.Dispose();
 
-            var error = Record.Exception(() => session.Run("RETURN 1"));
-            error.Should().BeOfType<ObjectDisposedException>();
-            error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
+            var error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+            error.Should().BeOfType<ObjectDisposedException>().Which
+                .Message.Should()
+                .StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         [RequireServerFact]
-        public void ShouldConnectAndRun()
+        public async Task ShouldConnectAndRun()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var result = session.Run("RETURN 2 as Number");
-                result.Consume();
-                result.Keys.Should().Contain("Number");
-                result.Keys.Count.Should().Be(1);
+                var result = await session.RunAsync("RETURN 2 as Number");
+                await result.ConsumeAsync();
+
+                var keys = await result.KeysAsync();
+                keys.Should().BeEquivalentTo("Number");
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void ShouldBeAbleToRunMultiStatementsInOneTransaction()
+        public async Task ShouldBeAbleToRunMultiStatementsInOneTransaction()
         {
-            using (var session = Driver.Session())
-            using (var tx = session.BeginTransaction())
+            var session = Driver.Session();
+            try
             {
-                // clean db
-                tx.Run("MATCH (n) DETACH DELETE n RETURN count(*)");
-                var result = tx.Run("CREATE (n {name:'Steve Brook'}) RETURN n.name");
+                var tx = await session.BeginTransactionAsync();
+                try
+                {
+                    // clean db
+                    await tx.RunAndConsumeAsync("MATCH (n) DETACH DELETE n RETURN count(*)");
 
-                var record = result.Single();
-                record["n.name"].Should().Be("Steve Brook");
+                    var record = await tx.RunAndSingleAsync("CREATE (n {name:'Steve Brook'}) RETURN n.name", null);
+
+                    record["n.name"].Should().Be("Steve Brook");
+
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void TheSessionErrorShouldBeClearedForEachSession()
+        public async Task TheSessionErrorShouldBeClearedForEachSession()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
-                ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input");
+                var ex = await Record.ExceptionAsync(() => session.RunAndConsumeAsync("Invalid Cypher"));
+
+                ex.Should().BeOfType<ClientException>().Which
+                    .Message.Should().StartWith("Invalid input");
             }
-            using (var session = Driver.Session())
+            finally
             {
-                var result = session.Run("RETURN 1");
-                result.Single()[0].ValueAs<int>().Should().Be(1);
+                await session.CloseAsync();
+            }
+
+            session = Driver.Session();
+            try
+            {
+                await VerifyRunsQuery(session);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
+        public async Task AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var ex = Record.Exception(() => session.Run("Invalid Cypher").Consume());
-                ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input");
-                var result = session.Run("RETURN 1");
-                result.Single()[0].ValueAs<int>().Should().Be(1);
+                var ex = await Record.ExceptionAsync(() => session.RunAndConsumeAsync("Invalid Cypher"));
+                ex.Should().BeOfType<ClientException>().Which
+                    .Message.Should().StartWith("Invalid input");
+
+                var result = await session.RunAndSingleAsync("RETURN 1", null);
+                result[0].Should().BeEquivalentTo(1);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void RollBackTxIfErrorWithConsume()
+        public async Task RollBackTxIfErrorWithConsume()
         {
             // Given
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
                 // When failed to run a tx with consume
-                using (var tx = session.BeginTransaction())
+                var tx = await session.BeginTransactionAsync();
+                try
                 {
-                    var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
-                    ex.Should().BeOfType<ClientException>();
-                    ex.Message.Should().StartWith("Invalid input");
+                    var ex = await Record.ExceptionAsync(() => tx.RunAndConsumeAsync("Invalid Cypher"));
+                    ex.Should().BeOfType<ClientException>().Which
+                        .Message.Should().StartWith("Invalid input");
+                }
+                finally
+                {
+                    await tx.RollbackAsync();
                 }
 
                 // Then can run more afterwards
-                var result = session.Run("RETURN 1");
-                result.Single()[0].ValueAs<int>().Should().Be(1);
+                var result = await session.RunAndSingleAsync("RETURN 1", null);
+                result[0].Should().BeEquivalentTo(1);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void RollBackTxIfErrorWithoutConsume()
+        public async Task RollBackTxIfErrorWithoutConsume()
         {
             // Given
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
                 // When failed to run a tx without consume
+                var tx = await session.BeginTransactionAsync();
+                await tx.RunAsync("CREATE (a { name: 'lizhen' })");
+                await tx.RunAsync("Invalid Cypher");
 
-                // The following code is the same as using(var tx = session.BeginTx()) {...}
-                // While we have the full control of where the error is thrown
-                var tx = session.BeginTransaction();
-                tx.Run("CREATE (a { name: 'lizhen' })");
-                tx.Run("Invalid Cypher");
-                tx.Success();
-                var ex = Record.Exception(() => tx.Dispose());
-                ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input");
+                var ex = await Record.ExceptionAsync(() => tx.CommitAsync());
+                ex.Should().BeOfType<ClientException>().Which
+                    .Message.Should().StartWith("Invalid input");
 
                 // Then can still run more afterwards
-                using (var anotherTx = session.BeginTransaction())
+                var anotherTx = await session.BeginTransactionAsync();
+                try
                 {
-                    var result = anotherTx.Run("MATCH (a {name : 'lizhen'}) RETURN count(a)");
-                    result.Single()[0].ValueAs<int>().Should().Be(0);
+                    var result =
+                        await anotherTx.RunAndSingleAsync("MATCH (a {name : 'a person'}) RETURN count(a)", null);
+                    result[0].Should().BeEquivalentTo(0);
+
+                    await anotherTx.CommitAsync();
                 }
+                catch
+                {
+                    await anotherTx.RollbackAsync();
+                    throw;
+                }
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void ShouldNotThrowExceptionWhenDisposeSessionAfterDriver()
+        public async Task ShouldNotThrowExceptionWhenSessionClosedAfterDriver()
         {
             var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
 
             var session = driver.Session();
 
-            using (var tx = session.BeginTransaction())
+            var tx = await session.BeginTransactionAsync();
+            try
             {
-                var ex = Record.Exception(() => tx.Run("Invalid Cypher").Consume());
-                ex.Should().BeOfType<ClientException>();
-                ex.Message.Should().StartWith("Invalid input");
+                var ex = await Record.ExceptionAsync(() => tx.RunAndConsumeAsync("Invalid Cypher"));
+                ex.Should().BeOfType<ClientException>().Which
+                    .Message.Should().StartWith("Invalid input");
+            }
+            finally
+            {
+                await tx.RollbackAsync();
             }
 
-            var result = session.Run("RETURN 1");
-            result.Single()[0].ValueAs<int>().Should().Be(1);
+            var result = await session.RunAndSingleAsync("RETURN 1", null);
+            result[0].Should().BeEquivalentTo(1);
 
             driver.Dispose();
-            session.Dispose();
+
+            await session.CloseAsync();
         }
 
         [RequireServerFact]
-        public void KeysShouldBeAvailableAfterRun()
+        public async Task KeysShouldBeAvailableAfterRun()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
-                {
-                    var result = session.Run("RETURN 1 As X");
-                    result.Keys.Should().HaveCount(1);
-                    result.Keys.Should().Contain("X");
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public void KeysShouldBeAvailableAfterRunAndResultConsumption()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
-                {
-                    var result = session.Run("RETURN 1 As X");
-                    result.Keys.Should().HaveCount(1);
-                    result.Keys.Should().Contain("X");
-                    result.Consume();
-                    result.Keys.Should().HaveCount(1);
-                    result.Keys.Should().Contain("X");
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRun()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
-                {
-                    var result1 = session.Run("RETURN 1 As X");
-                    var result2 = session.Run("RETURN 1 As Y");
-
-                    result1.Keys.Should().HaveCount(1);
-                    result1.Keys.Should().Contain("X");
-                    result2.Keys.Should().HaveCount(1);
-                    result2.Keys.Should().Contain("Y");
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumption()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
-                {
-                    var result1 = session.Run("RETURN 1 As X");
-                    var result2 = session.Run("RETURN 1 As Y");
-
-                    result1.Keys.Should().HaveCount(1);
-                    result1.Keys.Should().Contain("X");
-                    result2.Keys.Should().HaveCount(1);
-                    result2.Keys.Should().Contain("Y");
-
-                    result1.Consume();
-                    result2.Consume();
-
-                    result1.Keys.Should().HaveCount(1);
-                    result1.Keys.Should().Contain("X");
-                    result2.Keys.Should().HaveCount(1);
-                    result2.Keys.Should().Contain("Y");
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRunNoOrder()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
-                {
-                    var result1 = session.Run("RETURN 1 As X");
-                    var result2 = session.Run("RETURN 1 As Y");
-
-                    result2.Keys.Should().HaveCount(1);
-                    result2.Keys.Should().Contain("Y");
-                    result1.Keys.Should().HaveCount(1);
-                    result1.Keys.Should().Contain("X");
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumptionNoOrder()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
-                {
-                    var result1 = session.Run("RETURN 1 As X");
-                    var result2 = session.Run("RETURN 1 As Y");
-
-                    result2.Keys.Should().HaveCount(1);
-                    result2.Keys.Should().Contain("Y");
-                    result1.Keys.Should().HaveCount(1);
-                    result1.Keys.Should().Contain("X");
-
-                    result2.Consume();
-                    result1.Consume();
-
-                    result2.Keys.Should().HaveCount(1);
-                    result2.Keys.Should().Contain("Y");
-                    result1.Keys.Should().HaveCount(1);
-                    result1.Keys.Should().Contain("X");
-                }
-            }
-        }
-
-
-        [RequireServerFact]
-        public async void KeysShouldBeAvailableJustAfterRunAsync()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
                     var cursor = await session.RunAsync("RETURN 1 As X");
                     var keys = await cursor.KeysAsync();
-                    keys.Should().HaveCount(1).And.Contain("X");
+
+                    keys.Should().BeEquivalentTo("X");
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
         [RequireServerFact]
-        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsync()
+        public async Task KeysShouldBeAvailableAfterRunAndResultConsumption()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
+                {
+                    var cursor = await session.RunAsync("RETURN 1 As X");
+                    var keys1 = await cursor.KeysAsync();
+
+                    keys1.Should().BeEquivalentTo("X");
+
+                    await cursor.ConsumeAsync();
+
+                    var keys2 = await cursor.KeysAsync();
+                    keys2.Should().BeEquivalentTo("X");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async Task KeysShouldBeAvailableAfterConsecutiveRun()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.Session();
+                try
                 {
                     var cursor1 = await session.RunAsync("RETURN 1 As X");
                     var cursor2 = await session.RunAsync("RETURN 1 As Y");
 
                     var keys1 = await cursor1.KeysAsync();
-                    keys1.Should().HaveCount(1).And.Contain("X");
+                    keys1.Should().BeEquivalentTo("X");
 
                     var keys2 = await cursor2.KeysAsync();
-                    keys2.Should().HaveCount(1).And.Contain("Y");
+                    keys2.Should().BeEquivalentTo("Y");
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
         [RequireServerFact]
-        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsyncWithConsumptionInBetween()
+        public async Task KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumption()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
                     var cursor1 = await session.RunAsync("RETURN 1 As X");
                     var cursor2 = await session.RunAsync("RETURN 1 As Y");
+
+                    var keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+                    var keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
 
                     await cursor1.ConsumeAsync();
+                    await cursor2.ConsumeAsync();
 
-                    var keys1 = await cursor1.KeysAsync();
-                    keys1.Should().HaveCount(1).And.Contain("X");
-
-                    var keys2 = await cursor2.KeysAsync();
-                    keys2.Should().HaveCount(1).And.Contain("Y");
+                    keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+                    keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
+        [RequireServerFact]
+        public async Task KeysShouldBeAvailableAfterConsecutiveRunNoOrder()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.Session();
+                try
+                {
+                    var cursor1 = await session.RunAsync("RETURN 1 As X");
+                    var cursor2 = await session.RunAsync("RETURN 1 As Y");
+
+                    var keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+                    var keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async Task KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumptionNoOrder()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.Session();
+                try
+                {
+                    var cursor1 = await session.RunAsync("RETURN 1 As X");
+                    var cursor2 = await session.RunAsync("RETURN 1 As Y");
+
+                    var keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+                    var keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+
+                    await cursor2.ConsumeAsync();
+                    await cursor1.ConsumeAsync();
+
+                    keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+                    keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        private static async Task VerifyRunsQuery(ISession session)
+        {
+            var record = await session.RunAndSingleAsync("RETURN 1 AS Number", null);
+
+            record.Keys.Should().BeEquivalentTo("Number");
+            record.Values.Should().BeEquivalentTo(new KeyValuePair<string, object>("Number", 1));
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,26 +14,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System.Collections.Generic;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Result
+using System.Threading.Tasks;
+
+namespace Neo4j.Driver
 {
     /// <summary>
-    /// A record set represents a set of records where only forward enumeration is possible.
-    /// A record is considered consumed when it has been visited by enumeration. 
-    /// It will not be available by any other future enumerations.
+    /// Represents a transaction in the Neo4j database.
     /// </summary>
-    internal interface IRecordSet
+    public interface ITransaction : IStatementRunner
     {
         /// <summary>
-        /// Retrievers the next <see cref="IRecord"/>  without consuming it or returns null if the set is empty.
+        /// Asynchronously commit this transaction.
         /// </summary>
-        IRecord Peek();
+        Task CommitAsync();
 
         /// <summary>
-        /// Returns an IEnumerable of records.
+        /// Asynchronously roll back this transaction.
         /// </summary>
-        IEnumerable<IRecord> Records();
+        Task RollbackAsync();
     }
 }

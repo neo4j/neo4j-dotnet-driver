@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,11 +32,12 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private StringBuilder _stdErr;
         private Process _process;
 
-        private static Process CreateProcess(string command, string[] arguments, List<string> captureStdOut, StringBuilder captureStdErr)
+        private static Process CreateProcess(string command, string[] arguments, List<string> captureStdOut,
+            StringBuilder captureStdErr)
         {
-            var result = new Process()
+            var result = new Process
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = command,
                     Arguments = string.Join(" ", arguments),
@@ -77,7 +79,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
                 if (process.WaitForExit(DefaultTimeOut))
                 {
-                    Debug($"{process.ExitCode}");
+                    Debug("-----------");
+                    Debug(
+                        $"Execution of command `{GetProcessCommandLine(process)}` exited with code {process.ExitCode}.");
+                    if (stdErr.Length > 0)
+                    {
+                        Debug("The following output is generated:");
+                        Debug(stdErr.ToString());
+                    }
+
+                    Debug("-----------");
                 }
                 else
                 {
@@ -85,7 +96,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                         $"Timed out to execute shell command `{GetProcessCommandLine(process)}` after {DefaultTimeOut}ms");
                 }
 
-                if (process.ExitCode != 0 || stdErr.Length > 0)
+                if (process.ExitCode != 0)
                 {
                     throw new InvalidOperationException(
                         $"Failed to execute `{GetProcessCommandLine(process)}` due to error:{Environment.NewLine}{stdErr}.");
@@ -103,7 +114,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 _stdErr = new StringBuilder();
 
                 _process = CreateProcess(command, arguments, _stdOut, _stdErr);
-                
+
                 _process.Start();
                 _process.BeginOutputReadLine();
                 _process.BeginErrorReadLine();
@@ -123,7 +134,15 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 // wait for a while to download, install and start database
                 if (_process.WaitForExit(DefaultTimeOut))
                 {
-                    Debug($"{_process.ExitCode}");
+                    Debug("-----------");
+                    Debug($"Execution of command `{_process}` exited with code {_process.ExitCode}.");
+                    if (_stdErr.Length > 0)
+                    {
+                        Debug("The following output is generated:");
+                        Debug(_stdErr.ToString());
+                    }
+
+                    Debug("-----------");
                 }
                 else
                 {
@@ -131,13 +150,13 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                         $"Timed out to execute shell command `{GetProcessCommandLine(_process)}` after {DefaultTimeOut}ms");
                 }
 
-                if (_process.ExitCode != 0 || _stdErr.Length > 0)
+                if (_process.ExitCode != 0)
                 {
                     throw new InvalidOperationException(
                         $"Failed to execute `{GetProcessCommandLine(_process)}` due to error:{Environment.NewLine}{_stdErr}" +
                         $"{Environment.NewLine}output:{Environment.NewLine}{_stdOut.ToContentString($"{Environment.NewLine}")}");
                 }
-                
+
                 return _stdOut.ToArray();
             }
             finally
@@ -158,6 +177,5 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             return $"{process.StartInfo.FileName} {process.StartInfo.Arguments}";
         }
-
     }
 }

@@ -25,23 +25,11 @@ namespace Neo4j.Driver.Internal
 {
     internal abstract class StatementRunner : IStatementRunner
     {
-        public abstract IStatementResult Run(Statement statement);
-
         public abstract Task<IStatementResultCursor> RunAsync(Statement statement);
-
-        public IStatementResult Run(string statement)
-        {
-            return Run(new Statement(statement));
-        }
 
         public Task<IStatementResultCursor> RunAsync(string statement)
         {
             return RunAsync(new Statement(statement));
-        }
-
-        public IStatementResult Run(string statement, IDictionary<string, object> parameters)
-        {
-            return Run(new Statement(statement, parameters));
         }
 
         public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters)
@@ -49,23 +37,9 @@ namespace Neo4j.Driver.Internal
             return RunAsync(new Statement(statement, parameters));
         }
 
-        public IStatementResult Run(string statement, object parameters)
-        {
-            var cypherStatement = new Statement(statement, parameters.ToDictionary());
-            return Run(cypherStatement);
-        }
-
         public Task<IStatementResultCursor> RunAsync(string statement, object parameters)
         {
             return RunAsync(new Statement(statement, parameters.ToDictionary()));
-        }
-
-        protected abstract void Dispose(bool isDisposing);
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 

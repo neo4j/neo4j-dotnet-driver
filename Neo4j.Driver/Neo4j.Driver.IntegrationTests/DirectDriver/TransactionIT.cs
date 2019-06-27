@@ -14,10 +14,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver;
 using Xunit;
@@ -34,296 +36,278 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireServerFact]
-        public void ShouldRetry()
+        public async Task ShouldRetry()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var timer = new Stopwatch();
-                timer.Start();
-                var e = Record.Exception(() => session.WriteTransaction(tx =>
-                {
-                    throw new SessionExpiredException($"Failed at {timer.Elapsed}");
-                }));
+                var timer = Stopwatch.StartNew();
+
+                var exc = await Record.ExceptionAsync(() =>
+                    session.WriteTransactionAsync(tx =>
+                        throw new SessionExpiredException($"Failed at {timer.Elapsed}")));
                 timer.Stop();
 
-                e.Should().BeOfType<ServiceUnavailableException>();
-                var error = e.InnerException as AggregateException;
-                var innerErrors = error.Flatten().InnerExceptions;
-                foreach (var innerError in innerErrors)
-                {
-                    Output.WriteLine(innerError.Message);
-                    innerError.Should().BeOfType<SessionExpiredException>();
-                }
-                innerErrors.Count.Should().BeGreaterOrEqualTo(5);
-                timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(30);
+                exc.Should().BeOfType<ServiceUnavailableException>()
+                    .Which.InnerException.Should().BeOfType<AggregateException>()
+                    .Which.InnerExceptions.Should().NotBeEmpty().And.AllBeOfType<SessionExpiredException>();
+
+                timer.Elapsed.Should().BeGreaterThan(TimeSpan.FromSeconds(30));
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void ShouldCommitTransactionByDefault()
+        public async Task ShouldCommitTransactionByDefault()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var createResult = session.WriteTransaction(tx =>
-                {
-                    var result = tx.Run("CREATE (n) RETURN count(n)");
-                    return result.Single()[0].ValueAs<int>();
-                });
+                var createResult =
+                    await session.WriteTransactionAsync(tx =>
+                        tx.RunAndSingleAsync("CREATE (n) RETURN count(n)", null));
 
                 // the read operation should see the commited write tx
-                var matchResult = session.ReadTransaction(tx =>
-                {
-                    var result = tx.Run("MATCH (n) RETURN count(n)");
-                    return result.Single()[0].ValueAs<int>();
-                });
+                var matchResult =
+                    await session.ReadTransactionAsync(tx =>
+                        tx.RunAndSingleAsync("MATCH (n) RETURN count(n)", null));
 
-                createResult.Should().Be(matchResult);
+                createResult.Should().BeEquivalentTo(matchResult);
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
         [RequireServerFact]
-        public void ShouldNotCommitTransaction()
+        public async Task ShouldNotCommitTransaction()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                var createResult = session.WriteTransaction(tx =>
+                var createResult = await session.WriteTransactionAsync(async tx =>
                 {
-                    var result = tx.Run("CREATE (n) RETURN count(n)");
-                    var created = result.Single()[0].ValueAs<int>();
-                    tx.Failure();
-                    return created;
+                    var result = await tx.RunAndSingleAsync("CREATE (n) RETURN count(n)", null, r => r[0].As<int>());
+                    await tx.RollbackAsync();
+                    return result;
                 });
 
-                // the read operation should not see the commited write tx
-                var matchResult = session.ReadTransaction(tx =>
-                {
-                    var result = tx.Run("MATCH (n) RETURN count(n)");
-                    return result.Single()[0].ValueAs<int>();
-                });
+                // the read operation should not see the rolled back write tx
+                var matchResult =
+                    await session.ReadTransactionAsync(tx =>
+                        tx.RunAndSingleAsync("MATCH (n) RETURN count(n)", null, r => r[0].As<int>()));
 
                 createResult.Should().Be(matchResult + 1);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact]
-        public void ShouldNotCommitIfError()
+        public async Task ShouldNotCommitIfError()
         {
-            using (var session = Driver.Session())
+            var session = Driver.Session();
+            try
             {
-                Record.Exception(()=>session.WriteTransaction(tx =>
+                var exc = await Record.ExceptionAsync(() => session.WriteTransactionAsync(async tx =>
                 {
-                    tx.Run("CREATE (n) RETURN count(n)");
-                    tx.Success();
+                    await tx.RunAsync("CREATE (n) RETURN count(n)");
                     throw new ProtocolException("Broken");
-                })).Should().NotBeNull();
+                }));
+                exc.Should().NotBeNull();
 
-                // the read operation should not see the commited write tx
-                var matchResult = session.ReadTransaction(tx =>
-                {
-                    var result = tx.Run("MATCH (n) RETURN count(n)");
-                    return result.Single()[0].ValueAs<int>();
-                });
+                // the read operation should not see the rolled back write tx
+                var matchResult =
+                    await session.ReadTransactionAsync(tx =>
+                        tx.RunAndSingleAsync("MATCH (n) RETURN count(n)", null, r => r[0].As<int>()));
                 matchResult.Should().Be(0);
             }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         [RequireServerFact]
-        public void KeysShouldBeAvailableAfterRun()
+        public async Task KeysShouldBeAvailableAfterRun()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
-                    using (var txc = session.BeginTransaction())
-                    {
-                        var result = txc.Run("RETURN 1 As X");
-                        result.Keys.Should().HaveCount(1);
-                        result.Keys.Should().Contain("X");
-                    }
+                    var txc = await session.BeginTransactionAsync();
+
+                    var cursor = await txc.RunAsync("RETURN 1 As X");
+                    var keys = await cursor.KeysAsync();
+
+                    keys.Should().HaveCount(1);
+                    keys.Should().Contain("X");
+
+                    await txc.CommitAsync();
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
         [RequireServerFact]
-        public void KeysShouldBeAvailableAfterRunAndResultConsumption()
+        public async Task KeysShouldBeAvailableAfterRunAndResultConsumption()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
-                    using (var txc = session.BeginTransaction())
-                    {
-                        var result = txc.Run("RETURN 1 As X");
-                        result.Keys.Should().HaveCount(1);
-                        result.Keys.Should().Contain("X");
-                        result.Consume();
-                        result.Keys.Should().HaveCount(1);
-                        result.Keys.Should().Contain("X");
-                    }
+                    var txc = await session.BeginTransactionAsync();
+                    var cursor = await txc.RunAsync("RETURN 1 As X");
+
+                    var keys = await cursor.KeysAsync();
+                    keys.Should().BeEquivalentTo("X");
+
+                    await cursor.ConsumeAsync();
+
+                    keys = await cursor.KeysAsync();
+                    keys.Should().BeEquivalentTo("X");
+
+                    await txc.CommitAsync();
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
         [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRun()
+        public async Task KeysShouldBeAvailableAfterConsecutiveRun()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
-                    using (var txc = session.BeginTransaction())
-                    {
-                        var result1 = txc.Run("RETURN 1 As X");
-                        var result2 = txc.Run("RETURN 1 As Y");
+                    var txc = await session.BeginTransactionAsync();
 
-                        result1.Keys.Should().HaveCount(1);
-                        result1.Keys.Should().Contain("X");
-                        result2.Keys.Should().HaveCount(1);
-                        result2.Keys.Should().Contain("Y");
-                    }
+                    var cursor1 = await txc.RunAsync("RETURN 1 As X");
+                    var cursor2 = await txc.RunAsync("RETURN 1 As Y");
+
+                    var keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+
+                    var keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+
+                    await txc.CommitAsync();
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
         [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumption()
+        public async Task KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumption()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
-                    using (var txc = session.BeginTransaction())
-                    {
-                        var result1 = txc.Run("RETURN 1 As X");
-                        var result2 = txc.Run("RETURN 1 As Y");
+                    var txc = await session.BeginTransactionAsync();
 
-                        result1.Keys.Should().HaveCount(1);
-                        result1.Keys.Should().Contain("X");
-                        result2.Keys.Should().HaveCount(1);
-                        result2.Keys.Should().Contain("Y");
+                    var cursor1 = await txc.RunAsync("RETURN 1 As X");
+                    var cursor2 = await txc.RunAsync("RETURN 1 As Y");
 
-                        result1.Consume();
-                        result2.Consume();
+                    var keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+                    var keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
 
-                        result1.Keys.Should().HaveCount(1);
-                        result1.Keys.Should().Contain("X");
-                        result2.Keys.Should().HaveCount(1);
-                        result2.Keys.Should().Contain("Y");
-                    }
+                    await cursor1.ConsumeAsync();
+                    await cursor2.ConsumeAsync();
+
+                    keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+                    keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+
+                    await txc.CommitAsync();
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
         [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRunNoOrder()
+        public async Task KeysShouldBeAvailableAfterConsecutiveRunNoOrder()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
-                    using (var txc = session.BeginTransaction())
-                    {
-                        var result1 = txc.Run("RETURN 1 As X");
-                        var result2 = txc.Run("RETURN 1 As Y");
+                    var txc = await session.BeginTransactionAsync();
 
-                        result2.Keys.Should().HaveCount(1);
-                        result2.Keys.Should().Contain("Y");
-                        result1.Keys.Should().HaveCount(1);
-                        result1.Keys.Should().Contain("X");
-                    }
+                    var cursor1 = await txc.RunAsync("RETURN 1 As X");
+                    var cursor2 = await txc.RunAsync("RETURN 1 As Y");
+
+                    var keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+                    var keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+
+                    await txc.CommitAsync();
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
 
         [RequireServerFact]
-        public void KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumptionNoOrder()
+        public async Task KeysShouldBeAvailableAfterConsecutiveRunAndResultConsumptionNoOrder()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
-                using (var session = driver.Session())
+                var session = driver.Session();
+                try
                 {
-                    using (var txc = session.BeginTransaction())
-                    {
-                        var result1 = txc.Run("RETURN 1 As X");
-                        var result2 = txc.Run("RETURN 1 As Y");
+                    var txc = await session.BeginTransactionAsync();
 
-                        result2.Keys.Should().HaveCount(1);
-                        result2.Keys.Should().Contain("Y");
-                        result1.Keys.Should().HaveCount(1);
-                        result1.Keys.Should().Contain("X");
+                    var cursor1 = await txc.RunAsync("RETURN 1 As X");
+                    var cursor2 = await txc.RunAsync("RETURN 1 As Y");
 
-                        result2.Consume();
-                        result1.Consume();
+                    var keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+                    var keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
 
-                        result2.Keys.Should().HaveCount(1);
-                        result2.Keys.Should().Contain("Y");
-                        result1.Keys.Should().HaveCount(1);
-                        result1.Keys.Should().Contain("X");
-                    }
+                    await cursor2.ConsumeAsync();
+                    await cursor1.ConsumeAsync();
+
+                    keys2 = await cursor2.KeysAsync();
+                    keys2.Should().BeEquivalentTo("Y");
+                    keys1 = await cursor1.KeysAsync();
+                    keys1.Should().BeEquivalentTo("X");
+
+                    await txc.CommitAsync();
                 }
-            }
-        }
-
-        [RequireServerFact]
-        public async void KeysShouldBeAvailableJustAfterRunAsync()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
+                finally
                 {
-                    using (var txc = await session.BeginTransactionAsync())
-                    {
-                        var cursor = await txc.RunAsync("RETURN 1 As X");
-                        var keys = await cursor.KeysAsync();
-
-                        keys.Should().HaveCount(1).And.Contain("X");
-                    }
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsync()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
-                {
-                    using (var txc = await session.BeginTransactionAsync())
-                    {
-                        var cursor1 = await txc.RunAsync("RETURN 1 As X");
-                        var cursor2 = await txc.RunAsync("RETURN 1 As Y");
-
-                        var keys1 = await cursor1.KeysAsync();
-                        keys1.Should().HaveCount(1).And.Contain("X");
-
-                        var keys2 = await cursor2.KeysAsync();
-                        keys2.Should().HaveCount(1).And.Contain("Y");
-                    }
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public async void KeysShouldBeAvailableJustAfterConsecutiveRunAsyncWithConsumptionInBetween()
-        {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
-            {
-                using (var session = driver.Session())
-                {
-                    using (var txc = await session.BeginTransactionAsync())
-                    {
-                        var cursor1 = await txc.RunAsync("RETURN 1 As X");
-                        var cursor2 = await txc.RunAsync("RETURN 1 As Y");
-
-                        await cursor1.ConsumeAsync();
-
-                        var keys1 = await cursor1.KeysAsync();
-                        keys1.Should().HaveCount(1).And.Contain("X");
-
-                        var keys2 = await cursor2.KeysAsync();
-                        keys2.Should().HaveCount(1).And.Contain("Y");
-                    }
+                    await session.CloseAsync();
                 }
             }
         }
