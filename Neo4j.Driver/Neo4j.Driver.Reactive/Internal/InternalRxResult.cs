@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -28,91 +27,133 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxResult : IRxResult
     {
-        private readonly IObservable<IStatementResultCursor> _resultCursor;
-        private readonly CancellationTokenSource _cts;
-        private readonly ReplaySubject<IResultSummary> _summary;
-        private readonly Subject<IRecord> _records;
-
-        private int _streaming;
-
-        public InternalRxResult(IObservable<IStatementResultCursor> resultCursor)
+        private enum StreamingState
         {
-            _resultCursor = resultCursor.Replay().AutoConnect();
-            _cts = new CancellationTokenSource();
-            _summary = new ReplaySubject<IResultSummary>(1);
-            _records = new Subject<IRecord>();
+            Ready = 0,
+            Streaming = 1,
+            Completed = 2
         }
 
-        private bool IsStreaming => Volatile.Read(ref _streaming) > 0;
+        private readonly IObservable<IReactiveStatementResultCursor> _resultCursor;
+        private readonly IObservable<string[]> _keys;
+        private readonly Subject<IRecord> _records;
+        private readonly ReplaySubject<IResultSummary> _summary;
+
+        private volatile int _streaming = (int) StreamingState.Ready;
+
+        public InternalRxResult(IObservable<IReactiveStatementResultCursor> resultCursor)
+        {
+            _resultCursor = resultCursor.Replay().AutoConnect();
+            _keys = _resultCursor.SelectMany(x => x.KeysAsync().ToObservable()).Replay().AutoConnect();
+            _records = new Subject<IRecord>();
+            _summary = new ReplaySubject<IResultSummary>();
+        }
+
+        private StreamingState State => (StreamingState) _streaming;
 
         public IObservable<string[]> Keys()
         {
-            return _resultCursor.SelectMany(r => r.KeysAsync());
+            return _keys;
         }
 
         public IObservable<IRecord> Records()
         {
-            return Observable.Create(async (IObserver<IRecord> o) =>
-            {
-                _records.Subscribe(o);
-                await Stream(_cts.Token, false).ConfigureAwait(false);
-                return new CancellationDisposable(_cts);
-            });
+            return _resultCursor.SelectMany(cursor =>
+                Observable.Create<IRecord>(recordObserver => StartStreaming(cursor, recordObserver)));
         }
 
         public IObservable<IResultSummary> Summary()
         {
-            return Observable.Create(async (IObserver<IResultSummary> o) =>
-            {
-                var subscription = _summary.Subscribe(o);
-                if (!IsStreaming)
-                {
-                    _cts.Cancel();
-                }
-
-                await Stream(_cts.Token, true).ConfigureAwait(false);
-                return new CancellationDisposable(_cts);
-            });
+            return _resultCursor.SelectMany(cursor =>
+                Observable.Create<IResultSummary>(summaryObserver =>
+                    StartStreaming(cursor, summaryObserver: summaryObserver)));
         }
 
-        private async Task Stream(CancellationToken cts, bool fromSummary)
+        private IDisposable StartStreaming(IReactiveStatementResultCursor cursor,
+            IObserver<IRecord> recordObserver = null, IObserver<IResultSummary> summaryObserver = null)
         {
-            if (Interlocked.Increment(ref _streaming) == 1)
+            var cancellation = new CompositeDisposable(2);
+
+            if (summaryObserver != null)
             {
-                var cursor = await _resultCursor.GetAwaiter();
+                cancellation.Add(_summary.Subscribe(summaryObserver));
+            }
 
-                try
+            if (recordObserver != null && !_records.HasObservers)
+            {
+                cancellation.Add(_records.Subscribe(recordObserver));
+            }
+
+            if (StartStreaming())
+            {
+                var streamingCancellation = new CancellationDisposable();
+                cancellation.Add(streamingCancellation);
+
+                Task.Run(async () =>
                 {
-                    // Ensure that we propagate any errors from the KeysAsync call
-                    await cursor.KeysAsync();
-
-                    while (await cursor.FetchAsync() && !cts.IsCancellationRequested)
+                    try
                     {
-                        _records.OnNext(cursor.Current);
+                        // Ensure that we propagate any errors from the KeysAsync call
+                        await cursor.KeysAsync().ConfigureAwait(false);
+
+                        if (!_records.HasObservers)
+                        {
+                            cursor.Discard();
+                        }
+                        else
+                        {
+                            streamingCancellation.Token.Register(cursor.Discard);
+                        }
+
+                        while (await cursor.FetchAsync().ConfigureAwait(false))
+                        {
+                            _records.OnNext(cursor.Current);
+                        }
+
+                        _records.OnCompleted();
+                    }
+                    catch (Exception exc)
+                    {
+                        _records.OnError(exc);
+
+                        if (summaryObserver != null)
+                        {
+                            _summary.OnError(exc);
+                        }
                     }
 
-                    _records.OnCompleted();
-                }
-                catch (Exception exc)
-                {
-                    _records.OnError(exc);
-
-                    if (fromSummary)
+                    try
+                    {
+                        _summary.OnNext(await cursor.ConsumeAsync().ConfigureAwait(false));
+                        _summary.OnCompleted();
+                    }
+                    catch (Exception exc)
                     {
                         _summary.OnError(exc);
                     }
-                }
 
-                try
-                {
-                    _summary.OnNext(await cursor.ConsumeAsync().ConfigureAwait(false));
-                    _summary.OnCompleted();
-                }
-                catch (Exception exc)
-                {
-                    _summary.OnError(exc);
-                }
+                    CompleteStreaming();
+                }, streamingCancellation.Token);
             }
+            else if (State == StreamingState.Streaming)
+            {
+                recordObserver?.OnError(
+                    new ClientException(
+                        "Streaming has already started with a previous Records or Summary subscription."));
+            }
+
+            return cancellation;
+        }
+
+        private bool StartStreaming()
+        {
+            return Interlocked.CompareExchange(ref _streaming, (int) StreamingState.Streaming,
+                       (int) StreamingState.Ready) == (int) StreamingState.Ready;
+        }
+
+        private void CompleteStreaming()
+        {
+            Interlocked.CompareExchange(ref _streaming, (int) StreamingState.Completed, (int) StreamingState.Streaming);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,22 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
-using System.Threading;
-using Microsoft.Reactive.Testing;
-
-namespace Neo4j.Driver.Reactive
+namespace Neo4j.Driver.Internal
 {
-    public static class Extensions
+    internal interface IReactiveStatementResultCursor : IStatementResultCursor
     {
-        public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
-        {
-            return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
-        }
+        void Discard();
     }
 }

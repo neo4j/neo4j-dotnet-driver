@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal
         }
 
         /// <summary>
-        ///  This method will be called back by <see cref="ResultStreamBuilder"/> after it consumed result
+        ///  This method will be called back by <see cref="StatementResultCursorBuilder"/> after it consumed result
         /// </summary>
         public Task OnResultConsumedAsync()
         {

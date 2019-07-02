@@ -46,7 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run("UNWIND RANGE(1,10) AS n RETURN n")
                     .Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext<IResultSummary>(0, s => s != null),
                         OnCompleted<IResultSummary>(0)
@@ -205,7 +205,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 NewRunnable()
                     .Run(statement, parameters)
                     .Summary()
-                    .SubscribeAndWait(CreateObserver<IResultSummary>())
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, predicate),
                         OnCompleted<IResultSummary>(0)
@@ -250,7 +250,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             public override void Dispose()
             {
-                rxSession.Close<int>().SubscribeAndDiscard();
+                rxSession.Close<int>().WaitForCompletion();
 
                 base.Dispose();
             }
@@ -275,8 +275,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             public override void Dispose()
             {
-                rxTransaction.Commit<int>().SubscribeAndDiscard();
-                rxSession.Close<int>().SubscribeAndDiscard();
+                rxTransaction.Commit<int>().WaitForCompletion();
+                rxSession.Close<int>().WaitForCompletion();
 
                 base.Dispose();
             }

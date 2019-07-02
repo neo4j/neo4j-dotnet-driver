@@ -71,8 +71,8 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
-                CancellationToken.None, resultResourceHandler);
+            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
+                resultResourceHandler);
             var runHandler = new V1.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V1.PullResponseHandler(streamBuilder, summaryBuilder);
             await connection.EnqueueAsync(new RunMessage(statement), runHandler, PullAll, pullAllHandler)
@@ -98,8 +98,7 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, bool reactive)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
-                CancellationToken.None, null);
+            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V1.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V1.PullResponseHandler(streamBuilder, summaryBuilder);
             await connection.EnqueueAsync(new RunMessage(statement), runHandler, PullAll, pullAllHandler)

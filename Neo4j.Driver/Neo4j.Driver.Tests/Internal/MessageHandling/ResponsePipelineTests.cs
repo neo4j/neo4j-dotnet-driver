@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
         {
             var pipeline = new ResponsePipeline(null);
 
-            var exc = Record.Exception(() => pipeline.Current);
+            var exc = Record.Exception(() => pipeline.Peek());
 
             exc.Should().BeOfType<InvalidOperationException>();
         }
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             pipeline.Enqueue(msg.Object, handler.Object);
 
             pipeline.HasNoPendingMessages.Should().BeFalse();
-            pipeline.Current.Should().Be(handler.Object);
+            pipeline.Peek().Should().Be(handler.Object);
         }
 
         [Fact]
@@ -105,11 +105,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
             pipeline.Enqueue(msg2.Object, handler2.Object);
 
             pipeline.HasNoPendingMessages.Should().BeFalse();
-            pipeline.Current.Should().Be(handler1.Object);
+            pipeline.Peek().Should().Be(handler1.Object);
             pipeline.Dequeue();
 
             pipeline.HasNoPendingMessages.Should().BeFalse();
-            pipeline.Current.Should().Be(handler2.Object);
+            pipeline.Peek().Should().Be(handler2.Object);
             pipeline.Dequeue();
 
             pipeline.HasNoPendingMessages.Should().BeTrue();

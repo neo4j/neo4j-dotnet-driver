@@ -25,7 +25,7 @@ using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Driver : IDriver
+    internal class Driver : IReactiveDriver
     {
         private int _closedMarker = 0;
 
@@ -34,6 +34,7 @@ namespace Neo4j.Driver.Internal
         private readonly IDriverLogger _logger;
         private readonly IMetrics _metrics;
         private readonly SyncExecutor _syncExecutor;
+        private readonly Config _config;
 
         public Uri Uri { get; }
 
@@ -41,7 +42,7 @@ namespace Neo4j.Driver.Internal
         private const string NullBookmark = null;
 
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, IDriverLogger logger,
-            SyncExecutor syncExecutor, IMetrics metrics = null)
+            SyncExecutor syncExecutor, IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
             Throw.ArgumentNullException.IfNull(syncExecutor, nameof(syncExecutor));
@@ -52,9 +53,12 @@ namespace Neo4j.Driver.Internal
             _retryLogic = retryLogic;
             _metrics = metrics;
             _syncExecutor = syncExecutor;
+            _config = config;
         }
 
         private bool IsClosed => _closedMarker > 0;
+
+        public Config Config => _config;
 
         public ISession Session()
         {
@@ -89,7 +93,7 @@ namespace Neo4j.Driver.Internal
             return Session(AccessMode.Write, bookmarks);
         }
 
-        internal ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive)
+        public IReactiveSession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive)
         {
             if (IsClosed)
             {

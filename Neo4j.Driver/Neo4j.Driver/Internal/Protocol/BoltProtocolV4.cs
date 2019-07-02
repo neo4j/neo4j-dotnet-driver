@@ -59,9 +59,9 @@ namespace Neo4j.Driver.Internal.Protocol
             Bookmark bookmark, TransactionConfig txConfig)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
+            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
                 reactive ? RequestMore(connection, summaryBuilder, bookmarkTracker) : null,
-                reactive ? CancelRequest(connection, summaryBuilder, bookmarkTracker) : null, CancellationToken.None,
+                reactive ? CancelRequest(connection, summaryBuilder, bookmarkTracker) : null,
                 resultResourceHandler,
                 reactive ? DefaultBatchSize : All);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
@@ -87,10 +87,9 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, bool reactive)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new ResultStreamBuilder(summaryBuilder, connection.ReceiveOneAsync,
+            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
                 reactive ? RequestMore(connection, summaryBuilder, null) : null,
-                reactive ? CancelRequest(connection, summaryBuilder, null) : null,
-                CancellationToken.None, null,
+                reactive ? CancelRequest(connection, summaryBuilder, null) : null, null,
                 reactive ? DefaultBatchSize : All);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
 
@@ -109,7 +108,7 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        private static Func<ResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
+        private static Func<StatementResultCursorBuilder, long, long, Task> RequestMore(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
             return async (streamBuilder, id, n) =>
@@ -122,7 +121,7 @@ namespace Neo4j.Driver.Internal.Protocol
             };
         }
 
-        private static Func<ResultStreamBuilder, long, Task> CancelRequest(IConnection connection,
+        private static Func<StatementResultCursorBuilder, long, Task> CancelRequest(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
             return async (streamBuilder, id) =>

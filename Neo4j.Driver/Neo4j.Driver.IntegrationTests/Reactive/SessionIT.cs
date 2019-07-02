@@ -15,8 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading;
+using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
@@ -41,7 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .Records()
                 .Select(r => r["n"].As<int>())
                 .OnErrorResumeNext(session.Close<int>())
-                .SubscribeAndWait(CreateObserver<int>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, 1),
                     OnNext(0, 2),
@@ -57,16 +62,172 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             session.Run("INVALID STATEMENT")
                 .Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRecord>(0, MatchesException<ClientException>()));
 
             session.Run("RETURN 1")
                 .Records()
-                .SubscribeAndWait(CreateObserver<IRecord>())
+                .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, MatchesRecord(new[] {"1"}, 1)),
                     OnCompleted<IRecord>(0));
+        }
+
+        [RequireServerFact]
+        public void ShouldRunTransactionWithoutRetries()
+        {
+            var work = new ConfigurableTransactionWork("CREATE (:WithoutRetry) RETURN 5");
+
+            NewSession()
+                .WriteTransaction(work.Work)
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, 5),
+                    OnCompleted<int>(0));
+
+            work.Invocations.Should().Be(1);
+            CountNodes("WithoutRetry").Should().Be(1);
+        }
+
+        [RequireServerFact]
+        public void ShouldRunTransactionWithRetriesOnReactiveFailures()
+        {
+            var work = new ConfigurableTransactionWork("CREATE (:WithReactiveFailure) RETURN 7")
+            {
+                ReactiveFailures = new Exception[]
+                {
+                    new ServiceUnavailableException("service is unavailable"),
+                    new SessionExpiredException("expired"),
+                    new TransientException("transient", "transient error")
+                }
+            };
+
+            NewSession()
+                .WriteTransaction(work.Work)
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, 7),
+                    OnCompleted<int>(0));
+
+            work.Invocations.Should().Be(4);
+            CountNodes("WithReactiveFailure").Should().Be(1);
+        }
+
+        [RequireServerFact]
+        public void ShouldRunTransactionWithRetriesOnSynchronousFailures()
+        {
+            var work = new ConfigurableTransactionWork("CREATE (:WithSyncFailure) RETURN 7")
+            {
+                SyncFailures = new Exception[]
+                {
+                    new ServiceUnavailableException("service is unavailable"),
+                    new SessionExpiredException("expired"),
+                    new TransientException("transient", "transient error")
+                }
+            };
+
+            NewSession()
+                .WriteTransaction(work.Work)
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, 7),
+                    OnCompleted<int>(0));
+
+            work.Invocations.Should().Be(4);
+            CountNodes("WithSyncFailure").Should().Be(1);
+        }
+
+        [RequireServerFact("4.0.0", VersionComparison.GreaterThanOrEqualTo)]
+        public void ShouldFailOnTransactionThatCannotBeRetried()
+        {
+            var work = new ConfigurableTransactionWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
+
+            NewSession()
+                .WriteTransaction(work.Work)
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, 1),
+                    OnNext(0, 2),
+                    OnError<int>(0, MatchesException<ClientException>(e => e.Message.Contains("/ by zero"))));
+
+            work.Invocations.Should().Be(1);
+            CountNodes("Hi").Should().Be(0);
+        }
+
+        [RequireServerFact]
+        public void ShouldFailEvenAfterATransientError()
+        {
+            var work = new ConfigurableTransactionWork("CREATE (:Person) RETURN 1")
+            {
+                SyncFailures = new[] {new TransientException("code", "error")},
+                ReactiveFailures = new[] {new DatabaseException("offline", "database is offline")}
+            };
+
+            NewSession()
+                .WriteTransaction(work.Work)
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnError<int>(0,
+                        MatchesException<DatabaseException>(e => e.Message.Contains("database is offline"))));
+
+            work.Invocations.Should().Be(2);
+            CountNodes("Person").Should().Be(0);
+        }
+
+        private int CountNodes(string label)
+        {
+            return NewSession()
+                .Run($"MATCH (n:{label}) RETURN count(n)")
+                .Records()
+                .Select(r => r[0].As<int>())
+                .SingleAsync()
+                .Wait();
+        }
+
+        private class ConfigurableTransactionWork
+        {
+            private readonly string _statement;
+            private int _invocations;
+            private IEnumerator<Exception> _syncFailures;
+            private IEnumerator<Exception> _reactiveFailures;
+
+            public ConfigurableTransactionWork(string statement)
+            {
+                _statement = statement;
+                _invocations = 0;
+                _syncFailures = Enumerable.Empty<Exception>().GetEnumerator();
+                _reactiveFailures = Enumerable.Empty<Exception>().GetEnumerator();
+            }
+
+            public int Invocations => _invocations;
+
+            public IEnumerable<Exception> SyncFailures
+            {
+                set => _syncFailures = (value ?? Enumerable.Empty<Exception>()).GetEnumerator();
+            }
+
+            public IEnumerable<Exception> ReactiveFailures
+            {
+                set => _reactiveFailures = (value ?? Enumerable.Empty<Exception>()).GetEnumerator();
+            }
+
+            public IObservable<int> Work(IRxTransaction txc)
+            {
+                Interlocked.Increment(ref _invocations);
+
+                if (_syncFailures.MoveNext())
+                {
+                    throw _syncFailures.Current;
+                }
+
+                if (_reactiveFailures.MoveNext())
+                {
+                    return Observable.Throw<int>(_reactiveFailures.Current);
+                }
+
+                return txc.Run(_statement).Records().Select(r => r[0].As<int>());
+            }
         }
     }
 }

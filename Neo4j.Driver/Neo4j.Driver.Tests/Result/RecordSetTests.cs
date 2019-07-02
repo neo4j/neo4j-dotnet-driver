@@ -22,12 +22,13 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    internal class ListBasedRecordCursor : IStatementResultCursor
+    internal class ListBasedRecordCursor : IReactiveStatementResultCursor
     {
         private readonly string[] _keys;
         private readonly Func<IResultSummary> _summaryFunc;
@@ -108,6 +109,10 @@ namespace Neo4j.Driver.Tests
         }
 
         public IRecord Current => _record;
+
+        public void Discard()
+        {
+        }
     }
 
     internal static class RecordCreator
