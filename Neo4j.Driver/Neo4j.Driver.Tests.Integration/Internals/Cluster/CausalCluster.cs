@@ -14,15 +14,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using FluentAssertions;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class CausalCluster : IDisposable
     {
+        private static readonly TimeSpan ClusterOnlineTimeout = TimeSpan.FromMinutes(2);
+
         private readonly ExternalBoltkitClusterInstaller _installer = new ExternalBoltkitClusterInstaller();
         public ISet<ISingleInstance> Members { get; }
 
@@ -36,6 +42,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 _installer.Install();
                 Members = _installer.Start();
+                WaitForMembersOnline();
             }
             catch
             {
@@ -47,6 +54,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 {
                     // do nothing
                 }
+
                 throw;
             }
         }
@@ -74,6 +82,76 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
         }
 
+        private void WaitForMembersOnline()
+        {
+            void VerifyCanExecute(AccessMode mode, List<Exception> exceptions)
+            {
+                using (var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken))
+                using (var session = driver.Session(mode))
+                {
+                    session.Run("RETURN 1").Consume();
+                }
+            }
+
+            var expectedOnlineMembers = Members.Select(x => x.BoltUri.Authority).ToHashSet();
+            var onlineMembers = Enumerable.Empty<string>();
+
+            var errors = new List<Exception>();
+            var timer = Stopwatch.StartNew();
+            while (timer.Elapsed < ClusterOnlineTimeout)
+            {
+                Thread.Sleep(1000);
+
+                if (!expectedOnlineMembers.SetEquals(onlineMembers))
+                {
+                    try
+                    {
+                        using (var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken))
+                        using (var session = driver.Session(AccessMode.Read))
+                        {
+                            var addresses = new List<string>();
+                            var records = session.Run("CALL dbms.cluster.overview()").ToList();
+                            foreach (var record in records)
+                            {
+                                addresses.Add(
+                                    record["addresses"].As<List<object>>().First().As<string>().Replace("bolt://", ""));
+                            }
+
+                            onlineMembers = addresses;
+                        }
+                    }
+                    catch (Exception exc)
+                    {
+                        errors.Add(exc);
+                    }
+                }
+
+                if (!expectedOnlineMembers.SetEquals(onlineMembers))
+                {
+                    continue;
+                }
+
+                errors.Clear();
+                try
+                {
+                    // Verify that we can connect to a FOLLOWER
+                    VerifyCanExecute(AccessMode.Read, errors);
+
+                    // Verify that we can connect to a LEADER
+                    VerifyCanExecute(AccessMode.Write, errors);
+
+                    return;
+                }
+                catch (Exception exc)
+                {
+                    errors.Add(exc);
+                }
+            }
+
+            throw new TimeoutException(
+                $"Timed out waiting for the cluster to become available. Seen errors: {errors}");
+        }
+
         public void Dispose()
         {
             // shut down the whole cluster
@@ -92,6 +170,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 {
                     // ignored
                 }
+
                 // ignored
             }
         }

@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,16 +39,16 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly Stopwatch _stopwatch;
 
         public RoutingTable(IEnumerable<Uri> routers, long expireAfterSeconds = 0)
-        :this(routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)
+            : this(routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)
         {
         }
 
         public RoutingTable(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
             long expireAfterSeconds)
-        { 
-            _routers.Add(routers);
-            _readers.Add(readers);
-            _writers.Add(writers);
+        {
+            _routers.Add(routers ?? Enumerable.Empty<Uri>());
+            _readers.Add(readers ?? Enumerable.Empty<Uri>());
+            _writers.Add(writers ?? Enumerable.Empty<Uri>());
 
             _expireAfterSeconds = expireAfterSeconds;
             _stopwatch = new Stopwatch();
@@ -57,9 +58,9 @@ namespace Neo4j.Driver.Internal.Routing
         public bool IsStale(AccessMode mode)
         {
             return _routers.Count < MinRouterCount
-                || mode == AccessMode.Read && _readers.IsEmpty
-                || mode == AccessMode.Write && _writers.IsEmpty
-                || _expireAfterSeconds < _stopwatch.Elapsed.TotalSeconds;
+                   || mode == AccessMode.Read && _readers.IsEmpty
+                   || mode == AccessMode.Write && _writers.IsEmpty
+                   || _expireAfterSeconds < _stopwatch.Elapsed.TotalSeconds;
         }
 
         public void Remove(Uri uri)

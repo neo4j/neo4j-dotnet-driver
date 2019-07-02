@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 
@@ -30,11 +31,12 @@ namespace Neo4j.Driver
         {
             NoParameter = new Dictionary<string, object>();
         }
-         
+
         /// <summary>
         /// Gets the statement's text.
         /// </summary>
         public string Text { get; }
+
         /// <summary>
         /// Gets the statement's parameters.
         /// </summary>
@@ -44,7 +46,15 @@ namespace Neo4j.Driver
         /// Create a statement with no statement parameters.
         /// </summary>
         /// <param name="text">The statement's text</param>
-        public Statement(string text): this(text, null)
+        public Statement(string text) : this(text, (object) null)
+        {
+        }
+        /// <summary>
+        /// Create a statement with parameters specified as anonymous objects
+        /// </summary>
+        /// <param name="text">The statement's text</param>
+        public Statement(string text, object parameters)
+            : this(text, parameters.ToDictionary())
         {
         }
 
@@ -68,5 +78,4 @@ namespace Neo4j.Driver
             return $"`{Text}`, {Parameters.ToContentString()}";
         }
     }
-
 }

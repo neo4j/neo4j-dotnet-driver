@@ -135,7 +135,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 if (_process.WaitForExit(DefaultTimeOut))
                 {
                     Debug("-----------");
-                    Debug($"Execution of command `{_process}` exited with code {_process.ExitCode}.");
+                    Debug($"Execution of command `{GetProcessCommandLine(_process)}` exited with code {_process.ExitCode}.");
                     if (_stdErr.Length > 0)
                     {
                         Debug("The following output is generated:");
