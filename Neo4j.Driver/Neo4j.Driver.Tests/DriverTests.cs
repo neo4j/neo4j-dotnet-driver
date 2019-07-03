@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver;
 using Xunit;
@@ -89,18 +90,18 @@ namespace Neo4j.Driver.Tests
             var driver = GraphDatabase.Driver("bolt://localhost");
             driver.Dispose();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }
 
         [Fact]
-        public void CloseClosesDriver()
+        public async Task CloseClosesDriver()
         {
             var driver = GraphDatabase.Driver("bolt://localhost");
-            driver.Close();
+            await driver.CloseAsync();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }
@@ -111,19 +112,20 @@ namespace Neo4j.Driver.Tests
             var driver = GraphDatabase.Driver("bolt://localhost");
             await driver.CloseAsync();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }
 
-        [Fact] public async void MultipleCloseAndDisposeIsValidOnDriver()
+        [Fact] 
+        public async void MultipleCloseAndDisposeIsValidOnDriver()
         {
             var driver = GraphDatabase.Driver("bolt://localhost");
-            driver.Close();
             await driver.CloseAsync();
             driver.Dispose();
+            await driver.CloseAsync();
 
-            var ex = Record.Exception(() => driver.Session());
+            var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
         }

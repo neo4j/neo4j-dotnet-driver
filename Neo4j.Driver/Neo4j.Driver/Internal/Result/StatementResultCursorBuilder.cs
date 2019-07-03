@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.Result
 
         internal State CurrentState => (State) _state;
 
-        public IReactiveStatementResultCursor CreateCursor()
+        public IInternalStatementResultCursor CreateCursor()
         {
             return new StatementResultCursor(GetKeysAsync, NextRecordAsync, SummaryAsync, _cancellationSource);
         }
@@ -165,6 +165,9 @@ namespace Neo4j.Driver.Internal.Result
                     catch (Exception exc)
                     {
                         _pendingError = new ResponsePipelineError(exc);
+                        
+                        // Ensure that current state is updated and is recognized as Completed
+                        UpdateState(State.Completed);
                     }
                 }
 

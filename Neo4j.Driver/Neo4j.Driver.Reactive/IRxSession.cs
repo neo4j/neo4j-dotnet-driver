@@ -21,7 +21,7 @@ using System.Collections.Generic;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// A reactive session, which provides the same functionality as <see cref="Neo4j.Driver.ISession"/>
+    /// A reactive session, which provides the same functionality as <see cref="IAsyncSession"/>
     /// but with reactive API.
     /// </summary>
     public interface IRxSession : IRxRunnable
@@ -60,7 +60,7 @@ namespace Neo4j.Driver
         IObservable<IRxTransaction> BeginTransaction(TransactionConfig txConfig);
 
         /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the statement with the 
+        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement with the 
         /// provided <see cref="TransactionConfig"/> that applies to the underlying auto-commit transaction.
         /// </summary>
         /// 
@@ -69,10 +69,10 @@ namespace Neo4j.Driver
         /// <returns>a reactive result</returns>
         ///
         /// <see cref="Run(Statement,TransactionConfig)"/>
-        IRxResult Run(string statement, TransactionConfig txConfig);
+        IRxStatementResult Run(string statement, TransactionConfig txConfig);
 
         /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the statement  with the specified
+        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement  with the specified
         /// parameters and the provided <see cref="TransactionConfig"/>  that applies to the  underlying auto-commit
         /// transaction.
         /// </summary>
@@ -84,10 +84,10 @@ namespace Neo4j.Driver
         /// <returns>a reactive result</returns>
         /// 
         /// <see cref="Run(Statement,TransactionConfig)"></see>
-        IRxResult Run(string statement, object parameters, TransactionConfig txConfig);
+        IRxStatementResult Run(string statement, object parameters, TransactionConfig txConfig);
 
         /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the given statement with the
+        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the given statement with the
         /// provided <see cref="TransactionConfig"/> that applies to the underlying auto-commit transaction.
         ///
         /// The statement is only executed when an <see cref="IObserver{T}"/> is subscribed to one of the reactive streams
@@ -97,7 +97,7 @@ namespace Neo4j.Driver
         /// <param name="statement">statement to be executed</param>
         /// <param name="txConfig">configuration for the auto-commit transaction</param>
         /// <returns>a reactive result</returns>
-        IRxResult Run(Statement statement, TransactionConfig txConfig);
+        IRxStatementResult Run(Statement statement, TransactionConfig txConfig);
 
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Read">Read</see>

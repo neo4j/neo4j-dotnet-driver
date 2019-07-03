@@ -29,16 +29,16 @@ namespace Neo4j.Driver
     public interface IRxRunnable
     {
         /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the statement.
+        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement.
         /// </summary>
         /// <param name="statement">statement to be executed</param>
         /// <returns>a reactive result</returns>
         ///
         /// <see cref="Run(Statement)"/>
-        IRxResult Run(string statement);
+        IRxStatementResult Run(string statement);
 
         /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the statement
+        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement
         /// with the specified parameters.
         /// </summary>
         /// <param name="statement">statement to be executed</param>
@@ -47,10 +47,10 @@ namespace Neo4j.Driver
         /// <returns>a reactive result</returns>
         ///
         /// <see cref="Run(Statement)"/>
-        IRxResult Run(string statement, object parameters);
+        IRxStatementResult Run(string statement, object parameters);
 
         /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the given statement.
+        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the given statement.
         ///
         /// The statement is only executed when an <see cref="IObserver{T}"/> is subscribed to one of the
         /// reactive streams that can be accessed through the returned reactive result. 
@@ -58,6 +58,6 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="statement">statement to be executed</param>
         /// <returns>a reactive result</returns>
-        IRxResult Run(Statement statement);
+        IRxStatementResult Run(Statement statement);
     }
 }

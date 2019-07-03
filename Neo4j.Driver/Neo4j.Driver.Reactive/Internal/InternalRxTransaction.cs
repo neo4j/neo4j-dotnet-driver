@@ -24,29 +24,29 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxTransaction : IRxTransaction
     {
-        private readonly ITransaction _transaction;
+        private readonly IAsyncTransaction _transaction;
 
-        public InternalRxTransaction(ITransaction transaction)
+        public InternalRxTransaction(IAsyncTransaction transaction)
         {
             _transaction = transaction;
         }
 
         #region Run Methods
 
-        public IRxResult Run(string statement)
+        public IRxStatementResult Run(string statement)
         {
             return Run(statement, null);
         }
 
-        public IRxResult Run(string statement, object parameters)
+        public IRxStatementResult Run(string statement, object parameters)
         {
             return Run(new Statement(statement, parameters.ToDictionary()));
         }
 
-        public IRxResult Run(Statement statement)
+        public IRxStatementResult Run(Statement statement)
         {
-            return new InternalRxResult(Observable.FromAsync(() => _transaction.RunAsync(statement))
-                .Cast<IReactiveStatementResultCursor>());
+            return new InternalRxStatementResult(Observable.FromAsync(() => _transaction.RunAsync(statement))
+                .Cast<IInternalStatementResultCursor>());
         }
 
         #endregion

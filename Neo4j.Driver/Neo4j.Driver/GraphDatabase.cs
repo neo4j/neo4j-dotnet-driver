@@ -222,9 +222,7 @@ namespace Neo4j.Driver
             var metrics = config.MetricsFactory?.CreateMetrics(config);
             var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
 
-            var retryLogic = new ExponentialBackoffRetryLogic(config.MaxTransactionRetryTime, logger);
-
-            var syncExecutor = new SyncExecutor();
+            var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
 
             IConnectionProvider connectionProvider = null;
             switch (parsedUri.Scheme.ToLower())
@@ -235,15 +233,14 @@ namespace Neo4j.Driver
                         new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
                     break;
                 case "bolt+routing":
-                    connectionProvider = new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings,
-                        syncExecutor, logger);
+                    connectionProvider =
+                        new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, syncExecutor, metrics,
-                config);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics, config);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)

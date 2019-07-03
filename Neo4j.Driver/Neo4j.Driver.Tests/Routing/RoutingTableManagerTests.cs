@@ -49,8 +49,7 @@ namespace Neo4j.Driver.Tests.Routing
                 discovery = Mock.Of<IDiscovery>();
             }
 
-            return new RoutingTableManager(addressProvider, discovery, routingTable, poolManager, new SyncExecutor(),
-                logger);
+            return new RoutingTableManager(addressProvider, discovery, routingTable, poolManager, logger);
         }
 
         internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri)

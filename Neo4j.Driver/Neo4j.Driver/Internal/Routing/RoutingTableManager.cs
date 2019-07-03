@@ -29,7 +29,6 @@ namespace Neo4j.Driver.Internal.Routing
     {
         private readonly IDriverLogger _logger;
         private readonly IDiscovery _discovery;
-        private readonly SyncExecutor _syncExecutor;
 
         private readonly IClusterConnectionPoolManager _poolManager;
         private readonly IInitialServerAddressProvider _initialServerAddressProvider;
@@ -42,11 +41,10 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
-            SyncExecutor syncExecutor,
             IDriverLogger logger) :
             this(routingSettings.InitialServerAddressProvider,
-                new ClusterDiscovery(syncExecutor, routingSettings.RoutingContext, logger),
-                new RoutingTable(Enumerable.Empty<Uri>()), poolManager, syncExecutor, logger)
+                new ClusterDiscovery(routingSettings.RoutingContext, logger),
+                new RoutingTable(Enumerable.Empty<Uri>()), poolManager, logger)
         {
         }
 
@@ -55,14 +53,12 @@ namespace Neo4j.Driver.Internal.Routing
             IDiscovery discovery,
             IRoutingTable routingTable,
             IClusterConnectionPoolManager poolManager,
-            SyncExecutor syncExecutor,
             IDriverLogger logger)
         {
             _initialServerAddressProvider = initialServerAddressProvider;
             _discovery = discovery;
             _routingTable = routingTable;
             _poolManager = poolManager;
-            _syncExecutor = syncExecutor;
             _logger = logger;
         }
 

@@ -25,15 +25,14 @@ using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class Driver : IReactiveDriver
+    internal class Driver : IInternalDriver
     {
         private int _closedMarker = 0;
 
         private readonly IConnectionProvider _connectionProvider;
-        private readonly IRetryLogic _retryLogic;
+        private readonly IAsyncRetryLogic _retryLogic;
         private readonly IDriverLogger _logger;
         private readonly IMetrics _metrics;
-        private readonly SyncExecutor _syncExecutor;
         private readonly Config _config;
 
         public Uri Uri { get; }
@@ -41,18 +40,16 @@ namespace Neo4j.Driver.Internal
         private const AccessMode DefaultAccessMode = AccessMode.Write;
         private const string NullBookmark = null;
 
-        internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, IDriverLogger logger,
-            SyncExecutor syncExecutor, IMetrics metrics = null, Config config = null)
+        internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic, IDriverLogger logger,
+            IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
-            Throw.ArgumentNullException.IfNull(syncExecutor, nameof(syncExecutor));
 
             Uri = uri;
             _logger = logger;
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
             _metrics = metrics;
-            _syncExecutor = syncExecutor;
             _config = config;
         }
 
@@ -60,61 +57,65 @@ namespace Neo4j.Driver.Internal
 
         public Config Config => _config;
 
-        public ISession Session()
+        public IAsyncSession AsyncSession()
         {
-            return Session(DefaultAccessMode);
+            return AsyncSession(DefaultAccessMode);
         }
 
-        public ISession Session(AccessMode defaultMode)
+        public IAsyncSession AsyncSession(AccessMode defaultMode)
         {
-            return Session(defaultMode, NullBookmark);
+            return AsyncSession(defaultMode, NullBookmark);
         }
 
-        public ISession Session(string bookmark)
+        public IAsyncSession AsyncSession(string bookmark)
         {
-            return Session(DefaultAccessMode, bookmark);
+            return AsyncSession(DefaultAccessMode, bookmark);
         }
 
 
-        public ISession Session(AccessMode defaultMode, string bookmark)
+        public IAsyncSession AsyncSession(AccessMode defaultMode, string bookmark)
         {
-            return Session(defaultMode, string.IsNullOrEmpty(bookmark) ? Enumerable.Empty<string>() : new[] {bookmark},
+            return Session(defaultMode,
+                string.IsNullOrEmpty(bookmark) ? Enumerable.Empty<string>() : new[] {bookmark},
                 false);
         }
 
 
-        public ISession Session(AccessMode defaultMode, IEnumerable<string> bookmarks)
+        public IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<string> bookmarks)
         {
             return Session(defaultMode, bookmarks, false);
         }
 
-        public ISession Session(IEnumerable<string> bookmarks)
+        public IAsyncSession AsyncSession(IEnumerable<string> bookmarks)
         {
-            return Session(AccessMode.Write, bookmarks);
+            return AsyncSession(AccessMode.Write, bookmarks);
         }
 
-        public IReactiveSession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive)
+        public IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var session = new Session(_connectionProvider, _logger, _syncExecutor, _retryLogic, defaultMode,
-                Bookmark.From(bookmarks), reactive);
+            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, defaultMode, Bookmark.From(bookmarks),
+                reactive);
 
             if (IsClosed)
             {
-                session.Dispose();
                 ThrowDriverClosedException();
             }
 
             return session;
         }
 
-        public void Close()
+        private void Close()
         {
-            _syncExecutor.RunSync(CloseAsync);
+            Task.Factory
+                .StartNew(CloseAsync, TaskCreationOptions.None)
+                .Unwrap()
+                .GetAwaiter()
+                .GetResult();
         }
 
         public Task CloseAsync()

@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
         }
 
         [Fact]
-        public async Task ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushed()
+        public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushed()
         {
             var builder =
                 new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Tests
         }
 
         [Fact]
-        public async Task ShouldTransitionToRunCompletedWhenPullCompletedWithHasMore()
+        public void ShouldTransitionToRunCompletedWhenPullCompletedWithHasMore()
         {
             var builder =
                 new StatementResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
