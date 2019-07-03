@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var rxTxc = new InternalRxTransaction(Mock.Of<IAsyncTransaction>());
 
-                rxTxc.Run("RETURN 1").Should().BeOfType<InternalRxResult>();
+                rxTxc.Run("RETURN 1").Should().BeOfType<InternalRxStatementResult>();
             }
 
             [Fact]
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 });
             }
 
-            private static void VerifyLazyRunAsync(Action<IRxResult> action)
+            private static void VerifyLazyRunAsync(Action<IRxStatementResult> action)
             {
                 var asyncTxc = new Mock<IAsyncTransaction>();
                 asyncTxc.Setup(x => x.RunAsync(It.IsAny<Statement>()))

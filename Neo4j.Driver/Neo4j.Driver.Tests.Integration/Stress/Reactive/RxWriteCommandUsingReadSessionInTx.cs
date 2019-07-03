@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         public override async Task ExecuteAsync(TContext context)
         {
             var session = NewSession(AccessMode.Read, context);
-            var result = default(IRxResult);
+            var result = default(IRxStatementResult);
 
             var exc = await Record.ExceptionAsync(async () => await BeginTransaction(session, context)
                 .SelectMany(txc =>

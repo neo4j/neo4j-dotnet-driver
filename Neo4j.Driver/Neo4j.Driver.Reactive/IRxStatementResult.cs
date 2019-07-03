@@ -22,7 +22,7 @@ namespace Neo4j.Driver
     /// <summary>
     /// The reactive result interface
     /// </summary>
-    public interface IRxResult
+    public interface IRxStatementResult
     {
         /// <summary>
         /// Returns an observable that exposes a single item containing field names

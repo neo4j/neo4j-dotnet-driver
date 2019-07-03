@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class InternalRxResult : IRxResult
+    internal class InternalRxStatementResult : IRxStatementResult
     {
         private enum StreamingState
         {
@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Internal
 
         private volatile int _streaming = (int) StreamingState.Ready;
 
-        public InternalRxResult(IObservable<IInternalStatementResultCursor> resultCursor)
+        public InternalRxStatementResult(IObservable<IInternalStatementResultCursor> resultCursor)
         {
             _resultCursor = resultCursor.Replay().AutoConnect();
             _keys = _resultCursor.SelectMany(x => x.KeysAsync().ToObservable()).Replay().AutoConnect();
