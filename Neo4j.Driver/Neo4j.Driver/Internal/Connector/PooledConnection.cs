@@ -94,6 +94,11 @@ namespace Neo4j.Driver.Internal.Connector
                 HasUnrecoverableError = true;
             }
 
+            if (error is Neo4jException)
+            {
+                return Task.FromException(error);
+            }
+
             if (error.IsConnectionError())
             {
                 return TaskHelper.GetFailedTask(new ServiceUnavailableException(

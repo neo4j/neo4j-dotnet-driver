@@ -221,7 +221,7 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {TrustStrategy = TrustStrategy.TrustAllCertificates});
+                    new Config {TrustManager = TrustManager.CreateInsecure()});
             }
             // end::config-trust[]
 
@@ -925,7 +925,7 @@ namespace Neo4j.Driver.Examples
             }
         }
     }
-    
+
     // TODO Remove it after we figure out a way to solve the naming problem
     internal static class ValueExtensions
     {

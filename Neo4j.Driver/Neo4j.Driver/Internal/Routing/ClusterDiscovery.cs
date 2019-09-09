@@ -30,8 +30,8 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IDriverLogger _logger;
         private readonly IDictionary<string, string> _context;
 
-        private const string GetServersProcedure = "dbms.cluster.routing.getServers";
-        private const string GetRoutingTableProcedure = "dbms.cluster.routing.getRoutingTable";
+        private const string GetServersProcedure = "CALL dbms.cluster.routing.getServers()";
+        private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
 
 
         public ClusterDiscovery(IDictionary<string, string> context, IDriverLogger logger)
@@ -44,12 +44,12 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (ServerVersion.From(connection.Server.Version) >= ServerVersion.V3_2_0)
             {
-                return new Statement($"CALL {GetRoutingTableProcedure}({{context}})",
+                return new Statement(GetRoutingTableProcedure,
                     new Dictionary<string, object> {{"context", _context}});
             }
             else
             {
-                return new Statement($"CALL {GetServersProcedure}");
+                return new Statement(GetServersProcedure);
             }
         }
 

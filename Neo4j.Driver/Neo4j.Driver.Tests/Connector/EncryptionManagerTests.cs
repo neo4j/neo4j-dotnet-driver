@@ -30,30 +30,20 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class EncryptionManagerTests
     {
-
         [Fact]
         public void ShouldNotCreateTrustManagerIfEncryptionDisabled()
         {
             var encryption =
-                new EncryptionManager(EncryptionLevel.None, TrustStrategy.TrustAllCertificates, null, null);
+                new EncryptionManager(EncryptionLevel.None, null, null);
 
             encryption.TrustManager.Should().BeNull();
         }
 
         [Fact]
-        public void ShouldCreateCorrectTrustManagerForTrustAllCertificates()
+        public void ShouldCreateDefaulTrustManagerIfEncrypted()
         {
             var encryption =
-                new EncryptionManager(EncryptionLevel.Encrypted, TrustStrategy.TrustAllCertificates, null, null);
-
-            encryption.TrustManager.Should().NotBeNull().And.BeOfType<InsecureTrustManager>();
-        }
-
-        [Fact]
-        public void ShouldCreateCorrectTrustManagerForTrustSystemCaSignedCertificates()
-        {
-            var encryption =
-                new EncryptionManager(EncryptionLevel.Encrypted, TrustStrategy.TrustSystemCaSignedCertificates, null, null);
+                new EncryptionManager(EncryptionLevel.Encrypted, null, null);
 
             encryption.TrustManager.Should().NotBeNull().And.BeOfType<ChainTrustManager>();
         }
@@ -62,14 +52,15 @@ namespace Neo4j.Driver.Tests.Connector
         public void ShouldUseProvidedTrustManager()
         {
             var encryption =
-                new EncryptionManager(EncryptionLevel.Encrypted, TrustStrategy.TrustSystemCaSignedCertificates, new CustomTrustManager(), null);
+                new EncryptionManager(EncryptionLevel.Encrypted, new CustomTrustManager(), null);
 
             encryption.TrustManager.Should().NotBeNull().And.BeOfType<CustomTrustManager>();
         }
 
-        private class CustomTrustManager: TrustManager
+        private class CustomTrustManager : TrustManager
         {
-            public override bool ValidateServerCertificate(Uri uri, X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+            public override bool ValidateServerCertificate(Uri uri, X509Certificate2 certificate, X509Chain chain,
+                SslPolicyErrors sslPolicyErrors)
             {
                 throw new NotImplementedException();
             }

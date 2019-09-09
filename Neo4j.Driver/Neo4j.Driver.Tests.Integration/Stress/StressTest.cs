@@ -42,6 +42,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 Config.Builder.WithDriverLogger(new StressTestLogger(_output, LoggingEnabled))
                     .WithMaxConnectionPoolSize(100).WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1))
                     .ToConfig());
+
+            CleanupDatabase();
         }
 
         #region Abstract Members
@@ -263,7 +265,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private void VerifyNodesCreated(long expected)
         {
-            using (var session = _driver.Session())
+            using (var session = _driver.Session(AccessMode.Write))
             {
                 var count = session.Run("MATCH (n) RETURN count(n) as createdNodes")
                     .Select(r => r["createdNodes"].As<long>()).Single();
@@ -277,6 +279,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         #region Cleanup
 
         public void Dispose()
+        {
+            CleanupDatabase();
+        }
+
+        private void CleanupDatabase()
         {
             using (var session = _driver.Session(AccessMode.Write))
             {

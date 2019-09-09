@@ -33,6 +33,16 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
         private static readonly string HomeDir = Path.Combine(BoltkitHelper.TargetDir, "neo4jhome");
 
+        private static readonly IDictionary<string, string> DefaultConfig = new Dictionary<string, string>
+        {
+            {"dbms.backup.enabled", "false"},
+            {"dbms.connectors.default_listen_address", "127.0.0.1"},
+            {"dbms.connectors.http_listen_address", "localhost:7474"},
+            {"dbms.transaction.bookmark_ready_timeout", "5s"},
+            {"dbms.memory.pagecache.size", "512m"},
+            {"dbms.connector.bolt.tls_level", "optional"},
+        };
+
         private readonly IShellCommandRunner _commandRunner;
 
         public ExternalBoltkitInstaller()
@@ -59,6 +69,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
 
             _commandRunner.RunCommand("neoctrl-create-user", $"\"{HomeDir}\"", "neo4j", Password);
+
+            UpdateSettings(DefaultConfig);
+
             if (BoltkitHelper.IPV6Available() && BoltkitHelper.IPV6Enabled())
             {
                 UpdateSettings(new Dictionary<string, string>
