@@ -22,7 +22,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
     public abstract class StressTestContext
     {
         private bool _stopped;
-        private string _bookmark;
+        private Bookmark _bookmark;
         private long _readNodesCount;
         private long _createdNodesCount;
         private long _bookmarkFailures;
@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             Volatile.Write(ref _stopped, true);
         }
 
-        public string Bookmark
+        public Bookmark Bookmark
         {
             get => Volatile.Read(ref _bookmark);
             set => Volatile.Write(ref _bookmark, value);

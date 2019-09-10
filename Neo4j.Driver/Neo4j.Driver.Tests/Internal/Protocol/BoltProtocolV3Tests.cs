@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Internal.Protocol
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
         };
 
-        internal static readonly Bookmark Bookmark = Internal.Bookmark.From(SessionTests.FakeABookmark(123));
+        internal static readonly Bookmark Bookmark = Bookmark.From(SessionTests.FakeABookmark(123));
 
         internal static bool VerifyMetadata(IDictionary<string, object> metadata, AccessMode mode)
         {
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
             metadata.Should().HaveCount(keys.Count).And.ContainKeys(keys);
             metadata["bookmarks"].Should().BeOfType<string[]>().Which.Should().HaveCount(1).And
-                .Contain("neo4j:bookmark:v1:tx123");
+                .Contain("bookmark-123");
             metadata["tx_timeout"].Should().Be(60000L);
             metadata["tx_metadata"].Should().BeOfType<Dictionary<string, object>>().Which.Should().HaveCount(1).And
                 .Contain(new KeyValuePair<string, object>("key1", "value1"));
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldEnqueueRunAndPullAllAndSend()
             {
-                var mockConn =  NewConnectionWithMode();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
@@ -141,7 +141,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
-            
+
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
@@ -192,7 +192,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldNotSyncIfInvalidBookmarkGiven()
             {
                 var mockConn = NewConnectionWithMode();
-                var bookmark = Bookmark.From((string)null);
+                var bookmark = Bookmark.From((string) null);
 
                 await BoltV3.BeginTransactionAsync(mockConn.Object, bookmark, null);
 
@@ -215,7 +215,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
-            
+
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
@@ -302,6 +302,5 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.Server, Times.Once);
             }
         }
-
     }
 }

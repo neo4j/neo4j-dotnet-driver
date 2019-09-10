@@ -38,9 +38,9 @@ namespace Neo4j.Driver.Internal
         public Uri Uri { get; }
 
         private const AccessMode DefaultAccessMode = AccessMode.Write;
-        private const string NullBookmark = null;
 
-        internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic, IDriverLogger logger,
+        internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic,
+            IDriverLogger logger,
             IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
@@ -64,42 +64,40 @@ namespace Neo4j.Driver.Internal
 
         public IAsyncSession AsyncSession(AccessMode defaultMode)
         {
-            return AsyncSession(defaultMode, NullBookmark);
+            return AsyncSession(defaultMode, (Bookmark) null);
         }
 
-        public IAsyncSession AsyncSession(string bookmark)
+        public IAsyncSession AsyncSession(Bookmark bookmark)
         {
             return AsyncSession(DefaultAccessMode, bookmark);
         }
 
 
-        public IAsyncSession AsyncSession(AccessMode defaultMode, string bookmark)
+        public IAsyncSession AsyncSession(AccessMode defaultMode, Bookmark bookmark)
         {
-            return Session(defaultMode,
-                string.IsNullOrEmpty(bookmark) ? Enumerable.Empty<string>() : new[] {bookmark},
-                false);
+            return Session(defaultMode, bookmark != null ? new[] {bookmark} : Enumerable.Empty<Bookmark>(), false);
         }
 
 
-        public IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<string> bookmarks)
+        public IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<Bookmark> bookmarks)
         {
             return Session(defaultMode, bookmarks, false);
         }
 
-        public IAsyncSession AsyncSession(IEnumerable<string> bookmarks)
+        public IAsyncSession AsyncSession(IEnumerable<Bookmark> bookmarks)
         {
             return AsyncSession(AccessMode.Write, bookmarks);
         }
 
-        public IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive)
+        public IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<Bookmark> bookmarks, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, defaultMode, Bookmark.From(bookmarks),
-                reactive);
+            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, defaultMode,
+                Bookmark.From(bookmarks), reactive);
 
             if (IsClosed)
             {

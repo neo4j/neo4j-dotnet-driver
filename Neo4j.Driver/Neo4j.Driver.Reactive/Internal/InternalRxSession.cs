@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal
             _retryLogic = retryLogic;
         }
 
-        public String LastBookmark => _session.LastBookmark;
+        public Bookmark LastBookmark => _session.LastBookmark;
 
         #region Run Methods
 

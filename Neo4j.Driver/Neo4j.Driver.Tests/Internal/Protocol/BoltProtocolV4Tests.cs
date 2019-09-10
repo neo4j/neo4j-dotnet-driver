@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Internal.Protocol
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
         };
 
-        internal static readonly Bookmark Bookmark = Internal.Bookmark.From(SessionTests.FakeABookmark(123));
+        internal static readonly Bookmark Bookmark = Bookmark.From(SessionTests.FakeABookmark(123));
 
         internal static void VerifyMetadata(IDictionary<string, object> metadata)
         {

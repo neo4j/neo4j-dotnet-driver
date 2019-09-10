@@ -16,6 +16,8 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
@@ -45,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 await CreateNodeInTx(session, 1);
 
                 session.LastBookmark.Should().NotBeNull();
-                session.LastBookmark.Should().StartWith("neo4j:bookmark:v1:tx");
+                session.LastBookmark.Values.Should().NotBeEmpty();
             }
             finally
             {
@@ -62,7 +64,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 await CreateNodeInTx(session, 1);
 
                 var bookmark = session.LastBookmark;
-                bookmark.Should().NotBeNullOrEmpty();
+                bookmark.Should().NotBeNull();
+                bookmark.Values.Should().NotBeEmpty();
 
                 var tx = await session.BeginTransactionAsync();
                 try
@@ -91,7 +94,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 await CreateNodeInTx(session, 1);
 
                 var bookmark = session.LastBookmark;
-                bookmark.Should().NotBeNullOrEmpty();
+                bookmark.Should().NotBeNull();
+                bookmark.Values.Should().NotBeEmpty();
 
                 var tx = await session.BeginTransactionAsync();
                 var exc = await Record.ExceptionAsync(async () =>
@@ -110,24 +114,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
-        public async Task ShouldIgnoreInvalidBookmark()
-        {
-            var session = Driver.AsyncSession("invalid bookmark format");
-            try
-            {
-                await session.BeginTransactionAsync();
-                session.LastBookmark.Should().BeNull(); // ignored
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldThrowForUnreachableBookmark()
         {
-            string bookmark;
+            Bookmark bookmark;
             var session = Driver.AsyncSession();
             try
             {
@@ -140,13 +129,13 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
 
             // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
-            session = Driver.AsyncSession(bookmark + "0");
+            session = Driver.AsyncSession(Bookmark.From(BookmarkValue(bookmark) + "0"));
             try
             {
                 var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
 
                 exc.Should().BeOfType<TransientException>().Which
-                    .Message.Should().Contain("Database not up to the requested version:");
+                    .Message.Should().Contain("not up to the requested version:");
             }
             finally
             {
@@ -164,7 +153,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 session.LastBookmark.Should().BeNull();
                 await CreateNodeInTx(session, 1);
 
-                session.LastBookmark.Should().NotBeNull().And.StartWith(BookmarkHeader);
+                session.LastBookmark.Should().NotBeNull();
+                session.LastBookmark.Values.Should().NotBeEmpty();
                 var lastBookmarkNum = BookmarkNum(session.LastBookmark);
 
                 // start a thread to create lastBookmark + 1 tx 
@@ -185,7 +175,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 });
 
                 // wait for lastBookmark + 1
-                var waitForBookmark = $"{BookmarkHeader}{lastBookmarkNum + 1}";
+                var waitForBookmark = BookmarkNumOverride(session.LastBookmark, lastBookmarkNum + 1);
                 var count = await CountNodeInTx(Driver, 2, waitForBookmark);
                 count.Should().Be(1);
             }
@@ -210,7 +200,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        private static async Task<int> CountNodeInTx(IDriver driver, int id, string bookmark = null)
+        private static async Task<int> CountNodeInTx(IDriver driver, int id, Bookmark bookmark = null)
         {
             var session = driver.AsyncSession(bookmark);
             try
@@ -235,9 +225,33 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        private static long BookmarkNum(string bookmark)
+        private static long BookmarkNum(Bookmark bookmark)
         {
-            return Convert.ToInt64(bookmark.Substring(BookmarkHeader.Length));
+            return LastBookmarkValue(bookmark).seq;
+        }
+
+        private static string BookmarkValue(Bookmark bookmark)
+        {
+            return LastBookmarkValue(bookmark).value;
+        }
+
+        private static Bookmark BookmarkNumOverride(Bookmark bookmark, long newSeq)
+        {
+            var (value, seq) = LastBookmarkValue(bookmark);
+            var prefix = value.Substring(0, value.Length - seq.ToString().Length);
+
+            return Bookmark.From(prefix + newSeq);
+        }
+
+        private static (string value, long seq) LastBookmarkValue(Bookmark bookmark)
+        {
+            return bookmark.Values.Select(v => (value: v, seq: Convert.ToInt64(ExtractNumber(v))))
+                .OrderByDescending(v => v.seq).First();
+        }
+
+        private static string ExtractNumber(string value)
+        {
+            return Regex.Match(value, @"\D+(\d+)$").Groups[1].Value;
         }
     }
 }

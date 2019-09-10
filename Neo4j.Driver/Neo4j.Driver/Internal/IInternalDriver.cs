@@ -23,6 +23,6 @@ namespace Neo4j.Driver.Internal
     {
         Config Config { get; }
 
-        IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive);
+        IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<Bookmark> bookmarks, bool reactive);
     }
 }

@@ -77,15 +77,11 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
 
             metadata.Should().HaveCount(3).And.ContainKeys("bookmarks", "tx_timeout", "tx_metadata");
             metadata["bookmarks"].CastOrThrow<List<object>>().Should().HaveCount(1).And
-                .Contain("neo4j:bookmark:v1:tx123");
+                .Contain("bookmark-123");
             metadata["tx_timeout"].Should().Be(60000L);
 
             metadata["tx_metadata"].CastOrThrow<Dictionary<string, object>>().Should().HaveCount(1).And
-                .Contain(
-                    new[]
-                    {
-                        new KeyValuePair<string, object>("username", "MollyMostlyWhite"),
-                    });
+                .Contain(new KeyValuePair<string, object>("username", "MollyMostlyWhite"));
         }
 
         [Fact]

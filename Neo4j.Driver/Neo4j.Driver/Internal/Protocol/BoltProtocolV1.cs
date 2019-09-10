@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -88,7 +89,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var handler = new V1.BeginResponseHandler();
             await connection.EnqueueAsync(new RunMessage(Begin, parameters), handler, PullAll, handler)
                 .ConfigureAwait(false);
-            if (bookmark?.HasBookmark ?? false)
+            if (bookmark != null && bookmark.Values.Any())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
@@ -98,7 +99,8 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, bool reactive)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+            var streamBuilder =
+                new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V1.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V1.PullResponseHandler(streamBuilder, summaryBuilder);
             await connection.EnqueueAsync(new RunMessage(statement), runHandler, PullAll, pullAllHandler)

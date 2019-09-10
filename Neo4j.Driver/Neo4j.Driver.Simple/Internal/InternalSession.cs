@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         }
 
-        public string LastBookmark => _session.LastBookmark;
+        public Bookmark LastBookmark => _session.LastBookmark;
 
         public IStatementResult Run(string statement)
         {

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -81,7 +82,7 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()),
                     new V1.BeginResponseHandler())
                 .ConfigureAwait(false);
-            if (bookmark?.HasBookmark ?? false)
+            if (bookmark != null && bookmark.Values.Any())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
@@ -91,7 +92,8 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, bool reactive)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+            var streamBuilder =
+                new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, null);
             await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()),

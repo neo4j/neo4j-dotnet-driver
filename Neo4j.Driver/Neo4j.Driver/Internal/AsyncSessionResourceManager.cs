@@ -15,6 +15,7 @@
 // See the License for the specific
 
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
@@ -68,7 +69,7 @@ namespace Neo4j.Driver.Internal
         /// <param name="bookmark">The new bookmark</param>
         public void UpdateBookmark(Bookmark bookmark)
         {
-            if (bookmark?.HasBookmark ?? false)
+            if (bookmark != null && bookmark.Values.Any())
             {
                 _bookmark = bookmark;
             }

@@ -47,7 +47,7 @@ namespace Neo4j.Driver
         /// <returns>A reactive session instance</returns>
         public static IRxSession RxSession(this IDriver driver, AccessMode mode)
         {
-            return RxSession(driver, mode, Enumerable.Empty<string>());
+            return RxSession(driver, mode, Enumerable.Empty<Bookmark>());
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace Neo4j.Driver
         /// <param name="mode">access mode for the returned session</param>
         /// <param name="bookmarks">bookmarks to establish causal chaining</param>
         /// <returns>A reactive session instance</returns>
-        public static IRxSession RxSession(this IDriver driver, AccessMode mode, IEnumerable<string> bookmarks)
+        public static IRxSession RxSession(this IDriver driver, AccessMode mode, IEnumerable<Bookmark> bookmarks)
         {
             var reactiveDriver = driver.CastOrThrow<IInternalDriver>();
 

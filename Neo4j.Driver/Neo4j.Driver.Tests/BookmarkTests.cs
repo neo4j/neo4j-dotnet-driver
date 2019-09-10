@@ -17,6 +17,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver;
@@ -31,26 +32,29 @@ namespace Neo4j.Driver.Tests
         {
             public static IEnumerable<object[]> MultipleBookmarks => new[]
             {
-                new object[] {new[] {null, "illegalBookmark", FakeABookmark(123)}, FakeABookmark(123), true},
-                new object[] {new[] {null, "illegalBookmark"}, null, false},
-                new object[] {new string[] {null}, null, false},
-                new object[] {new[] {"illegalBookmark"}, null, false},
-                new object[] {new[] {FakeABookmark(123), FakeABookmark(234)}, FakeABookmark(234), true},
-                new object[] {new[] {FakeABookmark(123), FakeABookmark(-234)}, FakeABookmark(123), true},
+                new object[]
+                {
+                    new[] {null, "illegalBookmark", FakeABookmark(123)}, new[] {"illegalBookmark", FakeABookmark(123)}
+                },
+                new object[] {new[] {null, "illegalBookmark"}, new[] {"illegalBookmark"}},
+                new object[] {new string[] {null}, new string[0]},
+                new object[] {new[] {"illegalBookmark"}, new[] {"illegalBookmark"}},
+                new object[]
+                    {new[] {FakeABookmark(123), FakeABookmark(234)}, new[] {FakeABookmark(123), FakeABookmark(234)}},
+                new object[]
+                    {new[] {FakeABookmark(123), FakeABookmark(-234)}, new[] {FakeABookmark(123), FakeABookmark(-234)}},
             };
 
             [Theory, MemberData(nameof(MultipleBookmarks))]
-            public void ShouldCreateFromMultipleBookmarks(string[] bookmarks, string maxBookmark,
-                bool hasBookmark)
+            public void ShouldCreateFromMultipleBookmarks(string[] bookmarks, string[] expectedValues)
             {
                 var bookmark = Bookmark.From(bookmarks);
-                bookmark.MaxBookmark.Should().Be(maxBookmark);
-                bookmark.HasBookmark.Should().Be(hasBookmark);
+                bookmark.Values.Should().BeEquivalentTo(expectedValues);
+
                 var parameters = bookmark.AsBeginTransactionParameters();
-                if (hasBookmark)
+                if (expectedValues.Length > 0)
                 {
-                    parameters["bookmark"].Should().Be(maxBookmark);
-                    parameters["bookmarks"].ValueAs<List<string>>().Should().Contain(bookmarks);
+                    parameters.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(expectedValues);
                 }
                 else
                 {
@@ -58,30 +62,42 @@ namespace Neo4j.Driver.Tests
                 }
             }
 
-            public static IEnumerable<object[]> SingleBookmark => new[]
+            public class Equals
             {
-                new object[] {null, null, false},
-                new object[] {"illegalBookmark", null, false},
-                new object[] {FakeABookmark(-234), null, false},
-                new object[] {FakeABookmark(123), FakeABookmark(123), true},
-            };
+                [Theory]
+                [InlineData(new string[0], new string[0])]
+                [InlineData(new[] {"bookmark-1", "bookmark-2", "bookmark-3"},
+                    new[] {"bookmark-1", "bookmark-2", "bookmark-3"})]
+                [InlineData(new[] {null, "bookmark-1", "bookmark-2", "bookmark-3"},
+                    new[] {"bookmark-1", "bookmark-2", "bookmark-3", null})]
+                [InlineData(new[] {null, "bookmark-1", "bookmark-2", "bookmark-3"},
+                    new[] {"bookmark-3", "bookmark-1", "bookmark-2", null})]
+                public void ShouldBeEqual(string[] values1, string[] values2)
+                {
+                    var bookmark1 = Bookmark.From(values1);
+                    var bookmark2 = Bookmark.From(values2);
 
-            [Theory, MemberData(nameof(SingleBookmark))]
-            public void ShouldCreateFromSingleBookmark(string aBookmark, string maxBookmark, bool hasBookmark)
-            {
-                var bookmark = Bookmark.From(aBookmark);
-                bookmark.MaxBookmark.Should().Be(maxBookmark);
-                bookmark.HasBookmark.Should().Be(hasBookmark);
-                var parameters = bookmark.AsBeginTransactionParameters();
-                if (hasBookmark)
-                {
-                    parameters["bookmark"].Should().Be(maxBookmark);
-                    var bookmarks = parameters["bookmarks"].ValueAs<List<string>>();
-                    bookmarks.Single().Should().Be(aBookmark);
+                    bookmark1.Should().Be(bookmark2);
                 }
-                else
+            }
+
+            public class From
+            {
+                [Theory]
+                [InlineData(new string[0], new string[0], new string[0])]
+                [InlineData(new string[0], new[] {"bookmark-1"}, new[] {"bookmark-1"})]
+                [InlineData(new[] {"bookmark-1"}, new[] {"bookmark-2"}, new[] {"bookmark-1", "bookmark-2"})]
+                [InlineData(new[] {"bookmark-1", "bookmark-2"}, new[] {"bookmark-2"},
+                    new[] {"bookmark-1", "bookmark-2"})]
+                [InlineData(new[] {"bookmark-1", "bookmark-2"}, new[] {"bookmark-2", "bookmark-3"},
+                    new[] {"bookmark-1", "bookmark-2", "bookmark-3"})]
+                public void ShouldUnionValues(string[] values1, string[] values2, string[] values3)
                 {
-                    parameters.Should().BeNull();
+                    var bookmark1 = Bookmark.From(values1);
+                    var bookmark2 = Bookmark.From(values2);
+                    var bookmark3 = Bookmark.From(values3);
+
+                    Bookmark.From(new[] {bookmark1, bookmark2}).Should().Be(bookmark3);
                 }
             }
         }

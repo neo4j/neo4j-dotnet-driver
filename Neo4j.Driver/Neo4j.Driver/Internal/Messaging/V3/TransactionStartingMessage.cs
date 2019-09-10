@@ -16,12 +16,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Messaging.V3
 {
     internal abstract class TransactionStartingMessage : IRequestMessage
     {
+        private const string BookmarksKey = BookmarkHelper.BookmarksKey;
         private const string TxTimeoutMetadataKey = "tx_timeout";
         private const string TxMetadataMetadataKey = "tx_metadata";
         private const string AccessModeKey = "mode";
@@ -37,7 +39,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
         private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode)
         {
-            var bookmarksPresent = bookmark?.HasBookmark ?? false;
+            var bookmarksPresent = bookmark != null && bookmark.Values.Any();
             var txTimeoutPresent = txTimeout > TimeSpan.Zero;
             var txMetadataPresent = txMetadata != null && txMetadata.Count != 0;
 
@@ -45,7 +47,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
             if (bookmarksPresent)
             {
-                result.Add(Bookmark.BookmarksKey, bookmark.Bookmarks);
+                result.Add(BookmarksKey, bookmark.Values);
             }
 
             if (txTimeoutPresent)

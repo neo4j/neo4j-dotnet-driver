@@ -43,7 +43,8 @@ namespace Neo4j.Driver.Internal
 
         private Bookmark _bookmark;
         private readonly IDriverLogger _logger;
-        public string LastBookmark => _bookmark?.MaxBookmark;
+
+        public Bookmark LastBookmark => _bookmark;
 
         private readonly bool _reactive;
 

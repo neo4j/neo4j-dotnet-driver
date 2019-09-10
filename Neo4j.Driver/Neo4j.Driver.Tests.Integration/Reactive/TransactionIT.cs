@@ -239,7 +239,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         public void ShouldFailToBeginTxcWithInvalidBookmark()
         {
             Server.Driver
-                .RxSession(AccessMode.Read, new[] {"InvalidBookmark"})
+                .RxSession(AccessMode.Read, new[] {Bookmark.From("InvalidBookmark")})
                 .BeginTransaction()
                 .WaitForCompletion()
                 .AssertEqual(
@@ -341,7 +341,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             var bookmark3 = session.LastBookmark;
 
-            bookmark1.Should().BeNullOrEmpty();
+            bookmark1.Should().BeNull();
             bookmark2.Should().NotBe(bookmark1);
             bookmark3.Should().NotBe(bookmark1).And.NotBe(bookmark2);
         }

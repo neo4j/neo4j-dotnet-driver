@@ -53,7 +53,7 @@ namespace Neo4j.Driver
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
         /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(string bookmark);
+        IAsyncSession AsyncSession(Bookmark bookmark);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/> and start bookmark.
@@ -65,7 +65,7 @@ namespace Neo4j.Driver
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
         /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(AccessMode defaultMode, string bookmark);
+        IAsyncSession AsyncSession(AccessMode defaultMode, Bookmark bookmark);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode"/> and a series of start bookmarks.
@@ -77,7 +77,7 @@ namespace Neo4j.Driver
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
         /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<string> bookmarks);
+        IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<Bookmark> bookmarks);
 
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode.Write"/> access mode and a series of start bookmarks.
@@ -86,7 +86,7 @@ namespace Neo4j.Driver
         /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
         /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(IEnumerable<string> bookmarks);
+        IAsyncSession AsyncSession(IEnumerable<Bookmark> bookmarks);
 
         /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.

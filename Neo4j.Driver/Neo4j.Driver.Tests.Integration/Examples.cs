@@ -798,7 +798,7 @@ namespace Neo4j.Driver.Examples
             public void AddEmployAndMakeFriends()
             {
                 // To collect the session bookmarks
-                var savedBookmarks = new List<string>();
+                var savedBookmarks = new List<Bookmark>();
 
                 // Create the first person and employment relationship.
                 using (var session1 = Driver.Session(AccessMode.Write))

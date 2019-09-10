@@ -92,7 +92,7 @@ namespace Neo4j.Driver.Tests
 
         internal static string FakeABookmark(int num)
         {
-            return $"{Bookmark.BookmarkPrefix}{num}";
+            return $"bookmark-{num}";
         }
 
         public class RunAsyncMethod
