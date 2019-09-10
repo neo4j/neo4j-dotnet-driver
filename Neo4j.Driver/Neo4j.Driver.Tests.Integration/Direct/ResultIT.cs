@@ -129,7 +129,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             var session = Driver.AsyncSession();
             try
             {
-                var cursor = await session.RunAsync("EXPLAIN MATCH (n), (m) RETURN n, m");
+                var cursor = await session.RunAsync("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n");
                 var summary = await cursor.ConsumeAsync();
 
                 var notifications = summary.Notifications;

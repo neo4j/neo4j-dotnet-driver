@@ -179,14 +179,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact]
             public void ShouldReturnNotifications()
             {
-                VerifySummary("EXPLAIN MATCH (n),(m) RETURN n,m", null,
+                VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n", null,
                     MatchesSummary(new
                         {
                             Notifications = new[]
                             {
-                                new Notification("Neo.ClientNotification.Statement.CartesianProductWarning",
-                                    "This query builds a cartesian product between disconnected patterns.",
-                                    "If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m))",
+                                new Notification("Neo.ClientNotification.Statement.UnknownLabelWarning",
+                                    "The provided label is not in the database.",
+                                    "One of the labels in your query is not available in the database, make sure you didn\'t misspell it or that the label is available when you run this statement in your application (the missing label name is: ThisLabelDoesNotExist)",
                                     null, "WARNING")
                             }
                         },
