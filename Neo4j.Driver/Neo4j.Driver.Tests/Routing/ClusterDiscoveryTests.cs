@@ -397,7 +397,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 _mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>((msg1, handler1, msg2, handler2) =>
                     {
                         msg1.ToString().Should().Be(_requestMessages[_requestCount].ToString());
@@ -419,7 +419,7 @@ namespace Neo4j.Driver.Tests.Routing
                              _responseMessages[_responseCount].Dispatch(_pipeline);
                             _responseCount++;
                             _pipeline.AssertNoFailure();
-                            return TaskHelper.GetCompletedTask();
+                            return Task.CompletedTask;
                         }
                         else
                         {

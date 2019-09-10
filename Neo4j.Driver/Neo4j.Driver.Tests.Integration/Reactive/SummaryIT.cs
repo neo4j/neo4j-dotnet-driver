@@ -176,7 +176,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     Matches<IResultSummary>(s => s.Notifications.Should().BeEmpty()));
             }
 
-            [RequireServerFact(Skip = "Seems to be flaky")]
+            [RequireServerFact]
             public void ShouldReturnNotifications()
             {
                 VerifySummary("EXPLAIN MATCH (n),(m) RETURN n,m", null,
@@ -217,15 +217,23 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 using (var session = Server.Driver.Session())
                 {
                     foreach (var drop in session.Run(
-                        "CALL db.constraints() yield description RETURN 'DROP ' + description"))
+                        "CALL db.constraints()"))
                     {
-                        session.Run(drop[0].As<string>()).Consume();
+                        if (drop.Values.TryGetValue("description", out var name) ||
+                            drop.Values.TryGetValue("name", out name))
+                        {
+                            session.Run($"DROP {name}").Consume();
+                        }
                     }
 
                     foreach (var drop in session.Run(
-                        "CALL db.indexes() yield description RETURN 'DROP ' + description"))
+                        "CALL db.indexes()"))
                     {
-                        session.Run(drop[0].As<string>()).Consume();
+                        if (drop.Values.TryGetValue("description", out var name) ||
+                            drop.Values.TryGetValue("name", out name))
+                        {
+                            session.Run($"DROP {name}").Consume();
+                        }
                     }
                 }
 

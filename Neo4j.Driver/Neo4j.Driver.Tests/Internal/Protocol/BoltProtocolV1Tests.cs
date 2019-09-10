@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1?.OnSuccess(new Dictionary<string, object>()); });
 
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Setup(x =>
                         x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V1.RunResponseHandler>(), PullAllMessage.PullAll,
                             It.IsAny<V1.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1?.OnSuccess(new Dictionary<string, object>()); });
 

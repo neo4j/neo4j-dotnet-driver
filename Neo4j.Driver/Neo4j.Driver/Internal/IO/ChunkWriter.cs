@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Internal.IO
                     {
                         Cleanup();
 
-                        return TaskHelper.GetCompletedTask();
+                        return Task.CompletedTask;
                     }).Unwrap();
         }
 

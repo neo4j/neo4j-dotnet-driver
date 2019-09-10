@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
                 mockedConnection.Setup(c => c.InitAsync())
-                    .Returns(TaskHelper.GetFailedTask(new InvalidOperationException("An exception")));
+                    .Returns(Task.FromException(new InvalidOperationException("An exception")));
                 mockedConnectionPool.Setup(x => x.AcquireAsync(It.IsAny<AccessMode>()))
                     .ReturnsAsync(mockedConnection.Object);
 

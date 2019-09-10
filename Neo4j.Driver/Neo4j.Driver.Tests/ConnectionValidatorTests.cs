@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
                 conn.Setup(x => x.ClearConnectionAsync())
-                    .Returns(TaskHelper.GetFailedTask(new InvalidOperationException()));
+                    .Returns(Task.FromException(new InvalidOperationException()));
                 var validator = NewConnectionValidator();
                 var result = await validator.OnReleaseAsync(conn.Object);
                 result.Should().BeFalse();

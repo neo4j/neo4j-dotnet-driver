@@ -50,8 +50,8 @@ namespace Neo4j.Driver.Internal.Result
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
             _advanceFunction =
                 WrapAdvanceFunc(advanceFunction ?? throw new ArgumentNullException(nameof(advanceFunction)));
-            _moreFunction = moreFunction ?? ((s, id, n) => TaskHelper.GetCompletedTask());
-            _cancelFunction = cancelFunction ?? ((s, id) => TaskHelper.GetCompletedTask());
+            _moreFunction = moreFunction ?? ((s, id, n) => Task.CompletedTask);
+            _cancelFunction = cancelFunction ?? ((s, id) => Task.CompletedTask);
             _cancellationSource = new CancellationTokenSource();
             _resourceHandler = resourceHandler;
 
@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Internal.Result
                     catch (Exception exc)
                     {
                         _pendingError = new ResponsePipelineError(exc);
-                        
+
                         // Ensure that current state is updated and is recognized as Completed
                         UpdateState(State.Completed);
                     }

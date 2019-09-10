@@ -203,13 +203,13 @@ namespace Neo4j.Driver.Internal
                 // no resources will be closed as the resources passed in this class are managed outside this class
                 Delegate = null;
                 _transaction = null;
-                return TaskHelper.GetCompletedTask();
+                return Task.CompletedTask;
             }
 
             public override Task OnErrorAsync(Exception error)
             {
                 _transaction.MarkToClose();
-                return TaskHelper.GetFailedTask(error);
+                return Task.FromException(error);
             }
         }
     }

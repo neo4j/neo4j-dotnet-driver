@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Internal.Routing
                 return _clusterConnectionPool.CloseAsync();
             }
 
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public async Task<IConnection> AcquireConnectionAsync(AccessMode mode)

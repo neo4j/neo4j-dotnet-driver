@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Internal.Connector
                 return _tcpSocketClient.DisconnectAsync();
             }
 
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         private async Task<int> DoHandshakeAsync()

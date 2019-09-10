@@ -162,7 +162,7 @@ namespace Neo4j.Driver.Internal.Connector
                                 _client = null;
                                 _stream = null;
 
-                                return TaskHelper.GetCompletedTask();
+                                return Task.CompletedTask;
                             }).Unwrap();
 #else
                     _client.Shutdown(SocketShutdown.Both);
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Internal.Connector
                 _stream = null;
             }
 
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         private void InitClient()

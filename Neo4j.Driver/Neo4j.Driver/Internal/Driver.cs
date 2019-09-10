@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Internal
                 return _connectionProvider.CloseAsync();
             }
 
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public void Dispose()

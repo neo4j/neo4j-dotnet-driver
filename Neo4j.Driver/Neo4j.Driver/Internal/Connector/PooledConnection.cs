@@ -101,12 +101,12 @@ namespace Neo4j.Driver.Internal.Connector
 
             if (error.IsConnectionError())
             {
-                return TaskHelper.GetFailedTask(new ServiceUnavailableException(
+                return Task.FromException(new ServiceUnavailableException(
                     $"Connection with the server breaks due to {error.GetType().Name}: {error.Message}", error));
             }
             else
             {
-                return TaskHelper.GetFailedTask(error);
+                return Task.FromException(error);
             }
         }
 

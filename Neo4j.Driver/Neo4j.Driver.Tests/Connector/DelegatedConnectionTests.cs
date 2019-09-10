@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.Connector
             public override Task OnErrorAsync(Exception error)
             {
                 ErrorList.Add(error);
-                return TaskHelper.GetFailedTask(error);
+                return Task.FromException(error);
             }
         }
 
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.Connector
             private static Task FaultedTask()
             {
                 // as it is marked with async, therefore the result will be wrapped in task
-                return TaskHelper.GetFailedTask(new InvalidOperationException("Molly ate too much today!"));
+                return Task.FromException(new InvalidOperationException("Molly ate too much today!"));
             }
 
             private static Task FaultedOutsideTask()

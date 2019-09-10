@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (m1, h1, m2, h2) =>
                         {

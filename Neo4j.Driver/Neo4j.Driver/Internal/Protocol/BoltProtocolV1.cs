@@ -131,7 +131,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public Task LogoutAsync(IConnection connection)
         {
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         private void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig)

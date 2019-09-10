@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Tests
             {
                 var protocol = new Mock<IBoltProtocol>();
                 protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
-                    .Returns(TaskHelper.GetCompletedTask());
+                    .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
                         false,
                         It.IsAny<IBookmarkTracker>(),
@@ -70,18 +70,18 @@ namespace Neo4j.Driver.Tests
                 protocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))
-                    .Returns(TaskHelper.GetCompletedTask());
+                    .Returns(Task.CompletedTask);
                 protocol.Setup(x =>
                         x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), false))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
                 protocol.Setup(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<IBookmarkTracker>()))
-                    .Returns(TaskHelper.GetCompletedTask());
+                    .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()))
-                    .Returns(TaskHelper.GetCompletedTask());
+                    .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.ResetAsync(It.IsAny<IConnection>()))
-                    .Returns(TaskHelper.GetCompletedTask());
+                    .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>()))
-                    .Returns(TaskHelper.GetCompletedTask());
+                    .Returns(Task.CompletedTask);
 
                 boltProtocol = protocol.Object;
             }
@@ -212,7 +212,7 @@ namespace Neo4j.Driver.Tests
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))
-                    .Returns(TaskHelper.GetCompletedTask()).Callback(() =>
+                    .Returns(Task.CompletedTask).Callback(() =>
                     {
                         // only throw exception on the first beginTx call
                         calls++;
@@ -290,7 +290,7 @@ namespace Neo4j.Driver.Tests
             // Whenever you enqueue any message, you immediately receives a response
             mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                     It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
-                .Returns(TaskHelper.GetCompletedTask())
+                .Returns(Task.CompletedTask)
                 .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                     (m1, h1, m2, h2) =>
                     {
@@ -344,7 +344,7 @@ namespace Neo4j.Driver.Tests
 
             public Task CloseAsync()
             {
-                return TaskHelper.GetCompletedTask();
+                return Task.CompletedTask;
             }
         }
     }
