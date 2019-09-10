@@ -3,11 +3,11 @@ name: pull-requests
 # disable CI builds
 trigger: none
 
-# Only trigger for PR's targeting 2.0
+# Only trigger for PR's targeting 4.0
 pr:
   branches:
     include:
-      - 2.0
+      - 4.0
   autoCancel: "true"
 
 strategy:
