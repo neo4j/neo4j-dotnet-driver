@@ -1,10 +1,10 @@
 name: continous-integration
 
-# Build for 2.0
+# Build for 4.0
 trigger:
   branches:
     include:
-      - 2.0
+      - 4.0
 
 # disable PR builds
 pr: none
