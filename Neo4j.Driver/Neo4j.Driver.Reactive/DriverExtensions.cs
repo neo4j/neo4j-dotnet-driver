@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal;
@@ -35,7 +36,7 @@ namespace Neo4j.Driver
         /// <returns>A reactive session instance</returns>
         public static IRxSession RxSession(this IDriver driver)
         {
-            return RxSession(driver, AccessMode.Write);
+            return RxSession(driver, o => { });
         }
 
         /// <summary>
@@ -43,26 +44,14 @@ namespace Neo4j.Driver
         /// the specified access mode.
         /// </summary>
         /// <param name="driver">driver instance</param>
-        /// <param name="mode">access mode for the returned session</param>
+        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionOptions"/> instance, that should populate
+        /// the provided instance with desired options.</param> 
         /// <returns>A reactive session instance</returns>
-        public static IRxSession RxSession(this IDriver driver, AccessMode mode)
-        {
-            return RxSession(driver, mode, Enumerable.Empty<Bookmark>());
-        }
-
-        /// <summary>
-        /// Obtain a session which is designed to be used through <see cref="System.Reactive"/> with
-        /// the specified access mode and bookmarks.
-        /// </summary>
-        /// <param name="driver">driver instance</param>
-        /// <param name="mode">access mode for the returned session</param>
-        /// <param name="bookmarks">bookmarks to establish causal chaining</param>
-        /// <returns>A reactive session instance</returns>
-        public static IRxSession RxSession(this IDriver driver, AccessMode mode, IEnumerable<Bookmark> bookmarks)
+        public static IRxSession RxSession(this IDriver driver, Action<SessionOptions> optionsBuilder)
         {
             var reactiveDriver = driver.CastOrThrow<IInternalDriver>();
 
-            return new InternalRxSession(reactiveDriver.Session(mode, bookmarks, true),
+            return new InternalRxSession(reactiveDriver.Session(optionsBuilder, true),
                 new RxRetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.DriverLogger));
         }
     }

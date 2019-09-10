@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests
                 }
             }
 
-            public class Equals
+            public class EqualsMethod
             {
                 [Theory]
                 [InlineData(new string[0], new string[0])]
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests
                 }
             }
 
-            public class From
+            public class FromMethod
             {
                 [Theory]
                 [InlineData(new string[0], new string[0], new string[0])]

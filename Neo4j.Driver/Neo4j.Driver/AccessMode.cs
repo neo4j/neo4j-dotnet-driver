@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -18,16 +18,18 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///     An authentication token is used to authenticate with a Neo4j instance. 
-    ///     It usually contains a <c>Principal</c>, for instance a username, and one or more <c>Credentials</c>, for instance a password.
-    ///     See <see cref="AuthTokens" /> for available types of <see cref="IAuthToken"/>s.
+    /// Used by driver to route a cypher statement to a write server or a read server.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
-    /// </remarks>
-    public interface IAuthToken
+    public enum AccessMode
     {
-    }
+        /// <summary>
+        /// Requires cypher statement to be carried out on a read server
+        /// </summary>
+        Read,
 
-    
+        /// <summary>
+        /// Requires cypher statement to be executed on a write server
+        /// </summary>
+        Write
+    }
 }

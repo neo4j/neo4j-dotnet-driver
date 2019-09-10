@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -18,16 +18,33 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///     An authentication token is used to authenticate with a Neo4j instance. 
-    ///     It usually contains a <c>Principal</c>, for instance a username, and one or more <c>Credentials</c>, for instance a password.
-    ///     See <see cref="AuthTokens" /> for available types of <see cref="IAuthToken"/>s.
+    /// The type of a statement.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
-    /// </remarks>
-    public interface IAuthToken
+    public enum StatementType
     {
-    }
+        /// <summary>
+        /// The statement type is unknown
+        /// </summary>
+        Unknown,
 
-    
+        /// <summary>
+        /// The statement is a readonly statement
+        /// </summary>
+        ReadOnly,
+
+        /// <summary>
+        /// The statement is a readwrite statement
+        /// </summary>
+        ReadWrite,
+
+        /// <summary>
+        /// The statement is a writeonly statement
+        /// </summary>
+        WriteOnly,
+
+        /// <summary>
+        /// The statement is a schemawrite statement
+        /// </summary>
+        SchemaWrite
+    }
 }

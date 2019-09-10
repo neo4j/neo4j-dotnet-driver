@@ -45,7 +45,8 @@ namespace Neo4j.Driver.Reactive
 
         private static IRxSession NewSession(IDriver driver)
         {
-            return driver.RxSession(AccessMode.Write, new[] {Bookmark.From("1", "3")});
+            return driver.RxSession(o =>
+                o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(Bookmark.From("1", "3")));
         }
     }
 }

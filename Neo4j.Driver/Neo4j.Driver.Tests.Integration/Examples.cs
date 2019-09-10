@@ -321,7 +321,7 @@ namespace Neo4j.Driver.Examples
                             CreateDriverWithCustomResolver("bolt+routing://x.acme.com", AuthTokens.None,
                                 ServerAddress.From("localhost", 9001)))
                         {
-                            using (var session = driver.Session(AccessMode.Read))
+                            using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))
                             {
                                 // When & Then
                                 session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
@@ -801,7 +801,7 @@ namespace Neo4j.Driver.Examples
                 var savedBookmarks = new List<Bookmark>();
 
                 // Create the first person and employment relationship.
-                using (var session1 = Driver.Session(AccessMode.Write))
+                using (var session1 = Driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
                 {
                     session1.WriteTransaction(tx => AddCompany(tx, "Wayne Enterprises"));
                     session1.WriteTransaction(tx => AddPerson(tx, "Alice"));
@@ -811,7 +811,7 @@ namespace Neo4j.Driver.Examples
                 }
 
                 // Create the second person and employment relationship.
-                using (var session2 = Driver.Session(AccessMode.Write))
+                using (var session2 = Driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
                 {
                     session2.WriteTransaction(tx => AddCompany(tx, "LexCorp"));
                     session2.WriteTransaction(tx => AddPerson(tx, "Bob"));
@@ -821,7 +821,8 @@ namespace Neo4j.Driver.Examples
                 }
 
                 // Create a friendship between the two people created above.
-                using (var session3 = Driver.Session(AccessMode.Write, savedBookmarks))
+                using (var session3 = Driver.Session(o =>
+                    o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(savedBookmarks.ToArray())))
                 {
                     session3.WriteTransaction(tx => MakeFriends(tx, "Alice", "Bob"));
 

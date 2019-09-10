@@ -36,19 +36,7 @@ namespace Neo4j.Driver
         /// <returns>A reactive session instance</returns>
         public static ISession Session(this IDriver driver)
         {
-            return Session(driver, AccessMode.Write);
-        }
-
-        /// <summary>
-        /// Obtain a session which is designed to be used synchronously, which is built on top of the default
-        /// asynchronous <see cref="IAsyncSession"/> with the specified access mode.
-        /// </summary>
-        /// <param name="driver">driver instance</param>
-        /// <param name="mode">access mode for the returned session</param>
-        /// <returns>A reactive session instance</returns>
-        public static ISession Session(this IDriver driver, AccessMode mode)
-        {
-            return Session(driver, mode, Enumerable.Empty<Bookmark>());
+            return Session(driver, o => { });
         }
 
         /// <summary>
@@ -56,14 +44,14 @@ namespace Neo4j.Driver
         /// asynchronous <see cref="IAsyncSession"/> with the specified access mode and bookmarks.
         /// </summary>
         /// <param name="driver">driver instance</param>
-        /// <param name="mode">access mode for the returned session</param>
-        /// <param name="bookmarks">bookmarks to establish causal chaining</param>
+        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionOptions"/> instance, that should populate
+        /// the provided instance with desired options.</param> 
         /// <returns>A reactive session instance</returns>
-        public static ISession Session(this IDriver driver, AccessMode mode, IEnumerable<Bookmark> bookmarks)
+        public static ISession Session(this IDriver driver, Action<SessionOptions> optionsBuilder)
         {
             var reactiveDriver = driver.CastOrThrow<IInternalDriver>();
 
-            return new InternalSession(driver.AsyncSession(mode, bookmarks).CastOrThrow<IInternalAsyncSession>(),
+            return new InternalSession(driver.AsyncSession(optionsBuilder).CastOrThrow<IInternalAsyncSession>(),
                 new RetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.DriverLogger),
                 new BlockingExecutor());
         }

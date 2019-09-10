@@ -43,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldReceive()
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var cursor = await session
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSend()
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var point1 = new Point(Wgs84SrId, 51.5044585, -0.105658);
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceive(Point point)
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var cursor = await
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceiveList(IList<Point> points)
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var cursor =

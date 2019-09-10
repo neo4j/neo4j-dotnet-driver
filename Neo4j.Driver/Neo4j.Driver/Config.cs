@@ -24,38 +24,6 @@ using Neo4j.Driver.Internal.Metrics;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Control the level of encryption to require.
-    /// </summary>
-    public enum EncryptionLevel
-    {
-        /// <summary>
-        /// No encryption at all.
-        /// </summary>
-        None,
-
-        /// <summary>
-        /// Always encrypted.
-        /// </summary>
-        Encrypted
-    }
-
-    /// <summary>
-    /// Control load balancing strategy used by the driver.
-    /// </summary>
-    public enum LoadBalancingStrategy
-    {
-        /// <summary>
-        /// For each next query or transaction driver select servers in round-robin fashion.
-        /// </summary>
-        RoundRobin,
-
-        /// <summary>
-        /// For each next query or transaction driver selects the least connected server.
-        /// </summary>
-        LeastConnected
-    }
-
-    /// <summary>
     /// Use this class to config the <see cref="IDriver"/>.
     /// </summary>
     public class Config

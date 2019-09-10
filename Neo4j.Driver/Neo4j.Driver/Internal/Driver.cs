@@ -59,45 +59,26 @@ namespace Neo4j.Driver.Internal
 
         public IAsyncSession AsyncSession()
         {
-            return AsyncSession(DefaultAccessMode);
+            return AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
         }
 
-        public IAsyncSession AsyncSession(AccessMode defaultMode)
+        public IAsyncSession AsyncSession(Action<SessionOptions> optionsBuilder)
         {
-            return AsyncSession(defaultMode, (Bookmark) null);
+            return Session(optionsBuilder, false);
         }
 
-        public IAsyncSession AsyncSession(Bookmark bookmark)
-        {
-            return AsyncSession(DefaultAccessMode, bookmark);
-        }
-
-
-        public IAsyncSession AsyncSession(AccessMode defaultMode, Bookmark bookmark)
-        {
-            return Session(defaultMode, bookmark != null ? new[] {bookmark} : Enumerable.Empty<Bookmark>(), false);
-        }
-
-
-        public IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<Bookmark> bookmarks)
-        {
-            return Session(defaultMode, bookmarks, false);
-        }
-
-        public IAsyncSession AsyncSession(IEnumerable<Bookmark> bookmarks)
-        {
-            return AsyncSession(AccessMode.Write, bookmarks);
-        }
-
-        public IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<Bookmark> bookmarks, bool reactive)
+        public IInternalAsyncSession Session(Action<SessionOptions> optionsBuilder, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, defaultMode,
-                Bookmark.From(bookmarks), reactive);
+            var options = new SessionOptions();
+            optionsBuilder(options);
+
+            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,
+                Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive);
 
             if (IsClosed)
             {

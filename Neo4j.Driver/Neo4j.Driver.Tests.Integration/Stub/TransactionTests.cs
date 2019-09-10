@@ -47,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
-                        using (var session = driver.Session(AccessMode.Write))
+                        using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
                         {
                             var txc = session.BeginTransaction();
                             var result = txc.Run("CREATE (n {name: 'Bob'})");
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
-                        var session = driver.AsyncSession(AccessMode.Write);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
                         {
                             var txc = await session.BeginTransactionAsync();
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
-                        var session = driver.Session(AccessMode.Write);
+                        var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
                         {
                             var exc = Record.Exception(() =>
@@ -138,7 +138,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
-                        var session = driver.AsyncSession(AccessMode.Write);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
 
                         try
                         {

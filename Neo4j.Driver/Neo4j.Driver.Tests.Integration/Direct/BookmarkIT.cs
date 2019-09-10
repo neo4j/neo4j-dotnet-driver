@@ -129,7 +129,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
 
             // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
-            session = Driver.AsyncSession(Bookmark.From(BookmarkValue(bookmark) + "0"));
+            session = Driver.AsyncSession(o => o.WithBookmarks(Bookmark.From(BookmarkValue(bookmark) + "0")));
             try
             {
                 var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task<int> CountNodeInTx(IDriver driver, int id, Bookmark bookmark = null)
         {
-            var session = driver.AsyncSession(bookmark);
+            var session = driver.AsyncSession(o => o.WithBookmarks(bookmark));
             try
             {
                 var tx = await session.BeginTransactionAsync();

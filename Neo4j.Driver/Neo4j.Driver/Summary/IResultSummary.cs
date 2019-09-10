@@ -19,33 +19,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver
 {
-    /// <summary>
-    /// The type of a statement.
-    /// </summary>
-    public enum StatementType
-    {
-        /// <summary>
-        /// The statement type is unknown
-        /// </summary>
-        Unknown,
-        /// <summary>
-        /// The statement is a readonly statement
-        /// </summary>
-        ReadOnly,
-        /// <summary>
-        /// The statement is a readwrite statement
-        /// </summary>
-        ReadWrite,
-        /// <summary>
-        /// The statement is a writeonly statement
-        /// </summary>
-        WriteOnly,
-        /// <summary>
-        /// The statement is a schemawrite statement
-        /// </summary>
-        SchemaWrite
-    }
-
+    
     /// <summary>
     /// 
     /// The result summary of running a statement. The result summary interface can be used to investigate

@@ -57,7 +57,7 @@ namespace Neo4j.Driver.IntegrationTests
             var query = queries[currentIteration % queries.Length];
             var accessMode = accessModes[currentIteration % accessModes.Length];
 
-            using (var session = _driver.Session(accessMode))
+            using (var session = _driver.Session(o => o.WithDefaultAccessMode(accessMode)))
             {
                 try
                 {
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.IntegrationTests
             var query = queries[currentIteration % queries.Length];
             var accessMode = accessModes[currentIteration % accessModes.Length];
 
-            var session = _driver.AsyncSession(accessMode);
+            var session = _driver.AsyncSession(o => o.WithDefaultAccessMode(accessMode));
             try
             {
                 var result = await session.RunAsync(query);
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.IntegrationTests
                 var query = queries[currentIteration % queries.Length];
                 var accessMode = accessModes[currentIteration % accessModes.Length];
 
-                var session = _driver.AsyncSession(accessMode);
+                var session = _driver.AsyncSession(o => o.WithDefaultAccessMode(accessMode));
                 try
                 {
                     Func<IAsyncTransaction, Task> runTxAsync = async (txc) =>

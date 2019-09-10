@@ -265,7 +265,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private void VerifyNodesCreated(long expected)
         {
-            using (var session = _driver.Session(AccessMode.Write))
+            using (var session = _driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
             {
                 var count = session.Run("MATCH (n) RETURN count(n) as createdNodes")
                     .Select(r => r["createdNodes"].As<long>()).Single();
@@ -285,7 +285,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private void CleanupDatabase()
         {
-            using (var session = _driver.Session(AccessMode.Write))
+            using (var session = _driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }

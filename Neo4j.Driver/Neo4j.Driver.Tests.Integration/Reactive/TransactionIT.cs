@@ -239,7 +239,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         public void ShouldFailToBeginTxcWithInvalidBookmark()
         {
             Server.Driver
-                .RxSession(AccessMode.Read, new[] {Bookmark.From("InvalidBookmark")})
+                .RxSession(
+                    o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(Bookmark.From("InvalidBookmark")))
                 .BeginTransaction()
                 .WaitForCompletion()
                 .AssertEqual(

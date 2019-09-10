@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,19 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
+
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///     An authentication token is used to authenticate with a Neo4j instance. 
-    ///     It usually contains a <c>Principal</c>, for instance a username, and one or more <c>Credentials</c>, for instance a password.
-    ///     See <see cref="AuthTokens" /> for available types of <see cref="IAuthToken"/>s.
+    /// Represents a <c>Node</c> in the Neo4j graph database.
     /// </summary>
-    /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
-    /// </remarks>
-    public interface IAuthToken
+    public interface INode : IEntity, IEquatable<INode>
     {
+        /// <summary>
+        /// Gets the lables of the node.
+        /// </summary>
+        IReadOnlyList<string> Labels { get; }
     }
-
-    
 }

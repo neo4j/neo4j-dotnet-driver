@@ -55,7 +55,7 @@ namespace Neo4j.Driver
         {
             if (bookmarks == null)
             {
-                throw new NullReferenceException(nameof(bookmarks));
+                throw new ArgumentNullException(nameof(bookmarks));
             }
 
             return new InternalBookmark(bookmarks.SelectMany(b => b == null ? Array.Empty<string>() : b.Values)
