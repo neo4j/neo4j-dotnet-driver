@@ -26,6 +26,7 @@ using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive
@@ -37,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         {
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldAllowSessionRun()
         {
             var session = Server.Driver.RxSession();
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnCompleted<int>(0));
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldBeAbleToReuseSessionAfterFailure()
         {
             var session = NewSession();
@@ -74,7 +75,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnCompleted<IRecord>(0));
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldRunTransactionWithoutRetries()
         {
             var work = new ConfigurableTransactionWork("CREATE (:WithoutRetry) RETURN 5");
@@ -90,7 +91,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             CountNodes("WithoutRetry").Should().Be(1);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldRunTransactionWithRetriesOnReactiveFailures()
         {
             var work = new ConfigurableTransactionWork("CREATE (:WithReactiveFailure) RETURN 7")
@@ -114,7 +115,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             CountNodes("WithReactiveFailure").Should().Be(1);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldRunTransactionWithRetriesOnSynchronousFailures()
         {
             var work = new ConfigurableTransactionWork("CREATE (:WithSyncFailure) RETURN 7")
@@ -138,10 +139,11 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             CountNodes("WithSyncFailure").Should().Be(1);
         }
 
-        [RequireServerFact("4.0.0", VersionComparison.GreaterThanOrEqualTo)]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldFailOnTransactionThatCannotBeRetried()
         {
-            var work = new ConfigurableTransactionWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
+            var work = new ConfigurableTransactionWork(
+                "UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
 
             NewSession()
                 .WriteTransaction(work.Work)
@@ -155,7 +157,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             CountNodes("Hi").Should().Be(0);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldFailEvenAfterATransientError()
         {
             var work = new ConfigurableTransactionWork("CREATE (:Person) RETURN 1")

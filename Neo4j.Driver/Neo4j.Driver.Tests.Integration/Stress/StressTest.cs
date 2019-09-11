@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Stress
 {
@@ -182,7 +183,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         #region Reactive Stress Test
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task Reactive()
         {
             await RunStressTest(LaunchRxWorkers);
