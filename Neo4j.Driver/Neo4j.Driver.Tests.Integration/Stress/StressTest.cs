@@ -167,11 +167,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private static Task LaunchAsyncWorkerThread(TContext context, IList<IAsyncCommand<TContext>> commands)
         {
-            return Task.Factory.StartNew(async () =>
+            return Task.Factory.StartNew(() =>
             {
                 while (!context.Stopped)
                 {
-                    await Task.WhenAll(Enumerable.Range(1, AsyncBatchSize)
+                    Task.WaitAll(Enumerable.Range(1, AsyncBatchSize)
                         .Select(_ => commands.RandomElement().ExecuteAsync(context))
                         .ToArray());
                 }
