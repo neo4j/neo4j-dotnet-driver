@@ -40,7 +40,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {"dbms.connectors.http_listen_address", "localhost:7474"},
             {"dbms.transaction.bookmark_ready_timeout", "5s"},
             {"dbms.memory.pagecache.size", "512m"},
-            {"dbms.connector.bolt.tls_level", "optional"},
+            {"dbms.connector.bolt.tls_level", "OPTIONAL"},
         };
 
         private readonly IShellCommandRunner _commandRunner;
