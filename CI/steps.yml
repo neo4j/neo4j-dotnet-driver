@@ -11,12 +11,22 @@ steps:
       addToPath: true
       architecture: "x64"
 
-  - script: python -m pip install --upgrade boltkit==1.2.0
+  - script: python -m pip install --upgrade git+https://github.com/neo4j-drivers/boltkit.git@1.3#egg=boltkit
     displayName: "Install boltkit"
 
   - pwsh: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_${{ parameters.javaVersion }}_X64"
     displayName: "Setup java"
+
+  - bash: |
+      cat /etc/security/limits.conf
+      ulimit -aS
+      ulimit -aH
+      ulimit -n 8192
+      ulimit -aS
+      ulimit -aH
+    displayName: Set open files limit
+    condition: or(eq( variables['Agent.OS'], 'Linux' ),eq( variables['Agent.OS'], 'Darwin' ))
 
   - pwsh: |
       # This script is here because neo4j server with IPv6 enabled failed to start up with
@@ -82,6 +92,7 @@ steps:
     displayName: "Run unit tests"
     inputs:
       command: test
+      arguments: --verbosity diagnostic
       projects: "**/Neo4j.Driver.Tests/*.csproj"
       testRunTitle: "UnitTests-${{ parameters.name }}"
 
@@ -89,7 +100,30 @@ steps:
     displayName: "Run integration tests"
     inputs:
       command: test
-      projects: "**/Neo4j.Driver.IntegrationTests/*.csproj"
+      arguments: --verbosity diagnostic
+      projects: "**/Neo4j.Driver.Tests.Integration/*.csproj"
       testRunTitle: "IntegrationTests-${{ parameters.name }}"
     env:
       NEOCTRLARGS: ${{ parameters.serverVersion }}
+
+  - pwsh: |
+      Get-ChildItem env:* | sort-object name | Format-Table -Wrap -AutoSize | Out-File $env:BUILD_ARTIFACTSTAGINGDIRECTORY/environment.txt
+    displayName: "Gather environment variables"
+    condition: always()
+
+  - task: CopyFiles@2
+    displayName: "Gather log files"
+    condition: always()
+    inputs:
+      sourceFolder: "$(Build.SourcesDirectory)"
+      contents: |
+        Target/**/*.log
+        Target/**/*.conf
+      targetFolder: "$(Build.ArtifactStagingDirectory)"
+
+  - task: PublishBuildArtifacts@1
+    displayName: "Publish log files"
+    condition: always()
+    inputs:
+      pathtoPublish: "$(Build.ArtifactStagingDirectory)"
+      artifactName: "${{ parameters.name }}-logs"
