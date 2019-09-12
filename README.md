@@ -203,13 +203,13 @@ They can fail for three main reasons:
 3. You have an instance of Neo4j already installed / running on your local machine.
 
 The database installation uses boltkit `neoctrl-install` command to install the database.
-It is possible to run the integration tests against a specific version by setting environment variable `NeoctrlArgs`.
+It is possible to run the integration tests against a specific version by setting environment variable `NEOCTRL_ARGS`.
 
 #### Run tests
 The simplest way to run all tests from command line is to run `runTests.ps1` powershell script:
 
 	.\Neo4j.Driver\runTests.ps1
 
-Any parameter to this powershell script will be used to reset environment variable `NeoctrlArgs`:
+Any parameter to this powershell script will be used to reset environment variable `NEOCTRL_ARGS`:
 
 	.\Neo4j.Driver\runTests.ps1 -e 3.3.0

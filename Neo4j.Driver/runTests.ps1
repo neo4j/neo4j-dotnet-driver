@@ -24,10 +24,10 @@ try
     }
 
     $ServerVersionText = 'default'
-    If ($ServerVersion -ne '') 
+    If ($ServerVersion -ne '')
     {
         $ServerVersionText = "$ServerVersion"
-        $env:NEOCTRLARGS = "$ServerVersion"
+        $env:NEOCTRL_ARGS = "$ServerVersion"
     }
     $TestArgs = ''
     If ($Framework -ne '')

@@ -104,7 +104,7 @@ steps:
       projects: "**/Neo4j.Driver.Tests.Integration/*.csproj"
       testRunTitle: "IntegrationTests-${{ parameters.name }}"
     env:
-      NEOCTRLARGS: ${{ parameters.serverVersion }}
+      NEOCTRL_ARGS: ${{ parameters.serverVersion }}
 
   - pwsh: |
       Get-ChildItem env:* | sort-object name | Format-Table -Wrap -AutoSize | Out-File $env:BUILD_ARTIFACTSTAGINGDIRECTORY/environment.txt
