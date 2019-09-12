@@ -18,16 +18,6 @@ steps:
       echo "##vso[task.setvariable variable=JAVA_HOME]$env:JAVA_HOME_${{ parameters.javaVersion }}_X64"
     displayName: "Setup java"
 
-  - bash: |
-      cat /etc/security/limits.conf
-      ulimit -aS
-      ulimit -aH
-      ulimit -n 8192
-      ulimit -aS
-      ulimit -aH
-    displayName: Set open files limit
-    condition: or(eq( variables['Agent.OS'], 'Linux' ),eq( variables['Agent.OS'], 'Darwin' ))
-
   - pwsh: |
       # This script is here because neo4j server with IPv6 enabled failed to start up with
       # the hosted ubuntu-16.04 image. The machine indeed had IPv6 enabled, but it seems that
@@ -92,7 +82,6 @@ steps:
     displayName: "Run unit tests"
     inputs:
       command: test
-      arguments: --verbosity diagnostic
       projects: "**/Neo4j.Driver.Tests/*.csproj"
       testRunTitle: "UnitTests-${{ parameters.name }}"
 
@@ -100,7 +89,6 @@ steps:
     displayName: "Run integration tests"
     inputs:
       command: test
-      arguments: --verbosity diagnostic
       projects: "**/Neo4j.Driver.Tests.Integration/*.csproj"
       testRunTitle: "IntegrationTests-${{ parameters.name }}"
     env:
