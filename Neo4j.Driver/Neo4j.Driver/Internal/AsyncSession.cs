@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -95,18 +95,17 @@ namespace Neo4j.Driver.Internal
             return BeginTransactionAsync(null);
         }
 
-        public Task<IAsyncTransaction> BeginTransactionAsync(TransactionConfig txConfig)
+        public async Task<IAsyncTransaction> BeginTransactionAsync(TransactionConfig txConfig)
         {
-            return TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig))
-                .ContinueWith(t => t.Result.CastOrThrow<IAsyncTransaction>(),
-                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
+            var tx = await TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig))
+                .ConfigureAwait(false);
+            return tx;
         }
 
-        public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, TransactionConfig txConfig)
+        public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, TransactionConfig txConfig)
         {
-            return BeginTransactionWithoutLoggingAsync(mode, txConfig)
-                .ContinueWith(t => t.Result.CastOrThrow<IAsyncTransaction>(),
-                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
+            var tx = await BeginTransactionWithoutLoggingAsync(mode, txConfig).ConfigureAwait(false);
+            return tx;
         }
 
         public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work)
