@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal
                     .CastOrThrow<IInternalAsyncTransaction>(), _executor);
         }
 
-        private ITransaction BeginTransaction(AccessMode mode, TransactionConfig txConfig)
+        private InternalTransaction BeginTransaction(AccessMode mode, TransactionConfig txConfig)
         {
             return new InternalTransaction(
                 _executor.RunSync(() => _session.BeginTransactionAsync(mode, txConfig))
@@ -111,12 +111,20 @@ namespace Neo4j.Driver.Internal
                     try
                     {
                         var result = work(txc);
-                        txc.Success();
+                        if (txc.IsOpen)
+                        {
+                            txc.Commit();
+                        }
+
                         return result;
                     }
                     catch
                     {
-                        txc.Failure();
+                        if (txc.IsOpen)
+                        {
+                            txc.Rollback();
+                        }
+
                         throw;
                     }
                 }

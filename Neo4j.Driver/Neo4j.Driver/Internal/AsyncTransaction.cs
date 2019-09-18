@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -27,50 +28,34 @@ namespace Neo4j.Driver.Internal
 {
     internal class AsyncTransaction : AsyncStatementRunner, IInternalAsyncTransaction, IBookmarkTracker
     {
+        private static readonly IState Active = new ActiveState();
+        private static readonly IState Committed = new CommittedState();
+        private static readonly IState RolledBack = new RolledBackState();
+        private static readonly IState Failed = new FailedState();
+
         private readonly IConnection _connection;
         private readonly IBoltProtocol _protocol;
         private readonly bool _reactive;
-        private ITransactionResourceHandler _resourceHandler;
+        private readonly ITransactionResourceHandler _resourceHandler;
 
         private Bookmark _bookmark;
 
-        private State _state = State.Active;
+        private bool _disposed = false;
+        private IState _state = Active;
         private readonly IDriverLogger _logger;
 
-        private enum State
-        {
-            /** The transaction is running with no explicit success or failure marked */
-            Active,
-
-            /** Running, user marked for success, meaning it'll value committed */
-            MarkedSuccess,
-
-            /** User marked as failed, meaning it'll be rolled back. */
-            MarkedFailed,
-
-            /**
-             * An error has occurred, transaction can no longer be used and no more messages will be sent for this
-             * transaction.
-             */
-            Failed,
-
-            /** This transaction has successfully committed */
-            Succeeded,
-
-            /** This transaction has been rolled back */
-            RolledBack
-        }
-
-        public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler = null,
+        public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
             IDriverLogger logger = null, Bookmark bookmark = null, bool reactive = false)
         {
             _connection = new TransactionConnection(this, connection);
             _protocol = _connection.BoltProtocol;
-            _resourceHandler = resourceHandler;
+            _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
             _bookmark = bookmark;
             _logger = logger;
             _reactive = reactive;
         }
+
+        public bool IsOpen => _state == Active;
 
         public Task BeginTransactionAsync(TransactionConfig txConfig)
         {
@@ -79,113 +64,55 @@ namespace Neo4j.Driver.Internal
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
         {
-            return TryExecuteAsync(_logger, () =>
-            {
-                EnsureCanRunMoreStatements();
-                return _protocol.RunInExplicitTransactionAsync(_connection, statement, _reactive);
-            });
+            var result = _state.RunAsync(statement, _connection, _protocol, _logger, _reactive, out var nextState);
+            _state = nextState;
+            return result;
         }
 
-        public void Success()
-        {
-            if (_state == State.Active)
-            {
-                _state = State.MarkedSuccess;
-            }
-        }
-
-        public void Failure()
-        {
-            if (_state == State.Active || _state == State.MarkedSuccess)
-            {
-                _state = State.MarkedFailed;
-            }
-        }
-
-        public Task CommitAsync()
-        {
-            Success();
-            return CloseAsync();
-        }
-
-        public Task RollbackAsync()
-        {
-            Failure();
-            return CloseAsync();
-        }
-
-        public void MarkToClose()
-        {
-            _state = State.Failed;
-        }
-
-        public async Task CloseAsync()
+        public async Task CommitAsync()
         {
             try
             {
-                if (_state == State.MarkedSuccess)
-                {
-                    await CommitTxAsync().ConfigureAwait(false);
-                }
-                else if (_state == State.MarkedFailed || _state == State.Active)
-                {
-                    await RollbackTxAsync().ConfigureAwait(false);
-                }
+                await _state.CommitAsync(_connection, _protocol, this, out var nextState).ConfigureAwait(false);
+                _state = nextState;
             }
             finally
             {
-                await _connection.CloseAsync().ConfigureAwait(false);
-                if (_resourceHandler != null)
-                {
-                    await _resourceHandler.OnTransactionDisposeAsync(_bookmark).ConfigureAwait(false);
-                    _resourceHandler = null;
-                }
+                await DisposeTransaction().ConfigureAwait(false);
             }
         }
 
-        private async Task CommitTxAsync()
+        public async Task RollbackAsync()
         {
-            await _protocol.CommitTransactionAsync(_connection, this).ConfigureAwait(false);
-            _state = State.Succeeded;
+            try
+            {
+                await _state.RollbackAsync(_connection, _protocol, this, out var nextState);
+                _state = nextState;
+            }
+            finally
+            {
+                await DisposeTransaction().ConfigureAwait(false);
+            }
         }
 
-        private async Task RollbackTxAsync()
+        public async Task MarkToClose()
         {
-            await _protocol.RollbackTransactionAsync(_connection).ConfigureAwait(false);
-            _state = State.RolledBack;
-        }
-
-        private void EnsureCanRunMoreStatements()
-        {
-            if (_state == State.RolledBack)
-            {
-                throw new ClientException(
-                    "Cannot run more statements in this transaction, because previous statements in the " +
-                    "transaction has failed and the transaction has been rolled back. Please start a new" +
-                    " transaction to run another statement."
-                );
-            }
-
-            if (_state == State.Succeeded)
-            {
-                throw new ClientException(
-                    "Cannot run more statements in this transaction, because the transaction has already been committed successfully. " +
-                    "Please start a new transaction to run another statement.");
-            }
-
-            if (_state == State.Failed || _state == State.MarkedFailed)
-            {
-                throw new ClientException(
-                    "Cannot run more statements in this transaction, because previous statements in the " +
-                    "transaction has failed and the transaction could only be rolled back. Please start a new" +
-                    " transaction to run another statement."
-                );
-            }
+            _state = Failed;
+            await DisposeTransaction().ConfigureAwait(false);
         }
 
         public void UpdateBookmark(Bookmark bookmark)
         {
             _bookmark = bookmark;
+        }
+
+        private async Task DisposeTransaction()
+        {
+            if (!Volatile.Read(ref _disposed))
+            {
+                await _resourceHandler.OnTransactionDisposeAsync(_bookmark).ConfigureAwait(false);
+                Volatile.Write(ref _disposed, true);
+            }
         }
 
         private class TransactionConnection : DelegatedConnection
@@ -206,10 +133,118 @@ namespace Neo4j.Driver.Internal
                 return Task.CompletedTask;
             }
 
-            public override Task OnErrorAsync(Exception error)
+            public override async Task OnErrorAsync(Exception error)
             {
-                _transaction.MarkToClose();
-                return Task.FromException(error);
+                await _transaction.MarkToClose();
+                throw error;
+            }
+        }
+
+        private interface IState
+        {
+            Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection, IBoltProtocol protocol,
+                IDriverLogger logger, bool reactive, out IState nextState);
+
+            Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState);
+
+            Task RollbackAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState);
+        }
+
+        private class ActiveState : IState
+        {
+            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                out IState nextState)
+            {
+                nextState = Active;
+                return protocol.RunInExplicitTransactionAsync(connection, statement, reactive);
+            }
+
+            public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                nextState = Committed;
+                return protocol.CommitTransactionAsync(connection, tracker);
+            }
+
+            public Task RollbackAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                nextState = RolledBack;
+                return protocol.RollbackTransactionAsync(connection);
+            }
+        }
+
+        private class CommittedState : IState
+        {
+            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                out IState nextState)
+            {
+                throw new ClientException(
+                    "Cannot run statement in this transaction, because it has already been committed.");
+            }
+
+            public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                throw new ClientException("Cannot commit this transaction, because it has already been committed.");
+            }
+
+            public Task RollbackAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                throw new ClientException("Cannot rollback this transaction, because it has already been committed.");
+            }
+        }
+
+        private class RolledBackState : IState
+        {
+            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                out IState nextState)
+            {
+                throw new ClientException(
+                    "Cannot run statement in this transaction, because it has already been rolled back.");
+            }
+
+            public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                throw new ClientException("Cannot commit this transaction, because it has already been rolled back.");
+            }
+
+            public Task RollbackAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                throw new ClientException("Cannot rollback this transaction, because it has already been rolled back.");
+            }
+        }
+
+        private class FailedState : IState
+        {
+            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                out IState nextState)
+            {
+                throw new ClientException(
+                    "Cannot run statement in this transaction, because it has been rolled back either because of an error or explicit termination.");
+            }
+
+            public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                throw new ClientException(
+                    "Cannot commit this transaction, because it has been rolled back either because of an error or explicit termination.");
+            }
+
+            public Task RollbackAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
+                out IState nextState)
+            {
+                nextState = Failed;
+                return Task.CompletedTask;
             }
         }
     }

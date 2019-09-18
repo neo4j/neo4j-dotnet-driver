@@ -32,13 +32,13 @@ namespace Neo4j.Driver
         /// Mark this transaction as successful. You must call this method before calling <see cref="IDisposable.Dispose"/> to have your
         /// transaction committed.
         /// </summary>
-        void Success();
+        void Commit();
 
         /// <summary>
         /// Mark this transaction as failed. Calling <see cref="IDisposable.Dispose"/> will roll back the transaction.
         ///
-        /// Marking a transaction as failed is irreversible and guarantees that subsequent calls to <see cref="Success"/> will not change it's status.
+        /// Marking a transaction as failed is irreversible and guarantees that subsequent calls to <see cref="Commit"/> will not change it's status.
         /// </summary>
-        void Failure();
+        void Rollback();
     }
 }

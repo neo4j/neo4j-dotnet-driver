@@ -54,9 +54,6 @@ namespace Neo4j.Driver.Internal
         /// </summary>
         public Task OnTransactionDisposeAsync(Bookmark bookmark)
         {
-            Throw.ArgumentNullException.IfNull(_transaction, nameof(_transaction));
-            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-
             UpdateBookmark(bookmark);
             _transaction = null;
 

@@ -480,7 +480,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestCypherErrorExample()
             {
                 // When & Then
-                int result = await GetEmployeeNumberAsync("Alice");
+                var result = await GetEmployeeNumberAsync("Alice");
 
                 result.Should().Be(-1);
             }

@@ -51,9 +51,8 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                         {
                             var txc = session.BeginTransaction();
                             var result = txc.Run("CREATE (n {name: 'Bob'})");
-                            txc.Success();
 
-                            var exc = Record.Exception(() => txc.Dispose());
+                            var exc = Record.Exception(() => txc.Commit());
 
                             exc.Should().BeOfType<ServiceUnavailableException>().Which
                                 .HasCause<IOException>().Should().BeTrue();

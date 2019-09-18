@@ -97,12 +97,16 @@ namespace Neo4j.Driver.Internal
 
         public Task<IAsyncTransaction> BeginTransactionAsync(TransactionConfig txConfig)
         {
-            return TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig));
+            return TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, txConfig))
+                .ContinueWith(t => t.Result.CastOrThrow<IAsyncTransaction>(),
+                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
         public Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, TransactionConfig txConfig)
         {
-            return BeginTransactionWithoutLoggingAsync(mode, txConfig);
+            return BeginTransactionWithoutLoggingAsync(mode, txConfig)
+                .ContinueWith(t => t.Result.CastOrThrow<IAsyncTransaction>(),
+                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
         public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work)
@@ -162,23 +166,29 @@ namespace Neo4j.Driver.Internal
             return TryExecuteAsync(_logger, async () => await _retryLogic.RetryAsync(async () =>
             {
                 var tx = await BeginTransactionWithoutLoggingAsync(mode, txConfig).ConfigureAwait(false);
+                try
                 {
-                    try
+                    var result = await work(tx).ConfigureAwait(false);
+                    if (tx.IsOpen)
                     {
-                        var result = await work(tx).ConfigureAwait(false);
                         await tx.CommitAsync().ConfigureAwait(false);
-                        return result;
                     }
-                    catch
+
+                    return result;
+                }
+                catch
+                {
+                    if (tx.IsOpen)
                     {
                         await tx.RollbackAsync().ConfigureAwait(false);
-                        throw;
                     }
+
+                    throw;
                 }
             }).ConfigureAwait(false));
         }
 
-        private async Task<IAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
+        private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
             TransactionConfig txConfig)
         {
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
