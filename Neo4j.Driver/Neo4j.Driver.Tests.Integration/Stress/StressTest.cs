@@ -563,7 +563,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             tokenSource.Cancel();
             Task.WaitAll(tasks.Union(new[] {terminator}).ToArray());
 
-            failure.Get().Should().BeNull("Some workers have failed");
+            failure.Get().Should().BeNull("no workers should fail");
         }
 
 
@@ -612,8 +612,16 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 {
                     if (connections.Count > minimalConnCount && connections.TryDequeue(out var conn))
                     {
-                        await conn.DestroyAsync();
-                        _output.WriteLine($"Terminator killed connection {conn} towards server {conn.Server}");
+                        if (conn.Server.Version != null)
+                        {
+                            await conn.DestroyAsync();
+                            _output.WriteLine($"Terminator killed connection {conn} towards server {conn.Server}");
+                        }
+                        else
+                        {
+                            // connection is still being initialized, put it back to the connections list
+                            connections.Enqueue(conn);
+                        }
                     }
                     else
                     {
