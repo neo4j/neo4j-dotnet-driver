@@ -34,6 +34,7 @@ namespace Neo4j.Driver.Internal.Result
         public virtual IList<INotification> Notifications { get; set; }
         public virtual long ResultAvailableAfter { get; set; } = -1L;
         public virtual long ResultConsumedAfter { get; set; } = -1L;
+        public virtual IDatabaseInfo Database { get; set; }
 
         public SummaryBuilder(Statement statement, IServerInfo serverInfo)
         {
@@ -61,6 +62,7 @@ namespace Neo4j.Driver.Internal.Result
                 ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
                 ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
                 Server = builder.Server;
+                Database = builder.Database ?? new DatabaseInfo();
             }
 
             public Statement Statement { get; }
@@ -74,6 +76,7 @@ namespace Neo4j.Driver.Internal.Result
             public TimeSpan ResultAvailableAfter { get; }
             public TimeSpan ResultConsumedAfter { get; }
             public IServerInfo Server { get; }
+            public IDatabaseInfo Database { get; }
 
             public override string ToString()
             {
@@ -83,9 +86,10 @@ namespace Neo4j.Driver.Internal.Result
                        $"{nameof(Plan)}={Plan}, " +
                        $"{nameof(Profile)}={Profile}, " +
                        $"{nameof(Notifications)}={Notifications.ToContentString()}, " +
-                       $"{nameof(ResultAvailableAfter)}={ResultAvailableAfter.ToString("g")}, " +
-                       $"{nameof(ResultConsumedAfter)}={ResultConsumedAfter.ToString("g")}, " +
-                       $"{nameof(Server)}={Server})}}";
+                       $"{nameof(ResultAvailableAfter)}={ResultAvailableAfter:g}, " +
+                       $"{nameof(ResultConsumedAfter)}={ResultConsumedAfter:g}, " +
+                       $"{nameof(Server)}={Server})," +
+                       $"{nameof(Database)}={Database}}}";
             }
         }
     }
@@ -287,6 +291,40 @@ namespace Neo4j.Driver.Internal.Result
             return $"{GetType().Name}{{{nameof(Offset)}={Offset}, " +
                    $"{nameof(Line)}={Line}, " +
                    $"{nameof(Column)}={Column}}}";
+        }
+    }
+
+    internal class DatabaseInfo : IDatabaseInfo
+    {
+        public DatabaseInfo()
+            : this(null)
+        {
+        }
+
+
+        public DatabaseInfo(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        private bool Equals(IDatabaseInfo other)
+        {
+            return Name == other.Name;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((DatabaseInfo) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Name != null ? Name.GetHashCode() : 0);
         }
     }
 }

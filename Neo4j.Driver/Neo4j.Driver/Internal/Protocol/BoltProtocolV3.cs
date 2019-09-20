@@ -1,4 +1,5 @@
-// Copyright (c) 2002-2019 Neo4j Sweden AB [http://neo4j.com]
+// Copyright (c) 2002-2019 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -14,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -60,8 +62,10 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
-            Bookmark bookmark, TransactionConfig txConfig)
+            string database, Bookmark bookmark, TransactionConfig txConfig)
         {
+            AssertNullDatabase(database);
+
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
                 resultResourceHandler);
@@ -70,16 +74,20 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection
                 .EnqueueAsync(
                     new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()),
-                    runHandler, PullAll,
-                    pullAllHandler)
+                    runHandler,
+                    PullAll, pullAllHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
-        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
+        public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
+            TransactionConfig txConfig)
         {
-            await connection.EnqueueAsync(new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()),
+            AssertNullDatabase(database);
+
+            await connection.EnqueueAsync(
+                    new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()),
                     new V1.BeginResponseHandler())
                 .ConfigureAwait(false);
             if (bookmark != null && bookmark.Values.Any())
@@ -126,6 +134,16 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             await connection.EnqueueAsync(GoodbyeMessage.Goodbye, new NoOpResponseHandler()).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
+        }
+
+        private void AssertNullDatabase(string database)
+        {
+            if (database != null)
+            {
+                throw new ClientException(
+                    "Driver is connected to a server that does not support multiple databases. " +
+                    "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
+            }
         }
     }
 }

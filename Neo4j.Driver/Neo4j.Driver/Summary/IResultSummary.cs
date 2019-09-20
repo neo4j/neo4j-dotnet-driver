@@ -114,5 +114,10 @@ namespace Neo4j.Driver
         /// Get some basic information of the server where the statement is carried out
         /// </summary>
         IServerInfo Server { get; }
+        
+        /// <summary>
+        /// Get the database information that this summary is generated from.
+        /// </summary>
+        IDatabaseInfo Database { get; }
     }
 }

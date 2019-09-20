@@ -37,6 +37,7 @@ namespace Neo4j.Driver.Internal
         private readonly IBoltProtocol _protocol;
         private readonly bool _reactive;
         private readonly ITransactionResourceHandler _resourceHandler;
+        private readonly string _database;
 
         private Bookmark _bookmark;
 
@@ -45,7 +46,7 @@ namespace Neo4j.Driver.Internal
         private readonly IDriverLogger _logger;
 
         public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
-            IDriverLogger logger = null, Bookmark bookmark = null, bool reactive = false)
+            IDriverLogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false)
         {
             _connection = new TransactionConnection(this, connection);
             _protocol = _connection.BoltProtocol;
@@ -53,13 +54,14 @@ namespace Neo4j.Driver.Internal
             _bookmark = bookmark;
             _logger = logger;
             _reactive = reactive;
+            _database = database;
         }
 
         public bool IsOpen => _state == Active;
 
         public Task BeginTransactionAsync(TransactionConfig txConfig)
         {
-            return _protocol.BeginTransactionAsync(_connection, _bookmark, txConfig);
+            return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, txConfig);
         }
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)

@@ -16,22 +16,19 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging.V3;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
+namespace Neo4j.Driver
 {
-    internal class BeginMessageSerializer: WriteOnlySerializer
+    /// <summary>
+    /// Provides information about the database that processed the statement.
+    /// </summary>
+    public interface IDatabaseInfo
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(BeginMessage)};
-
-        public override void Serialize(IPackStreamWriter writer, object value)
-        {
-            var msg = value.CastOrThrow<BeginMessage>();
-
-            writer.WriteStructHeader(1, MsgBegin);
-            writer.Write(msg.Metadata);
-        }
+        /// <summary>
+        /// The name of the database where the statement is processed.
+        /// </summary>
+        /// 
+        /// <remarks>Returns <code>null</code> if the source server does not support multiple databases.</remarks>
+        string Name { get; }
     }
 }

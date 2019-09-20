@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2019 "Neo4j,"
+﻿// Copyright (c) 2002-2019 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -46,16 +46,18 @@ namespace Neo4j.Driver.Internal
 
         public Bookmark LastBookmark => _bookmark;
 
+        private readonly string _database;
         private readonly bool _reactive;
 
         public AsyncSession(IConnectionProvider provider, IDriverLogger logger, IAsyncRetryLogic retryLogic = null,
-            AccessMode defaultMode = AccessMode.Write, Bookmark bookmark = null,
+            AccessMode defaultMode = AccessMode.Write, string database = null, Bookmark bookmark = null,
             bool reactive = false)
         {
             _logger = logger;
             _connectionProvider = provider;
             _retryLogic = retryLogic;
             _reactive = reactive;
+            _database = database;
 
             _defaultMode = defaultMode;
             UpdateBookmark(bookmark);
@@ -69,7 +71,8 @@ namespace Neo4j.Driver.Internal
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode).ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
                 return await protocol
-                    .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _bookmark, txConfig)
+                    .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _database,
+                        _bookmark, txConfig)
                     .ConfigureAwait(false);
             });
         }
@@ -193,7 +196,7 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode).ConfigureAwait(false);
-            var tx = new AsyncTransaction(_connection, this, _logger, _bookmark, _reactive);
+            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive);
             await tx.BeginTransactionAsync(txConfig ?? TransactionConfig.Empty).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;

@@ -473,6 +473,7 @@ namespace Neo4j.Driver.Tests
             public TimeSpan ResultAvailableAfter { get; }
             public TimeSpan ResultConsumedAfter { get; }
             public IServerInfo Server { get; }
+            public IDatabaseInfo Database { get; }
         }
 
         private static Task<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)

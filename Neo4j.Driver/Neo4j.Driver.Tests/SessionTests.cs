@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
         internal static AsyncSession NewSession(IConnection connection, IDriverLogger logger = null,
             IAsyncRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
-            return new AsyncSession(new TestConnectionProvider(connection), logger, retryLogic, mode,
+            return new AsyncSession(new TestConnectionProvider(connection), logger, retryLogic, mode, null,
                 Bookmark.From(bookmark));
         }
 
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
-            return new AsyncSession(new TestConnectionProvider(mockConn.Object), logger, retryLogic, mode,
+            return new AsyncSession(new TestConnectionProvider(mockConn.Object), logger, retryLogic, mode, null,
                 Bookmark.From(bookmark), reactive);
         }
 
@@ -64,11 +64,11 @@ namespace Neo4j.Driver.Tests
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
                         false,
-                        It.IsAny<IBookmarkTracker>(),
-                        It.IsAny<IResultResourceHandler>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
+                        It.IsAny<IBookmarkTracker>(), It.IsAny<IResultResourceHandler>(), It.IsAny<string>(),
+                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()))
                     .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
                 protocol.Setup(x =>
-                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x =>
@@ -108,7 +108,8 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Verify(
                     x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), reactive,
-                        session, session, It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()), Times.Once);
+                        session, session, It.IsAny<string>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>()),
+                    Times.Once);
             }
         }
 
@@ -188,7 +189,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = MockedConnectionWithSuccessResponse(mockProtocol.Object);
 
                 mockProtocol.Setup(x =>
-                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
@@ -210,7 +211,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 var calls = 0;
                 mockProtocol.Setup(x =>
-                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))
                     .Returns(Task.CompletedTask).Callback(() =>
                     {
@@ -242,7 +243,7 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 mockProtocol.Setup(x =>
-                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                        x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);

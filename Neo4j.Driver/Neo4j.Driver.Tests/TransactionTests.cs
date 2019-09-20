@@ -49,11 +49,13 @@ namespace Neo4j.Driver.Tests
                 mockConn.Setup(x => x.BoltProtocol).Returns(mockProtocol.Object);
 
                 var bookmark = Bookmark.From(FakeABookmark(123));
-                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), null, bookmark);
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), null, null,
+                    bookmark);
 
                 await tx.BeginTransactionAsync(null);
                 mockProtocol.Verify(
-                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), bookmark, It.IsAny<TransactionConfig>()),
+                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), bookmark,
+                        It.IsAny<TransactionConfig>()),
                     Times.Once);
             }
         }
@@ -69,7 +71,7 @@ namespace Neo4j.Driver.Tests
 
                 await tx.BeginTransactionAsync(TransactionConfig.Empty);
                 protocol.Verify(
-                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Bookmark>(),
+                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
                         It.IsAny<TransactionConfig>()), Times.Once);
             }
         }

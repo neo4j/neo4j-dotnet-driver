@@ -19,28 +19,17 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 {
     public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
     {
         internal override IPackStreamSerializer SerializerUnderTest => new RunWithMetadataMessageSerializer();
-
-        [Fact]
-        public void ShouldThrowOnDeserialize()
-        {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV1MessageFormat.MsgRun, 1));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
 
         [Fact]
         public void ShouldSerialize()
@@ -53,7 +42,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
                 {"x", 1L}
             });
 
-            writer.Write(new RunWithMetadataMessage(statement, null,
+            writer.Write(new RunWithMetadataMessage(statement, "my-database",
                 Bookmark.From(SessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
                 new Dictionary<string, object>
                 {
@@ -70,33 +59,15 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             reader.ReadMap().Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("x", 1L));
 
             var metadata = reader.ReadMap();
-            
+
             metadata.Should().BeEquivalentTo(
                 new Dictionary<string, object>
                 {
                     {"bookmarks", new[] {"bookmark-123"}},
                     {"tx_timeout", 60_000L},
                     {"tx_metadata", new Dictionary<string, object> {{"username", "MollyMostlyWhite"}}},
+                    {"db", "my-database"}
                 });
-        }
-
-        [Fact]
-        public void ShouldSerializeEmptyMapWhenParamsAndMetadataAreNull()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
-
-            writer.Write(new RunWithMetadataMessage(new Statement("RETURN 1"), AccessMode.Write));
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV1MessageFormat.MsgRun);
-            reader.ReadString().Should().Be("RETURN 1");
-            reader.ReadMap().Should().NotBeNull().And.HaveCount(0);
-            reader.ReadMap().Should().NotBeNull().And.HaveCount(0);
         }
     }
 }

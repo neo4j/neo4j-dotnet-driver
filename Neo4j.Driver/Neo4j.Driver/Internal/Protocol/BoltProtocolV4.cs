@@ -1,4 +1,5 @@
-// Copyright (c) 2002-2019 Neo4j Sweden AB [http://neo4j.com]
+// Copyright (c) 2002-2019 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -17,6 +18,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -30,6 +32,7 @@ using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Messaging.V4;
 using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
+using V1 = Neo4j.Driver.Internal.MessageHandling.V1;
 using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -53,10 +56,24 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
+        public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
+            TransactionConfig txConfig)
+        {
+            await connection.EnqueueAsync(
+                    new BeginMessage(database, bookmark, txConfig?.Timeout, txConfig?.Metadata,
+                        connection.GetEnforcedAccessMode()),
+                    new V1.BeginResponseHandler())
+                .ConfigureAwait(false);
+            if (bookmark != null && bookmark.Values.Any())
+            {
+                await connection.SyncAsync().ConfigureAwait(false);
+            }
+        }
+
         public override async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
-            Bookmark bookmark, TransactionConfig txConfig)
+            string database, Bookmark bookmark, TransactionConfig txConfig)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
@@ -76,8 +93,9 @@ namespace Neo4j.Driver.Internal.Protocol
 
             await connection
                 .EnqueueAsync(
-                    new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()),
-                    runHandler, pullMessage, pullHandler)
+                    new RunWithMetadataMessage(statement, database, bookmark, txConfig,
+                        connection.GetEnforcedAccessMode()), runHandler,
+                    pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();

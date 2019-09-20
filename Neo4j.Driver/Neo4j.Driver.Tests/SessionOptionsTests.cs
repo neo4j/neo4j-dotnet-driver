@@ -16,22 +16,27 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging.V3;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
+using FluentAssertions;
+using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
+namespace Neo4j.Driver.Tests
 {
-    internal class BeginMessageSerializer: WriteOnlySerializer
+    public class SessionOptionsTests
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(BeginMessage)};
-
-        public override void Serialize(IPackStreamWriter writer, object value)
+        [Theory]
+        [InlineData((string) null)]
+        [InlineData("")]
+        public void ShouldThrowExceptionForInvalidDatabaseOnSetter(string name)
         {
-            var msg = value.CastOrThrow<BeginMessage>();
+            this.Invoking(_ => new SessionOptions().Database = name).Should().Throw<ArgumentNullException>();
+        }
 
-            writer.WriteStructHeader(1, MsgBegin);
-            writer.Write(msg.Metadata);
+        [Theory]
+        [InlineData((string) null)]
+        [InlineData("")]
+        public void ShouldThrowExceptionForInvalidDatabaseOnBuilder(string name)
+        {
+            this.Invoking(_ => new SessionOptions().ForDatabase(name)).Should().Throw<ArgumentNullException>();
         }
     }
 }

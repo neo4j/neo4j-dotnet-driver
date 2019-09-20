@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Internal
             optionsBuilder(options);
 
             var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,
-                Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive);
+                options.Database, Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive);
 
             if (IsClosed)
             {

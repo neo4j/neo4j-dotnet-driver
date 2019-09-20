@@ -68,9 +68,10 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
-            Bookmark ignored, TransactionConfig txConfig)
+            string database, Bookmark ignored, TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
+            AssertNullDatabase(database);
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
                 resultResourceHandler);
@@ -82,9 +83,11 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
+        public async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
+            TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
+            AssertNullDatabase(database);
             var parameters = bookmark?.AsBeginTransactionParameters();
             var handler = new V1.BeginResponseHandler();
             await connection.EnqueueAsync(new RunMessage(Begin, parameters), handler, PullAll, handler)
@@ -138,9 +141,19 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             if (txConfig != null && !txConfig.IsEmpty())
             {
-                throw new ArgumentException(
-                    "Driver is connected to the database that does not support transaction configuration. " +
+                throw new ClientException(
+                    "Driver is connected to a server that does not support transaction configuration. " +
                     "Please upgrade to neo4j 3.5.0 or later in order to use this functionality");
+            }
+        }
+
+        private void AssertNullDatabase(string database)
+        {
+            if (database != null)
+            {
+                throw new ClientException(
+                    "Driver is connected to a server that does not support multiple databases. " +
+                    "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
             }
         }
     }
