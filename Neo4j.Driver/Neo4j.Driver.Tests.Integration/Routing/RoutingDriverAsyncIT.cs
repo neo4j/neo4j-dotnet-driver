@@ -28,7 +28,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 {
     public class RoutingDriverAsyncIT : RoutingDriverTestBase
     {
-        public RoutingDriverAsyncIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(output, fixture)
+        public RoutingDriverAsyncIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(
+            output, fixture)
         {
         }
 
@@ -48,6 +49,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                     await session.CloseAsync();
                 }
             }
+
             exception.Should().BeOfType<AuthenticationException>();
             exception.Message.Should().Be("The client is unauthorized due to authentication failure.");
         }
@@ -91,8 +93,11 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                     await session.CloseAsync();
                 }
             }
+
             error.Should().BeOfType<ServiceUnavailableException>();
-            error.Message.Should().Be("Failed to connect to any routing server. Please make sure that the cluster is up and can be accessed by the driver and retry.");
+            error.Message.Should()
+                .Be(
+                    "Failed to connect to any routing server. Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
         [RequireClusterFact]
@@ -107,7 +112,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             driver.Dispose();
             var error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
             error.Should().BeOfType<ObjectDisposedException>();
-            error.Message.Should().StartWith("Failed to acquire a new connection as the driver has already been disposed.");
+            error.Message.Should()
+                .StartWith("Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         [RequireClusterFact]
@@ -125,57 +131,6 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             var error = Record.Exception(() => driver.AsyncSession());
             error.Should().BeOfType<ObjectDisposedException>();
             error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
-        }
-
-        [RequireClusterTheory]
-        [InlineData(50)]
-        [InlineData(5000)]
-        public async void SoakRunAsync(int threadCount)
-        {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
-            {
-                MetricsFactory = new DefaultMetricsFactory(),
-                ConnectionTimeout = Config.InfiniteInterval,
-                EncryptionLevel = EncryptionLevel.Encrypted,
-                MaxConnectionPoolSize = 100,
-                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5)
-            });
-            try
-            {
-                var startTime = DateTime.Now;
-                Output.WriteLine($"[{startTime:HH:mm:ss.ffffff}] Started");
-
-                var metrics = ((Internal.Driver) driver).GetMetrics();
-                var workItem = new SoakRunWorkItem(driver, metrics, Output);
-
-                var tasks = new List<Task>();
-                for (var i = 0; i < threadCount; i++)
-                {
-                    tasks.Add(workItem.RunAsync());
-                }
-
-                await Task.WhenAll(tasks);
-
-                var poolMetrics = metrics.ConnectionPoolMetrics;
-                Output.WriteLine(poolMetrics.ToContentString());
-                var endTime = DateTime.Now;
-                Output.WriteLine($"[{endTime:HH:mm:ss.ffffff}] Finished");
-                Output.WriteLine($"Total time spent: {endTime - startTime}");
-
-                foreach (var value in poolMetrics)
-                {
-                    var st = value.Value;
-
-                    st.Creating.Should().Be(0);
-                    st.Closing.Should().Be(0);
-                    st.InUse.Should().Be(0);
-                    st.Idle.Should().Be((int) (st.Created - st.Closed + st.FailedToCreate));
-                }
-            }
-            finally
-            {
-                await driver.CloseAsync();
-            }
         }
     }
 }

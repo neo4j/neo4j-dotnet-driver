@@ -24,12 +24,14 @@ namespace Neo4j.Driver.Internal
 {
     internal class InternalRxTransaction : IRxTransaction
     {
-        private readonly IAsyncTransaction _transaction;
+        private readonly IInternalAsyncTransaction _transaction;
 
-        public InternalRxTransaction(IAsyncTransaction transaction)
+        public InternalRxTransaction(IInternalAsyncTransaction transaction)
         {
             _transaction = transaction;
         }
+
+        public bool IsOpen => _transaction.IsOpen;
 
         #region Run Methods
 

@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                 clusterConnPoolMock.Setup(x => x.AcquireAsync(uri, mode))
-                    .Returns(TaskHelper.GetFailedTask<IConnection>(new ServiceUnavailableException("failed init")));
+                    .Returns(Task.FromException<IConnection>(new ServiceUnavailableException("failed init")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
@@ -161,7 +161,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                 clusterConnPoolMock.Setup(x => x.AcquireAsync(uri, mode))
-                    .Returns(TaskHelper.GetFailedTask<IConnection>(
+                    .Returns(Task.FromException<IConnection>(
                         new SecurityException("Failed to establish ssl connection with the server")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
@@ -191,7 +191,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                 clusterConnPoolMock.Setup(x => x.AcquireAsync(uri, mode)).Returns(
-                    TaskHelper.GetFailedTask<IConnection>(new ProtocolException("do not understand struct 0x01")));
+                    Task.FromException<IConnection>(new ProtocolException("do not understand struct 0x01")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 

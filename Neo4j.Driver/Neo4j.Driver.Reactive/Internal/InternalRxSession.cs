@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal
             _retryLogic = retryLogic;
         }
 
-        public String LastBookmark => _session.LastBookmark;
+        public Bookmark LastBookmark => _session.LastBookmark;
 
         #region Run Methods
 
@@ -83,14 +83,14 @@ namespace Neo4j.Driver.Internal
         {
             return Observable.FromAsync(() => _session.BeginTransactionAsync(txConfig))
                 .Select(tx =>
-                    new InternalRxTransaction(tx));
+                    new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
 
-        private IObservable<IRxTransaction> BeginTransaction(AccessMode mode, TransactionConfig txConfig)
+        private IObservable<InternalRxTransaction> BeginTransaction(AccessMode mode, TransactionConfig txConfig)
         {
             return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, txConfig))
                 .Select(tx =>
-                    new InternalRxTransaction(tx));
+                    new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
 
         #endregion
@@ -127,16 +127,18 @@ namespace Neo4j.Driver.Internal
                 BeginTransaction(mode, txConfig)
                     .SelectMany(txc =>
                         Observable.Defer(() =>
-                        {
-                            try
                             {
-                                return work(txc);
-                            }
-                            catch (Exception exc)
-                            {
-                                return Observable.Throw<T>(exc);
-                            }
-                        }).CatchAndThrow(exc => txc.Rollback<T>()).Concat(txc.Commit<T>()))
+                                try
+                                {
+                                    return work(txc);
+                                }
+                                catch (Exception exc)
+                                {
+                                    return Observable.Throw<T>(exc);
+                                }
+                            })
+                            .CatchAndThrow(exc => txc.IsOpen ? txc.Rollback<T>() : Observable.Empty<T>())
+                            .Concat(txc.IsOpen ? txc.Commit<T>() : Observable.Empty<T>()))
             );
         }
 

@@ -37,7 +37,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             protected abstract IRxRunnable NewRunnable();
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnKeys()
             {
                 NewRunnable()
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnSummary()
             {
                 NewRunnable()
@@ -63,7 +63,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnKeysAndRecords()
             {
                 var keys = new[] {"number", "text"};
@@ -88,7 +88,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnKeysAndRecordsAndSummary()
             {
                 var keys = new[] {"number", "text"};
@@ -120,7 +120,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnKeysAndSummaryButRecords()
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnKeysEvenAfterRecordsAreComplete()
             {
                 var keys = new[] {"number", "text"};
@@ -173,7 +173,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnSummaryAfterRecordsAreComplete()
             {
                 var keys = new[] {"number", "text"};
@@ -198,7 +198,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnKeysEvenAfterSummaryIsComplete()
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
@@ -218,7 +218,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnKeysForEachObserver()
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
@@ -237,7 +237,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 keys1.AssertEqual(keys3);
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnSummaryForEachObserver()
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
@@ -254,7 +254,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 summary1.AssertEqual(summary3);
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldSubsequentRecordsReturnEmpty()
             {
                 var keys = new[] {"number", "text"};
@@ -278,7 +278,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnEmptyKeysForStatementWithNoReturn()
             {
                 NewRunnable()
@@ -291,7 +291,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnEmptyRecordsForStatementWithNoReturn()
             {
                 NewRunnable()
@@ -303,7 +303,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnSummaryForStatementWithNoReturn()
             {
                 NewRunnable()
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldFailOnKeysWhenRunFails()
             {
                 NewRunnable()
@@ -331,7 +331,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldFailOnSubsequentKeysWhenRunFails()
             {
                 var result = NewRunnable().Run("THIS IS NOT A CYPHER");
@@ -345,7 +345,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 keys1.AssertEqual(keys2);
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldFailOnRecordsWhenRunFails()
             {
                 NewRunnable()
@@ -358,7 +358,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldFailOnSummaryWhenRunFails()
             {
                 var result = NewRunnable().Run("THIS IS NOT A CYPHER");

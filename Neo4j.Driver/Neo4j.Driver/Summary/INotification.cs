@@ -50,24 +50,4 @@ namespace Neo4j.Driver
         string Severity { get; }
     }
 
-    /// <summary>
-    /// An input position refers to a specific character in a statement.
-    /// </summary>
-    public interface IInputPosition
-    {
-        /// <summary>
-        /// Gets the character offset referred to by this position; offset numbers start at 0.
-        /// </summary>
-        int Offset { get; }
-
-        /// <summary>
-        /// Gets the line number referred to by the position; line numbers start at 1.
-        /// </summary>
-        int Line { get; }
-
-        /// <summary>
-        /// Gets the column number referred to by the position; column numbers start at 1.
-        /// </summary>
-        int Column { get; }
-    }
 }

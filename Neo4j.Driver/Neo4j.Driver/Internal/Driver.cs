@@ -38,9 +38,9 @@ namespace Neo4j.Driver.Internal
         public Uri Uri { get; }
 
         private const AccessMode DefaultAccessMode = AccessMode.Write;
-        private const string NullBookmark = null;
 
-        internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic, IDriverLogger logger,
+        internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic,
+            IDriverLogger logger,
             IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
@@ -59,47 +59,26 @@ namespace Neo4j.Driver.Internal
 
         public IAsyncSession AsyncSession()
         {
-            return AsyncSession(DefaultAccessMode);
+            return AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
         }
 
-        public IAsyncSession AsyncSession(AccessMode defaultMode)
+        public IAsyncSession AsyncSession(Action<SessionConfig> optionsBuilder)
         {
-            return AsyncSession(defaultMode, NullBookmark);
+            return Session(optionsBuilder, false);
         }
 
-        public IAsyncSession AsyncSession(string bookmark)
-        {
-            return AsyncSession(DefaultAccessMode, bookmark);
-        }
-
-
-        public IAsyncSession AsyncSession(AccessMode defaultMode, string bookmark)
-        {
-            return Session(defaultMode,
-                string.IsNullOrEmpty(bookmark) ? Enumerable.Empty<string>() : new[] {bookmark},
-                false);
-        }
-
-
-        public IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<string> bookmarks)
-        {
-            return Session(defaultMode, bookmarks, false);
-        }
-
-        public IAsyncSession AsyncSession(IEnumerable<string> bookmarks)
-        {
-            return AsyncSession(AccessMode.Write, bookmarks);
-        }
-
-        public IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive)
+        public IInternalAsyncSession Session(Action<SessionConfig> optionsBuilder, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, defaultMode, Bookmark.From(bookmarks),
-                reactive);
+            var options = new SessionConfig();
+            optionsBuilder(options);
+
+            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,
+                options.Database, Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive);
 
             if (IsClosed)
             {
@@ -125,7 +104,7 @@ namespace Neo4j.Driver.Internal
                 return _connectionProvider.CloseAsync();
             }
 
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public void Dispose()

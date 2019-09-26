@@ -29,5 +29,22 @@ namespace Neo4j.Driver.IntegrationTests
             var index = random.Next(0, list.Count());
             return list.ElementAt(index);
         }
+
+        public static IEnumerable<IEnumerable<T>> Batch<T>(this IEnumerable<T> collection, int batchSize)
+        {
+            var nextBatch = new List<T>(batchSize);
+            foreach (var item in collection)
+            {
+                nextBatch.Add(item);
+                if (nextBatch.Count == batchSize)
+                {
+                    yield return nextBatch;
+                    nextBatch = new List<T>(batchSize);
+                }
+            }
+
+            if (nextBatch.Count > 0)
+                yield return nextBatch;
+        }
     }
 }

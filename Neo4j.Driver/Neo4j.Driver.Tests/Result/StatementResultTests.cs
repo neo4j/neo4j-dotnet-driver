@@ -233,7 +233,8 @@ namespace Neo4j.Driver.Tests
 
                 int count = 0;
                 var cursor =
-                    new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new InternalStatementResult(
+                        new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                         new BlockingExecutor());
                 var t = Task.Factory.StartNew(() =>
                 {
@@ -260,7 +261,8 @@ namespace Neo4j.Driver.Tests
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var result =
-                    new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new InternalStatementResult(
+                        new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                         new BlockingExecutor());
                 var temp = result.Take(5);
                 var records = temp.ToList();
@@ -375,6 +377,7 @@ namespace Neo4j.Driver.Tests
             public TimeSpan ResultAvailableAfter { get; }
             public TimeSpan ResultConsumedAfter { get; }
             public IServerInfo Server { get; }
+            public IDatabaseInfo Database { get; }
         }
     }
 }

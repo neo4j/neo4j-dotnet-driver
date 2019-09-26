@@ -38,7 +38,7 @@ namespace Neo4j.Driver
         /// Gets the bookmark received following the last successfully completed <see cref="IAsyncTransaction"/>.
         /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
-        string LastBookmark { get; }
+        Bookmark LastBookmark { get; }
 
 
         /// <summary>

@@ -34,7 +34,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         public IAsyncSession NewSession(AccessMode mode, TContext context)
         {
-            return _useBookmark ? _driver.AsyncSession(mode, new[] {context.Bookmark}) : _driver.AsyncSession(mode);
+            return _driver.AsyncSession(o =>
+                o.WithDefaultAccessMode(mode)
+                    .WithBookmarks(_useBookmark ? new[] {context.Bookmark} : Array.Empty<Bookmark>()));
         }
 
         public Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, TContext context)

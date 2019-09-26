@@ -15,16 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
-
 namespace Neo4j.Driver.Internal
 {
     internal interface IInternalAsyncTransaction : IAsyncTransaction
     {
-        void Success();
-
-        void Failure();
-
-        Task CloseAsync();
+        bool IsOpen { get; }
     }
 }

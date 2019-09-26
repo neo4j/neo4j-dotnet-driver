@@ -1,4 +1,5 @@
-﻿// Copyright (c) 2002-2019 Neo4j Sweden AB [http://neo4j.com]
+﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -32,24 +33,27 @@ using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    public class BoltProtocolV4Tests
+    public static class BoltProtocolV4Tests
     {
-        internal static readonly TransactionConfig TxConfig = new TransactionConfig
+        private static readonly TransactionConfig TxConfig = new TransactionConfig
         {
             Timeout = TimeSpan.FromMinutes(1),
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
         };
 
-        internal static readonly Bookmark Bookmark = Internal.Bookmark.From(SessionTests.FakeABookmark(123));
+        private static readonly Bookmark Bookmark = Bookmark.From("bookmark-123");
+        private static readonly string Database = "my-database";
 
-        internal static void VerifyMetadata(IDictionary<string, object> metadata)
+        private static void VerifyMetadata(IDictionary<string, object> metadata)
         {
-            metadata.Should().HaveCount(3).And
-                .ContainKeys(new List<string> {"bookmarks", "tx_timeout", "tx_metadata"});
-            metadata["bookmarks"].CastOrThrow<string[]>().Should().HaveCount(1).And.Contain("neo4j:bookmark:v1:tx123");
-            metadata["tx_timeout"].Should().Be(60000L);
-            var txMeta = metadata["tx_metadata"].CastOrThrow<Dictionary<string, object>>();
-            txMeta.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key1", "value1"));
+            metadata.Should()
+                .BeEquivalentTo(new Dictionary<string, object>
+                {
+                    {"bookmarks", new[] {"bookmark-123"}},
+                    {"tx_timeout", TxConfig.Timeout.TotalMilliseconds},
+                    {"db", Database},
+                    {"tx_metadata", TxConfig.Metadata}
+                });
         }
 
         public class RunInAutoCommitTransactionAsyncMethod
@@ -64,12 +68,12 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null);
+                    resourceHandler.Object, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
@@ -85,14 +89,14 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
-                        It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, false, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null);
+                    resourceHandler.Object, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(),
@@ -108,29 +112,29 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
-                        It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null);
+                    resourceHandler.Object, null, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
 
             [Fact]
-            public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage()
+            public async Task ShouldPassDatabaseBookmarkAndTxConfigToRunWithMetadataMessage()
             {
                 var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
-                        It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (m1, h1, m2, h2) =>
                         {
@@ -139,7 +143,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, Bookmark, TxConfig);
+                    resourceHandler.Object, Database, Bookmark, TxConfig);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,

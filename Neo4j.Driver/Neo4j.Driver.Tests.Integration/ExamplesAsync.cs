@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using FluentAssertions;
 using Neo4j.Driver;
 using System;
@@ -30,14 +31,11 @@ namespace Neo4j.Driver.ExamplesAsync
 {
     public class ExamplesAsync
     {
-
         public class AsyncSectionExamples : BaseAsyncExample
         {
-
             public AsyncSectionExamples(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
                 : base(output, fixture)
             {
-                
             }
 
             public async Task<List<string>> AutocommitTransactionExample()
@@ -55,7 +53,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     // family of methods instead and provides async capable methods. 
                     var reader = await session.RunAsync(
                         "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
-                        new { id = 0 } // Parameters in the statement, if any
+                        new {id = 0} // Parameters in the statement, if any
                     );
 
                     // Loop through the records asynchronously
@@ -70,6 +68,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     // asynchronously close session
                     await session.CloseAsync();
                 }
+
                 // end::async-autocommit-transaction[]
                 return records;
             }
@@ -91,7 +90,7 @@ namespace Neo4j.Driver.ExamplesAsync
                         // Send cypher statement to the database
                         var reader = await tx.RunAsync(
                             "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
-                            new { id = 0 } // Parameters in the statement, if any
+                            new {id = 0} // Parameters in the statement, if any
                         );
 
                         // Loop through the records asynchronously
@@ -109,6 +108,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     // asynchronously close session
                     await session.CloseAsync();
                 }
+
                 // end::async-transaction-function[]
                 return result;
             }
@@ -128,7 +128,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     // transaction acquired
                     var reader = await tx.RunAsync(
                         "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
-                        new { id = 0 } // Parameters in the statement, if any
+                        new {id = 0} // Parameters in the statement, if any
                     );
 
                     // Loop through the records asynchronously
@@ -146,6 +146,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     // asynchronously close session
                     await session.CloseAsync();
                 }
+
                 // end::async-explicit-transaction[]
                 return records;
             }
@@ -162,7 +163,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 results.Should().HaveCount(1);
                 results.Should().Contain("Product-0");
             }
-            
+
             [RequireServerFact]
             public async void TestTransactionFunctionExample()
             {
@@ -188,9 +189,8 @@ namespace Neo4j.Driver.ExamplesAsync
                 results.Should().HaveCount(1);
                 results.Should().Contain("Product-0");
             }
-            
         }
-        
+
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class AutocommitTransactionExample : BaseAsyncExample
         {
@@ -219,7 +219,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 await AddPersonAsync("Alice");
                 // Then
                 int count = await CountPersonAsync("Alice");
-                
+
                 count.Should().Be(1);
             }
         }
@@ -269,7 +269,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedConnectionTimeout(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config { ConnectionTimeout = TimeSpan.FromSeconds(15) });
+                    new Config {ConnectionTimeout = TimeSpan.FromSeconds(15)});
             }
 
             [RequireServerFact]
@@ -305,7 +305,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedMaxRetryTime(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config { MaxTransactionRetryTime = TimeSpan.FromSeconds(15) });
+                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(15)});
             }
 
             [RequireServerFact]
@@ -341,7 +341,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config { TrustStrategy = TrustStrategy.TrustAllCertificates });
+                    new Config {TrustManager = TrustManager.CreateInsecure()});
             }
 
             [RequireServerFact]
@@ -377,7 +377,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedSecurityStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config { EncryptionLevel = EncryptionLevel.None });
+                    new Config {EncryptionLevel = EncryptionLevel.None});
             }
 
             [RequireServerFact]
@@ -411,10 +411,11 @@ namespace Neo4j.Driver.ExamplesAsync
             }
 
             public IDriver CreateDriverWithCustomizedAuth(string uri,
-                string principal, string credentials, string realm, string scheme, Dictionary<string, object> parameters)
+                string principal, string credentials, string realm, string scheme,
+                Dictionary<string, object> parameters)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
-                    new Config { EncryptionLevel = EncryptionLevel.None });
+                    new Config {EncryptionLevel = EncryptionLevel.None});
             }
 
             [RequireServerFact]
@@ -439,7 +440,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 }
             }
         }
-        
+
         public class CypherErrorExample : BaseAsyncExample
         {
             public CypherErrorExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -464,7 +465,7 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 try
                 {
-                    var result = await tx.RunAsync("SELECT * FROM Employees WHERE name = $name", new { name });
+                    var result = await tx.RunAsync("SELECT * FROM Employees WHERE name = $name", new {name});
 
                     return (await result.SingleAsync())["employee_number"].As<int>();
                 }
@@ -479,8 +480,8 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestCypherErrorExample()
             {
                 // When & Then
-                int result = await GetEmployeeNumberAsync("Alice");
-                
+                var result = await GetEmployeeNumberAsync("Alice");
+
                 result.Should().Be(-1);
             }
         }
@@ -599,7 +600,7 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 // When & Then
                 long id = await AddPersonAsync("Alice");
-                
+
                 id.Should().BeGreaterOrEqualTo(0L);
             }
 
@@ -620,14 +621,14 @@ namespace Neo4j.Driver.ExamplesAsync
 
             private static Task CreatePersonNodeAsync(IAsyncTransaction tx, string name)
             {
-                return tx.RunAsync("CREATE (a:Person {name: $name})", new { name });
+                return tx.RunAsync("CREATE (a:Person {name: $name})", new {name});
             }
 
             private static async Task<long> MatchPersonNodeAsync(IAsyncTransaction tx, string name)
             {
-                var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN id(a)", new { name });
+                var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN id(a)", new {name});
 
-                
+
                 return (await result.SingleAsync())[0].As<long>();
             }
         }
@@ -666,7 +667,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 // When & Then
                 List<string> people = await GetPeopleAsync();
 
-                people.Should().Contain(new[] { "Alice", "Bob" });
+                people.Should().Contain(new[] {"Alice", "Bob"});
             }
         }
 
@@ -714,7 +715,9 @@ namespace Neo4j.Driver.ExamplesAsync
                 int count = await AddEmployeesAsync("Acme");
                 count.Should().Be(2);
 
-                var result = await ReadAsync("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
+                var result =
+                    await ReadAsync(
+                        "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
 
                 bool next = await result.FetchAsync();
                 next.Should().BeTrue();
@@ -732,7 +735,7 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 _baseDriver = Driver;
                 Driver = GraphDatabase.Driver("bolt://localhost:8080", AuthTokens.Basic(User, Password),
-                    new Config { MaxTransactionRetryTime = TimeSpan.FromSeconds(3) });
+                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(3)});
             }
 
             protected override void Dispose(bool isDisposing)
@@ -771,7 +774,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public async Task TestServiceUnavailableExample()
             {
                 bool result = await AddItemAsync();
-                
+
                 result.Should().BeFalse();
             }
         }
@@ -919,7 +922,8 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-        protected async Task<IStatementResultCursor> ReadAsync(string statement, IDictionary<string, object> parameters = null)
+        protected async Task<IStatementResultCursor> ReadAsync(string statement,
+            IDictionary<string, object> parameters = null)
         {
             var session = Driver.AsyncSession();
             try
@@ -942,4 +946,3 @@ namespace Neo4j.Driver.ExamplesAsync
         }
     }
 }
-

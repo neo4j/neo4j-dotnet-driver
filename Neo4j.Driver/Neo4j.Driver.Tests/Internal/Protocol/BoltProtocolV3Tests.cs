@@ -1,4 +1,5 @@
-﻿// Copyright (c) 2002-2019 Neo4j Sweden AB [http://neo4j.com]
+﻿// Copyright (c) 2002-2019 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -33,36 +34,31 @@ using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    public class BoltProtocolV3Tests
+    public static class BoltProtocolV3Tests
     {
-        internal static readonly TransactionConfig TxConfig = new TransactionConfig
+        private static readonly TransactionConfig TxConfig = new TransactionConfig
         {
             Timeout = TimeSpan.FromMinutes(1),
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
         };
 
-        internal static readonly Bookmark Bookmark = Internal.Bookmark.From(SessionTests.FakeABookmark(123));
+        private static readonly Bookmark Bookmark = Bookmark.From("bookmark-123");
 
-        internal static bool VerifyMetadata(IDictionary<string, object> metadata, AccessMode mode)
+        private static void VerifyMetadata(IDictionary<string, object> metadata, AccessMode mode)
         {
-            var keys = new List<string> {"bookmarks", "tx_timeout", "tx_metadata"};
+            var expected = new Dictionary<string, object>
+            {
+                {"bookmarks", new[] {"bookmark-123"}},
+                {"tx_timeout", TxConfig.Timeout.TotalMilliseconds},
+                {"tx_metadata", TxConfig.Metadata}
+            };
+
             if (mode == AccessMode.Read)
             {
-                keys.Add("mode");
+                expected.Add("mode", "r");
             }
 
-            metadata.Should().HaveCount(keys.Count).And.ContainKeys(keys);
-            metadata["bookmarks"].Should().BeOfType<string[]>().Which.Should().HaveCount(1).And
-                .Contain("neo4j:bookmark:v1:tx123");
-            metadata["tx_timeout"].Should().Be(60000L);
-            metadata["tx_metadata"].Should().BeOfType<Dictionary<string, object>>().Which.Should().HaveCount(1).And
-                .Contain(new KeyValuePair<string, object>("key1", "value1"));
-            if (mode == AccessMode.Read)
-            {
-                metadata["mode"].Should().BeOfType<string>().Which.Should().Be("r");
-            }
-
-            return true;
+            metadata.Should().BeEquivalentTo(expected);
         }
 
         public class LoginAsyncMethod
@@ -101,19 +97,19 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldEnqueueRunAndPullAllAndSend()
             {
-                var mockConn =  NewConnectionWithMode();
+                var mockConn = NewConnectionWithMode();
                 var statement = new Statement("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V3.RunResponseHandler>(),
-                        It.IsAny<PullAllMessage>(), It.IsAny<V3.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null);
+                    resourceHandler.Object, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -130,18 +126,18 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V3.RunResponseHandler>(),
-                        It.IsAny<PullAllMessage>(), It.IsAny<V3.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null);
+                    resourceHandler.Object, null, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
-            
+
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
@@ -152,9 +148,9 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V3.RunResponseHandler>(),
-                        It.IsAny<PullAllMessage>(), It.IsAny<V3.PullResponseHandler>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (m1, h1, m2, h2) =>
                         {
@@ -163,13 +159,25 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, Bookmark, TxConfig);
+                    resourceHandler.Object, null, Bookmark, TxConfig);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
                         PullAllMessage.PullAll,
                         It.IsAny<V3.PullResponseHandler>()),
                     Times.Once);
+            }
+
+            [Theory]
+            [InlineData("")]
+            [InlineData("database")]
+            public void ShouldThrowWhenADatabaseIsGiven(string database)
+            {
+                BoltV3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Statement("text"),
+                        false, Mock.Of<IBookmarkTracker>(), Mock.Of<IResultResourceHandler>(), database,
+                        Bookmark.From("123"),
+                        TransactionConfig.Empty))
+                    .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }
 
@@ -180,7 +188,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
 
-                await BoltV3.BeginTransactionAsync(mockConn.Object, null, null);
+                await BoltV3.BeginTransactionAsync(mockConn.Object, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
@@ -192,9 +200,9 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldNotSyncIfInvalidBookmarkGiven()
             {
                 var mockConn = NewConnectionWithMode();
-                var bookmark = Bookmark.From((string)null);
+                var bookmark = Bookmark.From((string) null);
 
-                await BoltV3.BeginTransactionAsync(mockConn.Object, bookmark, null);
+                await BoltV3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
@@ -208,14 +216,14 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockConn = NewConnectionWithMode();
                 var bookmark = Bookmark.From(SessionTests.FakeABookmark(234));
 
-                await BoltV3.BeginTransactionAsync(mockConn.Object, bookmark, null);
+                await BoltV3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
-            
+
             [Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
@@ -223,9 +231,9 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode(mode);
 
-                mockConn.Setup(x =>
-                        x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null))
-                    .Returns(TaskHelper.GetCompletedTask())
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
+                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
+                    .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (m1, h1, m2, h2) =>
                         {
@@ -233,11 +241,21 @@ namespace Neo4j.Driver.Internal.Protocol
                             VerifyMetadata(msg.Metadata, mode);
                         });
 
-                await BoltV3.BeginTransactionAsync(mockConn.Object, Bookmark, TxConfig);
+                await BoltV3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
                     Times.Once);
+            }
+
+            [Theory]
+            [InlineData("")]
+            [InlineData("database")]
+            public void ShouldThrowWhenADatabaseIsGiven(string database)
+            {
+                BoltV3.Awaiting(p => p.BeginTransactionAsync(Mock.Of<IConnection>(), database, Bookmark.From("123"),
+                        TransactionConfig.Empty))
+                    .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }
 
@@ -302,6 +320,5 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.Server, Times.Once);
             }
         }
-
     }
 }

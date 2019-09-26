@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
                 context.NodeRead(result.Summary);
 
-                txc.Success();
+                txc.Commit();
             }
         }
     }

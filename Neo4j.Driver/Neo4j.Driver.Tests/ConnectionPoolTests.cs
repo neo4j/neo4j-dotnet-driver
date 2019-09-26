@@ -538,7 +538,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
-                mock.Setup(x => x.ClearConnectionAsync()).Returns(TaskHelper.GetFailedTask(new ClientException()));
+                mock.Setup(x => x.ClearConnectionAsync()).Returns(Task.FromException(new ClientException()));
 
                 var inUseConns = new ConcurrentSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
@@ -1433,7 +1433,7 @@ namespace Neo4j.Driver.Tests
                 var specialConn = new Mock<IPooledConnection>();
                 var releasedConn = new Mock<IPooledConnection>();
                 specialConn.Setup(x => x.DestroyAsync())
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback(() => { idleConnections.Add(releasedConn.Object); });
 
                 idleConnections.Add(specialConn.Object);
@@ -1464,7 +1464,7 @@ namespace Neo4j.Driver.Tests
                 var specialConn = new Mock<IPooledConnection>();
                 var pool = NewConnectionPool(idleConnections);
                 specialConn.Setup(x => x.DestroyAsync())
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback(() => { pool.Activate(); });
 
                 idleConnections.Add(specialConn.Object);

@@ -266,7 +266,7 @@ namespace Neo4j.Driver.Internal.Connector
                 _sendLock.Release();
             }
 
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override string ToString()

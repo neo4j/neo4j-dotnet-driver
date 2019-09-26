@@ -36,7 +36,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         public IRxSession NewSession(AccessMode mode, TContext context)
         {
-            return _useBookmark ? _driver.RxSession(mode, new[] {context.Bookmark}) : _driver.RxSession(mode);
+            return _driver.RxSession(o =>
+                o.WithDefaultAccessMode(mode)
+                    .WithBookmarks(_useBookmark ? new[] {context.Bookmark} : Array.Empty<Bookmark>()));
         }
 
         public IObservable<IRxTransaction> BeginTransaction(IRxSession session, TContext context)

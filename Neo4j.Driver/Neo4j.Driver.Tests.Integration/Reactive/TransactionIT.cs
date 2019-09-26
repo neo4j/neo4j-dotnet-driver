@@ -27,6 +27,7 @@ using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
 
@@ -44,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             session = NewSession();
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldCommitEmptyTx()
         {
             var bookmarkBefore = session.LastBookmark;
@@ -61,7 +62,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             bookmarkAfter.Should().NotBe(bookmarkBefore);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldRollbackEmptyTx()
         {
             var bookmarkBefore = session.LastBookmark;
@@ -78,7 +79,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             bookmarkAfter.Should().Be(bookmarkBefore);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldRunStatementAndCommit()
         {
             session.BeginTransaction()
@@ -96,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             CountNodes(42).Should().Be(1);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldRunStatementAndRollback()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -107,9 +108,19 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             CountNodes(4242).Should().Be(0);
         }
 
-        [RequireServerTheory]
-        [MemberData(nameof(TransactionOutcome))]
-        public async Task ShouldRunMultipleStatements(bool commit)
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldRunMultipleStatementsAndCommit()
+        {
+            return VerifyRunMultipleStatements(true);
+        }
+
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldRunMultipleStatementsAndRollback()
+        {
+            return VerifyRunMultipleStatements(false);
+        }
+
+        private async Task VerifyRunMultipleStatements(bool commit)
         {
             var txc = await session.BeginTransaction().SingleAsync();
 
@@ -124,12 +135,22 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRolledback(commit);
+            VerifyCommittedOrRollbacked(commit);
         }
 
-        [RequireServerTheory]
-        [MemberData(nameof(TransactionOutcome))]
-        public async Task ShouldRunMultipleStatementsWithoutWaiting(bool commit)
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldRunMultipleStatementsWithoutWaitingAndCommit()
+        {
+            return VerifyRunMultipleStatementsWithoutWaiting(true);
+        }
+
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldRunMultipleStatementsWithoutWaitingAndRollback()
+        {
+            return VerifyRunMultipleStatementsWithoutWaiting(false);
+        }
+
+        private async Task VerifyRunMultipleStatementsWithoutWaiting(bool commit)
         {
             var txc = await session.BeginTransaction().SingleAsync();
 
@@ -141,12 +162,22 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRolledback(commit);
+            VerifyCommittedOrRollbacked(commit);
         }
 
-        [RequireServerTheory]
-        [MemberData(nameof(TransactionOutcome))]
-        public async Task ShouldRunMultipleStatementsWithoutStreaming(bool commit)
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldRunMultipleStatementsWithoutStreamingAndCommit()
+        {
+            return VerifyRunMultipleStatementsWithoutStreaming(true);
+        }
+
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldRunMultipleStatementsWithoutStreamingAndRollback()
+        {
+            return VerifyRunMultipleStatementsWithoutStreaming(false);
+        }
+
+        private async Task VerifyRunMultipleStatementsWithoutStreaming(bool commit)
         {
             var txc = await session.BeginTransaction().SingleAsync();
 
@@ -158,10 +189,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRolledback(commit);
+            VerifyCommittedOrRollbacked(commit);
         }
 
-        [RequireServerFact(Skip = BehaviourDifferenceWJavaDriver)]
+        [RequireServerFact]
         public async Task ShouldFailToCommitAfterAFailedStatement()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -174,7 +205,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnError<int>(0, MatchesException<ClientException>()));
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldSucceedToRollbackAfterAFailedStatement()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -187,7 +218,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnCompleted<int>(0));
         }
 
-        [RequireServerFact(Skip = BehaviourDifferenceWJavaDriver)]
+        [RequireServerFact]
         public async Task ShouldFailToCommitAfterSuccessfulAndFailedStatements()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -202,7 +233,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnError<int>(0, MatchesException<ClientException>()));
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldSucceedToRollbackAfterSuccessfulAndFailedStatements()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -217,7 +248,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnCompleted<int>(0));
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldFailToRunAnotherStatementAfterAFailedOne()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -230,16 +261,17 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnError<IRecord>(0,
                         Matches<Exception>(exc =>
-                            exc.Message.Should().Contain("Cannot run more statements in this transaction"))));
+                            exc.Message.Should().Contain("Cannot run statement in this transaction"))));
 
             VerifyCanRollback(txc);
         }
 
-        [RequireServerFact(Skip = BehaviourDifferenceWJavaDriver)]
+        [RequireServerFact]
         public void ShouldFailToBeginTxcWithInvalidBookmark()
         {
             Server.Driver
-                .RxSession(AccessMode.Read, new[] {"InvalidBookmark"})
+                .RxSession(
+                    o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(Bookmark.From("InvalidBookmark")))
                 .BeginTransaction()
                 .WaitForCompletion()
                 .AssertEqual(
@@ -247,8 +279,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         Matches<Exception>(exc => exc.Message.Should().Contain("InvalidBookmark"))));
         }
 
-        [RequireServerFact]
-        public async Task ShouldAllowCommitAfterCommit()
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public async Task ShouldNotAllowCommitAfterCommit()
         {
             var txc = await session.BeginTransaction().SingleAsync();
 
@@ -258,11 +290,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             txc.Commit<int>()
                 .WaitForCompletion()
                 .AssertEqual(
-                    OnCompleted<int>(0));
+                    OnError<int>(0,
+                        Matches<Exception>(exc =>
+                            exc.Message.Should()
+                                .Be("Cannot commit this transaction, because it has already been committed."))));
         }
 
-        [RequireServerFact]
-        public async Task ShouldAllowRollbackAfterRollback()
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public async Task ShouldNotAllowRollbackAfterRollback()
         {
             var txc = await session.BeginTransaction().SingleAsync();
 
@@ -272,10 +307,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             txc.Rollback<int>()
                 .WaitForCompletion()
                 .AssertEqual(
-                    OnCompleted<int>(0));
+                    OnError<int>(0,
+                        Matches<Exception>(exc =>
+                            exc.Message.Should()
+                                .Be("Cannot rollback this transaction, because it has already been rolled back."))));
         }
 
-        [RequireServerFact(Skip = BehaviourDifferenceWJavaDriver)]
+        [RequireServerFact]
         public async Task ShouldFailToCommitAfterRollback()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -287,10 +325,12 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .WaitForCompletion()
                 .AssertEqual(
                     OnError<int>(0,
-                        Matches<Exception>(exc => exc.Message.Should().Contain("transaction has been rolled back"))));
+                        Matches<Exception>(exc =>
+                            exc.Message.Should()
+                                .Be("Cannot commit this transaction, because it has already been rolled back."))));
         }
 
-        [RequireServerFact(Skip = BehaviourDifferenceWJavaDriver)]
+        [RequireServerFact]
         public async Task ShouldFailToRollbackAfterCommit()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -302,12 +342,24 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .WaitForCompletion()
                 .AssertEqual(
                     OnError<string>(0,
-                        Matches<Exception>(exc => exc.Message.Should().Contain("transaction has been committed"))));
+                        Matches<Exception>(exc =>
+                            exc.Message.Should()
+                                .Be("Cannot rollback this transaction, because it has already been committed."))));
         }
 
-        [RequireServerTheory]
-        [MemberData(nameof(TransactionOutcome))]
-        public async Task ShouldFailToRunStatementAfterCompletedTxc(bool commit)
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldFailToRunStatementAfterCompletedTxcAndCommit()
+        {
+            return VerifyFailToRunStatementAfterCompletedTxc(true);
+        }
+
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldFailToRunStatementAfterCompletedTxcAndRollback()
+        {
+            return VerifyFailToRunStatementAfterCompletedTxc(false);
+        }
+
+        private async Task VerifyFailToRunStatementAfterCompletedTxc(bool commit)
         {
             var txc = await session.BeginTransaction().SingleAsync();
 
@@ -321,10 +373,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .WaitForCompletion()
                 .AssertEqual(
                     OnError<IRecord>(0,
-                        Matches<Exception>(exc => exc.Message.Should().Contain("Cannot run more statements in this"))));
+                        Matches<Exception>(exc => exc.Message.Should().Contain("Cannot run statement in this"))));
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldUpdateBookmark()
         {
             var bookmark1 = session.LastBookmark;
@@ -341,12 +393,12 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             var bookmark3 = session.LastBookmark;
 
-            bookmark1.Should().BeNullOrEmpty();
+            bookmark1.Should().BeNull();
             bookmark2.Should().NotBe(bookmark1);
             bookmark3.Should().NotBe(bookmark1).And.NotBe(bookmark2);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldPropagateFailuresFromStatements()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -370,7 +422,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanRollback(txc);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldNotRunUntilSubscribed()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -395,9 +447,19 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnCompleted<int>(0));
         }
 
-        [RequireServerTheory]
-        [MemberData(nameof(TransactionOutcome))]
-        public async Task ShouldNotPropagateFailureIfNotExecuted(bool commit)
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldNotPropagateFailureIfNotExecutedAndCommitted()
+        {
+            return VerifyNotPropagateFailureIfNotExecuted(true);
+        }
+
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public Task ShouldNotPropagateFailureIfNotExecutedAndRollBacked()
+        {
+            return VerifyNotPropagateFailureIfNotExecuted(false);
+        }
+
+        private async Task VerifyNotPropagateFailureIfNotExecuted(bool commit)
         {
             var txc = await session.BeginTransaction().SingleAsync();
 
@@ -406,7 +468,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanCommitOrRollback(txc, commit);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldNotPropagateRunFailureFromSummary()
         {
             var txc = await session.BeginTransaction().SingleAsync();
@@ -426,7 +488,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanRollback(txc);
         }
 
-        [RequireServerFact]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldHandleNestedQueries()
         {
             const int size = 1024;
@@ -518,7 +580,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     OnError<IRecord>(0, MatchesException<ClientException>(e => e.Code.Contains("SyntaxError"))));
         }
 
-        private void VerifyCommittedOrRolledback(bool commit)
+        private void VerifyCommittedOrRollbacked(bool commit)
         {
             if (commit)
             {
@@ -540,15 +602,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .Select(r => r[0].As<int>())
                 .SingleAsync()
                 .Wait();
-        }
-
-        public static TheoryData<bool> TransactionOutcome()
-        {
-            return new TheoryData<bool>
-            {
-                true,
-                false
-            };
         }
     }
 }

@@ -1,4 +1,5 @@
-// Copyright (c) 2002-2019 Neo4j Sweden AB [http://neo4j.com]
+// Copyright (c) 2002-2019 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
@@ -16,28 +17,31 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Messaging.V3
 {
     internal abstract class TransactionStartingMessage : IRequestMessage
     {
+        private const string BookmarksKey = BookmarkHelper.BookmarksKey;
         private const string TxTimeoutMetadataKey = "tx_timeout";
         private const string TxMetadataMetadataKey = "tx_metadata";
         private const string AccessModeKey = "mode";
+        private const string DbKey = "db";
 
-        protected TransactionStartingMessage(Bookmark bookmark, TimeSpan? txTimeout,
+        protected TransactionStartingMessage(string database, Bookmark bookmark, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode)
         {
-            Metadata = BuildMetadata(bookmark, txTimeout ?? TimeSpan.Zero, txMetadata, mode);
+            Metadata = BuildMetadata(bookmark, txTimeout ?? TimeSpan.Zero, txMetadata, mode, database);
         }
 
         public IDictionary<string, object> Metadata { get; }
 
         private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan txTimeout,
-            IDictionary<string, object> txMetadata, AccessMode mode)
+            IDictionary<string, object> txMetadata, AccessMode mode, string database)
         {
-            var bookmarksPresent = bookmark?.HasBookmark ?? false;
+            var bookmarksPresent = bookmark != null && bookmark.Values.Any();
             var txTimeoutPresent = txTimeout > TimeSpan.Zero;
             var txMetadataPresent = txMetadata != null && txMetadata.Count != 0;
 
@@ -45,7 +49,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
             if (bookmarksPresent)
             {
-                result.Add(Bookmark.BookmarksKey, bookmark.Bookmarks);
+                result.Add(BookmarksKey, bookmark.Values);
             }
 
             if (txTimeoutPresent)
@@ -67,6 +71,11 @@ namespace Neo4j.Driver.Internal.Messaging.V3
                     break;
                 case AccessMode.Write:
                     break;
+            }
+
+            if (database != null)
+            {
+                result.Add(DbKey, database);
             }
 
             return result;

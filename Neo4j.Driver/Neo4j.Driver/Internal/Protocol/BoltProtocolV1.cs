@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -67,9 +68,10 @@ namespace Neo4j.Driver.Internal.Protocol
         public async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
-            Bookmark ignored, TransactionConfig txConfig)
+            string database, Bookmark ignored, TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
+            AssertNullDatabase(database);
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
                 resultResourceHandler);
@@ -81,14 +83,16 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        public async Task BeginTransactionAsync(IConnection connection, Bookmark bookmark, TransactionConfig txConfig)
+        public async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
+            TransactionConfig txConfig)
         {
             AssertNullOrEmptyTransactionConfig(txConfig);
+            AssertNullDatabase(database);
             var parameters = bookmark?.AsBeginTransactionParameters();
             var handler = new V1.BeginResponseHandler();
             await connection.EnqueueAsync(new RunMessage(Begin, parameters), handler, PullAll, handler)
                 .ConfigureAwait(false);
-            if (bookmark?.HasBookmark ?? false)
+            if (bookmark != null && bookmark.Values.Any())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
@@ -98,7 +102,8 @@ namespace Neo4j.Driver.Internal.Protocol
             Statement statement, bool reactive)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+            var streamBuilder =
+                new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V1.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V1.PullResponseHandler(streamBuilder, summaryBuilder);
             await connection.EnqueueAsync(new RunMessage(statement), runHandler, PullAll, pullAllHandler)
@@ -129,16 +134,26 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public Task LogoutAsync(IConnection connection)
         {
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         private void AssertNullOrEmptyTransactionConfig(TransactionConfig txConfig)
         {
             if (txConfig != null && !txConfig.IsEmpty())
             {
-                throw new ArgumentException(
-                    "Driver is connected to the database that does not support transaction configuration. " +
+                throw new ClientException(
+                    "Driver is connected to a server that does not support transaction configuration. " +
                     "Please upgrade to neo4j 3.5.0 or later in order to use this functionality");
+            }
+        }
+
+        private void AssertNullDatabase(string database)
+        {
+            if (database != null)
+            {
+                throw new ClientException(
+                    "Driver is connected to a server that does not support multiple databases. " +
+                    "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
             }
         }
     }

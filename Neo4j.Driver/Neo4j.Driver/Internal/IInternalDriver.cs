@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal
@@ -23,6 +24,6 @@ namespace Neo4j.Driver.Internal
     {
         Config Config { get; }
 
-        IInternalAsyncSession Session(AccessMode defaultMode, IEnumerable<string> bookmarks, bool reactive);
+        IInternalAsyncSession Session(Action<SessionConfig> optionsBuilder, bool reactive);
     }
 }

@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var session = new Mock<IInternalAsyncSession>();
                 session.Setup(x => x.BeginTransactionAsync(It.IsAny<TransactionConfig>()))
-                    .ReturnsAsync(Mock.Of<IAsyncTransaction>());
+                    .ReturnsAsync(Mock.Of<IInternalAsyncTransaction>());
 
                 var rxSession = new InternalRxSession(session.Object, Mock.Of<IRxRetryLogic>());
 
@@ -129,6 +129,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 session.VerifyNoOtherCalls();
 
                 txc.Verify(x => x.CommitAsync(), Times.Once);
+                txc.VerifyGet(x => x.IsOpen);
                 txc.VerifyNoOtherCalls();
             }
 
@@ -149,6 +150,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 session.VerifyNoOtherCalls();
 
                 txc.Verify(x => x.RollbackAsync(), Times.Once);
+                txc.VerifyGet(x => x.IsOpen);
                 txc.VerifyNoOtherCalls();
             }
 
@@ -169,15 +171,19 @@ namespace Neo4j.Driver.Reactive.Internal
                 session.VerifyNoOtherCalls();
 
                 txc.Verify(x => x.RollbackAsync(), Times.Once);
+                txc.VerifyGet(x => x.IsOpen);
                 txc.VerifyNoOtherCalls();
             }
 
             private static InternalRxSession CreateSession(AccessMode mode, TransactionConfig txConfig,
-                out Mock<IInternalAsyncSession> session, out Mock<IAsyncTransaction> txc)
+                out Mock<IInternalAsyncSession> session, out Mock<IInternalAsyncTransaction> txc)
             {
-                txc = new Mock<IAsyncTransaction>();
-                txc.Setup(x => x.CommitAsync()).Returns(Task.CompletedTask);
-                txc.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask);
+                var isOpen = true;
+
+                txc = new Mock<IInternalAsyncTransaction>();
+                txc.Setup(x => x.CommitAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
+                txc.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
+                txc.SetupGet(x => x.IsOpen).Returns(() => isOpen);
 
                 session = new Mock<IInternalAsyncSession>();
                 session.Setup(x => x.BeginTransactionAsync(mode, txConfig)).ReturnsAsync(txc.Object);

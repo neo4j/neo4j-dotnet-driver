@@ -113,7 +113,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         private async Task VerifyFailure(Uri target, TrustManager trustManager)
         {
             var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
-                Config.Builder.WithTrustManager(trustManager).ToConfig()
+                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig()
             ));
             ex.Should().BeOfType<SecurityException>().Which.Message.Should()
                 .Contain("Failed to establish encrypted connection with server");
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         private async Task VerifySuccess(Uri target, TrustManager trustManager)
         {
             var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
-                Config.Builder.WithTrustManager(trustManager).ToConfig()
+                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig()
             ));
             ex.Should().BeNull();
         }
@@ -180,6 +180,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
+        // ReSharper disable once ClassNeverInstantiated.Global
         public class CertificateTrustIntegrationTestFixture : IDisposable
         {
             public StandAlone StandAlone { get; }
@@ -209,7 +210,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             public void Dispose()
             {
                 StandAlone?.Dispose();
-                StandAlone?.UpdateCertificate(null);
+                StandAlone?.UpdateCertificate(Pkcs12);
             }
         }
     }

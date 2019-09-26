@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Result;
@@ -36,6 +37,16 @@ namespace Neo4j.Driver.Tests
             serverInfo.Version = version;
 
             serverInfo.ToString().Should().Be(expected);
+        }
+
+        [Fact]
+        public void ShouldReturnEmptyDatabaseInfoIfNotSet()
+        {
+            var builder = new SummaryBuilder(new Statement("RETURN 1"), new ServerInfo(new Uri("bolt://localhost")));
+            var summary = builder.Build();
+
+            summary.Database.Should().NotBeNull();
+            summary.Database.Name.Should().BeNull();
         }
     }
 }

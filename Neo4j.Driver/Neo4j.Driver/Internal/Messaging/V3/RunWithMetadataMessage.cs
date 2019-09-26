@@ -24,18 +24,25 @@ namespace Neo4j.Driver.Internal.Messaging.V3
     internal class RunWithMetadataMessage : TransactionStartingMessage
     {
         public RunWithMetadataMessage(Statement statement, AccessMode mode)
-            : this(statement, null, null, null, mode)
+            : this(statement, null, null, mode)
         {
         }
 
-        public RunWithMetadataMessage(Statement statement, Bookmark bookmark, TransactionConfig txConfig, AccessMode mode)
-            : this(statement, bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
+        public RunWithMetadataMessage(Statement statement, Bookmark bookmark, TransactionConfig txConfig,
+            AccessMode mode)
+            : this(statement, null, bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
         {
         }
 
-        public RunWithMetadataMessage(Statement statement, Bookmark bookmark, TimeSpan? txTimeout,
+        public RunWithMetadataMessage(Statement statement, string database, Bookmark bookmark, TransactionConfig txConfig,
+            AccessMode mode)
+            : this(statement, database, bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
+        {
+        }
+
+        public RunWithMetadataMessage(Statement statement, string database, Bookmark bookmark, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode)
-            : base(bookmark, txTimeout, txMetadata, mode)
+            : base(database, bookmark, txTimeout, txMetadata, mode)
         {
             Statement = statement;
         }

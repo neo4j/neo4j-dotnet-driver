@@ -49,10 +49,12 @@ namespace Neo4j.Driver
         public Statement(string text) : this(text, (object) null)
         {
         }
+
         /// <summary>
         /// Create a statement with parameters specified as anonymous objects
         /// </summary>
         /// <param name="text">The statement's text</param>
+        /// <param name="parameters">The statement parameters, specified as an object which is then converted into key-value pairs.</param>
         public Statement(string text, object parameters)
             : this(text, parameters.ToDictionary())
         {

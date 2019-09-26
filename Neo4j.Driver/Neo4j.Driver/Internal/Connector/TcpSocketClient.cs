@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,7 +48,8 @@ namespace Neo4j.Driver.Internal.Connector
         {
             Throw.ArgumentNullException.IfNull(socketSettings, nameof(socketSettings));
             Throw.ArgumentNullException.IfNull(socketSettings.HostResolver, nameof(SocketSettings.HostResolver));
-            Throw.ArgumentNullException.IfNull(socketSettings.EncryptionManager, nameof(SocketSettings.EncryptionManager));
+            Throw.ArgumentNullException.IfNull(socketSettings.EncryptionManager,
+                nameof(SocketSettings.EncryptionManager));
 
             _logger = logger;
             _resolver = socketSettings.HostResolver;
@@ -66,10 +68,12 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 try
                 {
-                    _stream = CreateSecureStream(uri);
+                    var sslStream = CreateSecureStream(uri);
 
-                    await ((SslStream)_stream)
+                    await sslStream
                         .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
+
+                    _stream = sslStream;
                 }
                 catch (Exception e)
                 {
@@ -82,13 +86,13 @@ namespace Neo4j.Driver.Internal.Connector
         {
             var innerErrors = new List<Exception>();
             var addresses = await _resolver.ResolveAsync(uri.Host).ConfigureAwait(false);
-                        
+
             foreach (var address in addresses)
             {
                 try
                 {
                     await ConnectSocketAsync(address, uri.Port).ConfigureAwait(false);
-                    
+
                     return;
                 }
                 catch (Exception e)
@@ -104,7 +108,7 @@ namespace Neo4j.Driver.Internal.Connector
                         actualException));
                 }
             }
-            
+
             // all failed
             throw new IOException(
                 $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.",
@@ -133,7 +137,7 @@ namespace Neo4j.Driver.Internal.Connector
                     _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
                                       $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
                 }
-                
+
                 throw new OperationCanceledException(
                     $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
             }
@@ -158,7 +162,7 @@ namespace Neo4j.Driver.Internal.Connector
                                 _client = null;
                                 _stream = null;
 
-                                return TaskHelper.GetCompletedTask();
+                                return Task.CompletedTask;
                             }).Unwrap();
 #else
                     _client.Shutdown(SocketShutdown.Both);
@@ -171,7 +175,7 @@ namespace Neo4j.Driver.Internal.Connector
                 _stream = null;
             }
 
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         private void InitClient()
@@ -187,6 +191,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             }
+
             _client.NoDelay = true;
             _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
         }
@@ -217,6 +222,5 @@ namespace Neo4j.Driver.Internal.Connector
                     return trust;
                 });
         }
-
     }
 }

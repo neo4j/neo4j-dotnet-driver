@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldCollect()
         {
-            var bookmarkStr = $"{Bookmark.BookmarkPrefix}455";
+            var bookmarkStr = "bookmark-455";
             var metadata = new Dictionary<string, object> {{Key, bookmarkStr}};
             var collector = new BookmarkCollector();
 
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldReturnSameCollected()
         {
-            var bookmarkStr = $"{Bookmark.BookmarkPrefix}455";
+            var bookmarkStr = "bookmark-455";
             var metadata = new Dictionary<string, object> {{Key, bookmarkStr}};
             var collector = new BookmarkCollector();
 
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         }
 
         internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, $"{Bookmark.BookmarkPrefix}455");
+            new KeyValuePair<string, object>(Key, "bookmark-455");
 
         internal static Bookmark TestMetadataCollected => Bookmark.From((string) TestMetadata.Value);
     }

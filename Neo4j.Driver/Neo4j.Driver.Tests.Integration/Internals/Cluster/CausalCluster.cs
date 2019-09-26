@@ -87,7 +87,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             void VerifyCanExecute(AccessMode mode, List<Exception> exceptions)
             {
                 using (var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken))
-                using (var session = driver.Session(mode))
+                using (var session = driver.Session(o => o.WithDefaultAccessMode(mode)))
                 {
                     session.Run("RETURN 1").Consume();
                 }
@@ -107,7 +107,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     try
                     {
                         using (var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken))
-                        using (var session = driver.Session(AccessMode.Read))
+                        using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))
                         {
                             var addresses = new List<string>();
                             var records = session.Run("CALL dbms.cluster.overview()").ToList();

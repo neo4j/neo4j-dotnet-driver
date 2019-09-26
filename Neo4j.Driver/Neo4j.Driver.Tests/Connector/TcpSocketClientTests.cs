@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Tests.Connector
                         ConnectionTimeout = TimeSpan.FromSeconds(1),
                         HostResolver = new SystemHostResolver(),
                         EncryptionManager =
-                            new EncryptionManager(EncryptionLevel.None, TrustStrategy.TrustAllCertificates, null, null)
+                            new EncryptionManager(EncryptionLevel.None, null, null)
                     });
 
                 // ReSharper disable once PossibleNullReferenceException
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Tests.Connector
                     ConnectionTimeout = TimeSpan.FromSeconds(10),
                     HostResolver = new SystemHostResolver(),
                     EncryptionManager =
-                        new EncryptionManager(EncryptionLevel.None, TrustStrategy.TrustAllCertificates, null, null)
+                        new EncryptionManager(EncryptionLevel.None, null, null)
                 };
                 var client = new TcpSocketClient(socketSettings);
 
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests.Connector
                 {
                     ConnectionTimeout = TimeSpan.FromSeconds(1),
                     HostResolver = new SystemHostResolver(),
-                    EncryptionManager = new EncryptionManager(EncryptionLevel.None, TrustStrategy.TrustAllCertificates, null, null)
+                    EncryptionManager = new EncryptionManager(EncryptionLevel.None, null, null)
                 });
 
                 // ReSharper disable once PossibleNullReferenceException

@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             {
                 using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
                 {
-                    var session = driver.AsyncSession(AccessMode.Read);
+                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                     try
                     {
                         var cursor = await session.RunAsync("RETURN $x", new {x = 1});
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 var uri = new Uri("bolt://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))
                 {
-                    var session = driver.AsyncSession(bookmarks);
+                    var session = driver.AsyncSession(o => o.WithBookmarks(Bookmark.From(bookmarks)));
                     try
                     {
                         var txc = await session.BeginTransactionAsync();
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         await session.CloseAsync();
                     }
 
-                    session.LastBookmark.Should().Be("neo4j:bookmark:v1:tx95");
+                    session.LastBookmark.Should().Be(Bookmark.From("neo4j:bookmark:v1:tx95"));
                 }
             }
         }

@@ -24,6 +24,7 @@ using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Internal;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
 
@@ -40,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             protected abstract IRxRunnable NewRunnable();
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnNonNullSummary()
             {
                 NewRunnable()
@@ -53,29 +54,40 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnSummaryWithStatementText()
             {
                 VerifySummaryStatementTextAndParams("UNWIND RANGE(1, 10) AS n RETURN n, true", null);
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnSummaryWithStatementTextAndParams()
             {
                 VerifySummaryStatementTextAndParams("UNWIND RANGE(1,$x) AS n RETURN n, $y",
                     new {x = 50, y = false});
             }
 
-            [RequireServerTheory]
-            [InlineData("CREATE (n)", StatementType.WriteOnly)]
-            [InlineData("MATCH (n) RETURN n LIMIT 1", StatementType.ReadOnly)]
-            [InlineData("CREATE (n) RETURN n", StatementType.ReadWrite)]
-            public void ShouldReturnStatementType(string statement, StatementType expectedType)
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            public void ShouldReturnStatementTypeAsWriteOnly()
             {
-                VerifySummary(statement, null, MatchesSummary(new {StatementType = expectedType}));
+                VerifySummary("CREATE (n)", null, MatchesSummary(new {StatementType = StatementType.WriteOnly}));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            public void ShouldReturnStatementTypeAsReadOnly()
+            {
+                VerifySummary("MATCH (n) RETURN n LIMIT 1", null,
+                    MatchesSummary(new {StatementType = StatementType.ReadOnly}));
+            }
+
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            public void ShouldReturnStatementTypeAsReadWrite()
+            {
+                VerifySummary("CREATE (n) RETURN n", null,
+                    MatchesSummary(new {StatementType = StatementType.ReadWrite}));
+            }
+
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithCreates()
             {
                 VerifySummary("CREATE (n:Label1 {id: $id1})-[:KNOWS]->(m:Label2 {id: $id2}) RETURN n, m",
@@ -83,7 +95,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(new {Counters = new Counters(2, 0, 1, 0, 2, 2, 0, 0, 0, 0, 0)}));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithDeletes()
             {
                 VerifySummary("CREATE (n:Label3 {id: $id1})-[:KNOWS]->(m:Label4 {id: $id2}) RETURN n, m",
@@ -92,14 +104,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(new {Counters = new Counters(0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0)}));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithIndexCreate()
             {
                 VerifySummary("CREATE INDEX on :Label(prop)", null,
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0)}));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithIndexRemove()
             {
                 // Ensure that an index exists
@@ -112,14 +124,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0)}));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithConstraintCreate()
             {
                 VerifySummary("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0)}));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithConstraintRemove()
             {
                 // Ensure that a constraint exists
@@ -132,7 +144,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)}));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldNotReturnPlanAndProfile()
             {
                 VerifySummary("CREATE (n) RETURN n", null,
@@ -142,7 +154,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     }));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnPlanButNoProfile()
             {
                 VerifySummary("EXPLAIN CREATE (n) RETURN n", null,
@@ -155,7 +167,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                             .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnPlanAndProfile()
             {
                 VerifySummary("PROFILE CREATE (n) RETURN n", null,
@@ -169,24 +181,24 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                             .Excluding(x => x.SelectedMemberPath == "Profile.Children")));
             }
 
-            [RequireServerFact]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldNotReturnNotifications()
             {
                 VerifySummary("CREATE (n) RETURN n", null,
                     Matches<IResultSummary>(s => s.Notifications.Should().BeEmpty()));
             }
 
-            [RequireServerFact(Skip = "Seems to be flaky")]
+            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnNotifications()
             {
-                VerifySummary("EXPLAIN MATCH (n),(m) RETURN n,m", null,
+                VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n", null,
                     MatchesSummary(new
                         {
                             Notifications = new[]
                             {
-                                new Notification("Neo.ClientNotification.Statement.CartesianProductWarning",
-                                    "This query builds a cartesian product between disconnected patterns.",
-                                    "If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m))",
+                                new Notification("Neo.ClientNotification.Statement.UnknownLabelWarning",
+                                    "The provided label is not in the database.",
+                                    "One of the labels in your query is not available in the database, make sure you didn\'t misspell it or that the label is available when you run this statement in your application (the missing label name is: ThisLabelDoesNotExist)",
                                     null, "WARNING")
                             }
                         },
@@ -217,15 +229,23 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 using (var session = Server.Driver.Session())
                 {
                     foreach (var drop in session.Run(
-                        "CALL db.constraints() yield description RETURN 'DROP ' + description"))
+                        "CALL db.constraints()"))
                     {
-                        session.Run(drop[0].As<string>()).Consume();
+                        if (drop.Values.TryGetValue("description", out var name) ||
+                            drop.Values.TryGetValue("name", out name))
+                        {
+                            session.Run($"DROP {name}").Consume();
+                        }
                     }
 
                     foreach (var drop in session.Run(
-                        "CALL db.indexes() yield description RETURN 'DROP ' + description"))
+                        "CALL db.indexes()"))
                     {
-                        session.Run(drop[0].As<string>()).Consume();
+                        if (drop.Values.TryGetValue("description", out var name) ||
+                            drop.Values.TryGetValue("name", out name))
+                        {
+                            session.Run($"DROP {name}").Consume();
+                        }
                     }
                 }
 

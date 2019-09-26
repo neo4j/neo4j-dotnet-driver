@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync(
-                    "CREATE (a {value:{value}}) RETURN a.value", new Dictionary<string, object> {{"value", byteArray}});
+                    "CREATE (a {value: $value}) RETURN a.value", new Dictionary<string, object> {{"value", byteArray}});
                 var value = await cursor.SingleAsync(r => r["a.value"].As<byte[]>());
 
                 // Then

@@ -137,7 +137,19 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             throw new ArgumentException("Invalid store.");
         }
 
-        public static void DumpPem(object value, string target)
+        public static void DumpPem(AsymmetricKeyParameter value, string target)
+        {
+            using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
+            {
+                using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
+                {
+                    var pemWriter = new PemWriter(targetWriter);
+                    pemWriter.WriteObject(new Pkcs8Generator(value));
+                }
+            }
+        }
+
+        public static void DumpPem(X509Certificate value, string target)
         {
             using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
             {

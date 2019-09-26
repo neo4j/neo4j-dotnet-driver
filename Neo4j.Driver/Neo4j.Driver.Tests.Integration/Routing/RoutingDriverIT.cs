@@ -81,7 +81,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 {
                     string addr1, addr2;
 
-                    var session1 = driver.AsyncSession(AccessMode.Read);
+                    var session1 = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                     try
                     {
                         var summary = await session1.RunAndConsumeAsync("RETURN 1");
@@ -92,7 +92,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                         await session1.CloseAsync();
                     }
 
-                    var session2 = driver.AsyncSession(AccessMode.Read);
+                    var session2 = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                     try
                     {
                         var summary = await session2.RunAndConsumeAsync("RETURN 2");
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         {
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
 
-            var session = driver.AsyncSession(AccessMode.Write);
+            var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             var result = await session.RunAndSingleAsync("RETURN 1", null, r => r[0].As<int>());
             result.Should().Be(1);
 
@@ -152,7 +152,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         {
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
 
-            var session = driver.AsyncSession(AccessMode.Write);
+            var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             var result = await session.RunAndSingleAsync("RETURN 1", null, r => r[0].As<int>());
             result.Should().Be(1);
 

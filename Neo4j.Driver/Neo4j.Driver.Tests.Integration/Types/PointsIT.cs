@@ -43,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldReceive()
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var cursor = await session
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSend()
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var point1 = new Point(Wgs84SrId, 51.5044585, -0.105658);
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         public async Task ShouldSendAndReceive()
         {
             await TestSendAndReceive(new Point(Wgs84SrId, 51.24923585, 0.92723724));
-            await TestSendAndReceive(new Point(Wgs843DSrId, 22.86211019, 171.61820439, 0.1230987));
+            await TestSendAndReceive(new Point(Wgs843DSrId, 22.86211019, 71.61820439, 0.1230987));
             await TestSendAndReceive(new Point(CartesianSrId, 39.111748, -76.775635));
             await TestSendAndReceive(new Point(Cartesian3DSrId, 39.111748, -76.775635, 19.2937302840));
         }
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceive(Point point)
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var cursor = await
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceiveList(IList<Point> points)
         {
-            var session = Server.Driver.AsyncSession(AccessMode.Read);
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
             try
             {
                 var cursor =
@@ -164,23 +164,38 @@ namespace Neo4j.Driver.IntegrationTests.Types
             switch (sequence % 4)
             {
                 case 0:
-                    return new Point(Wgs84SrId, GenerateRandomDouble(), GenerateRandomDouble());
+                    return new Point(Wgs84SrId, GenerateRandomX(), GenerateRandomY());
                 case 1:
-                    return new Point(Wgs843DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
-                        GenerateRandomDouble());
+                    return new Point(Wgs843DSrId, GenerateRandomX(), GenerateRandomY(),
+                        GenerateRandomZ());
                 case 2:
-                    return new Point(CartesianSrId, GenerateRandomDouble(), GenerateRandomDouble());
+                    return new Point(CartesianSrId, GenerateRandomX(), GenerateRandomY());
                 case 3:
-                    return new Point(Cartesian3DSrId, GenerateRandomDouble(), GenerateRandomDouble(),
-                        GenerateRandomDouble());
+                    return new Point(Cartesian3DSrId, GenerateRandomX(), GenerateRandomY(),
+                        GenerateRandomZ());
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private double GenerateRandomDouble()
+        private double GenerateRandomX()
         {
-            return _random.Next(-179, 179) + _random.NextDouble();
+            return GenerateRandomDouble(-179, 179);
+        }
+
+        private double GenerateRandomY()
+        {
+            return GenerateRandomDouble(-89, 89);
+        }
+
+        private double GenerateRandomZ()
+        {
+            return GenerateRandomDouble(0, 100);
+        }
+
+        private double GenerateRandomDouble(int min, int max)
+        {
+            return _random.Next(min, max) + _random.NextDouble();
         }
     }
 }

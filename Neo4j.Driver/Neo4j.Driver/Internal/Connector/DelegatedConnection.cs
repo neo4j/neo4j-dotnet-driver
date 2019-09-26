@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public virtual Task OnErrorAsync(Exception error)
         {
-            return TaskHelper.GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public Task SyncAsync()

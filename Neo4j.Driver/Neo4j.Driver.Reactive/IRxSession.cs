@@ -33,7 +33,7 @@ namespace Neo4j.Driver
         ///
         /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
-        string LastBookmark { get; }
+        Bookmark LastBookmark { get; }
 
         /// <summary>
         /// Begin a new <strong>explicit</strong> <see cref="IRxTransaction"/>.

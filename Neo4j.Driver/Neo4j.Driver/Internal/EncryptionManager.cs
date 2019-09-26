@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
@@ -27,9 +28,11 @@ namespace Neo4j.Driver.Internal
     {
         private readonly EncryptionLevel _encryptionLevel;
 
-        public EncryptionManager(){} // for test
+        public EncryptionManager()
+        {
+        } // for test
 
-        public EncryptionManager(EncryptionLevel level, TrustStrategy strategy, TrustManager trustManager, IDriverLogger logger)
+        public EncryptionManager(EncryptionLevel level, TrustManager trustManager, IDriverLogger logger)
         {
             _encryptionLevel = level;
 
@@ -37,17 +40,7 @@ namespace Neo4j.Driver.Internal
             {
                 if (trustManager == null)
                 {
-                    switch (strategy)
-                    {
-                        case TrustStrategy.TrustAllCertificates:
-                            trustManager = TrustManager.CreateInsecure(false);
-                            break;
-                        case TrustStrategy.TrustSystemCaSignedCertificates:
-                            trustManager = TrustManager.CreateChainTrust(true);
-                            break;
-                        default:
-                            throw new InvalidOperationException($"Unknown trust strategy: {strategy}");
-                    }
+                    trustManager = TrustManager.CreateChainTrust();
                 }
 
                 trustManager.Logger = logger;

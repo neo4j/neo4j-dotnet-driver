@@ -11,7 +11,7 @@ steps:
       addToPath: true
       architecture: "x64"
 
-  - script: python -m pip install --upgrade boltkit==1.2.0
+  - script: python -m pip install --upgrade git+https://github.com/neo4j-drivers/boltkit.git@1.3#egg=boltkit
     displayName: "Install boltkit"
 
   - pwsh: |
@@ -89,7 +89,29 @@ steps:
     displayName: "Run integration tests"
     inputs:
       command: test
-      projects: "**/Neo4j.Driver.IntegrationTests/*.csproj"
+      projects: "**/Neo4j.Driver.Tests.Integration/*.csproj"
       testRunTitle: "IntegrationTests-${{ parameters.name }}"
     env:
-      NEOCTRLARGS: ${{ parameters.serverVersion }}
+      NEOCTRL_ARGS: ${{ parameters.serverVersion }}
+
+  - pwsh: |
+      Get-ChildItem env:* | sort-object name | Format-Table -Wrap -AutoSize | Out-File $env:BUILD_ARTIFACTSTAGINGDIRECTORY/environment.txt
+    displayName: "Gather environment variables"
+    condition: always()
+
+  - task: CopyFiles@2
+    displayName: "Gather log files"
+    condition: always()
+    inputs:
+      sourceFolder: "$(Build.SourcesDirectory)"
+      contents: |
+        Target/**/*.log
+        Target/**/*.conf
+      targetFolder: "$(Build.ArtifactStagingDirectory)"
+
+  - task: PublishBuildArtifacts@1
+    displayName: "Publish log files"
+    condition: always()
+    inputs:
+      pathtoPublish: "$(Build.ArtifactStagingDirectory)"
+      artifactName: "${{ parameters.name }}-logs"

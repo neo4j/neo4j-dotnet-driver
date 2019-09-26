@@ -24,54 +24,6 @@ using Neo4j.Driver.Internal.Metrics;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Control the level of encryption to require.
-    /// </summary>
-    public enum EncryptionLevel
-    {
-        /// <summary>
-        /// No encryption at all.
-        /// </summary>
-        None,
-
-        /// <summary>
-        /// Always encrypted.
-        /// </summary>
-        Encrypted
-    }
-
-    /// <summary>
-    /// Specify the trust strategy the driver adopts to trust a server.
-    /// </summary>
-    public enum TrustStrategy
-    {
-        /// <summary>
-        /// Trust all servers.
-        /// </summary>
-        TrustAllCertificates,
-
-        /// <summary>
-        /// Trust the servers whose certificate is trusted by OS.
-        /// </summary>
-        TrustSystemCaSignedCertificates
-    }
-
-    /// <summary>
-    /// Control load balancing strategy used by the driver.
-    /// </summary>
-    public enum LoadBalancingStrategy
-    {
-        /// <summary>
-        /// For each next query or transaction driver select servers in round-robin fashion.
-        /// </summary>
-        RoundRobin,
-
-        /// <summary>
-        /// For each next query or transaction driver selects the least connected server.
-        /// </summary>
-        LeastConnected
-    }
-
-    /// <summary>
     /// Use this class to config the <see cref="IDriver"/>.
     /// </summary>
     public class Config
@@ -86,12 +38,6 @@ namespace Neo4j.Driver
         /// </summary>
         public const int Infinite = -1;
 
-        /// <summary>
-        /// This const is deprecated.
-        /// </summary>
-        [System.Obsolete("Do not set idle connection size to infinite.")]
-        public const int InfiniteMaxIdleSessionPoolSize = Infinite;
-
         static Config()
         {
             DefaultConfig = new Config();
@@ -104,12 +50,11 @@ namespace Neo4j.Driver
         /// The defaults are <br/>
         /// <list type="bullet">
         /// <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> Encrypted</c> </item>
-        /// <item><see cref="TrustStrategy"/> : <c><see cref="TrustStrategy"/>TrustAllCertificates</c> </item>
+        /// <item><see cref="TrustManager"/> : <c><see cref="TrustManager"/>CreateChainTrust()</c> </item>
         /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
         /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
         /// <item><see cref="Ipv6Enabled"/>: <c>true</c></item>
         /// <br></br>
-        /// <item><see cref="MaxIdleConnectionPoolSize"/> : Same as <see cref="MaxConnectionPoolSize"/> if not explicitly set </item>
         /// <item><see cref="MaxConnectionPoolSize"/> : <c>500</c> </item>
         /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
         /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
@@ -135,36 +80,12 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets or sets the use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
-        public EncryptionLevel EncryptionLevel { get; set; } = EncryptionLevel.Encrypted;
-
-        /// <summary>
-        /// Gets or sets how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
-        /// </summary>
-        [Obsolete("Please use TrustManager instead.")]
-        public TrustStrategy TrustStrategy { get; set; } = TrustStrategy.TrustAllCertificates;
+        public EncryptionLevel EncryptionLevel { get; set; } = EncryptionLevel.None;
 
         /// <summary>
         /// Gets or sets which <see cref="TrustManager"/> implementation should be used while establishing trust via TLS.
-        /// This setting has precedence over <see cref="TrustStrategy"/>.
         /// </summary>
         public TrustManager TrustManager { get; set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="ILogger"/> instance to be used to receive all logs produced by this driver.
-        /// Since Driver 1.7, this field is deprecated and we recommend to use the new logger <see cref="IDriverLogger"/> instead to receive logs produced by this driver.
-        /// But for back-compatibility, if this field is set, you can still receive all logs in the <see cref="ILogger"/> specified.
-        /// You cannot use both this legacy logger and new logger at the same time.
-        /// </summary>
-        [Obsolete("Please use Logging instead.")]
-        public ILogger Logger
-        {
-            get => _legacyLogger;
-            set
-            {
-                _legacyLogger = value;
-                DriverLogger = new LegacyLoggerAdapter(_legacyLogger);
-            }
-        }
 
         /// <summary>
         /// Gets or sets the <see cref="IDriverLogger"/> instance to be used to receive all logs produced by this driver.
@@ -193,17 +114,6 @@ namespace Neo4j.Driver
         }
 
         private int _maxIdleConnPoolSize = Infinite;
-        private ILogger _legacyLogger = NullLegacyLogger.DevNullLogger;
-
-        /// <summary>
-        /// This property is deprecated. Use <see cref="MaxIdleConnectionPoolSize"/> instead.
-        /// </summary>
-        [Obsolete("Please use MaxIdleConnectionPoolSize instead.")]
-        public int MaxIdleSessionPoolSize
-        {
-            get => MaxIdleConnectionPoolSize;
-            set => MaxIdleConnectionPoolSize = value;
-        }
 
         /// <summary>
         /// Gets or sets the max connection pool size.
@@ -311,21 +221,9 @@ namespace Neo4j.Driver
                 return this;
             }
 
-            public IConfigBuilder WithTrustStrategy(TrustStrategy strategy)
-            {
-                _config.TrustStrategy = strategy;
-                return this;
-            }
-
             public IConfigBuilder WithTrustManager(TrustManager manager)
             {
                 _config.TrustManager = manager;
-                return this;
-            }
-
-            public IConfigBuilder WithLogger(ILogger logger)
-            {
-                _config.Logger = logger;
                 return this;
             }
 
@@ -461,32 +359,13 @@ namespace Neo4j.Driver
         IConfigBuilder WithEncryptionLevel(EncryptionLevel level);
 
         /// <summary>
-        /// Sets <see cref="Config"/> to use the verification <paramref name="strategy"/> when establishing TLS connections.
-        /// The <paramref name="strategy"/> will not take effects if <see cref="Config.EncryptionLevel"/> decides to use no TLS encryption on the connections.
-        /// </summary>
-        /// <param name="strategy">See <see cref="TrustStrategy"/> for available strategies.</param>
-        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
-        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
-        [Obsolete("Please use WithTrustManager instead.")]
-        IConfigBuilder WithTrustStrategy(TrustStrategy strategy);
-
-        /// <summary>
         /// Sets the <see cref="TrustManager"/> to use while establishing trust via TLS.
         /// The <paramref name="manager"/> will not take effect if <see cref="Config.EncryptionLevel"/> decides to use no TLS
-        /// encryption on the connections. This setting has precedence over <see cref="WithTrustStrategy"/>.
+        /// encryption on the connections.
         /// </summary>
         /// <param name="manager">A <see cref="TrustManager"/> instance.</param>
         /// <returns></returns>
         IConfigBuilder WithTrustManager(TrustManager manager);
-
-        /// <summary>
-        /// This method is deprecated. Use <see cref="WithDriverLogger"/> instead.
-        /// </summary>
-        /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
-        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
-        /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
-        [System.Obsolete("Please use WithDriverLogger instead.")]
-        IConfigBuilder WithLogger(ILogger logger);
 
         /// <summary>
         /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
@@ -495,15 +374,6 @@ namespace Neo4j.Driver
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         /// <remarks>Must call <see cref="ToConfig"/> to generate a <see cref="Config"/> instance.</remarks>
         IConfigBuilder WithDriverLogger(IDriverLogger logger);
-
-
-        /// <summary>
-        /// This method is deprecated. Use <see cref="WithMaxIdleConnectionPoolSize"/> instead.
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
-        [System.Obsolete("Please use WithMaxIdleConnectionPoolSize instead.")]
-        IConfigBuilder WithMaxIdleSessionPoolSize(int size);
 
         /// <summary>
         /// Sets the size of the idle connection pool.

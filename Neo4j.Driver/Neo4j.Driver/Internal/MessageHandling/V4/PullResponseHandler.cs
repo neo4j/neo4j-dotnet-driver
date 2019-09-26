@@ -44,6 +44,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             AddMetadata<PlanCollector, IPlan>();
             AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
             AddMetadata<NotificationsCollector, IList<INotification>>();
+            AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
         }
 
         public override void OnSuccess(IDictionary<string, object> metadata)
@@ -58,6 +59,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
             _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
             _summaryBuilder.StatementType = GetMetadata<TypeCollector, StatementType>();
+            _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
 
             _streamBuilder.PullCompleted(GetMetadata<HasMoreCollector, bool>(), null);
         }

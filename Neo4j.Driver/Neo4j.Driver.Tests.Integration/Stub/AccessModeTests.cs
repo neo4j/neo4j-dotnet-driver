@@ -42,7 +42,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        var session = driver.AsyncSession(AccessMode.Read);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                         try
                         {
                             var result = await session.RunAndSingleAsync("RETURN $x", new {x = 1}, r => r[0].As<int>());
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        var session = driver.AsyncSession(AccessMode.Read);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                         try
                         {
                             var tx = await session.BeginTransactionAsync();
@@ -99,7 +99,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        var session = driver.AsyncSession(mode);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
                         try
                         {
                             var result = await session.ReadTransactionAsync(tx =>
@@ -126,7 +126,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        var session = driver.AsyncSession(AccessMode.Write);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
                         {
                             var result = await session.RunAndSingleAsync("CREATE (n: { id: $x }) RETURN $x",
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        var session = driver.AsyncSession(AccessMode.Write);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
                         {
                             var tx = await session.BeginTransactionAsync();
@@ -186,7 +186,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                     using (var driver =
                         GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
                     {
-                        var session = driver.AsyncSession(mode);
+                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
                         try
                         {
                             var result = await session.WriteTransactionAsync(tx =>

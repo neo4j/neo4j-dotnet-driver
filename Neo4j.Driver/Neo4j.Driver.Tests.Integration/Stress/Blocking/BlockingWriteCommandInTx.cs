@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     {
                         summary = txc.Run("CREATE ()").Consume();
 
-                        txc.Success();
+                        txc.Commit();
                     }
 
                     context.Bookmark = session.LastBookmark;

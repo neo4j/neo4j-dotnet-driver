@@ -60,7 +60,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
                 BookmarkCollectorTests.TestMetadata, CountersCollectorTests.TestMetadata,
                 HasMoreCollectorTests.TestMetadata, NotificationsCollectorTests.TestMetadata,
                 PlanCollectorTests.TestMetadata, ProfiledPlanCollectorTests.TestMetadata,
-                TimeToLastCollectorTests.TestMetadata, TypeCollectorTests.TestMetadata
+                TimeToLastCollectorTests.TestMetadata, TypeCollectorTests.TestMetadata,
+                DatabaseInfoCollectorTests.TestMetadata
             }.ToDictionary());
 
             streamBuilder.Verify(x => x.PullCompleted(true, null), Times.Once);
@@ -79,6 +80,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             summaryBuilder.VerifySet(
                 x => x.ResultConsumedAfter = TimeToLastCollectorTests.TestMetadataCollected, Times.Once);
             summaryBuilder.VerifySet(x => x.StatementType = TypeCollectorTests.TestMetadataCollected, Times.Once);
+            summaryBuilder.VerifySet(x => x.Database = DatabaseInfoCollectorTests.TestMetadataCollected, Times.Once);
         }
 
         [Fact]

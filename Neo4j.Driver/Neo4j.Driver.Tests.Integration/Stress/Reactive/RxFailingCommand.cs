@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Reactive;
 using Xunit;
 using static Neo4j.Driver.Reactive.Utils;
 
@@ -37,22 +38,23 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
         }
 
-        public override async Task ExecuteAsync(TContext context)
+        public override Task ExecuteAsync(TContext context)
         {
             var session = NewSession(AccessMode.Read, context);
-            
-            var result = await session
+
+            session
                 .Run("UNWIND [10, 5, 0] AS x RETURN 10 / x")
                 .Records()
                 .Select(r => r[0].As<int>())
                 .CatchAndThrow(_ => session.Close<int>())
                 .Concat(session.Close<int>())
-                .Materialize()
-                .Select(i => new Recorded<Notification<int>>(0, i))
-                .ToList();
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, 1),
+                    OnNext(0, 2),
+                    OnError<int>(0, MatchesException<ClientException>(exc => exc.Message.Contains("/ by zero"))));
 
-            result.AssertEqual(
-                OnError<int>(0, MatchesException<ClientException>(exc => exc.Message.Contains("/ by zero"))));
+            return Task.CompletedTask;
         }
     }
 }

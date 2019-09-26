@@ -31,6 +31,8 @@ namespace Neo4j.Driver.Internal
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         }
 
+        public bool IsOpen => _txc.IsOpen;
+
         public IStatementResult Run(string statement)
         {
             return Run(new Statement(statement));
@@ -51,14 +53,14 @@ namespace Neo4j.Driver.Internal
             return new InternalStatementResult(_executor.RunSync(() => _txc.RunAsync(statement)), _executor);
         }
 
-        public void Success()
+        public void Commit()
         {
-            _txc.Success();
+            _executor.RunSync(() => _txc.CommitAsync());
         }
 
-        public void Failure()
+        public void Rollback()
         {
-            _txc.Failure();
+            _executor.RunSync(() => _txc.RollbackAsync());
         }
 
         public void Dispose()
@@ -69,9 +71,9 @@ namespace Neo4j.Driver.Internal
 
         private void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && IsOpen)
             {
-                _executor.RunSync(() => _txc.CloseAsync());
+                Rollback();
             }
         }
     }

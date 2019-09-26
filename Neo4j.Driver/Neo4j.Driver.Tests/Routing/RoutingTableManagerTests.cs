@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
 
                 var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object);
@@ -145,7 +145,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(InitialUri))
                     .ReturnsAsync(Mock.Of<IConnection>());
@@ -181,7 +181,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()))
-                    .Returns(TaskHelper.GetCompletedTask())
+                    .Returns(Task.CompletedTask)
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(t));
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(t)).ReturnsAsync(Mock.Of<IConnection>());
 

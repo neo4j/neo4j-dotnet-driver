@@ -38,76 +38,17 @@ namespace Neo4j.Driver
         IAsyncSession AsyncSession();
 
         /// <summary>
-        /// Obtain a session with the default <see cref="AccessMode"/>.
-        /// </summary>
-        /// <param name="defaultMode">The default access mode of the session. 
-        /// If no access mode is specified when using the statement running methods inside this session,
-        /// the statement will be executed in connections satisfying the default access mode.</param>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(AccessMode defaultMode);
-
-        /// <summary>
         /// Obtain a session with the default <see cref="AccessMode.Write"/> and start bookmark.
         /// </summary>
-        /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
-        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
-        /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
+        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionConfig"/> instance, that should populate
+        /// the provided instance with desired options.</param> 
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(string bookmark);
-
-        /// <summary>
-        /// Obtain a session with the default <see cref="AccessMode"/> and start bookmark.
-        /// </summary>
-        /// <param name="defaultMode">The default access mode of the session. 
-        /// If no access mode is specified when using the statement running methods inside this session,
-        /// the statement will be executed in connections satisfying the default access mode.</param>
-        /// <param name="bookmark">A reference to a previous transaction. If the bookmark is provided,
-        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmark.
-        /// Specify a bookmark if the statement executed inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(AccessMode defaultMode, string bookmark);
-
-        /// <summary>
-        /// Obtain a session with the default <see cref="AccessMode"/> and a series of start bookmarks.
-        /// </summary>
-        /// <param name="defaultMode">The default access mode of the session.
-        /// If no access mode is specified when using the statement running methods inside this session,
-        /// the statement will be executed in connections satisfying the default access mode.</param>
-        /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
-        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
-        /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(AccessMode defaultMode, IEnumerable<string> bookmarks);
-
-        /// <summary>
-        /// Obtain a session with the default <see cref="AccessMode.Write"/> access mode and a series of start bookmarks.
-        /// </summary>
-        /// <param name="bookmarks">References to previous transactions. If the bookmarks are provided,
-        /// then the server hosting is at least as up-to-date as the transaction referenced by the supplied bookmarks.
-        /// Specify bookmarks if the statement executed inside this session need to be chained after statements from other sessions.</param>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(IEnumerable<string> bookmarks);
+        IAsyncSession AsyncSession(Action<SessionConfig> optionsBuilder);
 
         /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
         /// </summary>
         /// <returns>The close task.</returns>
         Task CloseAsync();
-    }
-
-    /// <summary>
-    /// Used by driver to route a cypher statement to a write server or a read server.
-    /// </summary>
-    public enum AccessMode
-    {
-        /// <summary>
-        /// Requires cypher statement to be carried out on a read server
-        /// </summary>
-        Read,
-
-        /// <summary>
-        /// Requires cypher statement to be executed on a write server
-        /// </summary>
-        Write
     }
 }

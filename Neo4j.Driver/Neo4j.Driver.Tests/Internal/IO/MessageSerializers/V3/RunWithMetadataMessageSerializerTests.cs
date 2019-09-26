@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
                 {"x", 1L}
             });
 
-            writer.Write(new RunWithMetadataMessage(statement,
+            writer.Write(new RunWithMetadataMessage(statement, null,
                 Bookmark.From(SessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
                 new Dictionary<string, object>
                 {
@@ -67,25 +67,17 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be(BoltProtocolV1MessageFormat.MsgRun);
             reader.ReadString().Should().Be("RETURN $x");
-            reader.ReadMap().Should().HaveCount(1).And.Contain(
-                new[]
-                {
-                    new KeyValuePair<string, object>("x", 1L)
-                });
+            reader.ReadMap().Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("x", 1L));
 
             var metadata = reader.ReadMap();
-
-            metadata.Should().HaveCount(3).And.ContainKeys("bookmarks", "tx_timeout", "tx_metadata");
-            metadata["bookmarks"].CastOrThrow<List<object>>().Should().HaveCount(1).And
-                .Contain("neo4j:bookmark:v1:tx123");
-            metadata["tx_timeout"].Should().Be(60000L);
-
-            metadata["tx_metadata"].CastOrThrow<Dictionary<string, object>>().Should().HaveCount(1).And
-                .Contain(
-                    new[]
-                    {
-                        new KeyValuePair<string, object>("username", "MollyMostlyWhite"),
-                    });
+            
+            metadata.Should().BeEquivalentTo(
+                new Dictionary<string, object>
+                {
+                    {"bookmarks", new[] {"bookmark-123"}},
+                    {"tx_timeout", 60_000L},
+                    {"tx_metadata", new Dictionary<string, object> {{"username", "MollyMostlyWhite"}}},
+                });
         }
 
         [Fact]

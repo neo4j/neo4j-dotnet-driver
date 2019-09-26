@@ -134,7 +134,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             var session = Driver.AsyncSession();
             try
             {
-                var cursor = await session.RunAsync("RETURN {x} as y", new Dictionary<string, object> {{"x", input}});
+                var cursor = await session.RunAsync("RETURN $x as y", new Dictionary<string, object> {{"x", input}});
                 var record = await cursor.SingleAsync();
 
                 record["y"].Should().BeEquivalentTo(input);
