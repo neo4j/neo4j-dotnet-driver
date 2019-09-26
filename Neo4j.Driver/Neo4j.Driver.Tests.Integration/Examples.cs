@@ -250,7 +250,7 @@ namespace Neo4j.Driver.Examples
 
             public void AddPerson(string name)
             {
-                using (var driver = CreateDriverWithCustomResolver("bolt+routing://x.acme.com",
+                using (var driver = CreateDriverWithCustomResolver("neo4j://x.acme.com",
                     AuthTokens.Basic(Username, Password),
                     ServerAddress.From("a.acme.com", 7687), ServerAddress.From("b.acme.com", 7877),
                     ServerAddress.From("c.acme.com", 9092)))
@@ -286,7 +286,7 @@ namespace Neo4j.Driver.Examples
                     using (var server2 = BoltStubServer.Start("return_1", 9002))
                     {
                         using (var driver =
-                            CreateDriverWithCustomResolver("bolt+routing://x.acme.com", AuthTokens.None,
+                            CreateDriverWithCustomResolver("neo4j://x.acme.com", AuthTokens.None,
                                 ServerAddress.From("localhost", 9001)))
                         {
                             using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))

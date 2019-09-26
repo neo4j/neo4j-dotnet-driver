@@ -215,7 +215,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldHaveLocalhost(string input, string host, int port)
             {
                 var uri = ClusterDiscovery.BoltRoutingUri(input);
-                uri.Scheme.Should().Be("bolt+routing");
+                uri.Scheme.Should().Be("neo4j");
                 uri.Host.Should().Be(host);
                 uri.Port.Should().Be(port);
             }

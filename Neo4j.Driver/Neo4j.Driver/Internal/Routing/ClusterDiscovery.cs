@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public static Uri BoltRoutingUri(string address)
         {
-            UriBuilder builder = new UriBuilder("bolt+routing://" + address);
+            UriBuilder builder = new UriBuilder("neo4j://" + address);
 
             // If scheme is not registered and no port is specified, then the port is assigned as -1
             if (builder.Port == -1)

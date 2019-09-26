@@ -76,10 +76,10 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public void ShouldAcceptIfRoutingSchemeWithRoutingContext()
         {
-            using (var driver = (Internal.Driver) GraphDatabase.Driver("bolt+routing://localhost/?name=molly&age=1&color=white"))
+            using (var driver = (Internal.Driver) GraphDatabase.Driver("neo4j://localhost/?name=molly&age=1&color=white"))
             {
                 driver.Uri.Port.Should().Be(7687);
-                driver.Uri.Scheme.Should().Be("bolt+routing");
+                driver.Uri.Scheme.Should().Be("neo4j");
                 driver.Uri.Host.Should().Be("localhost");
             }
         }

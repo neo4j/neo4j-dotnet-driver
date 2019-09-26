@@ -40,7 +40,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                 using (BoltStubServer.Start("accessmode_reader_implicit", 9003))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, NoEncryption))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                         try
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                 using (BoltStubServer.Start("accessmode_reader_explicit", 9003))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, NoEncryption))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                         try
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                 using (BoltStubServer.Start("accessmode_reader_func", 9003))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, NoEncryption))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
                         try
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                 using (BoltStubServer.Start("accessmode_writer_implicit", 9002))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, NoEncryption))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
@@ -151,7 +151,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                 using (BoltStubServer.Start("accessmode_writer_explicit", 9002))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, NoEncryption))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
@@ -184,7 +184,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
                 using (BoltStubServer.Start("accessmode_writer_func", 9002))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, NoEncryption))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, NoEncryption))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
                         try

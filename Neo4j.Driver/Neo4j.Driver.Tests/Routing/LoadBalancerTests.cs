@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldReturnConnectionWithCorrectMode(AccessMode mode)
             {
                 // Given
-                var uri = new Uri("bolt+routing://123:456");
+                var uri = new Uri("neo4j://123:456");
                 var mock = new Mock<IRoutingTableManager>();
                 var routingTableMock = NewMockedRoutingTable(mode, uri);
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, Bookmark.Empty))
@@ -131,7 +131,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldForgetServerWhenFailedToEstablishConn(AccessMode mode)
             {
                 // Given
-                var uri = new Uri("bolt+routing://123:456");
+                var uri = new Uri("neo4j://123:456");
                 var routingTableMock = NewMockedRoutingTable(mode, uri);
                 var mock = new Mock<IRoutingTableManager>();
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, Bookmark.Empty))
@@ -162,7 +162,7 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldThrowErrorDirectlyIfSecurityError(AccessMode mode)
             {
                 // Given
-                var uri = new Uri("bolt+routing://123:456");
+                var uri = new Uri("neo4j://123:456");
                 var routingTableMock = NewMockedRoutingTable(mode, uri);
                 var mock = new Mock<IRoutingTableManager>();
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, Bookmark.Empty))
@@ -193,7 +193,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldThrowErrorDirectlyIfProtocolError(AccessMode mode)
             {
                 // Given
-                var uri = new Uri("bolt+routing://123:456");
+                var uri = new Uri("neo4j://123:456");
                 var routingTableMock = NewMockedRoutingTable(mode, uri);
                 var mock = new Mock<IRoutingTableManager>();
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, Bookmark.Empty))

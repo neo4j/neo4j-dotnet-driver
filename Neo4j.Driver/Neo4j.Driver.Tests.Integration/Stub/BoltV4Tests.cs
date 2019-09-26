@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start("V4/read_from_aDatabase", 9005))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                     {
                         var session = driver.AsyncSession(o =>
                             o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start("V4/write_to_aDatabase", 9007))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                     {
                         var session = driver.AsyncSession(o =>
                             o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Write));
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start("V4/read", 9005))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                         try
@@ -126,7 +126,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase_no_servers", 9001))
             {
                 using (var driver =
-                    GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, _config))
+                    GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                 {
                     this.Awaiting(async _ =>
                         {
@@ -158,7 +158,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/acquire_endpoints_db_not_found", 9001))
             {
                 using (var driver =
-                    GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, _config))
+                    GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                 {
                     this.Awaiting(async _ =>
                         {
@@ -195,7 +195,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                     var bookmark2 = Bookmark.From("aDatabase:5555");
 
                     using (var driver =
-                        GraphDatabase.Driver("bolt+routing://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                     {
                         var session = driver.AsyncSession(o =>
                             o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read)

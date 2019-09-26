@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal
             foreach (var address in addresses)
             {
                 // for now we convert this ServerAddress back to Uri
-                set.Add(new UriBuilder("bolt+routing://", address.Host, address.Port).Uri);
+                set.Add(new UriBuilder("neo4j://", address.Host, address.Port).Uri);
             }
 
             return set;

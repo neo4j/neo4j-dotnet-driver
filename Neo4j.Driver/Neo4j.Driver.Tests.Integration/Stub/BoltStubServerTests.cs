@@ -32,7 +32,8 @@ namespace Neo4j.Driver.IntegrationTests.Stub
 
         public BoltStubServerTests(ITestOutputHelper output)
         {
-            Config = new Config {EncryptionLevel = EncryptionLevel.None, DriverLogger = new TestDriverLogger(output)};
+            Config = new Config
+                {EncryptionLevel = EncryptionLevel.None, DriverLogger = TestDriverLogger.Create(output)};
         }
 
         [RequireBoltStubServerFact]
@@ -40,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start("get_routing_table_with_context", 9001))
             {
-                var uri = new Uri("bolt+routing://127.0.0.1:9001/?policy=my_policy&region=china");
+                var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
                 using (var driver = GraphDatabase.Driver(uri, Config))
                 {
                     var session = driver.AsyncSession();
@@ -103,7 +104,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start("get_routing_table", 9001))
             {
-                var uri = new Uri("bolt+routing://127.0.0.1:9001");
+                var uri = new Uri("neo4j://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))
                 {
                     var session = driver.AsyncSession();

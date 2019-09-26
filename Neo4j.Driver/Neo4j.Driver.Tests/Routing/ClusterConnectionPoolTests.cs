@@ -102,10 +102,10 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Theory]
-            [InlineData("bolt+routing://localhost:7687", "bolt+routing://127.0.0.1:7687", false)]
-            [InlineData("bolt+routing://127.0.0.1:7687", "bolt+routing://127.0.0.1:7687", true)]
-            [InlineData("bolt+routing://localhost:7687", "bolt+routing://localhost:7687", true)]
-            [InlineData("bolt+routing://LOCALHOST:7687", "bolt+routing://localhost:7687", true)]
+            [InlineData("neo4j://localhost:7687", "neo4j://127.0.0.1:7687", false)]
+            [InlineData("neo4j://127.0.0.1:7687", "neo4j://127.0.0.1:7687", true)]
+            [InlineData("neo4j://localhost:7687", "neo4j://localhost:7687", true)]
+            [InlineData("neo4j://LOCALHOST:7687", "neo4j://localhost:7687", true)]
             public async Task AddressMatchTest(string first, string second, bool expectedResult)
             {
                 // Given
@@ -341,7 +341,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
         }
 
-        private static Uri ServerUri { get; } = new Uri("bolt+routing://1234:5678");
+        private static Uri ServerUri { get; } = new Uri("neo4j://1234:5678");
 
         private class MockedPoolFactory : IConnectionPoolFactory
         {

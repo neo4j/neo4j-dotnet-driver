@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests.Routing
         private static readonly Uri server08 = new Uri("bolt://server-08");
         private static readonly Uri server09 = new Uri("bolt://server-09");
 
-        internal static Uri InitialUri = new Uri("bolt+routing://neo4j.com:6060");
+        internal static Uri InitialUri = new Uri("neo4j://neo4j.com:6060");
 
         internal static RoutingTableManager NewRoutingTableManager(
             IRoutingTable routingTable,
@@ -183,10 +183,10 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldNotTryInitialUriIfAlreadyTried()
             {
                 // Given
-                var a = new Uri("bolt+routing://123:456");
-                var b = new Uri("bolt+routing://123:789");
+                var a = new Uri("neo4j://123:456");
+                var b = new Uri("neo4j://123:789");
                 var s = a; // should not be retried
-                var t = new Uri("bolt+routing://222:123"); // this should be retried
+                var t = new Uri("neo4j://222:123"); // this should be retried
 
                 var routers = new List<Uri>(new[] {a, b});
                 var routingTableMock = new Mock<IRoutingTable>();
@@ -229,8 +229,8 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldForgetAndTryNextRouterWhenConnectionIsNull()
             {
                 // Given
-                var uriA = new Uri("bolt+routing://123:456");
-                var uriB = new Uri("bolt+routing://123:789");
+                var uriA = new Uri("neo4j://123:456");
+                var uriB = new Uri("neo4j://123:789");
 
                 // This ensures that uri and uri2 will return in order
                 var routingTable = new RoutingTable(null, new List<Uri> {uriA, uriB});
@@ -257,8 +257,8 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldForgetAndTryNextRouterWhenFailedWithConnectionError()
             {
                 // Given
-                var uriA = new Uri("bolt+routing://123:456");
-                var uriB = new Uri("bolt+routing://123:789");
+                var uriA = new Uri("neo4j://123:456");
+                var uriB = new Uri("neo4j://123:789");
                 var connA = new Mock<IConnection>().Object;
                 var connB = new Mock<IConnection>().Object;
 
@@ -293,7 +293,7 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldLogServiceUnavailable()
             {
                 var error = new ServiceUnavailableException("Procedure not found");
-                var uri = new Uri("bolt+routing://123:456");
+                var uri = new Uri("neo4j://123:456");
                 var routingTable = new RoutingTable(null, new List<Uri> {uri});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
@@ -317,7 +317,7 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldPropagateSecurityException()
             {
                 var error = new AuthenticationException("Procedure not found");
-                var uri = new Uri("bolt+routing://123:456");
+                var uri = new Uri("neo4j://123:456");
                 var routingTable = new RoutingTable(null, new List<Uri> {uri});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
                 poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
@@ -343,13 +343,13 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldTryNextRouterIfNoReader()
             {
                 // Given
-                var uriA = new Uri("bolt+routing://123:1");
-                var uriB = new Uri("bolt+routing://123:2");
+                var uriA = new Uri("neo4j://123:1");
+                var uriB = new Uri("neo4j://123:2");
                 var connA = new Mock<IConnection>().Object;
                 var connB = new Mock<IConnection>().Object;
 
-                var uriX = new Uri("bolt+routing://456:1");
-                var uriY = new Uri("bolt+routing://789:2");
+                var uriX = new Uri("neo4j://456:1");
+                var uriY = new Uri("neo4j://789:2");
 
                 var routingTable = new RoutingTable(null, new List<Uri> {uriA, uriB});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
@@ -382,9 +382,9 @@ namespace Neo4j.Driver.Tests.Routing
             public async Task ShouldAcceptRoutingTableIfNoWriter()
             {
                 // Given
-                var uriA = new Uri("bolt+routing://123:1");
+                var uriA = new Uri("neo4j://123:1");
                 var connA = new Mock<IConnection>().Object;
-                var uriX = new Uri("bolt+routing://456:1");
+                var uriX = new Uri("neo4j://456:1");
 
                 var routingTable = new RoutingTable(null, new List<Uri> {uriA});
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();

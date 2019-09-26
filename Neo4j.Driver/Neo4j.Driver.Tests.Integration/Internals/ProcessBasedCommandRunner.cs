@@ -135,7 +135,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 if (_process.WaitForExit(DefaultTimeOut))
                 {
                     Debug("-----------");
-                    Debug($"Execution of command `{GetProcessCommandLine(_process)}` exited with code {_process.ExitCode}.");
+                    Debug(
+                        $"Execution of command `{GetProcessCommandLine(_process)}` exited with code {_process.ExitCode}.");
                     if (_stdErr.Length > 0)
                     {
                         Debug("The following output is generated:");
@@ -153,7 +154,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 if (_process.ExitCode != 0)
                 {
                     throw new InvalidOperationException(
-                        $"Failed to execute `{GetProcessCommandLine(_process)}` due to error:{Environment.NewLine}{_stdErr}" +
+                        $"Failed to execute `{GetProcessCommandLine(_process)}` due to error (exit code: {_process.ExitCode}):" +
+                        $"{Environment.NewLine}stderr:{Environment.NewLine}{_stdErr}" +
                         $"{Environment.NewLine}output:{Environment.NewLine}{_stdOut.ToContentString($"{Environment.NewLine}")}");
                 }
 

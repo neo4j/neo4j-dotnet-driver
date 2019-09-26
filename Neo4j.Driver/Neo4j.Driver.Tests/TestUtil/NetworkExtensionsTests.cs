@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests
         {
             [Theory]
             [InlineData("bolt")]
-            [InlineData("bolt+routing")]
+            [InlineData("neo4j")]
             public void ShouldParseEmptyRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests
 
             [Theory]
             [InlineData("bolt")]
-            [InlineData("bolt+routing")]
+            [InlineData("neo4j")]
             public void ShouldParseMultipleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&age=1&color=white");
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests
 
             [Theory]
             [InlineData("bolt")]
-            [InlineData("bolt+routing")]
+            [InlineData("neo4j")]
             public void ShouldParseSingleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly");
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Tests
 
             [Theory]
             [InlineData("bolt")]
-            [InlineData("bolt+routing")]
+            [InlineData("neo4j")]
             public void ShouldErrorIfMissingValue(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=");
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Tests
 
             [Theory]
             [InlineData("bolt")]
-            [InlineData("bolt+routing")]
+            [InlineData("neo4j")]
             public void ShouldErrorIfDuplicateKey(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&name=mostly_white");

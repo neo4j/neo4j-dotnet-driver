@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         protected IAuthToken AuthToken { get; }
 
         protected string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
-        protected string WrongServer => "bolt+routing://localhost:1234";
+        protected string WrongServer => "neo4j://localhost:1234";
         protected IDriver Driver { get; }
 
         public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)

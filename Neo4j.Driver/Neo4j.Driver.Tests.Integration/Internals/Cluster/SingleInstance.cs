@@ -28,7 +28,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public string HomePath { get; }
         public IAuthToken AuthToken { get; }
 
-        private const string BoltRoutingScheme = "bolt+routing://";
+        private const string BoltRoutingScheme = "neo4j://";
         private const string Username = "neo4j";
 
         public SingleInstance(string httpUri, string boltUri, string homePath, string password)
