@@ -40,7 +40,8 @@ namespace Neo4j.Driver.Internal.Connector
         // receive one
         Task ReceiveOneAsync();
 
-        Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null, IResponseHandler handler2 = null);
+        Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null,
+            IResponseHandler handler2 = null);
 
         // Enqueue a reset message
         Task ResetAsync();
@@ -74,6 +75,11 @@ namespace Neo4j.Driver.Internal.Connector
         /// The AccessMode this connection is operating in.
         /// </summary>
         AccessMode? Mode { get; set; }
+
+        /// <summary>
+        /// The Database this connection is acquired for.
+        /// </summary>
+        string Database { get; set; }
 
         void UpdateId(string newConnId);
 

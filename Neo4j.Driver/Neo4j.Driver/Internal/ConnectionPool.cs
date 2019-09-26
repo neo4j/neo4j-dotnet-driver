@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
@@ -66,7 +67,8 @@ namespace Neo4j.Driver.Internal
         private readonly BlockingCollection<IPooledConnection> _idleConnections =
             new BlockingCollection<IPooledConnection>();
 
-        private readonly ConcurrentSet<IPooledConnection> _inUseConnections = new ConcurrentSet<IPooledConnection>();
+        private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections =
+            new ConcurrentHashSet<IPooledConnection>();
 
         private readonly IConnectionPoolListener _poolMetricsListener;
         private readonly IConnectionListener _connectionMetricsListener;
@@ -112,7 +114,7 @@ namespace Neo4j.Driver.Internal
         internal ConnectionPool(
             IPooledConnectionFactory connectionFactory,
             BlockingCollection<IPooledConnection> idleConnections = null,
-            ConcurrentSet<IPooledConnection> inUseConnections = null,
+            ConcurrentHashSet<IPooledConnection> inUseConnections = null,
             ConnectionPoolSettings poolSettings = null,
             IConnectionValidator validator = null,
             IDriverLogger logger = null)
@@ -120,7 +122,7 @@ namespace Neo4j.Driver.Internal
                 poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
-            _inUseConnections = inUseConnections ?? new ConcurrentSet<IPooledConnection>();
+            _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
             if (validator != null)
             {
                 _connectionValidator = validator;
@@ -225,12 +227,12 @@ namespace Neo4j.Driver.Internal
                 $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
         }
 
-        public Task<IConnection> AcquireAsync(AccessMode mode)
+        public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
         {
             var acquireEvent = new SimpleTimerEvent();
             _poolMetricsListener?.PoolAcquiring(acquireEvent);
             var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
-            var task = AcquireAsync(mode, timeOutTokenSource.Token).ContinueWith(t =>
+            var task = AcquireAsync(mode, database, timeOutTokenSource.Token).ContinueWith(t =>
             {
                 timeOutTokenSource.Dispose();
                 if (t.Status == TaskStatus.RanToCompletion)
@@ -247,7 +249,7 @@ namespace Neo4j.Driver.Internal
             return task;
         }
 
-        private Task<IConnection> AcquireAsync(AccessMode mode, CancellationToken cancellationToken)
+        private Task<IConnection> AcquireAsync(AccessMode mode, string database, CancellationToken cancellationToken)
         {
             return TryExecuteAsync(_logger, async () =>
             {
@@ -323,6 +325,7 @@ namespace Neo4j.Driver.Internal
                 if (connection != null)
                 {
                     connection.Mode = mode;
+                    connection.Database = database;
                 }
 
                 return (IConnection) connection;
@@ -365,6 +368,7 @@ namespace Neo4j.Driver.Internal
                 }
 
                 connection.Mode = null;
+                connection.Database = null;
 
                 // Add back to idle pool
                 _idleConnections.Add(connection);

@@ -14,12 +14,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Runtime.Serialization;
 
 namespace Neo4j.Driver
 {
-
     /// <summary>
     /// The base class for all Neo4j exceptions.
     /// </summary>
@@ -274,7 +274,6 @@ namespace Neo4j.Driver
         /// Create a new <see cref="ProtocolException"/> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
-
         public ProtocolException(string message) : base(message)
         {
         }
@@ -310,7 +309,6 @@ namespace Neo4j.Driver
         /// Create a new <see cref="SecurityException"/> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
-
         public SecurityException(string message) : base(message)
         {
         }
@@ -352,7 +350,6 @@ namespace Neo4j.Driver
         /// Create a new <see cref="AuthenticationException"/> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
-
         public AuthenticationException(string message) : base(ErrorCode, message)
         {
         }
@@ -365,12 +362,10 @@ namespace Neo4j.Driver
     [DataContract]
     public class ValueTruncationException : ClientException
     {
-
         /// <summary>
         /// Create a new <see cref="ValueTruncationException"/> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
-
         public ValueTruncationException(string message) : base(message)
         {
         }
@@ -383,13 +378,36 @@ namespace Neo4j.Driver
     [DataContract]
     public class ValueOverflowException : ClientException
     {
-
         /// <summary>
         /// Create a new <see cref="ValueTruncationException"/> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
-
         public ValueOverflowException(string message) : base(message)
+        {
+        }
+    }
+
+    /// <summary>
+    /// There was an error that points us to a fatal problem for routing table discovery, like the requested database
+    /// could not be found. This kind of errors are identified as non-transient and are not retried.
+    /// </summary>
+    [DataContract]
+    public class FatalDiscoveryException : ClientException
+    {
+        private const string ErrorCode = "Neo.ClientError.Database.DatabaseNotFound";
+
+        internal static bool IsFatalDiscoveryError(string code)
+        {
+            return code.Equals(ErrorCode);
+        }
+
+        /// <summary>
+        /// Create a new <see cref="FatalDiscoveryException"/> with an error code and an error message.
+        /// </summary>
+        /// <param name="code">The error code.</param>
+        /// <param name="message">The error message.</param>
+        public FatalDiscoveryException(string code, string message)
+            : base(code, message)
         {
         }
     }

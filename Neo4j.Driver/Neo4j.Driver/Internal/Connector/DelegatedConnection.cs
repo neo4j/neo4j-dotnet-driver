@@ -41,6 +41,12 @@ namespace Neo4j.Driver.Internal.Connector
             set => Delegate.Mode = value;
         }
 
+        public string Database
+        {
+            get => Delegate.Database;
+            set => Delegate.Database = value;
+        }
+        
         public virtual Task OnErrorAsync(Exception error)
         {
             return Task.CompletedTask;

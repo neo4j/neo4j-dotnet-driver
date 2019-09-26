@@ -40,10 +40,15 @@ namespace Neo4j.Driver.Internal
                     {
                         error = new ProtocolException(code, message);
                     }
+                    else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
+                    {
+                        error = new FatalDiscoveryException(code, message);
+                    }
                     else
                     {
                         error = new ClientException(code, message);
                     }
+
                     break;
                 case "transienterror":
                     error = new TransientException(code, message);
@@ -52,6 +57,7 @@ namespace Neo4j.Driver.Internal
                     error = new DatabaseException(code, message);
                     break;
             }
+
             return error;
         }
 
@@ -64,9 +70,9 @@ namespace Neo4j.Driver.Internal
         public static bool IsRetriableTransientError(this Exception error)
         {
             return error is TransientException &&
-                // These error code only happens if the transaction is terminated by client.
-                // We should not retry on these errors
-                !error.HasErrorCode("Neo.TransientError.Transaction.Terminated") &&
+                   // These error code only happens if the transaction is terminated by client.
+                   // We should not retry on these errors
+                   !error.HasErrorCode("Neo.TransientError.Transaction.Terminated") &&
                    !error.HasErrorCode("Neo.TransientError.Transaction.LockClientStopped");
         }
 
@@ -78,7 +84,7 @@ namespace Neo4j.Driver.Internal
         public static bool IsConnectionError(this Exception error)
         {
             return error is IOException || error is SocketException ||
-                error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
+                   error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
         }
 
         public static bool IsDatabaseUnavailableError(this Exception error)

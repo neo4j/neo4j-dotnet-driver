@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests.Routing
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var reader = strategy.SelectReader(new List<Uri>());
+            var reader = strategy.SelectReader(new List<Uri>(), "");
 
             reader.Should().BeNull();
         }
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests.Routing
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var writer = strategy.SelectWriter(new List<Uri>());
+            var writer = strategy.SelectWriter(new List<Uri>(), "");
 
             writer.Should().BeNull();
         }
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests.Routing
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(0);
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var reader = strategy.SelectReader(new List<Uri> {address});
+            var reader = strategy.SelectReader(new List<Uri> {address}, "");
 
             reader.Should().Be(address);
         }
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests.Routing
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(0);
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var writer = strategy.SelectWriter(new List<Uri> {address});
+            var writer = strategy.SelectWriter(new List<Uri> {address}, "");
 
             writer.Should().Be(address);
         }
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests.Routing
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(42);
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var reader = strategy.SelectReader(new List<Uri> {address});
+            var reader = strategy.SelectReader(new List<Uri> {address}, "");
 
             reader.Should().Be(address);
         }
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Tests.Routing
             connectionPoolMock.Setup(x => x.NumberOfInUseConnections(address)).Returns(42);
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var writer = strategy.SelectWriter(new List<Uri> {address});
+            var writer = strategy.SelectWriter(new List<Uri> {address}, "");
 
             writer.Should().Be(address);
         }
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Tests.Routing
 
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var reader = strategy.SelectReader(new List<Uri> {address1, address2, address3});
+            var reader = strategy.SelectReader(new List<Uri> {address1, address2, address3}, "");
 
             reader.Should().Be(address3);
         }
@@ -136,7 +136,7 @@ namespace Neo4j.Driver.Tests.Routing
 
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            var writer = strategy.SelectWriter(new List<Uri> {address1, address2, address3, address4});
+            var writer = strategy.SelectWriter(new List<Uri> {address1, address2, address3, address4}, "");
 
             writer.Should().Be(address3);
         }
@@ -154,13 +154,13 @@ namespace Neo4j.Driver.Tests.Routing
 
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            strategy.SelectReader(addresses).Should().Be(address1);
-            strategy.SelectReader(addresses).Should().Be(address2);
-            strategy.SelectReader(addresses).Should().Be(address3);
+            strategy.SelectReader(addresses, "").Should().Be(address1);
+            strategy.SelectReader(addresses, "").Should().Be(address2);
+            strategy.SelectReader(addresses, "").Should().Be(address3);
 
-            strategy.SelectReader(addresses).Should().Be(address1);
-            strategy.SelectReader(addresses).Should().Be(address2);
-            strategy.SelectReader(addresses).Should().Be(address3);
+            strategy.SelectReader(addresses, "").Should().Be(address1);
+            strategy.SelectReader(addresses, "").Should().Be(address2);
+            strategy.SelectReader(addresses, "").Should().Be(address3);
         }
 
         [Fact]
@@ -175,17 +175,54 @@ namespace Neo4j.Driver.Tests.Routing
 
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object);
 
-            strategy.SelectWriter(addresses).Should().Be(address1);
-            strategy.SelectWriter(addresses).Should().Be(address2);
+            strategy.SelectWriter(addresses, "").Should().Be(address1);
+            strategy.SelectWriter(addresses, "").Should().Be(address2);
 
-            strategy.SelectWriter(addresses).Should().Be(address1);
-            strategy.SelectWriter(addresses).Should().Be(address2);
+            strategy.SelectWriter(addresses, "").Should().Be(address1);
+            strategy.SelectWriter(addresses, "").Should().Be(address2);
+        }
+
+
+        [Fact]
+        public void ShouldIncludeDatabaseNameInLogMessageForReader()
+        {
+            var address = new Uri("reader:7687");
+            var logger = new Mock<IDriverLogger>();
+            logger.Setup(x => x.IsDebugEnabled()).Returns(true);
+            var connectionPoolMock = new Mock<IClusterConnectionPool>();
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object, logger.Object);
+
+            // When
+            strategy.SelectReader(new List<Uri> {address}, "foo-db");
+
+            logger.Verify(x =>
+                    x.Debug(
+                        $"Selected reader for database 'foo-db' with least connected address: '{address}' and active connections: 0"),
+                Times.Once);
+        }
+
+        [Fact]
+        public void ShouldIncludeDatabaseNameInLogMessageForWriter()
+        {
+            var address = new Uri("reader:7687");
+            var logger = new Mock<IDriverLogger>();
+            logger.Setup(x => x.IsDebugEnabled()).Returns(true);
+            var connectionPoolMock = new Mock<IClusterConnectionPool>();
+            var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object, logger.Object);
+
+            // When
+            strategy.SelectWriter(new List<Uri> {address}, "foo-db");
+
+            logger.Verify(x =>
+                    x.Debug(
+                        $"Selected writer for database 'foo-db' with least connected address: '{address}' and active connections: 0"),
+                Times.Once);
         }
 
         private static LeastConnectedLoadBalancingStrategy NewLeastConnectedStrategy(
-            IClusterConnectionPool connectionPool)
+            IClusterConnectionPool connectionPool, IDriverLogger logger = null)
         {
-            return new LeastConnectedLoadBalancingStrategy(connectionPool, new Mock<IDriverLogger>().Object);
+            return new LeastConnectedLoadBalancingStrategy(connectionPool, logger ?? Mock.Of<IDriverLogger>());
         }
     }
 }

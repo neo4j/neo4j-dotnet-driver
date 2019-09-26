@@ -122,38 +122,6 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        public class ConfigLoadBalancingStrategyExample : BaseExample
-        {
-            public ConfigLoadBalancingStrategyExample(ITestOutputHelper output,
-                StandAloneIntegrationTestFixture fixture)
-                : base(output, fixture)
-            {
-            }
-
-            // tag::config-load-balancing-strategy[]
-            public IDriver CreateDriverWithCustomizedLoadBalancingStrategy(string uri, string user, string password)
-            {
-                return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config
-                    {
-                        LoadBalancingStrategy = LoadBalancingStrategy.LeastConnected
-                    });
-            }
-            // end::config-load-balancing-strategy[]
-
-            [RequireServerFact]
-            public void TestConfigLoadBalancingStrategyExample()
-            {
-                // Given
-                using (var driver = CreateDriverWithCustomizedLoadBalancingStrategy(Uri, User, Password))
-                using (var session = driver.Session())
-                {
-                    // When & Then
-                    session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-                }
-            }
-        }
-
         public class ConfigConnectionTimeoutExample : BaseExample
         {
             public ConfigConnectionTimeoutExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)

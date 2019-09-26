@@ -41,10 +41,10 @@ namespace Neo4j.Driver.Tests.Routing
                     new ClusterConnection(CreateConnectionWithMode(AccessMode.Read), Uri, handlerMock.Object);
 
                 var inError = new ServiceUnavailableException("Connection error");
-                var outError = await Record.ExceptionAsync(()=>clusterConn.OnErrorAsync(inError));
+                var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().BeOfType<SessionExpiredException>();
-                handlerMock.Verify(x=>x.OnConnectionErrorAsync(Uri, inError), Times.Once);
-                handlerMock.Verify(x=>x.OnWriteError(Uri), Times.Never);
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, null, inError), Times.Once);
+                handlerMock.Verify(x => x.OnWriteError(Uri, null), Times.Never);
             }
 
             [Fact]
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().BeEquivalentTo(inError);
 
-                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError));
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, null, inError));
             }
 
             [Theory]
@@ -73,8 +73,8 @@ namespace Neo4j.Driver.Tests.Routing
                 var inError = ErrorExtensions.ParseServerException(code, null);
                 var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().BeOfType<ClientException>();
-                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError), Times.Never);
-                handlerMock.Verify(x => x.OnWriteError(Uri), Times.Never);
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, null, inError), Times.Never);
+                handlerMock.Verify(x => x.OnWriteError(Uri, null), Times.Never);
             }
 
             [Theory]
@@ -89,8 +89,8 @@ namespace Neo4j.Driver.Tests.Routing
                 var inError = ErrorExtensions.ParseServerException(code, null);
                 var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().BeOfType<SessionExpiredException>();
-                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError), Times.Never);
-                handlerMock.Verify(x => x.OnWriteError(Uri), Times.Once);
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, null, inError), Times.Never);
+                handlerMock.Verify(x => x.OnWriteError(Uri, null), Times.Once);
             }
 
             [Fact]
@@ -103,8 +103,8 @@ namespace Neo4j.Driver.Tests.Routing
                 var inError = new ClientException("random error");
                 var outError = await Record.ExceptionAsync(() => clusterConn.OnErrorAsync(inError));
                 outError.Should().Be(inError);
-                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, inError), Times.Never);
-                handlerMock.Verify(x => x.OnWriteError(Uri), Times.Never);
+                handlerMock.Verify(x => x.OnConnectionErrorAsync(Uri, null, inError), Times.Never);
+                handlerMock.Verify(x => x.OnWriteError(Uri, null), Times.Never);
             }
 
             private static IConnection CreateConnectionWithMode(AccessMode mode)

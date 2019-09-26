@@ -18,11 +18,12 @@
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Routing
+namespace Neo4j.Driver.Internal.Util
 {
-    public class AddressSetTests
+    public static class ConcurrentOrderedSetTests
     {
         public class AddMethod
         {
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldAddNew()
             {
                 // ReSharper disable once UseObjectOrCollectionInitializer
-                var set = new AddressSet<int>();
+                var set = new ConcurrentOrderedSet<int>();
                 set.Add(1);
                 set.Count.Should().Be(1);
                 set.ToList().Should().ContainInOrder(1);
@@ -40,7 +41,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldNotAddIfAlreadyExists()
             {
                 // ReSharper disable once UseObjectOrCollectionInitializer
-                var set = new AddressSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
                 set.Add(0);
                 set.Add(1);
                 set.Add(2);
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldRemove()
             {
-                var set = new AddressSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
                 set.Remove(0);
                 set.Remove(2);
                 set.ToList().Should().ContainInOrder(1, 3);
@@ -64,7 +65,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldNotMoveIfNotExists()
             {
-                var set = new AddressSet<int> {0, 1};
+                var set = new ConcurrentOrderedSet<int> {0, 1};
                 set.Remove(3);
                 set.Count.Should().Be(2);
                 set.ToList().Should().ContainInOrder(0, 1);
@@ -77,7 +78,7 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldClear()
             {
                 // Given
-                var set = new AddressSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
 
                 set.Should().NotBeEmpty();
 
@@ -95,43 +96,43 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldProvideSnapshotWhenEmpty()
             {
                 // Given
-                var set = new AddressSet<int>();
+                var set = new ConcurrentOrderedSet<int>();
 
                 // When
-                var snaphost = set.Snaphost;
+                var snapshot = set.Snapshot;
 
                 // Then
-                snaphost.Should().BeEmpty();
+                snapshot.Should().BeEmpty();
             }
 
             [Fact]
             public void ShouldProvideSnapshot()
             {
                 // Given
-                var set = new AddressSet<int> {0, 1, 2};
+                var set = new ConcurrentOrderedSet<int> {0, 1, 2};
 
                 // When
-                var snaphost = set.Snaphost;
+                var snapshot = set.Snapshot;
 
                 // Then
-                snaphost.Should().HaveCount(3);
-                snaphost.Should().ContainInOrder(0, 1, 2);
+                snapshot.Should().HaveCount(3);
+                snapshot.Should().ContainInOrder(0, 1, 2);
             }
 
             [Fact]
             public void ShouldProvideSnapshotAfterUpdate()
             {
                 // Given
-                var set = new AddressSet<int> {0, 1, 2};
+                var set = new ConcurrentOrderedSet<int> {0, 1, 2};
 
                 // When
                 set.Remove(1);
                 set.Add(42);
-                var snaphost = set.Snaphost;
+                var snapshot = set.Snapshot;
 
                 // Then
-                snaphost.Should().HaveCount(3);
-                snaphost.Should().ContainInOrder(0, 2, 42);
+                snapshot.Should().HaveCount(3);
+                snapshot.Should().ContainInOrder(0, 2, 42);
             }
         }
 
@@ -142,7 +143,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(30)]
             public void ShouldBeAbleToAccessNewlyAddedItem(int times)
             {
-                var set = new AddressSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
 
                 // we loop several turns on the full set
                 for (var j = 0; j < times; j++)
@@ -176,7 +177,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(40)]
             public void ShouldBeAbleToRemoveItem(int times)
             {
-                var set = new AddressSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
                 for (var j = 0; j < times; j++)
                 {
                     for (var i = 0; i < set.Count; i++)

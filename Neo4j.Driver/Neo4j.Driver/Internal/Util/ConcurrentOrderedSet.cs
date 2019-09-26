@@ -15,15 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Util
 {
-    internal class AddressSet<T> : IEnumerable<T>, IAddressSet<T>
+    internal class ConcurrentOrderedSet<T> : ICollection<T>
     {
         private readonly object _itemsLock = new object();
-        private volatile IList<T> _items = new List<T>();
+        private volatile List<T> _items = new List<T>();
 
         /// <summary>
         ///     Add one item into this set.
@@ -35,7 +37,8 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 if (!_items.Contains(item))
                 {
-                    var newItems = new List<T>(_items) {item};
+                    var newItems = new List<T>(_items);
+                    newItems.Add(item);
                     _items = newItems;
                 }
             }
@@ -57,22 +60,34 @@ namespace Neo4j.Driver.Internal.Routing
                         newItems.Add(item);
                     }
                 }
+
                 _items = newItems;
             }
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            _items.CopyTo(array, arrayIndex);
         }
 
         /// <summary>
         ///     Remove one item from this set
         /// </summary>
         /// <param name="item"></param>
-        public void Remove(T item)
+        public bool Remove(T item)
         {
             lock (_itemsLock)
             {
-                var newItems = new List<T>(_items);
-                newItems.Remove(item);
-                _items = newItems;
+                if (_items.Contains(item))
+                {
+                    var newItems = new List<T>(_items);
+                    newItems.Remove(item);
+                    _items = newItems;
+                    return true;
+                }
             }
+
+            return false;
         }
 
         /// <summary>
@@ -86,15 +101,19 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
-        /// <summary>
-        ///     Get a snapshot of this set as list
-        /// </summary>
-        public IList<T> Snaphost => _items;
+        public bool Contains(T item)
+        {
+            return _items.Contains(item);
+        }
 
         /// <summary>
         ///     Number of items in this set
         /// </summary>
         public int Count => _items.Count;
+
+        public bool IsReadOnly => false;
+
+        public IList<T> Snapshot => _items.AsReadOnly();
 
         /// <summary>
         ///     Check if this set is empty

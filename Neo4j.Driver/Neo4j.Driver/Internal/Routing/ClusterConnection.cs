@@ -38,13 +38,14 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (error is ServiceUnavailableException)
             {
-                await _errorHandler.OnConnectionErrorAsync(_uri, error).ConfigureAwait(false);
+                await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
                 throw new SessionExpiredException(
                     $"Server at {_uri} is no longer available due to error: {error.Message}.", error);
             }
-            else if (error.IsDatabaseUnavailableError())
+
+            if (error.IsDatabaseUnavailableError())
             {
-                await _errorHandler.OnConnectionErrorAsync(_uri, error).ConfigureAwait(false);
+                await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
             }
             else
             {
@@ -56,23 +57,22 @@ namespace Neo4j.Driver.Internal.Routing
 
         private void HandleClusterError(Exception error)
         {
-            if (error.IsClusterError())
+            if (!error.IsClusterError()) return;
+
+            switch (Mode)
             {
-                switch (Mode)
-                {
-                    case AccessMode.Read:
-                        // The user was trying to run a write in a read session
-                        // So inform the user and let him try with a proper session mode
-                        throw new ClientException("Write queries cannot be performed in READ access mode.");
-                    case AccessMode.Write:
-                        // The lead is no longer a leader, a.k.a. the write server no longer accepts writes
-                        // However the server is still available for possible reads.
-                        // Therefore we just remove it from ClusterView but keep it in connection pool.
-                        _errorHandler.OnWriteError(_uri);
-                        throw new SessionExpiredException($"Server at {_uri} no longer accepts writes");
-                    default:
-                        throw new ArgumentOutOfRangeException($"Unsupported mode type {Mode}");
-                }
+                case AccessMode.Read:
+                    // The user was trying to run a write in a read session
+                    // So inform the user and let him try with a proper session mode
+                    throw new ClientException("Write queries cannot be performed in READ access mode.");
+                case AccessMode.Write:
+                    // The lead is no longer a leader, a.k.a. the write server no longer accepts writes
+                    // However the server is still available for possible reads.
+                    // Therefore we just remove it from ClusterView but keep it in connection pool.
+                    _errorHandler.OnWriteError(_uri, Database);
+                    throw new SessionExpiredException($"Server at {_uri} no longer accepts writes");
+                default:
+                    throw new ArgumentOutOfRangeException($"Unsupported mode type {Mode}");
             }
         }
     }

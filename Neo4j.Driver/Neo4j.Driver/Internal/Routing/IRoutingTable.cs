@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver;
@@ -22,15 +23,18 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IRoutingTable
     {
-        bool IsStale(AccessMode mode);
+        string Database { get; }
         IList<Uri> Readers { get; }
         IList<Uri> Writers { get; }
         IList<Uri> Routers { get; }
         long ExpireAfterSeconds { get; }
+
+        IEnumerable<Uri> All();
+        bool IsStale(AccessMode mode);
+        bool IsExpiredFor(TimeSpan duration);
         void Remove(Uri uri);
         void RemoveWriter(Uri uri);
-        ISet<Uri> All();
-        void Clear();
         void PrependRouters(IEnumerable<Uri> uris);
+        bool IsReadingInAbsenceOfWriter(AccessMode mode);
     }
 }

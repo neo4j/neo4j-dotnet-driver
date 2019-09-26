@@ -89,6 +89,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public AccessMode? Mode { get; set; }
 
+        public string Database { get; set; }
+
         public async Task InitAsync()
         {
             _sendLock.Wait();

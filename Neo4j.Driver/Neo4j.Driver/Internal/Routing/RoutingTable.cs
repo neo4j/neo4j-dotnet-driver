@@ -19,40 +19,54 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Routing
 {
     internal class RoutingTable : IRoutingTable
     {
         private const int MinRouterCount = 1;
-        private readonly AddressSet<Uri> _routers = new AddressSet<Uri>();
-        private readonly AddressSet<Uri> _readers = new AddressSet<Uri>();
-        private readonly AddressSet<Uri> _writers = new AddressSet<Uri>();
-        private readonly long _expireAfterSeconds;
+        private readonly ConcurrentOrderedSet<Uri> _routers = new ConcurrentOrderedSet<Uri>();
+        private readonly ConcurrentOrderedSet<Uri> _readers = new ConcurrentOrderedSet<Uri>();
+        private readonly ConcurrentOrderedSet<Uri> _writers = new ConcurrentOrderedSet<Uri>();
+        private readonly long _expireAfterMilliseconds;
+        private readonly string _database;
+        private readonly ITimer _timer;
 
-        public IList<Uri> Routers => _routers.Snaphost;
-        public IList<Uri> Readers => _readers.Snaphost;
-        public IList<Uri> Writers => _writers.Snaphost;
-        public long ExpireAfterSeconds => _expireAfterSeconds;
+        public string Database => _database;
+        public IList<Uri> Routers => _routers.Snapshot;
+        public IList<Uri> Readers => _readers.Snapshot;
+        public IList<Uri> Writers => _writers.Snapshot;
+        public long ExpireAfterSeconds => _expireAfterMilliseconds / 1000;
 
-        private readonly Stopwatch _stopwatch;
 
-        public RoutingTable(IEnumerable<Uri> routers, long expireAfterSeconds = 0)
-            : this(routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)
+        public RoutingTable(string database, IEnumerable<Uri> routers, long expireAfterSeconds = 0)
+            : this(database, routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)
         {
         }
 
-        public RoutingTable(IEnumerable<Uri> routers, IEnumerable<Uri> readers, IEnumerable<Uri> writers,
-            long expireAfterSeconds)
+        public RoutingTable(string database, IEnumerable<Uri> routers, IEnumerable<Uri> readers,
+            IEnumerable<Uri> writers, long expireAfterSeconds)
+            : this(database, routers, readers, writers, expireAfterSeconds, new StopwatchBasedTimer())
         {
+        }
+
+        public RoutingTable(string database, IEnumerable<Uri> routers, IEnumerable<Uri> readers,
+            IEnumerable<Uri> writers, long expireAfterSeconds, ITimer timer)
+        {
+            _database = database ?? "";
+
             _routers.Add(routers ?? Enumerable.Empty<Uri>());
             _readers.Add(readers ?? Enumerable.Empty<Uri>());
             _writers.Add(writers ?? Enumerable.Empty<Uri>());
 
-            _expireAfterSeconds = expireAfterSeconds;
-            _stopwatch = new Stopwatch();
-            _stopwatch.Restart();
+            _expireAfterMilliseconds = expireAfterSeconds * 1000;
+            _timer = timer ?? throw new ArgumentNullException(nameof(timer));
+            _timer.Reset();
+            _timer.Start();
         }
 
         public bool IsStale(AccessMode mode)
@@ -60,7 +74,17 @@ namespace Neo4j.Driver.Internal.Routing
             return _routers.Count < MinRouterCount
                    || mode == AccessMode.Read && _readers.IsEmpty
                    || mode == AccessMode.Write && _writers.IsEmpty
-                   || _expireAfterSeconds < _stopwatch.Elapsed.TotalSeconds;
+                   || _expireAfterMilliseconds < _timer.ElapsedMilliseconds;
+        }
+
+        public bool IsExpiredFor(TimeSpan duration)
+        {
+            return (_timer.ElapsedMilliseconds - _expireAfterMilliseconds) >= duration.TotalMilliseconds;
+        }
+
+        public bool IsReadingInAbsenceOfWriter(AccessMode mode)
+        {
+            return mode == AccessMode.Read && !IsStale(AccessMode.Read) && IsStale(AccessMode.Write);
         }
 
         public void Remove(Uri uri)
@@ -75,7 +99,7 @@ namespace Neo4j.Driver.Internal.Routing
             _writers.Remove(uri);
         }
 
-        public ISet<Uri> All()
+        public IEnumerable<Uri> All()
         {
             var all = new HashSet<Uri>();
             all.UnionWith(_routers);
@@ -84,18 +108,17 @@ namespace Neo4j.Driver.Internal.Routing
             return all;
         }
 
-        public void Clear()
-        {
-            _routers.Clear();
-            _readers.Clear();
-            _writers.Clear();
-        }
-
         public override string ToString()
         {
-            return $"[{nameof(_routers)}: {_routers}], " +
-                   $"[{nameof(_readers)}: {_readers}], " +
-                   $"[{nameof(_writers)}: {_writers}]";
+            return new StringBuilder(128)
+                .Append("RoutingTable{")
+                .AppendFormat("database={0}, ", string.IsNullOrEmpty(_database) ? "default database" : _database)
+                .AppendFormat("routers=[{0}], ", _routers)
+                .AppendFormat("writers=[{0}], ", _writers)
+                .AppendFormat("readers=[{0}], ", _readers)
+                .AppendFormat("expiresAfter={0}s", _expireAfterMilliseconds / 1000)
+                .Append("}")
+                .ToString();
         }
 
         public void PrependRouters(IEnumerable<Uri> uris)

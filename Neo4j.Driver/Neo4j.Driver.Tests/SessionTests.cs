@@ -328,19 +328,9 @@ namespace Neo4j.Driver.Tests
                 // do nothing
             }
 
-            public IConnection Acquire(AccessMode mode)
-            {
-                Mode = mode;
-                return Connection;
-            }
-
-            public Task<IConnection> AcquireAsync(AccessMode mode)
+            public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
             {
                 return Task.FromResult(Connection);
-            }
-
-            public void Close()
-            {
             }
 
             public Task CloseAsync()

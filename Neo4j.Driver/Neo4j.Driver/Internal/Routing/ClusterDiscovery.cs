@@ -30,8 +30,10 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IDriverLogger _logger;
         private readonly IDictionary<string, string> _context;
 
-        private const string GetServersProcedure = "CALL dbms.cluster.routing.getServers()";
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
+
+        private const string GetRoutingTableForDatabaseProcedure =
+            "CALL dbms.routing.getRoutingTable($context, $database)";
 
 
         public ClusterDiscovery(IDictionary<string, string> context, IDriverLogger logger)
@@ -40,33 +42,37 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
         }
 
-        internal Statement DiscoveryProcedure(IConnection connection)
+        internal Statement DiscoveryProcedure(IConnection connection, string database)
         {
-            if (ServerVersion.From(connection.Server.Version) >= ServerVersion.V3_2_0)
+            if (connection.SupportsMultidatabase())
             {
-                return new Statement(GetRoutingTableProcedure,
-                    new Dictionary<string, object> {{"context", _context}});
+                return new Statement(GetRoutingTableForDatabaseProcedure,
+                    new Dictionary<string, object>
+                        {{"context", _context}, {"database", string.IsNullOrEmpty(database) ? null : database}});
             }
-            else
-            {
-                return new Statement(GetServersProcedure);
-            }
+
+            return new Statement(GetRoutingTableProcedure,
+                new Dictionary<string, object> {{"context", _context}});
         }
 
         /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
         /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
-        public async Task<IRoutingTable> DiscoverAsync(IConnection connection)
+        public async Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, Bookmark bookmark)
         {
-            var table = default(RoutingTable);
+            RoutingTable table;
 
             var provider = new SingleConnectionBasedConnectionProvider(connection);
-            var session = new AsyncSession(provider, _logger);
+            var multiDb = connection.SupportsMultidatabase();
+            var sessionAccessMode = multiDb ? AccessMode.Read : AccessMode.Write;
+            var sessionDb = multiDb ? "system" : null;
+            var session = new AsyncSession(provider, _logger, null, sessionAccessMode, sessionDb, bookmark);
             try
             {
-                var result = await session.RunAsync(DiscoveryProcedure(connection)).ConfigureAwait(false);
+                var stmt = DiscoveryProcedure(connection, database);
+                var result = await session.RunAsync(stmt).ConfigureAwait(false);
                 var record = await result.SingleAsync().ConfigureAwait(false);
 
-                table = ParseDiscoveryResult(record);
+                table = ParseDiscoveryResult(database, record);
             }
             finally
             {
@@ -85,7 +91,7 @@ namespace Neo4j.Driver.Internal.Routing
             return table;
         }
 
-        private static RoutingTable ParseDiscoveryResult(IRecord record)
+        private static RoutingTable ParseDiscoveryResult(string database, IRecord record)
         {
             var routers = default(Uri[]);
             var readers = default(Uri[]);
@@ -118,7 +124,7 @@ namespace Neo4j.Driver.Internal.Routing
                     $"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
             }
 
-            return new RoutingTable(routers, readers, writers, record["ttl"].As<long>());
+            return new RoutingTable(database, routers, readers, writers, record["ttl"].As<long>());
         }
 
         public static Uri BoltRoutingUri(string address)
@@ -143,10 +149,11 @@ namespace Neo4j.Driver.Internal.Routing
                 _connection = connection;
             }
 
-            public Task<IConnection> AcquireAsync(AccessMode mode)
+            public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
             {
                 var conn = _connection;
                 conn.Mode = mode;
+                conn.Database = database;
                 _connection = null;
                 return Task.FromResult(conn);
             }

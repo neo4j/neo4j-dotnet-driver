@@ -16,11 +16,11 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Routing
@@ -32,122 +32,181 @@ namespace Neo4j.Driver.Internal.Routing
 
         private readonly IClusterConnectionPoolManager _poolManager;
         private readonly IInitialServerAddressProvider _initialServerAddressProvider;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private readonly TimeSpan _routingTablePurgeDelay;
 
-        private IRoutingTable _routingTable;
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _routingTableLocks =
+            new ConcurrentDictionary<string, SemaphoreSlim>();
 
-        public bool IsReadingInAbsenceOfWriter { get; set; } = false;
+        private readonly ConcurrentDictionary<string, IRoutingTable> _routingTables =
+            new ConcurrentDictionary<string, IRoutingTable>();
 
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
             IDriverLogger logger) :
             this(routingSettings.InitialServerAddressProvider,
-                new ClusterDiscovery(routingSettings.RoutingContext, logger),
-                new RoutingTable(Enumerable.Empty<Uri>()), poolManager, logger)
+                new ClusterDiscovery(routingSettings.RoutingContext, logger), poolManager, logger,
+                routingSettings.RoutingTablePurgeDelay)
         {
         }
 
         public RoutingTableManager(
             IInitialServerAddressProvider initialServerAddressProvider,
             IDiscovery discovery,
-            IRoutingTable routingTable,
             IClusterConnectionPoolManager poolManager,
-            IDriverLogger logger)
+            IDriverLogger logger,
+            TimeSpan routingTablePurgeDelay,
+            params IRoutingTable[] routingTables)
         {
             _initialServerAddressProvider = initialServerAddressProvider;
             _discovery = discovery;
-            _routingTable = routingTable;
             _poolManager = poolManager;
             _logger = logger;
+            _routingTablePurgeDelay = routingTablePurgeDelay;
+
+            foreach (var routingTable in routingTables)
+            {
+                _routingTables.TryAdd(routingTable.Database, routingTable);
+            }
         }
 
-        public IRoutingTable RoutingTable => _routingTable;
-
-        public async Task EnsureRoutingTableForModeAsync(AccessMode mode)
+        public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(AccessMode mode, string database,
+            Bookmark bookmark)
         {
-            // a quick return path for most happy cases
-            if (!IsRoutingTableStale(_routingTable, mode))
+            database = database ?? string.Empty;
+
+            if (_routingTables.TryGetValue(database, out var existingTable) &&
+                !existingTable.IsStale(mode))
             {
-                return;
+                return existingTable;
             }
 
+            var semaphore = GetLock(database);
+
             // now lock
-            await _semaphore.WaitAsync().ConfigureAwait(false);
+            await semaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                // test against to avoid update it multiple times
-                if (!IsRoutingTableStale(_routingTable, mode))
+                if (_routingTables.TryGetValue(database, out existingTable) &&
+                    !existingTable.IsStale(mode))
                 {
-                    return;
+                    return existingTable;
                 }
 
-                var routingTable = await UpdateRoutingTableWithInitialUriFallbackAsync().ConfigureAwait(false);
-                await UpdateAsync(routingTable).ConfigureAwait(false);
+                var refreshedTable = await UpdateRoutingTableAsync(mode, database, bookmark)
+                    .ConfigureAwait(false);
+                await UpdateAsync(refreshedTable).ConfigureAwait(false);
+                return refreshedTable;
             }
             finally
             {
-                // no matter whether we succes to update or not, we release the lock
-                _semaphore.Release();
+                // no matter whether we succeeded to update or not, we release the lock
+                semaphore.Release();
             }
         }
 
-        internal async Task UpdateAsync(IRoutingTable newTable)
+        public void Clear()
         {
-            var added = newTable.All();
-            added.ExceptWith(_routingTable.All());
-            var removed = _routingTable.All();
-            removed.ExceptWith(newTable.All());
-
-            await _poolManager.UpdateConnectionPoolAsync(added, removed).ConfigureAwait(false);
-            _routingTable = newTable;
-
-            _logger?.Info("Updated routing table to be {0}", _routingTable);
+            _routingTables.Clear();
+            _routingTableLocks.Clear();
         }
 
-        private bool IsRoutingTableStale(IRoutingTable routingTable, AccessMode mode = AccessMode.Read)
+        public void ForgetServer(Uri uri, string database)
         {
-            switch (mode)
+            var routingTable = RoutingTableFor(database);
+            routingTable?.Remove(uri);
+        }
+
+        public void ForgetWriter(Uri uri, string database)
+        {
+            var routingTable = RoutingTableFor(database);
+            routingTable?.RemoveWriter(uri);
+        }
+
+        public IRoutingTable RoutingTableFor(string database)
+        {
+            return _routingTables.TryGetValue(database ?? string.Empty, out var routingTable) ? routingTable : null;
+        }
+
+        private SemaphoreSlim GetLock(string database)
+        {
+            return _routingTableLocks.GetOrAdd(database, _ => new SemaphoreSlim(1, 1));
+        }
+
+        private async Task UpdateAsync(IRoutingTable newRoutingTable)
+        {
+            IRoutingTable UpdateRoutingTable(IRoutingTable oldTable, IRoutingTable newTable, out IEnumerable<Uri> added,
+                out IEnumerable<Uri> removed)
             {
-                case AccessMode.Read:
-                    if (routingTable.IsStale(AccessMode.Read))
-                    {
-                        return true;
-                    }
+                var allNew = newTable.All().ToArray();
+                var allKnown = oldTable == null ? Array.Empty<Uri>() : oldTable.All().ToArray();
+                added = allNew.Except(allKnown);
+                removed = allKnown.Except(allNew);
+                return newTable;
+            }
 
-                    IsReadingInAbsenceOfWriter = routingTable.IsStale(AccessMode.Write);
-                    return false;
-                case AccessMode.Write:
-                    return routingTable.IsStale(AccessMode.Write);
-                default:
-                    throw new InvalidOperationException($"Unknown access mode {mode}.");
+            IEnumerable<Uri> addedServers = null, removedServers = null;
+            _routingTables.AddOrUpdate(newRoutingTable.Database,
+                _ => UpdateRoutingTable(null, newRoutingTable, out addedServers, out removedServers),
+                (_, oldTable) => UpdateRoutingTable(oldTable, newRoutingTable, out addedServers, out removedServers));
+
+            await _poolManager.UpdateConnectionPoolAsync(addedServers, removedServers).ConfigureAwait(false);
+
+            PurgeAged();
+
+            _logger?.Info("Routing table is updated => {0}", newRoutingTable);
+        }
+
+        private void PurgeAged()
+        {
+            foreach (var routingTable in _routingTables.Values)
+            {
+                if (!routingTable.IsExpiredFor(_routingTablePurgeDelay))
+                {
+                    continue;
+                }
+
+                _routingTables.TryRemove(routingTable.Database, out _);
+                _routingTableLocks.TryRemove(routingTable.Database, out _);
             }
         }
 
-        private Task PrependRoutersAsync(ISet<Uri> uris)
+        private Task PrependRoutersAsync(IRoutingTable routingTable, ISet<Uri> uris)
         {
-            _routingTable.PrependRouters(uris);
+            routingTable.PrependRouters(uris);
             return _poolManager.AddConnectionPoolAsync(uris);
         }
 
-        internal async Task<IRoutingTable> UpdateRoutingTableWithInitialUriFallbackAsync(
-            Func<ISet<Uri>, Task<IRoutingTable>> updateRoutingTableFunc = null)
+        internal async Task<IRoutingTable> UpdateRoutingTableAsync(AccessMode mode,
+            string database, Bookmark bookmark)
         {
-            _logger?.Debug("Updating routing table.");
+            if (database == null)
+            {
+                throw new ArgumentNullException(nameof(database));
+            }
+
+            _logger?.Debug("Updating routing table for database '{0}'.", database);
+
+            var existingTable = RoutingTableFor(database);
+            if (existingTable == null)
+            {
+                existingTable = new RoutingTable(database, Enumerable.Empty<Uri>());
+            }
 
             var hasPrependedInitialRouters = false;
-            if (IsReadingInAbsenceOfWriter)
+            if (existingTable.IsReadingInAbsenceOfWriter(mode))
             {
                 var uris = _initialServerAddressProvider.Get();
-                await PrependRoutersAsync(uris).ConfigureAwait(false);
+                await PrependRoutersAsync(existingTable, uris).ConfigureAwait(false);
                 hasPrependedInitialRouters = true;
             }
 
             var triedUris = new HashSet<Uri>();
-            var routingTable = await UpdateRoutingTableAsync(triedUris).ConfigureAwait(false);
-            if (routingTable != null)
+            var newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, bookmark, triedUris)
+                .ConfigureAwait(false);
+            if (newRoutingTable != null)
             {
-                return routingTable;
+                return newRoutingTable;
             }
 
             if (!hasPrependedInitialRouters)
@@ -156,26 +215,32 @@ namespace Neo4j.Driver.Internal.Routing
                 uris.ExceptWith(triedUris);
                 if (uris.Count != 0)
                 {
-                    await PrependRoutersAsync(uris).ConfigureAwait(false);
-                    routingTable = await UpdateRoutingTableAsync(null).ConfigureAwait(false);
-                    if (routingTable != null)
+                    await PrependRoutersAsync(existingTable, uris).ConfigureAwait(false);
+                    newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, bookmark)
+                        .ConfigureAwait(false);
+                    if (newRoutingTable != null)
                     {
-                        return routingTable;
+                        return newRoutingTable;
                     }
                 }
             }
 
-            // We retied and tried our best however there is just no cluster.
-            // This is the ultimate place we will inform the user that you need to re-create a driver
+            // We tried our best however there is just no cluster.
+            // This is the ultimate place we will inform the user that a new driver to be created.
             throw new ServiceUnavailableException(
                 "Failed to connect to any routing server. " +
                 "Please make sure that the cluster is up and can be accessed by the driver and retry.");
         }
 
-        public async Task<IRoutingTable> UpdateRoutingTableAsync(ISet<Uri> triedUris = null,
-            Func<IConnection, Task<IRoutingTable>> rediscoveryFunc = null)
+        internal async Task<IRoutingTable> UpdateRoutingTableAsync(IRoutingTable routingTable, AccessMode mode,
+            string database, Bookmark bookmark, ISet<Uri> triedUris = null)
         {
-            var knownRouters = _routingTable.Routers;
+            if (database == null)
+            {
+                throw new ArgumentNullException(nameof(database));
+            }
+
+            var knownRouters = routingTable?.Routers ?? throw new ArgumentNullException(nameof(routingTable));
             foreach (var router in knownRouters)
             {
                 triedUris?.Add(router);
@@ -184,26 +249,39 @@ namespace Neo4j.Driver.Internal.Routing
                     var conn = await _poolManager.CreateClusterConnectionAsync(router).ConfigureAwait(false);
                     if (conn == null)
                     {
-                        _routingTable.Remove(router);
+                        routingTable.Remove(router);
                     }
                     else
                     {
-                        var newRoutingTable = await _discovery.DiscoverAsync(conn).ConfigureAwait(false);
-                        if (!IsRoutingTableStale(newRoutingTable))
+                        var newRoutingTable =
+                            await _discovery.DiscoverAsync(conn, database, bookmark).ConfigureAwait(false);
+                        if (!newRoutingTable.IsStale(mode))
                         {
                             return newRoutingTable;
                         }
+
+                        _logger?.Debug("Skipping stale routing table received from server '{0}' for database '{1}'",
+                            router, database);
                     }
                 }
                 catch (SecurityException e)
                 {
                     _logger?.Error(e,
-                        "Failed to update routing table from server '{0}' because of a security exception.", router);
+                        "Failed to update routing table from server '{0}' for database '{1}' because of a security exception.",
+                        router, database);
+                    throw;
+                }
+                catch (FatalDiscoveryException e)
+                {
+                    _logger?.Error(e,
+                        "Failed to update routing table from server '{0}' for database '{1}' because of a fatal discovery exception.",
+                        router, database);
                     throw;
                 }
                 catch (Exception e)
                 {
-                    _logger?.Warn(e, "Failed to update routing table from server '{0}'.", router);
+                    _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router,
+                        database);
                 }
             }
 

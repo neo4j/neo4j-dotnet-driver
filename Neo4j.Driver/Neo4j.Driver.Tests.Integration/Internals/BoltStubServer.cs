@@ -26,24 +26,23 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     internal class BoltStubServer : IDisposable
     {
-
         private static readonly string ScriptSourcePath;
 
         static BoltStubServer()
         {
             Uri assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.CodeBase);
             string assemblyDirectory = new FileInfo(assemblyUri.AbsolutePath).Directory.FullName;
-            
+
             ScriptSourcePath = Path.Combine(assemblyDirectory, "Resources");
         }
-        
+
         private readonly IShellCommandRunner _commandRunner;
         private readonly TcpClient _testTcpClient = new TcpClient();
 
         private BoltStubServer(string script, int port)
         {
             _commandRunner = ShellCommandRunnerFactory.Create();
-            _commandRunner.BeginRunCommand("boltstub", port.ToString(), script);
+            _commandRunner.BeginRunCommand("boltstub", "-v", port.ToString(), script);
             WaitForServer(port);
         }
 
@@ -62,6 +61,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 // ignored
             }
+
             _commandRunner.EndRunCommand();
         }
 
@@ -72,12 +72,14 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 throw new ArgumentException($"Cannot locate script file `{scriptFilePath}`", scriptFilePath);
             }
+
             return scriptFilePath;
         }
 
         private enum ServerStatus
         {
-            Online, Offline
+            Online,
+            Offline
         }
 
         private void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
@@ -113,7 +115,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 // otherwise wait and retry
                 Task.Delay(300).Wait();
             } while (stopwatch.ElapsedMilliseconds <= waitingTime);
-            throw new InvalidOperationException($"Waited for {waitingTimeInSeconds}s for stub server to be in {status} status, but failed.");
+
+            throw new InvalidOperationException(
+                $"Waited for {waitingTimeInSeconds}s for stub server to be in {status} status, but failed.");
         }
 
         private void Disconnect(TcpClient testTcpClient)
