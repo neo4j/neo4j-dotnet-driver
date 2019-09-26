@@ -44,10 +44,10 @@ namespace Neo4j.Driver
         /// asynchronous <see cref="IAsyncSession"/> with the specified access mode and bookmarks.
         /// </summary>
         /// <param name="driver">driver instance</param>
-        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionOptions"/> instance, that should populate
+        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionConfig"/> instance, that should populate
         /// the provided instance with desired options.</param> 
         /// <returns>A reactive session instance</returns>
-        public static ISession Session(this IDriver driver, Action<SessionOptions> optionsBuilder)
+        public static ISession Session(this IDriver driver, Action<SessionConfig> optionsBuilder)
         {
             var reactiveDriver = driver.CastOrThrow<IInternalDriver>();
 

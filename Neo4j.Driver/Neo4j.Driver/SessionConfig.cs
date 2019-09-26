@@ -24,13 +24,13 @@ namespace Neo4j.Driver
     /// The interface that defines options applicable to session constructions. It could either be populated by a POCO
     /// approach or by the provided builder-style methods.
     /// </summary>
-    public class SessionOptions
+    public class SessionConfig
     {
         private AccessMode _defaultAccessMode;
         private string _database;
         private IEnumerable<Bookmark> _bookmarks;
 
-        internal SessionOptions()
+        internal SessionConfig()
         {
             _defaultAccessMode = AccessMode.Write;
             _database = null;
@@ -102,7 +102,7 @@ namespace Neo4j.Driver
         /// <param name="database">the database name</param>
         /// <returns>this ISessionOptions instance</returns>
         /// <seealso cref="Database"/>
-        public SessionOptions ForDatabase(string database)
+        public SessionConfig ForDatabase(string database)
         {
             Database = database;
             return this;
@@ -114,7 +114,7 @@ namespace Neo4j.Driver
         /// <param name="defaultAccessMode">the access mode</param>
         /// <returns>this ISessionOptions instance</returns>
         /// <seealso cref="DefaultAccessMode"/>
-        public SessionOptions WithDefaultAccessMode(AccessMode defaultAccessMode)
+        public SessionConfig WithDefaultAccessMode(AccessMode defaultAccessMode)
         {
             DefaultAccessMode = defaultAccessMode;
             return this;
@@ -126,7 +126,7 @@ namespace Neo4j.Driver
         /// <param name="bookmarks">the initial bookmarks</param>
         /// <returns>this ISessionOptions instance</returns>
         /// <seealso cref="Bookmarks"/>
-        public SessionOptions WithBookmarks(params Bookmark[] bookmarks)
+        public SessionConfig WithBookmarks(params Bookmark[] bookmarks)
         {
             Bookmarks = bookmarks;
             return this;

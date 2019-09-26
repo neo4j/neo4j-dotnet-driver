@@ -62,19 +62,19 @@ namespace Neo4j.Driver.Internal
             return AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
         }
 
-        public IAsyncSession AsyncSession(Action<SessionOptions> optionsBuilder)
+        public IAsyncSession AsyncSession(Action<SessionConfig> optionsBuilder)
         {
             return Session(optionsBuilder, false);
         }
 
-        public IInternalAsyncSession Session(Action<SessionOptions> optionsBuilder, bool reactive)
+        public IInternalAsyncSession Session(Action<SessionConfig> optionsBuilder, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var options = new SessionOptions();
+            var options = new SessionConfig();
             optionsBuilder(options);
 
             var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,

@@ -25,8 +25,6 @@ namespace Neo4j.Driver.Internal
         private readonly IInternalAsyncTransaction _txc;
         private readonly BlockingExecutor _executor;
 
-        private volatile bool _completed = false;
-
         public InternalTransaction(IInternalAsyncTransaction txc, BlockingExecutor executor)
         {
             _txc = txc ?? throw new ArgumentNullException(nameof(txc));
@@ -58,13 +56,11 @@ namespace Neo4j.Driver.Internal
         public void Commit()
         {
             _executor.RunSync(() => _txc.CommitAsync());
-            _completed = true;
         }
 
         public void Rollback()
         {
             _executor.RunSync(() => _txc.RollbackAsync());
-            _completed = true;
         }
 
         public void Dispose()
@@ -75,7 +71,7 @@ namespace Neo4j.Driver.Internal
 
         private void Dispose(bool disposing)
         {
-            if (disposing && !_completed)
+            if (disposing && IsOpen)
             {
                 Rollback();
             }

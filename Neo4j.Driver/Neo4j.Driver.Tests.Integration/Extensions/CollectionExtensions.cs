@@ -36,14 +36,15 @@ namespace Neo4j.Driver.IntegrationTests
             foreach (var item in collection)
             {
                 nextBatch.Add(item);
-                if (nextBatch.Count != batchSize) continue;
-                yield return nextBatch;
-                nextBatch = new List<T>(batchSize);
+                if (nextBatch.Count == batchSize)
+                {
+                    yield return nextBatch;
+                    nextBatch = new List<T>(batchSize);
+                }
             }
 
             if (nextBatch.Count > 0)
                 yield return nextBatch;
         }
-            
     }
 }

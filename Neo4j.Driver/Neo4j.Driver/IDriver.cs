@@ -40,10 +40,10 @@ namespace Neo4j.Driver
         /// <summary>
         /// Obtain a session with the default <see cref="AccessMode.Write"/> and start bookmark.
         /// </summary>
-        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionOptions"/> instance, that should populate
+        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionConfig"/> instance, that should populate
         /// the provided instance with desired options.</param> 
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(Action<SessionOptions> optionsBuilder);
+        IAsyncSession AsyncSession(Action<SessionConfig> optionsBuilder);
 
         /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
