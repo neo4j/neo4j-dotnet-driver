@@ -1,4 +1,4 @@
-!: BOLT 3
+!: BOLT 4
 !: AUTO HELLO
 !: AUTO RESET
 !: AUTO COMMIT
@@ -6,7 +6,7 @@
 !: AUTO BEGIN
 
 C: RUN "RETURN 1" {} {"mode": "r"}
-   PULL_ALL
+   PULL {"n": -1}
 S: SUCCESS {"fields": ["1"]}
    RECORD [1]
    SUCCESS {}

@@ -17,11 +17,10 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V1
+namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
-    internal class RollbackResponseHandler : NoOpResponseHandler
+    internal class BeginResponseHandler : NoOpResponseHandler
     {
     }
 }

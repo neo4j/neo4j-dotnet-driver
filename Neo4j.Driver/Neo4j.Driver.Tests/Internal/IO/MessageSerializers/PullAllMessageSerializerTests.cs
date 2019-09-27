@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var handler = SerializerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV1MessageFormat.MsgPullAll, 0));
+                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV3MessageFormat.MsgPullAll, 0));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV1MessageFormat.MsgPullAll);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgPullAll);
         }
     }
 }

@@ -29,7 +29,6 @@ using Neo4j.Driver.Tests;
 using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3;
-using V1 = Neo4j.Driver.Internal.MessageHandling.V1;
 using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -191,7 +190,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await BoltV3.BeginTransactionAsync(mockConn.Object, null, null, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }
@@ -205,7 +204,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await BoltV3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }
@@ -219,7 +218,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await BoltV3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
@@ -244,7 +243,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await BoltV3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V1.BeginResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
                     Times.Once);
             }
 
@@ -270,7 +269,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await BoltV3.CommitTransactionAsync(mockConn.Object, bookmarkTracker.Object);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(CommitMessage.Commit, It.IsAny<V1.CommitResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(CommitMessage.Commit, It.IsAny<V3.CommitResponseHandler>(), null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
@@ -286,7 +285,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await BoltV3.RollbackTransactionAsync(mockConn.Object);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(RollbackMessage.Rollback, It.IsAny<V1.RollbackResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(RollbackMessage.Rollback, It.IsAny<V3.RollbackResponseHandler>(), null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }

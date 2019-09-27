@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Messaging.V4;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
@@ -33,7 +34,8 @@ namespace Neo4j.Driver.Tests
             public static IEnumerable<object[]> MessageData => new[]
             {
                 new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
-                new object[] {new InitMessage("mydriver", new Dictionary<string, object>()), "INIT `mydriver`"},
+                new object[]
+                    {new HelloMessage("mydriver", new Dictionary<string, object>()), "HELLO [{user_agent, mydriver}]"},
                 new object[] {new SuccessMessage(new Dictionary<string, object>()), "SUCCESS []"},
                 new object[] {DiscardAll, "DISCARDALL"},
                 new object[] {Ignored, "IGNORED"},
@@ -46,12 +48,12 @@ namespace Neo4j.Driver.Tests
                 new object[] {ResetMessage.Reset, "RESET"},
                 new object[]
                 {
-                    new RunMessage("A statement", new Dictionary<string, object>
+                    new RunWithMetadataMessage(new Statement("A statement", new Dictionary<string, object>
                     {
                         {"key1", 1},
                         {"key2", new[] {2, 4}}
-                    }),
-                    "RUN `A statement` [{key1, 1}, {key2, [2, 4]}]"
+                    }), "my-database", Bookmark.From("bookmark-1"), TransactionConfig.Empty, AccessMode.Read),
+                    "RUN `A statement`, [{key1, 1}, {key2, [2, 4]}] [{bookmarks, [bookmark-1]}, {mode, r}, {db, my-database}]"
                 },
                 new object[] {new PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},
                 new object[] {new PullMessage(2), "PULL [{n, 2}]"},

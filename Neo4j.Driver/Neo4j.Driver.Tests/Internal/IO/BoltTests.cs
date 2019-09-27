@@ -23,9 +23,11 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
@@ -70,7 +72,8 @@ namespace Neo4j.Driver.Internal.IO
             var stream = new MemoryStream();
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
-            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> {{"x", 1L}}));
+            writer.Write(new RunWithMetadataMessage(
+                new Statement("RETURN $x", new Dictionary<string, object> {{"x", 1L}}), AccessMode.Read));
 
             Assert.Empty(stream.ToArray());
         }
@@ -81,7 +84,8 @@ namespace Neo4j.Driver.Internal.IO
             var stream = new MemoryStream();
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
-            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> {{"x", 1L}}));
+            writer.Write(new RunWithMetadataMessage(
+                new Statement("RETURN $x", new Dictionary<string, object> {{"x", 1L}}), AccessMode.Read));
 
             await writer.FlushAsync();
 
@@ -106,7 +110,9 @@ namespace Neo4j.Driver.Internal.IO
             var stream = new MemoryStream();
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
-            writer.Write(new RunMessage("RETURN $x", new Dictionary<string, object> {{"x", 1L}}));
+            writer.Write(
+                new RunWithMetadataMessage(new Statement("RETURN $x", new Dictionary<string, object> {{"x", 1L}}),
+                    AccessMode.Read));
 
             await writer.FlushAsync();
 
@@ -193,7 +199,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             return new Dictionary<byte, IPackStreamSerializer>
             {
-                {BoltProtocolV1MessageFormat.MsgSuccess, new SuccessMessageSerializer()},
+                {BoltProtocolV3MessageFormat.MsgSuccess, new SuccessMessageSerializer()},
                 {NodeSerializer.Node, new NodeSerializer()}
             };
         }
@@ -202,7 +208,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             return new Dictionary<Type, IPackStreamSerializer>
             {
-                {typeof(RunMessage), new RunMessageSerializer()}
+                {typeof(RunWithMetadataMessage), new RunWithMetadataMessageSerializer()}
             };
         }
 
@@ -210,7 +216,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var stream = new MemoryStream();
             var writer = new PackStreamWriter(stream, null);
-            writer.WriteStructHeader(1, BoltProtocolV1MessageFormat.MsgSuccess);
+            writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgSuccess);
             writer.WriteMapHeader(1);
             writer.Write("x");
             writer.Write(1);

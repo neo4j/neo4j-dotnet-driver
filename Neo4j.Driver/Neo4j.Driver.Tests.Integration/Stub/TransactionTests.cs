@@ -38,11 +38,11 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
         public class ExplicitTransaction
         {
             [Theory]
-            [InlineData("v1")]
-            [InlineData("v3")]
+            [InlineData("V3")]
+            [InlineData("V4")]
             public void ShouldFailIfCommitFailsDueToBrokenConnection(string boltVersion)
             {
-                using (BoltStubServer.Start($"connection_error_on_commit_{boltVersion}", 9001))
+                using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
                 {
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
@@ -62,11 +62,11 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
 
             [Theory]
-            [InlineData("v1")]
-            [InlineData("v3")]
+            [InlineData("V3")]
+            [InlineData("V4")]
             public async Task ShouldFailIfCommitFailsDueToBrokenConnectionAsync(string boltVersion)
             {
-                using (BoltStubServer.Start($"connection_error_on_commit_{boltVersion}", 9001))
+                using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
                 {
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
@@ -101,11 +101,11 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
 
             [Theory]
-            [InlineData("v1")]
-            [InlineData("v3")]
+            [InlineData("V3")]
+            [InlineData("V4")]
             public void ShouldFailIfCommitFailsDueToBrokenConnection(string boltVersion)
             {
-                using (BoltStubServer.Start($"connection_error_on_commit_{boltVersion}", 9001))
+                using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
                 {
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
@@ -128,11 +128,11 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
 
             [Theory]
-            [InlineData("v1")]
-            [InlineData("v3")]
+            [InlineData("V3")]
+            [InlineData("V4")]
             public async Task ShouldFailIfCommitFailsDueToBrokenConnectionAsync(string boltVersion)
             {
-                using (BoltStubServer.Start($"connection_error_on_commit_{boltVersion}", 9001))
+                using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
                 {
                     using (var driver =
                         GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))

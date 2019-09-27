@@ -23,8 +23,22 @@ using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV3MessageFormat: MessageFormat
+    internal class BoltProtocolV3MessageFormat : MessageFormat
     {
+        #region Message Constants Inherited Over Older Versions
+
+        public const byte MsgReset = 0x0F;
+        public const byte MsgRun = 0x10;
+        public const byte MsgDiscardAll = 0x2F;
+        public const byte MsgPullAll = 0x3F;
+
+        public const byte MsgRecord = 0x71;
+        public const byte MsgSuccess = 0x70;
+        public const byte MsgIgnored = 0x7E;
+        public const byte MsgFailure = 0x7F;
+
+        #endregion
+
         #region Message Constants
 
         public const byte MsgHello = 0x01;
@@ -34,7 +48,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public const byte MsgRollback = 0x13;
 
         #endregion
-        
+
         internal BoltProtocolV3MessageFormat()
         {
             // BoltV3 Request Message Types
@@ -46,7 +60,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
             // BoltV3 optional Goodbye
             AddHandler<GoodbyeMessageSerializer>();
-            
+
             AddHandler<PullAllMessageSerializer>();
             AddHandler<DiscardAllMessageSerializer>();
             AddHandler<ResetMessageSerializer>();
@@ -62,7 +76,7 @@ namespace Neo4j.Driver.Internal.Protocol
             AddHandler<RelationshipSerializer>();
             AddHandler<UnboundRelationshipSerializer>();
             AddHandler<PathSerializer>();
-            
+
             // Add V2 Spatial Types
             AddHandler<PointSerializer>();
 

@@ -281,9 +281,9 @@ namespace Neo4j.Driver.Examples
             [RequireBoltStubServerFactAttribute]
             public void TestCustomResolverExample()
             {
-                using (var server1 = BoltStubServer.Start("get_routing_table_only", 9001))
+                using (var server1 = BoltStubServer.Start("V4/get_routing_table_only", 9001))
                 {
-                    using (var server2 = BoltStubServer.Start("return_1", 9002))
+                    using (var server2 = BoltStubServer.Start("V4/return_1", 9002))
                     {
                         using (var driver =
                             CreateDriverWithCustomResolver("neo4j://x.acme.com", AuthTokens.None,

@@ -28,6 +28,7 @@ using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 using static Neo4j.Driver.Internal.ConnectionSettings;
@@ -67,7 +68,7 @@ namespace Neo4j.Driver.Tests
                 var bufferSettings = new BufferSettings(Config.DefaultConfig);
 
                 var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] {0, 0, 0, 1});
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] {0, 0, 0, 4});
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 
                 var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
@@ -87,8 +88,8 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var writerMock = new Mock<IMessageWriter>();
 
-                var m1 = new RunMessage("Run message 1");
-                var m2 = new RunMessage("Run message 2");
+                var m1 = new RunWithMetadataMessage(new Statement("Run message 1"), AccessMode.Write);
+                var m2 = new RunWithMetadataMessage(new Statement("Run message 2"), AccessMode.Read);
                 var messages = new IRequestMessage[] {m1, m2};
                 var client = new SocketClient(null, writerMock.Object);
 

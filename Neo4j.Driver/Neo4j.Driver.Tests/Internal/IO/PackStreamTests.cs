@@ -145,29 +145,29 @@ namespace Neo4j.Driver.Internal.IO
 
         }
 
-        public class V1 : PackStreamTestSpecs
+        public class V3 : PackStreamTestSpecs
         {
             internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
             {
-                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V1.CreateReader(stream));
+                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V3.CreateReader(stream));
             }
 
             internal override PackStreamWriterMachine CreateWriterMachine()
             {
-                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V1.CreateWriter(stream));
+                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V3.CreateWriter(stream));
             }
         }
 
-        public class V2 : PackStreamTestSpecs
+        public class V4 : PackStreamTestSpecs
         {
             internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
             {
-                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V2.CreateReader(stream));
+                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V4.CreateReader(stream));
             }
 
             internal override PackStreamWriterMachine CreateWriterMachine()
             {
-                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V2.CreateWriter(stream));
+                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V4.CreateWriter(stream));
             }
         }
 

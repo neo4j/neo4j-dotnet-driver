@@ -17,22 +17,11 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV1MessageFormat;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
-    internal class InitMessageSerializer: WriteOnlySerializer
+    internal class RollbackResponseHandler : NoOpResponseHandler
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(InitMessage)};
-
-        public override void Serialize(IPackStreamWriter writer, object value)
-        {
-            var msg = value.CastOrThrow<InitMessage>();
-
-            writer.WriteStructHeader(2, MsgInit);
-            writer.Write(msg.ClientNameAndVersion);
-            writer.Write(msg.AuthToken ?? PackStream.EmptyDictionary);
-        }
     }
 }

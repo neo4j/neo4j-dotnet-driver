@@ -36,10 +36,12 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 {EncryptionLevel = EncryptionLevel.None, DriverLogger = TestDriverLogger.Create(output)};
         }
 
-        [RequireBoltStubServerFact]
-        public async Task SendRoutingContextToServer()
+        [RequireBoltStubServerTheory]
+        [InlineData("V3")]
+        [InlineData("V4")]
+        public async Task SendRoutingContextToServer(string boltVersion)
         {
-            using (BoltStubServer.Start("get_routing_table_with_context", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/get_routing_table_with_context", 9001))
             {
                 var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
                 using (var driver = GraphDatabase.Driver(uri, Config))
@@ -71,7 +73,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 EncryptionLevel = EncryptionLevel.None,
                 DriverLogger = new TestDriverLogger(logs.Add, ExtendedLogLevel.Debug)
             };
-            using (BoltStubServer.Start("accessmode_reader_implicit", 9001))
+            using (BoltStubServer.Start("V4/accessmode_reader_implicit", 9001))
             {
                 using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
                 {
@@ -99,10 +101,12 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             }
         }
 
-        [RequireBoltStubServerFact]
-        public async Task InvokeProcedureGetRoutingTableWhenServerVersionPermits()
+        [RequireBoltStubServerTheory]
+        [InlineData("V3")]
+        [InlineData("V4")]
+        public async Task InvokeProcedureGetRoutingTableWhenServerVersionPermits(string boltVersion)
         {
-            using (BoltStubServer.Start("get_routing_table", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/get_routing_table", 9001))
             {
                 var uri = new Uri("neo4j://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))
@@ -135,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
                 "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68"
             };
-            using (BoltStubServer.Start("multiple_bookmarks", 9001))
+            using (BoltStubServer.Start("V4/multiple_bookmarks", 9001))
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))
@@ -165,10 +169,12 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             }
         }
 
-        [RequireBoltStubServerFact]
-        public async Task ShouldOnlyResetAfterError()
+        [RequireBoltStubServerTheory]
+        [InlineData("V3")]
+        [InlineData("V4")]
+        public async Task ShouldOnlyResetAfterError(string boltVersion)
         {
-            using (BoltStubServer.Start("rollback_error", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/rollback_error", 9001))
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
                 using (var driver = GraphDatabase.Driver(uri, Config))

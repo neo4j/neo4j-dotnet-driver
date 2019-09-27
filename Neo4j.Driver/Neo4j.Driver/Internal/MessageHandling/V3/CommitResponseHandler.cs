@@ -17,11 +17,27 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V1
+namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
-    internal class ResetResponseHandler : NoOpResponseHandler
+    internal class CommitResponseHandler : MetadataCollectingResponseHandler
     {
+        private readonly IBookmarkTracker _tracker;
+
+        public CommitResponseHandler(IBookmarkTracker tracker)
+        {
+            _tracker = tracker ?? throw new ArgumentNullException(nameof(tracker));
+
+            AddMetadata<BookmarkCollector, Bookmark>();
+        }
+
+        public override void OnSuccess(IDictionary<string, object> metadata)
+        {
+            base.OnSuccess(metadata);
+
+            _tracker.UpdateBookmark(GetMetadata<BookmarkCollector, Bookmark>());
+        }
     }
 }

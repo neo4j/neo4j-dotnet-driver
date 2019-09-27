@@ -29,26 +29,6 @@ namespace Neo4j.Driver.Internal.Protocol
         public class CreateMethod
         {
             [Fact]
-            public void ShouldCreateBoltProtocolV1()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(1);
-                boltProtocol.Should().BeOfType<BoltProtocolV1>();
-            }
-
-            [Fact]
-            public void ShouldCreateBoltProtocolV2()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(2);
-                boltProtocol.Should().BeOfType<BoltProtocolV2>();
-            }
-            
-            [Fact]
             public void ShouldCreateBoltProtocolV3()
             {
                 var connMock = new Mock<ITcpSocketClient>();
@@ -58,8 +38,20 @@ namespace Neo4j.Driver.Internal.Protocol
                 boltProtocol.Should().BeOfType<BoltProtocolV3>();
             }
 
+            [Fact]
+            public void ShouldCreateBoltProtocolV4()
+            {
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                var boltProtocol = BoltProtocolFactory.ForVersion(4);
+                boltProtocol.Should().BeOfType<BoltProtocolV4>();
+            }
+
             [Theory]
             [InlineData(0, "The Neo4j server does not support any of the protocol versions supported by this client")]
+            [InlineData(1, "Protocol error, server suggested unexpected protocol version: 1")]
+            [InlineData(2, "Protocol error, server suggested unexpected protocol version: 2")]
             [InlineData(1024, "Protocol error, server suggested unexpected protocol version: 1024")]
             [InlineData(1213486160 /*HTTP*/, "Server responded HTTP.")]
             public void ShouldThrowExceptionIfVersionIsNotSupported(int version, string errorMessage)

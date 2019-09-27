@@ -25,14 +25,13 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
-using Neo4j.Driver.Internal.MessageHandling.V1;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Messaging.V4;
 using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
-using V1 = Neo4j.Driver.Internal.MessageHandling.V1;
+using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -62,7 +61,7 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.EnqueueAsync(
                     new BeginMessage(database, bookmark, txConfig?.Timeout, txConfig?.Metadata,
                         connection.GetEnforcedAccessMode()),
-                    new V1.BeginResponseHandler())
+                    new V3.BeginResponseHandler())
                 .ConfigureAwait(false);
             if (bookmark != null && bookmark.Values.Any())
             {

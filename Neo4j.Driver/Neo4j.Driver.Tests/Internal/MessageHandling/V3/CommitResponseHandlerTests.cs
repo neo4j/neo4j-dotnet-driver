@@ -23,7 +23,7 @@ using Moq;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V1
+namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
     public class CommitResponseHandlerTests
     {

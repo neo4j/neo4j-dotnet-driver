@@ -28,8 +28,6 @@ namespace Neo4j.Driver.Internal.Protocol
         private static class ProtocolVersion
         {
             public const int NoVersion = 0;
-            public const int Version1 = 1;
-            public const int Version2 = 2;
             public const int Version3 = 3;
             public const int Version4 = 4;
             public const int Http = 1213486160;
@@ -39,16 +37,12 @@ namespace Neo4j.Driver.Internal.Protocol
         private const int BoltIdentifier = 0x6060B017;
 
         private static readonly int[] SupportedVersions =
-            {ProtocolVersion.Version4, ProtocolVersion.Version3, ProtocolVersion.Version2, ProtocolVersion.Version1};
+            {ProtocolVersion.Version4, ProtocolVersion.Version3, ProtocolVersion.NoVersion, ProtocolVersion.NoVersion};
 
         public static IBoltProtocol ForVersion(int version)
         {
             switch (version)
             {
-                case ProtocolVersion.Version1:
-                    return BoltProtocolV1.BoltV1;
-                case ProtocolVersion.Version2:
-                    return BoltProtocolV2.BoltV2;
                 case ProtocolVersion.Version3:
                     return BoltProtocolV3.BoltV3;
                 case ProtocolVersion.Version4:
