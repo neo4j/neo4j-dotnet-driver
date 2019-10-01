@@ -111,42 +111,42 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldThrowForNonExistentDatabase()
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummary("moo", "moo")).Should().Throw<ClientException>()
+            this.Awaiting(_ => VerifyDatabaseNameOnSummary("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*database does not exist.*");
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldThrowForNonExistentDatabaseInTx()
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("moo", "moo")).Should().Throw<ClientException>()
+            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*database does not exist.*");
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldThrowForNonExistentDatabaseInTxFunc()
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("moo", "moo")).Should().Throw<ClientException>()
+            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*database does not exist.*");
         }
 
         [RequireServerFact("4.0.0", LessThan)]
         public void ShouldThrowWhenDatabaseIsSpecified()
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummary("moo", "moo")).Should().Throw<ClientException>()
+            this.Awaiting(_ => VerifyDatabaseNameOnSummary("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*to a server that does not support multiple databases.*");
         }
 
         [RequireServerFact("4.0.0", LessThan)]
         public void ShouldThrowWhenDatabaseIsSpecifiedInTx()
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("moo", "moo")).Should().Throw<ClientException>()
+            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*to a server that does not support multiple databases.*");
         }
 
         [RequireServerFact("4.0.0", LessThan)]
         public void ShouldThrowWhenDatabaseIsSpecifiedInTxFunc()
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("moo", "moo")).Should().Throw<ClientException>()
+            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*to a server that does not support multiple databases.*");
         }
 
@@ -230,7 +230,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task CreateDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.ForDatabase("system"));
+            var session = driver.AsyncSession(o => o.WithDatabase("system"));
             try
             {
                 var cursor = await session.RunAsync($"CREATE DATABASE {name}");
@@ -244,7 +244,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task DropDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.ForDatabase("system"));
+            var session = driver.AsyncSession(o => o.WithDatabase("system"));
             try
             {
                 var cursor = await session.RunAsync($"DROP DATABASE {name}");

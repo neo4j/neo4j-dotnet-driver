@@ -1,0 +1,12 @@
+!: BOLT 4
+!: AUTO HELLO
+!: AUTO RESET
+
+C: BEGIN {}
+S: SUCCESS {}
+C: RUN "CREATE (n {name:'Alice'}) RETURN n.name AS name" {} {}
+   PULL {"n": -1}
+S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Unable to run any"}
+   IGNORED
+C: RESET
+S: SUCCESS {}

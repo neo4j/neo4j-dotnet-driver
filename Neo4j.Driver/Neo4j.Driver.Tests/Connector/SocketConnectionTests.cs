@@ -28,6 +28,7 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging.V3;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using static Xunit.Record;
@@ -121,7 +122,8 @@ namespace Neo4j.Driver.Tests
                 var mock = new Mock<ISocketClient>();
                 var con = NewSocketConnection(mock.Object);
 
-                await con.EnqueueAsync(new RunMessage("A statement"), NoOpHandler);
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("A statement"), AccessMode.Read),
+                    NoOpHandler);
                 await con.SyncAsync();
 
                 mock.Verify(c => c.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
@@ -138,11 +140,12 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunMessage("a statement"), NoOpHandler);
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("a statement"), AccessMode.Write),
+                    NoOpHandler);
 
                 // Then
                 con.Messages.Count.Should().Be(1); // Run
-                con.Messages[0].Should().BeAssignableTo<RunMessage>();
+                con.Messages[0].Should().BeAssignableTo<RunWithMetadataMessage>();
             }
 
             [Fact]
@@ -151,9 +154,10 @@ namespace Neo4j.Driver.Tests
                 var pipeline = new Mock<IResponsePipeline>();
                 var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunMessage("statement"), NoOpHandler);
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("statement"), AccessMode.Read),
+                    NoOpHandler);
 
-                pipeline.Verify(h => h.Enqueue(It.IsAny<RunMessage>(), NoOpHandler), Times.Once);
+                pipeline.Verify(h => h.Enqueue(It.IsAny<RunWithMetadataMessage>(), NoOpHandler), Times.Once);
             }
 
             [Fact]
@@ -163,11 +167,12 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunMessage("a statement"), NoOpHandler, PullAll, NoOpHandler);
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("a statement"), AccessMode.Read),
+                    NoOpHandler, PullAll, NoOpHandler);
 
                 // Then
                 con.Messages.Count.Should().Be(2); // Run + PullAll
-                con.Messages[0].Should().BeAssignableTo<RunMessage>();
+                con.Messages[0].Should().BeAssignableTo<RunWithMetadataMessage>();
                 con.Messages[1].Should().BeAssignableTo<PullAllMessage>();
             }
 
@@ -177,9 +182,10 @@ namespace Neo4j.Driver.Tests
                 var pipeline = new Mock<IResponsePipeline>();
                 var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunMessage("statement"), NoOpHandler, PullAll, NoOpHandler);
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("statement"), AccessMode.Read),
+                    NoOpHandler, PullAll, NoOpHandler);
 
-                pipeline.Verify(h => h.Enqueue(It.IsAny<RunMessage>(), NoOpHandler),
+                pipeline.Verify(h => h.Enqueue(It.IsAny<RunWithMetadataMessage>(), NoOpHandler),
                     Times.Once);
                 pipeline.Verify(h => h.Enqueue(It.IsAny<PullAllMessage>(), NoOpHandler),
                     Times.Once);

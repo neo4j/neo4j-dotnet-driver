@@ -50,32 +50,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         }
     }
 
-    internal class ResultAvailableAfterCollector : DurationCollector
-    {
-        internal const string ResultAvailableAfterKey = "result_available_after";
-
-        public ResultAvailableAfterCollector()
-            : base(ResultAvailableAfterKey)
-        {
-        }
-    }
-
     internal class TimeToFirstCollector : DurationCollector
     {
         internal const string TimeToFirstKey = "t_first";
 
         public TimeToFirstCollector()
             : base(TimeToFirstKey)
-        {
-        }
-    }
-
-    internal class ResultConsumedAfterCollector : DurationCollector
-    {
-        internal const string ResultConsumedAfterKey = "result_consumed_after";
-
-        public ResultConsumedAfterCollector()
-            : base(ResultConsumedAfterKey)
         {
         }
     }

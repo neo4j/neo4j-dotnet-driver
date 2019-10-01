@@ -14,14 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IClusterErrorHandler
     {
-        Task OnConnectionErrorAsync(Uri uri, Exception e);
-        void OnWriteError(Uri uri);
+        Task OnConnectionErrorAsync(Uri uri, string database, Exception e);
+        void OnWriteError(Uri uri, string database);
     }
 }

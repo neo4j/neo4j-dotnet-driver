@@ -62,7 +62,6 @@ namespace Neo4j.Driver
         /// <br></br>
         /// <item><see cref="DriverLogger"/> : <c>logs nothing.</c></item>
         /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
-        /// <item><see cref="LoadBalancingStrategy"/>: <c><see cref="LoadBalancingStrategy"/> LeastConnected</c> </item>
         /// <br></br>
         /// <item><see cref="DefaultReadBufferSize"/> : <c>32K</c> </item>
         /// <item><see cref="MaxReadBufferSize"/> : <c>128K</c> </item>
@@ -170,11 +169,6 @@ namespace Neo4j.Driver
         /// 2) when all the known routers from the current routing table have failed and driver needs to fallback to the initial address.
         /// </summary>
         public IServerAddressResolver Resolver { get; set; } = new PassThroughServerAddressResolver();
-
-        /// <summary>
-        /// Gets or sets the load balancing strategy for the routing driver. Direct driver will ignore this setting.
-        /// </summary>
-        public LoadBalancingStrategy LoadBalancingStrategy { get; set; } = LoadBalancingStrategy.LeastConnected;
 
         /// <summary>
         /// Gets or sets the metrics factory implementation to enable driver level metrics.
@@ -301,12 +295,6 @@ namespace Neo4j.Driver
             {
                 Throw.ArgumentNullException.IfNull(resolver, nameof(resolver));
                 _config.Resolver = resolver;
-                return this;
-            }
-
-            public IConfigBuilder WithLoadBalancingStrategy(LoadBalancingStrategy loadBalancingStrategy)
-            {
-                _config.LoadBalancingStrategy = loadBalancingStrategy;
                 return this;
             }
 
@@ -465,15 +453,6 @@ namespace Neo4j.Driver
         /// <param name="resolver">The resolver, default to a resolver that simply pass the initial server address as it is.</param>
         /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
         IConfigBuilder WithResolver(IServerAddressResolver resolver);
-
-        /// <summary>
-        /// Provide an alternative load balancing strategy for the routing driver to use. By default routing
-        /// driver uses <see cref="LoadBalancingStrategy.LeastConnected"/>. Direct driver will ignore this setting.
-        /// </summary>
-        /// <param name="loadBalancingStrategy">The strategy to use.</param>
-        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
-        /// <remarks>We are experimenting with different strategies. This could be removed in the next minor version.</remarks>
-        IConfigBuilder WithLoadBalancingStrategy(LoadBalancingStrategy loadBalancingStrategy);
 
         /// <summary>
         /// Specify the default read buffer size which the driver allocates for its internal buffers.

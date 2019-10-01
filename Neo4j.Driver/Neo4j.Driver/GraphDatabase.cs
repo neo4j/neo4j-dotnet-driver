@@ -39,9 +39,9 @@ namespace Neo4j.Driver
         ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
         ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>.
         ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
-        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        ///     The protocol <c>neo4j</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
@@ -59,9 +59,9 @@ namespace Neo4j.Driver
         ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
         ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>.
         ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
-        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        ///     The protocol <c>neo4j</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
         /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
@@ -79,9 +79,9 @@ namespace Neo4j.Driver
         ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
         ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>.
         ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
-        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        ///     The protocol <c>neo4j</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <param name="config">
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
@@ -103,9 +103,9 @@ namespace Neo4j.Driver
         ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
         ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>.
         ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
-        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        ///     The protocol <c>neo4j</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <param name="config">
         ///     Configuration for the driver instance to use, if <c>null</c> <see cref="Config.DefaultConfig" />
@@ -127,9 +127,9 @@ namespace Neo4j.Driver
         ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
         ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>.
         ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
-        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        ///     The protocol <c>neo4j</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
         /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
@@ -148,9 +148,9 @@ namespace Neo4j.Driver
         ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
         ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>.
         ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
-        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        ///     The protocol <c>neo4j</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
         /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
@@ -169,9 +169,9 @@ namespace Neo4j.Driver
         ///     <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>.
         ///     If <c>port</c> is not supplied the default of <c>7687</c> will
         ///     be used.
-        ///     The supported protocols in URI could either be <c>bolt</c> or <c>bolt+routing</c>.
+        ///     The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>.
         ///     The protocol <c>bolt</c> should be used when creating a driver connecting to the Neo4j instance directly.
-        ///     The protocol <c>bolt+routing</c> should be used when creating a driver with built-in routing.
+        ///     The protocol <c>neo4j</c> should be used when creating a driver with built-in routing.
         /// </param>
         /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
         /// <param name="config">
@@ -232,7 +232,7 @@ namespace Neo4j.Driver
                     connectionProvider =
                         new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
                     break;
-                case "bolt+routing":
+                case "neo4j":
                     connectionProvider =
                         new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
                     break;

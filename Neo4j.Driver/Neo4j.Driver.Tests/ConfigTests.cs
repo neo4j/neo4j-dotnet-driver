@@ -36,7 +36,6 @@ namespace Neo4j.Driver.Tests
                 config.TrustManager.Should().BeNull();
                 config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
-                config.LoadBalancingStrategy.Should().Be(LoadBalancingStrategy.LeastConnected);
             }
 
             [Fact]

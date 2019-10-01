@@ -1,0 +1,12 @@
+!: BOLT 4
+!: AUTO HELLO
+!: AUTO RESET
+!: AUTO COMMIT
+!: AUTO ROLLBACK
+!: AUTO BEGIN
+
+C: RUN "RETURN 1" {} {"mode": "r"}
+   PULL {"n": -1}
+S: SUCCESS {"fields": ["1"]}
+   RECORD [1]
+   SUCCESS {}

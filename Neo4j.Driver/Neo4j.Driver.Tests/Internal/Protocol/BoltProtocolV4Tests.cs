@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunMessage>(), It.IsAny<V4.RunResponseHandler>(),
+                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
                     .Returns(Task.CompletedTask)
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(

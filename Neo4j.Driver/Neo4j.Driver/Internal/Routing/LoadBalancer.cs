@@ -18,6 +18,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -46,8 +48,7 @@ namespace Neo4j.Driver.Internal.Routing
             _clusterConnectionPool =
                 new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
-            _loadBalancingStrategy =
-                CreateLoadBalancingStrategy(routingSettings.Strategy, _clusterConnectionPool, _logger);
+            _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
         }
 
         // for test only
@@ -60,20 +61,19 @@ namespace Neo4j.Driver.Internal.Routing
 
             _clusterConnectionPool = clusterConnPool;
             _routingTableManager = routingTableManager;
-            _loadBalancingStrategy =
-                CreateLoadBalancingStrategy(config.LoadBalancingStrategy, clusterConnPool, _logger);
+            _loadBalancingStrategy = CreateLoadBalancingStrategy(clusterConnPool, _logger);
         }
 
         private bool IsClosed => _closedMarker > 0;
 
-        public async Task<IConnection> AcquireAsync(AccessMode mode)
+        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
         {
             if (IsClosed)
             {
                 ThrowObjectDisposedException();
             }
 
-            IConnection conn = await AcquireConnectionAsync(mode).ConfigureAwait(false);
+            var conn = await AcquireConnectionAsync(mode, database, bookmark).ConfigureAwait(false);
 
             if (IsClosed)
             {
@@ -83,16 +83,16 @@ namespace Neo4j.Driver.Internal.Routing
             return conn;
         }
 
-        public Task OnConnectionErrorAsync(Uri uri, Exception e)
+        public Task OnConnectionErrorAsync(Uri uri, string database, Exception e)
         {
             _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
-            _routingTableManager.RoutingTable.Remove(uri);
+            _routingTableManager.ForgetServer(uri, database);
             return _clusterConnectionPool.DeactivateAsync(uri);
         }
 
-        public void OnWriteError(Uri uri)
+        public void OnWriteError(Uri uri, string database)
         {
-            _routingTableManager.RoutingTable.RemoveWriter(uri);
+            _routingTableManager.ForgetWriter(uri, database);
         }
 
         public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
@@ -107,24 +107,25 @@ namespace Neo4j.Driver.Internal.Routing
 
         public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
         {
-            return CreateClusterConnectionAsync(uri, AccessMode.Write);
-            ;
+            return CreateClusterConnectionAsync(uri, AccessMode.Write, null, Bookmark.Empty);
         }
 
         public Task CloseAsync()
         {
             if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
             {
-                _routingTableManager.RoutingTable.Clear();
+                _routingTableManager.Clear();
                 return _clusterConnectionPool.CloseAsync();
             }
 
             return Task.CompletedTask;
         }
 
-        public async Task<IConnection> AcquireConnectionAsync(AccessMode mode)
+        public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, Bookmark bookmark)
         {
-            await _routingTableManager.EnsureRoutingTableForModeAsync(mode).ConfigureAwait(false);
+            var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, bookmark)
+                .ConfigureAwait(false);
+
             while (true)
             {
                 Uri uri;
@@ -132,10 +133,10 @@ namespace Neo4j.Driver.Internal.Routing
                 switch (mode)
                 {
                     case AccessMode.Read:
-                        uri = _loadBalancingStrategy.SelectReader(_routingTableManager.RoutingTable.Readers);
+                        uri = _loadBalancingStrategy.SelectReader(routingTable.Readers, database);
                         break;
                     case AccessMode.Write:
-                        uri = _loadBalancingStrategy.SelectWriter(_routingTableManager.RoutingTable.Writers);
+                        uri = _loadBalancingStrategy.SelectWriter(routingTable.Writers, database);
                         break;
                     default:
                         throw new InvalidOperationException($"Unknown access mode {mode}");
@@ -147,7 +148,8 @@ namespace Neo4j.Driver.Internal.Routing
                     break;
                 }
 
-                IConnection conn = await CreateClusterConnectionAsync(uri, mode).ConfigureAwait(false);
+                var conn =
+                    await CreateClusterConnectionAsync(uri, mode, database, bookmark).ConfigureAwait(false);
                 if (conn != null)
                 {
                     return conn;
@@ -159,23 +161,25 @@ namespace Neo4j.Driver.Internal.Routing
             throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
         }
 
-        private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode)
+        private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode, string database,
+            Bookmark bookmark)
         {
             try
             {
-                IConnection conn = await _clusterConnectionPool.AcquireAsync(uri, mode).ConfigureAwait(false);
+                var conn = await _clusterConnectionPool.AcquireAsync(uri, mode, database, bookmark)
+                    .ConfigureAwait(false);
                 if (conn != null)
                 {
                     return new ClusterConnection(conn, uri, this);
                 }
 
-                await OnConnectionErrorAsync(uri, new ArgumentException(
-                    $"Routing table {_routingTableManager.RoutingTable} contains a server {uri} " +
+                await OnConnectionErrorAsync(uri, database, new ArgumentException(
+                    $"Routing table {_routingTableManager.RoutingTableFor(database)} contains a server {uri} " +
                     $"that is not known to cluster connection pool {_clusterConnectionPool}.")).ConfigureAwait(false);
             }
             catch (ServiceUnavailableException e)
             {
-                await OnConnectionErrorAsync(uri, e).ConfigureAwait(false);
+                await OnConnectionErrorAsync(uri, database, e).ConfigureAwait(false);
             }
 
             return null;
@@ -188,26 +192,19 @@ namespace Neo4j.Driver.Internal.Routing
 
         public override string ToString()
         {
-            return $"{nameof(_routingTableManager.RoutingTable)}: {{{_routingTableManager.RoutingTable}}}, " +
-                   $"{nameof(_clusterConnectionPool)}: {{{_clusterConnectionPool}}}";
+            return new StringBuilder(128)
+                .Append("LoadBalancer{")
+                .AppendFormat("routingTableManager={0}, ", _routingTableManager)
+                .AppendFormat("clusterConnectionPool={0}, ", _clusterConnectionPool)
+                .AppendFormat("closed={0}", IsClosed)
+                .Append("}")
+                .ToString();
         }
 
-        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(LoadBalancingStrategy strategy,
-            IClusterConnectionPool pool,
+        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool,
             IDriverLogger logger)
         {
-            if (strategy == LoadBalancingStrategy.LeastConnected)
-            {
-                return new LeastConnectedLoadBalancingStrategy(pool, logger);
-            }
-            else if (strategy == LoadBalancingStrategy.RoundRobin)
-            {
-                return new RoundRobinLoadBalancingStrategy(logger);
-            }
-            else
-            {
-                throw new ArgumentException($"Unknown load balancing strategy: {strategy}");
-            }
+            return new LeastConnectedLoadBalancingStrategy(pool, logger);
         }
     }
 }

@@ -69,14 +69,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        public Task<IConnection> AcquireAsync(Uri uri, AccessMode mode = AccessMode.Write)
+        public Task<IConnection> AcquireAsync(Uri uri, AccessMode mode, string database, Bookmark bookmark)
         {
             if (!_pools.TryGetValue(uri, out var pool))
             {
                 return Task.FromResult((IConnection) null);
             }
 
-            return pool.AcquireAsync(mode);
+            return pool.AcquireAsync(mode, database, bookmark);
         }
 
         private void Add(IEnumerable<Uri> servers)

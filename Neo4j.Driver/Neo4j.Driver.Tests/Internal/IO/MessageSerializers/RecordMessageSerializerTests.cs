@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(1, BoltProtocolV1MessageFormat.MsgRecord);
+            writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgRecord);
             writer.WriteListHeader(6);
             writer.WriteNull();
             writer.Write(true);

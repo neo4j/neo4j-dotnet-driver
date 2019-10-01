@@ -35,22 +35,23 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
         }
 
-        public Uri SelectReader(IList<Uri> knownReaders)
+        public Uri SelectReader(IList<Uri> knownReaders, string forDatabase)
         {
-            return Select(knownReaders, _readersIndex, "reader");
+            return Select(knownReaders, _readersIndex, forDatabase, "reader");
         }
 
-        public Uri SelectWriter(IList<Uri> knownWriters)
+        public Uri SelectWriter(IList<Uri> knownWriters, string forDatabase)
         {
-            return Select(knownWriters, _writersIndex, "writer");
+            return Select(knownWriters, _writersIndex, forDatabase, "writer");
         }
 
-        private Uri Select(IList<Uri> addresses, RoundRobinArrayIndex roundRobinIndex, string addressType)
+        private Uri Select(IList<Uri> addresses, RoundRobinArrayIndex roundRobinIndex, string forDatabase,
+            string addressType)
         {
             var count = addresses.Count;
             if (count == 0)
             {
-                LogDebug($"Unable to select {addressType}, no known addresses given");
+                LogDebug($"Unable to select {addressType} for database '{forDatabase}', no known addresses given");
                 return null;
             }
 
@@ -85,7 +86,7 @@ namespace Neo4j.Driver.Internal.Routing
             } while (index != startIndex);
 
             LogDebug(
-                $"Selected {addressType} with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
+                $"Selected {addressType} for database '{forDatabase}' with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
 
             return leastConnectedAddress;
         }

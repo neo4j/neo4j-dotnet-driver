@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var handler = SerializerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV1MessageFormat.MsgInit, 2));
+                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV3MessageFormat.MsgBegin, 2));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();

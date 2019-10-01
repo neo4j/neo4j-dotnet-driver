@@ -25,9 +25,11 @@ namespace Neo4j.Driver.Internal
 {
     internal class RoutingSettings
     {
+        private static readonly TimeSpan DefaultRoutingTablePurgeDelay = TimeSpan.FromSeconds(30);
+
         public IDictionary<string, string> RoutingContext { get; }
         public InitialServerAddressProvider InitialServerAddressProvider { get; }
-        public LoadBalancingStrategy Strategy { get; }
+        public TimeSpan RoutingTablePurgeDelay { get; }
 
         public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)
         {
@@ -37,7 +39,7 @@ namespace Neo4j.Driver.Internal
 
             InitialServerAddressProvider = new InitialServerAddressProvider(initServerUri, config.Resolver);
             RoutingContext = routingContext;
-            Strategy = config.LoadBalancingStrategy;
+            RoutingTablePurgeDelay = DefaultRoutingTablePurgeDelay;
         }
     }
 
@@ -50,6 +52,7 @@ namespace Neo4j.Driver.Internal
     {
         private readonly Uri _initAddress;
         private readonly IServerAddressResolver _resolver;
+
         public InitialServerAddressProvider(Uri initialServerAddress, IServerAddressResolver resolver)
         {
             _initAddress = initialServerAddress;
@@ -63,8 +66,9 @@ namespace Neo4j.Driver.Internal
             foreach (var address in addresses)
             {
                 // for now we convert this ServerAddress back to Uri
-                set.Add(new UriBuilder("bolt+routing://", address.Host, address.Port).Uri);
+                set.Add(new UriBuilder("neo4j://", address.Host, address.Port).Uri);
             }
+
             return set;
         }
     }

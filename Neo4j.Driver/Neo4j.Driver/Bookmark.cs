@@ -62,5 +62,7 @@ namespace Neo4j.Driver
                 .Distinct()
                 .ToArray());
         }
+        
+        internal static readonly Bookmark Empty = new InternalBookmark();
     }
 }

@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 using Neo4j.Driver;
 
@@ -22,7 +23,10 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IRoutingTableManager
     {
-        IRoutingTable RoutingTable { get; }
-        Task EnsureRoutingTableForModeAsync(AccessMode mode);
+        Task<IRoutingTable> EnsureRoutingTableForModeAsync(AccessMode mode, string database, Bookmark bookmark);
+        void Clear();
+        void ForgetServer(Uri uri, string database);
+        void ForgetWriter(Uri uri, string database);
+        IRoutingTable RoutingTableFor(string database);
     }
 }

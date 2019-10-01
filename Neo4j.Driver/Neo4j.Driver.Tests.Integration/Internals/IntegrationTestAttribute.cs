@@ -186,13 +186,51 @@ namespace Neo4j.Driver.IntegrationTests
     /// </summary>
     public class RequireClusterFactAttribute : FactAttribute
     {
-        public RequireClusterFactAttribute()
+        public RequireClusterFactAttribute(string versionText = null,
+            VersionComparison versionCompare = VersionComparison.EqualTo)
         {
-            var isClusterSupported = BoltkitHelper.IsClusterSupported();
-            if (!isClusterSupported.Item1)
+            var skipText = new StringBuilder();
+
+            if (!BoltkitHelper.IsBoltkitAvailable())
             {
-                Skip = isClusterSupported.Item2;
+                skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
+
+            if (!string.IsNullOrWhiteSpace(versionText))
+            {
+                var version = ServerVersion.From(versionText);
+                var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+
+                var satisfy = false;
+                switch (versionCompare)
+                {
+                    case VersionComparison.LessThan:
+                        satisfy = availableVersion.CompareTo(version) < 0;
+                        break;
+                    case VersionComparison.LessThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) <= 0;
+                        break;
+                    case VersionComparison.EqualTo:
+                        satisfy = availableVersion.CompareTo(version) == 0;
+                        break;
+                    case VersionComparison.GreaterThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) >= 0;
+                        break;
+                    case VersionComparison.GreaterThan:
+                        satisfy = availableVersion.CompareTo(version) > 0;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
+                }
+
+                if (!satisfy)
+                {
+                    skipText.AppendLine(
+                        $"Test requires available server version {availableVersion} to be {versionCompare.ToString()} {version}.");
+                }
+            }
+
+            Skip = skipText.ToString();
         }
     }
 

@@ -32,7 +32,8 @@ namespace Neo4j.Driver.Tests.Connector
     {
         internal class TcpSocketClientWithDisposeDetection : TcpSocketClient
         {
-            public TcpSocketClientWithDisposeDetection(SocketSettings socketSettings, IDriverLogger logger = null) : base(socketSettings, logger)
+            public TcpSocketClientWithDisposeDetection(SocketSettings socketSettings, IDriverLogger logger = null) :
+                base(socketSettings, logger)
             {
             }
 
@@ -85,16 +86,16 @@ namespace Neo4j.Driver.Tests.Connector
                 // We fail to connect the first time as there is no server to connect to
                 // ReSharper disable once PossibleNullReferenceException
                 var exception = await Record.ExceptionAsync(
-                    async()=> await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 20003));
+                    async () => await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 54321));
                 // start a server on port 20003
 
-                var serverSocket = new TcpListener(new IPEndPoint(IPAddress.Loopback, 20003));
+                var serverSocket = new TcpListener(new IPEndPoint(IPAddress.Loopback, 54321));
                 try
                 {
                     serverSocket.Start();
 
                     // We should not get any error this time as server in online now.
-                    await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 20003);
+                    await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 54321);
                 }
                 finally
                 {
@@ -130,6 +131,5 @@ namespace Neo4j.Driver.Tests.Connector
                 baseException.Message.Should().Be("Failed to connect to server 192.168.0.0:9998 within 1000ms.");
             }
         }
-        
     }
 }

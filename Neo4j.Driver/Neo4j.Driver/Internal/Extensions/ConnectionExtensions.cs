@@ -17,6 +17,7 @@
 
 using System;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal
 {
@@ -26,6 +27,11 @@ namespace Neo4j.Driver.Internal
         {
             return connection.Mode ??
                    throw new InvalidOperationException("Connection should have its Mode property set.");
+        }
+
+        public static bool SupportsMultidatabase(this IConnection connection)
+        {
+            return ServerVersion.From(connection.Server.Version) >= ServerVersion.V4_0_0;
         }
     }
 }

@@ -38,7 +38,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {"dbms.backup.enabled", "false"},
             {"dbms.connectors.default_listen_address", "127.0.0.1"},
             {"dbms.connectors.http_listen_address", "localhost:7474"},
-            {"dbms.transaction.bookmark_ready_timeout", "5s"},
             {"dbms.memory.pagecache.size", "512m"},
             {"dbms.connector.bolt.tls_level", "OPTIONAL"},
         };

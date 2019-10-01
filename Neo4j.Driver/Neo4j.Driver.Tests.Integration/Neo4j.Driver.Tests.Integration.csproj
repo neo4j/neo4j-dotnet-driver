@@ -50,23 +50,89 @@
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="Resources\accessmode_reader_explicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\accessmode_reader_func.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\accessmode_reader_implicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\accessmode_router.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\accessmode_writer_explicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\accessmode_writer_func.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\accessmode_writer_implicit.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\connection_error_on_commit_v1.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\connection_error_on_commit_v3.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\get_routing_table.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\get_routing_table_only.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\get_routing_table_with_context.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\multiple_bookmarks.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\return_1.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-    <None Update="Resources\rollback_error.script" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\acquire_endpoints_aDatabase.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\acquire_endpoints_aDatabase_no_servers.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\acquire_endpoints_aDatabase_with_bookmark.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\acquire_endpoints_db_not_found.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\acquire_endpoints_default_database.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\read_from_aDatabase.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\read_from_aDatabase_with_bookmark.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\write_to_aDatabase.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\read.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\accessmode_reader_explicit.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\accessmode_reader_func.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\accessmode_reader_implicit.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\accessmode_router.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\accessmode_writer_explicit.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\accessmode_writer_func.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\accessmode_writer_implicit.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\connection_error_on_commit.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\get_routing_table.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\get_routing_table_only.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\get_routing_table_with_context.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\multiple_bookmarks.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\return_1.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\rollback_error.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V3\connection_error_on_commit.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V3\get_routing_table.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V3\get_routing_table_with_context.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V3\rollback_error.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 </Project>

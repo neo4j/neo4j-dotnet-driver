@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Tests.Routing
         public class AcquireMethod
         {
             [Fact]
-            public async Task ShouldNotCreateNewConnectionPoolIfUriDoseNotExist()
+            public async Task ShouldNotCreateNewConnectionPoolIfUriDoesNotExist()
             {
                 // Given
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict.Count.Should().Be(0);
 
                 // When
-                var connection = await pool.AcquireAsync(ServerUri);
+                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, Bookmark.Empty);
 
                 // Then
                 connection.Should().BeNull();
@@ -77,7 +77,8 @@ namespace Neo4j.Driver.Tests.Routing
                 var mockedConnection = new Mock<IPooledConnection>();
                 mockedConnection.Setup(c => c.InitAsync())
                     .Returns(Task.FromException(new InvalidOperationException("An exception")));
-                mockedConnectionPool.Setup(x => x.AcquireAsync(It.IsAny<AccessMode>()))
+                mockedConnectionPool.Setup(x =>
+                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<Bookmark>()))
                     .ReturnsAsync(mockedConnection.Object);
 
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -90,7 +91,7 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
 
                 // When
-                var connection = await pool.AcquireAsync(ServerUri);
+                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, Bookmark.Empty);
 
                 // Then
                 connection.Should().NotBeNull();
@@ -101,21 +102,23 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             [Theory]
-            [InlineData("bolt+routing://localhost:7687", "bolt+routing://127.0.0.1:7687", false)]
-            [InlineData("bolt+routing://127.0.0.1:7687", "bolt+routing://127.0.0.1:7687", true)]
-            [InlineData("bolt+routing://localhost:7687", "bolt+routing://localhost:7687", true)]
-            [InlineData("bolt+routing://LOCALHOST:7687", "bolt+routing://localhost:7687", true)]
+            [InlineData("neo4j://localhost:7687", "neo4j://127.0.0.1:7687", false)]
+            [InlineData("neo4j://127.0.0.1:7687", "neo4j://127.0.0.1:7687", true)]
+            [InlineData("neo4j://localhost:7687", "neo4j://localhost:7687", true)]
+            [InlineData("neo4j://LOCALHOST:7687", "neo4j://localhost:7687", true)]
             public async Task AddressMatchTest(string first, string second, bool expectedResult)
             {
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IConnection>();
-                mockedConnectionPool.Setup(x => x.AcquireAsync(It.IsAny<AccessMode>())).ReturnsAsync(mockedConnection.Object);
+                mockedConnectionPool.Setup(x =>
+                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<Bookmark>()))
+                    .ReturnsAsync(mockedConnection.Object);
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
-                var connection = await pool.AcquireAsync(new Uri(second));
+                var connection = await pool.AcquireAsync(new Uri(second), AccessMode.Write, null, Bookmark.Empty);
 
                 if (expectedResult)
                 {
@@ -338,7 +341,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
         }
 
-        private static Uri ServerUri { get; } = new Uri("bolt+routing://1234:5678");
+        private static Uri ServerUri { get; } = new Uri("neo4j://1234:5678");
 
         private class MockedPoolFactory : IConnectionPoolFactory
         {

@@ -42,7 +42,7 @@ namespace Neo4j.Driver
         ///
         /// <remarks>
         /// When used against servers supporting multi-databases, it is recommended that this value to be set explicitly
-        /// either through this property or <see cref="ForDatabase"/> method. If not, then the session will connect to the
+        /// either through this property or <see cref="WithDatabase"/> method. If not, then the session will connect to the
         /// default database configured on the server side.
         ///
         /// When used against servers that don't support multi-databases, this property should be left unset.
@@ -102,7 +102,7 @@ namespace Neo4j.Driver
         /// <param name="database">the database name</param>
         /// <returns>this ISessionOptions instance</returns>
         /// <seealso cref="Database"/>
-        public SessionConfig ForDatabase(string database)
+        public SessionConfig WithDatabase(string database)
         {
             Database = database;
             return this;

@@ -1,0 +1,16 @@
+!: BOLT 4
+!: AUTO HELLO
+!: AUTO RESET
+
+C: RUN "CALL dbms.routing.getRoutingTable($context, $database)" {"context": {}, "database": null} {"mode": "r", "db": "system"}
+   PULL {"n": -1}
+S: SUCCESS {"fields": ["ttl", "servers"]}
+   RECORD [300, [{"addresses": ["127.0.0.1:9001", "127.0.0.1:9002"],"role": "WRITE"}, {"addresses": ["127.0.0.1:9001", "127.0.0.1:9002"], "role": "READ"},{"addresses": ["127.0.0.1:9001", "127.0.0.1:9002"], "role": "ROUTE"}]]
+   SUCCESS {}
+C: RUN "MATCH (n) RETURN n.name AS name" {} {}
+   PULL {"n": -1}
+S: SUCCESS {"fields": ["name"]}
+   RECORD ["Alice"]
+   RECORD ["Bob"]
+   RECORD ["Eve"]
+   SUCCESS {}

@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging.V3;
 
 namespace Neo4j.Driver.Tests.Routing
 {
@@ -105,17 +106,17 @@ namespace Neo4j.Driver.Tests.Routing
             ClientMock.Setup(x => x.IsOpen).Returns(() => _responseCount < _responseMessages.Count);
         }
 
-        internal static InitMessage InitMessage(IAuthToken auth = null)
+        internal static HelloMessage LoginMessage(IAuthToken auth = null)
         {
             auth = auth ?? AuthTokens.None;
-            return new InitMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary());
+            return new HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary());
         }
 
-        internal static SuccessMessage SuccessMessage(IList<object> fileds = null)
+        internal static SuccessMessage SuccessMessage(IList<object> fields = null)
         {
-            return fileds == null
+            return fields == null
                 ? new SuccessMessage(new Dictionary<string, object>())
-                : new SuccessMessage(new Dictionary<string, object> {{"fields", fileds}});
+                : new SuccessMessage(new Dictionary<string, object> {{"fields", fields}});
         }
 
         internal static Tuple<IRequestMessage, IResponseMessage> MessagePair(IRequestMessage request,

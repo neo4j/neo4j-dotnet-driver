@@ -91,6 +91,18 @@ namespace Neo4j.Driver.IntegrationTests.Shared
         {
             return _level >= ExtendedLogLevel.Debug;
         }
+
+        public static IDriverLogger Create(ITestOutputHelper output)
+        {
+            var logLevel = ExtendedLogLevel.Error;
+            var logLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
+            if (!string.IsNullOrEmpty(logLevelStr))
+            {
+                logLevel = Enum.Parse<ExtendedLogLevel>(logLevelStr, true);
+            }
+
+            return new TestDriverLogger(output, logLevel);
+        }
     }
 
     internal enum ExtendedLogLevel

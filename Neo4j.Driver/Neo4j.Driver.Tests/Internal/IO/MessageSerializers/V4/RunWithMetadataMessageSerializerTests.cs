@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV1MessageFormat.MsgRun);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgRun);
             reader.ReadString().Should().Be("RETURN $x");
             reader.ReadMap().Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("x", 1L));
 

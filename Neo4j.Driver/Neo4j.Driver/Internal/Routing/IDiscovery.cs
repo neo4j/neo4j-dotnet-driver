@@ -22,6 +22,6 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal interface IDiscovery
     {
-        Task<IRoutingTable> DiscoverAsync(IConnection connection);
+        Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, Bookmark bookmark);
     }
 }
