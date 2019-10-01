@@ -48,7 +48,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                     {
                         var session = driver.AsyncSession(o =>
-                            o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
+                            o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
                         try
                         {
                             var cursor =
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                     {
                         var session = driver.AsyncSession(o =>
-                            o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Write));
+                            o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Write));
                         try
                         {
                             await session.RunAndConsumeAsync("CREATE (n {name:'Bob'})");
@@ -131,7 +131,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                     this.Awaiting(async _ =>
                         {
                             var session = driver.AsyncSession(o =>
-                                o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
+                                o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
                             try
                             {
                                 var cursor =
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                     this.Awaiting(async _ =>
                         {
                             var session = driver.AsyncSession(o =>
-                                o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
+                                o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
                             try
                             {
                                 var cursor =
@@ -198,7 +198,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
                     {
                         var session = driver.AsyncSession(o =>
-                            o.ForDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read)
+                            o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read)
                                 .WithBookmarks(bookmark1, bookmark2));
                         try
                         {

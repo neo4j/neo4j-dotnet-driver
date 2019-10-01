@@ -230,7 +230,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task CreateDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.ForDatabase("system"));
+            var session = driver.AsyncSession(o => o.WithDatabase("system"));
             try
             {
                 var cursor = await session.RunAsync($"CREATE DATABASE {name}");
@@ -244,7 +244,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task DropDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.ForDatabase("system"));
+            var session = driver.AsyncSession(o => o.WithDatabase("system"));
             try
             {
                 var cursor = await session.RunAsync($"DROP DATABASE {name}");

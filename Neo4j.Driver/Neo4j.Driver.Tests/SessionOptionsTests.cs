@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
         [InlineData("")]
         public void ShouldThrowExceptionForInvalidDatabaseOnBuilder(string name)
         {
-            this.Invoking(_ => new SessionConfig().ForDatabase(name)).Should().Throw<ArgumentNullException>();
+            this.Invoking(_ => new SessionConfig().WithDatabase(name)).Should().Throw<ArgumentNullException>();
         }
     }
 }

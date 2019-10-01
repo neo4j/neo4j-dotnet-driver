@@ -106,7 +106,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 
         private static async Task<Bookmark> CreateDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.ForDatabase("system"));
+            var session = driver.AsyncSession(o => o.WithDatabase("system"));
             try
             {
                 await session.WriteTransactionAsync(txc => txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
@@ -120,7 +120,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 
         private static async Task DropDatabase(IDriver driver, string name, Bookmark bookmark)
         {
-            var session = driver.AsyncSession(o => o.ForDatabase("system").WithBookmarks(bookmark));
+            var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmark));
             try
             {
                 await session.WriteTransactionAsync(txc => txc.RunAndConsumeAsync($"DROP DATABASE {name}"));
