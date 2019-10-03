@@ -17,7 +17,7 @@
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Synchronous.xml</DocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Simple.xml</DocumentationFile>
     <RootNamespace>Neo4j.Driver</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
