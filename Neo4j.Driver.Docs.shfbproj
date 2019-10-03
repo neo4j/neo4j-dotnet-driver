@@ -19,8 +19,12 @@
     <HtmlHelpName>Neo4j.Driver.Documentation</HtmlHelpName>
     <Language>en-US</Language>
     <DocumentationSources>
-      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\net452\Neo4j.Driver.dll" />
-      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\net452\Neo4j.Driver.xml" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\netstandard2.0\Neo4j.Driver.dll" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver\bin\Release\netstandard2.0\Neo4j.Driver.xml" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver.Reactive\bin\Release\netstandard2.0\Neo4j.Driver.Reactive.dll" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver.Reactive\bin\Release\netstandard2.0\Neo4j.Driver.Reactive.xml" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver.Simple\bin\Release\netstandard2.0\Neo4j.Driver.Simple.dll" />
+      <DocumentationSource sourceFile="Neo4j.Driver\Neo4j.Driver.Simple\bin\Release\netstandard2.0\Neo4j.Driver.Simple.xml" />
     </DocumentationSources>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <HelpFileFormat>Website</HelpFileFormat>

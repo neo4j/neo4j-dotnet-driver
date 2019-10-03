@@ -2,15 +2,11 @@
   <Import Project="..\common.props" />
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>Neo4j.Driver.Synchronous$(PackageIdSuffix)</PackageId>
+    <PackageId>Neo4j.Driver.Simple$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
-    <PackageLicenseUrl>https://github.com/neo4j/neo4j-dotnet-driver/blob/2.0/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>Synchronous extensions for the official .NET driver.</Description>
     <Copyright>Copyright 2002-2019</Copyright>
-    <PackageIconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</PackageIconUrl>
-    <PackageTags>Cypher NoSql Graph Bolt Neo4j Reactive</PackageTags>
+    <PackageTags>Cypher NoSql Graph Bolt Neo4j</PackageTags>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>

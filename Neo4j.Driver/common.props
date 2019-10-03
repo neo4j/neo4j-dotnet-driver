@@ -11,16 +11,28 @@
   <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned' OR '$(Configuration)'=='ReleaseSigned'">
     <PackageIdSuffix>.Signed</PackageIdSuffix>
     <DefineConstants>$(DefineConstants);STRONGNAMED</DefineConstants>
-    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned'">
     <DelaySign>true</DelaySign>
-    <AssemblyOriginatorKeyFile>..\IdentityPubKey.snk</AssemblyOriginatorKeyFile>
-    <SignatureFile></SignatureFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='ReleaseSigned'">
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
+<!--
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='ReleaseSigned'">
     <GetFrameworkSdkPath>
       <Output TaskParameter="Path" PropertyName="WindowsSdkPath" />
     </GetFrameworkSdkPath>
     <Exec Command="&quot;$(SDK40ToolsPath)sn.exe&quot; -R &quot;$(TargetPath)&quot; &quot;$(SignatureFile)&quot;" />
   </Target>
+-->
+   <PropertyGroup>
+      <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+      <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+      <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
+      <PackageIconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</PackageIconUrl>
+    </PropertyGroup>
 </Project>
