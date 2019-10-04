@@ -127,7 +127,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     : await session.WriteTransactionAsync(tx => tx.RunAsync("CALL dbms.listTransactions()"), txConfig);
 
                 // Then
-                var value = (await result.SingleAsync())["metaData"].ValueAs<IDictionary<string, object>>();
+                var value = (await result.SingleAsync())["metaData"].As<IDictionary<string, object>>();
                 value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
             }
             finally

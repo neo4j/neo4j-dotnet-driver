@@ -53,8 +53,8 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         var records = await cursor.ToListAsync();
 
                         records.Count.Should().Be(2);
-                        records[0]["name"].ValueAs<string>().Should().Be("Alice");
-                        records[1]["name"].ValueAs<string>().Should().Be("Bob");
+                        records[0]["name"].As<string>().Should().Be("Alice");
+                        records[1]["name"].As<string>().Should().Be("Bob");
                     }
                     finally
                     {
@@ -118,9 +118,9 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         var records = await cursor.ToListAsync();
 
                         records.Count.Should().Be(3);
-                        records[0]["name"].ValueAs<string>().Should().Be("Alice");
-                        records[1]["name"].ValueAs<string>().Should().Be("Bob");
-                        records[2]["name"].ValueAs<string>().Should().Be("Eve");
+                        records[0]["name"].As<string>().Should().Be("Alice");
+                        records[1]["name"].As<string>().Should().Be("Bob");
+                        records[2]["name"].As<string>().Should().Be("Eve");
                     }
                     finally
                     {

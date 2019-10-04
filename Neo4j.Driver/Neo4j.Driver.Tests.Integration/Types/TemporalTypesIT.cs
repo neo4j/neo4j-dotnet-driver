@@ -562,7 +562,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             {
                 var cursor = await session.RunAsync(query);
                 var record = await cursor.SingleAsync();
-                var received = record[0].ValueAs<T>();
+                var received = record[0].As<T>();
 
                 received.Should().Be(expected);
             }
@@ -620,7 +620,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
                 record.Keys.Should().HaveCount(1);
                 record[0].Should().Be(actual);
-                record[0].ValueAs<TSent>().Should().Be(value);
+                record[0].As<TSent>().Should().Be(value);
             }
             finally
             {
@@ -663,7 +663,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
                 record.Keys.Should().HaveCount(1);
                 record[0].Should().BeEquivalentTo(actualAsList);
-                record[0].ValueAs<IList<TSent>>().Should().BeEquivalentTo(valueAsList);
+                record[0].As<IList<TSent>>().Should().BeEquivalentTo(valueAsList);
             }
             finally
             {

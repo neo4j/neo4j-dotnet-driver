@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Tests
                 dict["credentials"].Should().Be("toufu");
                 dict["realm"].Should().Be("foo");
 
-                var nums = dict["parameters"].ValueAs<Dictionary<string, object>>();
+                var nums = dict["parameters"].As<Dictionary<string, object>>();
                 nums["One"].Should().Be(1);
                 nums["Two"].Should().Be(2);
                 nums["Three"].Should().Be(3);

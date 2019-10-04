@@ -32,6 +32,41 @@ namespace Neo4j.Driver
         private static readonly TypeInfo DictionaryTypeInfo = typeof(IDictionary).GetTypeInfo();
 
         /// <summary>
+        /// A helper method to explicitly cast the value streamed back via Bolt to a local type,
+        /// with default fallback value.
+        /// </summary>
+        /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/>.</param>
+        /// <param name="defaultValue">Returns this value if the the value is null</param>
+        /// <typeparam name="T">
+        /// Supports for the following types (or nullable version of the following types if applies):
+        /// <see cref="short"/>,
+        /// <see cref="int"/>,
+        /// <see cref="long"/>,
+        /// <see cref="float"/>,
+        /// <see cref="double"/>,
+        /// <see cref="sbyte"/>,
+        /// <see cref="ushort"/>,
+        /// <see cref="uint"/>,
+        /// <see cref="ulong"/>,
+        /// <see cref="byte"/>,
+        /// <see cref="char"/>,
+        /// <see cref="bool"/>,
+        /// <see cref="string"/>,
+        /// <see cref="List{T}"/>,
+        /// <see cref="INode"/>,
+        /// <see cref="IRelationship"/>,
+        /// <see cref="IPath"/>.
+        /// Undefined support for other types that are not listed above.
+        /// No support for user-defined types, e.g. Person, Movie.
+        /// </typeparam>
+        /// <returns>The value of specified return type.</returns>
+        /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible.</remarks>
+        public static T As<T>(this object value, T defaultValue)
+        {
+            return value == null ? defaultValue : value.As<T>();
+        }
+
+        /// <summary>
         /// A helper method to explicitly cast the value streamed back via Bolt to a local type.
         /// </summary>
         /// <typeparam name="T">
@@ -147,11 +182,6 @@ namespace Neo4j.Driver
             }
 
             throw new InvalidCastException($"Unable to cast object of type `{sourceType}` to type `{typeof(T)}`.");
-        }
-
-        internal static T ValueAs<T>(this object value)
-        {
-            return As<T>(value);
         }
 
         private static T AsDictionary<T>(this IDictionary dict, TypeInfo typeInfo)

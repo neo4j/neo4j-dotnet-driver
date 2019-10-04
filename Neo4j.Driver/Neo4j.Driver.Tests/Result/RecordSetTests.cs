@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Tests
                 int i = 0;
                 while (await cursor.FetchAsync())
                 {
-                    cursor.Current[0].ValueAs<string>().Should().Be($"record{i++}:key0");
+                    cursor.Current[0].As<string>().Should().Be($"record{i++}:key0");
                 }
 
                 i.Should().Be(5);
@@ -169,7 +169,7 @@ namespace Neo4j.Driver.Tests
                 int i = 0;
                 while (await cursor.FetchAsync())
                 {
-                    cursor.Current[0].ValueAs<string>().Should().Be($"record{i++}:key0");
+                    cursor.Current[0].As<string>().Should().Be($"record{i++}:key0");
                 }
 
                 i.Should().Be(6);
@@ -186,12 +186,12 @@ namespace Neo4j.Driver.Tests
 
                 var record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
-                record[0].ValueAs<string>().Should().Be("record0:key0");
+                record[0].As<string>().Should().Be("record0:key0");
 
                 // not moving further no matter how many times are called
                 record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
-                record[0].ValueAs<string>().Should().Be("record0:key0");
+                record[0].As<string>().Should().Be("record0:key0");
             }
 
             [Fact]
@@ -204,12 +204,12 @@ namespace Neo4j.Driver.Tests
 
                 var record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
-                record[0].ValueAs<string>().Should().Be("record1:key0");
+                record[0].As<string>().Should().Be("record1:key0");
 
                 // not moving further no matter how many times are called
                 record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
-                record[0].ValueAs<string>().Should().Be("record1:key0");
+                record[0].As<string>().Should().Be("record1:key0");
             }
 
             [Fact]
@@ -226,13 +226,13 @@ namespace Neo4j.Driver.Tests
 
                 var record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
-                record[0].ValueAs<string>().Should().Be("record4:key0");
+                record[0].As<string>().Should().Be("record4:key0");
 
                 var moveNext = await cursor.FetchAsync();
                 moveNext.Should().BeTrue();
 
                 record.Should().NotBeNull();
-                record[0].ValueAs<string>().Should().Be("record4:key0");
+                record[0].As<string>().Should().Be("record4:key0");
 
                 record = await cursor.PeekAsync();
                 record.Should().BeNull();
@@ -250,13 +250,13 @@ namespace Neo4j.Driver.Tests
                 {
                     record = await cursor.PeekAsync();
                     record.Should().NotBeNull();
-                    record[0].ValueAs<string>().Should().Be($"record{i}:key0");
+                    record[0].As<string>().Should().Be($"record{i}:key0");
 
                     hasNext = await cursor.FetchAsync();
                     hasNext.Should().BeTrue();
 
                     // peeked record = current
-                    cursor.Current[0].ValueAs<string>().Should().Be($"record{i}:key0");
+                    cursor.Current[0].As<string>().Should().Be($"record{i}:key0");
                 }
 
                 record = await cursor.PeekAsync();

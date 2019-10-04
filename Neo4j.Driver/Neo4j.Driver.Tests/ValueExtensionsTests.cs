@@ -27,13 +27,41 @@ namespace Neo4j.Driver.Tests
 {
     public class ValueExtensionsTests
     {
+        public class AsWithDefaultPrimaryTypeMethod
+        {
+            [Fact]
+            public void ShouldConvertNullable()
+            {
+                object value = null;
+                var actual = value.As<bool?>(false);
+                actual.Value.Should().BeFalse();
+            }
+
+            [Fact]
+            public void ShouldConvertToDefault()
+            {
+                object value = null;
+                var actual = value.As(false);
+                actual.Should().BeFalse();
+            }
+
+            [Fact]
+            public void ShouldThrowExceptionWhenCastFromIntToList()
+            {
+                object value = 10;
+                var ex = Record.Exception(() => value.As(new List<int>()));
+                ex.Should().BeOfType<InvalidCastException>();
+                ex.Message.Should().StartWith("Invalid cast from 'System.Int32' to 'System.Collections.Generic.List`1[[System.Int32");
+            }
+        }
+
         public class AsPrimaryTypeMethod
         {
             [Fact]
             public void ShouldHandleLists()
             {
                 object value = new List<object> {"a", "b"};
-                var actual = value.ValueAs<List<string>>();
+                var actual = value.As<List<string>>();
                 actual.ToList().Should().HaveCount(2);
             }
 
@@ -41,7 +69,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldConvertNullToNullable()
             {
                 object value = null;
-                var actual = value.ValueAs<bool?>();
+                var actual = value.As<bool?>();
                 actual.HasValue.Should().BeFalse();
             }
 
@@ -49,7 +77,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldConvertNullToString()
             {
                 object value = null;
-                var actual = value.ValueAs<string>();
+                var actual = value.As<string>();
                 actual.Should().BeNull();
             }
 
@@ -57,7 +85,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldConvertNullToClass()
             {
                 object value = null;
-                var actual = value.ValueAs<INode>();
+                var actual = value.As<INode>();
                 actual.Should().BeNull();
             }
 
@@ -65,7 +93,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldThrowExceptionWhenConvertingFromNullToNotNullable()
             {
                 object value = null;
-                var ex = Record.Exception(() => value.ValueAs<bool>());
+                var ex = Record.Exception(() => value.As<bool>());
                 ex.Should().BeOfType<InvalidCastException>();
                 ex.Message.Should().Be("Unable to cast `null` to `System.Boolean`.");
             }
@@ -85,7 +113,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(false, false)]
             public void ShouldConvertToNullable(object input, bool expected)
             {
-                var actual = input.ValueAs<bool?>();
+                var actual = input.As<bool?>();
                 actual.HasValue.Should().BeTrue();
                 actual.Value.Should().Be(expected);
             }
@@ -105,7 +133,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(false, false)]
             public void ShouldConvertToBool(object input, bool expected)
             {
-                var actual = input.ValueAs<bool>();
+                var actual = input.As<bool>();
                 actual.Should().Be(expected);
             }
 
@@ -125,7 +153,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(true, 1)]
             public void ShouldConvertToInt(object input, int expected)
             {
-                var actual = input.ValueAs<int>();
+                var actual = input.As<int>();
                 actual.Should().Be(expected);
             }
 
@@ -145,7 +173,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(true, 1)]
             public void ShouldConvertToLong(object input, long expected)
             {
-                var actual = input.ValueAs<long>();
+                var actual = input.As<long>();
                 actual.Should().Be(expected);
             }
 
@@ -164,7 +192,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(true, 1)]
             public void ShouldConvertToDouble(object input, double expected)
             {
-                var actual = input.ValueAs<double>();
+                var actual = input.As<double>();
                 (actual - expected).Should().BeLessThan(0.01);
             }
 
@@ -184,7 +212,7 @@ namespace Neo4j.Driver.Tests
             [InlineData(true, 1)]
             public void ShouldConvertToByte(object input, byte expected)
             {
-                var actual = input.ValueAs<byte>();
+                var actual = input.As<byte>();
                 actual.Should().Be(expected);
             }
 
@@ -196,7 +224,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldThrowExceptionWhenCastFromIntToList()
             {
                 object value = 10;
-                var ex = Record.Exception(() => value.ValueAs<List<int>>());
+                var ex = Record.Exception(() => value.As<List<int>>());
                 ex.Should().BeOfType<InvalidCastException>();
                 ex.Message.Should().StartWith("Invalid cast from 'System.Int32' to 'System.Collections.Generic.List`1[[System.Int32");
             }
@@ -204,7 +232,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldThrowExceptionWhenCastFromListToInt()
             {
                 object value = new List<object> { "string", 2, true, "lala" };
-                var ex = Record.Exception(() => value.ValueAs<int>());
+                var ex = Record.Exception(() => value.As<int>());
                 ex.Should().BeOfType<InvalidCastException>();
             }
         }
@@ -216,7 +244,7 @@ namespace Neo4j.Driver.Tests
             {
                 IReadOnlyList<object> list = new List<object> { "string", 2, true, "lala" };
                 object obj = list;
-                var actual = obj.ValueAs<List<string>>();
+                var actual = obj.As<List<string>>();
                 actual.Count.Should().Be(4);
                 actual[0].Should().Be("string");
                 actual[1].Should().Be("2");
@@ -235,7 +263,7 @@ namespace Neo4j.Driver.Tests
                     new List<object> {31, 32, 33}
                 };
                 object obj = list;
-                var actual = obj.ValueAs<List<List<int>>>();
+                var actual = obj.As<List<List<int>>>();
                 actual.Count.Should().Be(4);
                 actual[0][0].Should().Be(1);
                 actual[1][1].Should().Be(12);
@@ -249,12 +277,12 @@ namespace Neo4j.Driver.Tests
                 IReadOnlyDictionary<string, object> dict =
                     new Dictionary<string, object> {{"key1", "string"}, {"key2", 2}, {"key3", true}, {"key4", "lala"}};
                 object obj = dict;
-                var actual = obj.ValueAs<Dictionary<string, string>>();
+                var actual = obj.As<Dictionary<string, string>>();
                 actual.Count.Should().Be(4);
-                actual["key1"].ValueAs<string>().Should().Be("string");
-                actual["key2"].ValueAs<string>().Should().Be("2");
-                actual["key3"].ValueAs<string>().Should().Be("True");
-                actual["key4"].ValueAs<string>().Should().Be("lala");
+                actual["key1"].As<string>().Should().Be("string");
+                actual["key2"].As<string>().Should().Be("2");
+                actual["key3"].As<string>().Should().Be("True");
+                actual["key4"].As<string>().Should().Be("lala");
             }
         }
 
@@ -267,15 +295,15 @@ namespace Neo4j.Driver.Tests
                     1L, 
                     new List<string> {"l1", "l2"}, 
                     new Dictionary<string, object> { {"key1", "value1"}, {"key2", 2 } });
-                var actual = obj.ValueAs<INode>();
+                var actual = obj.As<INode>();
                 actual.Id.Should().Be(1);
                 actual.Labels.Count.Should().Be(2);
                 actual.Labels[0].Should().Be("l1");
                 actual.Labels[1].Should().Be("l2");
-                actual.Properties["key1"].ValueAs<string>().Should().Be("value1");
-                actual.Properties["key2"].ValueAs<string>().Should().Be("2");
+                actual.Properties["key1"].As<string>().Should().Be("value1");
+                actual.Properties["key2"].As<string>().Should().Be("2");
 
-                obj.ValueAs<string>().Should().Be($"{obj.GetType()}");
+                obj.As<string>().Should().Be($"{obj.GetType()}");
             }
 
             [Fact]
@@ -284,13 +312,13 @@ namespace Neo4j.Driver.Tests
                 object obj = new Relationship(1, -2, -3, "Type",
                     new Dictionary<string, object> {{"key1", "value1"}, {"key2", 2}});
 
-                var actual = obj.ValueAs<IRelationship>();
+                var actual = obj.As<IRelationship>();
                 actual.Id.Should().Be(1);
                 actual.Type.Should().Be("Type");
-                actual.Properties["key1"].ValueAs<string>().Should().Be("value1");
-                actual.Properties["key2"].ValueAs<string>().Should().Be("2");
+                actual.Properties["key1"].As<string>().Should().Be("value1");
+                actual.Properties["key2"].As<string>().Should().Be("2");
 
-                obj.ValueAs<string>().Should().Be($"{obj.GetType()}");
+                obj.As<string>().Should().Be($"{obj.GetType()}");
             }
 
             [Fact]
@@ -307,14 +335,14 @@ namespace Neo4j.Driver.Tests
                     },
                     new List<IRelationship>());
 
-                var actual = obj.ValueAs<IPath>();
+                var actual = obj.As<IPath>();
                 actual.Start.Id.Should().Be(1);
                 actual.End.Id.Should().Be(1);
                 var node = actual.Nodes[0];
-                node.Properties["key1"].ValueAs<string>().Should().Be("value1");
-                node.Properties["key2"].ValueAs<string>().Should().Be("2");
+                node.Properties["key1"].As<string>().Should().Be("value1");
+                node.Properties["key2"].As<string>().Should().Be("2");
 
-                obj.ValueAs<string>().Should().Be($"{obj.GetType()}");
+                obj.As<string>().Should().Be($"{obj.GetType()}");
             }
         }
     }
