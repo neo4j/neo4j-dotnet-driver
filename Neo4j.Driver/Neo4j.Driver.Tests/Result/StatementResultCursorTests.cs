@@ -289,12 +289,12 @@ namespace Neo4j.Driver.Tests
                 var read = await result.FetchAsync();
                 read.Should().BeTrue();
                 var record = result.Current;
-                record[0].ValueAs<string>().Should().Be("record0:key0");
+                record[0].As<string>().Should().Be("record0:key0");
 
                 read = await result.FetchAsync();
                 read.Should().BeTrue();
                 record = result.Current;
-                record[0].ValueAs<string>().Should().Be("record1:key0");
+                record[0].As<string>().Should().Be("record1:key0");
             }
         }
 

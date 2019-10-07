@@ -66,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                     var result = await session.RunAsync("UNWIND range(1,10000) AS x RETURN sum(x)");
                     var read = await result.FetchAsync();
                     read.Should().BeTrue();
-                    result.Current[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
+                    result.Current[0].As<int>().Should().Be(10001 * 10000 / 2);
                     read = await result.FetchAsync();
                     read.Should().BeFalse();
                 }
@@ -107,7 +107,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             var session = driver.AsyncSession();
             var result = await session.RunAsync("RETURN 1");
             await result.FetchAsync();
-            result.Current[0].ValueAs<int>().Should().Be(1);
+            result.Current[0].As<int>().Should().Be(1);
 
             driver.Dispose();
             var error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
@@ -123,7 +123,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             var session = driver.AsyncSession();
             var result = await session.RunAsync("RETURN 1");
             await result.FetchAsync();
-            result.Current[0].ValueAs<int>().Should().Be(1);
+            result.Current[0].As<int>().Should().Be(1);
 
             driver.Dispose();
             await session.CloseAsync();
