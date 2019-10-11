@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Result
         public StatementResultCursorBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
             Func<StatementResultCursorBuilder, long, long, Task> moreFunction,
             Func<StatementResultCursorBuilder, long, Task> cancelFunction, IResultResourceHandler resourceHandler,
-            long batchSize = All)
+            long batchSize = Config.Infinite, bool reactive = false)
         {
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
             _advanceFunction =
@@ -57,13 +57,17 @@ namespace Neo4j.Driver.Internal.Result
 
             _records = new ConcurrentQueue<IRecord>();
 
-            _state = (int) State.RunRequested;
+            _state = (int) (reactive ? State.RunRequested : State.RunAndRecordsRequested);
             _statementId = NoStatementId;
             _fields = null;
             _batchSize = batchSize;
         }
 
-        internal State CurrentState => (State) _state;
+        internal State CurrentState
+        {
+            get => (State) _state;
+            set => _state = (int) value;
+        }
 
         public IInternalStatementResultCursor CreateCursor()
         {
@@ -121,7 +125,7 @@ namespace Neo4j.Driver.Internal.Result
             _statementId = statementId;
             _fields = fields;
 
-            UpdateState(State.RunCompleted);
+            CheckAndUpdateState(State.RunCompleted, State.RunRequested);
         }
 
         public void PullCompleted(bool hasMore, IResponsePipelineError error)
@@ -198,7 +202,8 @@ namespace Neo4j.Driver.Internal.Result
 
         internal enum State
         {
-            RunRequested,
+            RunRequested, // reactive initial state
+            RunAndRecordsRequested, // async initial state
             RunCompleted,
             RecordsRequested,
             RecordsStreaming,

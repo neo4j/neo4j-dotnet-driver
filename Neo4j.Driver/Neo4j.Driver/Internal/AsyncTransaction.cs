@@ -44,9 +44,11 @@ namespace Neo4j.Driver.Internal
         private bool _disposed = false;
         private IState _state = Active;
         private readonly IDriverLogger _logger;
+        private readonly long _fetchSize;
 
         public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
-            IDriverLogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false)
+            IDriverLogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false,
+            long fetchSize = Config.Infinite)
         {
             _connection = new TransactionConnection(this, connection);
             _protocol = _connection.BoltProtocol;
@@ -55,6 +57,7 @@ namespace Neo4j.Driver.Internal
             _logger = logger;
             _reactive = reactive;
             _database = database;
+            _fetchSize = fetchSize;
         }
 
         public bool IsOpen => _state == Active;
@@ -66,7 +69,7 @@ namespace Neo4j.Driver.Internal
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
         {
-            var result = _state.RunAsync(statement, _connection, _protocol, _logger, _reactive, out var nextState);
+            var result = _state.RunAsync(statement, _connection, _protocol, _logger, _reactive, _fetchSize, out var nextState);
             _state = nextState;
             return result;
         }
@@ -145,7 +148,7 @@ namespace Neo4j.Driver.Internal
         private interface IState
         {
             Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection, IBoltProtocol protocol,
-                IDriverLogger logger, bool reactive, out IState nextState);
+                IDriverLogger logger, bool reactive, long fetchSize, out IState nextState);
 
             Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState);
@@ -157,11 +160,11 @@ namespace Neo4j.Driver.Internal
         private class ActiveState : IState
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
-                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                IBoltProtocol protocol, IDriverLogger logger, bool reactive, long fetchSize,
                 out IState nextState)
             {
                 nextState = Active;
-                return protocol.RunInExplicitTransactionAsync(connection, statement, reactive);
+                return protocol.RunInExplicitTransactionAsync(connection, statement, reactive, fetchSize);
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
@@ -183,6 +186,7 @@ namespace Neo4j.Driver.Internal
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
                 IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                long fetchSize,
                 out IState nextState)
             {
                 throw new ClientException(
@@ -206,6 +210,7 @@ namespace Neo4j.Driver.Internal
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
                 IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                long fetchSize,
                 out IState nextState)
             {
                 throw new ClientException(
@@ -229,6 +234,7 @@ namespace Neo4j.Driver.Internal
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
                 IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                long fetchSize,
                 out IState nextState)
             {
                 throw new ClientException(

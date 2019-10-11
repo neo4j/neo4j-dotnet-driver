@@ -28,6 +28,7 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging.V4;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector

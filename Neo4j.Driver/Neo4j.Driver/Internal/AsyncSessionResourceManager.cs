@@ -74,12 +74,12 @@ namespace Neo4j.Driver.Internal
 
         /// <summary>
         /// Clean any transaction reference.
-        /// If transaction result is not commited, then rollback the transaction.
+        /// If transaction result is not committed, then rollback the transaction.
         /// </summary>
         /// <exception cref="ClientException">If error when rollback the transaction</exception>
         private async Task DisposeTransactionAsync()
         {
-            // When there is a open transaction, this method will aslo try to close the tx
+            // When there is a open transaction, this method will also try to close the tx
             if (_transaction != null)
             {
                 try

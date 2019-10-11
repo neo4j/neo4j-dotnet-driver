@@ -15,24 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.StubTests
+namespace Neo4j.Driver.IntegrationTests.Stub
 {
     public class AccessModeTests
     {
         private static readonly Config NoEncryption =
             Config.Builder.WithEncryptionLevel(EncryptionLevel.None).ToConfig();
 
-        [RequireBoltStubServerFactAttribute]
+        [RequireBoltStubServerFact]
         public async Task RunOnReadModeSessionShouldGoToReader()
         {
             using (BoltStubServer.Start("V4/accessmode_router", 9001))
@@ -58,7 +53,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [RequireBoltStubServerFactAttribute]
+        [RequireBoltStubServerFact]
         public async Task RunOnReadModeTransactionShouldGoToReader()
         {
             using (BoltStubServer.Start("V4/accessmode_router", 9001))
@@ -87,7 +82,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [RequireBoltStubServerTheoryAttribute]
+        [RequireBoltStubServerTheory]
         [InlineData(AccessMode.Read)]
         [InlineData(AccessMode.Write)]
         public async Task ReadTransactionOnSessionShouldGoToReader(AccessMode mode)
@@ -116,7 +111,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [RequireBoltStubServerFactAttribute]
+        [RequireBoltStubServerFact]
         public async Task RunOnWriteModeSessionShouldGoToWriter()
         {
             using (BoltStubServer.Start("V4/accessmode_router", 9001))
@@ -143,7 +138,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [RequireBoltStubServerFactAttribute]
+        [RequireBoltStubServerFact]
         public async Task RunOnWriteModeTransactionShouldGoToWriter()
         {
             using (BoltStubServer.Start("V4/accessmode_router", 9001))
@@ -174,7 +169,7 @@ namespace Neo4j.Driver.IntegrationTests.StubTests
             }
         }
 
-        [RequireBoltStubServerTheoryAttribute]
+        [RequireBoltStubServerTheory]
         [InlineData(AccessMode.Read)]
         [InlineData(AccessMode.Write)]
         public async Task WriteTransactionOnSessionShouldGoToWriter(AccessMode mode)

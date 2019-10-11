@@ -6,7 +6,7 @@
 !: AUTO BEGIN
 
 C: RUN "RETURN 1" {} {"mode": "r"}
-   PULL {"n": -1}
+   PULL {"n": 1000}
 S: SUCCESS {"fields": ["1"]}
    RECORD [1]
    SUCCESS {}

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
 {
@@ -29,12 +30,14 @@ namespace Neo4j.Driver
         private AccessMode _defaultAccessMode;
         private string _database;
         private IEnumerable<Bookmark> _bookmarks;
+        private long? _fetchSize;
 
         internal SessionConfig()
         {
             _defaultAccessMode = AccessMode.Write;
             _database = null;
             _bookmarks = null;
+            _fetchSize = null;
         }
 
         /// <summary>
@@ -97,6 +100,18 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
+        /// Gets or sets the default fetch size.
+        /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
+        /// This fetch size defines how many records to pull in each batch.
+        /// Use -1 to disable batching and always pull all records in one go instead.
+        /// </summary>
+        public long? FetchSize
+        {
+            get => _fetchSize;
+            set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
+        }
+
+        /// <summary>
         /// Sets the database the constructed session will connect to.
         /// </summary>
         /// <param name="database">the database name</param>
@@ -129,6 +144,20 @@ namespace Neo4j.Driver
         public SessionConfig WithBookmarks(params Bookmark[] bookmarks)
         {
             Bookmarks = bookmarks;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default fetch size.
+        /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
+        /// This fetch size defines how many records to pull in each batch.
+        /// Use -1 to disable batching and always pull all records in one go instead.
+        /// </summary>
+        /// <param name="size">Fetch size of each record batch.</param>
+        /// <returns>this ISessionOptions instance</returns>
+        public SessionConfig WithFetchSize(long size)
+        {
+            FetchSize = FetchSizeUtil.AssertValidFetchSize(size);
             return this;
         }
     }

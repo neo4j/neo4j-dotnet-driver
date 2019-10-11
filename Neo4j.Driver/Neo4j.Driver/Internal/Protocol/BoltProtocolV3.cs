@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionConfig txConfig)
+            string database, Bookmark bookmark, TransactionConfig txConfig, long fetchSize = Config.Infinite)
         {
             AssertNullDatabase(database);
 
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Statement statement, bool reactive)
+            Statement statement, bool reactive, long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder =

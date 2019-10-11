@@ -37,8 +37,6 @@ namespace Neo4j.Driver.Internal
 
         public Uri Uri { get; }
 
-        private const AccessMode DefaultAccessMode = AccessMode.Write;
-
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic,
             IDriverLogger logger,
             IMetrics metrics = null, Config config = null)
@@ -78,7 +76,8 @@ namespace Neo4j.Driver.Internal
             optionsBuilder(options);
 
             var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,
-                options.Database, Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive);
+                options.Database, Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive,
+                ParseFetchSize(options.FetchSize));
 
             if (IsClosed)
             {
@@ -86,6 +85,11 @@ namespace Neo4j.Driver.Internal
             }
 
             return session;
+        }
+
+        private long ParseFetchSize(long? fetchSize)
+        {
+            return fetchSize.GetValueOrDefault(_config.FetchSize);
         }
 
         private void Close()
