@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly AccessMode _defaultMode;
         private IConnection _connection;
+        private Task<IInternalStatementResultCursor> _result; // last session run result if any
 
         private AsyncTransaction _transaction;
 
@@ -67,7 +68,7 @@ namespace Neo4j.Driver.Internal
 
         public Task<IStatementResultCursor> RunAsync(Statement statement, TransactionConfig txConfig)
         {
-            return TryExecuteAsync(_logger, async () =>
+            var result = TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, _bookmark)
@@ -78,6 +79,9 @@ namespace Neo4j.Driver.Internal
                         _bookmark, txConfig, _fetchSize)
                     .ConfigureAwait(false);
             });
+
+            _result = result.ContinueWith(cursor => (IInternalStatementResultCursor) cursor.Result);
+            return result;
         }
 
         public Task<IStatementResultCursor> RunAsync(string statement, TransactionConfig txConfig)

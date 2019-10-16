@@ -88,6 +88,11 @@ namespace Neo4j.Driver.Internal.Result
 
         public async Task<IRecord> NextRecordAsync()
         {
+            if (_cancellationSource.IsCancellationRequested)
+            {
+                // Stop populate records immediately once the cancellation is requested.
+                ClearRecords();
+            }
             if (_records.TryDequeue(out var record))
             {
                 return record;
@@ -106,6 +111,13 @@ namespace Neo4j.Driver.Internal.Result
             _pendingError?.EnsureThrown();
 
             return null;
+        }
+
+        private void ClearRecords()
+        {
+            while (_records.TryDequeue(out _))
+            {
+            }
         }
 
         public async Task<IResultSummary> SummaryAsync()

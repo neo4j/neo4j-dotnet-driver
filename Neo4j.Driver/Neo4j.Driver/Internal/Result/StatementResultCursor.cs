@@ -62,6 +62,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public Task<IResultSummary> SummaryAsync()
         {
+            Discard();
             if (_summary == null)
             {
                 if (_summaryFunc != null)
@@ -140,7 +141,7 @@ namespace Neo4j.Driver.Internal.Result
         {
             get
             {
-                if (!_atEnd && (_current == null && _peeked == null))
+                if (!_atEnd && _current == null && _peeked == null)
                 {
                     throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
                 }

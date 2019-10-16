@@ -122,12 +122,18 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             var session = Server.Driver.AsyncSession();
             try
             {
-                var result = read
-                    ? await session.ReadTransactionAsync(tx => tx.RunAsync("CALL dbms.listTransactions()"), txConfig)
-                    : await session.WriteTransactionAsync(tx => tx.RunAsync("CALL dbms.listTransactions()"), txConfig);
+                var single = read
+                    ? await session.ReadTransactionAsync(tx =>
+                        tx.RunAsync("CALL dbms.listTransactions()")
+                            .ContinueWith(cursor => cursor.Result.SingleAsync())
+                            .Unwrap(), txConfig)
+                    : await session.WriteTransactionAsync(tx =>
+                        tx.RunAsync("CALL dbms.listTransactions()")
+                            .ContinueWith(cursor => cursor.Result.SingleAsync())
+                            .Unwrap(), txConfig);
 
                 // Then
-                var value = (await result.SingleAsync())["metaData"].As<IDictionary<string, object>>();
+                var value = single["metaData"].As<IDictionary<string, object>>();
                 value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
             }
             finally

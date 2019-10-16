@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -46,6 +47,8 @@ namespace Neo4j.Driver.Internal
         private readonly IDriverLogger _logger;
         private readonly long _fetchSize;
 
+        private readonly IList<Task<IInternalStatementResultCursor>> _results = new List<Task<IInternalStatementResultCursor>>();
+
         public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
             IDriverLogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false,
             long fetchSize = Config.Infinite)
@@ -71,6 +74,7 @@ namespace Neo4j.Driver.Internal
         {
             var result = _state.RunAsync(statement, _connection, _protocol, _logger, _reactive, _fetchSize, out var nextState);
             _state = nextState;
+            _results.Add(result.ContinueWith(cursor => (IInternalStatementResultCursor) cursor.Result));
             return result;
         }
 
@@ -84,6 +88,7 @@ namespace Neo4j.Driver.Internal
             finally
             {
                 await DisposeTransaction().ConfigureAwait(false);
+                await DiscardUnconsumed().ConfigureAwait(false);
             }
         }
 
@@ -97,6 +102,7 @@ namespace Neo4j.Driver.Internal
             finally
             {
                 await DisposeTransaction().ConfigureAwait(false);
+                await DiscardUnconsumed().ConfigureAwait(false);
             }
         }
 
@@ -117,6 +123,23 @@ namespace Neo4j.Driver.Internal
             {
                 await _resourceHandler.OnTransactionDisposeAsync(_bookmark).ConfigureAwait(false);
                 Volatile.Write(ref _disposed, true);
+            }
+        }
+
+        private async Task DiscardUnconsumed()
+        {
+            foreach (var result in _results)
+            {
+                try
+                {
+                    var cursor = await result.ConfigureAwait(false);
+                    cursor.Discard();
+                }
+                catch (Exception)
+                {
+                    // No need to replay cursor creation error.
+                    // We only interested in discard.
+                }
             }
         }
 

@@ -36,8 +36,26 @@ namespace Neo4j.Driver.Internal
                     _isOpen = false;
                     await DisposeTransactionAsync().ConfigureAwait(false);
                     await DisposeSessionResultAsync().ConfigureAwait(false);
+                    await DiscardUnconsumed().ConfigureAwait(false);
                 }
             }, "Failed to close the session asynchronously.");
+        }
+
+        private async Task DiscardUnconsumed()
+        {
+            if (_result != null)
+            {
+                try
+                {
+                    var cursor = await _result.ConfigureAwait(false);
+                    cursor.Discard();
+                }
+                catch (Exception)
+                {
+                    // No need to replay cursor creation error.
+                    // We only interested in discard.
+                }
+            }
         }
 
         /// <summary>

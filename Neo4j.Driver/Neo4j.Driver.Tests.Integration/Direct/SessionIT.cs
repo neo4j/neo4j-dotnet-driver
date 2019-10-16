@@ -436,6 +436,48 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
+        [RequireServerFact]
+        public async Task ShouldNotBeAbleToAccessRecordsAfterSessionClose()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.AsyncSession();
+                IStatementResultCursor cursor;
+                try
+                {
+                    cursor = await session.RunAsync("RETURN 1 As X");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+
+                var records = await cursor.ToListAsync();
+                records.Count.Should().Be(0);
+            }
+        }
+
+        [RequireServerFact]
+        public async Task ShouldNotBeAbleToAccessRecordsAfterSummary()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.AsyncSession();
+                try
+                {
+                    var cursor = await session.RunAsync("RETURN 1 As X");
+                    await cursor.SummaryAsync();
+
+                    var records = await cursor.ToListAsync();
+                    records.Count.Should().Be(0);
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
         private static async Task VerifyRunsQuery(IAsyncSession session)
         {
             var record = await session.RunAndSingleAsync("RETURN 1 AS Number", null);
