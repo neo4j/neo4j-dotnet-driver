@@ -242,7 +242,7 @@ namespace Neo4j.Driver.Tests
                 var keys = await cursor.KeysAsync();
                 keys.Should().BeEquivalentTo("a");
 
-                cursor.Discard();
+                cursor.Cancel();
 
                 var list = await cursor.ToListAsync(r => r[0].As<int>());
 
@@ -280,7 +280,7 @@ namespace Neo4j.Driver.Tests
                 hasRecord2.Should().BeTrue();
                 record2[0].Should().Be(2);
 
-                cursor.Discard();
+                cursor.Cancel();
 
                 var list = await cursor.ToListAsync(r => r[0].As<int>());
 

@@ -92,7 +92,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 var summary = await session.ReadTransactionAsync(async txc =>
                 {
                     var cursor = await txc.RunAsync("RETURN 1");
-                    return await cursor.ConsumeAsync();
+                    return await cursor.SummaryAsync();
                 });
 
                 summary.Database.Should().NotBeNull();

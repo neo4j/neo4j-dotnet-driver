@@ -39,16 +39,13 @@ namespace Neo4j.Driver.Internal
 
         public IReadOnlyList<string> Keys => _executor.RunSync(() => _cursor.KeysAsync());
 
-        public IResultSummary Summary => _executor.RunSync(() => _cursor.SummaryAsync());
-
         public IRecord Peek()
         {
             return _recordSet.Peek();
         }
-
-        public IResultSummary Consume()
+        public IResultSummary Summary()
         {
-            return _executor.RunSync(() => _cursor.ConsumeAsync());
+            return _executor.RunSync(() => _cursor.SummaryAsync());
         }
 
         public IEnumerator<IRecord> GetEnumerator()

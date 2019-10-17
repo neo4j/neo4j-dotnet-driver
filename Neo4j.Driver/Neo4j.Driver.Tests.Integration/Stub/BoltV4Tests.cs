@@ -16,12 +16,16 @@
 // limitations under the License.
 
 using System;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.IntegrationTests.Shared;
+using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Reactive.Testing.ReactiveTest;
 
 namespace Neo4j.Driver.IntegrationTests.Stub
 {
@@ -265,6 +269,49 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                     {
                         await session.CloseAsync();
                     }
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldDiscardIfNotFinished()
+        {
+            using (BoltStubServer.Start("V4/discard_streaming_records", 9001))
+            {
+                var config = Config.Builder.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)
+                    .ToConfig();
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
+                {
+                    var session = driver.RxSession();
+
+                    session.Run("UNWIND [1,2,3,4] AS n RETURN n")
+                        .Keys()
+                        .WaitForCompletion()
+                        .AssertEqual(
+                            OnNext(0, Utils.MatchesKeys("n")),
+                            OnCompleted<string[]>(0));
+                    session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
+                }
+            }
+        }
+
+        [Fact]
+        public void ShouldDiscardTxIfNotFinished()
+        {
+            using (BoltStubServer.Start("V4/discard_streaming_records_tx", 9001))
+            {
+                var config = Config.Builder.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)
+                    .ToConfig();
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
+                {
+                    var session = driver.RxSession();
+
+                    session.ReadTransaction(tx => tx.Run("UNWIND [1,2,3,4] AS n RETURN n").Keys())
+                        .WaitForCompletion()
+                        .AssertEqual(
+                            OnNext(0, Utils.MatchesKeys("n")),
+                            OnCompleted<string[]>(0));
+                    session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
                 }
             }
         }

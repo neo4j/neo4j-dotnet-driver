@@ -24,7 +24,7 @@ using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class StatementResultCursorBuilder : IResultStreamBuilder
+    internal class StatementResultCursorBuilder : IResultStreamBuilder, IResultStream
     {
         private readonly long _batchSize;
         private readonly Func<Task> _advanceFunction;
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IInternalStatementResultCursor CreateCursor()
         {
-            return new StatementResultCursor(GetKeysAsync, NextRecordAsync, SummaryAsync, _cancellationSource);
+            return new StatementResultCursor(this);
         }
 
         public async Task<string[]> GetKeysAsync()
@@ -120,15 +120,18 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
+        public void Cancel()
+        {
+            _cancellationSource.Cancel();
+        }
+
         public async Task<IResultSummary> SummaryAsync()
         {
             while (CurrentState < State.Completed)
             {
                 await _advanceFunction().ConfigureAwait(false);
             }
-
             _pendingError?.EnsureThrown();
-
             return _summaryBuilder.Build();
         }
 

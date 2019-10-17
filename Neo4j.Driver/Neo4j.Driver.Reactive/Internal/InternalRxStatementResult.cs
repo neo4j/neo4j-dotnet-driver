@@ -98,11 +98,11 @@ namespace Neo4j.Driver.Internal
 
                         if (!_records.HasObservers)
                         {
-                            cursor.Discard();
+                            cursor.Cancel();
                         }
                         else
                         {
-                            streamingCancellation.Token.Register(cursor.Discard);
+                            streamingCancellation.Token.Register(cursor.Cancel);
                         }
 
                         while (await cursor.FetchAsync().ConfigureAwait(false))
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Internal
 
                     try
                     {
-                        _summary.OnNext(await cursor.ConsumeAsync().ConfigureAwait(false));
+                        _summary.OnNext(await cursor.SummaryAsync().ConfigureAwait(false));
                         _summary.OnCompleted();
                     }
                     catch (Exception exc)

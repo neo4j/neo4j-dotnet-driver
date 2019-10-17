@@ -35,7 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 var result = session.Run("MATCH (n) RETURN n LIMIT 1");
                 var record = result.SingleOrDefault();
                 record?[0].Should().BeAssignableTo<INode>();
-                context.NodeRead(result.Summary);
+                context.NodeRead(result.Summary());
             }
         }
     }

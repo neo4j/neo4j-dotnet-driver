@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             using (var session = NewSession(AccessMode.Read, context))
             {
-                var exc = Record.Exception(() => session.Run("RETURN").Consume());
+                var exc = Record.Exception(() => session.Run("RETURN").Summary());
 
                 exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Unexpected end of input");
             }

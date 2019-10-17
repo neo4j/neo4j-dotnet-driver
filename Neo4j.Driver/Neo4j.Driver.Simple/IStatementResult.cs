@@ -33,17 +33,6 @@ namespace Neo4j.Driver
         IReadOnlyList<string> Keys { get; }
 
         /// <summary>
-        /// Gets the <see cref="IResultSummary"/> after streaming the whole records to the client.
-        /// If the records in the result are not fully consumed,
-        /// then calling this method will force to pull all remaining records into buffer to yield the summary.
-        ///
-        /// If you want to obtain the summary but discard the records, use <see cref="Consume"/> instead.
-        ///
-        /// If all records in the records stream are already consumed, then this method will return the summary directly.
-        /// </summary>
-        IResultSummary Summary { get; }
-
-        /// <summary>
         /// Investigate the next upcoming record without changing the current position in the result.
         /// </summary>
         /// <returns>The next record, or null if there is no next record.</returns>
@@ -52,9 +41,12 @@ namespace Neo4j.Driver
         /// <summary>
         /// Consume the entire result, yielding a summary of it.
         /// Calling this method exhausts the result.
+        /// If you want to obtain the summary without discarding the records,
+        /// use <see cref="Enumerable.ToList{TSource}"/> to buffer all unconsumed records into memory instead.
         /// </summary>
         /// <returns>A summary for running the statement.</returns>
-        /// <remarks>This method could be called multiple times. If no more record could be consumed then calling this method has the same effect of calling <see cref="IStatementResult.Summary"/>.</remarks>
-        IResultSummary Consume();
+        /// <remarks>This method could be called multiple times.
+        /// If all records in the records stream are already consumed, then this method will return the summary directly.</remarks>
+        IResultSummary Summary();
     }
 }

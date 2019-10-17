@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal
         private readonly IDriverLogger _logger;
         private readonly long _fetchSize;
 
-        private readonly IList<Task<IInternalStatementResultCursor>> _results = new List<Task<IInternalStatementResultCursor>>();
+        private readonly IList<Task<IStatementResultCursor>> _results = new List<Task<IStatementResultCursor>>();
 
         public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
             IDriverLogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false,
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Internal
         {
             var result = _state.RunAsync(statement, _connection, _protocol, _logger, _reactive, _fetchSize, out var nextState);
             _state = nextState;
-            _results.Add(result.ContinueWith(cursor => (IInternalStatementResultCursor) cursor.Result));
+            _results.Add(result);
             return result;
         }
 
@@ -82,13 +82,13 @@ namespace Neo4j.Driver.Internal
         {
             try
             {
+                await DiscardUnconsumed().ConfigureAwait(false);
                 await _state.CommitAsync(_connection, _protocol, this, out var nextState).ConfigureAwait(false);
                 _state = nextState;
             }
             finally
             {
                 await DisposeTransaction().ConfigureAwait(false);
-                await DiscardUnconsumed().ConfigureAwait(false);
             }
         }
 
@@ -96,13 +96,13 @@ namespace Neo4j.Driver.Internal
         {
             try
             {
+                await DiscardUnconsumed().ConfigureAwait(false);
                 await _state.RollbackAsync(_connection, _protocol, this, out var nextState);
                 _state = nextState;
             }
             finally
             {
                 await DisposeTransaction().ConfigureAwait(false);
-                await DiscardUnconsumed().ConfigureAwait(false);
             }
         }
 
@@ -130,15 +130,19 @@ namespace Neo4j.Driver.Internal
         {
             foreach (var result in _results)
             {
+                IStatementResultCursor cursor = null;
                 try
                 {
-                    var cursor = await result.ConfigureAwait(false);
-                    cursor.Discard();
+                    cursor = await result.ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
-                    // No need to replay cursor creation error.
-                    // We only interested in discard.
+                    // ignore if cursor failed to create
+                }
+
+                if (cursor != null)
+                {
+                    await cursor.SummaryAsync().ConfigureAwait(false);
                 }
             }
         }

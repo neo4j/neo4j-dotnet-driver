@@ -24,6 +24,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Neo4j.Driver.IntegrationTests;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -685,16 +686,21 @@ namespace Neo4j.Driver.ExamplesAsync
                 {
                     var persons = await session.ReadTransactionAsync(async tx =>
                     {
-                        IStatementResultCursor result = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
-                        return await result.ToListAsync();
+                        var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
+                        return await cursor.ToListAsync();
                     });
 
                     return persons.Sum(person => session.WriteTransactionAsync(async tx =>
                     {
-                        await tx.RunAsync("MATCH (emp:Person {name: $person_name}) " +
-                                          "MERGE (com:Company {name: $company_name}) " +
-                                          "MERGE (emp)-[:WORKS_FOR]->(com)",
-                            new {person_name = person["name"].As<string>(), company_name = companyName});
+                        var cursor = await tx.RunAsync("MATCH (emp:Person {name: $person_name}) " +
+                                                       "MERGE (com:Company {name: $company_name}) " +
+                                                       "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new
+                            {
+                                person_name = Neo4j.Driver.ValueExtensions.As<string>(person["name"]),
+                                company_name = companyName
+                            });
+                        await cursor.SummaryAsync();
 
                         return 1;
                     }).Result);
@@ -715,14 +721,12 @@ namespace Neo4j.Driver.ExamplesAsync
                 int count = await AddEmployeesAsync("Acme");
                 count.Should().Be(2);
 
-                var result =
+                var records =
                     await ReadAsync(
                         "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
 
-                bool next = await result.FetchAsync();
-                next.Should().BeTrue();
-
-                result.Current[0].As<int>().Should().Be(2);
+                var record = records.Single();
+                record[0].As<int>().Should().Be(2);
             }
         }
 
@@ -851,9 +855,9 @@ namespace Neo4j.Driver.ExamplesAsync
     {
         protected ITestOutputHelper Output { get; }
         protected IDriver Driver { set; get; }
-        protected const string Uri = "bolt://localhost:7687";
-        protected const string User = "neo4j";
-        protected const string Password = "neo4j";
+        protected const string Uri = Neo4jDefaultInstallation.BoltUri;
+        protected const string User = Neo4jDefaultInstallation.User;
+        protected const string Password = Neo4jDefaultInstallation.Password;
 
         protected BaseAsyncExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
@@ -868,7 +872,7 @@ namespace Neo4j.Driver.ExamplesAsync
 
             using (var session = Driver.Session())
             {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+                session.Run("MATCH (n) DETACH DELETE n").Summary();
             }
         }
 
@@ -922,13 +926,18 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-        protected async Task<IStatementResultCursor> ReadAsync(string statement,
+        protected async Task<List<IRecord>> ReadAsync(string statement,
             IDictionary<string, object> parameters = null)
         {
             var session = Driver.AsyncSession();
             try
             {
-                return await session.ReadTransactionAsync(tx => tx.RunAsync(statement, parameters));
+                return await session.ReadTransactionAsync(
+                    async tx =>
+                    {
+                        var cursor = await tx.RunAsync(statement, parameters);
+                        return await cursor.ToListAsync();
+                    });
             }
             finally
             {

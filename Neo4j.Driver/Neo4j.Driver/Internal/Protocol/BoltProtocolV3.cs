@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, null);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()),
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement),
                     runHandler, PullAll, pullAllHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);

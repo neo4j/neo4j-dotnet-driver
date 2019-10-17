@@ -26,7 +26,7 @@ namespace Neo4j.Driver
     /// Provides access to the result as an asynchronous stream of <see cref="IRecord"/>s.
     /// The records in the result is lazily retrieved and could only be visited once in a sequential order.
     /// </summary>
-    /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
+    /// <remarks> Calling <see cref="StatementResultCursorExtensions.ToListAsync"/> will enumerate the entire stream.</remarks>
     public interface IStatementResultCursor
     {
         /// <summary>
@@ -37,9 +37,10 @@ namespace Neo4j.Driver
         /// <summary>
         /// Asynchronously gets the <see cref="IResultSummary"/> after streaming the whole records to the client.
         /// If the records in the result are not fully consumed,
-        /// then calling this method will force to pull all remaining records into buffer to yield the summary.
+        /// then calling this method will discard all remaining records to yield the summary.
         ///
-        /// If you want to obtain the summary but discard the records, use <see cref="ConsumeAsync"/> instead.
+        /// If you want to obtain the summary without discarding the records,
+        /// consider buffering the unconsumed result using <see cref="StatementResultCursorExtensions.ToListAsync"/>.
         ///
         /// If all records in the records stream are already consumed, then this method will return the summary directly.
         /// </summary>
@@ -51,14 +52,6 @@ namespace Neo4j.Driver
         /// </summary>
         /// <returns>A task returning next record or null if there is no next record.</returns>
         Task<IRecord> PeekAsync();
-
-        /// <summary>
-        /// Asynchronously consume the entire result, yielding a summary of it.
-        /// Upon completion of the returned task, the result will be exhausted.
-        /// </summary>
-        /// <returns>A task returning the summary for running the statement.</returns>
-        /// <remarks>This method could be called multiple times. If no more record could be consumed then calling this method has the same effect of calling <see cref="IStatementResultCursor.SummaryAsync()"/>.</remarks>
-        Task<IResultSummary> ConsumeAsync();
 
         /// <summary>
         /// Asynchronously tries to advance to the next record.

@@ -170,7 +170,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys = await cursor.KeysAsync();
                     keys.Should().BeEquivalentTo("X");
 
-                    await cursor.ConsumeAsync();
+                    await cursor.SummaryAsync();
 
                     keys = await cursor.KeysAsync();
                     keys.Should().BeEquivalentTo("X");
@@ -230,8 +230,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
 
-                    await cursor1.ConsumeAsync();
-                    await cursor2.ConsumeAsync();
+                    await cursor1.SummaryAsync();
+                    await cursor2.SummaryAsync();
 
                     keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
@@ -292,8 +292,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
 
-                    await cursor2.ConsumeAsync();
-                    await cursor1.ConsumeAsync();
+                    await cursor2.SummaryAsync();
+                    await cursor1.SummaryAsync();
 
                     keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");

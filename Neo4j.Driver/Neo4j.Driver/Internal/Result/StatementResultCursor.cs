@@ -26,35 +26,26 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class StatementResultCursor : IInternalStatementResultCursor
     {
-        private readonly Func<Task<string[]>> _keysFunc;
-        private readonly Func<Task<IRecord>> _nextRecordFunc;
-        private readonly Func<Task<IResultSummary>> _summaryFunc;
-        private readonly CancellationTokenSource _cancellationSource;
-
         private bool _atEnd;
         private IRecord _peeked;
         private IRecord _current;
 
         private Task<string[]> _keys;
+        private readonly IResultStream _resultStream;
         private Task<IResultSummary> _summary;
 
-        public StatementResultCursor(Func<Task<string[]>> keysFunc, Func<Task<IRecord>> nextRecordFunc,
-            Func<Task<IResultSummary>> summaryFunc = null, CancellationTokenSource cancellationSource = null)
+        public StatementResultCursor(IResultStream resultStream)
         {
-            Throw.ArgumentNullException.IfNull(keysFunc, nameof(keysFunc));
-            Throw.ArgumentNullException.IfNull(nextRecordFunc, nameof(nextRecordFunc));
+            Throw.ArgumentNullException.IfNull(resultStream, nameof(resultStream));
 
-            _keysFunc = keysFunc;
-            _nextRecordFunc = nextRecordFunc;
-            _summaryFunc = summaryFunc;
-            _cancellationSource = cancellationSource;
+            _resultStream = resultStream;
         }
 
         public Task<string[]> KeysAsync()
         {
             if (_keys == null)
             {
-                _keys = _keysFunc();
+                _keys = _resultStream.GetKeysAsync();
             }
 
             return _keys;
@@ -62,16 +53,16 @@ namespace Neo4j.Driver.Internal.Result
 
         public Task<IResultSummary> SummaryAsync()
         {
-            Discard();
             if (_summary == null)
             {
-                if (_summaryFunc != null)
+                Cancel();
+                _summary = _resultStream.SummaryAsync();
+            }
+            else
+            {
+                if (_summary.IsFaulted)
                 {
-                    _summary = _summaryFunc();
-                }
-                else
-                {
-                    _summary = Task.FromResult((IResultSummary) null);
+                    _summary = _resultStream.SummaryAsync();
                 }
             }
 
@@ -90,7 +81,7 @@ namespace Neo4j.Driver.Internal.Result
                 return null;
             }
 
-            _peeked = await _nextRecordFunc().ConfigureAwait(false);
+            _peeked = await _resultStream.NextRecordAsync().ConfigureAwait(false);
             if (_peeked == null)
             {
                 _atEnd = true;
@@ -99,17 +90,6 @@ namespace Neo4j.Driver.Internal.Result
             }
 
             return _peeked;
-        }
-
-        public async Task<IResultSummary> ConsumeAsync()
-        {
-            var nextRecord = await _nextRecordFunc().ConfigureAwait(false);
-            while (nextRecord != null)
-            {
-                nextRecord = await _nextRecordFunc().ConfigureAwait(false);
-            }
-
-            return await SummaryAsync().ConfigureAwait(false);
         }
 
         public async Task<bool> FetchAsync()
@@ -123,7 +103,7 @@ namespace Neo4j.Driver.Internal.Result
             {
                 try
                 {
-                    _current = await _nextRecordFunc().ConfigureAwait(false);
+                    _current = await _resultStream.NextRecordAsync().ConfigureAwait(false);
                 }
                 finally
                 {
@@ -150,9 +130,9 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
-        public void Discard()
+        public void Cancel()
         {
-            _cancellationSource?.Cancel();
+            _resultStream.Cancel();
         }
     }
 }

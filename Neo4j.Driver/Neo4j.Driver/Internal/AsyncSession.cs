@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly AccessMode _defaultMode;
         private IConnection _connection;
-        private Task<IInternalStatementResultCursor> _result; // last session run result if any
+        private Task<IStatementResultCursor> _result; // last session run result if any
 
         private AsyncTransaction _transaction;
 
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Internal
                     .ConfigureAwait(false);
             });
 
-            _result = result.ContinueWith(cursor => (IInternalStatementResultCursor) cursor.Result);
+            _result = result;
             return result;
         }
 

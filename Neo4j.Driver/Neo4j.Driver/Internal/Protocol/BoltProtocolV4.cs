@@ -38,7 +38,6 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV4 : BoltProtocolV3
     {
-        public const long DefaultBatchSize = 100;
         public static readonly BoltProtocolV4 BoltV4 = new BoltProtocolV4();
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
@@ -118,7 +117,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);
             }
 
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement, connection.GetEnforcedAccessMode()),
+            await connection.EnqueueAsync(new RunWithMetadataMessage(statement),
                     runHandler, pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);

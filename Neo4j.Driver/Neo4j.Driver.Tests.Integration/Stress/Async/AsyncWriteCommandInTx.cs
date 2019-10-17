@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 try
                 {
                     var cursor = await txc.RunAsync("CREATE ()");
-                    summary = await cursor.ConsumeAsync();
+                    summary = await cursor.SummaryAsync();
 
                     await txc.CommitAsync();
                 }

@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests
             return Task.FromResult(_keys);
         }
 
-        public Task<IResultSummary> SummaryAsync()
+        private Task<IResultSummary> GetSummaryAsync()
         {
             if (_summary == null && _summaryFunc != null)
             {
@@ -80,13 +80,13 @@ namespace Neo4j.Driver.Tests
             return Task.FromResult(_peeked);
         }
 
-        public async Task<IResultSummary> ConsumeAsync()
+        public async Task<IResultSummary> SummaryAsync()
         {
             while (await FetchAsync())
             {
             }
 
-            return await SummaryAsync();
+            return await GetSummaryAsync();
         }
 
         public Task<bool> FetchAsync()
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tests
 
         public IRecord Current => _record;
 
-        public void Discard()
+        public void Cancel()
         {
         }
     }

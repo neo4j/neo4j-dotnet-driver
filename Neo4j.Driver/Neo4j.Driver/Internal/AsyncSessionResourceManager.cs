@@ -34,26 +34,36 @@ namespace Neo4j.Driver.Internal
                 {
                     // This will protect the session being disposed twice
                     _isOpen = false;
-                    await DisposeTransactionAsync().ConfigureAwait(false);
-                    await DisposeSessionResultAsync().ConfigureAwait(false);
-                    await DiscardUnconsumed().ConfigureAwait(false);
+                    try
+                    {
+                        await DisposeTransactionAsync().ConfigureAwait(false);
+                        await DiscardUnconsumedAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        await DisposeSessionResultAsync().ConfigureAwait(false);
+                    }
                 }
             }, "Failed to close the session asynchronously.");
         }
 
-        private async Task DiscardUnconsumed()
+        private async Task DiscardUnconsumedAsync()
         {
             if (_result != null)
             {
+                IStatementResultCursor cursor = null;
                 try
                 {
-                    var cursor = await _result.ConfigureAwait(false);
-                    cursor.Discard();
+                    cursor = await _result.ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
-                    // No need to replay cursor creation error.
-                    // We only interested in discard.
+                    // ignored if the cursor failed to create
+                }
+
+                if (cursor != null)
+                {
+                    await cursor.SummaryAsync().ConfigureAwait(false);
                 }
             }
         }

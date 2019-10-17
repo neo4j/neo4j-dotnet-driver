@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE (p:Person { Name: 'Test'})");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 var peeked = await cursor.PeekAsync();
                 peeked.Should().BeNull();
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("EXPLAIN MATCH (n) RETURN 1");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeFalse();
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("PROFILE RETURN 1");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeTrue();
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 var notifications = summary.Notifications;
                 notifications.Should().NotBeNull();
@@ -156,7 +156,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("Invalid");
-                var error = await Record.ExceptionAsync(() => cursor.ConsumeAsync());
+                var error = await Record.ExceptionAsync(() => cursor.SummaryAsync());
                 error.Should().BeOfType<ClientException>();
 
                 var summary = await cursor.SummaryAsync();
@@ -200,7 +200,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("UNWIND [1,2] AS a RETURN a");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
