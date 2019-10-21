@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tests
                 var statement = new Statement("lala");
                 await tx.RunAsync(statement);
 
-                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, false));
+                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, false, It.IsAny<long>()));
             }
 
             [Fact]
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tests
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 var statement = new Statement("lala");
 
-                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, false))
+                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, false, It.IsAny<long>()))
                     .Throws<Neo4jException>();
 
                 var error = await ExceptionAsync(() => tx.RunAsync(statement));

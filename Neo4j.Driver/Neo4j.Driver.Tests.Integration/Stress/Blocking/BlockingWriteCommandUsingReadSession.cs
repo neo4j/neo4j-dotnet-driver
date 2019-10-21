@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 var exc = Record.Exception(() =>
                 {
                     result = session.Run("CREATE ()");
-                    result.Consume();
+                    result.Summary();
                     return result;
                 });
 
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             }
 
             result.Should().NotBeNull();
-            result.Summary.Counters.NodesCreated.Should().Be(0);
+            result.Summary().Counters.NodesCreated.Should().Be(0);
         }
     }
 }

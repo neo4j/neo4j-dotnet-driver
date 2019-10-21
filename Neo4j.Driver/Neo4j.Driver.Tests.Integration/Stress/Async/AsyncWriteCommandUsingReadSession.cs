@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 var exc = await Record.ExceptionAsync(async () =>
                 {
                     cursor = await session.RunAsync("CREATE ()");
-                    await cursor.ConsumeAsync();
+                    await cursor.SummaryAsync();
                 });
 
                 exc.Should().BeOfType<ClientException>();

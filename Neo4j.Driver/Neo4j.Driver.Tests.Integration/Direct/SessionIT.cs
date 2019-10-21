@@ -100,7 +100,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var result = await session.RunAsync("RETURN 2 as Number");
-                await result.ConsumeAsync();
+                await result.SummaryAsync();
 
                 var keys = await result.KeysAsync();
                 keys.Should().BeEquivalentTo("Number");
@@ -315,7 +315,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                     keys1.Should().BeEquivalentTo("X");
 
-                    await cursor.ConsumeAsync();
+                    await cursor.SummaryAsync();
 
                     var keys2 = await cursor.KeysAsync();
                     keys2.Should().BeEquivalentTo("X");
@@ -367,8 +367,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
 
-                    await cursor1.ConsumeAsync();
-                    await cursor2.ConsumeAsync();
+                    await cursor1.SummaryAsync();
+                    await cursor2.SummaryAsync();
 
                     keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
@@ -421,13 +421,55 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
 
-                    await cursor2.ConsumeAsync();
-                    await cursor1.ConsumeAsync();
+                    await cursor2.SummaryAsync();
+                    await cursor1.SummaryAsync();
 
                     keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
                     keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async Task ShouldNotBeAbleToAccessRecordsAfterSessionClose()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.AsyncSession();
+                IStatementResultCursor cursor;
+                try
+                {
+                    cursor = await session.RunAsync("RETURN 1 As X");
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+
+                var records = await cursor.ToListAsync();
+                records.Count.Should().Be(0);
+            }
+        }
+
+        [RequireServerFact]
+        public async Task ShouldNotBeAbleToAccessRecordsAfterSummary()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.AsyncSession();
+                try
+                {
+                    var cursor = await session.RunAsync("RETURN 1 As X");
+                    await cursor.SummaryAsync();
+
+                    var records = await cursor.ToListAsync();
+                    records.Count.Should().Be(0);
                 }
                 finally
                 {

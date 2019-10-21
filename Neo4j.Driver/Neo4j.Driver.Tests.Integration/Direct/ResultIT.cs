@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE (p:Person { Name: 'Test'})");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 var peeked = await cursor.PeekAsync();
                 peeked.Should().BeNull();
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("EXPLAIN MATCH (n) RETURN 1");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeFalse();
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("PROFILE RETURN 1");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeTrue();
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 var notifications = summary.Notifications;
                 notifications.Should().NotBeNull();
@@ -156,7 +156,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("Invalid");
-                var error = await Record.ExceptionAsync(() => cursor.ConsumeAsync());
+                var error = await Record.ExceptionAsync(() => cursor.SummaryAsync());
                 error.Should().BeOfType<ClientException>();
 
                 var summary = await cursor.SummaryAsync();
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact]
-        public async Task BufferRecordsAfterSummary()
+        public async Task DiscardRecordsAfterSummary()
         {
             var session = Driver.AsyncSession();
             try
@@ -185,14 +185,6 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 summary.Server.Address.Should().Contain("localhost:7687");
 
                 var next = await cursor.FetchAsync();
-                next.Should().BeTrue();
-                cursor.Current["a"].Should().BeEquivalentTo(1);
-
-                next = await cursor.FetchAsync();
-                next.Should().BeTrue();
-                cursor.Current["a"].Should().BeEquivalentTo(2);
-
-                next = await cursor.FetchAsync();
                 next.Should().BeFalse();
             }
             finally
@@ -208,7 +200,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("UNWIND [1,2] AS a RETURN a");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
@@ -245,7 +237,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact]
-        public async Task BufferResultAfterSessionClose()
+        public async Task DiscardResultAfterSessionClose()
         {
             IStatementResultCursor cursor;
             var session = Driver.AsyncSession();
@@ -261,9 +253,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
             var resultAll = await cursor.ToListAsync(r => r["n"].As<int>());
 
-            // Records that has not been read inside session still saved
-            resultAll.Count.Should().Be(3);
-            resultAll.Should().ContainInOrder(1, 2, 3);
+            // Records that has not been read inside session is not saved
+            resultAll.Count.Should().Be(0);
 
             // Summary is still saved
             var summary = await cursor.SummaryAsync();
@@ -272,7 +263,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact]
-        public async Task BuffersResultsAfterTxCloseSoTheyCanBeReadAfterAnotherSubsequentTx()
+        public async Task DiscardResultsAfterTxClose()
         {
             var session = Driver.AsyncSession();
             try
@@ -306,8 +297,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var result2All = await result2.ToListAsync(r => r["n"].As<int>());
                 var result1All = await result1.ToListAsync(r => r["n"].As<int>());
 
-                result2All.Should().ContainInOrder(4, 5, 6);
-                result1All.Should().ContainInOrder(1, 2, 3);
+                result2All.Should().BeEmpty();
+                result1All.Should().BeEmpty();
             }
             finally
             {

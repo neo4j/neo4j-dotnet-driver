@@ -59,7 +59,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             // Given
             using (var session = Server.Driver.Session())
             {
-                session.Run("CREATE (:Node)").Consume();
+                session.Run("CREATE (:Node)").Summary();
             }
 
             var otherSession = Server.Driver.AsyncSession();
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 try
                 {
                     // lock dummy node but keep the transaction open
-                    await otherTx.RunAsync("MATCH (n:Node) SET n.prop = 1").ContinueWith(t => t.Result.ConsumeAsync())
+                    await otherTx.RunAsync("MATCH (n:Node) SET n.prop = 1").ContinueWith(t => t.Result.SummaryAsync())
                         .Unwrap();
 
                     // When
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     {
                         var error = await Record.ExceptionAsync(() =>
                             session.RunAsync("MATCH (n:Node) SET n.prop = 2", txConfig)
-                                .ContinueWith(c => c.Result.ConsumeAsync()).Unwrap());
+                                .ContinueWith(c => c.Result.SummaryAsync()).Unwrap());
 
                         // Then
                         error.Should().BeOfType<TransientException>().Which.Message.Should().Contain("terminated");
@@ -122,12 +122,18 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             var session = Server.Driver.AsyncSession();
             try
             {
-                var result = read
-                    ? await session.ReadTransactionAsync(tx => tx.RunAsync("CALL dbms.listTransactions()"), txConfig)
-                    : await session.WriteTransactionAsync(tx => tx.RunAsync("CALL dbms.listTransactions()"), txConfig);
+                var single = read
+                    ? await session.ReadTransactionAsync(tx =>
+                        tx.RunAsync("CALL dbms.listTransactions()")
+                            .ContinueWith(cursor => cursor.Result.SingleAsync())
+                            .Unwrap(), txConfig)
+                    : await session.WriteTransactionAsync(tx =>
+                        tx.RunAsync("CALL dbms.listTransactions()")
+                            .ContinueWith(cursor => cursor.Result.SingleAsync())
+                            .Unwrap(), txConfig);
 
                 // Then
-                var value = (await result.SingleAsync())["metaData"].As<IDictionary<string, object>>();
+                var value = single["metaData"].As<IDictionary<string, object>>();
                 value.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("name", "Molly"));
             }
             finally

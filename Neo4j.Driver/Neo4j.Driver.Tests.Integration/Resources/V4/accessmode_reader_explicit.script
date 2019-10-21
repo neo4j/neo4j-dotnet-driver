@@ -4,8 +4,8 @@
 
 C:  BEGIN {"mode": "r"}
 S:	SUCCESS {}
-C:	RUN "RETURN $x" {"x": 1} {"mode": "r"}
-    PULL {"n": -1}
+C:	RUN "RETURN $x" {"x": 1} {}
+    PULL {"n": 1000}
 S:	SUCCESS {"fields": ["x"]}
     RECORD [1]
     SUCCESS {}

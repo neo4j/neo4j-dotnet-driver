@@ -24,6 +24,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class Neo4jDefaultInstallation
     {
+        public const string User = "neo4j";
         public const string Password = "neo4j";
         public const string HttpUri = "http://localhost:7474";
         public const string BoltUri = "bolt://localhost:7687";

@@ -3,7 +3,7 @@
 !: AUTO RESET
 
 C:  RUN "RETURN $x" {"x": 1} {"mode": "r"}
-    PULL {"n": -1}
+    PULL {"n": 1000}
 S:  SUCCESS {"fields": ["x"]}
     RECORD [1]
     SUCCESS {}

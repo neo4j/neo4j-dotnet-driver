@@ -200,6 +200,19 @@ namespace Neo4j.Driver
         /// </summary>
         public int MaxWriteBufferSize { get; set; } = Constants.MaxWriteBufferSize;
 
+        private long _fetchSize = Constants.DefaultFetchSize;
+        /// <summary>
+        /// Gets or sets the default fetch size.
+        /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
+        /// This fetch size defines how many records to pull in each batch.
+        /// Use <see cref="Infinite"/> to disable batching and always pull all records in one batch instead.
+        /// </summary>
+        public long FetchSize
+        {
+            get => _fetchSize;
+            set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
+        }
+
         private class ConfigBuilder : IConfigBuilder
         {
             private readonly Config _config;
@@ -319,6 +332,12 @@ namespace Neo4j.Driver
             public IConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize)
             {
                 _config.MaxWriteBufferSize = maxWriteBufferSize;
+                return this;
+            }
+
+            public IConfigBuilder WithFetchSize(long size)
+            {
+                _config.FetchSize = size;
                 return this;
             }
         }
@@ -485,5 +504,16 @@ namespace Neo4j.Driver
         /// <remarks>If writing large values and experiencing too much garbage collection 
         /// consider increasing this size to a reasonable amount depending on your data.</remarks>
         IConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize);
+
+
+        /// <summary>
+        /// Sets the default fetch size.
+        /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
+        /// This fetch size defines how many records to pull in each batch.
+        /// Use -1 to disable batching and always pull all records in one go instead.
+        /// </summary>
+        /// <param name="size">The fetch size.</param>
+        /// <returns>An <see cref="IConfigBuilder"/> instance for further configuration options.</returns>
+        IConfigBuilder WithFetchSize(long size);
     }
 }

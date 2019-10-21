@@ -122,6 +122,18 @@
     <None Update="Resources\V4\rollback_error.script">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Resources\V4\streaming_records.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\streaming_records_all.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\discard_streaming_records.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\V4\discard_streaming_records_tx.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Resources\V3\connection_error_on_commit.script">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

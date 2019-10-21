@@ -31,5 +31,6 @@ namespace Neo4j.Driver.Internal.IO
         public const int MaxReadBufferSize = 128 * 1024;
         public const int DefaultWriteBufferSize = 16 * 1024;
         public const int MaxWriteBufferSize = 64 * 1024;
+        public const int DefaultFetchSize = 1000;
     }
 }

@@ -5,7 +5,7 @@
 C: BEGIN {}
 S: SUCCESS {}
 C: RUN "CREATE (n {name:'Alice'}) RETURN n.name AS name" {} {}
-   PULL {"n": -1}
+   PULL {"n": 1000}
 S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Unable to run any"}
    IGNORED
 C: RESET

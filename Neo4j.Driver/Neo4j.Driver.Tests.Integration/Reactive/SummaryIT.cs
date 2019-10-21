@@ -117,7 +117,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 // Ensure that an index exists
                 using (var session = Server.Driver.Session())
                 {
-                    session.Run("CREATE INDEX on :Label(prop)").Consume();
+                    session.Run("CREATE INDEX on :Label(prop)").Summary();
                 }
 
                 VerifySummary("DROP INDEX on :Label(prop)", null,
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 // Ensure that a constraint exists
                 using (var session = Server.Driver.Session())
                 {
-                    session.Run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE").Consume();
+                    session.Run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE").Summary();
                 }
 
                 VerifySummary("DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         if (drop.Values.TryGetValue("description", out var name) ||
                             drop.Values.TryGetValue("name", out name))
                         {
-                            session.Run($"DROP {name}").Consume();
+                            session.Run($"DROP {name}").Summary();
                         }
                     }
 
@@ -244,7 +244,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         if (drop.Values.TryGetValue("description", out var name) ||
                             drop.Values.TryGetValue("name", out name))
                         {
-                            session.Run($"DROP {name}").Consume();
+                            session.Run($"DROP {name}").Summary();
                         }
                     }
                 }

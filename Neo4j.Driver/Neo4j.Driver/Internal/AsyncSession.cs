@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly AccessMode _defaultMode;
         private IConnection _connection;
+        private Task<IStatementResultCursor> _result; // last session run result if any
 
         private AsyncTransaction _transaction;
 
@@ -48,10 +49,11 @@ namespace Neo4j.Driver.Internal
 
         private readonly string _database;
         private readonly bool _reactive;
+        private readonly long _fetchSize;
 
         public AsyncSession(IConnectionProvider provider, IDriverLogger logger, IAsyncRetryLogic retryLogic = null,
             AccessMode defaultMode = AccessMode.Write, string database = null, Bookmark bookmark = null,
-            bool reactive = false)
+            bool reactive = false, long fetchSize = Config.Infinite)
         {
             _logger = logger;
             _connectionProvider = provider;
@@ -60,12 +62,13 @@ namespace Neo4j.Driver.Internal
             _database = database;
 
             _defaultMode = defaultMode;
+            _fetchSize = fetchSize;
             UpdateBookmark(bookmark);
         }
 
         public Task<IStatementResultCursor> RunAsync(Statement statement, TransactionConfig txConfig)
         {
-            return TryExecuteAsync(_logger, async () =>
+            var result = TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, _bookmark)
@@ -73,9 +76,12 @@ namespace Neo4j.Driver.Internal
                 var protocol = _connection.BoltProtocol;
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _database,
-                        _bookmark, txConfig)
+                        _bookmark, txConfig, _fetchSize)
                     .ConfigureAwait(false);
             });
+
+            _result = result;
+            return result;
         }
 
         public Task<IStatementResultCursor> RunAsync(string statement, TransactionConfig txConfig)
@@ -197,7 +203,7 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, _bookmark).ConfigureAwait(false);
-            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive);
+            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize);
             await tx.BeginTransactionAsync(txConfig ?? TransactionConfig.Empty).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;

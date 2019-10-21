@@ -34,10 +34,38 @@ namespace Neo4j.Driver.Internal
                 {
                     // This will protect the session being disposed twice
                     _isOpen = false;
-                    await DisposeTransactionAsync().ConfigureAwait(false);
-                    await DisposeSessionResultAsync().ConfigureAwait(false);
+                    try
+                    {
+                        await DisposeTransactionAsync().ConfigureAwait(false);
+                        await DiscardUnconsumedAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        await DisposeSessionResultAsync().ConfigureAwait(false);
+                    }
                 }
             }, "Failed to close the session asynchronously.");
+        }
+
+        private async Task DiscardUnconsumedAsync()
+        {
+            if (_result != null)
+            {
+                IStatementResultCursor cursor = null;
+                try
+                {
+                    cursor = await _result.ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // ignored if the cursor failed to create
+                }
+
+                if (cursor != null)
+                {
+                    await cursor.SummaryAsync().ConfigureAwait(false);
+                }
+            }
         }
 
         /// <summary>
@@ -74,12 +102,12 @@ namespace Neo4j.Driver.Internal
 
         /// <summary>
         /// Clean any transaction reference.
-        /// If transaction result is not commited, then rollback the transaction.
+        /// If transaction result is not committed, then rollback the transaction.
         /// </summary>
         /// <exception cref="ClientException">If error when rollback the transaction</exception>
         private async Task DisposeTransactionAsync()
         {
-            // When there is a open transaction, this method will aslo try to close the tx
+            // When there is a open transaction, this method will also try to close the tx
             if (_transaction != null)
             {
                 try

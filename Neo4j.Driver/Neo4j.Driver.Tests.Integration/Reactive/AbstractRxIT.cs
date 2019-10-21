@@ -62,7 +62,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             // clean database after each test run
             using (var session = Server.Driver.Session())
             {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+                session.Run("MATCH (n) DETACH DELETE n").Summary();
             }
         }
     }

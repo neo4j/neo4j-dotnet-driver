@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             {
                 using (var session = NewSession(AccessMode.Write, context))
                 {
-                    summary = session.Run("CREATE ()").Consume();
+                    summary = session.Run("CREATE ()").Summary();
 
                     if (session.LastBookmark != null)
                     {

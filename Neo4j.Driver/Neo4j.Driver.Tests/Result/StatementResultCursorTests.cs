@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Xunit.Abstractions;
@@ -33,30 +34,14 @@ namespace Neo4j.Driver.Tests
         public class Constructor
         {
             [Fact]
-            public void ShouldThrowArgumentNullExceptionIfKeysIsNull()
-            {
-                var ex = Xunit.Record.Exception(() =>
-                    new StatementResultCursor(null, () => NextRecordFromEnum(null)));
-                ex.Should().NotBeNull();
-                ex.Should().BeOfType<ArgumentNullException>();
-            }
-
-            [Fact]
-            public void ShouldThrowArgumentNullExceptionIfNextRecordFuncIsNull()
-            {
-                var ex = Xunit.Record.Exception(() =>
-                    new StatementResultCursor(() => Task.FromResult(new[] {"key1"}), null));
-
-                ex.Should().NotBeNull();
-                ex.Should().BeOfType<ArgumentNullException>();
-            }
-
-            [Fact]
             public async Task ShouldSetKeysProperlyIfKeysNotNull()
             {
+                var stream = new Mock<IResultStream>();
+                stream.Setup(x => x.NextRecordAsync()).Returns(NextRecordFromEnum(new List<IRecord>().GetEnumerator()));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(new[] {"test"}));
+
                 var result =
-                    new StatementResultCursor(() => Task.FromResult(new[] {"test"}),
-                        () => NextRecordFromEnum(new List<IRecord>().GetEnumerator()));
+                    new StatementResultCursor(stream.Object);
                 var keys = await result.KeysAsync();
 
                 keys.Should().HaveCount(1).And.Contain("test");
@@ -68,66 +53,10 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task KeysShouldReturnTheSameGivenInConstructor()
             {
-                var result = ResultCursorCreator.CreateResultReader(1);
+                var result = ResultCursorCreator.CreateResultCursor(1);
                 var keys = await result.KeysAsync();
 
                 keys.Should().HaveCount(1).And.Contain("key0");
-            }
-        }
-
-        public class ConsumeAsyncMethod
-        {
-            // INFO: Rewritten because StatementResult no longers takes IPeekingEnumerator in constructor
-            [Fact]
-            public async void ShouldConsumeAllRecords()
-            {
-                var result = ResultCursorCreator.CreateResultReader(0, 3);
-                await result.ConsumeAsync();
-                var rec = await result.PeekAsync();
-                rec.Should().BeNull();
-                var read = await result.FetchAsync();
-                read.Should().BeFalse();
-            }
-
-            [Fact]
-            public async void ShouldConsumeSummaryCorrectly()
-            {
-                int getSummaryCalled = 0;
-                var result = ResultCursorCreator.CreateResultReader(1, 0, () =>
-                {
-                    getSummaryCalled++;
-                    return Task.FromResult((IResultSummary) new FakeSummary());
-                });
-
-
-                await result.ConsumeAsync();
-                getSummaryCalled.Should().Be(1);
-
-                // the same if we call it multiple times
-                await result.ConsumeAsync();
-                getSummaryCalled.Should().Be(1);
-            }
-
-            [Fact]
-            public async void ShouldThrowNoExceptionWhenCallingMultipleTimes()
-            {
-                var result = ResultCursorCreator.CreateResultReader(1);
-
-                await result.ConsumeAsync();
-                var ex = await Xunit.Record.ExceptionAsync(() => result.ConsumeAsync());
-                ex.Should().BeNull();
-            }
-
-            [Fact]
-            public async void ShouldConsumeRecordCorrectly()
-            {
-                var result = ResultCursorCreator.CreateResultReader(1, 3);
-
-                await result.ConsumeAsync();
-
-                var read = await result.FetchAsync();
-                read.Should().BeFalse();
-                result.Current.Should().BeNull();
             }
         }
 
@@ -146,9 +75,12 @@ namespace Neo4j.Driver.Tests
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var recordYielderEnum = recordYielder.RecordsWithAutoLoad.GetEnumerator();
-                var cursor =
-                    new StatementResultCursor(() => Task.FromResult(TestRecordYielder.Keys.ToArray()),
-                        () => NextRecordFromEnum(recordYielderEnum));
+
+                var stream = new Mock<IResultStream>();
+                stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+
+                var cursor = new StatementResultCursor(stream.Object);
                 var records = new List<IRecord>();
                 while (await cursor.FetchAsync())
                 {
@@ -164,10 +96,12 @@ namespace Neo4j.Driver.Tests
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var recordYielderEnum = recordYielder.Records.GetEnumerator();
 
+                var stream = new Mock<IResultStream>();
+                stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+
                 int count = 0;
-                var cursor =
-                    new StatementResultCursor(() => Task.FromResult(TestRecordYielder.Keys.ToArray()),
-                        () => NextRecordFromEnum(recordYielderEnum));
+                var cursor = new StatementResultCursor(stream.Object);
                 var t = Task.Factory.StartNew(async () =>
                 {
                     // ReSharper disable once LoopCanBeConvertedToQuery
@@ -194,9 +128,12 @@ namespace Neo4j.Driver.Tests
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var recordYielderEnum = recordYielder.Records.GetEnumerator();
-                var result =
-                    new StatementResultCursor(() => Task.FromResult(TestRecordYielder.Keys.ToArray()),
-                        () => NextRecordFromEnum(recordYielderEnum));
+
+                var stream = new Mock<IResultStream>();
+                stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+
+                var result = new StatementResultCursor(stream.Object);
                 var records = new List<IRecord>();
                 var count = 5;
                 while (count > 0 && await result.FetchAsync())
@@ -285,7 +222,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldGetTheFirstRecordAndMoveToNextPosition()
             {
-                var result = ResultCursorCreator.CreateResultReader(1, 3);
+                var result = ResultCursorCreator.CreateResultCursor(1, 3);
                 var read = await result.FetchAsync();
                 read.Should().BeTrue();
                 var record = result.Current;
@@ -301,10 +238,10 @@ namespace Neo4j.Driver.Tests
         public class SummaryAsyncMethod
         {
             [Fact]
-            public async void ShouldCallGetSummaryWhenGetSummaryIsNotNull()
+            public async void ShouldCallGetSummary()
             {
                 bool getSummaryCalled = false;
-                var result = ResultCursorCreator.CreateResultReader(1, 0, () =>
+                var result = ResultCursorCreator.CreateResultCursor(1, 0, () =>
                 {
                     getSummaryCalled = true;
                     return Task.FromResult((IResultSummary) null);
@@ -317,19 +254,25 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldReturnNullWhenGetSummaryIsNull()
+            public async void ShouldOnlyThrowErrorOnce()
             {
-                var result = ResultCursorCreator.CreateResultReader(1, 0);
-                var summary = await result.SummaryAsync();
+                int getSummaryCalled = 0;
+                var result = ResultCursorCreator.CreateResultCursor(1, 0,
+                    () => getSummaryCalled++ == 0
+                        ? Task.FromException<IResultSummary>(new Exception("error!"))
+                        : Task.FromResult((IResultSummary) new FakeSummary()));
+                var ex = await Xunit.Record.ExceptionAsync(async () => await result.SummaryAsync());
 
-                summary.Should().BeNull();
+                ex.Should().NotBeNull();
+                ex.Should().BeOfType<Exception>();
+                await result.SummaryAsync();
             }
 
             [Fact]
             public async void ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
             {
                 int getSummaryCalled = 0;
-                var result = ResultCursorCreator.CreateResultReader(1, 0, () =>
+                var result = ResultCursorCreator.CreateResultCursor(1, 0, () =>
                 {
                     getSummaryCalled++;
                     return Task.FromResult((IResultSummary) new FakeSummary());
@@ -348,7 +291,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldReturnNextRecordWithoutMovingCurrentRecord()
             {
-                var result = ResultCursorCreator.CreateResultReader(1);
+                var result = ResultCursorCreator.CreateResultCursor(1);
                 var record = await result.PeekAsync();
                 record.Should().NotBeNull();
 
@@ -358,7 +301,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldReturnNullJustBeforeAtEnd()
             {
-                var result = ResultCursorCreator.CreateResultReader(1);
+                var result = ResultCursorCreator.CreateResultCursor(1);
                 var read = await result.FetchAsync();
                 read.Should().BeTrue();
                 var record = await result.PeekAsync();
@@ -368,7 +311,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldReturnNullIfAtEnd()
             {
-                var result = ResultCursorCreator.CreateResultReader(1);
+                var result = ResultCursorCreator.CreateResultCursor(1);
                 var read = await result.FetchAsync();
                 read.Should().BeTrue();
                 read = await result.FetchAsync();
@@ -380,7 +323,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldReturnSameRecordIfPeekedTwice()
             {
-                var result = ResultCursorCreator.CreateResultReader(1);
+                var result = ResultCursorCreator.CreateResultCursor(1);
                 var peeked1 = await result.PeekAsync();
                 peeked1.Should().NotBeNull();
                 var peeked2 = await result.PeekAsync();
@@ -394,7 +337,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void FetchAsyncAndCurrentWillReturnPeekedAfterPeek()
             {
-                var result = ResultCursorCreator.CreateResultReader(1);
+                var result = ResultCursorCreator.CreateResultCursor(1);
                 var peeked = await result.PeekAsync();
                 peeked.Should().NotBeNull();
                 var read = await result.FetchAsync();
@@ -410,7 +353,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowExceptionIfFetchOrPeekNotCalled()
             {
-                var result = ResultCursorCreator.CreateResultReader(1);
+                var result = ResultCursorCreator.CreateResultCursor(1);
 
                 var ex = Xunit.Record.Exception(() => result.Current);
 
@@ -421,7 +364,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldNotThrowExceptionWhenCursorIsEmptyAndFetched()
             {
-                var result = ResultCursorCreator.CreateResultReader(1, 0);
+                var result = ResultCursorCreator.CreateResultCursor(1, 0);
 
                 var hasNext = await result.FetchAsync();
                 hasNext.Should().BeFalse();
@@ -433,7 +376,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldNotThrowExceptionWhenCursorIsEmptyAndPeeked()
             {
-                var result = ResultCursorCreator.CreateResultReader(1, 0);
+                var result = ResultCursorCreator.CreateResultCursor(1, 0);
 
                 var peeked = await result.PeekAsync();
                 peeked.Should().BeNull();
@@ -450,11 +393,11 @@ namespace Neo4j.Driver.Tests
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 var result =
-                    ResultCursorCreator.CreateResultReader(1, 0, cancellationTokenSource: cancellationTokenSource);
+                    ResultCursorCreator.CreateResultCursor(1, 0, cancellationTokenSource: cancellationTokenSource);
 
                 cancellationTokenSource.IsCancellationRequested.Should().BeFalse();
 
-                result.Discard();
+                result.Cancel();
 
                 cancellationTokenSource.IsCancellationRequested.Should().BeTrue();
             }
@@ -490,7 +433,7 @@ namespace Neo4j.Driver.Tests
 
         private static class ResultCursorCreator
         {
-            public static StatementResultCursor CreateResultReader(int keySize, int recordSize = 1,
+            public static StatementResultCursor CreateResultCursor(int keySize, int recordSize = 1,
                 Func<Task<IResultSummary>> getSummaryFunc = null,
                 CancellationTokenSource cancellationTokenSource = null)
             {
@@ -498,8 +441,13 @@ namespace Neo4j.Driver.Tests
                 var records = RecordCreator.CreateRecords(recordSize, keys);
                 var recordsEnum = records.GetEnumerator();
 
-                return new StatementResultCursor(() => Task.FromResult(keys.ToArray()),
-                    () => NextRecordFromEnum(recordsEnum), getSummaryFunc, cancellationTokenSource);
+                var stream = new Mock<IResultStream>();
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(keys.ToArray()));
+                stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordsEnum));
+                stream.Setup(x => x.SummaryAsync()).Returns(getSummaryFunc);
+                stream.Setup(x => x.Cancel()).Callback(() => cancellationTokenSource?.Cancel());
+
+                return new StatementResultCursor(stream.Object);
             }
         }
     }

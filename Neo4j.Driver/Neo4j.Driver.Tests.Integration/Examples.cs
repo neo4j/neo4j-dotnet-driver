@@ -835,9 +835,9 @@ namespace Neo4j.Driver.Examples
     {
         protected ITestOutputHelper Output { get; }
         protected IDriver Driver { set; get; }
-        protected const string Uri = "bolt://localhost:7687";
-        protected const string User = "neo4j";
-        protected const string Password = "neo4j";
+        protected const string Uri = Neo4jDefaultInstallation.BoltUri;
+        protected const string User = Neo4jDefaultInstallation.User;
+        protected const string Password = Neo4jDefaultInstallation.Password;
 
         protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
@@ -852,7 +852,7 @@ namespace Neo4j.Driver.Examples
 
             using (var session = Driver.Session())
             {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+                session.Run("MATCH (n) DETACH DELETE n").Summary();
             }
         }
 
@@ -885,12 +885,12 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        protected IStatementResult Read(string statement, object parameters = null)
+        protected List<IRecord> Read(string statement, object parameters = null)
         {
             using (var session = Driver.Session())
             {
                 return session.ReadTransaction(tx =>
-                    tx.Run(statement, parameters));
+                    tx.Run(statement, parameters).ToList());
             }
         }
     }

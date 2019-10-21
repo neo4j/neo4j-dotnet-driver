@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE (n:Person { name: 'Johan' })");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
                 summary.Counters.NodesCreated.Should().Be(1);
 
                 cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name = $name RETURN n", new {name = "Johan"});
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE (n:Person { name: 'Johan' })");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
                 summary.Counters.NodesCreated.Should().Be(1);
 
                 cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name =~ $regex RETURN n.name",
@@ -86,11 +86,11 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michael' })");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
                 summary.Counters.NodesCreated.Should().Be(1);
 
                 cursor = await session.RunAsync("CREATE (n:Person { name: 'michael' })");
-                summary = await cursor.ConsumeAsync();
+                summary = await cursor.SummaryAsync();
                 summary.Counters.NodesCreated.Should().Be(1);
 
                 cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name STARTS WITH $name RETURN n.name",
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             {
                 var cursor = await session.RunAsync("CREATE ($props)",
                     new {props = new {name = "Andres", position = "Developer"}});
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
                 summary.Counters.NodesCreated.Should().Be(1);
 
                 cursor = await session.RunAsync("MATCH (n) WHERE n.position = 'Developer' RETURN n.name");
@@ -140,7 +140,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                             new {children = 3, name = "Michael", position = "Developer"}
                         }
                     });
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
                 summary.Counters.NodesCreated.Should().Be(2);
 
                 cursor = await session.RunAsync("MATCH (n) WHERE n.position = 'Developer' RETURN n.name");
@@ -160,12 +160,12 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michaela' })");
-                var summary = await cursor.ConsumeAsync();
+                var summary = await cursor.SummaryAsync();
                 summary.Counters.NodesCreated.Should().Be(1);
 
                 cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name = 'Michaela' SET n = $props",
                     new {props = new {name = "Andres", position = "Developer"}});
-                summary = await cursor.ConsumeAsync();
+                summary = await cursor.SummaryAsync();
                 summary.Counters.PropertiesSet.Should().Be(2);
 
                 cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name = $name RETURN n.position",

@@ -16,18 +16,15 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using FluentAssertions.Execution;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.StubTests
+namespace Neo4j.Driver.IntegrationTests.Stub
 {
     public class TransactionTests
     {

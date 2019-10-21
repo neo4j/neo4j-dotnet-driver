@@ -170,7 +170,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys = await cursor.KeysAsync();
                     keys.Should().BeEquivalentTo("X");
 
-                    await cursor.ConsumeAsync();
+                    await cursor.SummaryAsync();
 
                     keys = await cursor.KeysAsync();
                     keys.Should().BeEquivalentTo("X");
@@ -230,8 +230,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
 
-                    await cursor1.ConsumeAsync();
-                    await cursor2.ConsumeAsync();
+                    await cursor1.SummaryAsync();
+                    await cursor2.SummaryAsync();
 
                     keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
@@ -292,8 +292,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
 
-                    await cursor2.ConsumeAsync();
-                    await cursor1.ConsumeAsync();
+                    await cursor2.SummaryAsync();
+                    await cursor1.SummaryAsync();
 
                     keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
@@ -301,6 +301,99 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     keys1.Should().BeEquivalentTo("X");
 
                     await txc.CommitAsync();
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async Task ShouldNotBeAbleToAccessRecordsAfterRollback()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.AsyncSession();
+                try
+                {
+                    var txc = await session.BeginTransactionAsync();
+                    var cursor = await txc.RunAsync("RETURN 1 As X");
+                    await txc.RollbackAsync();
+                    var records = await cursor.ToListAsync();
+                    records.Count.Should().Be(0);
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async Task ShouldNotBeAbleToAccessRecordsAfterCommit()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.AsyncSession();
+                try
+                {
+                    var txc = await session.BeginTransactionAsync();
+                    var cursor = await txc.RunAsync("RETURN 1 As X");
+                    await txc.CommitAsync();
+                    var records = await cursor.ToListAsync();
+                    records.Count.Should().Be(0);
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async Task ShouldNotBeAbleToAccessRecordsAfterSummary()
+        {
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
+            {
+                var session = driver.AsyncSession();
+                try
+                {
+                    var txc = await session.BeginTransactionAsync();
+                    var cursor = await txc.RunAsync("RETURN 1 As X");
+                    await cursor.SummaryAsync();
+
+                    var records = await cursor.ToListAsync();
+                    records.Count.Should().Be(0);
+                    await txc.RollbackAsync();
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+            }
+        }
+
+        [RequireServerFact]
+        public async Task ShouldBeAbleToRunNestedQueries()
+        {
+            var config = Config.Builder.WithFetchSize(2).ToConfig();
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, config))
+            {
+                const int size = 1024;
+                var session = driver.AsyncSession();
+                try
+                {
+                    var txc1 = await session.BeginTransactionAsync();
+                    var cursor1 = await txc1.RunAsync("UNWIND range(1, $size) AS x RETURN x", new {size});
+
+                    await cursor1.ForEachAsync(async r =>
+                        await txc1.RunAsync("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
+                            new {x = r["x"].As<int>()}));
+
+                    var count = await (await txc1.RunAsync("MATCH (n:Node) RETURN count(n)")).SingleAsync();
+                    count[0].As<int>().Should().Be(size);
+                    await txc1.RollbackAsync();
                 }
                 finally
                 {

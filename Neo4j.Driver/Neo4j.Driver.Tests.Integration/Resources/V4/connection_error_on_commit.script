@@ -4,7 +4,7 @@
 
 C: BEGIN {}
    RUN "CREATE (n {name: 'Bob'})" {} {}
-   PULL {"n": -1}
+   PULL {"n": 1000}
 S: SUCCESS {}
    SUCCESS {}
    SUCCESS {}
