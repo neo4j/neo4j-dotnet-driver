@@ -50,5 +50,14 @@ namespace Neo4j.Driver
         /// </summary>
         /// <returns>The close task.</returns>
         Task CloseAsync();
+
+        /// <summary>
+        /// Asynchronously verify if the driver can connect to the remote server by establishing a network connection with the remote.
+        /// If the driver failed to connect to the remote server, an error will be thrown.
+        /// This exception can be used to further understand the cause of the connectivity problem.
+        /// Note: Even if this method complete exceptionally, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
+        /// </summary>
+        /// <returns>THe verification task.</returns>
+        Task VerifyConnectivityAsync();
     }
 }
