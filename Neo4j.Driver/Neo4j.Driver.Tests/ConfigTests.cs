@@ -14,6 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Logging;
@@ -35,6 +37,7 @@ namespace Neo4j.Driver.Tests
                 config.DriverLogger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
                 config.LoadBalancingStrategy.Should().Be(LoadBalancingStrategy.LeastConnected);
+                config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
             }
 
             [Fact]
