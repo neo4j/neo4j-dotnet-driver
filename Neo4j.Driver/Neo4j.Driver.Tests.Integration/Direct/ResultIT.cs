@@ -51,7 +51,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 stats.ToString().Should()
                     .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
                         "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
-                        "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
+                        "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0, SystemUpdates=0}");
 
                 summary.StatementType.Should().Be(StatementType.WriteOnly);
 

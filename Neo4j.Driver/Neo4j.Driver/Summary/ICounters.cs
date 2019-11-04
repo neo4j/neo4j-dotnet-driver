@@ -81,5 +81,15 @@ namespace Neo4j.Driver
         /// Gets the number of constraints removed from the schema.
         /// </summary>
         int ConstraintsRemoved { get; }
+
+        /// <summary>
+        /// Gets the number of system updates performed by this query.
+        /// </summary>
+        int SystemUpdates { get; }
+
+        /// <summary>
+        /// If the query updated the system graph in any way, this method will return true.
+        /// </summary>
+        bool ContainsSystemUpdates { get; }
     }
 }

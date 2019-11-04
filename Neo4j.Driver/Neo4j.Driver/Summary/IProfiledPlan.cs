@@ -35,6 +35,31 @@ namespace Neo4j.Driver
         long Records { get; }
 
         /// <summary>
+        /// Gets number of page cache hits caused by executing the associated execution step.
+        /// </summary>
+        long PageCacheHits { get; }
+
+        /// <summary>
+        /// Gets number of page cache misses caused by executing the associated execution step
+        /// </summary>
+        long PageCacheMisses { get; }
+
+        /// <summary>
+        /// Gets the ratio of page cache hits to total number of lookups or 0 if no data is available
+        /// </summary>
+        double PageCacheHitRatio { get; }
+
+        /// <summary>
+        /// Gets amount of time spent in the associated execution step.
+        /// </summary>
+        long Time { get; }
+
+        /// <summary>
+        /// Gets if the number page cache hits and misses and the ratio was recorded.
+        /// </summary>
+        bool HasPageCacheStats { get; }
+
+        /// <summary>
         /// Gets zero or more child profiled plans.
         /// 
         /// A profiled plan is a tree, where each child is another profiled plan. The children are where

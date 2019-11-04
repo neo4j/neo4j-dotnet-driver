@@ -139,7 +139,8 @@ namespace Neo4j.Driver.Internal.Result
     internal class ProfiledPlan : IProfiledPlan
     {
         public ProfiledPlan(string operatorType, IDictionary<string, object> arguments, IList<string> identifiers,
-            IList<IProfiledPlan> children, long dbHits, long records)
+            IList<IProfiledPlan> children, long dbHits, long records,
+            long pageCacheHits, long pageCacheMisses, double pageCacheHitRatio, long time)
         {
             OperatorType = operatorType;
             Arguments = arguments;
@@ -147,6 +148,11 @@ namespace Neo4j.Driver.Internal.Result
             Children = children;
             DbHits = dbHits;
             Records = records;
+            PageCacheHits = pageCacheHits;
+            PageCacheMisses = pageCacheMisses;
+            PageCacheHitRatio = pageCacheHitRatio;
+            HasPageCacheStats = pageCacheHits > 0 || pageCacheMisses > 0 || pageCacheHitRatio > 0;
+            Time = time;
         }
 
         public string OperatorType { get; }
@@ -155,6 +161,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IList<string> Identifiers { get; }
 
+        public bool HasPageCacheStats { get; }
         IList<IPlan> IPlan.Children => Children.Cast<IPlan>().ToList();
 
         public IList<IProfiledPlan> Children { get; }
@@ -162,6 +169,10 @@ namespace Neo4j.Driver.Internal.Result
         public long DbHits { get; }
 
         public long Records { get; }
+        public long PageCacheHits { get; }
+        public long PageCacheMisses { get; }
+        public double PageCacheHitRatio { get; }
+        public long Time { get; }
 
         public override string ToString()
         {
@@ -170,6 +181,10 @@ namespace Neo4j.Driver.Internal.Result
                    $"{nameof(Identifiers)}={Identifiers.ToContentString()}, " +
                    $"{nameof(DbHits)}={DbHits}, " +
                    $"{nameof(Records)}={Records}, " +
+                   $"{nameof(PageCacheHits)}={PageCacheHits}, " +
+                   $"{nameof(PageCacheMisses)}={PageCacheMisses}, " +
+                   $"{nameof(PageCacheHitRatio)}={PageCacheHitRatio}, " +
+                   $"{nameof(Time)}={Time}, " +
                    $"{nameof(Children)}={Children.ToContentString()}}}";
         }
     }
@@ -200,14 +215,17 @@ namespace Neo4j.Driver.Internal.Result
         public int IndexesRemoved { get; }
         public int ConstraintsAdded { get; }
         public int ConstraintsRemoved { get; }
+        public int SystemUpdates { get; }
 
-        public Counters() : this(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        public bool ContainsSystemUpdates => IsPositive(SystemUpdates);
+
+        public Counters() : this(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         {
         }
 
         public Counters(int nodesCreated, int nodesDeleted, int relationshipsCreated, int relationshipsDeleted,
             int propertiesSet, int labelsAdded, int labelsRemoved, int indexesAdded, int indexesRemoved,
-            int constraintsAdded, int constraintsRemoved)
+            int constraintsAdded, int constraintsRemoved, int systemUpdates)
         {
             NodesCreated = nodesCreated;
             NodesDeleted = nodesDeleted;
@@ -220,6 +238,7 @@ namespace Neo4j.Driver.Internal.Result
             IndexesRemoved = indexesRemoved;
             ConstraintsAdded = constraintsAdded;
             ConstraintsRemoved = constraintsRemoved;
+            SystemUpdates = systemUpdates;
         }
 
         private bool IsPositive(int value)
@@ -239,7 +258,8 @@ namespace Neo4j.Driver.Internal.Result
                    $"{nameof(IndexesAdded)}={IndexesAdded}, " +
                    $"{nameof(IndexesRemoved)}={IndexesRemoved}, " +
                    $"{nameof(ConstraintsAdded)}={ConstraintsAdded}, " +
-                   $"{nameof(ConstraintsRemoved)}={ConstraintsRemoved}}}";
+                   $"{nameof(ConstraintsRemoved)}={ConstraintsRemoved}, " +
+                   $"{nameof(SystemUpdates)}={SystemUpdates}}}";
         }
     }
 
