@@ -51,7 +51,7 @@ namespace Neo4j.Driver
         /// <list type="bullet">
         /// <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> Encrypted</c> </item>
         /// <item><see cref="TrustManager"/> : <c><see cref="TrustManager"/>CreateChainTrust()</c> </item>
-        /// <item><see cref="ConnectionTimeout"/>: <c>5s</c> </item>
+        /// <item><see cref="ConnectionTimeout"/>: <c>30s</c> </item>
         /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
         /// <item><see cref="Ipv6Enabled"/>: <c>true</c></item>
         /// <br></br>
@@ -137,7 +137,7 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets or sets the connection timeout when establishing a connection with a server.
         /// </summary>
-        public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Gets or sets the socket keep alive option.
