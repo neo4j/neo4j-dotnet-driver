@@ -145,20 +145,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnUpdateStatisticsWithSystemUpdates()
-            {
-                // Ensure that a constraint exists
-                using (var session = Server.Driver.Session(o => o.WithDatabase("system")))
-                {
-                    session.Run("CREATE USER foo SET PASSWORD 'bar'").Summary();
-                }
-
-                VerifySummary("CREATE USER foo", null,
-                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)}));
-            }
-
-
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldNotReturnPlanAndProfile()
             {
                 VerifySummary("CREATE (n) RETURN n", null,
