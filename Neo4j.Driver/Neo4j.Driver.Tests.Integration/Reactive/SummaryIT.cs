@@ -244,7 +244,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         if (drop.Values.TryGetValue("description", out var name) ||
                             drop.Values.TryGetValue("name", out name))
                         {
-                            session.Run($"DROP {name}").Summary();
+                            session.Run($"DROP INDEX {name}").Summary();
                         }
                     }
                 }
