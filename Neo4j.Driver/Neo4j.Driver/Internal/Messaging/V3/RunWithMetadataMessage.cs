@@ -28,15 +28,15 @@ namespace Neo4j.Driver.Internal.Messaging.V3
         {
         }
 
-        public RunWithMetadataMessage(Statement statement, Bookmark bookmark = null, TransactionConfig txConfig = null,
+        public RunWithMetadataMessage(Statement statement, Bookmark bookmark = null, TransactionOptions optionsBuilder = null,
             AccessMode mode = AccessMode.Write)
-            : this(statement, null, bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
+            : this(statement, null, bookmark, optionsBuilder?.Timeout, optionsBuilder?.Metadata, mode)
         {
         }
 
-        public RunWithMetadataMessage(Statement statement, string database, Bookmark bookmark, TransactionConfig txConfig,
+        public RunWithMetadataMessage(Statement statement, string database, Bookmark bookmark, TransactionOptions optionsBuilder,
             AccessMode mode)
-            : this(statement, database, bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
+            : this(statement, database, bookmark, optionsBuilder?.Timeout, optionsBuilder?.Metadata, mode)
         {
         }
 

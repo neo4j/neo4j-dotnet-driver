@@ -54,19 +54,19 @@ namespace Neo4j.Driver.Internal
             return Run(statement, null);
         }
 
-        public IRxStatementResult Run(string statement, TransactionConfig txConfig)
+        public IRxStatementResult Run(string statement, Action<TransactionOptions> optionsBuilder)
         {
-            return Run(new Statement(statement), txConfig);
+            return Run(new Statement(statement), optionsBuilder);
         }
 
-        public IRxStatementResult Run(string statement, object parameters, TransactionConfig txConfig)
+        public IRxStatementResult Run(string statement, object parameters, Action<TransactionOptions> optionsBuilder)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()), txConfig);
+            return Run(new Statement(statement, parameters.ToDictionary()), optionsBuilder);
         }
 
-        public IRxStatementResult Run(Statement statement, TransactionConfig txConfig)
+        public IRxStatementResult Run(Statement statement, Action<TransactionOptions> optionsBuilder)
         {
-            return new InternalRxStatementResult(Observable.FromAsync(() => _session.RunAsync(statement, txConfig))
+            return new InternalRxStatementResult(Observable.FromAsync(() => _session.RunAsync(statement, optionsBuilder))
                 .Cast<IInternalStatementResultCursor>());
         }
 
@@ -79,16 +79,16 @@ namespace Neo4j.Driver.Internal
             return BeginTransaction(null);
         }
 
-        public IObservable<IRxTransaction> BeginTransaction(TransactionConfig txConfig)
+        public IObservable<IRxTransaction> BeginTransaction(Action<TransactionOptions> optionsBuilder)
         {
-            return Observable.FromAsync(() => _session.BeginTransactionAsync(txConfig))
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(optionsBuilder))
                 .Select(tx =>
                     new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
 
-        private IObservable<InternalRxTransaction> BeginTransaction(AccessMode mode, TransactionConfig txConfig)
+        private IObservable<InternalRxTransaction> BeginTransaction(AccessMode mode, Action<TransactionOptions> optionsBuilder)
         {
-            return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, txConfig))
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, optionsBuilder))
                 .Select(tx =>
                     new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
@@ -99,32 +99,32 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return ReadTransaction(work, TransactionConfig.Empty);
+            return ReadTransaction(work, null);
         }
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig)
+            Action<TransactionOptions> optionsBuilder)
         {
-            return RunTransaction(AccessMode.Read, work, txConfig);
+            return RunTransaction(AccessMode.Read, work, optionsBuilder);
         }
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return WriteTransaction(work, TransactionConfig.Empty);
+            return WriteTransaction(work, null);
         }
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig)
+            Action<TransactionOptions> optionsBuilder)
         {
-            return RunTransaction(AccessMode.Write, work, txConfig);
+            return RunTransaction(AccessMode.Write, work, optionsBuilder);
         }
 
         internal IObservable<T> RunTransaction<T>(AccessMode mode,
             Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig)
+            Action<TransactionOptions> optionsBuilder)
         {
             return _retryLogic.Retry(
-                BeginTransaction(mode, txConfig)
+                BeginTransaction(mode, optionsBuilder)
                     .SelectMany(txc =>
                         Observable.Defer(() =>
                             {

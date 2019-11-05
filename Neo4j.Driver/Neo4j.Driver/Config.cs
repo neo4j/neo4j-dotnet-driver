@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Metrics;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Use this class to config the <see cref="IDriver"/>.
+    /// Use this class to configure the <see cref="IDriver"/>.
     /// </summary>
     public class Config
     {

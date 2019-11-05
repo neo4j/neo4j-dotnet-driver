@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     public static class BoltProtocolV3Tests
     {
-        private static readonly TransactionConfig TxConfig = new TransactionConfig
+        private static readonly TransactionOptions TxOptions = new TransactionOptions
         {
             Timeout = TimeSpan.FromMinutes(1),
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
@@ -48,8 +48,8 @@ namespace Neo4j.Driver.Internal.Protocol
             var expected = new Dictionary<string, object>
             {
                 {"bookmarks", new[] {"bookmark-123"}},
-                {"tx_timeout", TxConfig.Timeout.TotalMilliseconds},
-                {"tx_metadata", TxConfig.Metadata}
+                {"tx_timeout", TxOptions.Timeout.TotalMilliseconds},
+                {"tx_metadata", TxOptions.Metadata}
             };
 
             if (mode == AccessMode.Read)
@@ -158,7 +158,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, Bookmark, TxConfig);
+                    resourceHandler.Object, null, Bookmark, TxOptions);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 BoltV3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Statement("text"),
                         false, Mock.Of<IBookmarkTracker>(), Mock.Of<IResultResourceHandler>(), database,
                         Bookmark.From("123"),
-                        TransactionConfig.Empty))
+                        TransactionOptions.Empty))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             VerifyMetadata(msg.Metadata, mode);
                         });
 
-                await BoltV3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig);
+                await BoltV3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxOptions);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
                 BoltV3.Awaiting(p => p.BeginTransactionAsync(Mock.Of<IConnection>(), database, Bookmark.From("123"),
-                        TransactionConfig.Empty))
+                        TransactionOptions.Empty))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }

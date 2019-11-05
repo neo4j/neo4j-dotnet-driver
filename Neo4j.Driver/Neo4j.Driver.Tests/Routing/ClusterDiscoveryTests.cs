@@ -289,7 +289,7 @@ namespace Neo4j.Driver.Tests.Routing
                                 {"database", string.IsNullOrEmpty(database) ? null : database},
                             }),
                         "system",
-                        bookmark, TransactionConfig.Empty, AccessMode.Read),
+                        bookmark, TransactionOptions.Empty, AccessMode.Read),
                     SuccessMessage(new List<object> {"ttl", "servers"})),
                 MessagePair(new RecordMessage(recordFields)),
                 MessagePair(new PullMessage(PullMessage.All), SuccessMessage())

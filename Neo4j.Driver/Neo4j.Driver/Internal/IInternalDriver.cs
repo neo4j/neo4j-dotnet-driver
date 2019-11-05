@@ -24,6 +24,6 @@ namespace Neo4j.Driver.Internal
     {
         Config Config { get; }
 
-        IInternalAsyncSession Session(Action<SessionConfig> optionsBuilder, bool reactive);
+        IInternalAsyncSession Session(Action<SessionOptions> optionsBuilder, bool reactive);
     }
 }

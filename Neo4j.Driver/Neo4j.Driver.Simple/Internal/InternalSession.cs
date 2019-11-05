@@ -39,42 +39,42 @@ namespace Neo4j.Driver.Internal
 
         public IStatementResult Run(string statement)
         {
-            return Run(new Statement(statement), TransactionConfig.Empty);
+            return Run(new Statement(statement));
         }
 
         public IStatementResult Run(string statement, object parameters)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()), TransactionConfig.Empty);
+            return Run(new Statement(statement, parameters.ToDictionary()));
         }
 
         public IStatementResult Run(string statement, IDictionary<string, object> parameters)
         {
-            return Run(new Statement(statement, parameters), TransactionConfig.Empty);
+            return Run(new Statement(statement, parameters));
         }
 
         public IStatementResult Run(Statement statement)
         {
-            return Run(statement, TransactionConfig.Empty);
+            return Run(statement, null);
         }
 
         #region BeginTransaction Methods
 
         public ITransaction BeginTransaction()
         {
-            return BeginTransaction(TransactionConfig.Empty);
+            return BeginTransaction(null);
         }
 
-        public ITransaction BeginTransaction(TransactionConfig txConfig)
+        public ITransaction BeginTransaction(Action<TransactionOptions> optionsBuilder)
         {
             return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(txConfig))
+                _executor.RunSync(() => _session.BeginTransactionAsync(optionsBuilder))
                     .CastOrThrow<IInternalAsyncTransaction>(), _executor);
         }
 
-        private InternalTransaction BeginTransaction(AccessMode mode, TransactionConfig txConfig)
+        private InternalTransaction BeginTransaction(AccessMode mode, Action<TransactionOptions> optionsBuilder)
         {
             return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(mode, txConfig))
+                _executor.RunSync(() => _session.BeginTransactionAsync(mode, optionsBuilder))
                     .CastOrThrow<IInternalAsyncTransaction>(), _executor);
         }
 
@@ -84,29 +84,29 @@ namespace Neo4j.Driver.Internal
 
         public T ReadTransaction<T>(Func<ITransaction, T> work)
         {
-            return ReadTransaction(work, TransactionConfig.Empty);
+            return ReadTransaction(work, null);
         }
 
-        public T ReadTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig)
+        public T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder)
         {
-            return RunTransaction(AccessMode.Read, work, txConfig);
+            return RunTransaction(AccessMode.Read, work, optionsBuilder);
         }
 
         public T WriteTransaction<T>(Func<ITransaction, T> work)
         {
-            return WriteTransaction(work, TransactionConfig.Empty);
+            return WriteTransaction(work, null);
         }
 
-        public T WriteTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig)
+        public T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder)
         {
-            return RunTransaction(AccessMode.Write, work, txConfig);
+            return RunTransaction(AccessMode.Write, work, optionsBuilder);
         }
 
-        internal T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, TransactionConfig txConfig)
+        internal T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder)
         {
             return _retryLogic.Retry(() =>
             {
-                using (var txc = BeginTransaction(mode, txConfig))
+                using (var txc = BeginTransaction(mode, optionsBuilder))
                 {
                     try
                     {
@@ -133,20 +133,20 @@ namespace Neo4j.Driver.Internal
 
         #endregion
 
-        public IStatementResult Run(string statement, TransactionConfig txConfig)
+        public IStatementResult Run(string statement, Action<TransactionOptions> optionsBuilder)
         {
-            return Run(new Statement(statement), txConfig);
+            return Run(new Statement(statement), optionsBuilder);
         }
 
         public IStatementResult Run(string statement, IDictionary<string, object> parameters,
-            TransactionConfig txConfig)
+            Action<TransactionOptions> optionsBuilder)
         {
-            return Run(new Statement(statement, parameters), txConfig);
+            return Run(new Statement(statement, parameters), optionsBuilder);
         }
 
-        public IStatementResult Run(Statement statement, TransactionConfig txConfig)
+        public IStatementResult Run(Statement statement, Action<TransactionOptions> optionsBuilder)
         {
-            return new InternalStatementResult(_executor.RunSync(() => _session.RunAsync(statement, txConfig)),
+            return new InternalStatementResult(_executor.RunSync(() => _session.RunAsync(statement, optionsBuilder)),
                 _executor);
         }
 

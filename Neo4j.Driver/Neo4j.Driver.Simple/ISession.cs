@@ -58,7 +58,7 @@ namespace Neo4j.Driver
         ITransaction BeginTransaction();
 
         /// <summary>
-        /// Begin a new transaction with a specific <see cref="TransactionConfig"/> in this session.
+        /// Begin a new transaction with a specific <see cref="TransactionOptions"/> in this session.
         /// A session can have at most one transaction running at a time, if you
         /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
         /// 
@@ -70,10 +70,10 @@ namespace Neo4j.Driver
         /// method.
         ///
         /// </summary>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionOptions"/></param>
         /// <returns>A new transaction.</returns>
-        ITransaction BeginTransaction(TransactionConfig txConfig);
+        ITransaction BeginTransaction(Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.
@@ -84,14 +84,14 @@ namespace Neo4j.Driver
         T ReadTransaction<T>(Func<ITransaction, T> work);
 
         /// <summary>
-        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
+        /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionOptions"/>.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
         /// This configuration overrides server side default transaction configurations.</param>
         /// <returns>A result as returned by the given unit of work.</returns>
-        T ReadTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig);
+        T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.
@@ -102,31 +102,31 @@ namespace Neo4j.Driver
         T WriteTransaction<T>(Func<ITransaction, T> work);
 
         /// <summary>
-        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
+        ///  Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionOptions"/>.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
-        /// <param name="txConfig">Configuration for the new transaction.
-        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionOptions"/></param>
         /// <returns>A result as returned by the given unit of work.</returns>
-        T WriteTransaction<T>(Func<ITransaction, T> work, TransactionConfig txConfig);
+        T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// 
-        /// Run a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        /// Run a statement with the specific <see cref="TransactionOptions"/> and return a result stream.
         ///
         /// This method accepts a String representing a Cypher statement which will be 
         /// compiled into a query object that can be used to efficiently execute this
         /// statement multiple times. 
         /// </summary>
         /// <param name="statement">A Cypher statement.</param>
-        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(string statement, TransactionConfig txConfig);
+        IStatementResult Run(string statement, Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// 
-        /// Run a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        /// Run a statement with the specific <see cref="TransactionOptions"/> and return a result stream.
         ///
         /// This method accepts a String representing a Cypher statement which will be 
         /// compiled into a query object that can be used to efficiently execute this
@@ -136,18 +136,18 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="statement">A Cypher statement.</param>
         /// <param name="parameters">Input parameters for the statement.</param>
-        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(string statement, IDictionary<string, object> parameters, TransactionConfig txConfig);
+        IStatementResult Run(string statement, IDictionary<string, object> parameters, Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         ///
-        /// Execute a statement with the specific <see cref="TransactionConfig"/> and return a result stream.
+        /// Execute a statement with the specific <see cref="TransactionOptions"/> and return a result stream.
         ///
         /// </summary>
         /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
-        /// <param name="txConfig">Configuration for the new transaction.</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(Statement statement, TransactionConfig txConfig);
+        IStatementResult Run(Statement statement, Action<TransactionOptions> optionsBuilder);
     }
 }

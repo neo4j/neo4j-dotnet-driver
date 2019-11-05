@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests
                     {
                         {"key1", 1},
                         {"key2", new[] {2, 4}}
-                    }), "my-database", Bookmark.From("bookmark-1"), TransactionConfig.Empty, AccessMode.Read),
+                    }), "my-database", Bookmark.From("bookmark-1"), TransactionOptions.Empty, AccessMode.Read),
                     "RUN `A statement`, [{key1, 1}, {key2, [2, 4]}] [{bookmarks, [bookmark-1]}, {mode, r}, {db, my-database}]"
                 },
                 new object[] {new PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},

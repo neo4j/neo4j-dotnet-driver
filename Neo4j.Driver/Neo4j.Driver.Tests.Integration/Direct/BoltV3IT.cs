@@ -34,14 +34,12 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact("3.5.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldRunWithTxConfigAsync()
         {
-            // Given
-            var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
-
             // When
             var session = Server.Driver.AsyncSession();
             try
             {
-                var cursor = await session.RunAsync("CALL dbms.listTransactions()", txConfig);
+                var cursor = await session.RunAsync("CALL dbms.listTransactions()",
+                    o => { o.WithMetadata(new Dictionary<string, object> {{"name", "Molly"}}); });
                 var records = await cursor.ToListAsync(r => r["metaData"].As<IDictionary<string, object>>());
 
                 // Then
@@ -74,12 +72,12 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                     // When
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                    var txConfig = new TransactionConfig {Timeout = TimeSpan.FromMilliseconds(1)};
                     var session = Server.Driver.AsyncSession();
                     try
                     {
                         var error = await Record.ExceptionAsync(() =>
-                            session.RunAsync("MATCH (n:Node) SET n.prop = 2", txConfig)
+                            session.RunAsync("MATCH (n:Node) SET n.prop = 2",
+                                    o => { o.WithTimeout(TimeSpan.FromMilliseconds(1)); })
                                 .ContinueWith(c => c.Result.SummaryAsync()).Unwrap());
 
                         // Then
@@ -116,7 +114,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         private async Task RunWithTxConfigAsync(bool read)
         {
             // Given
-            var txConfig = new TransactionConfig {Metadata = new Dictionary<string, object> {{"name", "Molly"}}};
+            void BuildOptions(TransactionOptions o)
+            {
+                o.WithMetadata(new Dictionary<string, object> {{"name", "Molly"}});
+            }
 
             // When
             var session = Server.Driver.AsyncSession();
@@ -126,11 +127,11 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     ? await session.ReadTransactionAsync(tx =>
                         tx.RunAsync("CALL dbms.listTransactions()")
                             .ContinueWith(cursor => cursor.Result.SingleAsync())
-                            .Unwrap(), txConfig)
+                            .Unwrap(), BuildOptions)
                     : await session.WriteTransactionAsync(tx =>
                         tx.RunAsync("CALL dbms.listTransactions()")
                             .ContinueWith(cursor => cursor.Result.SingleAsync())
-                            .Unwrap(), txConfig);
+                            .Unwrap(), BuildOptions);
 
                 // Then
                 var value = single["metaData"].As<IDictionary<string, object>>();

@@ -29,17 +29,23 @@ namespace Neo4j.Driver
     /// <para/>
     /// For example, the following code starts a transaction using server default transaction configurations.
     /// <code>
-    /// session.BeginTransaction(new TransactionConfig());
+    /// session.BeginTransaction(o=>{});
     /// </code>
     /// </summary>
-    public sealed class TransactionConfig : IEquatable<TransactionConfig>
+    public sealed class TransactionOptions
     {
-        internal static readonly TransactionConfig Empty = new TransactionConfig();
-        private IDictionary<string, object> _metadata = PackStream.EmptyDictionary;
-        private TimeSpan _timeout = TimeSpan.Zero;
+        internal static readonly TransactionOptions Empty = new TransactionOptions();
+        private IDictionary<string, object> _metadata;
+        private TimeSpan _timeout;
+
+        internal TransactionOptions()
+        {
+            _timeout = TimeSpan.Zero;
+            _metadata = PackStream.EmptyDictionary;
+        }
 
         /// <summary>
-        /// Get and set transaction timeout.
+        /// Transaction timeout.
         /// Transactions that execute longer than the configured timeout will be terminated by the database.
         /// This functionality allows to limit query/transaction execution time.
         /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
@@ -49,7 +55,7 @@ namespace Neo4j.Driver
         public TimeSpan Timeout
         {
             get => _timeout;
-            set
+            internal set
             {
                 if (value <= TimeSpan.Zero)
                 {
@@ -62,58 +68,50 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        /// Get and set the transaction metadata.
+        /// The transaction metadata.
         /// Specified metadata will be attached to the executing transaction and visible in the output of <code>dbms.listQueries</code>
         /// and <code>dbms.listTransactions</code> procedures. It will also get logged to the <code>query.log</code>.
-        /// Transactions starting with this <see cref="TransactionConfig"/>
+        /// Transactions starting with this <see cref="TransactionOptions"/>
         /// This functionality makes it easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure.
         /// Leave this field unmodified to use default timeout configured on database.
         /// </summary>
         public IDictionary<string, object> Metadata
         {
             get => _metadata;
-            set => _metadata =
+            internal set => _metadata =
                 value ?? throw new ArgumentNullException(nameof(value), "Transaction metadata should not be null");
-        }
-        
-        /// <summary>
-        /// Returns a value indicating whether this instance is equal to a specified object.
-        /// </summary>
-        /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="TransactionConfig"/> and
-        /// equals the value of this instance; otherwise, <code>false</code></returns>
-        public override bool Equals(object obj)
-        {
-            if (obj is null) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            return obj is TransactionConfig config && Equals(config);
-        }
-        
-        /// <summary>
-        /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="TransactionConfig" /> instance. 
-        /// </summary>
-        /// <param name="other">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
-        /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(TransactionConfig other)
-        {
-            if (other is null) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Timeout == other.Timeout &&
-                   (Metadata == other.Metadata ||
-                    Metadata.Count == other.Metadata.Count && !Metadata.Except(other.Metadata).Any());
         }
 
         /// <summary>
-        /// Returns the hash code for this instance.
+        /// Sets the transaction timeout.
+        /// Transactions that execute longer than the configured timeout will be terminated by the database.
+        /// This functionality allows to limit query/transaction execution time.
+        /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
+        /// Leave this field unmodified to use default timeout configured on database.
         /// </summary>
-        /// <returns>A 32-bit signed integer hash code.</returns>
-        public override int GetHashCode()
+        /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less or equal to zero</exception>
+        /// <param name="timeout">the new timeout</param>
+        /// <returns>this <see cref="TransactionOptions"/> instance</returns>
+        public TransactionOptions WithTimeout(TimeSpan timeout)
         {
-            var hashCode = Timeout.GetHashCode();
-            hashCode = (hashCode * 397) ^ (Metadata != null ? Metadata.GetHashCode() : 0);
-            return hashCode;
+            Timeout = timeout;
+            return this;
+        }
+
+        /// <summary>
+        /// The transaction metadata.
+        /// Specified metadata will be attached to the executing transaction and visible in the output of <code>dbms.listQueries</code>
+        /// and <code>dbms.listTransactions</code> procedures. It will also get logged to the <code>query.log</code>.
+        /// Transactions starting with this <see cref="TransactionOptions"/>
+        /// This functionality makes it easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure.
+        /// Leave this field unmodified to use default timeout configured on database.
+        /// </summary>
+        /// <param name="metadata">the metadata to set on transaction</param>
+        /// <returns>this <see cref="TransactionOptions"/> instance</returns>
+        public TransactionOptions WithMetadata(IDictionary<string, object> metadata)
+        {
+            Metadata = metadata;
+            return this;
         }
 
         /// <summary>
@@ -123,16 +121,6 @@ namespace Neo4j.Driver
         public override string ToString()
         {
             return $"{GetType().Name}{{{nameof(Metadata)}={Metadata.ToContentString()}, {nameof(Timeout)}={Timeout}}}";
-        }
-        
-        /// <summary>
-        /// Test if the config is empty. Empty configuration will not be sent to server when starting a transaction,
-        /// and therefore the transactions will be started using default transaction configuration values set in server configurations. 
-        /// </summary>
-        /// <returns>True if the transaction config is empty, otherwise false.</returns>
-        internal bool IsEmpty()
-        {
-            return Equals(Empty) || _timeout <= TimeSpan.Zero && (_metadata == null || _metadata.Count == 0);
         }
     }
 }

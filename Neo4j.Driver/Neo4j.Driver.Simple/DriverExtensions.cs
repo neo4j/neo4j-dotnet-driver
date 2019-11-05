@@ -30,10 +30,10 @@ namespace Neo4j.Driver
     {
         /// <summary>
         /// Obtain a session which is designed to be used synchronously, which is built on top of the default
-        /// asynchronous <see cref="IAsyncSession"/> with <see cref="AccessMode.Write"/>.
+        /// asynchronous <see cref="IAsyncSession"/> with default <see cref="SessionOptions"/>.
         /// </summary>
         /// <param name="driver">driver instance</param>
-        /// <returns>A reactive session instance</returns>
+        /// <returns>A simple session instance</returns>
         public static ISession Session(this IDriver driver)
         {
             return Session(driver, o => { });
@@ -41,18 +41,18 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// Obtain a session which is designed to be used synchronously, which is built on top of the default
-        /// asynchronous <see cref="IAsyncSession"/> with the specified access mode and bookmarks.
+        /// asynchronous <see cref="IAsyncSession"/> with the customized <see cref="SessionOptions"/>.
         /// </summary>
         /// <param name="driver">driver instance</param>
-        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionConfig"/> instance, that should populate
+        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionOptions"/> instance, that should populate
         /// the provided instance with desired options.</param> 
-        /// <returns>A reactive session instance</returns>
-        public static ISession Session(this IDriver driver, Action<SessionConfig> optionsBuilder)
+        /// <returns>A simple session instance</returns>
+        public static ISession Session(this IDriver driver, Action<SessionOptions> optionsBuilder)
         {
-            var reactiveDriver = driver.CastOrThrow<IInternalDriver>();
+            var asyncDriver = driver.CastOrThrow<IInternalDriver>();
 
             return new InternalSession(driver.AsyncSession(optionsBuilder).CastOrThrow<IInternalAsyncSession>(),
-                new RetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.DriverLogger),
+                new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.DriverLogger),
                 new BlockingExecutor());
         }
     }

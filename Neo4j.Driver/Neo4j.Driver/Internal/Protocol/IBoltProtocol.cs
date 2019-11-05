@@ -33,10 +33,10 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Statement statement,
             bool reactive, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionConfig txConfig, long fetchSize);
+            string database, Bookmark bookmark, TransactionOptions optionsBuilder, long fetchSize);
 
         Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
-            TransactionConfig txConfig);
+            TransactionOptions optionsBuilder);
 
         Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection, Statement statement,
             bool reactive, long fetchSize);

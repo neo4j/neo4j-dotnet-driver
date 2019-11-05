@@ -22,6 +22,7 @@ using System.Threading;
 using Neo4j.Driver;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal
 {
@@ -57,23 +58,22 @@ namespace Neo4j.Driver.Internal
 
         public IAsyncSession AsyncSession()
         {
-            return AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
+            return AsyncSession(null);
         }
 
-        public IAsyncSession AsyncSession(Action<SessionConfig> optionsBuilder)
+        public IAsyncSession AsyncSession(Action<SessionOptions> optionsBuilder)
         {
             return Session(optionsBuilder, false);
         }
 
-        public IInternalAsyncSession Session(Action<SessionConfig> optionsBuilder, bool reactive)
+        public IInternalAsyncSession Session(Action<SessionOptions> optionsBuilder, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var options = new SessionConfig();
-            optionsBuilder(options);
+            var options = OptionsBuilder.BuildSessionOptions(optionsBuilder);
 
             var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,
                 options.Database, Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive,

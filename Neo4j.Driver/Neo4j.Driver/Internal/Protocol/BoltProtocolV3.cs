@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionConfig txConfig, long fetchSize = Config.Infinite)
+            string database, Bookmark bookmark, TransactionOptions optionsBuilder, long fetchSize = Config.Infinite)
         {
             AssertNullDatabase(database);
 
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection
                 .EnqueueAsync(
-                    new RunWithMetadataMessage(statement, bookmark, txConfig, connection.GetEnforcedAccessMode()),
+                    new RunWithMetadataMessage(statement, bookmark, optionsBuilder, connection.GetEnforcedAccessMode()),
                     runHandler,
                     PullAll, pullAllHandler)
                 .ConfigureAwait(false);
@@ -81,12 +81,12 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
-            TransactionConfig txConfig)
+            TransactionOptions optionsBuilder)
         {
             AssertNullDatabase(database);
 
             await connection.EnqueueAsync(
-                    new BeginMessage(bookmark, txConfig, connection.GetEnforcedAccessMode()),
+                    new BeginMessage(bookmark, optionsBuilder, connection.GetEnforcedAccessMode()),
                     new V3.BeginResponseHandler())
                 .ConfigureAwait(false);
             if (bookmark != null && bookmark.Values.Any())

@@ -48,56 +48,59 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// Begin a new <strong>explicit</strong> <see cref="IRxTransaction"/> with the provided
-        /// <see cref="TransactionConfig"/>.
+        /// <see cref="TransactionOptions"/>.
         ///
         /// Actual transaction is only created once an observer is subscribed to the returned reactive stream.
         /// 
         /// A session instance can only have at most one transaction at a time. If you want to run
         /// multiple concurrent transactions, you should use multiple concurrent sessions.
         /// </summary>
-        /// <param name="txConfig">configuration for the returned transaction</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>,
+        /// defines how to create the configuration for the returned transaction</param>
         /// <returns>a reactive stream which will generate at most one <see cref="IRxTransaction"/> instance.</returns>
-        IObservable<IRxTransaction> BeginTransaction(TransactionConfig txConfig);
+        IObservable<IRxTransaction> BeginTransaction(Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement with the 
-        /// provided <see cref="TransactionConfig"/> that applies to the underlying auto-commit transaction.
+        /// provided <see cref="TransactionOptions"/> that applies to the underlying auto-commit transaction.
         /// </summary>
         /// 
         /// <param name="statement">statement to be executed</param>
-        /// <param name="txConfig">configuration for the auto-commit transaction</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>,
+        /// defines how to create the configuration for the returned transaction</param>
         /// <returns>a reactive result</returns>
         ///
-        /// <see cref="Run(Statement,TransactionConfig)"/>
-        IRxStatementResult Run(string statement, TransactionConfig txConfig);
+        /// <see cref="Run(string,System.Action{Neo4j.Driver.TransactionOptions})"></see>
+        IRxStatementResult Run(string statement, Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement  with the specified
-        /// parameters and the provided <see cref="TransactionConfig"/>  that applies to the  underlying auto-commit
+        /// parameters and the provided <see cref="TransactionOptions"/>  that applies to the  underlying auto-commit
         /// transaction.
         /// </summary>
         /// 
         /// <param  name="statement">statement to be executed</param>
         /// <param name="parameters">a parameter dictionary, can be an
         ///     <see cref="IDictionary{TKey,TValue}" /> or an anonymous object</param>
-        /// <param name="txConfig">configuration for the auto-commit transaction</param>
+        /// <param name="optionsBuilder">configuration for the auto-commit transaction</param>
         /// <returns>a reactive result</returns>
         /// 
-        /// <see cref="Run(Statement,TransactionConfig)"></see>
-        IRxStatementResult Run(string statement, object parameters, TransactionConfig txConfig);
+        /// <see cref="Run(string,System.Action{Neo4j.Driver.TransactionOptions})"></see>
+        IRxStatementResult Run(string statement, object parameters, Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the given statement with the
-        /// provided <see cref="TransactionConfig"/> that applies to the underlying auto-commit transaction.
+        /// provided <see cref="TransactionOptions"/> that applies to the underlying auto-commit transaction.
         ///
         /// The statement is only executed when an <see cref="IObserver{T}"/> is subscribed to one of the reactive streams
         /// that can be accessed through the returned reactive result. 
         /// 
         /// </summary>
         /// <param name="statement">statement to be executed</param>
-        /// <param name="txConfig">configuration for the auto-commit transaction</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>,
+        /// defines how to create the configuration for the auto-commit transaction</param>
         /// <returns>a reactive result</returns>
-        IRxStatementResult Run(Statement statement, TransactionConfig txConfig);
+        IRxStatementResult Run(Statement statement, Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Read">Read</see>
@@ -111,14 +114,15 @@ namespace Neo4j.Driver
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Read">Read</see>
         /// <see cref="IRxTransaction">reactive transaction</see> which is created with the provided
-        /// <see cref="TransactionConfig"/>.
+        /// <see cref="TransactionOptions"/>.
         /// </summary>
         /// <param name="work">a unit of work to be executed</param>
-        /// <param name="txConfig">configuration for the created transaction</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>,
+        /// defines how to create the configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
         IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig);
+            Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Write">Read</see>
@@ -132,14 +136,15 @@ namespace Neo4j.Driver
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Write">Read</see>
         /// <see cref="IRxTransaction">reactive transaction</see> which is created with the provided
-        /// <see cref="TransactionConfig"/>.
+        /// <see cref="TransactionOptions"/>.
         /// </summary>
         /// <param name="work">a unit of work to be executed</param>
-        /// <param name="txConfig">configuration for the created transaction</param>
+        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>,
+        /// defines how to create the configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
         IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig);
+            Action<TransactionOptions> optionsBuilder);
 
         /// <summary>
         /// Closes this session and returns an empty reactive stream.
