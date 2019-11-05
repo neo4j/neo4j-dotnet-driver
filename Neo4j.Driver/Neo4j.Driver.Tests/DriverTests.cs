@@ -18,7 +18,9 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -128,6 +130,17 @@ namespace Neo4j.Driver.Tests
             var ex = Record.Exception(() => driver.AsyncSession());
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ObjectDisposedException>();
+        }
+
+        [Fact]
+        public async void ShouldVerifyConnection()
+        {
+            var mock = new Mock<IConnectionProvider>();
+            mock.Setup(x => x.VerifyConnectivityAsync()).Returns(Task.CompletedTask);
+            var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null);
+            await driver.VerifyConnectivityAsync();
+
+            mock.Verify(x => x.VerifyConnectivityAsync(), Times.Once);
         }
     }
 }

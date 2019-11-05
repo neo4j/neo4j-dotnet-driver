@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Internal
         public Uri Uri { get; }
 
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic,
-            IDriverLogger logger,
+            IDriverLogger logger = null,
             IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
@@ -109,6 +109,11 @@ namespace Neo4j.Driver.Internal
             }
 
             return Task.CompletedTask;
+        }
+
+        public Task VerifyConnectivityAsync()
+        {
+            return _connectionProvider.VerifyConnectivityAsync();
         }
 
         public void Dispose()

@@ -18,9 +18,11 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Util;
-using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
@@ -51,7 +53,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 stats.ToString().Should()
                     .Be("Counters{NodesCreated=1, NodesDeleted=0, RelationshipsCreated=0, " +
                         "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
-                        "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0}");
+                        "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0, SystemUpdates=0}");
 
                 summary.StatementType.Should().Be(StatementType.WriteOnly);
 
@@ -71,6 +73,27 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
             finally
             {
+                await session.CloseAsync();
+            }
+        }
+
+        [RequireServerFact("4.0.0", versionCompare: GreaterThanOrEqualTo)]
+        public async Task ShouldContainsSystemUpdates()
+        {
+            // Ensure that a constraint exists
+            var session = Driver.AsyncSession(o => o.WithDatabase("system"));
+            try
+            {
+                var cursor = await session.RunAsync("CREATE USER foo SET PASSWORD 'bar'");
+                var summary = await cursor.SummaryAsync();
+                summary.Counters.ContainsUpdates.Should().BeFalse();
+                summary.Counters.ContainsSystemUpdates.Should().BeTrue();
+                summary.Counters.SystemUpdates.Should().Be(1);
+            }
+            finally
+            {
+                var cursor = await session.RunAsync("DROP USER foo");
+                await cursor.SummaryAsync();
                 await session.CloseAsync();
             }
         }

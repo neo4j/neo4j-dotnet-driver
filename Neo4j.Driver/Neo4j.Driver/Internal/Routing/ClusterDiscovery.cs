@@ -167,6 +167,11 @@ namespace Neo4j.Driver.Internal.Routing
 
                 return Task.CompletedTask;
             }
+
+            public Task VerifyConnectivityAsync()
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

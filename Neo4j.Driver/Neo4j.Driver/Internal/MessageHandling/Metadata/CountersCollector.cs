@@ -50,7 +50,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                             CountersValue(countersDict, "indexes-added"),
                             CountersValue(countersDict, "indexes-removed"),
                             CountersValue(countersDict, "constraints-added"),
-                            CountersValue(countersDict, "constraints-removed")
+                            CountersValue(countersDict, "constraints-removed"),
+                            CountersValue(countersDict, "system-updates")
                         );
                         break;
                     default:

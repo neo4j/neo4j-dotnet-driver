@@ -337,6 +337,11 @@ namespace Neo4j.Driver.Tests
             {
                 return Task.CompletedTask;
             }
+
+            public Task VerifyConnectivityAsync()
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }

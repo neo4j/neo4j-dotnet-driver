@@ -27,6 +27,7 @@ using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
+using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal
 {
@@ -401,6 +402,13 @@ namespace Neo4j.Driver.Internal
             }
 
             return Task.CompletedTask;
+        }
+
+        public async Task VerifyConnectivityAsync()
+        {
+            // Establish a connection with the server and immediately close it.
+            var connection = await AcquireAsync(Simple.Mode, Simple.Database, Simple.Bookmark);
+            await connection.CloseAsync();
         }
 
         public Task DeactivateAsync()

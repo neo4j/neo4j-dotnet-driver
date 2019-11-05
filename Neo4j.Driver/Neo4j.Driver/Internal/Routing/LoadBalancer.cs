@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
+using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -119,6 +120,22 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             return Task.CompletedTask;
+        }
+
+        public async Task VerifyConnectivityAsync()
+        {
+            // As long as there is a fresh routing table, we consider we can route to these servers.
+            try
+            {
+                await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, Simple.Database,
+                    Simple.Bookmark);
+            }
+            catch (ServiceUnavailableException e)
+            {
+                throw new ServiceUnavailableException(
+                    "Unable to connect to database, " +
+                    "ensure the database is running and that there is a working network connection to it.", e);
+            }
         }
 
         public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, Bookmark bookmark)
