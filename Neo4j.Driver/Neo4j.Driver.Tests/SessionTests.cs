@@ -35,14 +35,14 @@ namespace Neo4j.Driver.Tests
 {
     public class SessionTests
     {
-        internal static AsyncSession NewSession(IConnection connection, IDriverLogger logger = null,
+        internal static AsyncSession NewSession(IConnection connection, ILogger logger = null,
             IAsyncRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
         {
             return new AsyncSession(new TestConnectionProvider(connection), logger, retryLogic, mode, null,
                 Bookmark.From(bookmark));
         }
 
-        internal static AsyncSession NewSession(IBoltProtocol protocol, IDriverLogger logger = null,
+        internal static AsyncSession NewSession(IBoltProtocol protocol, ILogger logger = null,
             IAsyncRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null,
             bool reactive = false)
         {

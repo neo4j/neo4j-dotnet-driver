@@ -42,9 +42,9 @@ namespace Neo4j.Driver.Internal
         private const double RetryDelayMultiplier = 2.0;
         private const double RetryDelayJitterFactor = 0.2;
 
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
-        public AsyncRetryLogic(TimeSpan maxRetryTimeout, IDriverLogger logger)
+        public AsyncRetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
         {
             _maxRetryTimeMs = maxRetryTimeout.TotalMilliseconds;
             _logger = logger;

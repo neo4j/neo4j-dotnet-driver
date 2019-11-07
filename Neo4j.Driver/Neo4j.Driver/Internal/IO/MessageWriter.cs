@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.IO
 
         }
 
-        public MessageWriter(Stream stream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger, IMessageFormat messageFormat)
+        public MessageWriter(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, IMessageFormat messageFormat)
         {
             Throw.ArgumentNullException.IfNull(stream, nameof(stream));
             Throw.ArgumentOutOfRangeException.IfFalse(stream.CanWrite, nameof(stream));

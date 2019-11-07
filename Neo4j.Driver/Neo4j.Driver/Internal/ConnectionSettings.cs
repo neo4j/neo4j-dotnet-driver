@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal
         public SocketSettings SocketSettings { get; }
 
         public ConnectionSettings(IAuthToken auth, Config config)
-        : this(auth, new EncryptionManager(config.EncryptionLevel, config.TrustManager, config.DriverLogger),
+        : this(auth, new EncryptionManager(config.EncryptionLevel, config.TrustManager, config.Logger),
               config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled)
         {
         }

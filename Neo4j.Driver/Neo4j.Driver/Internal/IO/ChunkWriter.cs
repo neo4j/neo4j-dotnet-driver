@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.IO
         private readonly int _chunkSize;
         private readonly Stream _downStream;
         private readonly MemoryStream _chunkStream;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
         private readonly int _defaultBufferSize;
         private readonly int _maxBufferSize;
         private int _shrinkCounter = 0;
@@ -53,26 +53,26 @@ namespace Neo4j.Driver.Internal.IO
 
         }
 
-        public ChunkWriter(Stream downStream, IDriverLogger logger)
+        public ChunkWriter(Stream downStream, ILogger logger)
             : this(downStream, logger, Constants.MaxChunkSize)
         {
 
         }
 
-        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger)
+        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger)
             : this(downStream, defaultBufferSize, maxBufferSize, logger, Constants.MaxChunkSize)
         {
 
         }
 
 
-        public ChunkWriter(Stream downStream, IDriverLogger logger, int chunkSize)
+        public ChunkWriter(Stream downStream, ILogger logger, int chunkSize)
             : this(downStream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, logger, chunkSize)
         {
 
         }
 
-        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, IDriverLogger logger, int chunkSize)
+        public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream));

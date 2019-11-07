@@ -27,9 +27,9 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly RoundRobinArrayIndex _writersIndex = new RoundRobinArrayIndex();
 
         private readonly IClusterConnectionPool _connectionPool;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
-        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, IDriverLogger logger)
+        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, ILogger logger)
         {
             _connectionPool = connectionPool;
             _logger = logger;

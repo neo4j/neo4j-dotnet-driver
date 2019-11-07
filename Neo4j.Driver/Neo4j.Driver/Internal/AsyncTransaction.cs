@@ -44,13 +44,13 @@ namespace Neo4j.Driver.Internal
 
         private bool _disposed = false;
         private IState _state = Active;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
         private readonly long _fetchSize;
 
         private readonly IList<Task<IStatementResultCursor>> _results = new List<Task<IStatementResultCursor>>();
 
         public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
-            IDriverLogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false,
+            ILogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false,
             long fetchSize = Config.Infinite)
         {
             _connection = new TransactionConnection(this, connection);
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Internal
         private interface IState
         {
             Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection, IBoltProtocol protocol,
-                IDriverLogger logger, bool reactive, long fetchSize, out IState nextState);
+                ILogger logger, bool reactive, long fetchSize, out IState nextState);
 
             Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState);
@@ -187,7 +187,7 @@ namespace Neo4j.Driver.Internal
         private class ActiveState : IState
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
-                IBoltProtocol protocol, IDriverLogger logger, bool reactive, long fetchSize,
+                IBoltProtocol protocol, ILogger logger, bool reactive, long fetchSize,
                 out IState nextState)
             {
                 nextState = Active;
@@ -212,7 +212,7 @@ namespace Neo4j.Driver.Internal
         private class CommittedState : IState
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
-                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                IBoltProtocol protocol, ILogger logger, bool reactive,
                 long fetchSize,
                 out IState nextState)
             {
@@ -236,7 +236,7 @@ namespace Neo4j.Driver.Internal
         private class RolledBackState : IState
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
-                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                IBoltProtocol protocol, ILogger logger, bool reactive,
                 long fetchSize,
                 out IState nextState)
             {
@@ -260,7 +260,7 @@ namespace Neo4j.Driver.Internal
         private class FailedState : IState
         {
             public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
-                IBoltProtocol protocol, IDriverLogger logger, bool reactive,
+                IBoltProtocol protocol, ILogger logger, bool reactive,
                 long fetchSize,
                 out IState nextState)
             {

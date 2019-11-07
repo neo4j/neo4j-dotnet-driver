@@ -39,12 +39,12 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly EncryptionManager _encryptionManager;
         private readonly TimeSpan _connectionTimeout;
         private readonly bool _socketKeepAliveEnabled;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
         public Stream ReadStream => _stream;
         public Stream WriteStream => _stream;
 
-        public TcpSocketClient(SocketSettings socketSettings, IDriverLogger logger = null)
+        public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
         {
             Throw.ArgumentNullException.IfNull(socketSettings, nameof(socketSettings));
             Throw.ArgumentNullException.IfNull(socketSettings.HostResolver, nameof(SocketSettings.HostResolver));

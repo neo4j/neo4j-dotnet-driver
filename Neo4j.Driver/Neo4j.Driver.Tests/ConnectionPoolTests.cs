@@ -792,7 +792,7 @@ namespace Neo4j.Driver.Tests
                 var uri = new Uri("bolt://localhost:7687");
                 var poolSettings = new ConnectionPoolSettings(1, 1, Config.InfiniteInterval, Config.InfiniteInterval,
                     Config.InfiniteInterval);
-                var logger = new Mock<IDriverLogger>().Object;
+                var logger = new Mock<ILogger>().Object;
                 var connFactory = new MockedConnectionFactory();
 
                 var pool = new ConnectionPool(uri, connFactory, poolSettings, logger);
@@ -827,7 +827,6 @@ namespace Neo4j.Driver.Tests
 
                 // pool has no in-use connections
                 var inUseConnections = new ConcurrentHashSet<IPooledConnection>();
-                var logger = new Mock<ILogger>().Object;
 
                 var pool = NewConnectionPool(idleConnections, inUseConnections);
 
@@ -847,8 +846,6 @@ namespace Neo4j.Driver.Tests
                 var inUseConnections = new ConcurrentHashSet<IPooledConnection>();
                 inUseConnections.TryAdd(new Mock<IPooledConnection>().Object);
                 inUseConnections.TryAdd(new Mock<IPooledConnection>().Object);
-
-                var logger = new Mock<ILogger>().Object;
 
                 var pool = NewConnectionPool(idleConnections, inUseConnections);
 

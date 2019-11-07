@@ -22,18 +22,18 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Shared
 {
-    internal class TestDriverLogger : IDriverLogger
+    internal class TestLogger : ILogger
     {
         private readonly ExtendedLogLevel _level;
         private readonly Action<string> _logMethod;
 
-        public TestDriverLogger(ITestOutputHelper output, ExtendedLogLevel level = ExtendedLogLevel.Info)
+        public TestLogger(ITestOutputHelper output, ExtendedLogLevel level = ExtendedLogLevel.Info)
         {
             _level = level;
             _logMethod = output.WriteLine;
         }
 
-        public TestDriverLogger(Action<string> logMethod, ExtendedLogLevel level = ExtendedLogLevel.Info)
+        public TestLogger(Action<string> logMethod, ExtendedLogLevel level = ExtendedLogLevel.Info)
         {
             _level = level;
             _logMethod = logMethod;
@@ -92,7 +92,7 @@ namespace Neo4j.Driver.IntegrationTests.Shared
             return _level >= ExtendedLogLevel.Debug;
         }
 
-        public static IDriverLogger Create(ITestOutputHelper output)
+        public static ILogger Create(ITestOutputHelper output)
         {
             var logLevel = ExtendedLogLevel.Error;
             var logLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.IntegrationTests.Shared
                 logLevel = Enum.Parse<ExtendedLogLevel>(logLevelStr, true);
             }
 
-            return new TestDriverLogger(output, logLevel);
+            return new TestLogger(output, logLevel);
         }
     }
 

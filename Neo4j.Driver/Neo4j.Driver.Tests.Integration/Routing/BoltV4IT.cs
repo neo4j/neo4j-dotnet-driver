@@ -32,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             : base(output, fixture)
         {
             _driver = GraphDatabase.Driver(Cluster.AnyCore().BoltRoutingUri, Cluster.AuthToken,
-                o => o.WithDriverLogger(TestDriverLogger.Create(output)));
+                o => o.WithLogger(TestLogger.Create(output)));
         }
 
         [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]

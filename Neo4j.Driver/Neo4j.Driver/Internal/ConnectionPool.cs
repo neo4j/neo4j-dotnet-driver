@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal
         internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
         private readonly string _id;
 
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
         public ConnectionPoolStatus Status
         {
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Internal
             Uri uri,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
-            IDriverLogger logger)
+            ILogger logger)
         {
             _uri = uri;
             _id = $"pool-{_uri.Host}:{_uri.Port}";
@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Internal
             ConcurrentHashSet<IPooledConnection> inUseConnections = null,
             ConnectionPoolSettings poolSettings = null,
             IConnectionValidator validator = null,
-            IDriverLogger logger = null)
+            ILogger logger = null)
             : this(new Uri("bolt://localhost:7687"), connectionFactory,
                 poolSettings ?? new ConnectionPoolSettings(Config.Default), logger)
         {

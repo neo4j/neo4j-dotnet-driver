@@ -153,7 +153,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 new CustomHostResolver(Server.BoltUri, connectionSettings.SocketSettings.HostResolver);
             var bufferSettings = new BufferSettings(config);
             var connectionFactory =
-                new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger);
+                new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
 
             return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory);
         }

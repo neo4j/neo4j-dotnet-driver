@@ -43,12 +43,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         private int _closedMarker = -1;
 
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
         private readonly IConnectionListener _connMetricsListener;
         private readonly IListenerEvent _connEvent;
 
         public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings,
-            IConnectionListener connMetricsListener = null, IDriverLogger logger = null,
+            IConnectionListener connMetricsListener = null, ILogger logger = null,
             ITcpSocketClient socketClient = null)
         {
             _uri = uri;

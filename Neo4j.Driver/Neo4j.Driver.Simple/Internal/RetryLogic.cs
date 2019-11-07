@@ -34,9 +34,9 @@ namespace Neo4j.Driver.Internal
         private readonly double _delayMultiplier;
         private readonly double _delayJitter;
         private readonly Random _random;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
-        public RetryLogic(TimeSpan maxRetryTimeout, IDriverLogger logger)
+        public RetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
         {
             _maxRetryTimeout = (int) maxRetryTimeout.TotalMilliseconds;
             _initialDelay = TimeSpan.FromSeconds(1).TotalMilliseconds;

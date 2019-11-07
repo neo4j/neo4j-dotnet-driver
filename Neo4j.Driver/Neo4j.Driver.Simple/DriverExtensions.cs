@@ -52,7 +52,7 @@ namespace Neo4j.Driver
             var asyncDriver = driver.CastOrThrow<IInternalDriver>();
 
             return new InternalSession(driver.AsyncSession(action).CastOrThrow<IInternalAsyncSession>(),
-                new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.DriverLogger),
+                new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.Logger),
                 new BlockingExecutor());
         }
     }

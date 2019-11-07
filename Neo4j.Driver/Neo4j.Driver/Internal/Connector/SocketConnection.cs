@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly string _idPrefix;
 
         public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
-            IConnectionListener metricsListener = null, IDriverLogger logger = null)
+            IConnectionListener metricsListener = null, ILogger logger = null)
         {
             _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         // for test only
         internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
-            string userAgent, IDriverLogger logger, IServerInfo server,
+            string userAgent, ILogger logger, IServerInfo server,
             IResponsePipeline responsePipeline = null)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));

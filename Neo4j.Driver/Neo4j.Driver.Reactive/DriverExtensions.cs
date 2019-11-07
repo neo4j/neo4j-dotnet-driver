@@ -52,7 +52,7 @@ namespace Neo4j.Driver
             var reactiveDriver = driver.CastOrThrow<IInternalDriver>();
 
             return new InternalRxSession(reactiveDriver.Session(action, true),
-                new RxRetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.DriverLogger));
+                new RxRetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.Logger));
         }
     }
 }

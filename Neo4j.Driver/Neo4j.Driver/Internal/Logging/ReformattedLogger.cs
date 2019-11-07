@@ -19,11 +19,11 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Logging
 {
-    internal abstract class ReformattedLogger : IDriverLogger
+    internal abstract class ReformattedLogger : ILogger
     {
-        private readonly IDriverLogger _delegate;
+        private readonly ILogger _delegate;
 
-        protected ReformattedLogger(IDriverLogger logger)
+        protected ReformattedLogger(ILogger logger)
         {
             _delegate = logger;
         }

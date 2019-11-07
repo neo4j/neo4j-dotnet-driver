@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal
         {
         } // for test
 
-        public EncryptionManager(EncryptionLevel level, TrustManager trustManager, IDriverLogger logger)
+        public EncryptionManager(EncryptionLevel level, TrustManager trustManager, ILogger logger)
         {
             _encryptionLevel = level;
 

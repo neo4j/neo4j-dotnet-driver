@@ -31,7 +31,7 @@ namespace Neo4j.Driver
     public abstract class TrustManager
     {
 
-        internal IDriverLogger Logger { get; set; }
+        internal ILogger Logger { get; set; }
 
         /// <summary>
         /// Returns whether the endpoint should be trusted or not.

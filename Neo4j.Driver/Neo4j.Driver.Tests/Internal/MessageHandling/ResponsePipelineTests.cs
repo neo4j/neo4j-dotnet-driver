@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldLog()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldNotLogIfDebugDisabled()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -178,7 +178,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldLog()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -192,7 +192,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldNotLogIfDebugDisabled()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -238,7 +238,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldLog()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -254,7 +254,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldNotLogIfDebugDisabled()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -345,7 +345,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldLog()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -358,7 +358,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldNotLogIfDebugDisabled()
             {
-                var log = new Mock<IDriverLogger>();
+                var log = new Mock<ILogger>();
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
@@ -412,7 +412,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             }
         }
 
-        private static ResponsePipeline CreatePipelineWithHandler(IDriverLogger logger)
+        private static ResponsePipeline CreatePipelineWithHandler(ILogger logger)
         {
             var pipeline = new ResponsePipeline(logger);
 

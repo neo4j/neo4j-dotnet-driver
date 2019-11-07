@@ -23,33 +23,7 @@ namespace Neo4j.Driver.Internal.Logging
 {
     internal static class DriverLoggerUtil
     {
-        public static void TryExecute(IDriverLogger logger, Action action, string message = null)
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, message);
-                throw;
-            }
-        }
-
-        public static T TryExecute<T>(IDriverLogger logger, Func<T> func, string message = null)
-        {
-            try
-            {
-                return func();
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, message);
-                throw;
-            }
-        }
-
-        public static async Task TryExecuteAsync(IDriverLogger logger, Func<Task> func, string message = null)
+        public static async Task TryExecuteAsync(ILogger logger, Func<Task> func, string message = null)
         {
             try
             {
@@ -62,7 +36,7 @@ namespace Neo4j.Driver.Internal.Logging
             }
         }
 
-        public static async Task<T> TryExecuteAsync<T>(IDriverLogger logger, Func<Task<T>> func, string message = null)
+        public static async Task<T> TryExecuteAsync<T>(ILogger logger, Func<Task<T>> func, string message = null)
         {
             try
             {

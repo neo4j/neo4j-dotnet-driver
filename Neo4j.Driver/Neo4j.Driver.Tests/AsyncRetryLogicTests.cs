@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Tests
         public async Task ShouldLogRetries(int errorCount)
         {
             var error = new TransientException("code", "message");
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var retryLogic = new AsyncRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
             var work = CreateFailingWork(1,
                 Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray());
@@ -95,7 +95,7 @@ namespace Neo4j.Driver.Tests
         public async Task ShouldRetryAtLeastTwice()
         {
             var error = new TransientException("code", "message");
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(1), logger.Object);
             var work = CreateFailingWork(TimeSpan.FromSeconds(2), 1, error);
 
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Tests
             var errorCount = 3;
             var exceptions = Enumerable.Range(1, errorCount).Select(i => new TransientException($"{i}", $"{i}"))
                 .Cast<Exception>().ToArray();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
             var work = CreateFailingWork(TimeSpan.FromSeconds(1), 1, exceptions);
 
