@@ -270,7 +270,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedConnectionTimeout(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {ConnectionTimeout = TimeSpan.FromSeconds(15)});
+                    o => o.WithConnectionTimeout(TimeSpan.FromSeconds(15)));
             }
 
             [RequireServerFact]
@@ -306,7 +306,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedMaxRetryTime(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(15)});
+                    o=>o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(15)));
             }
 
             [RequireServerFact]
@@ -342,7 +342,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {TrustManager = TrustManager.CreateInsecure()});
+                    o => o.WithTrustManager(TrustManager.CreateInsecure()));
             }
 
             [RequireServerFact]
@@ -378,7 +378,7 @@ namespace Neo4j.Driver.ExamplesAsync
             public IDriver CreateDriverWithCustomizedSecurityStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {EncryptionLevel = EncryptionLevel.None});
+                    o => o.WithEncryptionLevel(EncryptionLevel.None));
             }
 
             [RequireServerFact]
@@ -416,7 +416,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 Dictionary<string, object> parameters)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
-                    new Config {EncryptionLevel = EncryptionLevel.None});
+                    o => o.WithEncryptionLevel(EncryptionLevel.None));
             }
 
             [RequireServerFact]
@@ -739,7 +739,7 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 _baseDriver = Driver;
                 Driver = GraphDatabase.Driver("bolt://localhost:8080", AuthTokens.Basic(User, Password),
-                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(3)});
+                    o => o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(3)));
             }
 
             protected override void Dispose(bool isDisposing)

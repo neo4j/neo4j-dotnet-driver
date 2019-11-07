@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 BoltV3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Statement("text"),
                         false, Mock.Of<IBookmarkTracker>(), Mock.Of<IResultResourceHandler>(), database,
                         Bookmark.From("123"),
-                        TransactionConfig.Empty))
+                        TransactionConfig.Default))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
                 BoltV3.Awaiting(p => p.BeginTransactionAsync(Mock.Of<IConnection>(), database, Bookmark.From("123"),
-                        TransactionConfig.Empty))
+                        TransactionConfig.Default))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }

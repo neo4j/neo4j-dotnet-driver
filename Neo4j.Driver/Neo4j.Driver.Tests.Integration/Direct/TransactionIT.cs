@@ -377,8 +377,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact]
         public async Task ShouldBeAbleToRunNestedQueries()
         {
-            var config = Config.Builder.WithFetchSize(2).ToConfig();
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, config))
+            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
             {
                 const int size = 1024;
                 var session = driver.AsyncSession();

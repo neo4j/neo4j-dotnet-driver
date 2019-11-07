@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal.Routing
             IClusterConnectionPool clusterConnPool,
             IRoutingTableManager routingTableManager)
         {
-            var config = Config.DefaultConfig;
+            var config = Config.Default;
             _logger = config.DriverLogger;
 
             _clusterConnectionPool = clusterConnPool;

@@ -54,19 +54,19 @@ namespace Neo4j.Driver.Internal
             return Run(statement, null);
         }
 
-        public IRxStatementResult Run(string statement, TransactionConfig txConfig)
+        public IRxStatementResult Run(string statement, Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement), txConfig);
+            return Run(new Statement(statement), action);
         }
 
-        public IRxStatementResult Run(string statement, object parameters, TransactionConfig txConfig)
+        public IRxStatementResult Run(string statement, object parameters, Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()), txConfig);
+            return Run(new Statement(statement, parameters.ToDictionary()), action);
         }
 
-        public IRxStatementResult Run(Statement statement, TransactionConfig txConfig)
+        public IRxStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action)
         {
-            return new InternalRxStatementResult(Observable.FromAsync(() => _session.RunAsync(statement, txConfig))
+            return new InternalRxStatementResult(Observable.FromAsync(() => _session.RunAsync(statement, action))
                 .Cast<IInternalStatementResultCursor>());
         }
 
@@ -79,16 +79,16 @@ namespace Neo4j.Driver.Internal
             return BeginTransaction(null);
         }
 
-        public IObservable<IRxTransaction> BeginTransaction(TransactionConfig txConfig)
+        public IObservable<IRxTransaction> BeginTransaction(Action<TransactionConfigBuilder> action)
         {
-            return Observable.FromAsync(() => _session.BeginTransactionAsync(txConfig))
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(action))
                 .Select(tx =>
                     new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
 
-        private IObservable<InternalRxTransaction> BeginTransaction(AccessMode mode, TransactionConfig txConfig)
+        private IObservable<InternalRxTransaction> BeginTransaction(AccessMode mode, Action<TransactionConfigBuilder> action)
         {
-            return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, txConfig))
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, action))
                 .Select(tx =>
                     new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
@@ -99,32 +99,32 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return ReadTransaction(work, TransactionConfig.Empty);
+            return ReadTransaction(work, null);
         }
 
         public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig)
+            Action<TransactionConfigBuilder> action)
         {
-            return RunTransaction(AccessMode.Read, work, txConfig);
+            return RunTransaction(AccessMode.Read, work, action);
         }
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work)
         {
-            return WriteTransaction(work, TransactionConfig.Empty);
+            return WriteTransaction(work, null);
         }
 
         public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig)
+            Action<TransactionConfigBuilder> action)
         {
-            return RunTransaction(AccessMode.Write, work, txConfig);
+            return RunTransaction(AccessMode.Write, work, action);
         }
 
         internal IObservable<T> RunTransaction<T>(AccessMode mode,
             Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig)
+            Action<TransactionConfigBuilder> action)
         {
             return _retryLogic.Retry(
-                BeginTransaction(mode, txConfig)
+                BeginTransaction(mode, action)
                     .SelectMany(txc =>
                         Observable.Defer(() =>
                             {

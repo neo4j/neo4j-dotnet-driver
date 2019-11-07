@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void DefaultConfigShouldGiveCorrectValueBack()
             {
-                var config = Config.DefaultConfig;
+                var config = Config.Default;
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.DriverLogger.Should().BeOfType<NullLogger>();
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldUseMaxConnectionValueIfMaxIdleValueIsNotSpecified()
             {
-                var config = Config.Builder.WithMaxConnectionPoolSize(50).ToConfig();
+                var config = Config.Builder.WithMaxConnectionPoolSize(50).Build();
                 config.MaxConnectionPoolSize.Should().Be(50);
                 config.MaxIdleConnectionPoolSize.Should().Be(50);
             }
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetMaxIdleValueWhenSetSeparately()
             {
-                var config = Config.Builder.WithMaxConnectionPoolSize(50).WithMaxIdleConnectionPoolSize(20).ToConfig();
+                var config = Config.Builder.WithMaxConnectionPoolSize(50).WithMaxIdleConnectionPoolSize(20).Build();
                 config.MaxConnectionPoolSize.Should().Be(50);
                 config.MaxIdleConnectionPoolSize.Should().Be(20);
             }
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void WithLoggingShouldModifyTheSingleValue()
             {
-                var config = Config.Builder.WithDriverLogger(null).ToConfig();
+                var config = Config.Builder.WithDriverLogger(null).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.DriverLogger.Should().BeNull();
@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void WithPoolSizeShouldModifyTheSingleValue()
             {
-                var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).ToConfig();
+                var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.DriverLogger.Should().BeOfType<NullLogger>();
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void WithEncryptionLevelShouldModifyTheSingleValue()
             {
-                var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).ToConfig();
+                var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.DriverLogger.Should().BeOfType<NullLogger>();
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void WithTrustManagerShouldModifyTheSingleValue()
             {
-                var config = Config.Builder.WithTrustManager(TrustManager.CreateChainTrust()).ToConfig();
+                var config = Config.Builder.WithTrustManager(TrustManager.CreateChainTrust()).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeOfType<ChainTrustManager>();
                 config.DriverLogger.Should().BeOfType<NullLogger>();
@@ -129,9 +129,9 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ChangingNewConfigShouldNotAffectOtherConfig()
             {
-                var config = Config.DefaultConfig;
-                var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).ToConfig();
-                var config2 = Config.Builder.WithDriverLogger(null).ToConfig();
+                var config = Config.Default;
+                var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
+                var config2 = Config.Builder.WithDriverLogger(null).Build();
 
                 config2.DriverLogger.Should().BeNull();
                 config2.MaxIdleConnectionPoolSize.Should().Be(500);

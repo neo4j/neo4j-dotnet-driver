@@ -28,9 +28,11 @@ namespace Neo4j.Driver.IntegrationTests.Stub
 {
     public class TransactionTests
     {
-        private static readonly Config NoEncryptionAndShortRetry =
-            Config.Builder.WithEncryptionLevel(EncryptionLevel.None)
-                .WithMaxTransactionRetryTime(TimeSpan.FromSeconds(2)).ToConfig();
+        private static void NoEncryptionAndShortRetry(ConfigBuilder builder)
+        {
+            builder.WithEncryptionLevel(EncryptionLevel.None)
+                .WithMaxTransactionRetryTime(TimeSpan.FromSeconds(2));
+        }
 
         public class ExplicitTransaction
         {

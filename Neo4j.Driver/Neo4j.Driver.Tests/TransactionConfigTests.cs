@@ -45,8 +45,9 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAllowToSetToNewValue()
             {
-                var config = new TransactionConfig();
-                config.Timeout = TimeSpan.FromSeconds(1);
+                var builder = TransactionConfig.Builder;
+                builder.WithTimeout(TimeSpan.FromSeconds(1));
+                var config = builder.Build();
                 config.Timeout.Should().Be(TimeSpan.FromSeconds(1));
                 (config.Timeout == TimeSpan.FromSeconds(1)).Should().BeTrue();
             }
@@ -54,8 +55,7 @@ namespace Neo4j.Driver.Tests
             [Theory, MemberData(nameof(InvalidTimeSpanValues))]
             public void ShouldThrowExceptionIfAssigningValueZero(TimeSpan input)
             {
-                var config = new TransactionConfig();
-                var error = Record.Exception(()=>config.Timeout = input);
+                var error = Record.Exception(()=>TransactionConfig.Builder.WithTimeout(input));
                 error.Should().BeOfType<ArgumentOutOfRangeException>();
                 error.Message.Should().Contain("not be zero or negative");
             }
@@ -73,77 +73,18 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAllowToSetToNewValue()
             {
-                var config = new TransactionConfig();
-                config.Metadata = new Dictionary<string, object>{{"key", "value"}};
+                var builder = TransactionConfig.Builder;
+                builder.WithMetadata(new Dictionary<string, object> {{"key", "value"}});
+                var config = builder.Build();
                 config.Metadata.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key", "value"));
             }
 
             [Fact]
             public void ShouldThrowExceptionIfAssigningNull()
             {
-                var config = new TransactionConfig();
-                var error = Record.Exception(() => config.Metadata = null);
+                var error = Record.Exception(() => TransactionConfig.Builder.WithMetadata(null));
                 error.Should().BeOfType<ArgumentNullException>();
                 error.Message.Should().Contain("should not be null");
-            }
-        }
-
-        public class IsEmptyMethod
-        {
-            [Fact]
-            public void DefaultValueShouldBeEmpty()
-            {
-                var config = new TransactionConfig();
-                config.IsEmpty().Should().BeTrue();
-            }
-
-            [Fact]
-            public void EmptyConfigShouldBeEmpty()
-            {
-                TransactionConfig.Empty.IsEmpty().Should().BeTrue();
-            }
-        }
-
-        public class EqualsMethod
-        {
-            [Fact]
-            public void NewConfigShouldEqualsToEmpty()
-            {
-                new TransactionConfig().Equals(TransactionConfig.Empty).Should().BeTrue();
-                TransactionConfig.Empty.Equals(new TransactionConfig()).Should().BeTrue();
-                new TransactionConfig().Equals((object)TransactionConfig.Empty).Should().BeTrue();
-                TransactionConfig.Empty.Equals((object)new TransactionConfig()).Should().BeTrue();
-            }
-
-            [Fact]
-            public void ConfigWithSameValueShouldBeEqualsToEachOther()
-            {
-                var config1 = new TransactionConfig
-                {
-                    Metadata = new Dictionary<string, object> {{"Molly", "MostlyWhite"}},
-                    Timeout = TimeSpan.FromMinutes(6)
-                };
-                
-                var config2 = new TransactionConfig
-                {
-                    Timeout = TimeSpan.FromMinutes(6),
-                    Metadata = new Dictionary<string, object> {{"Molly", "MostlyWhite"}}
-                };
-
-                config1.Equals(config2).Should().BeTrue();
-                config2.Equals(config1).Should().BeTrue();
-            }
-            
-            [Fact]
-            public void ShouldNotEqualToNull()
-            {
-                var config2 = new TransactionConfig
-                {
-                    Timeout = TimeSpan.FromMinutes(6),
-                    Metadata = new Dictionary<string, object> {{"Molly", "MostlyWhite"}}
-                };
-
-                config2.Equals(null).Should().BeFalse();
             }
         }
     }

@@ -22,6 +22,7 @@ using System.Threading;
 using Neo4j.Driver;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal
 {
@@ -57,27 +58,26 @@ namespace Neo4j.Driver.Internal
 
         public IAsyncSession AsyncSession()
         {
-            return AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
+            return AsyncSession(null);
         }
 
-        public IAsyncSession AsyncSession(Action<SessionConfig> optionsBuilder)
+        public IAsyncSession AsyncSession(Action<SessionConfigBuilder> action)
         {
-            return Session(optionsBuilder, false);
+            return Session(action, false);
         }
 
-        public IInternalAsyncSession Session(Action<SessionConfig> optionsBuilder, bool reactive)
+        public IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var options = new SessionConfig();
-            optionsBuilder(options);
+            var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
 
-            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,
-                options.Database, Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive,
-                ParseFetchSize(options.FetchSize));
+            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, sessionConfig.DefaultAccessMode,
+                sessionConfig.Database, Bookmark.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmark>()), reactive,
+                ParseFetchSize(sessionConfig.FetchSize));
 
             if (IsClosed)
             {

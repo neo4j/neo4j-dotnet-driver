@@ -113,7 +113,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         private async Task VerifyFailure(Uri target, TrustManager trustManager)
         {
             var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
-                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig()
+                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).Build()
             ));
             ex.Should().BeOfType<SecurityException>().Which.Message.Should()
                 .Contain("Failed to establish encrypted connection with server");
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         private async Task VerifySuccess(Uri target, TrustManager trustManager)
         {
             var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
-                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).ToConfig()
+                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).Build()
             ));
             ex.Should().BeNull();
         }

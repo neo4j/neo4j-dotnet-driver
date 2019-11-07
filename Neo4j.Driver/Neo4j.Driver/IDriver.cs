@@ -26,24 +26,25 @@ namespace Neo4j.Driver
     ///     <see cref="IAsyncSession" /> method.
     /// </summary>
     /// <remarks>
-    ///     The Driver maintains a session pool buffering the <see cref="IAsyncSession" />s created by the user. 
-    ///     The size of the buffer can be configured by the <see cref="Config.MaxIdleConnectionPoolSize" /> property on the <see cref="Config" /> when creating the Driver.
+    /// The Driver maintains a connection pool buffering connections created by the user.
+    /// The size of the buffer can be configured by the <see cref="Neo4j.Driver.Config.MaxConnectionPoolSize" />
+    /// property on the <see cref="Neo4j.Driver.Config" /> when creating the Driver.
     /// </remarks>
     public interface IDriver : IDisposable
     {
         /// <summary>
-        /// Obtain a session with the default access mode <see cref="AccessMode.Write"/>.
+        /// Obtain a session with the default <see cref="SessionConfig"/>.
         /// </summary>
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
         IAsyncSession AsyncSession();
 
         /// <summary>
-        /// Obtain a session with the default <see cref="AccessMode.Write"/> and start bookmark.
+        /// Obtain a session with the customized <see cref="SessionConfig"/>.
         /// </summary>
-        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionConfig"/> instance, that should populate
-        /// the provided instance with desired options.</param> 
+        /// <param name="action">An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate
+        /// the provided instance with desired <see cref="SessionConfig"/>.</param>
         /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
-        IAsyncSession AsyncSession(Action<SessionConfig> optionsBuilder);
+        IAsyncSession AsyncSession(Action<SessionConfigBuilder> action);
 
         /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
@@ -53,11 +54,16 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// Asynchronously verify if the driver can connect to the remote server by establishing a network connection with the remote.
-        /// If the driver failed to connect to the remote server, an error will be thrown.
-        /// This exception can be used to further understand the cause of the connectivity problem.
-        /// Note: Even if this method complete exceptionally, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
+        /// If the driver fails to connect to the remote server, an error will be thrown,
+        /// which can be used to further understand the cause of the connectivity issue.
+        /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
         /// </summary>
-        /// <returns>THe verification task.</returns>
+        /// <returns>The verification task.</returns>
         Task VerifyConnectivityAsync();
+
+        /// <summary>
+        /// Gets the driver configurations.
+        /// </summary>
+        Config Config { get; }
     }
 }

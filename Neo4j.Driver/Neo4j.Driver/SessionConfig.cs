@@ -22,31 +22,35 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// The interface that defines options applicable to session constructions. It could either be populated by a POCO
-    /// approach or by the provided builder-style methods.
+    /// The interface that defines options applicable to session constructions.
+    /// It could be populated by the provided builder-style methods.
+    /// The default <see cref="SessionConfig"/> defines a <see cref="AccessMode.Write"/> session
+    /// with the server default database using default fetch size specified in <see cref="Config.FetchSize"/>.
     /// </summary>
-    public class SessionConfig
+    public sealed class SessionConfig
     {
-        private AccessMode _defaultAccessMode;
+        internal static readonly SessionConfig Default = new SessionConfig();
         private string _database;
         private IEnumerable<Bookmark> _bookmarks;
         private long? _fetchSize;
 
         internal SessionConfig()
         {
-            _defaultAccessMode = AccessMode.Write;
+            DefaultAccessMode = AccessMode.Write;
             _database = null;
             _bookmarks = null;
             _fetchSize = null;
         }
+
+        internal static SessionConfigBuilder Builder => new SessionConfigBuilder(new SessionConfig());
 
         /// <summary>
         /// The database that the constructed session will connect to.
         ///
         /// <remarks>
         /// When used against servers supporting multi-databases, it is recommended that this value to be set explicitly
-        /// either through this property or <see cref="WithDatabase"/> method. If not, then the session will connect to the
-        /// default database configured on the server side.
+        /// either through <see cref="SessionConfigBuilder.WithDatabase"/> method.
+        /// If not, then the session will connect to the default database configured on the server side.
         ///
         /// When used against servers that don't support multi-databases, this property should be left unset.
         /// </remarks>
@@ -56,7 +60,7 @@ namespace Neo4j.Driver
         public string Database
         {
             get => _database;
-            set
+            internal set
             {
                 if (string.IsNullOrEmpty(value))
                 {
@@ -68,7 +72,7 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        /// Set the type of access required by the constructed session.
+        /// The type of access required by the constructed session.
         ///
         /// This is used to route the requests originating from this session instance to the correct server in a clustered
         /// environment.
@@ -79,14 +83,10 @@ namespace Neo4j.Driver
         /// used (with corresponding access modes derived from invoked method name).
         /// </remarks>
         /// </summary>
-        public AccessMode DefaultAccessMode
-        {
-            get => _defaultAccessMode;
-            set => _defaultAccessMode = value;
-        }
+        public AccessMode DefaultAccessMode { get; internal set; }
 
         /// <summary>
-        /// Set the initial bookmarks to be used by the constructed session.
+        /// The initial bookmarks to be used by the constructed session.
         ///
         /// The first transaction (either auto-commit or explicit) will ensure that the executing server is at least
         /// up to date to the point identified by the latest of the provided initial bookmarks. The bookmarks can be
@@ -96,30 +96,43 @@ namespace Neo4j.Driver
         public IEnumerable<Bookmark> Bookmarks
         {
             get => _bookmarks;
-            set => _bookmarks = value ?? throw new ArgumentNullException();
+            internal set => _bookmarks = value ?? throw new ArgumentNullException();
         }
 
         /// <summary>
-        /// Gets or sets the default fetch size.
+        /// The default fetch size.
         /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
         /// This fetch size defines how many records to pull in each batch.
-        /// Use -1 to disable batching and always pull all records in one go instead.
+        /// Use <see cref="Config.Infinite"/> to disable batching and always pull all records in one batch instead.
         /// </summary>
         public long? FetchSize
         {
             get => _fetchSize;
-            set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
+            internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
+        }
+    }
+
+    /// <summary>
+    /// The builder to build a <see cref="SessionConfig"/>.
+    /// </summary>
+    public sealed class SessionConfigBuilder
+    {
+        private readonly SessionConfig _config;
+
+        internal SessionConfigBuilder(SessionConfig config)
+        {
+            _config = config;
         }
 
         /// <summary>
         /// Sets the database the constructed session will connect to.
         /// </summary>
         /// <param name="database">the database name</param>
-        /// <returns>this ISessionOptions instance</returns>
-        /// <seealso cref="Database"/>
-        public SessionConfig WithDatabase(string database)
+        /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+        /// <seealso cref="SessionConfig.Database"/>
+        public SessionConfigBuilder WithDatabase(string database)
         {
-            Database = database;
+            _config.Database = database;
             return this;
         }
 
@@ -127,11 +140,11 @@ namespace Neo4j.Driver
         /// Sets the type of access required by the constructed session.
         /// </summary>
         /// <param name="defaultAccessMode">the access mode</param>
-        /// <returns>this ISessionOptions instance</returns>
-        /// <seealso cref="DefaultAccessMode"/>
-        public SessionConfig WithDefaultAccessMode(AccessMode defaultAccessMode)
+        /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+        /// <seealso cref="SessionConfig.DefaultAccessMode"/>
+        public SessionConfigBuilder WithDefaultAccessMode(AccessMode defaultAccessMode)
         {
-            DefaultAccessMode = defaultAccessMode;
+            _config.DefaultAccessMode = defaultAccessMode;
             return this;
         }
 
@@ -139,11 +152,11 @@ namespace Neo4j.Driver
         /// Sets the initial bookmarks to be used by the constructed session.
         /// </summary>
         /// <param name="bookmarks">the initial bookmarks</param>
-        /// <returns>this ISessionOptions instance</returns>
-        /// <seealso cref="Bookmarks"/>
-        public SessionConfig WithBookmarks(params Bookmark[] bookmarks)
+        /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+        /// <seealso cref="SessionConfig.Bookmarks"/>
+        public SessionConfigBuilder WithBookmarks(params Bookmark[] bookmarks)
         {
-            Bookmarks = bookmarks;
+            _config.Bookmarks = bookmarks;
             return this;
         }
 
@@ -151,14 +164,20 @@ namespace Neo4j.Driver
         /// Sets the default fetch size.
         /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
         /// This fetch size defines how many records to pull in each batch.
-        /// Use -1 to disable batching and always pull all records in one go instead.
+        /// Use <see cref="Config.Infinite"/> to disable batching and always pull all records in one batch instead.
         /// </summary>
         /// <param name="size">Fetch size of each record batch.</param>
-        /// <returns>this ISessionOptions instance</returns>
-        public SessionConfig WithFetchSize(long size)
+        /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+        /// <seealso cref="SessionConfig.FetchSize"/>
+        public SessionConfigBuilder WithFetchSize(long size)
         {
-            FetchSize = FetchSizeUtil.AssertValidFetchSize(size);
+            _config.FetchSize = size;
             return this;
+        }
+
+        internal SessionConfig Build()
+        {
+            return _config;
         }
     }
 }

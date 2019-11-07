@@ -32,13 +32,13 @@ namespace Neo4j.Driver.IntegrationTests.Stub
     public class BoltV4Tests
     {
         private readonly ITestOutputHelper _output;
-        private readonly Config _config;
+        private readonly Action<ConfigBuilder> _setupConfig;
 
         public BoltV4Tests(ITestOutputHelper output)
         {
             _output = output;
 
-            _config = Config.Builder.WithDriverLogger(TestDriverLogger.Create(output)).ToConfig();
+            _setupConfig = o => o.WithDriverLogger(TestDriverLogger.Create(output));
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start("V4/read_from_aDatabase", 9005))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _setupConfig))
                     {
                         var session = driver.AsyncSession(o =>
                             o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start("V4/write_to_aDatabase", 9007))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _setupConfig))
                     {
                         var session = driver.AsyncSession(o =>
                             o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Write));
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start("V4/read", 9005))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _setupConfig))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                         try
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase_no_servers", 9001))
             {
                 using (var driver =
-                    GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
+                    GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _setupConfig))
                 {
                     this.Awaiting(async _ =>
                         {
@@ -162,7 +162,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/acquire_endpoints_db_not_found", 9001))
             {
                 using (var driver =
-                    GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
+                    GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _setupConfig))
                 {
                     this.Awaiting(async _ =>
                         {
@@ -199,7 +199,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                     var bookmark2 = Bookmark.From("aDatabase:5555");
 
                     using (var driver =
-                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _config))
+                        GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, _setupConfig))
                     {
                         var session = driver.AsyncSession(o =>
                             o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read)
@@ -227,7 +227,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/streaming_records_all", 9001))
             {
                 using (var driver =
-                    GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, _config))
+                    GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, _setupConfig))
                 {
                     var session = driver.AsyncSession();
                     try
@@ -251,10 +251,8 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start("V4/streaming_records", 9001))
             {
-                var config = Config.Builder.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)
-                    .ToConfig();
-                using (var driver =
-                    GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
+                    o => o.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)))
                 {
                     var session = driver.AsyncSession();
                     try
@@ -278,9 +276,8 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start("V4/discard_streaming_records", 9001))
             {
-                var config = Config.Builder.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)
-                    .ToConfig();
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
+                    o => o.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)))
                 {
                     var session = driver.RxSession();
 
@@ -300,9 +297,8 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start("V4/discard_streaming_records_tx", 9001))
             {
-                var config = Config.Builder.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)
-                    .ToConfig();
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
+                    o => o.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)))
                 {
                     var session = driver.RxSession();
 

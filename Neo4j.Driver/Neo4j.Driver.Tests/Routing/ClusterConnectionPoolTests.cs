@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 var uris = new HashSet<Uri> {new Uri("bolt://123:456")};
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
-                var poolSettings = new ConnectionPoolSettings(Config.DefaultConfig);
+                var poolSettings = new ConnectionPoolSettings(Config.Default);
                 var pool = new ClusterConnectionPool(uris, connFactory, poolSettings, null);
 
                 pool.ToString().Should().Contain(

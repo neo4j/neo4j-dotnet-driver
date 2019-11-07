@@ -55,9 +55,10 @@ namespace Neo4j.Driver
         /// A session instance can only have at most one transaction at a time. If you want to run
         /// multiple concurrent transactions, you should use multiple concurrent sessions.
         /// </summary>
-        /// <param name="txConfig">configuration for the returned transaction</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
+        /// defines how to create the configuration for the returned transaction</param>
         /// <returns>a reactive stream which will generate at most one <see cref="IRxTransaction"/> instance.</returns>
-        IObservable<IRxTransaction> BeginTransaction(TransactionConfig txConfig);
+        IObservable<IRxTransaction> BeginTransaction(Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement with the 
@@ -65,11 +66,12 @@ namespace Neo4j.Driver
         /// </summary>
         /// 
         /// <param name="statement">statement to be executed</param>
-        /// <param name="txConfig">configuration for the auto-commit transaction</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
+        /// defines how to create the configuration for the returned transaction</param>
         /// <returns>a reactive result</returns>
         ///
-        /// <see cref="Run(Statement,TransactionConfig)"/>
-        IRxStatementResult Run(string statement, TransactionConfig txConfig);
+        /// <see cref="Run(string,System.Action{TransactionConfigBuilder})"></see>
+        IRxStatementResult Run(string statement, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement  with the specified
@@ -80,11 +82,11 @@ namespace Neo4j.Driver
         /// <param  name="statement">statement to be executed</param>
         /// <param name="parameters">a parameter dictionary, can be an
         ///     <see cref="IDictionary{TKey,TValue}" /> or an anonymous object</param>
-        /// <param name="txConfig">configuration for the auto-commit transaction</param>
+        /// <param name="action">configuration for the auto-commit transaction</param>
         /// <returns>a reactive result</returns>
         /// 
-        /// <see cref="Run(Statement,TransactionConfig)"></see>
-        IRxStatementResult Run(string statement, object parameters, TransactionConfig txConfig);
+        /// <see cref="Run(string,System.Action{TransactionConfigBuilder})"></see>
+        IRxStatementResult Run(string statement, object parameters, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the given statement with the
@@ -95,9 +97,10 @@ namespace Neo4j.Driver
         /// 
         /// </summary>
         /// <param name="statement">statement to be executed</param>
-        /// <param name="txConfig">configuration for the auto-commit transaction</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
+        /// defines how to create the configuration for the auto-commit transaction</param>
         /// <returns>a reactive result</returns>
-        IRxStatementResult Run(Statement statement, TransactionConfig txConfig);
+        IRxStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Read">Read</see>
@@ -114,11 +117,12 @@ namespace Neo4j.Driver
         /// <see cref="TransactionConfig"/>.
         /// </summary>
         /// <param name="work">a unit of work to be executed</param>
-        /// <param name="txConfig">configuration for the created transaction</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
+        /// defines how to create the configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
         IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig);
+            Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Write">Read</see>
@@ -135,11 +139,12 @@ namespace Neo4j.Driver
         /// <see cref="TransactionConfig"/>.
         /// </summary>
         /// <param name="work">a unit of work to be executed</param>
-        /// <param name="txConfig">configuration for the created transaction</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
+        /// defines how to create the configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
         IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
-            TransactionConfig txConfig);
+            Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Closes this session and returns an empty reactive stream.

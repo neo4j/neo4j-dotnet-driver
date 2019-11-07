@@ -24,8 +24,10 @@ namespace Neo4j.Driver.IntegrationTests.Stub
 {
     public class AccessModeTests
     {
-        private static readonly Config NoEncryption =
-            Config.Builder.WithEncryptionLevel(EncryptionLevel.None).ToConfig();
+        private static void NoEncryption(ConfigBuilder builder)
+        {
+            builder.WithEncryptionLevel(EncryptionLevel.None);
+        }
 
         [RequireBoltStubServerFact]
         public async Task RunOnReadModeSessionShouldGoToReader()

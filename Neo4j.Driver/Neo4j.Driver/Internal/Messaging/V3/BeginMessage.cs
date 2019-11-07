@@ -23,13 +23,13 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 {
     internal class BeginMessage : TransactionStartingMessage
     {
-        public BeginMessage(Bookmark bookmark, TransactionConfig txConfig, AccessMode mode)
-            : this(null, bookmark, txConfig, mode)
+        public BeginMessage(Bookmark bookmark, TransactionConfig configBuilder, AccessMode mode)
+            : this(null, bookmark, configBuilder, mode)
         {
         }
 
-        public BeginMessage(string database, Bookmark bookmark, TransactionConfig txConfig, AccessMode mode)
-            : this(database, bookmark, txConfig?.Timeout, txConfig?.Metadata, mode)
+        public BeginMessage(string database, Bookmark bookmark, TransactionConfig configBuilder, AccessMode mode)
+            : this(database, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode)
         {
         }
 

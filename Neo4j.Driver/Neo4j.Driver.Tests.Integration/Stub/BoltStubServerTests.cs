@@ -28,12 +28,13 @@ namespace Neo4j.Driver.IntegrationTests.Stub
 {
     public class BoltStubServerTests
     {
-        public Config Config { get; set; }
+        public Action<ConfigBuilder> SetupConfig { get; }
 
         public BoltStubServerTests(ITestOutputHelper output)
         {
-            Config = new Config
-                {EncryptionLevel = EncryptionLevel.None, DriverLogger = TestDriverLogger.Create(output)};
+            SetupConfig = o => o
+                .WithEncryptionLevel(EncryptionLevel.None)
+                .WithDriverLogger(TestDriverLogger.Create(output));
         }
 
         [RequireBoltStubServerTheory]
@@ -44,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start($"{boltVersion}/get_routing_table_with_context", 9001))
             {
                 var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
-                using (var driver = GraphDatabase.Driver(uri, Config))
+                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
                 {
                     var session = driver.AsyncSession();
                     try
@@ -68,14 +69,16 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         public async Task ShouldLogServerAddress()
         {
             var logs = new List<string>();
-            var config = new Config
+
+            void SetupConfig(ConfigBuilder o)
             {
-                EncryptionLevel = EncryptionLevel.None,
-                DriverLogger = new TestDriverLogger(logs.Add, ExtendedLogLevel.Debug)
-            };
+                o.WithEncryptionLevel(EncryptionLevel.None);
+                o.WithDriverLogger(new TestDriverLogger(logs.Add, ExtendedLogLevel.Debug));
+            }
+
             using (BoltStubServer.Start("V4/accessmode_reader_implicit", 9001))
             {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, config))
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
                 {
                     var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                     try
@@ -109,7 +112,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start($"{boltVersion}/get_routing_table", 9001))
             {
                 var uri = new Uri("neo4j://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, Config))
+                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
                 {
                     var session = driver.AsyncSession();
                     try
@@ -142,7 +145,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/multiple_bookmarks", 9001))
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, Config))
+                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
                 {
                     var session = driver.AsyncSession(o => o.WithBookmarks(Bookmark.From(bookmarks)));
                     try
@@ -177,7 +180,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start($"{boltVersion}/rollback_error", 9001))
             {
                 var uri = new Uri("bolt://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, Config))
+                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
                 {
                     var session = driver.AsyncSession();
                     try

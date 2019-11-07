@@ -31,19 +31,18 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public static IDriver NewBoltDriver(Uri boltUri, IAuthToken authToken)
         {
-            var config = Config.DefaultConfig;
+            IDriverLogger logger;
             var configuredLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
             if (Enum.TryParse<ExtendedLogLevel>(configuredLevelStr ?? "", true, out var configuredLevel))
             {
-                config.DriverLogger = new TestDriverLogger(s => Console.WriteLine(s), configuredLevel);
+                logger = new TestDriverLogger(s => Console.WriteLine(s), configuredLevel);
             }
             else
             {
-                config.DriverLogger =
-                    new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s), ExtendedLogLevel.Debug);
+                logger = new TestDriverLogger(s => System.Diagnostics.Debug.WriteLine(s), ExtendedLogLevel.Debug);
             }
 
-            return GraphDatabase.Driver(boltUri, authToken, config);
+            return GraphDatabase.Driver(boltUri, authToken, o => { o.WithDriverLogger(logger); });
         }
     }
 }
