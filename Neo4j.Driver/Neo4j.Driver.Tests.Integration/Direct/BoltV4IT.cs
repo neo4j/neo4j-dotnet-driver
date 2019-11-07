@@ -156,7 +156,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             {
                 if (!string.IsNullOrEmpty(name))
                 {
-                    o.Database = name;
+                    o.WithDatabase(name);
                 }
             });
 
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             {
                 if (!string.IsNullOrEmpty(name))
                 {
-                    o.Database = name;
+                    o.WithDatabase(name);
                 }
             });
 
@@ -207,7 +207,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             {
                 if (!string.IsNullOrEmpty(name))
                 {
-                    o.Database = name;
+                    o.WithDatabase(name);
                 }
             });
 

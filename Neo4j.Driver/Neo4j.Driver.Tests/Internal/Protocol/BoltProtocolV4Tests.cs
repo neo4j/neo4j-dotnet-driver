@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     public static class BoltProtocolV4Tests
     {
-        private static readonly TransactionOptions TxOptions = new TransactionOptions
+        private static readonly TransactionConfig TxConfig = new TransactionConfig
         {
             Timeout = TimeSpan.FromMinutes(1),
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
@@ -50,9 +50,9 @@ namespace Neo4j.Driver.Internal.Protocol
                 .BeEquivalentTo(new Dictionary<string, object>
                 {
                     {"bookmarks", new[] {"bookmark-123"}},
-                    {"tx_timeout", TxOptions.Timeout.TotalMilliseconds},
+                    {"tx_timeout", TxConfig.Timeout.TotalMilliseconds},
                     {"db", Database},
-                    {"tx_metadata", TxOptions.Metadata}
+                    {"tx_metadata", TxConfig.Metadata}
                 });
         }
 
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await BoltV4.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
-                    resourceHandler.Object, Database, Bookmark, TxOptions);
+                    resourceHandler.Object, Database, Bookmark, TxConfig);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,

@@ -44,14 +44,14 @@ namespace Neo4j.Driver
         /// the specified access mode.
         /// </summary>
         /// <param name="driver">driver instance</param>
-        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionOptions"/> instance, that should populate
-        /// the provided instance with desired options.</param> 
+        /// <param name="action">An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate
+        /// the provided instance with desired session configurations <see cref="SessionConfig"/>.</param>
         /// <returns>A reactive session instance</returns>
-        public static IRxSession RxSession(this IDriver driver, Action<SessionOptions> optionsBuilder)
+        public static IRxSession RxSession(this IDriver driver, Action<SessionConfigBuilder> action)
         {
             var reactiveDriver = driver.CastOrThrow<IInternalDriver>();
 
-            return new InternalRxSession(reactiveDriver.Session(optionsBuilder, true),
+            return new InternalRxSession(reactiveDriver.Session(action, true),
                 new RxRetryLogic(reactiveDriver.Config.MaxTransactionRetryTime, reactiveDriver.Config.DriverLogger));
         }
     }

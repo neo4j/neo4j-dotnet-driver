@@ -32,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             : base(output, fixture)
         {
             _driver = GraphDatabase.Driver(Cluster.AnyCore().BoltRoutingUri, Cluster.AuthToken,
-                Config.Builder.WithDriverLogger(TestDriverLogger.Create(output)).ToConfig());
+                o => o.WithDriverLogger(TestDriverLogger.Create(output)));
         }
 
         [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
@@ -81,10 +81,10 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             {
                 if (!string.IsNullOrEmpty(name))
                 {
-                    o.Database = name;
+                    o.WithDatabase(name);
                 }
 
-                o.Bookmarks = new[] {bookmark ?? Bookmark.Empty};
+                o.WithBookmarks(bookmark ?? Bookmark.Empty);
             });
 
             try

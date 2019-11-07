@@ -21,14 +21,14 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class SessionOptionsTests
+    public class SessionConfigTests
     {
         [Theory]
         [InlineData((string) null)]
         [InlineData("")]
         public void ShouldThrowExceptionForInvalidDatabaseOnSetter(string name)
         {
-            this.Invoking(_ => new SessionOptions().Database = name).Should().Throw<ArgumentNullException>();
+            this.Invoking(_ => new SessionConfig().Database = name).Should().Throw<ArgumentNullException>();
         }
 
         [Theory]
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
         [InlineData("")]
         public void ShouldThrowExceptionForInvalidDatabaseOnBuilder(string name)
         {
-            this.Invoking(_ => new SessionOptions().WithDatabase(name)).Should().Throw<ArgumentNullException>();
+            this.Invoking(_ => SessionConfig.Builder.WithDatabase(name)).Should().Throw<ArgumentNullException>();
         }
     }
 }

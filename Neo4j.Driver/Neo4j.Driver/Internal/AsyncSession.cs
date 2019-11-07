@@ -23,7 +23,7 @@ using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Result;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
-using static Neo4j.Driver.Internal.Util.OptionsBuilder;
+using static Neo4j.Driver.Internal.Util.ConfigBuilders;
 
 namespace Neo4j.Driver.Internal
 {
@@ -67,9 +67,9 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(bookmark);
         }
 
-        public Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionOptions> optionsBuilder)
+        public Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action)
         {
-            var options = BuildTransactionOptions(optionsBuilder);
+            var options = BuildTransactionConfig(action);
             var result = TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
@@ -85,15 +85,15 @@ namespace Neo4j.Driver.Internal
             _result = result;
             return result;
         }
-        public Task<IStatementResultCursor> RunAsync(string statement, Action<TransactionOptions> optionsBuilder)
+        public Task<IStatementResultCursor> RunAsync(string statement, Action<TransactionConfigBuilder> action)
         {
-            return RunAsync(new Statement(statement), optionsBuilder);
+            return RunAsync(new Statement(statement), action);
         }
 
         public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters,
-            Action<TransactionOptions> optionsBuilder)
+            Action<TransactionConfigBuilder> action)
         {
-            return RunAsync(new Statement(statement, parameters), optionsBuilder);
+            return RunAsync(new Statement(statement, parameters), action);
         }
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)
@@ -106,16 +106,16 @@ namespace Neo4j.Driver.Internal
             return BeginTransactionAsync(null);
         }
 
-        public async Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionOptions> optionsBuilder)
+        public async Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action)
         {
-            var tx = await TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, optionsBuilder))
+            var tx = await TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, action))
                 .ConfigureAwait(false);
             return tx;
         }
 
-        public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionOptions> optionsBuilder)
+        public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action)
         {
-            var tx = await BeginTransactionWithoutLoggingAsync(mode, optionsBuilder).ConfigureAwait(false);
+            var tx = await BeginTransactionWithoutLoggingAsync(mode, action).ConfigureAwait(false);
             return tx;
         }
 
@@ -129,14 +129,14 @@ namespace Neo4j.Driver.Internal
             return ReadTransactionAsync(work, null);
         }
 
-        public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionOptions> optionsBuilder)
+        public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action)
         {
-            return RunTransactionAsync(AccessMode.Read, work, optionsBuilder);
+            return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionOptions> optionsBuilder)
+        public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action)
         {
-            return RunTransactionAsync(AccessMode.Read, work, optionsBuilder);
+            return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
         public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work)
@@ -149,33 +149,33 @@ namespace Neo4j.Driver.Internal
             return WriteTransactionAsync(work, null);
         }
 
-        public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionOptions> optionsBuilder)
+        public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action)
         {
-            return RunTransactionAsync(AccessMode.Write, work, optionsBuilder);
+            return RunTransactionAsync(AccessMode.Write, work, action);
         }
 
-        public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionOptions> optionsBuilder)
+        public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action)
         {
-            return RunTransactionAsync(AccessMode.Write, work, optionsBuilder);
+            return RunTransactionAsync(AccessMode.Write, work, action);
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<IAsyncTransaction, Task> work,
-            Action<TransactionOptions> optionsBuilder)
+            Action<TransactionConfigBuilder> action)
         {
             return RunTransactionAsync(mode, async tx =>
             {
                 await work(tx).ConfigureAwait(false);
                 var ignored = 1;
                 return ignored;
-            }, optionsBuilder);
+            }, action);
         }
 
         private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<IAsyncTransaction, Task<T>> work,
-            Action<TransactionOptions> optionsBuilder)
+            Action<TransactionConfigBuilder> action)
         {
             return TryExecuteAsync(_logger, async () => await _retryLogic.RetryAsync(async () =>
             {
-                var tx = await BeginTransactionWithoutLoggingAsync(mode, optionsBuilder).ConfigureAwait(false);
+                var tx = await BeginTransactionWithoutLoggingAsync(mode, action).ConfigureAwait(false);
                 try
                 {
                     var result = await work(tx).ConfigureAwait(false);
@@ -199,9 +199,9 @@ namespace Neo4j.Driver.Internal
         }
 
         private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
-            Action<TransactionOptions> optionsBuilder)
+            Action<TransactionConfigBuilder> action)
         {
-            var options = BuildTransactionOptions(optionsBuilder);
+            var options = BuildTransactionConfig(action);
             await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, _bookmark).ConfigureAwait(false);

@@ -48,7 +48,7 @@ namespace Neo4j.Driver
         Task<IAsyncTransaction> BeginTransactionAsync();
 
         /// <summary>
-        /// Asynchronously begin a new transaction with a specific <see cref="TransactionOptions"/> in this session.
+        /// Asynchronously begin a new transaction with a specific <see cref="TransactionConfig"/> in this session.
         /// A session can have at most one transaction running at a time, if you
         /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
         /// 
@@ -59,10 +59,10 @@ namespace Neo4j.Driver
         /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
         /// method.
         /// </summary>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
-        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionOptions"/></param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task of a new transaction.</returns>
-        Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionOptions> optionsBuilder);
+        Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
@@ -80,23 +80,23 @@ namespace Neo4j.Driver
         Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work);
 
         /// <summary>
-        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionOptions"/>.
+        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new read transaction.</param>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
-        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionOptions"/></param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionOptions> optionsBuilder);
+        Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action);
 
         /// <summary>
-        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionOptions"/>.
+        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
         /// </summary>
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
-        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionOptions"/></param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
-        Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionOptions> optionsBuilder);
+        Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
@@ -114,23 +114,23 @@ namespace Neo4j.Driver
         Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work);
 
         /// <summary>
-        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionOptions"/>.
+        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
         /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new write transaction.</param>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
-        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionOptions"/></param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionOptions> optionsBuilder);
+        Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action);
 
         /// <summary>
-        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionOptions"/>.
+        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
         /// </summary>
         /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
-        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionOptions"/></param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
+        /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
-        Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionOptions> optionsBuilder);
+        Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Close all resources used in this Session. If any transaction is left open in this session without commit or rollback,
@@ -147,7 +147,7 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// 
-        /// Asynchronously run a statement with the specific <see cref="TransactionOptions"/> and return a task of result stream.
+        /// Asynchronously run a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
         ///
         /// This method accepts a String representing a Cypher statement which will be 
         /// compiled into a query object that can be used to efficiently execute this
@@ -156,13 +156,13 @@ namespace Neo4j.Driver
         ///
         /// </summary>
         /// <param name="statement">A Cypher statement.</param>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(string statement, Action<TransactionOptions> optionsBuilder);
+        Task<IStatementResultCursor> RunAsync(string statement, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// 
-        /// Asynchronously run a statement with the customized <see cref="TransactionOptions"/> and return a task of result stream.
+        /// Asynchronously run a statement with the customized <see cref="TransactionConfig"/> and return a task of result stream.
         ///
         /// This method accepts a String representing a Cypher statement which will be 
         /// compiled into a query object that can be used to efficiently execute this
@@ -172,20 +172,20 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="statement">A Cypher statement.</param>
         /// <param name="parameters">Input parameters for the statement.</param>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
         Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters,
-            Action<TransactionOptions> optionsBuilder);
+            Action<TransactionConfigBuilder> action);
 
         /// <summary>
         ///
-        /// Asynchronously execute a statement with the specific <see cref="TransactionOptions"/> and return a task of result stream.
+        /// Asynchronously execute a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
         ///
         /// </summary>
         /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
-        /// <param name="optionsBuilder">Given a <see cref="TransactionOptions"/>, defines how to set the configurations for the new transaction.
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
         /// </param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionOptions> optionsBuilder);
+        Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action);
     }
 }

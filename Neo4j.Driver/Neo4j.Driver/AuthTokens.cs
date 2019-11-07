@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using static Neo4j.Driver.Internal.AuthToken;
@@ -26,7 +27,7 @@ namespace Neo4j.Driver
     ///     The scheme used must be also supported by the Neo4j instance you are connecting to.
     /// </summary>
     /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
     /// </remarks>
     public class AuthTokens
     {
@@ -35,7 +36,7 @@ namespace Neo4j.Driver
         ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
         /// </summary>
         /// <remarks>
-        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
         /// </remarks>
         public static IAuthToken None => new AuthToken(new Dictionary<string, object> {{SchemeKey, "none"}});
 
@@ -46,7 +47,7 @@ namespace Neo4j.Driver
         /// <param name="password">This is the "credential", proving the identity of the user.</param>
         /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
         /// <remarks>
-        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
         /// </remarks>
         public static IAuthToken Basic(string username, string password)
         {
@@ -61,7 +62,7 @@ namespace Neo4j.Driver
         /// <param name="realm">This is the "realm", specifies the authentication provider. If none is given, default to be decided by the server. </param>
         /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
         /// <remarks>
-        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
         /// </remarks>
         public static IAuthToken Basic(string username, string password, string realm)
         {
@@ -85,7 +86,7 @@ namespace Neo4j.Driver
         /// <param name="base64EncodedTicket">A base64 encoded service ticket.</param>
         /// <returns>an authentication token that can be used to connect to Neo4j.</returns>
         /// <remarks>
-        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
         /// </remarks>
         public static IAuthToken Kerberos(string base64EncodedTicket)
         {
@@ -103,7 +104,7 @@ namespace Neo4j.Driver
         ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
         /// </summary>
         /// <remarks>
-        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
         /// </remarks>
         /// <param name="principal">This is used to identify who this token represents.</param>
         /// <param name="credentials">This is credentials authenticating the principal.</param>
@@ -121,7 +122,7 @@ namespace Neo4j.Driver
         ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
         /// </summary>
         /// <remarks>
-        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
         /// </remarks>
         /// <param name="principal">This is used to identify who this token represents.</param>
         /// <param name="credentials">This is credentials authenticating the principal.</param>

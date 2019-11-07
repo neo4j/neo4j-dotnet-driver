@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldThrowIOExceptionIfFailedToReadOnHandshakeAsync()
             {
-                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+                var bufferSettings = new BufferSettings(Config.Default);
 
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldConnectServerAsync()
             {
-                var bufferSettings = new BufferSettings(Config.DefaultConfig);
+                var bufferSettings = new BufferSettings(Config.Default);
 
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] {0, 0, 0, 4});

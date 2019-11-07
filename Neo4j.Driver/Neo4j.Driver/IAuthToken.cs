@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver
 {
     /// <summary>
@@ -23,7 +25,7 @@ namespace Neo4j.Driver
     ///     See <see cref="AuthTokens" /> for available types of <see cref="IAuthToken"/>s.
     /// </summary>
     /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Config)" />
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
     /// </remarks>
     public interface IAuthToken
     {

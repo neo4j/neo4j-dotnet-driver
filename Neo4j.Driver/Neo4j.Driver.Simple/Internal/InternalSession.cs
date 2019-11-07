@@ -64,17 +64,17 @@ namespace Neo4j.Driver.Internal
             return BeginTransaction(null);
         }
 
-        public ITransaction BeginTransaction(Action<TransactionOptions> optionsBuilder)
+        public ITransaction BeginTransaction(Action<TransactionConfigBuilder> action)
         {
             return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(optionsBuilder))
+                _executor.RunSync(() => _session.BeginTransactionAsync(action))
                     .CastOrThrow<IInternalAsyncTransaction>(), _executor);
         }
 
-        private InternalTransaction BeginTransaction(AccessMode mode, Action<TransactionOptions> optionsBuilder)
+        private InternalTransaction BeginTransaction(AccessMode mode, Action<TransactionConfigBuilder> action)
         {
             return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(mode, optionsBuilder))
+                _executor.RunSync(() => _session.BeginTransactionAsync(mode, action))
                     .CastOrThrow<IInternalAsyncTransaction>(), _executor);
         }
 
@@ -87,9 +87,9 @@ namespace Neo4j.Driver.Internal
             return ReadTransaction(work, null);
         }
 
-        public T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder)
+        public T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
         {
-            return RunTransaction(AccessMode.Read, work, optionsBuilder);
+            return RunTransaction(AccessMode.Read, work, action);
         }
 
         public T WriteTransaction<T>(Func<ITransaction, T> work)
@@ -97,16 +97,16 @@ namespace Neo4j.Driver.Internal
             return WriteTransaction(work, null);
         }
 
-        public T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder)
+        public T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
         {
-            return RunTransaction(AccessMode.Write, work, optionsBuilder);
+            return RunTransaction(AccessMode.Write, work, action);
         }
 
-        internal T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, Action<TransactionOptions> optionsBuilder)
+        internal T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
         {
             return _retryLogic.Retry(() =>
             {
-                using (var txc = BeginTransaction(mode, optionsBuilder))
+                using (var txc = BeginTransaction(mode, action))
                 {
                     try
                     {
@@ -133,20 +133,20 @@ namespace Neo4j.Driver.Internal
 
         #endregion
 
-        public IStatementResult Run(string statement, Action<TransactionOptions> optionsBuilder)
+        public IStatementResult Run(string statement, Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement), optionsBuilder);
+            return Run(new Statement(statement), action);
         }
 
         public IStatementResult Run(string statement, IDictionary<string, object> parameters,
-            Action<TransactionOptions> optionsBuilder)
+            Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement, parameters), optionsBuilder);
+            return Run(new Statement(statement, parameters), action);
         }
 
-        public IStatementResult Run(Statement statement, Action<TransactionOptions> optionsBuilder)
+        public IStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action)
         {
-            return new InternalStatementResult(_executor.RunSync(() => _session.RunAsync(statement, optionsBuilder)),
+            return new InternalStatementResult(_executor.RunSync(() => _session.RunAsync(statement, action)),
                 _executor);
         }
 

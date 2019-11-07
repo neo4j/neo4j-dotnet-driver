@@ -64,9 +64,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _databaseUri = databaseUri;
             _authToken = authToken;
             _driver = GraphDatabase.Driver(databaseUri, authToken,
-                Config.Builder.WithDriverLogger(new StressTestLogger(_output, LoggingEnabled))
-                    .WithMaxConnectionPoolSize(100).WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1))
-                    .ToConfig());
+                o=> o
+                    .WithDriverLogger(new StressTestLogger(_output, LoggingEnabled))
+                    .WithMaxConnectionPoolSize(100).WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1)));
 
             CleanupDatabase();
         }

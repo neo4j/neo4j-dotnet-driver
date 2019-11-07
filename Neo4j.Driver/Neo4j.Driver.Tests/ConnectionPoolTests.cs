@@ -441,7 +441,7 @@ namespace Neo4j.Driver.Tests
             public async void ShouldTimeoutAfterAcquireAsyncTimeoutIfPoolIsFull()
             {
                 Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(10))
-                    .WithMaxConnectionPoolSize(5).WithMaxIdleConnectionPoolSize(0).ToConfig();
+                    .WithMaxConnectionPoolSize(5).WithMaxIdleConnectionPoolSize(0).Build();
 
                 var pool = NewConnectionPool(poolSettings: new ConnectionPoolSettings(config));
 
@@ -466,7 +466,7 @@ namespace Neo4j.Driver.Tests
             public async void ShouldTimeoutAfterAcquireAsyncTimeoutWhenConnectionIsNotValidated()
             {
                 Config config = Config.Builder.WithConnectionAcquisitionTimeout(TimeSpan.FromSeconds(5))
-                    .ToConfig();
+                    .Build();
 
 
                 var pool = NewConnectionPool(poolSettings: new ConnectionPoolSettings(config),

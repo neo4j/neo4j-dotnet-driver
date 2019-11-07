@@ -22,6 +22,6 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IInternalAsyncSession: IAsyncSession
     {
-        Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionOptions> optionsBuilder);
+        Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action);
     }
 }

@@ -29,20 +29,22 @@ namespace Neo4j.Driver
     /// <para/>
     /// For example, the following code starts a transaction using server default transaction configurations.
     /// <code>
-    /// session.BeginTransaction(o=>{});
+    /// session.BeginTransaction(b=>{});
     /// </code>
     /// </summary>
-    public sealed class TransactionOptions
+    public sealed class TransactionConfig
     {
-        internal static readonly TransactionOptions Empty = new TransactionOptions();
+        internal static readonly TransactionConfig Default = new TransactionConfig();
         private IDictionary<string, object> _metadata;
         private TimeSpan _timeout;
 
-        internal TransactionOptions()
+        internal TransactionConfig()
         {
             _timeout = TimeSpan.Zero;
             _metadata = PackStream.EmptyDictionary;
         }
+
+        internal static TransactionConfigBuilder Builder => new TransactionConfigBuilder(new TransactionConfig());
 
         /// <summary>
         /// Transaction timeout.
@@ -71,7 +73,7 @@ namespace Neo4j.Driver
         /// The transaction metadata.
         /// Specified metadata will be attached to the executing transaction and visible in the output of <code>dbms.listQueries</code>
         /// and <code>dbms.listTransactions</code> procedures. It will also get logged to the <code>query.log</code>.
-        /// Transactions starting with this <see cref="TransactionOptions"/>
+        /// Transactions starting with this <see cref="TransactionConfig"/>
         /// This functionality makes it easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure.
         /// Leave this field unmodified to use default timeout configured on database.
         /// </summary>
@@ -83,6 +85,28 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
+        /// Returns the config content in a nice string representation.
+        /// </summary>
+        /// <returns>The content of the transaction config in a string.</returns>
+        public override string ToString()
+        {
+            return $"{GetType().Name}{{{nameof(Metadata)}={Metadata.ToContentString()}, {nameof(Timeout)}={Timeout}}}";
+        }
+    }
+
+    /// <summary>
+    /// The builder to create a <see cref="TransactionConfig"/>
+    /// </summary>
+    public sealed class TransactionConfigBuilder
+    {
+        private readonly TransactionConfig _config;
+
+        internal TransactionConfigBuilder(TransactionConfig config)
+        {
+            _config = config;
+        }
+
+        /// <summary>
         /// Sets the transaction timeout.
         /// Transactions that execute longer than the configured timeout will be terminated by the database.
         /// This functionality allows to limit query/transaction execution time.
@@ -91,10 +115,10 @@ namespace Neo4j.Driver
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less or equal to zero</exception>
         /// <param name="timeout">the new timeout</param>
-        /// <returns>this <see cref="TransactionOptions"/> instance</returns>
-        public TransactionOptions WithTimeout(TimeSpan timeout)
+        /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
+        public TransactionConfigBuilder WithTimeout(TimeSpan timeout)
         {
-            Timeout = timeout;
+            _config.Timeout = timeout;
             return this;
         }
 
@@ -102,25 +126,21 @@ namespace Neo4j.Driver
         /// The transaction metadata.
         /// Specified metadata will be attached to the executing transaction and visible in the output of <code>dbms.listQueries</code>
         /// and <code>dbms.listTransactions</code> procedures. It will also get logged to the <code>query.log</code>.
-        /// Transactions starting with this <see cref="TransactionOptions"/>
+        /// Transactions starting with this <see cref="TransactionConfig"/>
         /// This functionality makes it easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure.
         /// Leave this field unmodified to use default timeout configured on database.
         /// </summary>
         /// <param name="metadata">the metadata to set on transaction</param>
-        /// <returns>this <see cref="TransactionOptions"/> instance</returns>
-        public TransactionOptions WithMetadata(IDictionary<string, object> metadata)
+        /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
+        public TransactionConfigBuilder WithMetadata(IDictionary<string, object> metadata)
         {
-            Metadata = metadata;
+            _config.Metadata = metadata;
             return this;
         }
 
-        /// <summary>
-        /// Returns the config content in a nice string representation.
-        /// </summary>
-        /// <returns>The content of the transaction config in a string.</returns>
-        public override string ToString()
+        internal TransactionConfig Build()
         {
-            return $"{GetType().Name}{{{nameof(Metadata)}={Metadata.ToContentString()}, {nameof(Timeout)}={Timeout}}}";
+            return _config;
         }
     }
 }

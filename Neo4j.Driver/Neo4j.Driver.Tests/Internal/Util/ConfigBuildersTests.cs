@@ -21,22 +21,22 @@ using Xunit;
 
 namespace Neo4j.Driver.Internal.Util
 {
-    public class OptionsBuilderTests
+    public class ConfigBuildersTests
     {
         public class BuildTransactionOptions
         {
             [Fact]
             public void ShouldReturnEmptyTxOptionsWhenBuilderIsNull()
             {
-                var options = OptionsBuilder.BuildTransactionOptions(null);
-                options.Should().Be(TransactionOptions.Empty);
+                var options = ConfigBuilders.BuildTransactionConfig(null);
+                options.Should().Be(TransactionConfig.Default);
             }
 
             [Fact]
             public void ShouldReturnNewTxOptions()
             {
-                var options1 = OptionsBuilder.BuildTransactionOptions(o => { o.WithTimeout(TimeSpan.FromSeconds(5)); });
-                var options2 = OptionsBuilder.BuildTransactionOptions(o => { o.WithTimeout(TimeSpan.FromSeconds(30)); });
+                var options1 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(5)));
+                var options2 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(30)));
                 options1.Timeout.Should().Be(TimeSpan.FromSeconds(5));
                 options2.Timeout.Should().Be(TimeSpan.FromSeconds(30));
 
@@ -52,15 +52,15 @@ namespace Neo4j.Driver.Internal.Util
             [Fact]
             public void ShouldReturnEmptySessionOptionsWhenBuilderIsNull()
             {
-                var options = OptionsBuilder.BuildSessionOptions(null);
-                options.Should().Be(SessionOptions.Empty);
+                var options = ConfigBuilders.BuildSessionConfig(null);
+                options.Should().Be(SessionConfig.Default);
             }
 
             [Fact]
             public void ShouldReturnNewSessionOptions()
             {
-                var options1 = OptionsBuilder.BuildSessionOptions(o => { o.WithDatabase("neo4j"); });
-                var options2 = OptionsBuilder.BuildSessionOptions(o => { o.WithDatabase("system"); });
+                var options1 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("neo4j"));
+                var options2 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("system"));
                 options1.Database.Should().Be("neo4j");
                 options2.Database.Should().Be("system");
 

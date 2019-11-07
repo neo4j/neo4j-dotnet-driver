@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Internal
             IConnectionValidator validator = null,
             IDriverLogger logger = null)
             : this(new Uri("bolt://localhost:7687"), connectionFactory,
-                poolSettings ?? new ConnectionPoolSettings(Config.DefaultConfig), logger)
+                poolSettings ?? new ConnectionPoolSettings(Config.Default), logger)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();

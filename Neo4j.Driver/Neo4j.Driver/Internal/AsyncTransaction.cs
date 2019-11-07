@@ -65,9 +65,9 @@ namespace Neo4j.Driver.Internal
 
         public bool IsOpen => _state == Active;
 
-        public Task BeginTransactionAsync(TransactionOptions optionsBuilder)
+        public Task BeginTransactionAsync(TransactionConfig configBuilder)
         {
-            return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, optionsBuilder);
+            return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, configBuilder);
         }
 
         public override Task<IStatementResultCursor> RunAsync(Statement statement)

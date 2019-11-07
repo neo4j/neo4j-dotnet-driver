@@ -55,10 +55,10 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
-            TransactionOptions optionsBuilder)
+            TransactionConfig configBuilder)
         {
             await connection.EnqueueAsync(
-                    new BeginMessage(database, bookmark, optionsBuilder?.Timeout, optionsBuilder?.Metadata,
+                    new BeginMessage(database, bookmark, configBuilder?.Timeout, configBuilder?.Metadata,
                         connection.GetEnforcedAccessMode()),
                     new V3.BeginResponseHandler())
                 .ConfigureAwait(false);
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public override async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionOptions optionsBuilder, long fetchSize = Config.Infinite)
+            string database, Bookmark bookmark, TransactionConfig configBuilder, long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(statement, connection.Server);
             var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
             await connection
                 .EnqueueAsync(
-                    new RunWithMetadataMessage(statement, database, bookmark, optionsBuilder,
+                    new RunWithMetadataMessage(statement, database, bookmark, configBuilder,
                         connection.GetEnforcedAccessMode()), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);

@@ -23,7 +23,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class TransactionOptionsTests
+    public class TransactionConfigTests
     {
         public class TimeoutField
         {
@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldReturnDefaultValueTimeSpanZero()
             {
-                var config = new TransactionOptions();
+                var config = new TransactionConfig();
                 config.Timeout.Should().Be(TimeSpan.Zero);
                 (config.Timeout == TimeSpan.Zero).Should().BeTrue();
             }
@@ -45,8 +45,9 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAllowToSetToNewValue()
             {
-                var config = new TransactionOptions();
-                config.WithTimeout(TimeSpan.FromSeconds(1));
+                var builder = TransactionConfig.Builder;
+                builder.WithTimeout(TimeSpan.FromSeconds(1));
+                var config = builder.Build();
                 config.Timeout.Should().Be(TimeSpan.FromSeconds(1));
                 (config.Timeout == TimeSpan.FromSeconds(1)).Should().BeTrue();
             }
@@ -54,8 +55,7 @@ namespace Neo4j.Driver.Tests
             [Theory, MemberData(nameof(InvalidTimeSpanValues))]
             public void ShouldThrowExceptionIfAssigningValueZero(TimeSpan input)
             {
-                var config = new TransactionOptions();
-                var error = Record.Exception(()=>config.WithTimeout(input));
+                var error = Record.Exception(()=>TransactionConfig.Builder.WithTimeout(input));
                 error.Should().BeOfType<ArgumentOutOfRangeException>();
                 error.Message.Should().Contain("not be zero or negative");
             }
@@ -66,23 +66,23 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldReturnDefaultValueEmptyDictionary()
             {
-                var config = new TransactionOptions();
+                var config = new TransactionConfig();
                 config.Metadata.Should().BeEmpty();
             }
             
             [Fact]
             public void ShouldAllowToSetToNewValue()
             {
-                var config = new TransactionOptions();
-                config.WithMetadata(new Dictionary<string, object> {{"key", "value"}});
+                var builder = TransactionConfig.Builder;
+                builder.WithMetadata(new Dictionary<string, object> {{"key", "value"}});
+                var config = builder.Build();
                 config.Metadata.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key", "value"));
             }
 
             [Fact]
             public void ShouldThrowExceptionIfAssigningNull()
             {
-                var config = new TransactionOptions();
-                var error = Record.Exception(() => config.WithMetadata(null));
+                var error = Record.Exception(() => TransactionConfig.Builder.WithMetadata(null));
                 error.Should().BeOfType<ArgumentNullException>();
                 error.Message.Should().Contain("should not be null");
             }

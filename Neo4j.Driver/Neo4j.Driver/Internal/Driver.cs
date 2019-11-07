@@ -61,23 +61,23 @@ namespace Neo4j.Driver.Internal
             return AsyncSession(null);
         }
 
-        public IAsyncSession AsyncSession(Action<SessionOptions> optionsBuilder)
+        public IAsyncSession AsyncSession(Action<SessionConfigBuilder> action)
         {
-            return Session(optionsBuilder, false);
+            return Session(action, false);
         }
 
-        public IInternalAsyncSession Session(Action<SessionOptions> optionsBuilder, bool reactive)
+        public IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive)
         {
             if (IsClosed)
             {
                 ThrowDriverClosedException();
             }
 
-            var options = OptionsBuilder.BuildSessionOptions(optionsBuilder);
+            var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
 
-            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, options.DefaultAccessMode,
-                options.Database, Bookmark.From(options.Bookmarks ?? Array.Empty<Bookmark>()), reactive,
-                ParseFetchSize(options.FetchSize));
+            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, sessionConfig.DefaultAccessMode,
+                sessionConfig.Database, Bookmark.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmark>()), reactive,
+                ParseFetchSize(sessionConfig.FetchSize));
 
             if (IsClosed)
             {

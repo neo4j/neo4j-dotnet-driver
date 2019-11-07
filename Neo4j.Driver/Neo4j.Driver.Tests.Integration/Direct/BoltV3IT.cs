@@ -114,7 +114,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         private async Task RunWithTxConfigAsync(bool read)
         {
             // Given
-            void BuildOptions(TransactionOptions o)
+            void BuildOptions(TransactionConfigBuilder o)
             {
                 o.WithMetadata(new Dictionary<string, object> {{"name", "Molly"}});
             }

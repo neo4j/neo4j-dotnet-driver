@@ -60,7 +60,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerWithIPv6Fact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldConnectIPv6AddressIfEnabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = true}))
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken,
+                o => o.WithIpv6Enabled(true)))
             {
                 var session = driver.AsyncSession();
                 try
@@ -80,7 +81,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldNotConnectIPv6AddressIfDisabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken, new Config {Ipv6Enabled = false}))
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken,
+                o => o.WithIpv6Enabled(false)))
             {
                 var session = driver.AsyncSession();
                 try
@@ -117,8 +119,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerWithIPv6Fact]
         public async Task ShouldConnectIPv4AddressIfIpv6Enabled()
         {
-            using (
-                var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config {Ipv6Enabled = true}))
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken,
+                o => o.WithIpv6Enabled(true)))
             {
                 var session = driver.AsyncSession();
                 try
@@ -141,10 +143,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         public async Task ShouldCloseAgedIdleConnections(int sessionCount)
         {
             // Given
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, new Config
+            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, o=>
             {
-                MetricsFactory = new DefaultMetricsFactory(),
-                ConnectionIdleTimeout = TimeSpan.Zero // enable but always timeout idle connections
+                o.WithMetricsFactory(new DefaultMetricsFactory());
+                o.WithConnectionIdleTimeout(TimeSpan.Zero); // enable but always timeout idle connections
             }))
             {
                 // When

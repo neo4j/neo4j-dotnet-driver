@@ -30,7 +30,7 @@ namespace Neo4j.Driver
     {
         /// <summary>
         /// Obtain a session which is designed to be used synchronously, which is built on top of the default
-        /// asynchronous <see cref="IAsyncSession"/> with default <see cref="SessionOptions"/>.
+        /// asynchronous <see cref="IAsyncSession"/> with default <see cref="SessionConfig"/>.
         /// </summary>
         /// <param name="driver">driver instance</param>
         /// <returns>A simple session instance</returns>
@@ -41,17 +41,17 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// Obtain a session which is designed to be used synchronously, which is built on top of the default
-        /// asynchronous <see cref="IAsyncSession"/> with the customized <see cref="SessionOptions"/>.
+        /// asynchronous <see cref="IAsyncSession"/> with the customized <see cref="SessionConfig"/>.
         /// </summary>
         /// <param name="driver">driver instance</param>
-        /// <param name="optionsBuilder">An action, provided with a <see cref="SessionOptions"/> instance, that should populate
-        /// the provided instance with desired options.</param> 
+        /// <param name="action">An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate
+        /// the provided instance with desired session configurations <see cref="SessionConfig"/>.</param>
         /// <returns>A simple session instance</returns>
-        public static ISession Session(this IDriver driver, Action<SessionOptions> optionsBuilder)
+        public static ISession Session(this IDriver driver, Action<SessionConfigBuilder> action)
         {
             var asyncDriver = driver.CastOrThrow<IInternalDriver>();
 
-            return new InternalSession(driver.AsyncSession(optionsBuilder).CastOrThrow<IInternalAsyncSession>(),
+            return new InternalSession(driver.AsyncSession(action).CastOrThrow<IInternalAsyncSession>(),
                 new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.DriverLogger),
                 new BlockingExecutor());
         }

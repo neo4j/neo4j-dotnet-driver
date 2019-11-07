@@ -100,12 +100,9 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithCustomizedConnectionPool(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config
-                    {
-                        MaxConnectionLifetime = TimeSpan.FromMinutes(30),
-                        MaxConnectionPoolSize = 50,
-                        ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
-                    });
+                    o => o.WithMaxConnectionLifetime(TimeSpan.FromMinutes(30))
+                        .WithMaxConnectionPoolSize(50)
+                        .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(2)));
             }
             // end::config-connection-pool[]
 
@@ -133,7 +130,7 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithCustomizedConnectionTimeout(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {ConnectionTimeout = TimeSpan.FromSeconds(15)});
+                    o => o.WithConnectionTimeout(TimeSpan.FromSeconds(15)));
             }
             // end::config-connection-timeout[]
 
@@ -161,7 +158,7 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithCustomizedMaxRetryTime(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(15)});
+                    o => o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(15)));
             }
             // end::config-max-retry-time[]
 
@@ -189,7 +186,7 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {TrustManager = TrustManager.CreateInsecure()});
+                    o => o.WithTrustManager(TrustManager.CreateInsecure()));
             }
             // end::config-trust[]
 
@@ -217,7 +214,7 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithCustomizedSecurityStrategy(string uri, string user, string password)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
-                    new Config {EncryptionLevel = EncryptionLevel.None});
+                    o=>o.WithEncryptionLevel(EncryptionLevel.None));
             }
             // end::config-unencrypted[]
 
@@ -245,7 +242,7 @@ namespace Neo4j.Driver.Examples
                 params ServerAddress[] addresses)
             {
                 return GraphDatabase.Driver(virtualUri, token,
-                    new Config {Resolver = new ListAddressResolver(addresses), EncryptionLevel = EncryptionLevel.None});
+                    o => o.WithResolver(new ListAddressResolver(addresses)).WithEncryptionLevel(EncryptionLevel.None));
             }
 
             public void AddPerson(string name)
@@ -313,7 +310,7 @@ namespace Neo4j.Driver.Examples
                 Dictionary<string, object> parameters)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
-                    new Config {EncryptionLevel = EncryptionLevel.None});
+                    o=>o.WithEncryptionLevel(EncryptionLevel.None));
             }
             // end::custom-auth[]
 
@@ -341,7 +338,7 @@ namespace Neo4j.Driver.Examples
             public IDriver CreateDriverWithKerberosAuth(string uri, string ticket)
             {
                 return GraphDatabase.Driver(uri, AuthTokens.Kerberos(ticket),
-                    new Config {EncryptionLevel = EncryptionLevel.None});
+                    o => o.WithEncryptionLevel(EncryptionLevel.None));
             }
             // end::kerberos-auth[]
 
@@ -612,7 +609,7 @@ namespace Neo4j.Driver.Examples
             {
                 _baseDriver = Driver;
                 Driver = GraphDatabase.Driver("bolt://localhost:8080", AuthTokens.Basic(User, Password),
-                    new Config {MaxTransactionRetryTime = TimeSpan.FromSeconds(3)});
+                    o => o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(3)));
             }
 
             protected override void Dispose(bool isDisposing)
