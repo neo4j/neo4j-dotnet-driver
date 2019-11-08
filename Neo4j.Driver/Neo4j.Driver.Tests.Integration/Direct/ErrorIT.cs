@@ -88,7 +88,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var result = await session.RunAsync("Invalid Cypher");
-                var ex = await Record.ExceptionAsync(() => result.SummaryAsync());
+                var ex = await Record.ExceptionAsync(() => result.ConsumeAsync());
 
                 ex.Should().BeOfType<ClientException>().Which
                     .Message.Should().StartWith("Invalid input");

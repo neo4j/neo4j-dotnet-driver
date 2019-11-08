@@ -189,7 +189,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         try
                         {
                             var result = await txc.RunAsync("CREATE (n {name:'Alice'}) RETURN n.name AS name");
-                            var exception = await Record.ExceptionAsync(() => result.SummaryAsync());
+                            var exception = await Record.ExceptionAsync(() => result.ConsumeAsync());
 
                             exception.Should().BeOfType<TransientException>();
                         }

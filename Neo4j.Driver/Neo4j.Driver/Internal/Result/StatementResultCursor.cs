@@ -51,18 +51,18 @@ namespace Neo4j.Driver.Internal.Result
             return _keys;
         }
 
-        public Task<IResultSummary> SummaryAsync()
+        public Task<IResultSummary> ConsumeAsync()
         {
             if (_summary == null)
             {
                 Cancel();
-                _summary = _resultStream.SummaryAsync();
+                _summary = _resultStream.ConsumeAsync();
             }
             else
             {
                 if (_summary.IsFaulted)
                 {
-                    _summary = _resultStream.SummaryAsync();
+                    _summary = _resultStream.ConsumeAsync();
                 }
             }
 

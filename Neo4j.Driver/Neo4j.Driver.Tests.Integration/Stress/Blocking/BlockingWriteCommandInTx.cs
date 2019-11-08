@@ -43,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 {
                     using (var txc = BeginTransaction(session, context))
                     {
-                        summary = txc.Run("CREATE ()").Summary();
+                        summary = txc.Run("CREATE ()").Consume();
 
                         txc.Commit();
                     }

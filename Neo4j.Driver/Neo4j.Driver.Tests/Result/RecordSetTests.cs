@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests
             return Task.FromResult(_peeked);
         }
 
-        public async Task<IResultSummary> SummaryAsync()
+        public async Task<IResultSummary> ConsumeAsync()
         {
             while (await FetchAsync())
             {

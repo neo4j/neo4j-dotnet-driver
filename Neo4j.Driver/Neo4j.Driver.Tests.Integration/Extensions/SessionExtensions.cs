@@ -26,7 +26,7 @@ namespace Neo4j.Driver.IntegrationTests
             object parameters = null)
         {
             var cursor = await runner.RunAsync(statement, parameters);
-            var summary = await cursor.SummaryAsync();
+            var summary = await cursor.ConsumeAsync();
             return summary;
         }
 

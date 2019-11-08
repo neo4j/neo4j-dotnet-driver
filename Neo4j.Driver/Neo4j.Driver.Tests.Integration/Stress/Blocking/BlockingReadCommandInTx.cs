@@ -37,7 +37,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 var record = result.SingleOrDefault();
                 record?[0].Should().BeAssignableTo<INode>();
 
-                context.NodeRead(result.Summary());
+                context.NodeRead(result.Consume());
 
                 txc.Commit();
             }

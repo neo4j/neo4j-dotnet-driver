@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Internal
 
                 if (cursor != null)
                 {
-                    await cursor.SummaryAsync().ConfigureAwait(false);
+                    await cursor.ConsumeAsync().ConfigureAwait(false);
                 }
             }
         }

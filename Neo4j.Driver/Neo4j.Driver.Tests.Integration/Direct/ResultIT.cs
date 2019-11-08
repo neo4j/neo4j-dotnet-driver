@@ -18,10 +18,10 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Util;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.Tests.ConsumableStatementCursorTests;
 using Record = Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
@@ -41,10 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE (p:Person { Name: 'Test'})");
-                var summary = await cursor.SummaryAsync();
-
-                var peeked = await cursor.PeekAsync();
-                peeked.Should().BeNull();
+                var summary = await cursor.ConsumeAsync();
 
                 summary.Statement.Text.Should().Be("CREATE (p:Person { Name: 'Test'})");
                 summary.Statement.Parameters.Count.Should().Be(0);
@@ -85,7 +82,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("CREATE USER foo SET PASSWORD 'bar'");
-                var summary = await cursor.SummaryAsync();
+                var summary = await cursor.ConsumeAsync();
                 summary.Counters.ContainsUpdates.Should().BeFalse();
                 summary.Counters.ContainsSystemUpdates.Should().BeTrue();
                 summary.Counters.SystemUpdates.Should().Be(1);
@@ -93,7 +90,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             finally
             {
                 var cursor = await session.RunAsync("DROP USER foo");
-                await cursor.SummaryAsync();
+                await cursor.ConsumeAsync();
                 await session.CloseAsync();
             }
         }
@@ -105,7 +102,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("EXPLAIN MATCH (n) RETURN 1");
-                var summary = await cursor.SummaryAsync();
+                var summary = await cursor.ConsumeAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeFalse();
@@ -129,7 +126,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("PROFILE RETURN 1");
-                var summary = await cursor.SummaryAsync();
+                var summary = await cursor.ConsumeAsync();
 
                 summary.HasPlan.Should().BeTrue();
                 summary.HasProfile.Should().BeTrue();
@@ -153,7 +150,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n");
-                var summary = await cursor.SummaryAsync();
+                var summary = await cursor.ConsumeAsync();
 
                 var notifications = summary.Notifications;
                 notifications.Should().NotBeNull();
@@ -179,10 +176,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("Invalid");
-                var error = await Record.ExceptionAsync(() => cursor.SummaryAsync());
+                var error = await Record.ExceptionAsync(() => cursor.ConsumeAsync());
                 error.Should().BeOfType<ClientException>();
 
-                var summary = await cursor.SummaryAsync();
+                var summary = await cursor.ConsumeAsync();
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
@@ -195,42 +192,21 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact]
-        public async Task DiscardRecordsAfterSummary()
+        public async Task ErrorAccessRecordsAfterConsume()
         {
             var session = Driver.AsyncSession();
             try
             {
-                var cursor = await session.RunAsync("UNWIND [1,2] AS a RETURN a");
-                var summary = await cursor.SummaryAsync();
+                var cursor = await session.RunAsync("unwind range(1,3) as n return n");
+                var summary = await cursor.ConsumeAsync();
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
                 summary.Server.Address.Should().Contain("localhost:7687");
 
-                var next = await cursor.FetchAsync();
-                next.Should().BeFalse();
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        [RequireServerFact]
-        public async Task DiscardRecordsAfterConsume()
-        {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("UNWIND [1,2] AS a RETURN a");
-                var summary = await cursor.SummaryAsync();
-
-                summary.Should().NotBeNull();
-                summary.Counters.NodesCreated.Should().Be(0);
-                summary.Server.Address.Should().Contain("localhost:7687");
-
-                var list = await cursor.ToListAsync();
-                list.Should().BeEmpty();
+                await AssertCannotAccessRecords(cursor);
+                await CanAccessSummary(cursor);
+                await CanAccessKeys(cursor);
             }
             finally
             {
@@ -247,11 +223,12 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var cursor1 = await session.RunAsync("unwind range(1,3) as n RETURN n");
                 var cursor2 = await session.RunAsync("unwind range(4,6) as n RETURN n");
 
-                var list2 = await cursor2.ToListAsync(r => r["n"].As<int>());
-                var list1 = await cursor1.ToListAsync(r => r["n"].As<int>());
+                await AssertCannotAccessRecords(cursor1);
+                await CanAccessSummary(cursor1);
+                await CanAccessKeys(cursor1);
 
+                var list2 = await cursor2.ToListAsync(r => r["n"].As<int>());
                 list2.Should().ContainInOrder(4, 5, 6);
-                list1.Should().ContainInOrder(1, 2, 3);
             }
             finally
             {
@@ -260,7 +237,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact]
-        public async Task DiscardResultAfterSessionClose()
+        public async Task ErrorAccessRecordsAfterSessionClose()
         {
             IStatementResultCursor cursor;
             var session = Driver.AsyncSession();
@@ -274,19 +251,13 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 await session.CloseAsync();
             }
 
-            var resultAll = await cursor.ToListAsync(r => r["n"].As<int>());
-
-            // Records that has not been read inside session is not saved
-            resultAll.Count.Should().Be(0);
-
-            // Summary is still saved
-            var summary = await cursor.SummaryAsync();
-            summary.Statement.Text.Should().Be("unwind range(1,3) as n RETURN n");
-            summary.StatementType.Should().Be(StatementType.ReadOnly);
+            await AssertCannotAccessRecords(cursor);
+            await CanAccessSummary(cursor);
+            await CanAccessKeys(cursor);
         }
 
         [RequireServerFact]
-        public async Task DiscardResultsAfterTxClose()
+        public async Task ErrorAccessRecordsAfterTxClose()
         {
             var session = Driver.AsyncSession();
             try
@@ -317,16 +288,43 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     throw;
                 }
 
-                var result2All = await result2.ToListAsync(r => r["n"].As<int>());
-                var result1All = await result1.ToListAsync(r => r["n"].As<int>());
+                await AssertCannotAccessRecords(result1);
+                await CanAccessSummary(result1);
+                await CanAccessKeys(result1);
 
-                result2All.Should().BeEmpty();
-                result1All.Should().BeEmpty();
+                await AssertCannotAccessRecords(result2);
+                await CanAccessSummary(result2);
+                await CanAccessKeys(result2);
             }
             finally
             {
                 await session.CloseAsync();
             }
+        }
+
+        private static async Task CanAccessKeys(IStatementResultCursor cursor)
+        {
+            // Summary is still saved
+            var keys = await cursor.KeysAsync();
+            keys.Should().ContainInOrder("n");
+        }
+
+        private static async Task CanAccessSummary(IStatementResultCursor cursor)
+        {
+            // Summary is still saved
+            var summary = await cursor.ConsumeAsync();
+            summary.Statement.Text.ToLower().Should().NotBeNullOrEmpty();
+            summary.StatementType.Should().Be(StatementType.ReadOnly);
+        }
+
+        private static async Task AssertCannotAccessRecords(IStatementResultCursor cursor)
+        {
+            await ThrowsResultConsumedException(async () => await cursor.FetchAsync());
+            await ThrowsResultConsumedException(async () => await cursor.PeekAsync());
+            ThrowsResultConsumedException(() => cursor.Current);
+            await ThrowsResultConsumedException(async () => await cursor.SingleAsync());
+            await ThrowsResultConsumedException(async () => await cursor.ToListAsync());
+            await ThrowsResultConsumedException(async () => await cursor.ForEachAsync(r => { }));
         }
     }
 }

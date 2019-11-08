@@ -113,5 +113,12 @@ namespace Neo4j.Driver.Internal
             var exception = error as Neo4jException;
             return exception?.Code != null && exception.Code.Equals(code);
         }
+
+        public static ResultConsumedException NewResultConsumedException()
+        {
+            return new ResultConsumedException(
+                "Cannot access records on this result any more as the result has already been consumed " +
+                "or the statement runner where the result is created has already been closed.");
+        }
     }
 }

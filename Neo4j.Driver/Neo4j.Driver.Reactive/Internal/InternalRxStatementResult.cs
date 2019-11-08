@@ -79,9 +79,18 @@ namespace Neo4j.Driver.Internal
                 cancellation.Add(_summary.Subscribe(summaryObserver));
             }
 
-            if (recordObserver != null && !_records.HasObservers)
+            if (recordObserver != null)
             {
-                cancellation.Add(_records.Subscribe(recordObserver));
+                if (State == StreamingState.Completed)
+                {
+                    var error = new Subject<IRecord>();
+                    cancellation.Add(error.Subscribe(recordObserver));
+                    error.OnError(ErrorExtensions.NewResultConsumedException());
+                }
+                else if (!_records.HasObservers)
+                {
+                    cancellation.Add(_records.Subscribe(recordObserver));
+                }
             }
 
             if (StartStreaming())
@@ -124,7 +133,7 @@ namespace Neo4j.Driver.Internal
 
                     try
                     {
-                        _summary.OnNext(await cursor.SummaryAsync().ConfigureAwait(false));
+                        _summary.OnNext(await cursor.ConsumeAsync().ConfigureAwait(false));
                         _summary.OnCompleted();
                     }
                     catch (Exception exc)

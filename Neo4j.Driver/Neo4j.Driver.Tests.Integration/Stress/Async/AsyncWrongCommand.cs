@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 var exc = await Record.ExceptionAsync(async () =>
                 {
                     var cursor = await session.RunAsync("RETURN");
-                    await cursor.SummaryAsync();
+                    await cursor.ConsumeAsync();
                 });
 
                 exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Unexpected end of input");

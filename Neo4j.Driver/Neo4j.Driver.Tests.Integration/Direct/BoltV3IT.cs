@@ -57,7 +57,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             // Given
             using (var session = Server.Driver.Session())
             {
-                session.Run("CREATE (:Node)").Summary();
+                session.Run("CREATE (:Node)").Consume();
             }
 
             var otherSession = Server.Driver.AsyncSession();
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 try
                 {
                     // lock dummy node but keep the transaction open
-                    await otherTx.RunAsync("MATCH (n:Node) SET n.prop = 1").ContinueWith(t => t.Result.SummaryAsync())
+                    await otherTx.RunAsync("MATCH (n:Node) SET n.prop = 1").ContinueWith(t => t.Result.ConsumeAsync())
                         .Unwrap();
 
                     // When
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                         var error = await Record.ExceptionAsync(() =>
                             session.RunAsync("MATCH (n:Node) SET n.prop = 2",
                                     o => { o.WithTimeout(TimeSpan.FromMilliseconds(1)); })
-                                .ContinueWith(c => c.Result.SummaryAsync()).Unwrap());
+                                .ContinueWith(c => c.Result.ConsumeAsync()).Unwrap());
 
                         // Then
                         error.Should().BeOfType<TransientException>().Which.Message.Should().Contain("terminated");

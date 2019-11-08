@@ -43,9 +43,9 @@ namespace Neo4j.Driver.Internal
         {
             return _recordSet.Peek();
         }
-        public IResultSummary Summary()
+        public IResultSummary Consume()
         {
-            return _executor.RunSync(() => _cursor.SummaryAsync());
+            return _executor.RunSync(() => _cursor.ConsumeAsync());
         }
 
         public IEnumerator<IRecord> GetEnumerator()

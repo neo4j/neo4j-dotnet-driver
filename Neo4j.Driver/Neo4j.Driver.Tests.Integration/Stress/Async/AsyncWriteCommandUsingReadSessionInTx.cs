@@ -44,7 +44,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     var exc = await Record.ExceptionAsync(async () =>
                     {
                         cursor = await txc.RunAsync("CREATE ()");
-                        await cursor.SummaryAsync();
+                        await cursor.ConsumeAsync();
                     });
 
                     exc.Should().BeOfType<ClientException>();
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             }
 
             cursor.Should().NotBeNull();
-            var summary = await cursor.SummaryAsync();
+            var summary = await cursor.ConsumeAsync();
             summary.Counters.NodesCreated.Should().Be(0);
         }
     }

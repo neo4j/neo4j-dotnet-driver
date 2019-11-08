@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldConsumeAllRecords()
             {
                 var result = ResultCreator.CreateResult(0, 3);
-                result.Summary();
+                result.Consume();
                 result.Count().Should().Be(0);
                 result.Peek().Should().BeNull();
             }
@@ -79,11 +79,11 @@ namespace Neo4j.Driver.Tests
                 });
 
 
-                result.Summary();
+                result.Consume();
                 getSummaryCalled.Should().Be(1);
 
                 // the same if we call it multiple times
-                result.Summary();
+                result.Consume();
                 getSummaryCalled.Should().Be(1);
             }
 
@@ -92,8 +92,8 @@ namespace Neo4j.Driver.Tests
             {
                 var result = ResultCreator.CreateResult(1);
 
-                result.Summary();
-                var ex = Xunit.Record.Exception(() => result.Summary());
+                result.Consume();
+                var ex = Xunit.Record.Exception(() => result.Consume());
                 ex.Should().BeNull();
             }
 
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Tests
             {
                 var result = ResultCreator.CreateResult(1, 3);
 
-                result.Summary();
+                result.Consume();
                 result.Count().Should().Be(0); // the records left after consume
 
                 result.GetEnumerator().Current.Should().BeNull();
@@ -311,7 +311,7 @@ namespace Neo4j.Driver.Tests
                 });
 
                 // ReSharper disable once UnusedVariable
-                var summary = result.Summary();
+                var summary = result.Consume();
 
                 getSummaryCalled.Should().BeTrue();
             }
@@ -321,7 +321,7 @@ namespace Neo4j.Driver.Tests
             {
                 var result = ResultCreator.CreateResult(1, 0);
 
-                result.Summary().Should().BeNull();
+                result.Consume().Should().BeNull();
             }
 
             [Fact]
@@ -335,9 +335,9 @@ namespace Neo4j.Driver.Tests
                 });
 
                 // ReSharper disable once NotAccessedVariable
-                var summary = result.Summary();
+                var summary = result.Consume();
                 // ReSharper disable once RedundantAssignment
-                summary = result.Summary();
+                summary = result.Consume();
                 getSummaryCalled.Should().Be(1);
             }
         }
