@@ -26,11 +26,8 @@ namespace Neo4j.Driver.Internal.Connector
     internal class PooledConnection : DelegatedConnection, IPooledConnection
     {
         private readonly IConnectionReleaseManager _releaseManager;
-        private readonly IConnectionListener _connMetricsListener;
-        private readonly IListenerEvent _connEvent;
 
-        public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null,
-            IConnectionListener connMetricsListener = null)
+        public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null)
             : base(conn)
         {
             _releaseManager = releaseManager;
@@ -39,12 +36,6 @@ namespace Neo4j.Driver.Internal.Connector
             // LifetimeTimer starts to count once the connection is created.
             LifetimeTimer = new StopwatchBasedTimer();
             LifetimeTimer.Start();
-
-            _connMetricsListener = connMetricsListener;
-            if (_connMetricsListener != null)
-            {
-                _connEvent = new SimpleTimerEvent();
-            }
         }
 
         public Guid Id { get; } = Guid.NewGuid();
@@ -55,21 +46,11 @@ namespace Neo4j.Driver.Internal.Connector
             await SyncAsync().ConfigureAwait(false);
         }
 
-        public void OnAcquire()
-        {
-            _connMetricsListener?.ConnectionAcquired(_connEvent);
-        }
-
-        public void OnRelease()
-        {
-            _connMetricsListener?.ConnectionReleased(_connEvent);
-        }
-
         public override bool IsOpen => Delegate.IsOpen && !HasUnrecoverableError;
 
         public override Task DestroyAsync()
         {
-            // stops the timmer
+            // stops the timer
             IdleTimer.Reset();
             LifetimeTimer.Reset();
 

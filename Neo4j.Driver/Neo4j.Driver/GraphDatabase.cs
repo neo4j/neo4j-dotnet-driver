@@ -224,7 +224,7 @@ namespace Neo4j.Driver
             var routingContext = uri.ParseRoutingContext();
             var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
 
-            var metrics = config.MetricsFactory?.CreateMetrics(config);
+            var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
             var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
 
             var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);

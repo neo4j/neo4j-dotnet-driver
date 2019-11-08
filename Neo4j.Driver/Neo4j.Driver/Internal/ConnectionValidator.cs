@@ -64,7 +64,6 @@ namespace Neo4j.Driver.Internal
             }
 
             RestartIdleTimer(connection);
-            connection.OnRelease();
 
             return true;
         }
@@ -78,7 +77,6 @@ namespace Neo4j.Driver.Internal
             if (isRequirable)
             {
                 ResetIdleTimer(connection);
-                connection.OnAcquire();
             }
             return isRequirable;
         }

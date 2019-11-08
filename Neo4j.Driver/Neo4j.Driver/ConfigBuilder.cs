@@ -264,9 +264,9 @@ namespace Neo4j.Driver
             return this;
         }
 
-        internal ConfigBuilder WithMetricsFactory(IMetricsFactory factory)
+        internal ConfigBuilder WithMetricsEnabled(bool enabled)
         {
-            _config.MetricsFactory = factory;
+            _config.MetricsEnabled = enabled;
             return this;
         }
     }

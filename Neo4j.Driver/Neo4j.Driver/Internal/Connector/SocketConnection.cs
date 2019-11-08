@@ -52,15 +52,13 @@ namespace Neo4j.Driver.Internal.Connector
         private string _id;
         private readonly string _idPrefix;
 
-        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
-            IConnectionListener metricsListener = null, ILogger logger = null)
+        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogger logger = null)
         {
             _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-            _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, metricsListener,
-                _logger);
+            _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger);
             _authToken = connectionSettings.AuthToken;
             _userAgent = connectionSettings.UserAgent;
             Server = new ServerInfo(uri);

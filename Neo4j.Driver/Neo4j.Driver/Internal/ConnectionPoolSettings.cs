@@ -27,9 +27,9 @@ namespace Neo4j.Driver.Internal
         public TimeSpan ConnectionAcquisitionTimeout { get; }
         public TimeSpan ConnectionIdleTimeout { get; }
         public TimeSpan MaxConnectionLifetime { get; }
-        public IMetrics Metrics { get; }
+        public IInternalMetrics Metrics { get; }
 
-        public ConnectionPoolSettings(Config config, IMetrics metrics = null)
+        public ConnectionPoolSettings(Config config, IInternalMetrics metrics = null)
             : this(config.MaxIdleConnectionPoolSize, config.MaxConnectionPoolSize, config.ConnectionAcquisitionTimeout,
                 config.ConnectionIdleTimeout, config.MaxConnectionLifetime, metrics)
         {
@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal
 
         internal ConnectionPoolSettings(int maxIdleConnectionPoolSize, int maxConnectionPoolSize,
             TimeSpan connectionAcquisitionTimeout, TimeSpan connectionIdleTimeout, TimeSpan maxConnectionLifetime,
-            IMetrics metrics = null)
+            IInternalMetrics metrics = null)
         {
             MaxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
             MaxConnectionPoolSize = maxConnectionPoolSize;

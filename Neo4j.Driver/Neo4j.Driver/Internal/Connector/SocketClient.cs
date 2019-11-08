@@ -44,23 +44,14 @@ namespace Neo4j.Driver.Internal.Connector
         private int _closedMarker = -1;
 
         private readonly ILogger _logger;
-        private readonly IConnectionListener _connMetricsListener;
-        private readonly IListenerEvent _connEvent;
 
-        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings,
-            IConnectionListener connMetricsListener = null, ILogger logger = null,
+        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
             ITcpSocketClient socketClient = null)
         {
             _uri = uri;
             _logger = logger;
             _bufferSettings = bufferSettings;
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
-
-            _connMetricsListener = connMetricsListener;
-            if (_connMetricsListener != null)
-            {
-                _connEvent = new SimpleTimerEvent();
-            }
         }
 
         // For testing only
@@ -76,12 +67,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task<IBoltProtocol> ConnectAsync()
         {
-            _connMetricsListener?.ConnectionConnecting(_connEvent);
             await _tcpSocketClient.ConnectAsync(_uri).ConfigureAwait(false);
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
-            _connMetricsListener?.ConnectionConnected(_connEvent);
 
             var version = await DoHandshakeAsync().ConfigureAwait(false);
             return SelectBoltProtocol(version);

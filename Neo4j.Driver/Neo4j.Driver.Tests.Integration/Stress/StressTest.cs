@@ -587,7 +587,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             var config = new Config
             {
-                MetricsFactory = new DefaultMetricsFactory(),
+                MetricsEnabled = true,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 100,
@@ -767,10 +767,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 _delegate = factory;
             }
 
-            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager,
-                IConnectionListener metricsListener)
+            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
             {
-                var pooledConnection = _delegate.Create(uri, releaseManager, metricsListener);
+                var pooledConnection = _delegate.Create(uri, releaseManager);
                 Connections.Enqueue(pooledConnection);
                 return pooledConnection;
             }
