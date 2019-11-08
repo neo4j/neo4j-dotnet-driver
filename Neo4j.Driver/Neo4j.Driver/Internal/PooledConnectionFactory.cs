@@ -29,9 +29,9 @@ namespace Neo4j.Driver.Internal
     {
         private readonly ConnectionSettings _connectionSettings;
         private readonly BufferSettings _bufferSettings;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
-        public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, IDriverLogger logger)
+        public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(bufferSettings, nameof(bufferSettings));

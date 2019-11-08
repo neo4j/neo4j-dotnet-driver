@@ -70,11 +70,11 @@ namespace Neo4j.Driver
         /// <summary>
         /// Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.
         /// </summary>
-        /// <param name="logger">The <see cref="IDriverLogger"/> instance to use, if <c>null</c> no logging will occur.</param>
+        /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        public ConfigBuilder WithDriverLogger(IDriverLogger logger)
+        public ConfigBuilder WithLogger(ILogger logger)
         {
-            _config.DriverLogger = logger;
+            _config.Logger = logger;
             return this;
         }
 

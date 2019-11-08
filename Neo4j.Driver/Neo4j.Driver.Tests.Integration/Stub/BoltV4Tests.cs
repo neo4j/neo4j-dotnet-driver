@@ -38,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             _output = output;
 
-            _setupConfig = o => o.WithDriverLogger(TestDriverLogger.Create(output));
+            _setupConfig = o => o.WithLogger(TestLogger.Create(output));
         }
 
         [Fact]
@@ -252,7 +252,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/streaming_records", 9001))
             {
                 using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
-                    o => o.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)))
+                    o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
                 {
                     var session = driver.AsyncSession();
                     try
@@ -277,7 +277,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/discard_streaming_records", 9001))
             {
                 using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
-                    o => o.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)))
+                    o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
                 {
                     var session = driver.RxSession();
 
@@ -298,7 +298,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             using (BoltStubServer.Start("V4/discard_streaming_records_tx", 9001))
             {
                 using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
-                    o => o.WithDriverLogger(TestDriverLogger.Create(_output)).WithFetchSize(2)))
+                    o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
                 {
                     var session = driver.RxSession();
 

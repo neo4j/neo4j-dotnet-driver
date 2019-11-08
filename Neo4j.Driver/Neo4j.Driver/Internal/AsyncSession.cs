@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal
         private bool _isOpen = true;
 
         private Bookmark _bookmark;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
         public Bookmark LastBookmark => _bookmark;
 
@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Internal
         private readonly bool _reactive;
         private readonly long _fetchSize;
 
-        public AsyncSession(IConnectionProvider provider, IDriverLogger logger, IAsyncRetryLogic retryLogic = null,
+        public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
             AccessMode defaultMode = AccessMode.Write, string database = null, Bookmark bookmark = null,
             bool reactive = false, long fetchSize = Config.Infinite)
         {

@@ -65,7 +65,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _authToken = authToken;
             _driver = GraphDatabase.Driver(databaseUri, authToken,
                 o=> o
-                    .WithDriverLogger(new StressTestLogger(_output, LoggingEnabled))
+                    .WithLogger(new StressTestLogger(_output, LoggingEnabled))
                     .WithMaxConnectionPoolSize(100).WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1)));
 
             CleanupDatabase();
@@ -591,13 +591,13 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
                 ConnectionTimeout = Config.InfiniteInterval,
                 MaxConnectionPoolSize = 100,
-                DriverLogger = new StressTestLogger(_output, LoggingEnabled)
+                Logger = new StressTestLogger(_output, LoggingEnabled)
             };
 
             var connectionSettings = new ConnectionSettings(_authToken, config);
             var bufferSettings = new BufferSettings(config);
             var connectionFactory = new MonitoredPooledConnectionFactory(
-                new PooledConnectionFactory(connectionSettings, bufferSettings, config.DriverLogger));
+                new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger));
 
             return ((Internal.Driver) GraphDatabase.CreateDriver(_databaseUri, config, connectionFactory),
                 connectionFactory.Connections);
@@ -832,7 +832,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         #endregion
 
-        private class StressTestLogger : IDriverLogger
+        private class StressTestLogger : ILogger
         {
             private readonly ITestOutputHelper _output;
             private readonly bool _enabled;

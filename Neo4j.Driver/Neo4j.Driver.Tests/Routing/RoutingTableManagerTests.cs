@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.Routing
             IRoutingTable routingTable,
             IClusterConnectionPoolManager poolManager, IDiscovery discovery = null,
             IInitialServerAddressProvider addressProvider = null,
-            IDriverLogger logger = null)
+            ILogger logger = null)
         {
             if (addressProvider == null)
             {
@@ -302,7 +302,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty)).Throws(error);
 
-                var logger = new Mock<IDriverLogger>();
+                var logger = new Mock<ILogger>();
                 logger.Setup(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
@@ -326,7 +326,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty)).Throws(error);
 
-                var logger = new Mock<IDriverLogger>();
+                var logger = new Mock<ILogger>();
                 logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
@@ -433,7 +433,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .Throws(new ServiceUnavailableException("something went wrong"));
                 discovery.Setup(x => x.DiscoverAsync(connE, "", Bookmark.Empty)).ReturnsAsync(routingTable);
 
-                var logger = new Mock<IDriverLogger>();
+                var logger = new Mock<ILogger>();
                 logger.Setup(x =>
                     x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
@@ -480,7 +480,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .Throws(new ServiceUnavailableException("something went wrong"));
                 discovery.Setup(x => x.DiscoverAsync(connE, "", Bookmark.Empty)).ReturnsAsync(routingTable);
 
-                var logger = new Mock<IDriverLogger>();
+                var logger = new Mock<ILogger>();
                 logger.Setup(x =>
                     x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()));
 
@@ -517,7 +517,7 @@ namespace Neo4j.Driver.Tests.Routing
                     new RoutingTable("bar", new[] {server07}, new[] {server08}, new[] {server09, server05}, 100);
 
                 var manager = new RoutingTableManager(Mock.Of<IInitialServerAddressProvider>(), Mock.Of<IDiscovery>(),
-                    Mock.Of<IClusterConnectionPoolManager>(), Mock.Of<IDriverLogger>(), TimeSpan.MaxValue,
+                    Mock.Of<IClusterConnectionPoolManager>(), Mock.Of<ILogger>(), TimeSpan.MaxValue,
                     defaultRoutingTable, fooRoutingTable, barRoutingTable);
 
                 manager.ForgetServer(server05, "foo");
@@ -547,7 +547,7 @@ namespace Neo4j.Driver.Tests.Routing
                     new RoutingTable("bar", new[] {server07}, new[] {server08}, new[] {server09, server05}, 100);
 
                 var manager = new RoutingTableManager(Mock.Of<IInitialServerAddressProvider>(), Mock.Of<IDiscovery>(),
-                    Mock.Of<IClusterConnectionPoolManager>(), Mock.Of<IDriverLogger>(), TimeSpan.MaxValue,
+                    Mock.Of<IClusterConnectionPoolManager>(), Mock.Of<ILogger>(), TimeSpan.MaxValue,
                     defaultRoutingTable, fooRoutingTable, barRoutingTable);
 
                 manager.ForgetWriter(server06, "foo");
@@ -596,7 +596,7 @@ namespace Neo4j.Driver.Tests.Routing
                 initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> {server01, server04, server07});
 
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
-                    poolManager.Object, Mock.Of<IDriverLogger>(), TimeSpan.MaxValue);
+                    poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
                 // When
                 var routingTable1 = await manager.EnsureRoutingTableForModeAsync(mode, null, Bookmark.Empty);
@@ -638,7 +638,7 @@ namespace Neo4j.Driver.Tests.Routing
                 initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> {server01, server04, server07});
 
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
-                    poolManager.Object, Mock.Of<IDriverLogger>(), TimeSpan.FromSeconds(1));
+                    poolManager.Object, Mock.Of<ILogger>(), TimeSpan.FromSeconds(1));
 
                 // When
                 var routingTable1 =
@@ -681,7 +681,7 @@ namespace Neo4j.Driver.Tests.Routing
                 initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> {server01, server04, server07});
 
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
-                    poolManager.Object, Mock.Of<IDriverLogger>(), TimeSpan.MaxValue);
+                    poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
                 // When
                 var routingTable1 =
@@ -714,7 +714,7 @@ namespace Neo4j.Driver.Tests.Routing
                 initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> {server01, server04, server07});
 
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
-                    poolManager.Object, Mock.Of<IDriverLogger>(), TimeSpan.MaxValue);
+                    poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
                 manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", Bookmark.Empty))
                     .Should().Throw<FatalDiscoveryException>().Which.Should().Be(error);
@@ -739,7 +739,7 @@ namespace Neo4j.Driver.Tests.Routing
                 initialAddressProvider.Setup(x => x.Get()).Returns(new HashSet<Uri> {server01});
 
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
-                    poolManager.Object, Mock.Of<IDriverLogger>(), TimeSpan.MaxValue);
+                    poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
                 var routingTable = await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", bookmark);
 

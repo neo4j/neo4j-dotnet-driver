@@ -1,5 +1,5 @@
 # Neo4j .NET Driver
-This is the official Neo4j .NET driver for connecting to Neo4j 3.0.0+ databases via in-house binary protocol Bolt.
+This is the official Neo4j .NET driver for connecting to Neo4j 4.0.0+ databases via in-house binary protocol Bolt.
 
 Resources to get you started:
 * [Nuget](https://www.nuget.org/profiles/Neo4j) for getting the latest driver.
@@ -8,7 +8,7 @@ Resources to get you started:
 * [Movies Example Application](https://github.com/neo4j-examples/movies-dotnet-bolt) a sample small project using the driver.
 
 ## For Application Developers
-This section is prepared for application developers who would like to use this driver in appliation projects for connecting to a Neo4j instance or a Neo4j cluster.
+This section is prepared for application developers who would like to use this driver in application projects for connecting to a Neo4j instance or a Neo4j cluster.
 
 ### Getting the Driver
 
@@ -29,12 +29,20 @@ PM> Install-Package Neo4j.Driver.Signed
 
 Connect to a Neo4j database
 ```csharp
-IDriver driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"));
-using(ISession session = driver.Session())
+IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"));
+IAsyncSession session = driver.AsyncSession(o => o.withDatabase("neo4j"));
+try
 {
-    IStatementResult result = session.Run("CREATE (n) RETURN n");
+    IStatementResultCursor cursor = await session.RunAsync("CREATE (n) RETURN n");
+    await cursor.ConsumeAsync();
 }
-driver.Dispose();
+finally
+{
+    await session.CloseAsync();
+}
+
+...
+await driver.closeAsync();
 ```
 There are a few points that need to be highlighted when adding this driver into your project:
 * Each `IDriver` instance maintains a pool of connections inside, as a result, it is recommended to only use **one driver per application**.
@@ -44,30 +52,19 @@ There are a few points that need to be highlighted when adding this driver into 
 ### Parsing Result Values
 #### Record Stream
 A cypher execution result is comprised of a stream records followed by a result summary.
-The records inside the result are accessible via `IEnumerable` interface on `IStatementResult`.
-Our recommended way to access these result records is to make use of `Linq` methods such as `Single`, `ToList`, `Select`.
+The records inside the result are accessible via `FetchAsync` and `Current` methods on `IStatementResultCursor`.
+Our recommended way to access these result records is to make use of methods provided by `StatementResultCursorExtensions` such as `SingleAsync`, `ToListAsync`, and `ForEachAsync`.
 
-Process result records using `Linq`:
+Process result records using `StatementResultCursorExtensions`:
 ```csharp
-IStatementResult result = tx.Run("MATCH (a:Person) RETURN a.name as name");
-List<string> people = result.Select(record => record["name"].As<string>()).ToList();
+IStatementResultCursor cursor = await session.RunAsync("MATCH (a:Person) RETURN a.name as name");
+List<string> people = await cursor.ToListAsync(record => record["name"].As<string>());
 ```
 The records are exposed as a record stream in the sense that:
 * A record is accessible once it is received by the client. It is not needed for the whole result set to be received before it can be visited.
 * Each record can only be visited (a.k.a. consumed) once.
 
-For example, given a record stream in a result:
-
-| Keys | "name" |
-| -------: | :----- |
-| Record 0 | "Bruce Wayne" |
-| Record 1 | "Selina Kyle" |
-
-Visiting the record stream when consumed as `IEnumerable` (i.e. if not converted to `List` or `Array`):
-```csharp
-result.First(); // Bruce Wayne
-result.First(); // Selina Kyle as you already consumed the previous "first" record!
-```
+Records on a result cannot be accessed if the session or transaction where the result is created has been closed.
 
 #### Value Types
 Values in a record are currently exposed as of `object` type.
@@ -92,7 +89,7 @@ The mapping between driver types and Cypher types are listed in the table bellow
 
 To convert from `object` to the driver type, a helper method `ValueExtensions#As<T>` can be used:
 ```csharp
-IRecord record = result.First();
+IRecord record = await result.SingleAsync();
 string name = record["name"].As<string>();
 ```
 
@@ -115,13 +112,13 @@ The mapping among the Cypher temporal types, driver types, and convertible CLR t
 
 Receiving a temporal value as driver type:
 ```csharp
-IRecord record = result.Single();
+IRecord record = await result.SingleAsync();
 ZonedDateTime datetime = record["datetime"].As<ZonedDateTime>();
 ```
 
 Converting a temporal value to the CLR type:
 ```csharp
-object record = result.Single()["datetime"];
+object record = await result.SingleAsync()["datetime"];
 
 DateTimeOffset datetime = record["datetime"].As<DateTimeOffset>();
 // which is equivalent to
@@ -143,27 +140,21 @@ is used for this conversion. Please bear in mind that Windows time zone database
 
 ### Logging
 
-Since 1.7 series, we introduce a new logger called `IDriverLogger`, aiming to replace the legacy `ILogger` interface for good.
-Therefore we recommend driver users to upgrade to the new logger if it is possible.
-Though for backward compatibility, the current release still supports accessing driver logs via the legacy `ILogger` interface.
-But note that using the legacy `ILogger` interface might harm driver's performance,
-as string concatenation is used internally on some log messages to fit the new log message format to legacy logging interface.
-
-To pass a `IDriverLogger` to this driver:
+The driver accepts a logger that implements `ILogger` interface.
+To pass a `ILogger` to this driver:
 ```c#
-Config config = Config.Builder.WithDriverLogger(driverLogger).ToConfig();
-IDriver driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"), config);
+IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"), o => o.WithLogger(logger));
 ```
 
-In this new `IDriverLogger` interface, each logging method takes a message format string and message arguments as input.
+In this `ILogger` interface, each logging method takes a message format string and message arguments as input.
 The full log messages can be restored using `string.format(message_format, message_argument)`.
 
-An example of implementing `IDriverLogger` with `Microsoft.Extensions.Logging`:
+An example of implementing `ILogger` with `Microsoft.Extensions.Logging`:
 ```c#
-public class DriverLogger : IDriverLogger
+public class DriverLogger : ILogger
 {
     private readonly Microsoft.Extensions.Logging.ILogger _delegator;
-    public DriverLogger(ILogger delegator)
+    public DriverLogger(Microsoft.Extensions.Logging.ILogger delegator)
     {
        _delegator = delegator;
     }
@@ -212,4 +203,4 @@ The simplest way to run all tests from command line is to run `runTests.ps1` pow
 
 Any parameter to this powershell script will be used to reset environment variable `NEOCTRL_ARGS`:
 
-	.\Neo4j.Driver\runTests.ps1 -e 3.3.0
+	.\Neo4j.Driver\runTests.ps1 -e 4.0.0

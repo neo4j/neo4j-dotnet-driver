@@ -40,7 +40,7 @@ namespace Neo4j.Driver
     /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
     /// <item><see cref="MaxConnectionLifetime"/>: <c>1h</c></item>
     /// <br></br>
-    /// <item><see cref="DriverLogger"/> : <c>logs nothing.</c></item>
+    /// <item><see cref="Logger"/> : <c>logs nothing.</c></item>
     /// <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item>
     /// <br></br>
     /// <item><see cref="DefaultReadBufferSize"/> : <c>32K</c> </item>
@@ -82,9 +82,9 @@ namespace Neo4j.Driver
         public TrustManager TrustManager { get; internal set; }
 
         /// <summary>
-        /// The <see cref="IDriverLogger"/> instance to be used to receive all logs produced by this driver.
+        /// The <see cref="ILogger"/> instance to be used to receive all logs produced by this driver.
         /// </summary>
-        public IDriverLogger DriverLogger { get; internal set; } = NullLogger.Instance;
+        public ILogger Logger { get; internal set; } = NullLogger.Instance;
 
         /// <summary>
         /// The maximum transaction retry timeout.

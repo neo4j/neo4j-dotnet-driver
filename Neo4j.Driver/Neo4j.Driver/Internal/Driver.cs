@@ -32,14 +32,14 @@ namespace Neo4j.Driver.Internal
 
         private readonly IConnectionProvider _connectionProvider;
         private readonly IAsyncRetryLogic _retryLogic;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
         private readonly IMetrics _metrics;
         private readonly Config _config;
 
         public Uri Uri { get; }
 
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IAsyncRetryLogic retryLogic,
-            IDriverLogger logger = null,
+            ILogger logger = null,
             IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));

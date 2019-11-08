@@ -30,11 +30,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
         private const string MessagePattern = "S: {0}";
 
         private readonly ConcurrentQueue<IResponseHandler> _handlers;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
         private IResponsePipelineError _error;
 
-        public ResponsePipeline(IDriverLogger logger)
+        public ResponsePipeline(ILogger logger)
         {
             _handlers = new ConcurrentQueue<IResponseHandler>();
             _logger = logger;

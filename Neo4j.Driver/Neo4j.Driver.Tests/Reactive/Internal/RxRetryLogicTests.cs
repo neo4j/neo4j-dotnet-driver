@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Reactive.Internal
         public void ShouldLogRetries(int errorCount)
         {
             var error = new TransientException("code", "message");
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var retryLogic = new RxRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
 
             retryLogic
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Reactive.Internal
         public void ShouldRetryAtLeastTwice()
         {
             var error = new TransientException("code", "message");
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var retryLogic = new RxRetryLogic(TimeSpan.FromSeconds(1), logger.Object);
 
             retryLogic
@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Reactive.Internal
             var errorCount = 3;
             var exceptions = Enumerable.Range(1, errorCount).Select(i => new TransientException($"{i}", $"{i}"))
                 .Cast<Exception>().ToArray();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var retryLogic = new RxRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
 
             retryLogic

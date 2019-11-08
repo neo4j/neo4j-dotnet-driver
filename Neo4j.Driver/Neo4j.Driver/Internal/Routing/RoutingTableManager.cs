@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class RoutingTableManager : IRoutingTableManager
     {
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
         private readonly IDiscovery _discovery;
 
         private readonly IClusterConnectionPoolManager _poolManager;
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingTableManager(
             RoutingSettings routingSettings,
             IClusterConnectionPoolManager poolManager,
-            IDriverLogger logger) :
+            ILogger logger) :
             this(routingSettings.InitialServerAddressProvider,
                 new ClusterDiscovery(routingSettings.RoutingContext, logger), poolManager, logger,
                 routingSettings.RoutingTablePurgeDelay)
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.Routing
             IInitialServerAddressProvider initialServerAddressProvider,
             IDiscovery discovery,
             IClusterConnectionPoolManager poolManager,
-            IDriverLogger logger,
+            ILogger logger,
             TimeSpan routingTablePurgeDelay,
             params IRoutingTable[] routingTables)
         {

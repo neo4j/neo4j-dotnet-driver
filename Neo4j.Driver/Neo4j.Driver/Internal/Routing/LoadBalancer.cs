@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IRoutingTableManager _routingTableManager;
         private readonly ILoadBalancingStrategy _loadBalancingStrategy;
         private readonly IClusterConnectionPool _clusterConnectionPool;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
         private int _closedMarker = 0;
 
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.Routing
             IPooledConnectionFactory connectionFactory,
             RoutingSettings routingSettings,
             ConnectionPoolSettings poolSettings,
-            IDriverLogger logger)
+            ILogger logger)
         {
             _logger = logger;
 
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal.Routing
             IRoutingTableManager routingTableManager)
         {
             var config = Config.Default;
-            _logger = config.DriverLogger;
+            _logger = config.Logger;
 
             _clusterConnectionPool = clusterConnPool;
             _routingTableManager = routingTableManager;
@@ -219,7 +219,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool,
-            IDriverLogger logger)
+            ILogger logger)
         {
             return new LeastConnectedLoadBalancingStrategy(pool, logger);
         }

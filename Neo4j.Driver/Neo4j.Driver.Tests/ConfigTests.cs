@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Default;
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
-                config.DriverLogger.Should().BeOfType<NullLogger>();
+                config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
                 config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
             }
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests
 
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustManager.Should().BeNull();
-                config.DriverLogger.Should().BeOfType<NullLogger>();
+                config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -89,10 +89,10 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void WithLoggingShouldModifyTheSingleValue()
             {
-                var config = Config.Builder.WithDriverLogger(null).Build();
+                var config = Config.Builder.WithLogger(null).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
-                config.DriverLogger.Should().BeNull();
+                config.Logger.Should().BeNull();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
-                config.DriverLogger.Should().BeOfType<NullLogger>();
+                config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(3);
             }
 
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
-                config.DriverLogger.Should().BeOfType<NullLogger>();
+                config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Tests
                 var config = Config.Builder.WithTrustManager(TrustManager.CreateChainTrust()).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeOfType<ChainTrustManager>();
-                config.DriverLogger.Should().BeOfType<NullLogger>();
+                config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
 
@@ -131,17 +131,17 @@ namespace Neo4j.Driver.Tests
             {
                 var config = Config.Default;
                 var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
-                var config2 = Config.Builder.WithDriverLogger(null).Build();
+                var config2 = Config.Builder.WithLogger(null).Build();
 
-                config2.DriverLogger.Should().BeNull();
+                config2.Logger.Should().BeNull();
                 config2.MaxIdleConnectionPoolSize.Should().Be(500);
 
                 config1.MaxIdleConnectionPoolSize.Should().Be(3);
-                config1.DriverLogger.Should().BeOfType<NullLogger>();
+                config1.Logger.Should().BeOfType<NullLogger>();
 
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
-                config.DriverLogger.Should().BeOfType<NullLogger>();
+                config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);
             }
         }

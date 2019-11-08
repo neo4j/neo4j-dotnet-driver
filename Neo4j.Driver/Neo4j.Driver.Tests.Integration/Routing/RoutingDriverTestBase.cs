@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             AuthToken = Cluster.AuthToken;
 
             Driver = GraphDatabase.Driver(RoutingServer, AuthToken,
-                o => o.WithDriverLogger(new TestDriverLogger(output)));
+                o => o.WithLogger(new TestLogger(output)));
         }
 
         public virtual void Dispose()

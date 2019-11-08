@@ -199,7 +199,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -219,7 +219,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -260,7 +260,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
 
             writer.OpenChunk();
@@ -277,7 +277,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
 
             writer.OpenChunk();
@@ -298,7 +298,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
 
             writer.OpenChunk();

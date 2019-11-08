@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.IO
     internal class ChunkReader : IChunkReader
     {
         private readonly Stream _downStream;
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
 
         private readonly byte[] _chunkSizeBuffer = new byte[2];
         private readonly byte[] _buffer = new byte[Constants.ChunkBufferSize];
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.IO
         {
         }
 
-        internal ChunkReader(Stream downStream, IDriverLogger logger)
+        internal ChunkReader(Stream downStream, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream));

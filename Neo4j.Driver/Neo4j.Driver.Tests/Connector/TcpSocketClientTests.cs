@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.Connector
     {
         internal class TcpSocketClientWithDisposeDetection : TcpSocketClient
         {
-            public TcpSocketClientWithDisposeDetection(SocketSettings socketSettings, IDriverLogger logger = null) :
+            public TcpSocketClientWithDisposeDetection(SocketSettings socketSettings, ILogger logger = null) :
                 base(socketSettings, logger)
             {
             }

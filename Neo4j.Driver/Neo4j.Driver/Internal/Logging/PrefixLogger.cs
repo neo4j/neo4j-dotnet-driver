@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Internal.Logging
 {
     internal class PrefixLogger : ReformattedLogger
     {
-        public PrefixLogger(IDriverLogger logger, string prefix = null) : base(logger)
+        public PrefixLogger(ILogger logger, string prefix = null) : base(logger)
         {
             Prefix = prefix;
         }

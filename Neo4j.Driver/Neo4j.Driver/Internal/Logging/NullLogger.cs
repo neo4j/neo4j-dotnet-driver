@@ -20,7 +20,7 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Logging
 {
-    internal class NullLogger : IDriverLogger
+    internal class NullLogger : ILogger
     {
         public static readonly NullLogger Instance = new NullLogger();
 

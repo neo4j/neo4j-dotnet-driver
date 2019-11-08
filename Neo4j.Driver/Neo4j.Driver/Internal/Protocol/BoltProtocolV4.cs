@@ -41,14 +41,14 @@ namespace Neo4j.Driver.Internal.Protocol
         public static readonly BoltProtocolV4 BoltV4 = new BoltProtocolV4();
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-            IDriverLogger logger = null)
+            ILogger logger = null)
         {
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
                 bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
         public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
-            IDriverLogger logger = null)
+            ILogger logger = null)
         {
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);

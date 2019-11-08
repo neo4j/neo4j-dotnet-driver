@@ -187,7 +187,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldIncludeDatabaseNameInLogMessageForReader()
         {
             var address = new Uri("reader:7687");
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             logger.Setup(x => x.IsDebugEnabled()).Returns(true);
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object, logger.Object);
@@ -205,7 +205,7 @@ namespace Neo4j.Driver.Tests.Routing
         public void ShouldIncludeDatabaseNameInLogMessageForWriter()
         {
             var address = new Uri("reader:7687");
-            var logger = new Mock<IDriverLogger>();
+            var logger = new Mock<ILogger>();
             logger.Setup(x => x.IsDebugEnabled()).Returns(true);
             var connectionPoolMock = new Mock<IClusterConnectionPool>();
             var strategy = NewLeastConnectedStrategy(connectionPoolMock.Object, logger.Object);
@@ -220,9 +220,9 @@ namespace Neo4j.Driver.Tests.Routing
         }
 
         private static LeastConnectedLoadBalancingStrategy NewLeastConnectedStrategy(
-            IClusterConnectionPool connectionPool, IDriverLogger logger = null)
+            IClusterConnectionPool connectionPool, ILogger logger = null)
         {
-            return new LeastConnectedLoadBalancingStrategy(connectionPool, logger ?? Mock.Of<IDriverLogger>());
+            return new LeastConnectedLoadBalancingStrategy(connectionPool, logger ?? Mock.Of<ILogger>());
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             SetupConfig = o => o
                 .WithEncryptionLevel(EncryptionLevel.None)
-                .WithDriverLogger(TestDriverLogger.Create(output));
+                .WithLogger(TestLogger.Create(output));
         }
 
         [RequireBoltStubServerTheory]
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             void SetupConfig(ConfigBuilder o)
             {
                 o.WithEncryptionLevel(EncryptionLevel.None);
-                o.WithDriverLogger(new TestDriverLogger(logs.Add, ExtendedLogLevel.Debug));
+                o.WithLogger(new TestLogger(logs.Add, ExtendedLogLevel.Debug));
             }
 
             using (BoltStubServer.Start("V4/accessmode_reader_implicit", 9001))

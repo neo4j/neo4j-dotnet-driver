@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Routing
 {
     internal class ClusterDiscovery : IDiscovery
     {
-        private readonly IDriverLogger _logger;
+        private readonly ILogger _logger;
         private readonly IDictionary<string, string> _context;
 
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.Routing
             "CALL dbms.routing.getRoutingTable($context, $database)";
 
 
-        public ClusterDiscovery(IDictionary<string, string> context, IDriverLogger logger)
+        public ClusterDiscovery(IDictionary<string, string> context, ILogger logger)
         {
             _context = context;
             _logger = logger;

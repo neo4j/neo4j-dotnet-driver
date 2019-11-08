@@ -41,12 +41,12 @@ namespace Neo4j.Driver.Tests
         private static readonly IResponseHandler NoOpHandler = new NoOpResponseHandler();
         private static IAuthToken AuthToken => AuthTokens.None;
         private static string UserAgent => ConnectionSettings.DefaultUserAgent;
-        private static IDriverLogger Logger => new Mock<IDriverLogger>().Object;
+        private static ILogger Logger => new Mock<ILogger>().Object;
         private static IServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
         internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null,
-            IResponsePipeline pipeline = null, IServerInfo server = null, IDriverLogger logger = null)
+            IResponsePipeline pipeline = null, IServerInfo server = null, ILogger logger = null)
         {
             socketClient = socketClient ?? SocketClient;
             server = server ?? Server;
@@ -290,7 +290,7 @@ namespace Neo4j.Driver.Tests
             public async void ShouldNotThrowAndLogIfSocketDisposedAsync(Exception exc)
             {
                 // Given
-                var logger = new Mock<IDriverLogger>();
+                var logger = new Mock<ILogger>();
 
                 var protocol = new Mock<IBoltProtocol>();
                 protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>())).ThrowsAsync(exc);
