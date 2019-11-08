@@ -28,7 +28,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Neo4j.Driver.Metrics\Neo4j.Driver.Metrics.csproj" />
     <ProjectReference Include="..\Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj" />
     <ProjectReference Include="..\Neo4j.Driver.Simple\Neo4j.Driver.Simple.csproj" />
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />

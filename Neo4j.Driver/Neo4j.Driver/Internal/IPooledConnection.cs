@@ -26,11 +26,6 @@ namespace Neo4j.Driver.Internal
         /// Try to reset the connection to a clean state.
         /// </summary>
         Task ClearConnectionAsync();
-
-        void OnAcquire();
-
-        void OnRelease();
-
         ITimer IdleTimer { get; }
 
         ITimer LifetimeTimer { get; }

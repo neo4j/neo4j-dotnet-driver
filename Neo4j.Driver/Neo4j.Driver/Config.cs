@@ -166,10 +166,10 @@ namespace Neo4j.Driver
         public IServerAddressResolver Resolver { get; internal set; } = new PassThroughServerAddressResolver();
 
         /// <summary>
-        /// The metrics factory implementation to enable driver level metrics.
+        /// Enable the driver level metrics.
         /// Internally used for testing and experimenting.
         /// </summary>
-        internal IMetricsFactory MetricsFactory { get; set; }
+        internal bool MetricsEnabled { get; set; }
 
         /// <summary>
         /// The default read buffer size which the driver allocates for its internal buffers.

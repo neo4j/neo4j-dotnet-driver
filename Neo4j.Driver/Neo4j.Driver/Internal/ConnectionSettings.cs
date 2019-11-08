@@ -22,7 +22,6 @@ namespace Neo4j.Driver.Internal
 {
     internal class ConnectionSettings
     {
-        internal const int DefaultDnsTtl = 30 * 1000;
         internal const string DefaultUserAgent = "neo4j-dotnet/1.7";
 
         public IAuthToken AuthToken { get; }

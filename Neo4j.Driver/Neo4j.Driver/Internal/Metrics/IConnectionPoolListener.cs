@@ -27,9 +27,13 @@ namespace Neo4j.Driver.Internal.Metrics
         void ConnectionFailedToCreate();
         void ConnectionClosing();
         void ConnectionClosed();
-        void PoolAcquiring(IListenerEvent listenerEvent);
-        void PoolAcquired(IListenerEvent listenerEvent);
+        void PoolAcquiring();
+        void PoolAcquired();
         void PoolFailedToAcquire();
         void PoolTimedOutToAcquire();
+    }
+
+    internal interface IInternalConnectionPoolMetrics : IConnectionPoolMetrics, IConnectionPoolListener
+    {
     }
 }

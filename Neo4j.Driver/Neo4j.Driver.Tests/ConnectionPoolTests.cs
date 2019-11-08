@@ -1515,10 +1515,9 @@ namespace Neo4j.Driver.Tests
                 _connection = conn ?? new Mock<IConnection>().Object;
             }
 
-            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager,
-                IConnectionListener listener)
+            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
             {
-                return new PooledConnection(_connection, releaseManager, listener);
+                return new PooledConnection(_connection, releaseManager);
             }
         }
 

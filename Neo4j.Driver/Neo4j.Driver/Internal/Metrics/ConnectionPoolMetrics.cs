@@ -20,7 +20,7 @@ using System.Threading;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
-    internal class ConnectionPoolMetrics : IConnectionPoolMetrics, IConnectionPoolListener
+    internal class ConnectionPoolMetrics : IInternalConnectionPoolMetrics
     {
         private int _creating;
         private long _created;
@@ -44,21 +44,17 @@ namespace Neo4j.Driver.Internal.Metrics
         public long Acquired => Interlocked.Read(ref _acquired);
         public long TimedOutToAcquire => Interlocked.Read(ref _timedOutToAcquire);
 
-        public string UniqueName { get; }
+        public string Id { get; }
 
         private IConnectionPool _pool;
+        private IInternalMetrics _metrics;
         public int InUse => _pool?.NumberOfInUseConnections ?? 0;
         public int Idle => _pool?.NumberOfIdleConnections ?? 0;
-        public PoolStatus PoolStatus => _pool?.Status.Code ?? PoolStatus.Closed;
-
-        private readonly Histogram _histogram;
-        public IHistogram AcquisitionTimeHistogram => _histogram.Snapshot();
-
-        public ConnectionPoolMetrics(Uri uri, IConnectionPool pool, TimeSpan connAcquisitionTimeout)
+        public ConnectionPoolMetrics(string poolId, IConnectionPool pool, IInternalMetrics metrics)
         {
-            UniqueName = uri.ToString();
+            Id = poolId;
             _pool = pool;
-            _histogram = new Histogram(connAcquisitionTimeout.Ticks);
+            _metrics = metrics;
         }
 
         public void ConnectionCreating()
@@ -89,17 +85,15 @@ namespace Neo4j.Driver.Internal.Metrics
             Interlocked.Decrement(ref _closing);
         }
 
-        public void PoolAcquiring(IListenerEvent listenerEvent)
+        public void PoolAcquiring()
         {
             Interlocked.Increment(ref _acquiring);
-            listenerEvent.Start();
         }
 
-        public void PoolAcquired(IListenerEvent listenerEvent)
+        public void PoolAcquired()
         {
             Interlocked.Decrement(ref _acquiring);
             Interlocked.Increment(ref _acquired);
-            _histogram.RecordValue(listenerEvent.GetElapsed());
         }
 
         public void PoolFailedToAcquire()
@@ -115,6 +109,8 @@ namespace Neo4j.Driver.Internal.Metrics
         public void Dispose()
         {
             _pool = null;
+            _metrics.RemovePoolMetrics(Id);
+            _metrics = null;
         }
 
         public override string ToString()

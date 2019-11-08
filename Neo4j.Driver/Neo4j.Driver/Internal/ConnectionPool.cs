@@ -37,12 +37,19 @@ namespace Neo4j.Driver.Internal
         public static readonly ConnectionPoolStatus Closed = new ConnectionPoolStatus(PoolStatus.Closed);
         public static readonly ConnectionPoolStatus Inactive = new ConnectionPoolStatus(PoolStatus.Inactive);
 
-        public readonly PoolStatus Code;
+        private readonly PoolStatus _code;
 
         private ConnectionPoolStatus(PoolStatus code)
         {
-            Code = code;
+            _code = code;
         }
+    }
+
+    internal enum PoolStatus
+    {
+        Open,
+        Closed,
+        Inactive
     }
 
     internal class ConnectionPool : IConnectionPool
@@ -72,7 +79,6 @@ namespace Neo4j.Driver.Internal
             new ConcurrentHashSet<IPooledConnection>();
 
         private readonly IConnectionPoolListener _poolMetricsListener;
-        private readonly IConnectionListener _connectionMetricsListener;
 
         public int NumberOfInUseConnections => _inUseConnections.Count;
         public int NumberOfIdleConnections => _idleConnections.Count;
@@ -107,8 +113,7 @@ namespace Neo4j.Driver.Internal
             _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
 
             var metrics = connectionPoolSettings.Metrics;
-            _poolMetricsListener = metrics?.CreateConnectionPoolListener(uri, this);
-            _connectionMetricsListener = metrics?.CreateConnectionListener(uri);
+            _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
         }
 
         // Used in test only
@@ -161,7 +166,7 @@ namespace Neo4j.Driver.Internal
             {
                 _poolMetricsListener?.ConnectionCreating();
 
-                return _connectionFactory.Create(_uri, this, _connectionMetricsListener);
+                return _connectionFactory.Create(_uri, this);
             }
 
             return null;
@@ -230,15 +235,14 @@ namespace Neo4j.Driver.Internal
 
         public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
         {
-            var acquireEvent = new SimpleTimerEvent();
-            _poolMetricsListener?.PoolAcquiring(acquireEvent);
+            _poolMetricsListener?.PoolAcquiring();
             var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
             var task = AcquireAsync(mode, database, timeOutTokenSource.Token).ContinueWith(t =>
             {
                 timeOutTokenSource.Dispose();
                 if (t.Status == TaskStatus.RanToCompletion)
                 {
-                    _poolMetricsListener?.PoolAcquired(acquireEvent);
+                    _poolMetricsListener?.PoolAcquired();
                 }
                 else
                 {
@@ -265,7 +269,7 @@ namespace Neo4j.Driver.Internal
                         }
                         else if (IsInactive)
                         {
-                            ThrowClientExceptionDueToZombified();
+                            ThrowClientExceptionDueToDeactivated();
                         }
 
                         if (!_idleConnections.TryTake(out connection))
@@ -398,6 +402,7 @@ namespace Neo4j.Driver.Internal
 
                 allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
 
+                _poolMetricsListener?.Dispose();
                 return Task.WhenAll(allCloseTasks);
             }
 
@@ -443,7 +448,7 @@ namespace Neo4j.Driver.Internal
             FailedToAcquireConnectionDueToPoolClosed(this);
         }
 
-        private void ThrowClientExceptionDueToZombified()
+        private void ThrowClientExceptionDueToDeactivated()
         {
             throw new ClientException(
                 $"Failed to acquire a connection from connection pool for server with URI `{_uri}` " +

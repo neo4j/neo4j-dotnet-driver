@@ -145,7 +145,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             // Given
             using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, o=>
             {
-                o.WithMetricsFactory(new DefaultMetricsFactory());
+                o.WithMetricsEnabled(true);
                 o.WithConnectionIdleTimeout(TimeSpan.Zero); // enable but always timeout idle connections
             }))
             {
