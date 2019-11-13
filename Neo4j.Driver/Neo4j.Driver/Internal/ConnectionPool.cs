@@ -413,7 +413,7 @@ namespace Neo4j.Driver.Internal
         {
             // Establish a connection with the server and immediately close it.
             var connection = await AcquireAsync(Simple.Mode, Simple.Database, Simple.Bookmark);
-            await connection.CloseAsync();
+            await connection.CloseAsync().ConfigureAwait(false);
         }
 
         public Task DeactivateAsync()

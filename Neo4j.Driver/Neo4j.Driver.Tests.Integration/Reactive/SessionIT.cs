@@ -23,6 +23,7 @@ using System.Reactive.Linq;
 using System.Threading;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
 using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
@@ -73,6 +74,35 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnNext(0, MatchesRecord(new[] {"1"}, 1)),
                     OnCompleted<IRecord>(0));
+        }
+
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public void ShouldBeAbleToCloseSessionAfterSessionRunFailure()
+        {
+            var session = NewSession();
+
+            session.Run("INVALID STATEMENT")
+                .Records()
+                .OnErrorResumeNext(session.Close<IRecord>())
+                .WaitForCompletion()
+                .AssertEqual(OnCompleted<IRecord>(0));
+        }
+
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public void ShouldBeAbleToCloseSessionAfterUserFailure()
+        {
+            var session = NewSession();
+
+            session.Run("RETURN 1")
+                .Records()
+                .SelectMany(r =>
+                {
+                    throw new Exception("Got you!");
+                    return Observable.Range(0, 10);
+                })
+                .OnErrorResumeNext(session.Close<int>())
+                .WaitForCompletion()
+                .AssertEqual(OnCompleted<int>(0));
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]

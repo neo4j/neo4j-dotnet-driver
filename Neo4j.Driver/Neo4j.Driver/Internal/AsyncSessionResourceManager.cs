@@ -52,6 +52,7 @@ namespace Neo4j.Driver.Internal
         public Task OnResultConsumedAsync()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+            _result = null;
             return DisposeConnectionAsync();
         }
 
@@ -142,11 +143,22 @@ namespace Neo4j.Driver.Internal
             _connection = null;
         }
 
-        private Task EnsureCanRunMoreStatementsAsync()
+        private async Task EnsureCanRunMoreStatementsAsync(bool disposeUnconsumedSessionResult)
         {
             EnsureSessionIsOpen();
             EnsureNoOpenTransaction();
-            return DisposeSessionResultAsync();
+            if (disposeUnconsumedSessionResult)
+            {
+                await DisposeSessionResultAsync();
+            }
+            else
+            {
+                if (_result != null)
+                {
+                    throw new ClientException("Please consume the current statement result before running " +
+                                              "more statements/transaction in the same session.");
+                }
+            }
         }
 
         private void EnsureNoOpenTransaction()

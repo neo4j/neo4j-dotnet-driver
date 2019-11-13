@@ -22,6 +22,12 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IInternalAsyncSession: IAsyncSession
     {
-        Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action);
+        Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action,
+            bool disposeUnconsumedSessionResult);
+        Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action,
+            bool disposeUnconsumedSessionResult);
+
+        Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action,
+            bool disposeUnconsumedSessionResult);
     }
 }
