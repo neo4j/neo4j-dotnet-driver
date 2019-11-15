@@ -22,6 +22,7 @@ using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using System.Threading;
 using System.Threading.Tasks;
+using static Neo4j.Driver.Internal.ErrorExtensions;
 
 namespace Neo4j.Driver.Internal
 {
@@ -40,13 +41,16 @@ namespace Neo4j.Driver.Internal
         private readonly ReplaySubject<IResultSummary> _summary;
 
         private volatile int _streaming = (int) StreamingState.Ready;
+        private readonly ILogger _logger;
 
-        public InternalRxStatementResult(IObservable<IInternalStatementResultCursor> resultCursor)
+        public InternalRxStatementResult(IObservable<IInternalStatementResultCursor> resultCursor,
+            ILogger logger = null)
         {
             _resultCursor = resultCursor.Replay().AutoConnect();
             _keys = _resultCursor.SelectMany(x => x.KeysAsync().ToObservable()).Replay().AutoConnect();
             _records = new Subject<IRecord>();
             _summary = new ReplaySubject<IResultSummary>();
+            _logger = logger;
         }
 
         private StreamingState State => (StreamingState) _streaming;
@@ -79,22 +83,13 @@ namespace Neo4j.Driver.Internal
                 cancellation.Add(_summary.Subscribe(summaryObserver));
             }
 
-            if (recordObserver != null)
+            if (StartStreaming())
             {
-                if (State == StreamingState.Completed)
-                {
-                    var error = new Subject<IRecord>();
-                    cancellation.Add(error.Subscribe(recordObserver));
-                    error.OnError(ErrorExtensions.NewResultConsumedException());
-                }
-                else if (!_records.HasObservers)
+                if (recordObserver != null)
                 {
                     cancellation.Add(_records.Subscribe(recordObserver));
                 }
-            }
 
-            if (StartStreaming())
-            {
                 var streamingCancellation = new CancellationDisposable();
                 cancellation.Add(streamingCancellation);
 
@@ -144,11 +139,10 @@ namespace Neo4j.Driver.Internal
                     CompleteStreaming();
                 }, streamingCancellation.Token);
             }
-            else if (State == StreamingState.Streaming)
+            else
             {
-                recordObserver?.OnError(
-                    new ClientException(
-                        "Streaming has already started with a previous Records or Summary subscription."));
+                recordObserver?.OnError(new ResultConsumedException(
+                    "Streaming has already started and/or finished with a previous Records or Summary subscription."));
             }
 
             return cancellation;

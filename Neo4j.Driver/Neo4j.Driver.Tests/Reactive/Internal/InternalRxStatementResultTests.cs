@@ -23,11 +23,14 @@ using System.Reactive.Linq;
 using System.Threading;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests;
+using Neo4j.Driver.TestUtil;
 using Xunit;
+using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
 using static Neo4j.Driver.Reactive.Internal.InternalRxStatementResultTests.RxStatementResultUtil;
 using static Neo4j.Driver.Reactive.Utils;
@@ -180,11 +183,14 @@ namespace Neo4j.Driver.Reactive.Internal
                     .AssertEqual(
                         OnError<IRecord>(0, MatchesException<ClientException>()));
             }
-
         }
 
         public class CursorKeysErrors : AbstractRxTest
         {
+            public CursorKeysErrors(ITestOutputHelper output) : base(output)
+            {
+            }
+
             [Fact]
             public void ShouldErrorOnKeys()
             {
@@ -222,9 +228,10 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxStatementResult(Observable.Return(cursor));
+                var result = new InternalRxStatementResult(Observable.Return(cursor), new TestLogger(Output.WriteLine));
 
                 VerifyError(result.Records(), exc);
+
                 VerifyResultConsumedError(result.Records());
                 VerifyResultConsumedError(result.Records());
             }
@@ -440,7 +447,8 @@ namespace Neo4j.Driver.Reactive.Internal
                             .Concat(new[] {OnCompleted<IRecord>(0)}));
             }
 
-            public static void VerifyRecordsAndError(IRxStatementResult result, string[] keys, int recordsCount, Exception failure)
+            public static void VerifyRecordsAndError(IRxStatementResult result, string[] keys, int recordsCount,
+                Exception failure)
             {
                 result.Records()
                     .WaitForCompletion()
@@ -477,7 +485,7 @@ namespace Neo4j.Driver.Reactive.Internal
                     .AssertEqual(
                         OnError<T>(0,
                             MatchesException<ResultConsumedException>(e =>
-                                e.Message.StartsWith("Cannot access records on this result any more"))));
+                                e.Message.StartsWith("Streaming has already started and/or finished"))));
             }
 
             public static void VerifyNoError<T>(IObservable<T> observable)
@@ -515,7 +523,6 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 return new ListBasedRecordCursor(keys, GenerateRecords);
             }
-
         }
     }
 }

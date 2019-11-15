@@ -16,9 +16,9 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver;
+using Neo4j.Driver.TestUtil;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {

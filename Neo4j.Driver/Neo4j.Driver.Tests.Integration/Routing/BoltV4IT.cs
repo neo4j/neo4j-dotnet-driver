@@ -18,7 +18,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests.Shared;
+using Neo4j.Driver.TestUtil;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 

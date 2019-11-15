@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.IntegrationTests.Shared;
+using Neo4j.Driver.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 

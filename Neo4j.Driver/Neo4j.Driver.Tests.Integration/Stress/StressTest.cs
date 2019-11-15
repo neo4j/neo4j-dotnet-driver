@@ -26,7 +26,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
-using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;

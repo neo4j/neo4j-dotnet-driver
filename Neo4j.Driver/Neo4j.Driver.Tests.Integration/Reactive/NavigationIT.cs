@@ -145,8 +145,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Records()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnError<IRecord>(0, MatchesException<ClientException>(
-                            e => e.Message.Contains("result has already been consumed")))
+                        OnError<IRecord>(0, MatchesException<ResultConsumedException>())
                     );
             }
 
@@ -313,8 +312,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Records()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnError<IRecord>(0, MatchesException<ClientException>(
-                            e => e.Message.Contains("result has already been consumed")))
+                        OnError<IRecord>(0, MatchesException<ResultConsumedException>())
                     );
             }
 
