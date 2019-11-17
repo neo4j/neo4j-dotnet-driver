@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
 using System.Reactive.Linq;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
@@ -228,8 +229,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 using (var session = Server.Driver.Session())
                 {
-                    foreach (var drop in session.Run(
-                        "CALL db.constraints()"))
+                    foreach (var drop in session.Run("CALL db.constraints()").ToList())
                     {
                         if (drop.Values.TryGetValue("description", out var name) ||
                             drop.Values.TryGetValue("name", out name))
@@ -238,8 +238,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         }
                     }
 
-                    foreach (var drop in session.Run(
-                        "CALL db.indexes()"))
+                    foreach (var drop in session.Run("CALL db.indexes()").ToList())
                     {
                         if (drop.Values.TryGetValue("description", out var name) ||
                             drop.Values.TryGetValue("name", out name))

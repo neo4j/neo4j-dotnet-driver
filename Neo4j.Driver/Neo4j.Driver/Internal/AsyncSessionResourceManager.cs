@@ -52,7 +52,6 @@ namespace Neo4j.Driver.Internal
         public Task OnResultConsumedAsync()
         {
             Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
-            _result = null;
             return DisposeConnectionAsync();
         }
 
@@ -153,7 +152,7 @@ namespace Neo4j.Driver.Internal
             }
             else
             {
-                if (_result != null)
+                if (_connection != null) // after a result is consumed, connection will be set to null
                 {
                     throw new ClientException("Please consume the current statement result before running " +
                                               "more statements/transaction in the same session.");

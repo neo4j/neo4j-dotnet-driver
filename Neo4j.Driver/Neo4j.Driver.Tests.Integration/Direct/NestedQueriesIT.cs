@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         {
         }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        [RequireServerFact]
         public async Task ShouldErrorToRunNestedQueriesWithSessionRuns()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        [RequireServerFact]
         public async Task ShouldErrorToRunNestedQueriesWithSessionAndTxRuns()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        [RequireServerFact]
         public async Task ShouldErrorToRunNestedQueriesWithSessionRunAndTxFunc()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
