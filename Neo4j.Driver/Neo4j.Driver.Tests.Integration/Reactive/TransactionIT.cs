@@ -479,7 +479,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnError<IRecord>(0, MatchesException<ClientException>()));
 
-            result.Summary()
+            result.Consume()
                 .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, Matches<IResultSummary>(x => x.Should().NotBeNull())),

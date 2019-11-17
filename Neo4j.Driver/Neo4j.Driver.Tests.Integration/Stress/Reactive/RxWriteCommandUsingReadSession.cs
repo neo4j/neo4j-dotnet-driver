@@ -46,7 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             exc.Should().BeOfType<ClientException>();
 
             result.Should().NotBeNull();
-            var summary = await result.Summary();
+            var summary = await result.Consume();
             summary.Counters.NodesCreated.Should().Be(0);
         }
     }

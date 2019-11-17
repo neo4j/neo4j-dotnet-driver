@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal
                 Observable.Create<IRecord>(recordObserver => StartStreaming(cursor, recordObserver)));
         }
 
-        public IObservable<IResultSummary> Summary()
+        public IObservable<IResultSummary> Consume()
         {
             return _resultCursor.SelectMany(cursor =>
                 Observable.Create<IResultSummary>(summaryObserver =>

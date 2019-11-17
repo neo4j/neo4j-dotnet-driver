@@ -47,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 NewRunnable()
                     .Run("UNWIND RANGE(1,10) AS n RETURN n")
-                    .Summary()
+                    .Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext<IResultSummary>(0, s => s != null),
@@ -217,7 +217,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 NewRunnable()
                     .Run(statement, parameters)
-                    .Summary()
+                    .Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, predicate),

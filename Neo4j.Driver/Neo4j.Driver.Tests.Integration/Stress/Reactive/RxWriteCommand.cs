@@ -42,7 +42,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             await session
                 .Run("CREATE ()")
-                .Summary()
+                .Consume()
                 .Select(summary =>
                 {
                     summary.Counters.NodesCreated.Should().Be(1);

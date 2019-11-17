@@ -464,7 +464,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     session.WriteTransaction(txc => Observable.Range(1, batchSize)
                         .Select(index => (batchIndex * batchSize) + index)
                         .Buffer(batchBuffer)
-                        .SelectMany(batch => txc.Run(CreateBatchNodesStatement(batch)).Summary())
+                        .SelectMany(batch => txc.Run(CreateBatchNodesStatement(batch)).Consume())
                     ))
                 .Concat()
                 .Concat(session.Close<IResultSummary>()).CatchAndThrow(_ => session.Close<IResultSummary>())

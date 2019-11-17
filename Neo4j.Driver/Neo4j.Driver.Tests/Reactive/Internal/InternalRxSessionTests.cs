@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeSessionRunAsyncOnSummary()
             {
-                VerifyLazyRunAsync(r => r.Summary().WaitForCompletion());
+                VerifyLazyRunAsync(r => r.Consume().WaitForCompletion());
             }
 
             [Fact]
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 {
                     r.Keys().WaitForCompletion();
                     r.Records().WaitForCompletion();
-                    r.Summary().WaitForCompletion();
+                    r.Consume().WaitForCompletion();
                 });
             }
 

@@ -56,7 +56,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 NewRunnable()
                     .Run("RETURN 1 as f1, true as f2, 'string' as f3")
-                    .Summary()
+                    .Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         OnCompleted<IRecord>(0)
                     );
 
-                result.Summary()
+                result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         OnCompleted<string[]>(0)
                     );
 
-                result.Summary()
+                result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
@@ -171,7 +171,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         OnError<string[]>(0, MatchesException<ClientException>())
                     );
 
-                result.Summary()
+                result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnError<IResultSummary>(0, MatchesException<ClientException>())
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                         OnCompleted<IRecord>(0)
                     );
 
-                result.Summary()
+                result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
@@ -241,7 +241,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
-                result.Summary()
+                result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
                 var keys1 = result.Keys().WaitForCompletion();
-                result.Summary().WaitForCompletion();
+                result.Consume().WaitForCompletion();
 
                 var keys2 = result.Keys().WaitForCompletion();
                 var keys3 = result.Keys().WaitForCompletion();
@@ -280,9 +280,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
-                var summary1 = result.Summary().WaitForCompletion();
-                var summary2 = result.Summary().WaitForCompletion();
-                var summary3 = result.Summary().WaitForCompletion();
+                var summary1 = result.Consume().WaitForCompletion();
+                var summary2 = result.Consume().WaitForCompletion();
+                var summary3 = result.Consume().WaitForCompletion();
 
                 summary1.AssertEqual(
                     OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
@@ -346,7 +346,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 NewRunnable()
                     .Run("CREATE ({ id: $id })", new {id = 5})
-                    .Summary()
+                    .Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0,
@@ -411,8 +411,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 var result = NewRunnable().Run("THIS IS NOT A CYPHER");
 
-                var summary1 = result.Summary();
-                var summary2 = result.Summary();
+                var summary1 = result.Consume();
+                var summary2 = result.Consume();
                 summary1
                     .WaitForCompletion()
                     .AssertEqual(

@@ -243,7 +243,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var cursor = CreateFailingResultCursor(exc);
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
-                VerifyError(result.Summary(), exc);
+                VerifyError(result.Consume(), exc);
             }
 
             [Fact]
@@ -253,9 +253,9 @@ namespace Neo4j.Driver.Reactive.Internal
                 var cursor = CreateFailingResultCursor(exc);
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
-                VerifyError(result.Summary(), exc);
-                VerifyError(result.Summary(), exc);
-                VerifyError(result.Summary(), exc);
+                VerifyError(result.Consume(), exc);
+                VerifyError(result.Consume(), exc);
+                VerifyError(result.Consume(), exc);
             }
 
             [Fact]
@@ -267,7 +267,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 VerifyError(result.Keys(), exc);
                 VerifyError(result.Records(), exc);
-                VerifyNoError(result.Summary());
+                VerifyNoError(result.Consume());
             }
         }
 
@@ -314,7 +314,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
-                VerifyError(result.Summary(), failure);
+                VerifyError(result.Consume(), failure);
             }
 
             [Fact]
@@ -324,9 +324,9 @@ namespace Neo4j.Driver.Reactive.Internal
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
-                VerifyError(result.Summary(), failure);
-                VerifyError(result.Summary(), failure);
-                VerifyError(result.Summary(), failure);
+                VerifyError(result.Consume(), failure);
+                VerifyError(result.Consume(), failure);
+                VerifyError(result.Consume(), failure);
             }
 
             [Fact]
@@ -338,7 +338,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
                 VerifyRecordsAndError(result, keys, 5, failure);
-                VerifyNoError(result.Summary());
+                VerifyNoError(result.Consume());
             }
         }
 
@@ -372,7 +372,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
-                VerifyError(result.Summary(), failure);
+                VerifyError(result.Consume(), failure);
             }
 
             [Fact]
@@ -382,8 +382,8 @@ namespace Neo4j.Driver.Reactive.Internal
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
-                VerifyError(result.Summary(), failure);
-                VerifyError(result.Summary(), failure);
+                VerifyError(result.Consume(), failure);
+                VerifyError(result.Consume(), failure);
             }
 
             [Fact]
@@ -393,7 +393,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new InternalRxStatementResult(Observable.Return(cursor));
 
-                VerifyError(result.Summary(), failure);
+                VerifyError(result.Consume(), failure);
                 VerifyKeys(result, "key01", "key02");
             }
         }
@@ -463,7 +463,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
             public static void VerifySummary(IRxStatementResult result, string statement = "fake")
             {
-                result.Summary()
+                result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0,
