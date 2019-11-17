@@ -30,7 +30,7 @@ PM> Install-Package Neo4j.Driver.Signed
 Connect to a Neo4j database
 ```csharp
 IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"));
-IAsyncSession session = driver.AsyncSession(o => o.withDatabase("neo4j"));
+IAsyncSession session = driver.AsyncSession(o => o.WithDatabase("neo4j"));
 try
 {
     IStatementResultCursor cursor = await session.RunAsync("CREATE (n) RETURN n");
@@ -42,7 +42,7 @@ finally
 }
 
 ...
-await driver.closeAsync();
+await driver.CloseAsync();
 ```
 There are a few points that need to be highlighted when adding this driver into your project:
 * Each `IDriver` instance maintains a pool of connections inside, as a result, it is recommended to only use **one driver per application**.
