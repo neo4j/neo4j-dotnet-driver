@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
 using System.Reactive.Linq;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
@@ -46,7 +47,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 NewRunnable()
                     .Run("UNWIND RANGE(1,10) AS n RETURN n")
-                    .Summary()
+                    .Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext<IResultSummary>(0, s => s != null),
@@ -117,7 +118,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 // Ensure that an index exists
                 using (var session = Server.Driver.Session())
                 {
-                    session.Run("CREATE INDEX on :Label(prop)").Summary();
+                    session.Run("CREATE INDEX on :Label(prop)").Consume();
                 }
 
                 VerifySummary("DROP INDEX on :Label(prop)", null,
@@ -137,7 +138,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 // Ensure that a constraint exists
                 using (var session = Server.Driver.Session())
                 {
-                    session.Run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE").Summary();
+                    session.Run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE").Consume();
                 }
 
                 VerifySummary("DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
@@ -216,7 +217,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 NewRunnable()
                     .Run(statement, parameters)
-                    .Summary()
+                    .Consume()
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, predicate),
@@ -228,23 +229,21 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 using (var session = Server.Driver.Session())
                 {
-                    foreach (var drop in session.Run(
-                        "CALL db.constraints()"))
+                    foreach (var drop in session.Run("CALL db.constraints()").ToList())
                     {
                         if (drop.Values.TryGetValue("description", out var name) ||
                             drop.Values.TryGetValue("name", out name))
                         {
-                            session.Run($"DROP {name}").Summary();
+                            session.Run($"DROP {name}").Consume();
                         }
                     }
 
-                    foreach (var drop in session.Run(
-                        "CALL db.indexes()"))
+                    foreach (var drop in session.Run("CALL db.indexes()").ToList())
                     {
                         if (drop.Values.TryGetValue("description", out var name) ||
                             drop.Values.TryGetValue("name", out name))
                         {
-                            session.Run($"DROP INDEX {name}").Summary();
+                            session.Run($"DROP INDEX {name}").Consume();
                         }
                     }
                 }

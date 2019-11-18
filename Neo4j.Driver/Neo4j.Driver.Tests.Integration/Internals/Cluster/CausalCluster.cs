@@ -89,7 +89,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 using (var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken))
                 using (var session = driver.Session(o => o.WithDefaultAccessMode(mode)))
                 {
-                    session.Run("RETURN 1").Summary();
+                    session.Run("RETURN 1").Consume();
                 }
             }
 

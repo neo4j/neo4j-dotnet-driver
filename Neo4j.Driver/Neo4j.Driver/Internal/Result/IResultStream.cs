@@ -24,6 +24,6 @@ namespace Neo4j.Driver.Internal.Result
         Task<string[]> GetKeysAsync();
         Task<IRecord> NextRecordAsync();
         void Cancel();
-        Task<IResultSummary> SummaryAsync();
+        Task<IResultSummary> ConsumeAsync();
     }
 }

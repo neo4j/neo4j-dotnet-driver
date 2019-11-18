@@ -100,7 +100,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var result = await session.RunAsync("RETURN 2 as Number");
-                await result.SummaryAsync();
+                await result.ConsumeAsync();
 
                 var keys = await result.KeysAsync();
                 keys.Should().BeEquivalentTo("Number");
@@ -315,7 +315,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                     keys1.Should().BeEquivalentTo("X");
 
-                    await cursor.SummaryAsync();
+                    await cursor.ConsumeAsync();
 
                     var keys2 = await cursor.KeysAsync();
                     keys2.Should().BeEquivalentTo("X");
@@ -367,8 +367,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
 
-                    await cursor1.SummaryAsync();
-                    await cursor2.SummaryAsync();
+                    await cursor1.ConsumeAsync();
+                    await cursor2.ConsumeAsync();
 
                     keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
@@ -421,8 +421,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
 
-                    await cursor2.SummaryAsync();
-                    await cursor1.SummaryAsync();
+                    await cursor2.ConsumeAsync();
+                    await cursor1.ConsumeAsync();
 
                     keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
@@ -452,8 +452,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     await session.CloseAsync();
                 }
 
-                var records = await cursor.ToListAsync();
-                records.Count.Should().Be(0);
+                var error = await Record.ExceptionAsync(async () => await cursor.ToListAsync());
+                error.Should().BeOfType<ResultConsumedException>();
             }
         }
 
@@ -466,10 +466,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 try
                 {
                     var cursor = await session.RunAsync("RETURN 1 As X");
-                    await cursor.SummaryAsync();
+                    await cursor.ConsumeAsync();
 
-                    var records = await cursor.ToListAsync();
-                    records.Count.Should().Be(0);
+                    var error = await Record.ExceptionAsync(async () => await cursor.ToListAsync());
+                    error.Should().BeOfType<ResultConsumedException>();
                 }
                 finally
                 {

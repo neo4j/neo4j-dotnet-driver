@@ -849,7 +849,7 @@ namespace Neo4j.Driver.Examples
 
             using (var session = Driver.Session())
             {
-                session.Run("MATCH (n) DETACH DELETE n").Summary();
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 

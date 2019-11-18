@@ -170,7 +170,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys = await cursor.KeysAsync();
                     keys.Should().BeEquivalentTo("X");
 
-                    await cursor.SummaryAsync();
+                    await cursor.ConsumeAsync();
 
                     keys = await cursor.KeysAsync();
                     keys.Should().BeEquivalentTo("X");
@@ -230,8 +230,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
 
-                    await cursor1.SummaryAsync();
-                    await cursor2.SummaryAsync();
+                    await cursor1.ConsumeAsync();
+                    await cursor2.ConsumeAsync();
 
                     keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
@@ -292,8 +292,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var keys1 = await cursor1.KeysAsync();
                     keys1.Should().BeEquivalentTo("X");
 
-                    await cursor2.SummaryAsync();
-                    await cursor1.SummaryAsync();
+                    await cursor2.ConsumeAsync();
+                    await cursor1.ConsumeAsync();
 
                     keys2 = await cursor2.KeysAsync();
                     keys2.Should().BeEquivalentTo("Y");
@@ -320,8 +320,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var txc = await session.BeginTransactionAsync();
                     var cursor = await txc.RunAsync("RETURN 1 As X");
                     await txc.RollbackAsync();
-                    var records = await cursor.ToListAsync();
-                    records.Count.Should().Be(0);
+                    var error = await Record.ExceptionAsync(async () => await cursor.ToListAsync());
+                    error.Should().BeOfType<ResultConsumedException>();
                 }
                 finally
                 {
@@ -341,8 +341,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     var txc = await session.BeginTransactionAsync();
                     var cursor = await txc.RunAsync("RETURN 1 As X");
                     await txc.CommitAsync();
-                    var records = await cursor.ToListAsync();
-                    records.Count.Should().Be(0);
+                    var error = await Record.ExceptionAsync(async () => await cursor.ToListAsync());
+                    error.Should().BeOfType<ResultConsumedException>();
                 }
                 finally
                 {
@@ -361,10 +361,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 {
                     var txc = await session.BeginTransactionAsync();
                     var cursor = await txc.RunAsync("RETURN 1 As X");
-                    await cursor.SummaryAsync();
+                    await cursor.ConsumeAsync();
 
-                    var records = await cursor.ToListAsync();
-                    records.Count.Should().Be(0);
+                    var error = await Record.ExceptionAsync(async () => await cursor.ToListAsync());
+                    error.Should().BeOfType<ResultConsumedException>();
                     await txc.RollbackAsync();
                 }
                 finally
@@ -380,7 +380,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
             {
                 const int size = 1024;
-                var session = driver.AsyncSession();
+                var session = driver.AsyncSession(o => o.WithFetchSize(5));
                 try
                 {
                     var txc1 = await session.BeginTransactionAsync();

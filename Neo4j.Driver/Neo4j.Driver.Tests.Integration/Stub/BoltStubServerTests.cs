@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.IntegrationTests.Shared;
+using Neo4j.Driver.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -189,7 +189,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                         try
                         {
                             var result = await txc.RunAsync("CREATE (n {name:'Alice'}) RETURN n.name AS name");
-                            var exception = await Record.ExceptionAsync(() => result.SummaryAsync());
+                            var exception = await Record.ExceptionAsync(() => result.ConsumeAsync());
 
                             exception.Should().BeOfType<TransientException>();
                         }

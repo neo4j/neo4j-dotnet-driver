@@ -251,7 +251,6 @@ namespace Neo4j.Driver.Tests
                 error.Should().BeOfType<IOException>();
                 await session.CloseAsync();
 
-                mockConn.Verify(x => x.SyncAsync(), Times.Once);
                 mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
 
@@ -280,7 +279,6 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalal");
                 await session.CloseAsync();
 
-                mockConn.Verify(x => x.SyncAsync(), Times.Once);
                 mockConn.Verify(x => x.CloseAsync(), Times.Once);
             }
         }

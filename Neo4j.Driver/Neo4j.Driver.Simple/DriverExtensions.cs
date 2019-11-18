@@ -16,8 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
@@ -36,7 +34,7 @@ namespace Neo4j.Driver
         /// <returns>A simple session instance</returns>
         public static ISession Session(this IDriver driver)
         {
-            return Session(driver, o => { });
+            return Session(driver, null);
         }
 
         /// <summary>

@@ -163,7 +163,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync("RETURN 1");
-                var summary = await cursor.SummaryAsync();
+                var summary = await cursor.ConsumeAsync();
 
                 summary.Database.Should().NotBeNull();
                 summary.Database.Name.Should().Be(expected);
@@ -188,7 +188,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             {
                 var txc = await session.BeginTransactionAsync();
                 var cursor = await txc.RunAsync("RETURN 1");
-                var summary = await cursor.SummaryAsync();
+                var summary = await cursor.ConsumeAsync();
 
                 summary.Database.Should().NotBeNull();
                 summary.Database.Name.Should().Be(expected);
@@ -216,7 +216,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var summary = await session.ReadTransactionAsync(async txc =>
                 {
                     var cursor = await txc.RunAsync("RETURN 1");
-                    return await cursor.SummaryAsync();
+                    return await cursor.ConsumeAsync();
                 });
 
                 summary.Database.Should().NotBeNull();
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync($"CREATE DATABASE {name}");
-                await cursor.SummaryAsync();
+                await cursor.ConsumeAsync();
             }
             finally
             {
@@ -248,7 +248,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync($"DROP DATABASE {name}");
-                await cursor.SummaryAsync();
+                await cursor.ConsumeAsync();
             }
             finally
             {

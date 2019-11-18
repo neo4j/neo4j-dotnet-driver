@@ -16,13 +16,11 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.Logging;
-using Neo4j.Driver;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Shared
+namespace Neo4j.Driver.TestUtil
 {
-    internal class TestLogger : ILogger
+    public class TestLogger : ILogger
     {
         private readonly ExtendedLogLevel _level;
         private readonly Action<string> _logMethod;
@@ -105,7 +103,7 @@ namespace Neo4j.Driver.IntegrationTests.Shared
         }
     }
 
-    internal enum ExtendedLogLevel
+    public enum ExtendedLogLevel
     {
         None,
         Error,

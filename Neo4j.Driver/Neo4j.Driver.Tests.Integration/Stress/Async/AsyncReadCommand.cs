@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 if (records.Count > 0)
                 {
                     records[0][0].Should().BeAssignableTo<INode>();
-                    context.NodeRead(await cursor.SummaryAsync());
+                    context.NodeRead(await cursor.ConsumeAsync());
                 }
             }
             finally

@@ -35,7 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             using (var session = NewSession(AccessMode.Read, context))
             {
                 var result = session.Run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
-                var exc = Record.Exception(() => result.Summary());
+                var exc = Record.Exception(() => result.Consume());
 
                 exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
             }

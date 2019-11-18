@@ -47,6 +47,6 @@ namespace Neo4j.Driver
         /// <returns>A summary for running the statement.</returns>
         /// <remarks>This method could be called multiple times.
         /// If all records in the records stream are already consumed, then this method will return the summary directly.</remarks>
-        IResultSummary Summary();
+        IResultSummary Consume();
     }
 }

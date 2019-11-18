@@ -45,7 +45,7 @@ namespace Neo4j.Driver
         /// If all records in the records stream are already consumed, then this method will return the summary directly.
         /// </summary>
         /// <returns>A task returning the result summary of the running statement.</returns>
-        Task<IResultSummary> SummaryAsync();
+        Task<IResultSummary> ConsumeAsync();
 
         /// <summary>
         /// Asynchronously investigates the next upcoming record without changing the current position in the result.

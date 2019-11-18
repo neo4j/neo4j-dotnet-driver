@@ -38,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             try
             {
                 var cursor = await session.RunAsync("UNWIND [10, 5, 0] AS x RETURN 10 / x");
-                var exc = await Record.ExceptionAsync(() => cursor.SummaryAsync());
+                var exc = await Record.ExceptionAsync(() => cursor.ConsumeAsync());
 
                 exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
             }

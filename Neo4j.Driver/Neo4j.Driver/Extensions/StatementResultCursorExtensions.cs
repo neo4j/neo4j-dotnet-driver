@@ -121,7 +121,7 @@ namespace Neo4j.Driver
                 operation(record);
             }
 
-            return await result.SummaryAsync().ConfigureAwait(false);
+            return await result.ConsumeAsync().ConfigureAwait(false);
         }
     }
 }

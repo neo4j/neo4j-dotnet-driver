@@ -18,7 +18,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests.Shared;
+using Neo4j.Driver.TestUtil;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
@@ -92,7 +92,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 var summary = await session.ReadTransactionAsync(async txc =>
                 {
                     var cursor = await txc.RunAsync("RETURN 1");
-                    return await cursor.SummaryAsync();
+                    return await cursor.ConsumeAsync();
                 });
 
                 summary.Database.Should().NotBeNull();

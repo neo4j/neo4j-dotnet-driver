@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal
 
         public IRxStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action)
         {
-            return new InternalRxStatementResult(Observable.FromAsync(() => _session.RunAsync(statement, action))
+            return new InternalRxStatementResult(Observable.FromAsync(() => _session.RunAsync(statement, action, false))
                 .Cast<IInternalStatementResultCursor>());
         }
 
@@ -81,14 +81,14 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<IRxTransaction> BeginTransaction(Action<TransactionConfigBuilder> action)
         {
-            return Observable.FromAsync(() => _session.BeginTransactionAsync(action))
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(action, false))
                 .Select(tx =>
                     new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
 
         private IObservable<InternalRxTransaction> BeginTransaction(AccessMode mode, Action<TransactionConfigBuilder> action)
         {
-            return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, action))
+            return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, action, false))
                 .Select(tx =>
                     new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
@@ -148,7 +148,9 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> Close<T>()
         {
-            return Observable.FromAsync(() => _session.CloseAsync()).SelectMany(x => Observable.Empty<T>());
+            return Observable.FromAsync(
+                () =>
+                    _session.CloseAsync()).SelectMany(x => Observable.Empty<T>());
         }
 
         #endregion

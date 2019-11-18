@@ -233,9 +233,10 @@ namespace Neo4j.Driver.Tests
                 record = result.Current;
                 record[0].As<string>().Should().Be("record1:key0");
             }
+
         }
 
-        public class SummaryAsyncMethod
+        public class ConsumeAsyncMethod
         {
             [Fact]
             public async void ShouldCallGetSummary()
@@ -248,7 +249,7 @@ namespace Neo4j.Driver.Tests
                 });
 
                 // ReSharper disable once UnusedVariable
-                var summary = await result.SummaryAsync();
+                var summary = await result.ConsumeAsync();
 
                 getSummaryCalled.Should().BeTrue();
             }
@@ -261,11 +262,11 @@ namespace Neo4j.Driver.Tests
                     () => getSummaryCalled++ == 0
                         ? Task.FromException<IResultSummary>(new Exception("error!"))
                         : Task.FromResult((IResultSummary) new FakeSummary()));
-                var ex = await Xunit.Record.ExceptionAsync(async () => await result.SummaryAsync());
+                var ex = await Xunit.Record.ExceptionAsync(async () => await result.ConsumeAsync());
 
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<Exception>();
-                await result.SummaryAsync();
+                await result.ConsumeAsync();
             }
 
             [Fact]
@@ -279,9 +280,9 @@ namespace Neo4j.Driver.Tests
                 });
 
                 // ReSharper disable once NotAccessedVariable
-                var summary = await result.SummaryAsync();
+                var summary = await result.ConsumeAsync();
                 // ReSharper disable once RedundantAssignment
-                summary = await result.SummaryAsync();
+                summary = await result.ConsumeAsync();
                 getSummaryCalled.Should().Be(1);
             }
         }
@@ -431,7 +432,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        private static class ResultCursorCreator
+        internal static class ResultCursorCreator
         {
             public static StatementResultCursor CreateResultCursor(int keySize, int recordSize = 1,
                 Func<Task<IResultSummary>> getSummaryFunc = null,
@@ -442,9 +443,13 @@ namespace Neo4j.Driver.Tests
                 var recordsEnum = records.GetEnumerator();
 
                 var stream = new Mock<IResultStream>();
+                if (getSummaryFunc == null)
+                {
+                    getSummaryFunc = () => Task.FromResult((IResultSummary) new FakeSummary());
+                }
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(keys.ToArray()));
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordsEnum));
-                stream.Setup(x => x.SummaryAsync()).Returns(getSummaryFunc);
+                stream.Setup(x => x.ConsumeAsync()).Returns(getSummaryFunc);
                 stream.Setup(x => x.Cancel()).Callback(() => cancellationTokenSource?.Cancel());
 
                 return new StatementResultCursor(stream.Object);

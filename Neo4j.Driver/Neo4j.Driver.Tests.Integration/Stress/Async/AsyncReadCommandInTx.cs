@@ -44,7 +44,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     {
                         records[0][0].Should().BeAssignableTo<INode>();
 
-                        context.NodeRead(await cursor.SummaryAsync());
+                        context.NodeRead(await cursor.ConsumeAsync());
                     }
 
                     await txc.CommitAsync();

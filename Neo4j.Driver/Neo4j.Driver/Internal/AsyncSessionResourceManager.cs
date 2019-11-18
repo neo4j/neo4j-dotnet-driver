@@ -37,7 +37,6 @@ namespace Neo4j.Driver.Internal
                     try
                     {
                         await DisposeTransactionAsync().ConfigureAwait(false);
-                        await DiscardUnconsumedAsync().ConfigureAwait(false);
                     }
                     finally
                     {
@@ -45,27 +44,6 @@ namespace Neo4j.Driver.Internal
                     }
                 }
             }, "Failed to close the session asynchronously.");
-        }
-
-        private async Task DiscardUnconsumedAsync()
-        {
-            if (_result != null)
-            {
-                IStatementResultCursor cursor = null;
-                try
-                {
-                    cursor = await _result.ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // ignored if the cursor failed to create
-                }
-
-                if (cursor != null)
-                {
-                    await cursor.SummaryAsync().ConfigureAwait(false);
-                }
-            }
         }
 
         /// <summary>
@@ -121,40 +99,35 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        /// <summary>
-        /// Clean any session.run result reference.
-        /// If session.run result is not fully consumed, then pull full result into memory.
-        /// </summary>
-        /// <exception cref="ClientException">If error when pulling result into memory</exception>
         private async Task DisposeSessionResultAsync()
         {
-            if (_connection == null)
+            try
             {
-                // there is no session result resources to dispose
-                return;
+                await DiscardUnconsumedResultAsync().ConfigureAwait(false);
             }
-
-            if (_connection.IsOpen)
-            {
-                try
-                {
-                    // this will force buffering of all unconsumed result
-                    await _connection.SyncAsync().ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    throw new ClientException(
-                        $"Error when pulling unconsumed session.run records into memory in session: {e.Message}", e);
-                }
-                finally
-                {
-                    // there is a possibility that when error happens e.g. ProtocolError, the resources are not closed.
-                    await DisposeConnectionAsync().ConfigureAwait(false);
-                }
-            }
-            else
+            finally
             {
                 await DisposeConnectionAsync().ConfigureAwait(false);
+            }
+        }
+        private async Task DiscardUnconsumedResultAsync()
+        {
+            if (_result != null)
+            {
+                IStatementResultCursor cursor = null;
+                try
+                {
+                    cursor = await _result.ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // ignored if the cursor failed to create
+                }
+
+                if (cursor != null)
+                {
+                    await cursor.ConsumeAsync().ConfigureAwait(false);
+                }
             }
         }
 
@@ -169,11 +142,22 @@ namespace Neo4j.Driver.Internal
             _connection = null;
         }
 
-        private Task EnsureCanRunMoreStatementsAsync()
+        private async Task EnsureCanRunMoreStatementsAsync(bool disposeUnconsumedSessionResult)
         {
             EnsureSessionIsOpen();
             EnsureNoOpenTransaction();
-            return DisposeSessionResultAsync();
+            if (disposeUnconsumedSessionResult)
+            {
+                await DisposeSessionResultAsync();
+            }
+            else
+            {
+                if (_connection != null) // after a result is consumed, connection will be set to null
+                {
+                    throw new ClientException("Please consume the current statement result before running " +
+                                              "more statements/transaction in the same session.");
+                }
+            }
         }
 
         private void EnsureNoOpenTransaction()
@@ -190,7 +174,7 @@ namespace Neo4j.Driver.Internal
             if (!_isOpen)
             {
                 throw new ClientException(
-                    "Cannot running more statements in the current session as it has already been disposed." +
+                    "Cannot running more statements in the current session as it has already been disposed. " +
                     "Make sure that you do not have a bad reference to a disposed session " +
                     "and retry your statement in another new session.");
             }

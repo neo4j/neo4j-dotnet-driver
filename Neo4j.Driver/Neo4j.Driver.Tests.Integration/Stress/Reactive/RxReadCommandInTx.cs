@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                         .Records()
                         .SingleOrDefaultAsync()
                         .All(r => Matches(() => r?[0].Should().BeAssignableTo<INode>()))
-                        .SelectMany(_ => result.Summary())
+                        .SelectMany(_ => result.Consume())
                         .CatchAndThrow(_ => txc.Rollback<IResultSummary>())
                         .Concat(txc.Commit<IResultSummary>());
                 })

@@ -26,7 +26,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
-using Neo4j.Driver.IntegrationTests.Shared;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
@@ -289,7 +288,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                             .Batch(batchBuffer)
                             .Select(indices =>
                                 txc.RunAsync(CreateBatchNodesStatement(indices))
-                                    .ContinueWith(t => t.Result.SummaryAsync()).Unwrap()).ToArray()));
+                                    .ContinueWith(t => t.Result.ConsumeAsync()).Unwrap()).ToArray()));
                 }
             }
             finally
@@ -391,7 +390,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     session.WriteTransaction(txc =>
                         Enumerable.Range(1, batchSize)
                             .Select(item => (index * batchSize) + item)
-                            .Batch(batchBuffer).Select(indices => txc.Run(CreateBatchNodesStatement(indices)).Summary())
+                            .Batch(batchBuffer).Select(indices => txc.Run(CreateBatchNodesStatement(indices)).Consume())
                             .ToArray());
                 }
 
@@ -437,7 +436,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                                     }
                                 }), opts => opts.Including(x => x.Labels).Including(x => x.Properties));
 
-                    return result.Summary();
+                    return result.Consume();
                 });
             }
 
@@ -465,7 +464,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     session.WriteTransaction(txc => Observable.Range(1, batchSize)
                         .Select(index => (batchIndex * batchSize) + index)
                         .Buffer(batchBuffer)
-                        .SelectMany(batch => txc.Run(CreateBatchNodesStatement(batch)).Summary())
+                        .SelectMany(batch => txc.Run(CreateBatchNodesStatement(batch)).Consume())
                     ))
                 .Concat()
                 .Concat(session.Close<IResultSummary>()).CatchAndThrow(_ => session.Close<IResultSummary>())
@@ -730,9 +729,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             {
                 var result = runner.Run(statement);
                 Thread.Sleep(_rnd.Next(100));
-                result.Summary();
+                result.Consume();
                 Thread.Sleep(_rnd.Next(100));
-                return result.Summary();
+                return result.Consume();
             }
         }
 
@@ -825,7 +824,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             using (var session = _driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
             {
-                session.Run("MATCH (n) DETACH DELETE n").Summary();
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 

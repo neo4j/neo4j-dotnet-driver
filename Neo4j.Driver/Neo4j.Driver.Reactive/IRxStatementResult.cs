@@ -53,6 +53,6 @@ namespace Neo4j.Driver
         /// <remarks>Subscribing to this stream before subscribing to <see cref="Records"/> causes the results
         /// to be discarded on the server.</remarks>
         /// <returns>An observable stream (with only one element) of result summary</returns>
-        IObservable<IResultSummary> Summary();
+        IObservable<IResultSummary> Consume();
     }
 }

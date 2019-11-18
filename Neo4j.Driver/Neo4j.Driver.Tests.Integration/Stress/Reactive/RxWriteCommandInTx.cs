@@ -42,7 +42,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             await BeginTransaction(session, context)
                 .SelectMany(txc => txc
                     .Run("CREATE ()")
-                    .Summary()
+                    .Consume()
                     .Catch((Exception error) =>
                         !_test.HandleWriteFailure(error, context)
                             ? txc.Rollback<IResultSummary>().Concat(Observable.Throw<IResultSummary>(error))

@@ -700,7 +700,7 @@ namespace Neo4j.Driver.ExamplesAsync
                                 person_name = Neo4j.Driver.ValueExtensions.As<string>(person["name"]),
                                 company_name = companyName
                             });
-                        await cursor.SummaryAsync();
+                        await cursor.ConsumeAsync();
 
                         return 1;
                     }).Result);
@@ -872,7 +872,7 @@ namespace Neo4j.Driver.ExamplesAsync
 
             using (var session = Driver.Session())
             {
-                session.Run("MATCH (n) DETACH DELETE n").Summary();
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
         }
 

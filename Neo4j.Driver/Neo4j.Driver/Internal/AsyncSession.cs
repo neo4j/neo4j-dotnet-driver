@@ -19,9 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
-using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Result;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Util.ConfigBuilders;
 
@@ -69,21 +66,7 @@ namespace Neo4j.Driver.Internal
 
         public Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action)
         {
-            var options = BuildTransactionConfig(action);
-            var result = TryExecuteAsync(_logger, async () =>
-            {
-                await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
-                _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, _bookmark)
-                    .ConfigureAwait(false);
-                var protocol = _connection.BoltProtocol;
-                return await protocol
-                    .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _database,
-                        _bookmark, options, _fetchSize)
-                    .ConfigureAwait(false);
-            });
-
-            _result = result;
-            return result;
+            return RunAsync(statement, action, true);
         }
         public Task<IStatementResultCursor> RunAsync(string statement, Action<TransactionConfigBuilder> action)
         {
@@ -106,17 +89,46 @@ namespace Neo4j.Driver.Internal
             return BeginTransactionAsync(null);
         }
 
-        public async Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action)
+        public Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action)
         {
-            var tx = await TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(_defaultMode, action))
+            return BeginTransactionAsync(action, true);
+        }
+
+        public async Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action,
+            bool disposeUnconsumedSessionResult)
+        {
+            var tx = await TryExecuteAsync(_logger,
+                    () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
                 .ConfigureAwait(false);
             return tx;
         }
 
-        public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action)
+        public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode,
+            Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
         {
-            var tx = await BeginTransactionWithoutLoggingAsync(mode, action).ConfigureAwait(false);
+            var tx = await BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult)
+                .ConfigureAwait(false);
             return tx;
+        }
+
+        public Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action,
+            bool disposeUnconsumedSessionResult)
+        {
+            var options = BuildTransactionConfig(action);
+            var result = TryExecuteAsync(_logger, async () =>
+            {
+                await EnsureCanRunMoreStatementsAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
+                _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, _bookmark)
+                    .ConfigureAwait(false);
+                var protocol = _connection.BoltProtocol;
+                return await protocol
+                    .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _database,
+                        _bookmark, options, _fetchSize)
+                    .ConfigureAwait(false);
+            });
+
+            _result = result;
+            return result;
         }
 
         public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work)
@@ -175,7 +187,7 @@ namespace Neo4j.Driver.Internal
         {
             return TryExecuteAsync(_logger, async () => await _retryLogic.RetryAsync(async () =>
             {
-                var tx = await BeginTransactionWithoutLoggingAsync(mode, action).ConfigureAwait(false);
+                var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true).ConfigureAwait(false);
                 try
                 {
                     var result = await work(tx).ConfigureAwait(false);
@@ -199,10 +211,10 @@ namespace Neo4j.Driver.Internal
         }
 
         private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
-            Action<TransactionConfigBuilder> action)
+            Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
         {
             var options = BuildTransactionConfig(action);
-            await EnsureCanRunMoreStatementsAsync().ConfigureAwait(false);
+            await EnsureCanRunMoreStatementsAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, _bookmark).ConfigureAwait(false);
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize);

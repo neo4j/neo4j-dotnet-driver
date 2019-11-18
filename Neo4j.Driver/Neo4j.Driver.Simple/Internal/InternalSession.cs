@@ -67,14 +67,14 @@ namespace Neo4j.Driver.Internal
         public ITransaction BeginTransaction(Action<TransactionConfigBuilder> action)
         {
             return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(action))
+                _executor.RunSync(() => _session.BeginTransactionAsync(action, true))
                     .CastOrThrow<IInternalAsyncTransaction>(), _executor);
         }
 
         private InternalTransaction BeginTransaction(AccessMode mode, Action<TransactionConfigBuilder> action)
         {
             return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(mode, action))
+                _executor.RunSync(() => _session.BeginTransactionAsync(mode, action, true))
                     .CastOrThrow<IInternalAsyncTransaction>(), _executor);
         }
 
@@ -146,7 +146,7 @@ namespace Neo4j.Driver.Internal
 
         public IStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action)
         {
-            return new InternalStatementResult(_executor.RunSync(() => _session.RunAsync(statement, action)),
+            return new InternalStatementResult(_executor.RunSync(() => _session.RunAsync(statement, action, true)),
                 _executor);
         }
 

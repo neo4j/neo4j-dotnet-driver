@@ -145,5 +145,12 @@
     <None Update="Resources\V3\rollback_error.script">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Remove="Shared\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Shared\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="Shared\**" />
   </ItemGroup>
 </Project>

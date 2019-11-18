@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public IInternalStatementResultCursor CreateCursor()
         {
-            return new StatementResultCursor(this);
+            return new ConsumableStatementResultCursor(new StatementResultCursor(this));
         }
 
         public async Task<string[]> GetKeysAsync()
@@ -125,7 +125,7 @@ namespace Neo4j.Driver.Internal.Result
             _cancellationSource.Cancel();
         }
 
-        public async Task<IResultSummary> SummaryAsync()
+        public async Task<IResultSummary> ConsumeAsync()
         {
             while (CurrentState < State.Completed)
             {
