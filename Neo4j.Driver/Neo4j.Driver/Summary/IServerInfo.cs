@@ -17,7 +17,7 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Provides basic information of the server where the cypher statement was executed.
+    /// Provides basic information of the server where the cypher query was executed.
     /// </summary>
     public interface IServerInfo
     {

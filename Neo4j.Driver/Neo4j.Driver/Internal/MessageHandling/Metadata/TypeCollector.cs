@@ -20,13 +20,13 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    internal class TypeCollector : IMetadataCollector<StatementType>
+    internal class TypeCollector : IMetadataCollector<QueryType>
     {
         internal const string TypeKey = "type";
 
         object IMetadataCollector.Collected => Collected;
 
-        public StatementType Collected { get; private set; } = StatementType.Unknown;
+        public QueryType Collected { get; private set; } = QueryType.Unknown;
 
         public void Collect(IDictionary<string, object> metadata)
         {
@@ -44,18 +44,18 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             }
         }
 
-        private static StatementType FromTypeCode(string type)
+        private static QueryType FromTypeCode(string type)
         {
             switch (type.ToLowerInvariant())
             {
                 case "r":
-                    return StatementType.ReadOnly;
+                    return QueryType.ReadOnly;
                 case "rw":
-                    return StatementType.ReadWrite;
+                    return QueryType.ReadWrite;
                 case "w":
-                    return StatementType.WriteOnly;
+                    return QueryType.WriteOnly;
                 case "s":
-                    return StatementType.SchemaWrite;
+                    return QueryType.SchemaWrite;
                 default:
                     throw new ProtocolException($"An invalid value of '{type}' was passed as '{TypeKey}' metadata.");
             }

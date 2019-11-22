@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Tests
                 var mock = new Mock<ISocketClient>();
                 var con = NewSocketConnection(mock.Object);
 
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("A statement"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("A query"), AccessMode.Read),
                     NoOpHandler);
                 await con.SyncAsync();
 
@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("a statement"), AccessMode.Write),
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("a query"), AccessMode.Write),
                     NoOpHandler);
 
                 // Then
@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Tests
                 var pipeline = new Mock<IResponsePipeline>();
                 var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("statement"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("query"), AccessMode.Read),
                     NoOpHandler);
 
                 pipeline.Verify(h => h.Enqueue(It.IsAny<RunWithMetadataMessage>(), NoOpHandler), Times.Once);
@@ -167,7 +167,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("a statement"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("a query"), AccessMode.Read),
                     NoOpHandler, PullAll, NoOpHandler);
 
                 // Then
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Tests
                 var pipeline = new Mock<IResponsePipeline>();
                 var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Statement("statement"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("query"), AccessMode.Read),
                     NoOpHandler, PullAll, NoOpHandler);
 
                 pipeline.Verify(h => h.Enqueue(It.IsAny<RunWithMetadataMessage>(), NoOpHandler),

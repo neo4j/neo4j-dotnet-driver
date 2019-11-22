@@ -59,7 +59,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     .Consume()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
+                        OnNext(0, MatchesSummary(new {QueryType = QueryType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
                     );
             }
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
+                        OnNext(0, MatchesSummary(new {QueryType = QueryType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
                     );
             }
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
+                        OnNext(0, MatchesSummary(new {QueryType = QueryType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
                     );
 
@@ -231,7 +231,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
+                        OnNext(0, MatchesSummary(new {QueryType = QueryType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
                     );
             }
@@ -244,7 +244,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
+                        OnNext(0, MatchesSummary(new {QueryType = QueryType.ReadOnly})),
                         OnCompleted<IResultSummary>(0)
                     );
 
@@ -285,7 +285,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var summary3 = result.Consume().WaitForCompletion();
 
                 summary1.AssertEqual(
-                    OnNext(0, MatchesSummary(new {StatementType = StatementType.ReadOnly})),
+                    OnNext(0, MatchesSummary(new {QueryType = QueryType.ReadOnly})),
                     OnCompleted<IResultSummary>(0)
                 );
                 summary1.AssertEqual(summary2);
@@ -317,7 +317,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnEmptyKeysForStatementWithNoReturn()
+            public void ShouldReturnEmptyKeysForQueryWithNoReturn()
             {
                 NewRunnable()
                     .Run("CREATE ({ id: $id })", new {id = 5})
@@ -330,7 +330,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnEmptyRecordsForStatementWithNoReturn()
+            public void ShouldReturnEmptyRecordsForQueryWithNoReturn()
             {
                 NewRunnable()
                     .Run("CREATE ({ id: $id })", new {id = 5})
@@ -342,7 +342,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnSummaryForStatementWithNoReturn()
+            public void ShouldReturnSummaryForQueryWithNoReturn()
             {
                 NewRunnable()
                     .Run("CREATE ({ id: $id })", new {id = 5})
@@ -351,7 +351,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     .AssertEqual(
                         OnNext(0,
                             MatchesSummary(new
-                                {Counters = new {NodesCreated = 1}, StatementType = StatementType.WriteOnly})),
+                                {Counters = new {NodesCreated = 1}, QueryType = QueryType.WriteOnly})),
                         OnCompleted<IResultSummary>(0)
                     );
             }

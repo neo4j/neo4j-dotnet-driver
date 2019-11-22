@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             AddMetadata<BookmarkCollector, Bookmark>();
             AddMetadata<HasMoreCollector, bool>();
             AddMetadata<TimeToLastCollector, long>();
-            AddMetadata<TypeCollector, StatementType>();
+            AddMetadata<TypeCollector, QueryType>();
             AddMetadata<CountersCollector, ICounters>();
             AddMetadata<PlanCollector, IPlan>();
             AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             _summaryBuilder.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
             _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
             _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
-            _summaryBuilder.StatementType = GetMetadata<TypeCollector, StatementType>();
+            _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
             _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
 
             _streamBuilder.PullCompleted(GetMetadata<HasMoreCollector, bool>(), null);

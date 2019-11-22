@@ -30,17 +30,17 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    public static class StatementResultTests
+    public static class ResultTests
     {
         private static class ResultCreator
         {
-            public static InternalStatementResult CreateResult(int keySize, int recordSize = 1,
+            public static InternalResult CreateResult(int keySize, int recordSize = 1,
                 Func<IResultSummary> getSummaryFunc = null)
             {
                 var keys = RecordCreator.CreateKeys(keySize);
                 var records = RecordCreator.CreateRecords(recordSize, keys);
 
-                return new InternalStatementResult(new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
+                return new InternalResult(new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
                     new BlockingExecutor());
             }
         }
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowArgumentNullExceptionIfCursorIsNull()
             {
-                var ex = Xunit.Record.Exception(() => new InternalStatementResult(null, new BlockingExecutor()));
+                var ex = Xunit.Record.Exception(() => new InternalResult(null, new BlockingExecutor()));
                 ex.Should().NotBeNull();
                 ex.Should().BeOfType<ArgumentNullException>();
             }
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests
 
         public class ConsumeMethod
         {
-            // INFO: Rewritten because StatementResult no longers takes IPeekingEnumerator in constructor
+            // INFO: Rewritten because Result no longer takes IPeekingEnumerator in constructor
             [Fact]
             public void ShouldConsumeAllRecords()
             {
@@ -220,7 +220,7 @@ namespace Neo4j.Driver.Tests
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var cursor =
-                    new InternalStatementResult(new ListBasedRecordCursor(TestRecordYielder.Keys,
+                    new InternalResult(new ListBasedRecordCursor(TestRecordYielder.Keys,
                         () => recordYielder.RecordsWithAutoLoad), new BlockingExecutor());
                 var records = cursor.ToList();
                 records.Count.Should().Be(10);
@@ -233,7 +233,7 @@ namespace Neo4j.Driver.Tests
 
                 int count = 0;
                 var cursor =
-                    new InternalStatementResult(
+                    new InternalResult(
                         new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                         new BlockingExecutor());
                 var t = Task.Factory.StartNew(() =>
@@ -261,7 +261,7 @@ namespace Neo4j.Driver.Tests
             {
                 var recordYielder = new TestRecordYielder(5, 10, _output);
                 var result =
-                    new InternalStatementResult(
+                    new InternalResult(
                         new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                         new BlockingExecutor());
                 var temp = result.Take(5);
@@ -366,9 +366,9 @@ namespace Neo4j.Driver.Tests
 
         private class FakeSummary : IResultSummary
         {
-            public Statement Statement { get; }
+            public Query Query { get; }
             public ICounters Counters { get; }
-            public StatementType StatementType { get; }
+            public QueryType QueryType { get; }
             public bool HasPlan { get; }
             public bool HasProfile { get; }
             public IPlan Plan { get; }

@@ -112,7 +112,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact]
-        public async Task ShouldBeAbleToRunMultiStatementsInOneTransaction()
+        public async Task ShouldBeAbleToRunMultiQuerysInOneTransaction()
         {
             var session = Driver.AsyncSession();
             try
@@ -169,7 +169,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [RequireServerFact]
-        public async Task AfterErrorTheFirstSyncShouldAckFailureSoThatNewStatementCouldRun()
+        public async Task AfterErrorTheFirstSyncShouldAckFailureSoThatNewQueryCouldRun()
         {
             var session = Driver.AsyncSession();
             try
@@ -442,7 +442,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken))
             {
                 var session = driver.AsyncSession();
-                IStatementResultCursor cursor;
+                IResultCursor cursor;
                 try
                 {
                     cursor = await session.RunAsync("RETURN 1 As X");

@@ -19,12 +19,12 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ConsumableStatementResultCursor : IInternalStatementResultCursor
+    internal class ConsumableResultCursor : IInternalResultCursor
     {
-        private readonly IInternalStatementResultCursor _cursor;
+        private readonly IInternalResultCursor _cursor;
         private bool _isConsumed;
 
-        public ConsumableStatementResultCursor(IInternalStatementResultCursor cursor)
+        public ConsumableResultCursor(IInternalResultCursor cursor)
         {
             _cursor = cursor;
         }

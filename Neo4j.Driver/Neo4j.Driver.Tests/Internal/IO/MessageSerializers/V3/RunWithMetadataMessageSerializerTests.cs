@@ -48,12 +48,12 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            var statement = new Statement("RETURN $x", new Dictionary<string, object>
+            var query = new Query("RETURN $x", new Dictionary<string, object>
             {
                 {"x", 1L}
             });
 
-            writer.Write(new RunWithMetadataMessage(statement, null,
+            writer.Write(new RunWithMetadataMessage(query, null,
                 Bookmark.From(SessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
                 new Dictionary<string, object>
                 {
@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new RunWithMetadataMessage(new Statement("RETURN 1"), AccessMode.Write));
+            writer.Write(new RunWithMetadataMessage(new Query("RETURN 1"), AccessMode.Write));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();

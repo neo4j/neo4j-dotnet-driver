@@ -24,10 +24,10 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class SummaryBuilder
     {
-        public Statement Statement { get; }
+        public Query Query { get; }
         public IServerInfo Server { get; }
 
-        public virtual StatementType StatementType { get; set; }
+        public virtual QueryType QueryType { get; set; }
         public virtual ICounters Counters { get; set; }
         public virtual IPlan Plan { get; set; }
         public virtual IProfiledPlan Profile { get; set; }
@@ -36,9 +36,9 @@ namespace Neo4j.Driver.Internal.Result
         public virtual long ResultConsumedAfter { get; set; } = -1L;
         public virtual IDatabaseInfo Database { get; set; }
 
-        public SummaryBuilder(Statement statement, IServerInfo serverInfo)
+        public SummaryBuilder(Query query, IServerInfo serverInfo)
         {
-            Statement = statement;
+            Query = query;
             Server = serverInfo;
         }
 
@@ -51,10 +51,10 @@ namespace Neo4j.Driver.Internal.Result
         {
             public ResultSummary(SummaryBuilder builder)
             {
-                Throw.ArgumentNullException.IfNull(builder.Statement, nameof(builder.Statement));
-                //Throw.ArgumentNullException.IfNull(builder.StatementType, nameof(builder.StatementType));
-                Statement = builder.Statement;
-                StatementType = builder.StatementType;
+                Throw.ArgumentNullException.IfNull(builder.Query, nameof(builder.Query));
+                //Throw.ArgumentNullException.IfNull(builder.QueryType, nameof(builder.QueryType));
+                Query = builder.Query;
+                QueryType = builder.QueryType;
                 Counters = builder.Counters ?? new Counters();
                 Profile = builder.Profile;
                 Plan = Profile ?? builder.Plan;
@@ -65,9 +65,9 @@ namespace Neo4j.Driver.Internal.Result
                 Database = builder.Database ?? new DatabaseInfo();
             }
 
-            public Statement Statement { get; }
+            public Query Query { get; }
             public ICounters Counters { get; }
-            public StatementType StatementType { get; }
+            public QueryType QueryType { get; }
             public bool HasPlan => Plan != null;
             public bool HasProfile => Profile != null;
             public IPlan Plan { get; }
@@ -80,9 +80,9 @@ namespace Neo4j.Driver.Internal.Result
 
             public override string ToString()
             {
-                return $"{GetType().Name}{{{nameof(Statement)}={Statement}, " +
+                return $"{GetType().Name}{{{nameof(Query)}={Query}, " +
                        $"{nameof(Counters)}={Counters}, " +
-                       $"{nameof(StatementType)}={StatementType}, " +
+                       $"{nameof(QueryType)}={QueryType}, " +
                        $"{nameof(Plan)}={Plan}, " +
                        $"{nameof(Profile)}={Profile}, " +
                        $"{nameof(Notifications)}={Notifications.ToContentString()}, " +

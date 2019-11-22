@@ -68,13 +68,13 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public override async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
+        public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+            Query query, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
             string database, Bookmark bookmark, TransactionConfig configBuilder, long fetchSize = Config.Infinite)
         {
-            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
                 RequestMore(connection, summaryBuilder, bookmarkTracker),
                 CancelRequest(connection, summaryBuilder, bookmarkTracker),
                 resultResourceHandler,
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
             await connection
                 .EnqueueAsync(
-                    new RunWithMetadataMessage(statement, database, bookmark, configBuilder,
+                    new RunWithMetadataMessage(query, database, bookmark, configBuilder,
                         connection.GetEnforcedAccessMode()), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
@@ -99,11 +99,11 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        public override async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Statement statement, bool reactive, long fetchSize = Config.Infinite)
+        public override async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection,
+            Query query, bool reactive, long fetchSize = Config.Infinite)
         {
-            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
                 RequestMore(connection, summaryBuilder, null),
                 CancelRequest(connection, summaryBuilder, null), null,
                 fetchSize, reactive);
@@ -117,14 +117,14 @@ namespace Neo4j.Driver.Internal.Protocol
                 pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);
             }
 
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement),
+            await connection.EnqueueAsync(new RunWithMetadataMessage(query),
                     runHandler, pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
-        private static Func<StatementResultCursorBuilder, long, long, Task> RequestMore(IConnection connection,
+        private static Func<ResultCursorBuilder, long, long, Task> RequestMore(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
             return async (streamBuilder, id, n) =>
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Internal.Protocol
             };
         }
 
-        private static Func<StatementResultCursorBuilder, long, Task> CancelRequest(IConnection connection,
+        private static Func<ResultCursorBuilder, long, Task> CancelRequest(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
             return async (streamBuilder, id) =>

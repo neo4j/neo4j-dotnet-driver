@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldEnqueueRunAndPullAllAndSend()
             {
                 var mockConn = NewConnectionWithMode();
-                var statement = new Statement("A cypher query");
+                var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
@@ -107,7 +107,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
-                await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
+                await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
                     resourceHandler.Object, null, null, null);
 
                 mockConn.Verify(
@@ -121,7 +121,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
                 var mockConn = NewConnectionWithMode();
-                var statement = new Statement("A cypher query");
+                var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
@@ -131,7 +131,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
-                await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
+                await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
                     resourceHandler.Object, null, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage(AccessMode mode)
             {
                 var mockConn = NewConnectionWithMode(mode);
-                var statement = new Statement("A cypher query");
+                var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
 
@@ -157,7 +157,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             VerifyMetadata(m1.CastOrThrow<RunWithMetadataMessage>().Metadata, mode);
                         });
 
-                await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, statement, true, bookmarkTracker.Object,
+                await BoltV3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
                     resourceHandler.Object, null, Bookmark, TxConfig);
 
                 mockConn.Verify(
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [InlineData("database")]
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
-                BoltV3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Statement("text"),
+                BoltV3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Query("text"),
                         false, Mock.Of<IBookmarkTracker>(), Mock.Of<IResultResourceHandler>(), database,
                         Bookmark.From("123"),
                         TransactionConfig.Default))
@@ -297,9 +297,9 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldRunPullAllSync()
             {
                 var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
-                var statement = new Statement("lalala");
+                var query = new Query("lalala");
 
-                await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, statement, true);
+                await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, query, true);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -313,9 +313,9 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
                 var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
-                var statement = new Statement("lalala");
+                var query = new Query("lalala");
 
-                await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, statement, true);
+                await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, query, true);
                 mockConn.Verify(x => x.Server, Times.Once);
             }
         }

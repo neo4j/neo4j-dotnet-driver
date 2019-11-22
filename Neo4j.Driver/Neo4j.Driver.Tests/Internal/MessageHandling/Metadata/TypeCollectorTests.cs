@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(null);
 
-            collector.Collected.Should().Be(StatementType.Unknown);
+            collector.Collected.Should().Be(QueryType.Unknown);
         }
 
         [Fact]
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collect(new Dictionary<string, object>());
 
-            collector.Collected.Should().Be(StatementType.Unknown);
+            collector.Collected.Should().Be(QueryType.Unknown);
         }
 
         [Fact]
@@ -70,11 +70,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         }
 
         [Theory]
-        [InlineData("r", StatementType.ReadOnly)]
-        [InlineData("rw", StatementType.ReadWrite)]
-        [InlineData("w", StatementType.WriteOnly)]
-        [InlineData("s", StatementType.SchemaWrite)]
-        public void ShouldCollect(string value, StatementType expectedValue)
+        [InlineData("r", QueryType.ReadOnly)]
+        [InlineData("rw", QueryType.ReadWrite)]
+        [InlineData("w", QueryType.WriteOnly)]
+        [InlineData("s", QueryType.SchemaWrite)]
+        public void ShouldCollect(string value, QueryType expectedValue)
         {
             var metadata = new Dictionary<string, object> {{Key, value}};
             var collector = new TypeCollector();
@@ -98,6 +98,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         internal static KeyValuePair<string, object> TestMetadata =>
             new KeyValuePair<string, object>(Key, "rw");
 
-        internal static StatementType TestMetadataCollected => StatementType.ReadWrite;
+        internal static QueryType TestMetadataCollected => QueryType.ReadWrite;
     }
 }

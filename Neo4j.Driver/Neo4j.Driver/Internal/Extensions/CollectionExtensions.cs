@@ -190,7 +190,7 @@ namespace Neo4j.Driver.Internal
                         if (!(key is string))
                         {
                             throw new InvalidOperationException(
-                                "dictionaries passed as part of a parameter to cypher statements should have string keys!");
+                                "dictionaries passed as part of a parameter to cypher queries should have string keys!");
                         }
 
                         convertedDict.Add((string) key, Transform(dict[key]));

@@ -23,9 +23,9 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Extension methods for <see cref="IStatementResultCursor"/>
+    /// Extension methods for <see cref="IResultCursor"/>
     /// </summary>
-    public static class StatementResultCursorExtensions
+    public static class ResultCursorExtensions
     {
         /// <summary>
         /// Return the only record in the result stream.
@@ -34,7 +34,7 @@ namespace Neo4j.Driver
         /// <returns>The only record in the result stream.</returns>
         /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
         /// if the result contains more than one record or the result is empty.</remarks>
-        public static Task<IRecord> SingleAsync(this IStatementResultCursor result)
+        public static Task<IRecord> SingleAsync(this IResultCursor result)
         {
             return SingleAsync(result, record => record);
         }
@@ -47,7 +47,7 @@ namespace Neo4j.Driver
         /// <returns>The only record in the result stream.</returns>
         /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
         /// if the result contains more than one record or the result is empty.</remarks>
-        public static async Task<T> SingleAsync<T>(this IStatementResultCursor result, Func<IRecord, T> operation)
+        public static async Task<T> SingleAsync<T>(this IResultCursor result, Func<IRecord, T> operation)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));
             if (await result.FetchAsync().ConfigureAwait(false))
@@ -73,7 +73,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="result"> The result stream.</param>
         /// <returns>A list with all records in the result stream.</returns>
-        public static async Task<List<IRecord>> ToListAsync(this IStatementResultCursor result)
+        public static async Task<List<IRecord>> ToListAsync(this IResultCursor result)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));
             List<IRecord> list = new List<IRecord>();
@@ -92,7 +92,7 @@ namespace Neo4j.Driver
         /// <param name="result">The result stream.</param>
         /// <param name="operation">The operation to carry out on each record.</param>
         /// <returns>A list of collected operation result.</returns>
-        public static async Task<List<T>> ToListAsync<T>(this IStatementResultCursor result, Func<IRecord, T> operation)
+        public static async Task<List<T>> ToListAsync<T>(this IResultCursor result, Func<IRecord, T> operation)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));
             var list = new List<T>();
@@ -111,7 +111,7 @@ namespace Neo4j.Driver
         /// <param name="result">The result stream.</param>
         /// <param name="operation">The operation is carried out on each record.</param>
         /// <returns>The result summary after all records have been processed.</returns>
-        public static async Task<IResultSummary> ForEachAsync(this IStatementResultCursor result,
+        public static async Task<IResultSummary> ForEachAsync(this IResultCursor result,
             Action<IRecord> operation)
         {
             Throw.ArgumentNullException.IfNull(result, nameof(result));

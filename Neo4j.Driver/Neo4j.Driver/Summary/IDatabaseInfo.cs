@@ -20,12 +20,12 @@ using System;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Provides information about the database that processed the statement.
+    /// Provides information about the database that processed the query.
     /// </summary>
     public interface IDatabaseInfo
     {
         /// <summary>
-        /// The name of the database where the statement is processed.
+        /// The name of the database where the query is processed.
         /// </summary>
         /// 
         /// <remarks>Returns <code>null</code> if the source server does not support multiple databases.</remarks>

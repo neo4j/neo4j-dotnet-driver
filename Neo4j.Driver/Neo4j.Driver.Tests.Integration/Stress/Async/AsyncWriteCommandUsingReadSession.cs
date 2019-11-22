@@ -33,7 +33,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         public override async Task ExecuteAsync(TContext context)
         {
-            var cursor = default(IStatementResultCursor);
+            var cursor = default(IResultCursor);
 
             var session = NewSession(AccessMode.Read, context);
             try

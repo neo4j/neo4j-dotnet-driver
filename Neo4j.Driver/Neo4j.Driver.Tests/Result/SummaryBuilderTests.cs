@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public void ShouldReturnEmptyDatabaseInfoIfNotSet()
         {
-            var builder = new SummaryBuilder(new Statement("RETURN 1"), new ServerInfo(new Uri("bolt://localhost")));
+            var builder = new SummaryBuilder(new Query("RETURN 1"), new ServerInfo(new Uri("bolt://localhost")));
             var summary = builder.Build();
 
             summary.Database.Should().NotBeNull();

@@ -35,20 +35,20 @@ namespace Neo4j.Driver.Internal
 
         #region Run Methods
 
-        public IRxStatementResult Run(string statement)
+        public IRxResult Run(string query)
         {
-            return Run(statement, null);
+            return Run(query, null);
         }
 
-        public IRxStatementResult Run(string statement, object parameters)
+        public IRxResult Run(string query, object parameters)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()));
+            return Run(new Query(query, parameters.ToDictionary()));
         }
 
-        public IRxStatementResult Run(Statement statement)
+        public IRxResult Run(Query query)
         {
-            return new InternalRxStatementResult(Observable.FromAsync(() => _transaction.RunAsync(statement))
-                .Cast<IInternalStatementResultCursor>());
+            return new InternalRxResult(Observable.FromAsync(() => _transaction.RunAsync(query))
+                .Cast<IInternalResultCursor>());
         }
 
         #endregion

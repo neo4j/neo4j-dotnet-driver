@@ -32,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         public override void Execute(TContext context)
         {
-            var result = default(IStatementResult);
+            var result = default(IResult);
 
             using (var session = NewSession(AccessMode.Read, context))
             {

@@ -27,7 +27,7 @@ namespace Neo4j.Driver
     public interface IRxSession : IRxRunnable
     {
         /// <summary>
-        /// Returns the bookmark received following the last successfully completed statement, which is executed
+        /// Returns the bookmark received following the last successfully completed query, which is executed
         /// either in an <see cref="IRxTransaction"/> obtained from this session instance or directly through one of
         /// the <strong>Run</strong> overrides of this session instance.
         ///
@@ -61,46 +61,46 @@ namespace Neo4j.Driver
         IObservable<IRxTransaction> BeginTransaction(Action<TransactionConfigBuilder> action);
 
         /// <summary>
-        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement with the 
+        /// Create <see cref="IRxResult">a reactive result</see> that will execute the query with the
         /// provided <see cref="TransactionConfig"/> that applies to the underlying auto-commit transaction.
         /// </summary>
         /// 
-        /// <param name="statement">statement to be executed</param>
+        /// <param name="query">Query to be executed</param>
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
         /// defines how to create the configuration for the returned transaction</param>
         /// <returns>a reactive result</returns>
         ///
         /// <see cref="Run(string,System.Action{TransactionConfigBuilder})"></see>
-        IRxStatementResult Run(string statement, Action<TransactionConfigBuilder> action);
+        IRxResult Run(string query, Action<TransactionConfigBuilder> action);
 
         /// <summary>
-        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the statement  with the specified
+        /// Create <see cref="IRxResult">a reactive result</see> that will execute the query  with the specified
         /// parameters and the provided <see cref="TransactionConfig"/>  that applies to the  underlying auto-commit
         /// transaction.
         /// </summary>
         /// 
-        /// <param  name="statement">statement to be executed</param>
+        /// <param  name="query">Query to be executed</param>
         /// <param name="parameters">a parameter dictionary, can be an
         ///     <see cref="IDictionary{TKey,TValue}" /> or an anonymous object</param>
         /// <param name="action">configuration for the auto-commit transaction</param>
         /// <returns>a reactive result</returns>
         /// 
         /// <see cref="Run(string,System.Action{TransactionConfigBuilder})"></see>
-        IRxStatementResult Run(string statement, object parameters, Action<TransactionConfigBuilder> action);
+        IRxResult Run(string query, object parameters, Action<TransactionConfigBuilder> action);
 
         /// <summary>
-        /// Create <see cref="IRxStatementResult">a reactive result</see> that will execute the given statement with the
+        /// Create <see cref="IRxResult">a reactive result</see> that will execute the given query with the
         /// provided <see cref="TransactionConfig"/> that applies to the underlying auto-commit transaction.
         ///
-        /// The statement is only executed when an <see cref="IObserver{T}"/> is subscribed to one of the reactive streams
+        /// The query is only executed when an <see cref="IObserver{T}"/> is subscribed to one of the reactive streams
         /// that can be accessed through the returned reactive result. 
         /// 
         /// </summary>
-        /// <param name="statement">statement to be executed</param>
+        /// <param name="query">Query to be executed</param>
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
         /// defines how to create the configuration for the auto-commit transaction</param>
         /// <returns>a reactive result</returns>
-        IRxStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action);
+        IRxResult Run(Query query, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// Execute the provided unit of work in a <see cref="AccessMode.Read">Read</see>

@@ -52,12 +52,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
 
         public override void OnFailure(IResponsePipelineError error)
         {
-            _streamBuilder.RunCompleted(NoStatementId, null, error);
+            _streamBuilder.RunCompleted(NoQueryId, null, error);
         }
 
         public override void OnIgnored()
         {
-            _streamBuilder.RunCompleted(NoStatementId, null, null);
+            _streamBuilder.RunCompleted(NoQueryId, null, null);
         }
     }
 }

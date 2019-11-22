@@ -33,7 +33,7 @@ IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic
 IAsyncSession session = driver.AsyncSession(o => o.withDatabase("neo4j"));
 try
 {
-    IStatementResultCursor cursor = await session.RunAsync("CREATE (n) RETURN n");
+    IResultCursor cursor = await session.RunAsync("CREATE (n) RETURN n");
     await cursor.ConsumeAsync();
 }
 finally
@@ -52,12 +52,12 @@ There are a few points that need to be highlighted when adding this driver into 
 ### Parsing Result Values
 #### Record Stream
 A cypher execution result is comprised of a stream records followed by a result summary.
-The records inside the result are accessible via `FetchAsync` and `Current` methods on `IStatementResultCursor`.
-Our recommended way to access these result records is to make use of methods provided by `StatementResultCursorExtensions` such as `SingleAsync`, `ToListAsync`, and `ForEachAsync`.
+The records inside the result are accessible via `FetchAsync` and `Current` methods on `IResultCursor`.
+Our recommended way to access these result records is to make use of methods provided by `ResultCursorExtensions` such as `SingleAsync`, `ToListAsync`, and `ForEachAsync`.
 
-Process result records using `StatementResultCursorExtensions`:
+Process result records using `ResultCursorExtensions`:
 ```csharp
-IStatementResultCursor cursor = await session.RunAsync("MATCH (a:Person) RETURN a.name as name");
+IResultCursor cursor = await session.RunAsync("MATCH (a:Person) RETURN a.name as name");
 List<string> people = await cursor.ToListAsync(record => record["name"].As<string>());
 ```
 The records are exposed as a record stream in the sense that:

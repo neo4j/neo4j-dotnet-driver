@@ -23,23 +23,23 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal
 {
-    internal abstract class AsyncStatementRunner : IAsyncStatementRunner
+    internal abstract class AsyncQueryRunner : IAsyncQueryRunner
     {
-        public abstract Task<IStatementResultCursor> RunAsync(Statement statement);
+        public abstract Task<IResultCursor> RunAsync(Query query);
 
-        public Task<IStatementResultCursor> RunAsync(string statement)
+        public Task<IResultCursor> RunAsync(string query)
         {
-            return RunAsync(new Statement(statement));
+            return RunAsync(new Query(query));
         }
 
-        public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters)
+        public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters)
         {
-            return RunAsync(new Statement(statement, parameters));
+            return RunAsync(new Query(query, parameters));
         }
 
-        public Task<IStatementResultCursor> RunAsync(string statement, object parameters)
+        public Task<IResultCursor> RunAsync(string query, object parameters)
         {
-            return RunAsync(new Statement(statement, parameters.ToDictionary()));
+            return RunAsync(new Query(query, parameters.ToDictionary()));
         }
     }
 

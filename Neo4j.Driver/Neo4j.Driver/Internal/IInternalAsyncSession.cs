@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal
         Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action,
             bool disposeUnconsumedSessionResult);
 
-        Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action,
+        Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action,
             bool disposeUnconsumedSessionResult);
     }
 }

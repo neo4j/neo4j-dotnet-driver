@@ -17,14 +17,14 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Represents the changes to the database made as a result of a statement being run.
+    /// Represents the changes to the database made as a result of a query being run.
     /// </summary>
     public interface ICounters
     {
         /// <summary>
         /// Gets whether there were any updates at all, eg. any of the counters are greater than 0.
         /// </summary>
-        /// <value>Returns <c>true</c> if the statement made any updates, <c>false</c> otherwise.</value>
+        /// <value>Returns <c>true</c> if the query made any updates, <c>false</c> otherwise.</value>
         bool ContainsUpdates { get; }
 
         /// <summary>

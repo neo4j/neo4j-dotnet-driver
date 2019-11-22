@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal.IO
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             writer.Write(new RunWithMetadataMessage(
-                new Statement("RETURN $x", new Dictionary<string, object> {{"x", 1L}}), AccessMode.Read));
+                new Query("RETURN $x", new Dictionary<string, object> {{"x", 1L}}), AccessMode.Read));
 
             Assert.Empty(stream.ToArray());
         }
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Internal.IO
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             writer.Write(new RunWithMetadataMessage(
-                new Statement("RETURN $x", new Dictionary<string, object> {{"x", 1L}}), AccessMode.Read));
+                new Query("RETURN $x", new Dictionary<string, object> {{"x", 1L}}), AccessMode.Read));
 
             await writer.FlushAsync();
 
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Internal.IO
             var writer = new MessageWriter(stream, CreatePackStreamFactory());
 
             writer.Write(
-                new RunWithMetadataMessage(new Statement("RETURN $x", new Dictionary<string, object> {{"x", 1L}}),
+                new RunWithMetadataMessage(new Query("RETURN $x", new Dictionary<string, object> {{"x", 1L}}),
                     AccessMode.Read));
 
             await writer.FlushAsync();

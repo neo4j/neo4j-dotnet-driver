@@ -18,32 +18,32 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// The type of a statement.
+    /// The type of a query.
     /// </summary>
-    public enum StatementType
+    public enum QueryType
     {
         /// <summary>
-        /// The statement type is unknown
+        /// The query type is unknown
         /// </summary>
         Unknown,
 
         /// <summary>
-        /// The statement is a readonly statement
+        /// The query is a readonly query
         /// </summary>
         ReadOnly,
 
         /// <summary>
-        /// The statement is a readwrite statement
+        /// The query is a readwrite query
         /// </summary>
         ReadWrite,
 
         /// <summary>
-        /// The statement is a writeonly statement
+        /// The query is a writeonly query
         /// </summary>
         WriteOnly,
 
         /// <summary>
-        /// The statement is a schemawrite statement
+        /// The query is a schemawrite query
         /// </summary>
         SchemaWrite
     }

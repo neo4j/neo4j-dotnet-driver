@@ -56,36 +56,36 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnSummaryWithStatementText()
+            public void ShouldReturnSummaryWithQueryText()
             {
-                VerifySummaryStatementTextAndParams("UNWIND RANGE(1, 10) AS n RETURN n, true", null);
+                VerifySummaryQueryTextAndParams("UNWIND RANGE(1, 10) AS n RETURN n, true", null);
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnSummaryWithStatementTextAndParams()
+            public void ShouldReturnSummaryWithQueryTextAndParams()
             {
-                VerifySummaryStatementTextAndParams("UNWIND RANGE(1,$x) AS n RETURN n, $y",
+                VerifySummaryQueryTextAndParams("UNWIND RANGE(1,$x) AS n RETURN n, $y",
                     new {x = 50, y = false});
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnStatementTypeAsWriteOnly()
+            public void ShouldReturnQueryTypeAsWriteOnly()
             {
-                VerifySummary("CREATE (n)", null, MatchesSummary(new {StatementType = StatementType.WriteOnly}));
+                VerifySummary("CREATE (n)", null, MatchesSummary(new {QueryType = QueryType.WriteOnly}));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnStatementTypeAsReadOnly()
+            public void ShouldReturnQueryTypeAsReadOnly()
             {
                 VerifySummary("MATCH (n) RETURN n LIMIT 1", null,
-                    MatchesSummary(new {StatementType = StatementType.ReadOnly}));
+                    MatchesSummary(new {QueryType = QueryType.ReadOnly}));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnStatementTypeAsReadWrite()
+            public void ShouldReturnQueryTypeAsReadWrite()
             {
                 VerifySummary("CREATE (n) RETURN n", null,
-                    MatchesSummary(new {StatementType = StatementType.ReadWrite}));
+                    MatchesSummary(new {QueryType = QueryType.ReadWrite}));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -207,16 +207,16 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                             .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")));
             }
 
-            private void VerifySummaryStatementTextAndParams(string statement, object parameters)
+            private void VerifySummaryQueryTextAndParams(string query, object parameters)
             {
-                VerifySummary(statement, parameters,
-                    MatchesSummary(new {Statement = new Statement(statement, parameters.ToDictionary())}));
+                VerifySummary(query, parameters,
+                    MatchesSummary(new {Query = new Query(query, parameters.ToDictionary())}));
             }
 
-            private void VerifySummary(string statement, object parameters, Func<IResultSummary, bool> predicate)
+            private void VerifySummary(string query, object parameters, Func<IResultSummary, bool> predicate)
             {
                 NewRunnable()
-                    .Run(statement, parameters)
+                    .Run(query, parameters)
                     .Consume()
                     .WaitForCompletion()
                     .AssertEqual(

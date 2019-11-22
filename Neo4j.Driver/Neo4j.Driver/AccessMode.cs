@@ -18,17 +18,17 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Used by driver to route a cypher statement to a write server or a read server.
+    /// Used by driver to route a cypher query to a write server or a read server.
     /// </summary>
     public enum AccessMode
     {
         /// <summary>
-        /// Requires cypher statement to be carried out on a read server
+        /// Requires cypher query to be carried out on a read server
         /// </summary>
         Read,
 
         /// <summary>
-        /// Requires cypher statement to be executed on a write server
+        /// Requires cypher query to be executed on a write server
         /// </summary>
         Write
     }

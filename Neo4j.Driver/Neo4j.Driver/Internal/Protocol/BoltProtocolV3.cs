@@ -58,21 +58,21 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
-        public virtual async Task<IStatementResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Statement statement, bool reactive, IBookmarkTracker bookmarkTracker,
+        public virtual async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+            Query query, bool reactive, IBookmarkTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
             string database, Bookmark bookmark, TransactionConfig configBuilder, long fetchSize = Config.Infinite)
         {
             AssertNullDatabase(database);
 
-            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
-            var streamBuilder = new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
                 resultResourceHandler);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection
                 .EnqueueAsync(
-                    new RunWithMetadataMessage(statement, bookmark, configBuilder, connection.GetEnforcedAccessMode()),
+                    new RunWithMetadataMessage(query, bookmark, configBuilder, connection.GetEnforcedAccessMode()),
                     runHandler,
                     PullAll, pullAllHandler)
                 .ConfigureAwait(false);
@@ -95,15 +95,15 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public virtual async Task<IStatementResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Statement statement, bool reactive, long fetchSize = Config.Infinite)
+        public virtual async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection,
+            Query query, bool reactive, long fetchSize = Config.Infinite)
         {
-            var summaryBuilder = new SummaryBuilder(statement, connection.Server);
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder =
-                new StatementResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+                new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, null);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(statement),
+            await connection.EnqueueAsync(new RunWithMetadataMessage(query),
                     runHandler, PullAll, pullAllHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);

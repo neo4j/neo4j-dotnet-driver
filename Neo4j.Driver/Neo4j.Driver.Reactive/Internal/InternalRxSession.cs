@@ -39,35 +39,35 @@ namespace Neo4j.Driver.Internal
 
         #region Run Methods
 
-        public IRxStatementResult Run(string statement)
+        public IRxResult Run(string query)
         {
-            return Run(statement, null);
+            return Run(query, null);
         }
 
-        public IRxStatementResult Run(string statement, object parameters)
+        public IRxResult Run(string query, object parameters)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()), null);
+            return Run(new Query(query, parameters.ToDictionary()), null);
         }
 
-        public IRxStatementResult Run(Statement statement)
+        public IRxResult Run(Query query)
         {
-            return Run(statement, null);
+            return Run(query, null);
         }
 
-        public IRxStatementResult Run(string statement, Action<TransactionConfigBuilder> action)
+        public IRxResult Run(string query, Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement), action);
+            return Run(new Query(query), action);
         }
 
-        public IRxStatementResult Run(string statement, object parameters, Action<TransactionConfigBuilder> action)
+        public IRxResult Run(string query, object parameters, Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()), action);
+            return Run(new Query(query, parameters.ToDictionary()), action);
         }
 
-        public IRxStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action)
+        public IRxResult Run(Query query, Action<TransactionConfigBuilder> action)
         {
-            return new InternalRxStatementResult(Observable.FromAsync(() => _session.RunAsync(statement, action, false))
-                .Cast<IInternalStatementResultCursor>());
+            return new InternalRxResult(Observable.FromAsync(() => _session.RunAsync(query, action, false))
+                .Cast<IInternalResultCursor>());
         }
 
         #endregion

@@ -85,10 +85,10 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                var statement = new Statement("lala");
-                await tx.RunAsync(statement);
+                var query = new Query("lala");
+                await tx.RunAsync(query);
 
-                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, false, It.IsAny<long>()));
+                protocol.Verify(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
             }
 
             [Fact]
@@ -108,12 +108,12 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-                var statement = new Statement("lala");
+                var query = new Query("lala");
 
-                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), statement, false, It.IsAny<long>()))
+                protocol.Setup(x => x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
                     .Throws<Neo4jException>();
 
-                var error = await ExceptionAsync(() => tx.RunAsync(statement));
+                var error = await ExceptionAsync(() => tx.RunAsync(query));
                 error.Should().BeOfType<Neo4jException>();
             }
         }
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.Tests
                 tx.MarkToClose();
 
                 tx.Awaiting(t => t.RunAsync("should not run")).Should().Throw<ClientException>().Which.Message.Should()
-                    .StartWith("Cannot run statement in this transaction");
+                    .StartWith("Cannot run query in this transaction");
                 protocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }

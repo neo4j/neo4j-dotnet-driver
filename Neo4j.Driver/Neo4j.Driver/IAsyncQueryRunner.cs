@@ -21,57 +21,57 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///  Common interface for components that can execute Neo4j statements.
+    ///  Common interface for components that can execute Neo4j queries.
     /// </summary>
     /// <remarks>
     /// <see cref="IAsyncSession"/> and <see cref="IAsyncTransaction"/>
     /// </remarks>
-    public interface IAsyncStatementRunner
+    public interface IAsyncQueryRunner
     {
         /// <summary>
         /// 
-        /// Asynchronously run a statement and return a task of result stream.
+        /// Asynchronously run a query and return a task of result stream.
         ///
-        /// This method accepts a String representing a Cypher statement which will be 
+        /// This method accepts a String representing a Cypher query which will be 
         /// compiled into a query object that can be used to efficiently execute this
-        /// statement multiple times. This method optionally accepts a set of parameters
-        /// which will be injected into the query object statement by Neo4j. 
+        /// query multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object query by Neo4j. 
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="query">A Cypher query.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(string statement);
+        Task<IResultCursor> RunAsync(string query);
 
         /// <summary>
-        /// Asynchronously execute a statement and return a task of result stream.
+        /// Asynchronously execute a query and return a task of result stream.
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="query">A Cypher query.</param>
         /// <param name="parameters">A parameter dictionary which is made of prop.Name=prop.Value pairs would be created.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(string statement, object parameters);
+        Task<IResultCursor> RunAsync(string query, object parameters);
 
         /// <summary>
         /// 
-        /// Asynchronously run a statement and return a task of result stream.
+        /// Asynchronously run a query and return a task of result stream.
         ///
-        /// This method accepts a String representing a Cypher statement which will be 
+        /// This method accepts a String representing a Cypher query which will be 
         /// compiled into a query object that can be used to efficiently execute this
-        /// statement multiple times. This method optionally accepts a set of parameters
-        /// which will be injected into the query object statement by Neo4j. 
+        /// query multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object query by Neo4j. 
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
-        /// <param name="parameters">Input parameters for the statement.</param>
+        /// <param name="query">A Cypher query.</param>
+        /// <param name="parameters">Input parameters for the query.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters);
+        Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters);
 
         /// <summary>
         ///
-        /// Asynchronously execute a statement and return a task of result stream.
+        /// Asynchronously execute a query and return a task of result stream.
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
+        /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(Statement statement);
+        Task<IResultCursor> RunAsync(Query query);
     }
 }

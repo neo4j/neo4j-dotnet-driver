@@ -48,12 +48,12 @@ namespace Neo4j.Driver.Tests
                 new object[] {ResetMessage.Reset, "RESET"},
                 new object[]
                 {
-                    new RunWithMetadataMessage(new Statement("A statement", new Dictionary<string, object>
+                    new RunWithMetadataMessage(new Query("A query", new Dictionary<string, object>
                     {
                         {"key1", 1},
                         {"key2", new[] {2, 4}}
                     }), "my-database", Bookmark.From("bookmark-1"), TransactionConfig.Default, AccessMode.Read),
-                    "RUN `A statement`, [{key1, 1}, {key2, [2, 4]}] [{bookmarks, [bookmark-1]}, {mode, r}, {db, my-database}]"
+                    "RUN `A query`, [{key1, 1}, {key2, [2, 4]}] [{bookmarks, [bookmark-1]}, {mode, r}, {db, my-database}]"
                 },
                 new object[] {new PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},
                 new object[] {new PullMessage(2), "PULL [{n, 2}]"},

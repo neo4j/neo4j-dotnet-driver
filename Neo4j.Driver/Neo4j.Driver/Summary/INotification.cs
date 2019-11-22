@@ -17,9 +17,9 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// Representation for notifications found when executing a statement.
+    /// Representation for notifications found when executing a query.
     /// 
-    /// A notification can be visualized in a client pinpointing problems or other information about the statement.
+    /// A notification can be visualized in a client pinpointing problems or other information about the query.
     /// </summary>
     public interface INotification
     {
@@ -39,7 +39,7 @@ namespace Neo4j.Driver
         string Description { get; }
 
         /// <summary>
-        ///Gets the position in the statement where this notification points to.
+        ///Gets the position in the query where this notification points to.
         ///Not all notifications have a unique position to point to and in that case the position would be set to all 0s.
         /// </summary>
         IInputPosition Position { get; }

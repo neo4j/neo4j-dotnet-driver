@@ -219,14 +219,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
         private class ConfigurableTransactionWork
         {
-            private readonly string _statement;
+            private readonly string _query;
             private int _invocations;
             private IEnumerator<Exception> _syncFailures;
             private IEnumerator<Exception> _reactiveFailures;
 
-            public ConfigurableTransactionWork(string statement)
+            public ConfigurableTransactionWork(string query)
             {
-                _statement = statement;
+                _query = query;
                 _invocations = 0;
                 _syncFailures = Enumerable.Empty<Exception>().GetEnumerator();
                 _reactiveFailures = Enumerable.Empty<Exception>().GetEnumerator();
@@ -258,7 +258,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     return Observable.Throw<int>(_reactiveFailures.Current);
                 }
 
-                return txc.Run(_statement).Records().Select(r => r[0].As<int>());
+                return txc.Run(_query).Records().Select(r => r[0].As<int>());
             }
         }
     }
