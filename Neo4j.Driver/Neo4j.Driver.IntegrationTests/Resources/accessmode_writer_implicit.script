@@ -1,7 +1,8 @@
-!: AUTO INIT
+!: BOLT 3
+!: AUTO HELLO
 !: AUTO RESET
 
-C:  RUN "CREATE (n: { id: $x }) RETURN $x" {"x": 1}
+C:  RUN "CREATE (n: { id: $x }) RETURN $x" {"x": 1} {}
     PULL_ALL
 S:  SUCCESS {"fields": ["x"]}
     RECORD [1]

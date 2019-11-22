@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests
         public async Task ShouldFailWithAuthenticationError()
         {
             Exception exception = null;
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake")))
+            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
             {
                 var session = driver.Session();
                 try
@@ -61,22 +61,19 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public async Task ShouldConnectClusterWithRoutingScheme()
         {
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
+            var session = Driver.Session();
+            try
             {
-                var session = driver.Session();
-                try
-                {
-                    var result = await session.RunAsync("UNWIND range(1,10000) AS x RETURN sum(x)");
-                    var read = await result.FetchAsync();
-                    read.Should().BeTrue();
-                    result.Current[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
-                    read = await result.FetchAsync();
-                    read.Should().BeFalse();
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
+                var result = await session.RunAsync("UNWIND range(1,10000) AS x RETURN sum(x)");
+                var read = await result.FetchAsync();
+                read.Should().BeTrue();
+                result.Current[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
+                read = await result.FetchAsync();
+                read.Should().BeFalse();
+            }
+            finally
+            {
+                await session.CloseAsync();
             }
         }
 
@@ -84,7 +81,7 @@ namespace Neo4j.Driver.IntegrationTests
         public async Task ShouldThrowServiceUnavailableExceptionIfNoServer()
         {
             Exception error = null;
-            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake")))
+            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
             {
                 var session = driver.Session();
                 try
@@ -103,7 +100,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public async Task ShouldDisallowMoreStatementAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
             var session = driver.Session();
             var result = await session.RunAsync("RETURN 1");
             await result.FetchAsync();
@@ -118,7 +115,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public async Task ShouldDisallowMoreConnectionsAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
             var session = driver.Session();
             var result = await session.RunAsync("RETURN 1");
             await result.FetchAsync();
@@ -141,7 +138,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
-                EncryptionLevel = EncryptionLevel.Encrypted,
+                EncryptionLevel = EncryptionLevel.None,
                 MaxConnectionPoolSize = 100,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5)
             });

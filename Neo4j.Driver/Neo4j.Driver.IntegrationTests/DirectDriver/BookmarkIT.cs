@@ -111,7 +111,7 @@ namespace Neo4j.Driver.IntegrationTests
                 // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
                 var exception = Record.Exception(() => session.BeginTransaction(session.LastBookmark + "0"));
                 exception.Should().BeOfType<TransientException>();
-                exception.Message.Should().Contain("Database not up to the requested version:");
+                exception.Message.Should().Contain("not up to the requested version:");
             }
         }
 

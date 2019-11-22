@@ -33,6 +33,7 @@ namespace Neo4j.Driver.Internal.Routing
         public static readonly ServerVersion V3_2_0 = new ServerVersion(3, 2, 0);
         public static readonly ServerVersion V3_3_0 = new ServerVersion(3, 3, 0);
         public static readonly ServerVersion V3_4_0 = new ServerVersion(3, 4, 0);
+        public static readonly ServerVersion V4_0_0 = new ServerVersion(4, 0, 0);
 
         private static readonly Regex VersionRegex = new Regex(@"(Neo4j/)?(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?", RegexOptions.IgnoreCase);
 
