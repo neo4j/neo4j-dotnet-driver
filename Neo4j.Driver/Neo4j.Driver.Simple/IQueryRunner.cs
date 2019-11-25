@@ -21,55 +21,55 @@ using System.Collections.Generic;
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///  Common interface for components that can execute Neo4j statements.
+    ///  Common interface for components that can execute Neo4j queries.
     /// </summary>
     /// <remarks>
     /// <see cref="IAsyncSession"/> and <see cref="IAsyncTransaction"/>
     /// </remarks>
-    public interface IStatementRunner : IDisposable
+    public interface IQueryRunner : IDisposable
     {
         /// <summary>
         /// 
-        /// Run a statement and return a result stream.
+        /// Run a query and return a result stream.
         ///
-        /// This method accepts a String representing a Cypher statement which will be 
+        /// This method accepts a String representing a Cypher query which will be 
         /// compiled into a query object that can be used to efficiently execute this
-        /// statement multiple times. 
+        /// query multiple times. 
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="query">A Cypher query.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(string statement);
+        IResult Run(string query);
 
         /// <summary>
-        /// Execute a statement and return a result stream.
+        /// Execute a query and return a result stream.
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="query">A Cypher query.</param>
         /// <param name="parameters">A parameter dictionary which is made of prop.Name=prop.Value pairs would be created.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(string statement, object parameters);
+        IResult Run(string query, object parameters);
 
         /// <summary>
         /// 
-        /// Run a statement and return a result stream.
+        /// Run a query and return a result stream.
         ///
-        /// This method accepts a String representing a Cypher statement which will be 
+        /// This method accepts a String representing a Cypher query which will be 
         /// compiled into a query object that can be used to efficiently execute this
-        /// statement multiple times. This method optionally accepts a set of parameters
-        /// which will be injected into the query object statement by Neo4j. 
+        /// query multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object query by Neo4j. 
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
-        /// <param name="parameters">Input parameters for the statement.</param>
+        /// <param name="query">A Cypher query.</param>
+        /// <param name="parameters">Input parameters for the query.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(string statement, IDictionary<string, object> parameters);
+        IResult Run(string query, IDictionary<string, object> parameters);
 
         /// <summary>
         ///
-        /// Execute a statement and return a result stream.
+        /// Execute a query and return a result stream.
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
+        /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
-        IStatementResult Run(Statement statement);
+        IResult Run(Query query);
     }
 }

@@ -24,14 +24,14 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class StatementResultCursorExtensionsTests
+    public class ResultCursorExtensionsTests
     {
         public class SingleAsyncMethod
         {
             [Fact]
             public async Task ShouldReturnSingleRecord()
             {
-                var mock = new Mock<IStatementResultCursor>();
+                var mock = new Mock<IResultCursor>();
                 var recordMock = new Mock<IRecord>();
                 mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
                 mock.Setup(x => x.Current).Returns(recordMock.Object);
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldThrowExceptionIfMoreThanOneRecord()
             {
-                var mock = new Mock<IStatementResultCursor>();
+                var mock = new Mock<IResultCursor>();
                 var recordMock = new Mock<IRecord>();
                 mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(true);
                 mock.Setup(x => x.Current).Returns(recordMock.Object);
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldThrowExceptionIfNoRecord()
             {
-                var mock = new Mock<IStatementResultCursor>();
+                var mock = new Mock<IResultCursor>();
                 var recordMock = new Mock<IRecord>();
                 mock.Setup(x => x.FetchAsync()).ReturnsAsync(false);
                 mock.Setup(x => x.Current).Returns(recordMock.Object);
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldThrowExceptionIfNullResult()
             {
-                IStatementResultCursor result = null;
+                IResultCursor result = null;
                 var exception = await Record.ExceptionAsync(()=>result.SingleAsync());
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldReturnEmptyListIfNoRecord()
             {
-                var mock = new Mock<IStatementResultCursor>();
+                var mock = new Mock<IResultCursor>();
                 mock.Setup(x => x.FetchAsync()).ReturnsAsync(false);
 
                 var list = await mock.Object.ToListAsync();
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldReturnList()
             {
-                var mock = new Mock<IStatementResultCursor>();
+                var mock = new Mock<IResultCursor>();
                 mock.SetupSequence(x => x.FetchAsync()).
                     ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
                 var record0 = new Mock<IRecord>().Object;
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldThrowExceptionIfNullResult()
             {
-                IStatementResultCursor result = null;
+                IResultCursor result = null;
                 var exception = await Record.ExceptionAsync(() => result.ToListAsync());
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -117,7 +117,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldThrowExceptionIfNullResult()
             {
-                IStatementResultCursor result = null;
+                IResultCursor result = null;
                 var exception = await Record.ExceptionAsync(() => result.ForEachAsync(r => { }));
                 exception.Should().BeOfType<ArgumentNullException>();
             }
@@ -125,7 +125,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldApplyOnEachElement()
             {
-                var mock = new Mock<IStatementResultCursor>();
+                var mock = new Mock<IResultCursor>();
                 mock.SetupSequence(x => x.FetchAsync()).
                     ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
                 var record = new Mock<IRecord>().Object;

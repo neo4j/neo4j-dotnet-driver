@@ -24,7 +24,7 @@ using static Neo4j.Driver.Internal.Util.ConfigBuilders;
 
 namespace Neo4j.Driver.Internal
 {
-    internal partial class AsyncSession : AsyncStatementRunner, IInternalAsyncSession
+    internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     {
         // If the connection is ever successfully created, 
         // then it is session's responsibility to dispose them properly
@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal
 
         private readonly AccessMode _defaultMode;
         private IConnection _connection;
-        private Task<IStatementResultCursor> _result; // last session run result if any
+        private Task<IResultCursor> _result; // last session run result if any
 
         private AsyncTransaction _transaction;
 
@@ -64,24 +64,24 @@ namespace Neo4j.Driver.Internal
             UpdateBookmark(bookmark);
         }
 
-        public Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action)
+        public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
         {
-            return RunAsync(statement, action, true);
+            return RunAsync(query, action, true);
         }
-        public Task<IStatementResultCursor> RunAsync(string statement, Action<TransactionConfigBuilder> action)
+        public Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action)
         {
-            return RunAsync(new Statement(statement), action);
+            return RunAsync(new Query(query), action);
         }
 
-        public Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters,
+        public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters,
             Action<TransactionConfigBuilder> action)
         {
-            return RunAsync(new Statement(statement, parameters), action);
+            return RunAsync(new Query(query, parameters), action);
         }
 
-        public override Task<IStatementResultCursor> RunAsync(Statement statement)
+        public override Task<IResultCursor> RunAsync(Query query)
         {
-            return RunAsync(statement, null);
+            return RunAsync(query, null);
         }
 
         public Task<IAsyncTransaction> BeginTransactionAsync()
@@ -111,18 +111,18 @@ namespace Neo4j.Driver.Internal
             return tx;
         }
 
-        public Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action,
+        public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action,
             bool disposeUnconsumedSessionResult)
         {
             var options = BuildTransactionConfig(action);
             var result = TryExecuteAsync(_logger, async () =>
             {
-                await EnsureCanRunMoreStatementsAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
+                await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
                 _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, _bookmark)
                     .ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
                 return await protocol
-                    .RunInAutoCommitTransactionAsync(_connection, statement, _reactive, this, this, _database,
+                    .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
                         _bookmark, options, _fetchSize)
                     .ConfigureAwait(false);
             });
@@ -214,7 +214,7 @@ namespace Neo4j.Driver.Internal
             Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
         {
             var options = BuildTransactionConfig(action);
-            await EnsureCanRunMoreStatementsAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
+            await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, _bookmark).ConfigureAwait(false);
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize);

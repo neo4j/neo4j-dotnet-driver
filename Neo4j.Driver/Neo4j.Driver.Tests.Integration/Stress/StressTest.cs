@@ -287,7 +287,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                             .Select(index => (batchIndex * batchSize) + index)
                             .Batch(batchBuffer)
                             .Select(indices =>
-                                txc.RunAsync(CreateBatchNodesStatement(indices))
+                                txc.RunAsync(CreateBatchNodesQuery(indices))
                                     .ContinueWith(t => t.Result.ConsumeAsync()).Unwrap()).ToArray()));
                 }
             }
@@ -301,9 +301,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             return session.LastBookmark;
         }
 
-        private Statement CreateBatchNodesStatement(IEnumerable<int> batch)
+        private Query CreateBatchNodesQuery(IEnumerable<int> batch)
         {
-            return new Statement("UNWIND $values AS props CREATE (n:Test:Node) SET n = props", new
+            return new Query("UNWIND $values AS props CREATE (n:Test:Node) SET n = props", new
             {
                 values = batch.Select(nodeIndex => new
                 {
@@ -390,7 +390,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     session.WriteTransaction(txc =>
                         Enumerable.Range(1, batchSize)
                             .Select(item => (index * batchSize) + item)
-                            .Batch(batchBuffer).Select(indices => txc.Run(CreateBatchNodesStatement(indices)).Consume())
+                            .Batch(batchBuffer).Select(indices => txc.Run(CreateBatchNodesQuery(indices)).Consume())
                             .ToArray());
                 }
 
@@ -464,7 +464,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                     session.WriteTransaction(txc => Observable.Range(1, batchSize)
                         .Select(index => (batchIndex * batchSize) + index)
                         .Buffer(batchBuffer)
-                        .SelectMany(batch => txc.Run(CreateBatchNodesStatement(batch)).Consume())
+                        .SelectMany(batch => txc.Run(CreateBatchNodesQuery(batch)).Consume())
                     ))
                 .Concat()
                 .Concat(session.Close<IResultSummary>()).CatchAndThrow(_ => session.Close<IResultSummary>())
@@ -669,9 +669,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 {
                     while (!_token.IsCancellationRequested)
                     {
-                        foreach (var (accessMode, statement) in Queries)
+                        foreach (var (accessMode, query) in Queries)
                         {
-                            RunWithNoTx(accessMode, statement);
+                            RunWithNoTx(accessMode, query);
                         }
                     }
                 }
@@ -687,9 +687,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 {
                     while (!_token.IsCancellationRequested)
                     {
-                        foreach (var (accessMode, statement) in Queries)
+                        foreach (var (accessMode, query) in Queries)
                         {
-                            RunWithTxFunc(accessMode, statement);
+                            RunWithTxFunc(accessMode, query);
                         }
                     }
                 }
@@ -699,25 +699,25 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 }
             }
 
-            private void RunWithNoTx(AccessMode mode, string statement)
+            private void RunWithNoTx(AccessMode mode, string query)
             {
                 using (var session = _driver.Session(o => o.WithDefaultAccessMode(mode)))
                 {
-                    Execute(session, statement);
+                    Execute(session, query);
                 }
             }
 
-            private void RunWithTxFunc(AccessMode mode, string statement)
+            private void RunWithTxFunc(AccessMode mode, string query)
             {
                 using (var session = _driver.Session())
                 {
                     switch (mode)
                     {
                         case AccessMode.Read:
-                            session.ReadTransaction(txc => Execute(txc, statement));
+                            session.ReadTransaction(txc => Execute(txc, query));
                             break;
                         case AccessMode.Write:
-                            session.WriteTransaction(txc => Execute(txc, statement));
+                            session.WriteTransaction(txc => Execute(txc, query));
                             break;
                         default:
                             throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
@@ -725,9 +725,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 }
             }
 
-            private IResultSummary Execute(IStatementRunner runner, string statement)
+            private IResultSummary Execute(IQueryRunner runner, string query)
             {
-                var result = runner.Run(statement);
+                var result = runner.Run(query);
                 Thread.Sleep(_rnd.Next(100));
                 result.Consume();
                 Thread.Sleep(_rnd.Next(100));

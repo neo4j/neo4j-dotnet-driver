@@ -44,17 +44,17 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
 
             _summaryBuilder.ResultAvailableAfter = GetMetadata<TimeToFirstCollector, long>();
 
-            _streamBuilder.RunCompleted(NoStatementId, GetMetadata<FieldsCollector, string[]>(), null);
+            _streamBuilder.RunCompleted(NoQueryId, GetMetadata<FieldsCollector, string[]>(), null);
         }
 
         public override void OnFailure(IResponsePipelineError error)
         {
-            _streamBuilder.RunCompleted(NoStatementId, null, error);
+            _streamBuilder.RunCompleted(NoQueryId, null, error);
         }
 
         public override void OnIgnored()
         {
-            _streamBuilder.RunCompleted(NoStatementId, null, null);
+            _streamBuilder.RunCompleted(NoQueryId, null, null);
         }
     }
 }

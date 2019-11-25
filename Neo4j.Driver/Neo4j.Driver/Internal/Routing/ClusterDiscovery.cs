@@ -42,16 +42,16 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
         }
 
-        internal Statement DiscoveryProcedure(IConnection connection, string database)
+        internal Query DiscoveryProcedure(IConnection connection, string database)
         {
             if (connection.SupportsMultidatabase())
             {
-                return new Statement(GetRoutingTableForDatabaseProcedure,
+                return new Query(GetRoutingTableForDatabaseProcedure,
                     new Dictionary<string, object>
                         {{"context", _context}, {"database", string.IsNullOrEmpty(database) ? null : database}});
             }
 
-            return new Statement(GetRoutingTableProcedure,
+            return new Query(GetRoutingTableProcedure,
                 new Dictionary<string, object> {{"context", _context}});
         }
 

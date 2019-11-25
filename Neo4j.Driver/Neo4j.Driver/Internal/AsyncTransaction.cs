@@ -27,7 +27,7 @@ using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class AsyncTransaction : AsyncStatementRunner, IInternalAsyncTransaction, IBookmarkTracker
+    internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, IBookmarkTracker
     {
         private static readonly IState Active = new ActiveState();
         private static readonly IState Committed = new CommittedState();
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal
         private readonly ILogger _logger;
         private readonly long _fetchSize;
 
-        private readonly IList<Task<IStatementResultCursor>> _results = new List<Task<IStatementResultCursor>>();
+        private readonly IList<Task<IResultCursor>> _results = new List<Task<IResultCursor>>();
 
         public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
             ILogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false,
@@ -70,9 +70,9 @@ namespace Neo4j.Driver.Internal
             return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, configBuilder);
         }
 
-        public override Task<IStatementResultCursor> RunAsync(Statement statement)
+        public override Task<IResultCursor> RunAsync(Query query)
         {
-            var result = _state.RunAsync(statement, _connection, _protocol, _logger, _reactive, _fetchSize, out var nextState);
+            var result = _state.RunAsync(query, _connection, _protocol, _logger, _reactive, _fetchSize, out var nextState);
             _state = nextState;
             _results.Add(result);
             return result;
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Internal
         {
             foreach (var result in _results)
             {
-                IStatementResultCursor cursor = null;
+                IResultCursor cursor = null;
                 try
                 {
                     cursor = await result.ConfigureAwait(false);
@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Internal
 
         private interface IState
         {
-            Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection, IBoltProtocol protocol,
+            Task<IResultCursor> RunAsync(Query query, IConnection connection, IBoltProtocol protocol,
                 ILogger logger, bool reactive, long fetchSize, out IState nextState);
 
             Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
@@ -186,12 +186,12 @@ namespace Neo4j.Driver.Internal
 
         private class ActiveState : IState
         {
-            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+            public Task<IResultCursor> RunAsync(Query query, IConnection connection,
                 IBoltProtocol protocol, ILogger logger, bool reactive, long fetchSize,
                 out IState nextState)
             {
                 nextState = Active;
-                return protocol.RunInExplicitTransactionAsync(connection, statement, reactive, fetchSize);
+                return protocol.RunInExplicitTransactionAsync(connection, query, reactive, fetchSize);
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
@@ -211,13 +211,13 @@ namespace Neo4j.Driver.Internal
 
         private class CommittedState : IState
         {
-            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+            public Task<IResultCursor> RunAsync(Query query, IConnection connection,
                 IBoltProtocol protocol, ILogger logger, bool reactive,
                 long fetchSize,
                 out IState nextState)
             {
                 throw new ClientException(
-                    "Cannot run statement in this transaction, because it has already been committed.");
+                    "Cannot run query in this transaction, because it has already been committed.");
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
@@ -235,13 +235,13 @@ namespace Neo4j.Driver.Internal
 
         private class RolledBackState : IState
         {
-            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+            public Task<IResultCursor> RunAsync(Query query, IConnection connection,
                 IBoltProtocol protocol, ILogger logger, bool reactive,
                 long fetchSize,
                 out IState nextState)
             {
                 throw new ClientException(
-                    "Cannot run statement in this transaction, because it has already been rolled back.");
+                    "Cannot run query in this transaction, because it has already been rolled back.");
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
@@ -259,13 +259,13 @@ namespace Neo4j.Driver.Internal
 
         private class FailedState : IState
         {
-            public Task<IStatementResultCursor> RunAsync(Statement statement, IConnection connection,
+            public Task<IResultCursor> RunAsync(Query query, IConnection connection,
                 IBoltProtocol protocol, ILogger logger, bool reactive,
                 long fetchSize,
                 out IState nextState)
             {
                 throw new ClientException(
-                    "Cannot run statement in this transaction, because it has been rolled back either because of an error or explicit termination.");
+                    "Cannot run query in this transaction, because it has been rolled back either because of an error or explicit termination.");
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,

@@ -88,8 +88,8 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var writerMock = new Mock<IMessageWriter>();
 
-                var m1 = new RunWithMetadataMessage(new Statement("Run message 1"), AccessMode.Write);
-                var m2 = new RunWithMetadataMessage(new Statement("Run message 2"), AccessMode.Read);
+                var m1 = new RunWithMetadataMessage(new Query("Run message 1"), AccessMode.Write);
+                var m2 = new RunWithMetadataMessage(new Query("Run message 2"), AccessMode.Read);
                 var messages = new IRequestMessage[] {m1, m2};
                 var client = new SocketClient(null, writerMock.Object);
 

@@ -55,7 +55,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnError<int>(0,
                         MatchesException<ClientException>(e =>
-                            e.Message.Contains("consume the current statement result before"))));
+                            e.Message.Contains("consume the current query result before"))));
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -136,7 +136,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnError<int>(0,
                         MatchesException<ClientException>(e =>
-                            e.Message.Contains("consume the current statement result before"))));
+                            e.Message.Contains("consume the current query result before"))));
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]

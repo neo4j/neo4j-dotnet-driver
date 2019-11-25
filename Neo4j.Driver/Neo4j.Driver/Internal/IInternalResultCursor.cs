@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Internal
 {
-    internal interface IInternalStatementResultCursor : IStatementResultCursor
+    internal interface IInternalResultCursor : IResultCursor
     {
         void Cancel();
     }

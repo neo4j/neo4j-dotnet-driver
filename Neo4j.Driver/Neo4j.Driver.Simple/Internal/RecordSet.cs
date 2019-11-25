@@ -27,10 +27,10 @@ namespace Neo4j.Driver.Internal
 
     internal class RecordSet : IRecordSet
     {
-        private readonly IStatementResultCursor _cursor;
+        private readonly IResultCursor _cursor;
         private readonly BlockingExecutor _executor;
 
-        public RecordSet(IStatementResultCursor cursor, BlockingExecutor executor)
+        public RecordSet(IResultCursor cursor, BlockingExecutor executor)
         {
             _cursor = cursor;
             _executor = executor;

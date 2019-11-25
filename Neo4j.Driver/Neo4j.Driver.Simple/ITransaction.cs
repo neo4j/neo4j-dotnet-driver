@@ -26,7 +26,7 @@ namespace Neo4j.Driver
     /// It is designed to minimize the complexity of the code you need to write to use transactions in a safe way, ensuring
     /// that transactions are properly rolled back even if there is an exception while the transaction is running.
     /// </summary>
-    public interface ITransaction : IStatementRunner
+    public interface ITransaction : IQueryRunner
     {
         /// <summary>
         /// Mark this transaction as successful. You must call this method before calling <see cref="IDisposable.Dispose"/> to have your

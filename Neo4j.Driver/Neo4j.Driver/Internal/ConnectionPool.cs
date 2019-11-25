@@ -453,7 +453,7 @@ namespace Neo4j.Driver.Internal
             throw new ClientException(
                 $"Failed to acquire a connection from connection pool for server with URI `{_uri}` " +
                 "as this server has already been removed from routing table. " +
-                "Please retry your statement again and you should be routed with a different server from the new routing table. " +
+                "Please retry your query again and you should be routed with a different server from the new routing table. " +
                 "You should not see this error persistently.");
         }
 

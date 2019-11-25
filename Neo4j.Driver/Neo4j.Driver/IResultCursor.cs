@@ -26,8 +26,8 @@ namespace Neo4j.Driver
     /// Provides access to the result as an asynchronous stream of <see cref="IRecord"/>s.
     /// The records in the result is lazily retrieved and could only be visited once in a sequential order.
     /// </summary>
-    /// <remarks> Calling <see cref="StatementResultCursorExtensions.ToListAsync"/> will enumerate the entire stream.</remarks>
-    public interface IStatementResultCursor
+    /// <remarks> Calling <see cref="ResultCursorExtensions.ToListAsync"/> will enumerate the entire stream.</remarks>
+    public interface IResultCursor
     {
         /// <summary>
         /// Gets the keys in the result.
@@ -40,11 +40,11 @@ namespace Neo4j.Driver
         /// then calling this method will discard all remaining records to yield the summary.
         ///
         /// If you want to obtain the summary without discarding the records,
-        /// consider buffering the unconsumed result using <see cref="StatementResultCursorExtensions.ToListAsync"/>.
+        /// consider buffering the unconsumed result using <see cref="ResultCursorExtensions.ToListAsync"/>.
         ///
         /// If all records in the records stream are already consumed, then this method will return the summary directly.
         /// </summary>
-        /// <returns>A task returning the result summary of the running statement.</returns>
+        /// <returns>A task returning the result summary of the running query.</returns>
         Task<IResultSummary> ConsumeAsync();
 
         /// <summary>

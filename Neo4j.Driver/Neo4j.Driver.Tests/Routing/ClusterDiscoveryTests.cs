@@ -59,11 +59,11 @@ namespace Neo4j.Driver.Tests.Routing
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
                 // When
-                var statement = discovery.DiscoveryProcedure(mock.Object, null);
+                var query = discovery.DiscoveryProcedure(mock.Object, null);
                 // Then
-                statement.Text.Should()
+                query.Text.Should()
                     .Be("CALL dbms.cluster.routing.getRoutingTable($context)");
-                statement.Parameters["context"].Should().Be(context);
+                query.Parameters["context"].Should().Be(context);
             }
 
             [Theory]
@@ -83,12 +83,12 @@ namespace Neo4j.Driver.Tests.Routing
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
                 // When
-                var statement = discovery.DiscoveryProcedure(mock.Object, "foo");
+                var query = discovery.DiscoveryProcedure(mock.Object, "foo");
                 // Then
-                statement.Text.Should()
+                query.Text.Should()
                     .Be("CALL dbms.routing.getRoutingTable($context, $database)");
-                statement.Parameters["context"].Should().Be(context);
-                statement.Parameters["database"].Should().Be("foo");
+                query.Parameters["context"].Should().Be(context);
+                query.Parameters["database"].Should().Be("foo");
             }
         }
 
@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
                 {
                     MessagePair(
-                        new RunWithMetadataMessage(new Statement("CALL dbms.cluster.routing.getRoutingTable($context)",
+                        new RunWithMetadataMessage(new Query("CALL dbms.cluster.routing.getRoutingTable($context)",
                             new Dictionary<string, object> {{"context", null}}), AccessMode.Write),
                         new FailureMessage("Neo.ClientError.Procedure.ProcedureNotFound", "not found")),
                     MessagePair(PullAll, Ignored)
@@ -263,7 +263,7 @@ namespace Neo4j.Driver.Tests.Routing
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
-                MessagePair(new RunWithMetadataMessage(new Statement(
+                MessagePair(new RunWithMetadataMessage(new Query(
                         "CALL dbms.cluster.routing.getRoutingTable($context)",
                         new Dictionary<string, object> {{"context", routingContext}}), AccessMode.Write),
                     SuccessMessage(new List<object> {"ttl", "servers"})),
@@ -281,7 +281,7 @@ namespace Neo4j.Driver.Tests.Routing
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
-                MessagePair(new RunWithMetadataMessage(new Statement(
+                MessagePair(new RunWithMetadataMessage(new Query(
                             "CALL dbms.routing.getRoutingTable($context, $database)",
                             new Dictionary<string, object>
                             {

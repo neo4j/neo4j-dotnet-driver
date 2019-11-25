@@ -29,7 +29,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    public class StatementResultCursorTests
+    public class ResultCursorTests
     {
         public class Constructor
         {
@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(new[] {"test"}));
 
                 var result =
-                    new StatementResultCursor(stream.Object);
+                    new ResultCursor(stream.Object);
                 var keys = await result.KeysAsync();
 
                 keys.Should().HaveCount(1).And.Contain("test");
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
 
-                var cursor = new StatementResultCursor(stream.Object);
+                var cursor = new ResultCursor(stream.Object);
                 var records = new List<IRecord>();
                 while (await cursor.FetchAsync())
                 {
@@ -101,7 +101,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
 
                 int count = 0;
-                var cursor = new StatementResultCursor(stream.Object);
+                var cursor = new ResultCursor(stream.Object);
                 var t = Task.Factory.StartNew(async () =>
                 {
                     // ReSharper disable once LoopCanBeConvertedToQuery
@@ -133,7 +133,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
 
-                var result = new StatementResultCursor(stream.Object);
+                var result = new ResultCursor(stream.Object);
                 var records = new List<IRecord>();
                 var count = 5;
                 while (count > 0 && await result.FetchAsync())
@@ -406,9 +406,9 @@ namespace Neo4j.Driver.Tests
 
         private class FakeSummary : IResultSummary
         {
-            public Statement Statement { get; }
+            public Query Query { get; }
             public ICounters Counters { get; }
-            public StatementType StatementType { get; }
+            public QueryType QueryType { get; }
             public bool HasPlan { get; }
             public bool HasProfile { get; }
             public IPlan Plan { get; }
@@ -434,7 +434,7 @@ namespace Neo4j.Driver.Tests
 
         internal static class ResultCursorCreator
         {
-            public static StatementResultCursor CreateResultCursor(int keySize, int recordSize = 1,
+            public static ResultCursor CreateResultCursor(int keySize, int recordSize = 1,
                 Func<Task<IResultSummary>> getSummaryFunc = null,
                 CancellationTokenSource cancellationTokenSource = null)
             {
@@ -452,7 +452,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.ConsumeAsync()).Returns(getSummaryFunc);
                 stream.Setup(x => x.Cancel()).Callback(() => cancellationTokenSource?.Cancel());
 
-                return new StatementResultCursor(stream.Object);
+                return new ResultCursor(stream.Object);
             }
         }
     }

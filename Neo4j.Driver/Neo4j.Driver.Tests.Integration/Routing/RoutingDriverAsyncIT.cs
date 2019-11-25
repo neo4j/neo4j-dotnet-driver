@@ -101,7 +101,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         }
 
         [RequireClusterFact]
-        public async Task ShouldDisallowMoreStatementAfterDriverDispose()
+        public async Task ShouldDisallowMoreQueryAfterDriverDispose()
         {
             var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
             var session = driver.AsyncSession();

@@ -37,12 +37,12 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            var statement = new Statement("RETURN $x", new Dictionary<string, object>
+            var query = new Query("RETURN $x", new Dictionary<string, object>
             {
                 {"x", 1L}
             });
 
-            writer.Write(new RunWithMetadataMessage(statement, "my-database",
+            writer.Write(new RunWithMetadataMessage(query, "my-database",
                 Bookmark.From(SessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
                 new Dictionary<string, object>
                 {

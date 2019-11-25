@@ -18,7 +18,7 @@
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// An input position refers to a specific character in a statement.
+    /// An input position refers to a specific character in a query.
     /// </summary>
     public interface IInputPosition
     {

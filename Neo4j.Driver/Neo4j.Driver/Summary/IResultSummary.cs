@@ -22,7 +22,7 @@ namespace Neo4j.Driver
     
     /// <summary>
     /// 
-    /// The result summary of running a statement. The result summary interface can be used to investigate
+    /// The result summary of running a query. The result summary interface can be used to investigate
     /// details about the result, like the type of query run, how many and which kinds of updates have been executed,
     /// and query plan and profiling information if available.
     ///
@@ -33,61 +33,61 @@ namespace Neo4j.Driver
     public interface IResultSummary
     {
         /// <summary>
-        /// Gets statement that has been executed.
+        /// Gets query that has been executed.
         /// </summary>
-        Statement Statement { get; }
+        Query Query { get; }
 
         /// <summary>
-        /// Gets statistics counts for the statement.
+        /// Gets statistics counts for the query.
         /// </summary>
         ICounters Counters { get; }
 
         /// <summary>
-        /// Gets type of statement that has been executed.
+        /// Gets type of query that has been executed.
         /// </summary>
-        StatementType StatementType { get; }
+        QueryType QueryType { get; }
 
         /// <summary>
-        /// Gets if the result contained a statement plan or not, i.e. is the summary of a Cypher <c>PROFILE</c> or <c>EXPLAIN</c> statement.
+        /// Gets if the result contained a query plan or not, i.e. is the summary of a Cypher <c>PROFILE</c> or <c>EXPLAIN</c> query.
         /// </summary>
         bool HasPlan { get; }
 
         /// <summary>
-        /// Gets if the result contained profiling information or not, i.e. is the summary of a Cypher <c>PROFILE</c> statement.
+        /// Gets if the result contained profiling information or not, i.e. is the summary of a Cypher <c>PROFILE</c> query.
         /// </summary>
         bool HasProfile { get; }
 
         /// <summary>
-        /// Gets statement plan for the executed statement if available, otherwise null.
+        /// Gets query plan for the executed query if available, otherwise null.
         /// </summary>
         /// <remarks>
-        /// This describes how the database will execute your statement.
+        /// This describes how the database will execute your query.
         /// </remarks>
         IPlan Plan { get; }
 
         /// <summary>
-        /// Gets profiled statement plan for the executed statement if available, otherwise null.
+        /// Gets profiled query plan for the executed query if available, otherwise null.
         /// </summary>
         /// <remarks>
-        /// This describes how the database did execute your statement.
+        /// This describes how the database did execute your query.
         /// 
-        /// If the statement you executed (<see cref="HasProfile"/> was profiled), the statement plan will contain detailed
-        /// information about what each step of the plan did. That more in-depth version of the statement plan becomes
+        /// If the query you executed (<see cref="HasProfile"/> was profiled), the query plan will contain detailed
+        /// information about what each step of the plan did. That more in-depth version of the query plan becomes
         /// available here.
         /// 
         /// </remarks>
         IProfiledPlan Profile { get; }
 
         /// <summary>
-        /// Gets a list of notifications produced while executing the statement. The list will be empty if no
-        /// notifications produced while executing the statement.
+        /// Gets a list of notifications produced while executing the query. The list will be empty if no
+        /// notifications produced while executing the query.
         /// </summary>
         /// <remarks>
-        /// A list of notifications that might arise when executing the statement.
-        /// Notifications can be warnings about problematic statements or other valuable information that can be presented
+        /// A list of notifications that might arise when executing the query.
+        /// Notifications can be warnings about problematic queries or other valuable information that can be presented
         /// in a client.
         /// 
-        /// Unlike failures or errors, notifications do not affect the execution of a statement.
+        /// Unlike failures or errors, notifications do not affect the execution of a query.
         /// 
         /// </remarks>
         IList<INotification> Notifications { get; }
@@ -111,7 +111,7 @@ namespace Neo4j.Driver
         TimeSpan ResultConsumedAfter { get; }
 
         /// <summary>
-        /// Get some basic information of the server where the statement is carried out
+        /// Get some basic information of the server where the query is carried out
         /// </summary>
         IServerInfo Server { get; }
         

@@ -47,14 +47,14 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 try
                 {
-                    // Send cypher statement to the database.
-                    // The existing IStatementResult interface implements IEnumerable
+                    // Send cypher query to the database.
+                    // The existing IResult interface implements IEnumerable
                     // and does not play well with asynchronous use cases. The replacement
-                    // IStatementResultCursor interface is returned from the RunAsync
+                    // IResultCursor interface is returned from the RunAsync
                     // family of methods instead and provides async capable methods. 
                     var reader = await session.RunAsync(
-                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
-                        new {id = 0} // Parameters in the statement, if any
+                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                        new {id = 0} // Parameters in the query, if any
                     );
 
                     // Loop through the records asynchronously
@@ -88,10 +88,10 @@ namespace Neo4j.Driver.ExamplesAsync
                     {
                         var records = new List<string>();
 
-                        // Send cypher statement to the database
+                        // Send cypher query to the database
                         var reader = await tx.RunAsync(
-                            "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
-                            new {id = 0} // Parameters in the statement, if any
+                            "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                            new {id = 0} // Parameters in the query, if any
                         );
 
                         // Loop through the records asynchronously
@@ -125,11 +125,11 @@ namespace Neo4j.Driver.ExamplesAsync
                     // Start an explicit transaction
                     var tx = await session.BeginTransactionAsync();
 
-                    // Send cypher statement to the database through the explicit
+                    // Send cypher query to the database through the explicit
                     // transaction acquired
                     var reader = await tx.RunAsync(
-                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher statement
-                        new {id = 0} // Parameters in the statement, if any
+                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                        new {id = 0} // Parameters in the query, if any
                     );
 
                     // Loop through the records asynchronously
@@ -246,7 +246,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     // When & Then
-                    IStatementResultCursor result = await session.RunAsync("RETURN 1");
+                    IResultCursor result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.FetchAsync();
                     read.Should().BeTrue();
@@ -282,7 +282,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     // When & Then
-                    IStatementResultCursor result = await session.RunAsync("RETURN 1");
+                    IResultCursor result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.FetchAsync();
                     read.Should().BeTrue();
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     // When & Then
-                    IStatementResultCursor result = await session.RunAsync("RETURN 1");
+                    IResultCursor result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.FetchAsync();
                     read.Should().BeTrue();
@@ -354,7 +354,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     // When & Then
-                    IStatementResultCursor result = await session.RunAsync("RETURN 1");
+                    IResultCursor result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.FetchAsync();
                     read.Should().BeTrue();
@@ -390,7 +390,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     // When & Then
-                    IStatementResultCursor result = await session.RunAsync("RETURN 1");
+                    IResultCursor result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.FetchAsync();
                     read.Should().BeTrue();
@@ -428,7 +428,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     // When & Then
-                    IStatementResultCursor result = await session.RunAsync("RETURN 1");
+                    IResultCursor result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.FetchAsync();
                     read.Should().BeTrue();
@@ -518,7 +518,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     // When & Then
-                    IStatementResultCursor result = await session.RunAsync("RETURN 1");
+                    IResultCursor result = await session.RunAsync("RETURN 1");
 
                     bool read = await result.FetchAsync();
                     read.Should().BeTrue();
@@ -888,7 +888,7 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 return await session.ReadTransactionAsync(async tx =>
                 {
-                    IStatementResultCursor result =
+                    IResultCursor result =
                         await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new {name});
 
                     return (await result.SingleAsync())[0].As<int>();
@@ -900,12 +900,12 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-        protected async Task WriteAsync(string statement, object parameters)
+        protected async Task WriteAsync(string query, object parameters)
         {
             var session = Driver.AsyncSession();
             try
             {
-                await session.WriteTransactionAsync(tx => tx.RunAsync(statement, parameters));
+                await session.WriteTransactionAsync(tx => tx.RunAsync(query, parameters));
             }
             finally
             {
@@ -913,12 +913,12 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-        protected async Task WriteAsync(string statement, IDictionary<string, object> parameters = null)
+        protected async Task WriteAsync(string query, IDictionary<string, object> parameters = null)
         {
             var session = Driver.AsyncSession();
             try
             {
-                await session.WriteTransactionAsync(tx => tx.RunAsync(statement, parameters));
+                await session.WriteTransactionAsync(tx => tx.RunAsync(query, parameters));
             }
             finally
             {
@@ -926,7 +926,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-        protected async Task<List<IRecord>> ReadAsync(string statement,
+        protected async Task<List<IRecord>> ReadAsync(string query,
             IDictionary<string, object> parameters = null)
         {
             var session = Driver.AsyncSession();
@@ -935,7 +935,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 return await session.ReadTransactionAsync(
                     async tx =>
                     {
-                        var cursor = await tx.RunAsync(statement, parameters);
+                        var cursor = await tx.RunAsync(query, parameters);
                         return await cursor.ToListAsync();
                     });
             }

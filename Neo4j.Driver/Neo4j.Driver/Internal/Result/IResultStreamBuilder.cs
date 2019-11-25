@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal interface IResultStreamBuilder
     {
-        void RunCompleted(long statementId, string[] fields, IResponsePipelineError error);
+        void RunCompleted(long queryId, string[] fields, IResponsePipelineError error);
 
         void PullCompleted(bool hasMore, IResponsePipelineError error);
 

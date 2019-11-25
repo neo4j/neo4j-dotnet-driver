@@ -35,7 +35,7 @@ namespace Neo4j.Driver
         /// <summary>
         /// Obtain a session with the default <see cref="SessionConfig"/>.
         /// </summary>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
         IAsyncSession AsyncSession();
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="action">An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate
         /// the provided instance with desired <see cref="SessionConfig"/>.</param>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute statements.</returns>
+        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
         IAsyncSession AsyncSession(Action<SessionConfigBuilder> action);
 
         /// <summary>

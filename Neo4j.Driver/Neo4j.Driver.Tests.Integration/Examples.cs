@@ -515,7 +515,7 @@ namespace Neo4j.Driver.Examples
                 }
             }
 
-            private static IStatementResult CreatePersonNode(ITransaction tx, string name)
+            private static IResult CreatePersonNode(ITransaction tx, string name)
             {
                 return tx.Run("CREATE (a:Person {name: $name})", new {name});
             }
@@ -717,20 +717,20 @@ namespace Neo4j.Driver.Examples
 
             // tag::pass-bookmarks[]
             // Create a company node
-            private IStatementResult AddCompany(ITransaction tx, string name)
+            private IResult AddCompany(ITransaction tx, string name)
             {
                 return tx.Run("CREATE (a:Company {name: $name})", new {name});
             }
 
             // Create a person node
-            private IStatementResult AddPerson(ITransaction tx, string name)
+            private IResult AddPerson(ITransaction tx, string name)
             {
                 return tx.Run("CREATE (a:Person {name: $name})", new {name});
             }
 
             // Create an employment relationship to a pre-existing company node.
             // This relies on the person first having been created.
-            private IStatementResult Employ(ITransaction tx, string personName, string companyName)
+            private IResult Employ(ITransaction tx, string personName, string companyName)
             {
                 return tx.Run(@"MATCH (person:Person {name: $personName}) 
                          MATCH (company:Company {name: $companyName}) 
@@ -738,7 +738,7 @@ namespace Neo4j.Driver.Examples
             }
 
             // Create a friendship between two people.
-            private IStatementResult MakeFriends(ITransaction tx, string name1, string name2)
+            private IResult MakeFriends(ITransaction tx, string name1, string name2)
             {
                 return tx.Run(@"MATCH (a:Person {name: $name1}) 
                          MATCH (b:Person {name: $name2})
@@ -873,21 +873,21 @@ namespace Neo4j.Driver.Examples
             return CountNodes("Person", "name", name);
         }
 
-        protected void Write(string statement, object parameters = null)
+        protected void Write(string query, object parameters = null)
         {
             using (var session = Driver.Session())
             {
                 session.WriteTransaction(tx =>
-                    tx.Run(statement, parameters));
+                    tx.Run(query, parameters));
             }
         }
 
-        protected List<IRecord> Read(string statement, object parameters = null)
+        protected List<IRecord> Read(string query, object parameters = null)
         {
             using (var session = Driver.Session())
             {
                 return session.ReadTransaction(tx =>
-                    tx.Run(statement, parameters).ToList());
+                    tx.Run(query, parameters).ToList());
             }
         }
     }

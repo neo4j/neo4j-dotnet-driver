@@ -33,24 +33,24 @@ namespace Neo4j.Driver.Internal
 
         public bool IsOpen => _txc.IsOpen;
 
-        public IStatementResult Run(string statement)
+        public IResult Run(string query)
         {
-            return Run(new Statement(statement));
+            return Run(new Query(query));
         }
 
-        public IStatementResult Run(string statement, object parameters)
+        public IResult Run(string query, object parameters)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()));
+            return Run(new Query(query, parameters.ToDictionary()));
         }
 
-        public IStatementResult Run(string statement, IDictionary<string, object> parameters)
+        public IResult Run(string query, IDictionary<string, object> parameters)
         {
-            return Run(new Statement(statement, parameters));
+            return Run(new Query(query, parameters));
         }
 
-        public IStatementResult Run(Statement statement)
+        public IResult Run(Query query)
         {
-            return new InternalStatementResult(_executor.RunSync(() => _txc.RunAsync(statement)), _executor);
+            return new InternalResult(_executor.RunSync(() => _txc.RunAsync(query)), _executor);
         }
 
         public void Commit()

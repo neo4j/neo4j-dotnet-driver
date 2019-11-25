@@ -23,35 +23,35 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 {
     internal class RunWithMetadataMessage : TransactionStartingMessage
     {
-        public RunWithMetadataMessage(Statement statement, AccessMode mode)
-            : this(statement, null, null, mode)
+        public RunWithMetadataMessage(Query query, AccessMode mode)
+            : this(query, null, null, mode)
         {
         }
 
-        public RunWithMetadataMessage(Statement statement, Bookmark bookmark = null, TransactionConfig configBuilder = null,
+        public RunWithMetadataMessage(Query query, Bookmark bookmark = null, TransactionConfig configBuilder = null,
             AccessMode mode = AccessMode.Write)
-            : this(statement, null, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode)
+            : this(query, null, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode)
         {
         }
 
-        public RunWithMetadataMessage(Statement statement, string database, Bookmark bookmark, TransactionConfig configBuilder,
+        public RunWithMetadataMessage(Query query, string database, Bookmark bookmark, TransactionConfig configBuilder,
             AccessMode mode)
-            : this(statement, database, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode)
+            : this(query, database, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode)
         {
         }
 
-        public RunWithMetadataMessage(Statement statement, string database, Bookmark bookmark, TimeSpan? txTimeout,
+        public RunWithMetadataMessage(Query query, string database, Bookmark bookmark, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode)
             : base(database, bookmark, txTimeout, txMetadata, mode)
         {
-            Statement = statement;
+            Query = query;
         }
 
-        public Statement Statement { get; }
+        public Query Query { get; }
 
         public override string ToString()
         {
-            return $"RUN {Statement} {Metadata.ToContentString()}";
+            return $"RUN {Query} {Metadata.ToContentString()}";
         }
     }
 }

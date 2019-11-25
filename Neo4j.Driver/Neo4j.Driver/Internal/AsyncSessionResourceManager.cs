@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal
         }
 
         /// <summary>
-        ///  This method will be called back by <see cref="StatementResultCursorBuilder"/> after it consumed result
+        ///  This method will be called back by <see cref="ResultCursorBuilder"/> after it consumed result
         /// </summary>
         public Task OnResultConsumedAsync()
         {
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Internal
         {
             if (_result != null)
             {
-                IStatementResultCursor cursor = null;
+                IResultCursor cursor = null;
                 try
                 {
                     cursor = await _result.ConfigureAwait(false);
@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Internal
             _connection = null;
         }
 
-        private async Task EnsureCanRunMoreStatementsAsync(bool disposeUnconsumedSessionResult)
+        private async Task EnsureCanRunMoreQuerysAsync(bool disposeUnconsumedSessionResult)
         {
             EnsureSessionIsOpen();
             EnsureNoOpenTransaction();
@@ -154,8 +154,8 @@ namespace Neo4j.Driver.Internal
             {
                 if (_connection != null) // after a result is consumed, connection will be set to null
                 {
-                    throw new ClientException("Please consume the current statement result before running " +
-                                              "more statements/transaction in the same session.");
+                    throw new ClientException("Please consume the current query result before running " +
+                                              "more queries/transaction in the same session.");
                 }
             }
         }
@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Internal
             if (_transaction != null)
             {
                 throw new ClientException("Please close the currently open transaction object before running " +
-                                          "more statements/transactions in the current session.");
+                                          "more queries/transactions in the current session.");
             }
         }
 
@@ -174,9 +174,9 @@ namespace Neo4j.Driver.Internal
             if (!_isOpen)
             {
                 throw new ClientException(
-                    "Cannot running more statements in the current session as it has already been disposed. " +
+                    "Cannot running more queries in the current session as it has already been disposed. " +
                     "Make sure that you do not have a bad reference to a disposed session " +
-                    "and retry your statement in another new session.");
+                    "and retry your query in another new session.");
             }
         }
     }

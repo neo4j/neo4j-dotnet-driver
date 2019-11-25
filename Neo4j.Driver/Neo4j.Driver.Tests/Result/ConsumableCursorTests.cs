@@ -25,7 +25,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class ConsumableStatementCursorTests
+    public class ConsumableCursorTests
     {
         [Fact]
         public async void ShouldErrorWhenAccessRecordsAfterConsume()
@@ -83,13 +83,13 @@ namespace Neo4j.Driver.Tests
 
         private static class ResultCursorCreator
         {
-            public static IInternalStatementResultCursor CreateResultCursor(int keySize, int recordSize = 1,
+            public static IInternalResultCursor CreateResultCursor(int keySize, int recordSize = 1,
                 Func<Task<IResultSummary>> getSummaryFunc = null,
                 CancellationTokenSource cancellationTokenSource = null)
             {
-                var cursor = StatementResultCursorTests.ResultCursorCreator.
+                var cursor = ResultCursorTests.ResultCursorCreator.
                     CreateResultCursor(keySize, recordSize, getSummaryFunc, cancellationTokenSource);
-                return new ConsumableStatementResultCursor(cursor);
+                return new ConsumableResultCursor(cursor);
             }
         }
     }

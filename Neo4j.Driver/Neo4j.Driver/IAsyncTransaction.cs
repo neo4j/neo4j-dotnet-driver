@@ -22,7 +22,7 @@ namespace Neo4j.Driver
     /// <summary>
     /// Represents a transaction in the Neo4j database.
     /// </summary>
-    public interface IAsyncTransaction : IAsyncStatementRunner
+    public interface IAsyncTransaction : IAsyncQueryRunner
     {
         /// <summary>
         /// Asynchronously commit this transaction.

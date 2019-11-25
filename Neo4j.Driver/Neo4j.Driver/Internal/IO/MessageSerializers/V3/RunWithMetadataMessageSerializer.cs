@@ -31,8 +31,8 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var msg = value.CastOrThrow<RunWithMetadataMessage>();
 
             writer.WriteStructHeader(3, MsgRun);
-            writer.Write(msg.Statement.Text);
-            writer.Write(msg.Statement.Parameters);
+            writer.Write(msg.Query.Text);
+            writer.Write(msg.Query.Parameters);
             writer.Write(msg.Metadata);
         }
     }

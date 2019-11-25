@@ -21,7 +21,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Util;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
-using static Neo4j.Driver.Tests.ConsumableStatementCursorTests;
+using static Neo4j.Driver.Tests.ConsumableCursorTests;
 using Record = Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
@@ -43,8 +43,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var cursor = await session.RunAsync("CREATE (p:Person { Name: 'Test'})");
                 var summary = await cursor.ConsumeAsync();
 
-                summary.Statement.Text.Should().Be("CREATE (p:Person { Name: 'Test'})");
-                summary.Statement.Parameters.Count.Should().Be(0);
+                summary.Query.Text.Should().Be("CREATE (p:Person { Name: 'Test'})");
+                summary.Query.Parameters.Count.Should().Be(0);
 
                 var stats = summary.Counters;
                 stats.ToString().Should()
@@ -52,7 +52,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                         "RelationshipsDeleted=0, PropertiesSet=1, LabelsAdded=1, LabelsRemoved=0, " +
                         "IndexesAdded=0, IndexesRemoved=0, ConstraintsAdded=0, ConstraintsRemoved=0, SystemUpdates=0}");
 
-                summary.StatementType.Should().Be(StatementType.WriteOnly);
+                summary.QueryType.Should().Be(QueryType.WriteOnly);
 
                 var serverInfo = summary.Server;
 
@@ -239,7 +239,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact]
         public async Task ErrorAccessRecordsAfterSessionClose()
         {
-            IStatementResultCursor cursor;
+            IResultCursor cursor;
             var session = Driver.AsyncSession();
             try
             {
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             var session = Driver.AsyncSession();
             try
             {
-                IStatementResultCursor result1, result2;
+                IResultCursor result1, result2;
 
                 var tx1 = await session.BeginTransactionAsync();
                 try
@@ -302,22 +302,22 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        private static async Task CanAccessKeys(IStatementResultCursor cursor)
+        private static async Task CanAccessKeys(IResultCursor cursor)
         {
             // Summary is still saved
             var keys = await cursor.KeysAsync();
             keys.Should().ContainInOrder("n");
         }
 
-        private static async Task CanAccessSummary(IStatementResultCursor cursor)
+        private static async Task CanAccessSummary(IResultCursor cursor)
         {
             // Summary is still saved
             var summary = await cursor.ConsumeAsync();
-            summary.Statement.Text.ToLower().Should().NotBeNullOrEmpty();
-            summary.StatementType.Should().Be(StatementType.ReadOnly);
+            summary.Query.Text.ToLower().Should().NotBeNullOrEmpty();
+            summary.QueryType.Should().Be(QueryType.ReadOnly);
         }
 
-        private static async Task AssertCannotAccessRecords(IStatementResultCursor cursor)
+        private static async Task AssertCannotAccessRecords(IResultCursor cursor)
         {
             await ThrowsResultConsumedException(async () => await cursor.FetchAsync());
             await ThrowsResultConsumedException(async () => await cursor.PeekAsync());

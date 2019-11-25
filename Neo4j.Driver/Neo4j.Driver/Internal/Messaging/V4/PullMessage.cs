@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Internal.Messaging.V4
     internal class PullMessage : ResultHandleMessage
     {
         public PullMessage(long n)
-            : this(NoStatementId, n)
+            : this(NoQueryId, n)
         {
         }
 

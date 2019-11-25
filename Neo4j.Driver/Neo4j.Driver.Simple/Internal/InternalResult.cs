@@ -21,13 +21,13 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class InternalStatementResult : IStatementResult
+    internal class InternalResult : IResult
     {
-        private readonly IStatementResultCursor _cursor;
+        private readonly IResultCursor _cursor;
         private readonly IRecordSet _recordSet;
         private readonly BlockingExecutor _executor;
 
-        public InternalStatementResult(IStatementResultCursor cursor, BlockingExecutor executor)
+        public InternalResult(IResultCursor cursor, BlockingExecutor executor)
         {
             _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));

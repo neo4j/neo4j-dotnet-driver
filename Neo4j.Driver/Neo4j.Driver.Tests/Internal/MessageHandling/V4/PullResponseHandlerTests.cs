@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
         public void ShouldThrowIfStreamBuilderIsNull()
         {
             var summaryBuilder =
-                new Mock<SummaryBuilder>(new Statement("stmt"), new ServerInfo(new Uri("bolt://localhost")));
+                new Mock<SummaryBuilder>(new Query("stmt"), new ServerInfo(new Uri("bolt://localhost")));
             var exc = Record.Exception(() => new PullResponseHandler(null, summaryBuilder.Object, null));
 
             exc.Should().BeOfType<ArgumentNullException>().Which
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
                 c.ToString() == ProfiledPlanCollectorTests.TestMetadataCollected.ToString()), Times.Once);
             summaryBuilder.VerifySet(
                 x => x.ResultConsumedAfter = TimeToLastCollectorTests.TestMetadataCollected, Times.Once);
-            summaryBuilder.VerifySet(x => x.StatementType = TypeCollectorTests.TestMetadataCollected, Times.Once);
+            summaryBuilder.VerifySet(x => x.QueryType = TypeCollectorTests.TestMetadataCollected, Times.Once);
             summaryBuilder.VerifySet(x => x.Database = DatabaseInfoCollectorTests.TestMetadataCollected, Times.Once);
         }
 
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             out Mock<SummaryBuilder> summaryBuilder, out Mock<IBookmarkTracker> bookmarkTracker)
         {
             summaryBuilder =
-                new Mock<SummaryBuilder>(new Statement("stmt"), new ServerInfo(new Uri("bolt://localhost")));
+                new Mock<SummaryBuilder>(new Query("stmt"), new ServerInfo(new Uri("bolt://localhost")));
             streamBuilder = new Mock<IResultStreamBuilder>();
             bookmarkTracker = new Mock<IBookmarkTracker>();
 

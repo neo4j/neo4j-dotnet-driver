@@ -62,18 +62,18 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
                     .Returns(Task.CompletedTask);
-                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(),
+                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(),
                         false,
                         It.IsAny<IBookmarkTracker>(), It.IsAny<IResultResourceHandler>(), It.IsAny<string>(),
                         It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<long>()))
-                    .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
+                    .ReturnsAsync(new Mock<IResultCursor>().Object);
                 protocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
                             It.IsAny<TransactionConfig>()))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x =>
-                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), false, It.IsAny<long>()))
-                    .ReturnsAsync(new Mock<IStatementResultCursor>().Object);
+                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), false, It.IsAny<long>()))
+                    .ReturnsAsync(new Mock<IResultCursor>().Object);
                 protocol.Setup(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<IBookmarkTracker>()))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()))
@@ -107,7 +107,7 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalalal");
 
                 mockProtocol.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Statement>(), reactive,
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), reactive,
                         session, session, It.IsAny<string>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<long>()),
                     Times.Once);
             }
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldClosePreviousRunConnectionWhenRunMoreStatements()
+            public async void ShouldClosePreviousRunConnectionWhenRunMoreQuerys()
             {
                 var mockConn = MockedConnectionWithSuccessResponse();
                 var session = NewSession(mockConn.Object);

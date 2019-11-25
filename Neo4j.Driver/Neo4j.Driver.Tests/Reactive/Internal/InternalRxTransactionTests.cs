@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var rxTxc = new InternalRxTransaction(Mock.Of<IInternalAsyncTransaction>());
 
-                rxTxc.Run("RETURN 1").Should().BeOfType<InternalRxStatementResult>();
+                rxTxc.Run("RETURN 1").Should().BeOfType<InternalRxResult>();
             }
 
             [Fact]
@@ -67,22 +67,22 @@ namespace Neo4j.Driver.Reactive.Internal
                 });
             }
 
-            private static void VerifyLazyRunAsync(Action<IRxStatementResult> action)
+            private static void VerifyLazyRunAsync(Action<IRxResult> action)
             {
                 var asyncTxc = new Mock<IInternalAsyncTransaction>();
-                asyncTxc.Setup(x => x.RunAsync(It.IsAny<Statement>()))
+                asyncTxc.Setup(x => x.RunAsync(It.IsAny<Query>()))
                     .ReturnsAsync(new ListBasedRecordCursor(new[] {"x"}, Enumerable.Empty<IRecord>,
                         Mock.Of<IResultSummary>));
                 var txc = new InternalRxTransaction(asyncTxc.Object);
                 var result = txc.Run("RETURN 1");
 
                 asyncTxc.Verify(
-                    x => x.RunAsync(It.IsAny<Statement>()), Times.Never);
+                    x => x.RunAsync(It.IsAny<Query>()), Times.Never);
 
                 action(result);
 
                 asyncTxc.Verify(
-                    x => x.RunAsync(It.IsAny<Statement>()), Times.Once);
+                    x => x.RunAsync(It.IsAny<Query>()), Times.Once);
             }
         }
 

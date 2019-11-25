@@ -21,58 +21,58 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// An executable statement, i.e. the statements' text and its parameters.
+    /// An executable query, i.e. the queries' text and its parameters.
     /// </summary>
-    public class Statement
+    public class Query
     {
         private static IDictionary<string, object> NoParameter { get; }
 
-        static Statement()
+        static Query()
         {
             NoParameter = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets the statement's text.
+        /// Gets the query's text.
         /// </summary>
         public string Text { get; }
 
         /// <summary>
-        /// Gets the statement's parameters.
+        /// Gets the query's parameters.
         /// </summary>
         public IDictionary<string, object> Parameters { get; }
 
         /// <summary>
-        /// Create a statement with no statement parameters.
+        /// Create a query with no query parameters.
         /// </summary>
-        /// <param name="text">The statement's text</param>
-        public Statement(string text) : this(text, (object) null)
+        /// <param name="text">The query's text</param>
+        public Query(string text) : this(text, (object) null)
         {
         }
 
         /// <summary>
-        /// Create a statement with parameters specified as anonymous objects
+        /// Create a query with parameters specified as anonymous objects
         /// </summary>
-        /// <param name="text">The statement's text</param>
-        /// <param name="parameters">The statement parameters, specified as an object which is then converted into key-value pairs.</param>
-        public Statement(string text, object parameters)
+        /// <param name="text">The query's text</param>
+        /// <param name="parameters">The query parameters, specified as an object which is then converted into key-value pairs.</param>
+        public Query(string text, object parameters)
             : this(text, parameters.ToDictionary())
         {
         }
 
         /// <summary>
-        /// Create a statement
+        /// Create a query
         /// </summary>
-        /// <param name="text">The statement's text</param>
-        /// <param name="parameters">The statement's parameters, whose values should not be changed while the statement is used in a session/transaction.</param>
-        public Statement(string text, IDictionary<string, object> parameters)
+        /// <param name="text">The query's text</param>
+        /// <param name="parameters">The query's parameters, whose values should not be changed while the query is used in a session/transaction.</param>
+        public Query(string text, IDictionary<string, object> parameters)
         {
             Text = text;
             Parameters = parameters ?? NoParameter;
         }
 
         /// <summary>
-        /// Print the statement.
+        /// Print the query.
         /// </summary>
         /// <returns></returns>
         public override string ToString()

@@ -24,7 +24,7 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class StatementResultCursor : IInternalStatementResultCursor
+    internal class ResultCursor : IInternalResultCursor
     {
         private bool _atEnd;
         private IRecord _peeked;
@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.Result
         private readonly IResultStream _resultStream;
         private Task<IResultSummary> _summary;
 
-        public StatementResultCursor(IResultStream resultStream)
+        public ResultCursor(IResultStream resultStream)
         {
             Throw.ArgumentNullException.IfNull(resultStream, nameof(resultStream));
 

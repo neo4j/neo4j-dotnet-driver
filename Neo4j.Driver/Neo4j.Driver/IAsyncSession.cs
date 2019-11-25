@@ -30,18 +30,18 @@ namespace Neo4j.Driver
     /// Session objects are not thread safe, if you want to run concurrent operations against the database,
     /// simply create multiple session objects.
     /// </summary>
-    public interface IAsyncSession : IAsyncStatementRunner
+    public interface IAsyncSession : IAsyncQueryRunner
     {
         /// <summary>
         /// Asynchronously begin a new transaction in this session using server default transaction configurations.
         /// A session can have at most one transaction running at a time, if you
         /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
         /// 
-        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IAsyncStatementRunner.RunAsync(Statement)"/>
-        /// method directly on this session interface as well. When you use that method, your statement automatically gets
+        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IAsyncQueryRunner.RunAsync(Query)"/>
+        /// method directly on this session interface as well. When you use that method, your query automatically gets
         /// wrapped in a transaction.
         ///
-        /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
+        /// If you want to run multiple queries in the same transaction, you should wrap them in a transaction using this
         /// method.
         /// </summary>
         /// <returns>A task of a new transaction.</returns>
@@ -52,11 +52,11 @@ namespace Neo4j.Driver
         /// A session can have at most one transaction running at a time, if you
         /// want to run multiple concurrent transactions, you should use multiple concurrent sessions.
         /// 
-        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IAsyncStatementRunner.RunAsync(Statement)"/>
-        /// method directly on this session interface as well. When you use that method, your statement automatically gets
+        /// All data operations in Neo4j are transactional. However, for convenience we provide a <see cref="IAsyncQueryRunner.RunAsync(Query)"/>
+        /// method directly on this session interface as well. When you use that method, your query automatically gets
         /// wrapped in a transaction.
         ///
-        /// If you want to run multiple statements in the same transaction, you should wrap them in a transaction using this
+        /// If you want to run multiple queries in the same transaction, you should wrap them in a transaction using this
         /// method.
         /// </summary>
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
@@ -147,45 +147,45 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// 
-        /// Asynchronously run a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        /// Asynchronously run a query with the specific <see cref="TransactionConfig"/> and return a task of result stream.
         ///
-        /// This method accepts a String representing a Cypher statement which will be 
+        /// This method accepts a String representing a Cypher query which will be 
         /// compiled into a query object that can be used to efficiently execute this
-        /// statement multiple times. This method optionally accepts a set of parameters
-        /// which will be injected into the query object statement by Neo4j. 
+        /// query multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object query by Neo4j. 
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
+        /// <param name="query">A Cypher query.</param>
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(string statement, Action<TransactionConfigBuilder> action);
+        Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action);
 
         /// <summary>
         /// 
-        /// Asynchronously run a statement with the customized <see cref="TransactionConfig"/> and return a task of result stream.
+        /// Asynchronously run a query with the customized <see cref="TransactionConfig"/> and return a task of result stream.
         ///
-        /// This method accepts a String representing a Cypher statement which will be 
+        /// This method accepts a String representing a Cypher query which will be 
         /// compiled into a query object that can be used to efficiently execute this
-        /// statement multiple times. This method optionally accepts a set of parameters
-        /// which will be injected into the query object statement by Neo4j. 
+        /// query multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object query by Neo4j. 
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement.</param>
-        /// <param name="parameters">Input parameters for the statement.</param>
+        /// <param name="query">A Cypher query.</param>
+        /// <param name="parameters">Input parameters for the query.</param>
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(string statement, IDictionary<string, object> parameters,
+        Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters,
             Action<TransactionConfigBuilder> action);
 
         /// <summary>
         ///
-        /// Asynchronously execute a statement with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        /// Asynchronously execute a query with the specific <see cref="TransactionConfig"/> and return a task of result stream.
         ///
         /// </summary>
-        /// <param name="statement">A Cypher statement, <see cref="Statement"/>.</param>
+        /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
         /// </param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IStatementResultCursor> RunAsync(Statement statement, Action<TransactionConfigBuilder> action);
+        Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action);
     }
 }

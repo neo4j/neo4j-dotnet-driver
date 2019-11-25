@@ -25,7 +25,7 @@ namespace Neo4j.Driver
     /// The records in the result is lazily retrieved and could only be visited once.
     /// </summary>
     /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
-    public interface IStatementResult : IEnumerable<IRecord>
+    public interface IResult : IEnumerable<IRecord>
     {
         /// <summary>
         /// Gets the keys in the result.
@@ -44,7 +44,7 @@ namespace Neo4j.Driver
         /// If you want to obtain the summary without discarding the records,
         /// use <see cref="Enumerable.ToList{TSource}"/> to buffer all unconsumed records into memory instead.
         /// </summary>
-        /// <returns>A summary for running the statement.</returns>
+        /// <returns>A summary for running the query.</returns>
         /// <remarks>This method could be called multiple times.
         /// If all records in the records stream are already consumed, then this method will return the summary directly.</remarks>
         IResultSummary Consume();

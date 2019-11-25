@@ -37,24 +37,24 @@ namespace Neo4j.Driver.Internal
 
         public Bookmark LastBookmark => _session.LastBookmark;
 
-        public IStatementResult Run(string statement)
+        public IResult Run(string Query)
         {
-            return Run(new Statement(statement));
+            return Run(new Query(Query));
         }
 
-        public IStatementResult Run(string statement, object parameters)
+        public IResult Run(string Query, object parameters)
         {
-            return Run(new Statement(statement, parameters.ToDictionary()));
+            return Run(new Query(Query, parameters.ToDictionary()));
         }
 
-        public IStatementResult Run(string statement, IDictionary<string, object> parameters)
+        public IResult Run(string Query, IDictionary<string, object> parameters)
         {
-            return Run(new Statement(statement, parameters));
+            return Run(new Query(Query, parameters));
         }
 
-        public IStatementResult Run(Statement statement)
+        public IResult Run(Query query)
         {
-            return Run(statement, null);
+            return Run(query, null);
         }
 
         #region BeginTransaction Methods
@@ -133,20 +133,20 @@ namespace Neo4j.Driver.Internal
 
         #endregion
 
-        public IStatementResult Run(string statement, Action<TransactionConfigBuilder> action)
+        public IResult Run(string Query, Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement), action);
+            return Run(new Query(Query), action);
         }
 
-        public IStatementResult Run(string statement, IDictionary<string, object> parameters,
+        public IResult Run(string Query, IDictionary<string, object> parameters,
             Action<TransactionConfigBuilder> action)
         {
-            return Run(new Statement(statement, parameters), action);
+            return Run(new Query(Query, parameters), action);
         }
 
-        public IStatementResult Run(Statement statement, Action<TransactionConfigBuilder> action)
+        public IResult Run(Query query, Action<TransactionConfigBuilder> action)
         {
-            return new InternalStatementResult(_executor.RunSync(() => _session.RunAsync(statement, action, true)),
+            return new InternalResult(_executor.RunSync(() => _session.RunAsync(query, action, true)),
                 _executor);
         }
 

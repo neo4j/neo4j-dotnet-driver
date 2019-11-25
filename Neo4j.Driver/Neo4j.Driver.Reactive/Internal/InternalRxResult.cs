@@ -26,7 +26,7 @@ using static Neo4j.Driver.Internal.ErrorExtensions;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class InternalRxStatementResult : IRxStatementResult
+    internal class InternalRxResult : IRxResult
     {
         private enum StreamingState
         {
@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal
             Completed = 2
         }
 
-        private readonly IObservable<IInternalStatementResultCursor> _resultCursor;
+        private readonly IObservable<IInternalResultCursor> _resultCursor;
         private readonly IObservable<string[]> _keys;
         private readonly Subject<IRecord> _records;
         private readonly ReplaySubject<IResultSummary> _summary;
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal
         private volatile int _streaming = (int) StreamingState.Ready;
         private readonly ILogger _logger;
 
-        public InternalRxStatementResult(IObservable<IInternalStatementResultCursor> resultCursor,
+        public InternalRxResult(IObservable<IInternalResultCursor> resultCursor,
             ILogger logger = null)
         {
             _resultCursor = resultCursor.Replay().AutoConnect();
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal
                     StartStreaming(cursor, summaryObserver: summaryObserver)));
         }
 
-        private IDisposable StartStreaming(IInternalStatementResultCursor cursor,
+        private IDisposable StartStreaming(IInternalResultCursor cursor,
             IObserver<IRecord> recordObserver = null, IObserver<IResultSummary> summaryObserver = null)
         {
             var cancellation = new CompositeDisposable(2);

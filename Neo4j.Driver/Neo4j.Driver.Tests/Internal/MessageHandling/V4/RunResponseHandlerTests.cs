@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
         public void ShouldThrowIfStreamBuilderIsNull()
         {
             var summaryBuilder =
-                new Mock<SummaryBuilder>(new Statement("stmt"), new ServerInfo(new Uri("bolt://localhost")));
+                new Mock<SummaryBuilder>(new Query("stmt"), new ServerInfo(new Uri("bolt://localhost")));
             var exc = Record.Exception(() => new RunResponseHandler(null, summaryBuilder.Object));
 
             exc.Should().BeOfType<ArgumentNullException>().Which
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
             out Mock<SummaryBuilder> summaryBuilder)
         {
             summaryBuilder =
-                new Mock<SummaryBuilder>(new Statement("stmt"), new ServerInfo(new Uri("bolt://localhost")));
+                new Mock<SummaryBuilder>(new Query("stmt"), new ServerInfo(new Uri("bolt://localhost")));
             streamBuilder = new Mock<IResultStreamBuilder>();
 
             return new RunResponseHandler(streamBuilder.Object, summaryBuilder.Object);

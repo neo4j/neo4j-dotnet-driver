@@ -24,12 +24,12 @@ using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class StatementResultCursorBuilder : IResultStreamBuilder, IResultStream
+    internal class ResultCursorBuilder : IResultStreamBuilder, IResultStream
     {
         private readonly long _batchSize;
         private readonly Func<Task> _advanceFunction;
-        private readonly Func<StatementResultCursorBuilder, long, long, Task> _moreFunction;
-        private readonly Func<StatementResultCursorBuilder, long, Task> _cancelFunction;
+        private readonly Func<ResultCursorBuilder, long, long, Task> _moreFunction;
+        private readonly Func<ResultCursorBuilder, long, Task> _cancelFunction;
         private readonly CancellationTokenSource _cancellationSource;
         private readonly IResultResourceHandler _resourceHandler;
         private readonly SummaryBuilder _summaryBuilder;
@@ -37,14 +37,14 @@ namespace Neo4j.Driver.Internal.Result
         private readonly ConcurrentQueue<IRecord> _records;
 
         private volatile int _state;
-        private long _statementId;
+        private long _queryId;
         private string[] _fields;
 
         private IResponsePipelineError _pendingError;
 
-        public StatementResultCursorBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
-            Func<StatementResultCursorBuilder, long, long, Task> moreFunction,
-            Func<StatementResultCursorBuilder, long, Task> cancelFunction, IResultResourceHandler resourceHandler,
+        public ResultCursorBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
+            Func<ResultCursorBuilder, long, long, Task> moreFunction,
+            Func<ResultCursorBuilder, long, Task> cancelFunction, IResultResourceHandler resourceHandler,
             long batchSize = Config.Infinite, bool reactive = false)
         {
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal.Result
             _records = new ConcurrentQueue<IRecord>();
 
             _state = (int) (reactive ? State.RunRequested : State.RunAndRecordsRequested);
-            _statementId = NoStatementId;
+            _queryId = NoQueryId;
             _fields = null;
             _batchSize = batchSize;
         }
@@ -69,9 +69,9 @@ namespace Neo4j.Driver.Internal.Result
             set => _state = (int) value;
         }
 
-        public IInternalStatementResultCursor CreateCursor()
+        public IInternalResultCursor CreateCursor()
         {
-            return new ConsumableStatementResultCursor(new StatementResultCursor(this));
+            return new ConsumableResultCursor(new ResultCursor(this));
         }
 
         public async Task<string[]> GetKeysAsync()
@@ -135,9 +135,9 @@ namespace Neo4j.Driver.Internal.Result
             return _summaryBuilder.Build();
         }
 
-        public void RunCompleted(long statementId, string[] fields, IResponsePipelineError error)
+        public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
         {
-            _statementId = statementId;
+            _queryId = queryId;
             _fields = fields;
 
             CheckAndUpdateState(State.RunCompleted, State.RunRequested);
@@ -163,11 +163,11 @@ namespace Neo4j.Driver.Internal.Result
                 {
                     if (_cancellationSource.IsCancellationRequested)
                     {
-                        await _cancelFunction(this, _statementId).ConfigureAwait(false);
+                        await _cancelFunction(this, _queryId).ConfigureAwait(false);
                     }
                     else
                     {
-                        await _moreFunction(this, _statementId, _batchSize).ConfigureAwait(false);
+                        await _moreFunction(this, _queryId, _batchSize).ConfigureAwait(false);
                     }
                 }
 
