@@ -21,6 +21,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Util;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.SessionConfigBuilder;
 using static Neo4j.Driver.Tests.ConsumableCursorTests;
 using Record = Xunit.Record;
 
@@ -78,7 +79,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         public async Task ShouldContainsSystemUpdates()
         {
             // Ensure that a constraint exists
-            var session = Driver.AsyncSession(o => o.WithDatabase("system"));
+            var session = Driver.AsyncSession(ForDatabase("system"));
             try
             {
                 var cursor = await session.RunAsync("CREATE USER foo SET PASSWORD 'bar'");

@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.SessionConfigBuilder;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
@@ -230,7 +231,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task CreateDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.WithDatabase("system"));
+            var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
                 var cursor = await session.RunAsync($"CREATE DATABASE {name}");
@@ -244,7 +245,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task DropDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.WithDatabase("system"));
+            var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
                 var cursor = await session.RunAsync($"DROP DATABASE {name}");
