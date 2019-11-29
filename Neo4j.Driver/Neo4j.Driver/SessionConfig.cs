@@ -125,6 +125,16 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
+        /// Returns an action on <see cref="SessionConfigBuilder"/> which will set the database name to the value specified.
+        /// </summary>
+        /// <param name="database">the database name</param>
+        /// <returns>An action of <see cref="SessionConfigBuilder"/></returns>
+        public static Action<SessionConfigBuilder> ForDatabase(string database)
+        {
+            return o => o.WithDatabase(database);
+        }
+
+        /// <summary>
         /// Sets the database the constructed session will connect to.
         /// </summary>
         /// <param name="database">the database name</param>

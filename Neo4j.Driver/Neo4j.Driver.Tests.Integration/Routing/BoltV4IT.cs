@@ -21,6 +21,7 @@ using FluentAssertions;
 using Neo4j.Driver.TestUtil;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.SessionConfigBuilder;
 
 namespace Neo4j.Driver.IntegrationTests.Routing
 {
@@ -106,7 +107,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 
         private static async Task<Bookmark> CreateDatabase(IDriver driver, string name)
         {
-            var session = driver.AsyncSession(o => o.WithDatabase("system"));
+            var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
                 await session.WriteTransactionAsync(txc => txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
