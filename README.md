@@ -29,7 +29,7 @@ PM> Install-Package Neo4j.Driver.Signed
 
 Connect to a Neo4j database
 ```csharp
-IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"));
+IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "password"));
 IAsyncSession session = driver.AsyncSession(o => o.WithDatabase("neo4j"));
 try
 {
@@ -129,11 +129,11 @@ DateTimeOffset datetime = record["datetime"].As<DateTimeOffset>();
 Note:
 * The conversion to CLR types is possible only when the value fits in the range of the target built-in type. A `ValueOverflowException` is thrown 
 when the conversion is not possible.
-* The Cypher temporal types (excluding `Date`) provide nanosecond precision. However CLR types only support ticks (100 nanosecond) precision.
+* The Cypher temporal types (excluding `Date`) provide nanosecond precision. However, CLR types only support ticks (100 nanosecond) precision.
 So a temporal type created via Cypher might not be convertible to the CLR type (a `ValueTruncationException` is thrown when a conversion is requested in this case).
 * `ZonedDateTime` represents date and times with either offset or time zone information. Time zone names adhere to the [IANA system](https://www.iana.org/time-zones), 
 rather than the [Windows system](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/default-time-zones). Although there is no support for inbound 
-time zone name conversions, a conversion from IANA system to Windows system may be necessary if a conversion to `DateTimeOffset` or an access to `Offset` is 
+time zone name conversions, a conversion from IANA system to Windows system may be necessary if a conversion to a `DateTimeOffset` object or access to a `Offset` object is 
 requested by the user. [Unicode CLDR mapping](http://cldr.unicode.org/development/development-process/design-proposals/extended-windows-olson-zid-mapping) 
 is used for this conversion. Please bear in mind that Windows time zone database do not provide precise historical data, so you may end up with inaccurate 
 `DateTimeOffset` values for past values. _It is recommended that you use driver level temporal types to avoid these inaccuracies._    
@@ -143,7 +143,7 @@ is used for this conversion. Please bear in mind that Windows time zone database
 The driver accepts a logger that implements `ILogger` interface.
 To pass a `ILogger` to this driver:
 ```c#
-IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"), o => o.WithLogger(logger));
+IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "password"), o => o.WithLogger(logger));
 ```
 
 In this `ILogger` interface, each logging method takes a message format string and message arguments as input.
