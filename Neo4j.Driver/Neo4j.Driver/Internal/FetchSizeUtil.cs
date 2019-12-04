@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal
     /// <summary>
     /// A util class for handling fetch size.
     /// </summary>
-    public static class FetchSizeUtil
+    internal static class FetchSizeUtil
     {
         /// <summary>
         /// Validate the fetch size.
