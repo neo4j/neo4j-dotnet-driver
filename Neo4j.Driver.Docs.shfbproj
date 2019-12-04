@@ -51,7 +51,7 @@
     <CopyrightHref>http://neo4j.com</CopyrightHref>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
     <NamespaceSummaries>
-      <NamespaceSummaryItem name="Neo4j.Driver.V1" isDocumented="True">The base namespace for interaction with the Neo4j .NET Driver.</NamespaceSummaryItem>
+      <NamespaceSummaryItem name="Neo4j.Driver" isDocumented="True">The base namespace for interaction with the Neo4j .NET Driver.</NamespaceSummaryItem>
     </NamespaceSummaries>
     <SaveComponentCacheCapacity>100</SaveComponentCacheCapacity>
     <PlugInConfigurations>
