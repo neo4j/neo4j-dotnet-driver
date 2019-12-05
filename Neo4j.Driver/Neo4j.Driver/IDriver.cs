@@ -62,6 +62,12 @@ namespace Neo4j.Driver
         Task VerifyConnectivityAsync();
 
         /// <summary>
+        /// Asynchronously verify if the driver connects to a server and/or cluster that can support multi-database feature.
+        /// </summary>
+        /// <returns>True if the remote server and/or cluster support multi-databases, otherwise false.</returns>
+        Task<bool> SupportsMultiDbAsync();
+
+        /// <summary>
         /// Gets the driver configurations.
         /// </summary>
         Config Config { get; }

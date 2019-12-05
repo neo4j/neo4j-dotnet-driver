@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal static class BoltProtocolFactory
     {
-        private static class ProtocolVersion
+        internal static class ProtocolVersion
         {
             public const int NoVersion = 0;
             public const int Version3 = 3;

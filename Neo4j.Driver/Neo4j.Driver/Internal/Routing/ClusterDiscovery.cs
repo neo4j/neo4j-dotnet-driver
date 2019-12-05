@@ -172,6 +172,11 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 throw new NotSupportedException();
             }
+
+            public Task<bool> SupportsMultiDbAsync()
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

@@ -17,6 +17,7 @@
 
 using System;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal
@@ -31,7 +32,10 @@ namespace Neo4j.Driver.Internal
 
         public static bool SupportsMultidatabase(this IConnection connection)
         {
-            return ServerVersion.From(connection.Server.Version) >= ServerVersion.V4_0_0;
+            var serverVersion = ServerVersion.From(connection.Server.Version);
+            var protocol = connection.BoltProtocol;
+            return serverVersion >= ServerVersion.V4_0_0 &&
+                   protocol.Version() >= BoltProtocolFactory.ProtocolVersion.Version4;
         }
     }
 }

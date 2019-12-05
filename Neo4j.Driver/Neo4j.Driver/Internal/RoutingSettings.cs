@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal
         private static readonly TimeSpan DefaultRoutingTablePurgeDelay = TimeSpan.FromSeconds(30);
 
         public IDictionary<string, string> RoutingContext { get; }
-        public InitialServerAddressProvider InitialServerAddressProvider { get; }
+        public IInitialServerAddressProvider InitialServerAddressProvider { get; }
         public TimeSpan RoutingTablePurgeDelay { get; }
 
         public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)

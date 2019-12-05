@@ -16,25 +16,21 @@
 // limitations under the License.
 
 using System;
-using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.Reactive;
 using Neo4j.Driver.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Reactive.Testing.ReactiveTest;
 
 namespace Neo4j.Driver.IntegrationTests.Stub
 {
-    public class BoltV4Tests
+    public class MultiDatabasesTests
     {
         private readonly ITestOutputHelper _output;
         private readonly Action<ConfigBuilder> _setupConfig;
 
-        public BoltV4Tests(ITestOutputHelper output)
+        public MultiDatabasesTests(ITestOutputHelper output)
         {
             _output = output;
 
@@ -221,93 +217,56 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             }
         }
 
-        [Fact]
-        public async Task ShouldStreamingWithAsyncSession()
+        [RequireBoltStubServerTheory]
+        [InlineData("V3", "neo4j")]
+        [InlineData("V3", "bolt")]
+        [InlineData("V4", "neo4j")]
+        [InlineData("V4", "bolt")]
+        public async Task ShouldDetectMultiDatabasesFeature(string boltVersion, string scheme)
         {
-            using (BoltStubServer.Start("V4/streaming_records_all", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
             {
-                using (var driver =
-                    GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, _setupConfig))
+                using (var driver = GraphDatabase.Driver($"{scheme}://localhost:9001", AuthTokens.None, _setupConfig))
                 {
-                    var session = driver.AsyncSession();
-                    try
+                    var support = await driver.SupportsMultiDbAsync();
+                    if (boltVersion.Equals("V3"))
                     {
-                        var cursor =
-                            await session.RunAsync("MATCH (n) RETURN n.name");
-                        var result = await cursor.ToListAsync(r => r[0].As<string>());
-
-                        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                        support.Should().BeFalse();
                     }
-                    finally
+                    else
                     {
-                        await session.CloseAsync();
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public async Task ShouldAllowChangeFetchSize()
-        {
-            using (BoltStubServer.Start("V4/streaming_records", 9001))
-            {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
-                    o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
-                {
-                    var session = driver.AsyncSession();
-                    try
-                    {
-                        var cursor =
-                            await session.RunAsync("MATCH (n) RETURN n.name");
-                        var result = await cursor.ToListAsync(r => r[0].As<string>());
-
-                        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
+                        support.Should().BeTrue();
                     }
                 }
             }
         }
 
-        [Fact]
-        public void ShouldDiscardIfNotFinished()
+        [RequireBoltStubServerTheory]
+        [InlineData("neo4j")]
+        [InlineData("bolt")]
+        public async Task ShouldFailToDetectMultiDatabasesFeature(string scheme)
         {
-            using (BoltStubServer.Start("V4/discard_streaming_records", 9001))
+            using (var driver = GraphDatabase.Driver($"{scheme}://localhost:9099", AuthTokens.None, _setupConfig))
             {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
-                    o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
-                {
-                    var session = driver.RxSession();
-
-                    session.Run("UNWIND [1,2,3,4] AS n RETURN n")
-                        .Keys()
-                        .WaitForCompletion()
-                        .AssertEqual(
-                            OnNext(0, Utils.MatchesKeys("n")),
-                            OnCompleted<string[]>(0));
-                    session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
-                }
+                var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
+                error.Should().BeOfType<ServiceUnavailableException>();
             }
         }
 
-        [Fact]
-        public void ShouldDiscardTxIfNotFinished()
+        [RequireBoltStubServerTheory]
+        [InlineData("V3", "neo4j")]
+        [InlineData("V3", "bolt")]
+        [InlineData("V4", "neo4j")]
+        [InlineData("V4", "bolt")]
+        public async Task ShouldThrowSecurityErrorWhenFailToHello(string boltVersion, string scheme)
         {
-            using (BoltStubServer.Start("V4/discard_streaming_records_tx", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
             {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None,
-                    o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
+                using (var driver = GraphDatabase.Driver($"{scheme}://localhost:9001", AuthTokens.None, _setupConfig))
                 {
-                    var session = driver.RxSession();
-
-                    session.ReadTransaction(tx => tx.Run("UNWIND [1,2,3,4] AS n RETURN n").Keys())
-                        .WaitForCompletion()
-                        .AssertEqual(
-                            OnNext(0, Utils.MatchesKeys("n")),
-                            OnCompleted<string[]>(0));
-                    session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
+                    var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
+                    error.Should().BeOfType<AuthenticationException>();
+                    error.Message.Should().StartWith("blabla");
                 }
             }
         }

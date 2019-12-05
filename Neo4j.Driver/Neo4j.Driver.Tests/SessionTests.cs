@@ -340,6 +340,11 @@ namespace Neo4j.Driver.Tests
             {
                 return Task.CompletedTask;
             }
+
+            public Task<bool> SupportsMultiDbAsync()
+            {
+                return Task.FromResult(true);
+            }
         }
     }
 }

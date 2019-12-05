@@ -27,5 +27,6 @@ namespace Neo4j.Driver.Internal
         Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark);
         Task CloseAsync();
         Task VerifyConnectivityAsync();
+        Task<bool> SupportsMultiDbAsync();
     }
 }

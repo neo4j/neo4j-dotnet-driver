@@ -135,6 +135,11 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.SendAsync().ConfigureAwait(false);
         }
 
+        public virtual int Version()
+        {
+            return BoltProtocolFactory.ProtocolVersion.Version3;
+        }
+
         private void AssertNullDatabase(string database)
         {
             if (database != null)

@@ -142,5 +142,17 @@ namespace Neo4j.Driver.Tests
 
             mock.Verify(x => x.VerifyConnectivityAsync(), Times.Once);
         }
+
+        [Fact]
+        public async void ShouldTestSupportMultiDb()
+        {
+            var mock = new Mock<IConnectionProvider>();
+            mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));
+            var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null);
+            await driver.SupportsMultiDbAsync();
+
+            mock.Verify(x => x.SupportsMultiDbAsync(), Times.Once);
+        }
+
     }
 }

@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
@@ -412,8 +413,18 @@ namespace Neo4j.Driver.Internal
         public async Task VerifyConnectivityAsync()
         {
             // Establish a connection with the server and immediately close it.
-            var connection = await AcquireAsync(Simple.Mode, Simple.Database, Simple.Bookmark);
+            var connection = await AcquireAsync(Simple.Mode, Simple.Database, Simple.Bookmark).ConfigureAwait(false);
             await connection.CloseAsync().ConfigureAwait(false);
+        }
+
+        public async Task<bool> SupportsMultiDbAsync()
+        {
+            // Establish a connection with the server and immediately close it.
+            var connection = await AcquireAsync(Simple.Mode, Simple.Database, Simple.Bookmark).ConfigureAwait(false);
+            var multiDb = connection.SupportsMultidatabase();
+            await connection.CloseAsync().ConfigureAwait(false);
+
+            return multiDb;
         }
 
         public Task DeactivateAsync()
