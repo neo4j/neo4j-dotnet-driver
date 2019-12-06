@@ -83,7 +83,10 @@ namespace Neo4j.Driver.Internal.Connector
             if (error.IsConnectionError())
             {
                 return Task.FromException(new ServiceUnavailableException(
-                    $"Connection with the server breaks due to {error.GetType().Name}: {error.Message}", error));
+                    $"Connection with the server breaks due to {error.GetType().Name}: {error.Message} " +
+                    "Please ensure that your database is listening on the correct host and port " +
+                    "and that you have compatible encryption settings both on Neo4j server and driver. " +
+                    "Note that the default encryption setting has changed in Neo4j 4.0.", error));
             }
             else
             {

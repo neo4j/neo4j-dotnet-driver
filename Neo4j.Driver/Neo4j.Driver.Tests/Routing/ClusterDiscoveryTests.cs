@@ -58,6 +58,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
+                mock.Setup(m => m.BoltProtocol).Returns(BoltProtocolV3.BoltV3);
                 // When
                 var query = discovery.DiscoveryProcedure(mock.Object, null);
                 // Then
@@ -82,6 +83,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
+                mock.Setup(m => m.BoltProtocol).Returns(BoltProtocolV4.BoltV4);
                 // When
                 var query = discovery.DiscoveryProcedure(mock.Object, "foo");
                 // Then

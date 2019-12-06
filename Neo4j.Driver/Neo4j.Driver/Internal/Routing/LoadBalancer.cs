@@ -24,6 +24,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
@@ -37,6 +39,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ILogger _logger;
 
         private int _closedMarker = 0;
+        private IInitialServerAddressProvider _initialServerAddressProvider;
 
         public LoadBalancer(
             IPooledConnectionFactory connectionFactory,
@@ -50,6 +53,7 @@ namespace Neo4j.Driver.Internal.Routing
                 new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
             _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
+            _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
         }
 
         // for test only
@@ -127,8 +131,9 @@ namespace Neo4j.Driver.Internal.Routing
             // As long as there is a fresh routing table, we consider we can route to these servers.
             try
             {
-                await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, Simple.Database,
-                    Simple.Bookmark);
+                var database = await SupportsMultiDbAsync().ConfigureAwait(false) ? "system" : null;
+                await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, database,
+                    Simple.Bookmark).ConfigureAwait(false);
             }
             catch (ServiceUnavailableException e)
             {
@@ -136,6 +141,36 @@ namespace Neo4j.Driver.Internal.Routing
                     "Unable to connect to database, " +
                     "ensure the database is running and that there is a working network connection to it.", e);
             }
+        }
+
+        public async Task<bool> SupportsMultiDbAsync()
+        {
+            var uris = _initialServerAddressProvider.Get();
+            await AddConnectionPoolAsync(uris).ConfigureAwait(false);
+            var exceptions = new List<Exception>();
+            foreach (var uri in uris)
+            {
+                try
+                {
+                    var connection = await CreateClusterConnectionAsync(uri, Simple.Mode, Simple.Database,
+                        Simple.Bookmark).ConfigureAwait(false);
+                    var multiDb = connection.SupportsMultidatabase();
+                    await connection.CloseAsync().ConfigureAwait(false);
+                    return multiDb;
+                }
+                catch (SecurityException)
+                {
+                    throw; // immediately stop
+                }
+                catch (Exception e)
+                {
+                    exceptions.Add(e); // save and continue with the next server
+                }
+            }
+
+            throw new ServiceUnavailableException(
+                $"Failed to perform multi-databases feature detection with the following servers: {uris.ToContentString()} ",
+                new AggregateException(exceptions));
         }
 
         public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, Bookmark bookmark)

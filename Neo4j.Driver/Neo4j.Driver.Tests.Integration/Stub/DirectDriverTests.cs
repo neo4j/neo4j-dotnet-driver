@@ -26,43 +26,15 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stub
 {
-    public class BoltStubServerTests
+    public class DirectDriverTests
     {
         public Action<ConfigBuilder> SetupConfig { get; }
 
-        public BoltStubServerTests(ITestOutputHelper output)
+        public DirectDriverTests(ITestOutputHelper output)
         {
             SetupConfig = o => o
                 .WithEncryptionLevel(EncryptionLevel.None)
                 .WithLogger(TestLogger.Create(output));
-        }
-
-        [RequireBoltStubServerTheory]
-        [InlineData("V3")]
-        [InlineData("V4")]
-        public async Task SendRoutingContextToServer(string boltVersion)
-        {
-            using (BoltStubServer.Start($"{boltVersion}/get_routing_table_with_context", 9001))
-            {
-                var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
-                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
-                {
-                    var session = driver.AsyncSession();
-                    try
-                    {
-                        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
-                        var records = await cursor.ToListAsync();
-
-                        records.Count.Should().Be(2);
-                        records[0]["name"].As<string>().Should().Be("Alice");
-                        records[1]["name"].As<string>().Should().Be("Bob");
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }
-            }
         }
 
         [RequireBoltStubServerFact]
@@ -100,35 +72,6 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 if (log.StartsWith("[Debug]:[conn-"))
                 {
                     log.Should().Contain("localhost:9001");
-                }
-            }
-        }
-
-        [RequireBoltStubServerTheory]
-        [InlineData("V3")]
-        [InlineData("V4")]
-        public async Task InvokeProcedureGetRoutingTableWhenServerVersionPermits(string boltVersion)
-        {
-            using (BoltStubServer.Start($"{boltVersion}/get_routing_table", 9001))
-            {
-                var uri = new Uri("neo4j://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
-                {
-                    var session = driver.AsyncSession();
-                    try
-                    {
-                        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
-                        var records = await cursor.ToListAsync();
-
-                        records.Count.Should().Be(3);
-                        records[0]["name"].As<string>().Should().Be("Alice");
-                        records[1]["name"].As<string>().Should().Be("Bob");
-                        records[2]["name"].As<string>().Should().Be("Eve");
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
                 }
             }
         }
@@ -202,6 +145,36 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                     {
                         await session.CloseAsync();
                     }
+                }
+            }
+        }
+
+        [RequireBoltStubServerTheory]
+        [InlineData("V3")]
+        [InlineData("V4")]
+        public async Task ShouldVerifyConnectivity(string boltVersion)
+        {
+            using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
+            {
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
+                {
+                    await driver.VerifyConnectivityAsync();
+                }
+            }
+        }
+
+        [RequireBoltStubServerTheory]
+        [InlineData("V3")]
+        [InlineData("V4")]
+        public async Task ShouldThrowSecurityErrorWhenFailedToHello(string boltVersion)
+        {
+            using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
+            {
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
+                {
+                    var error = await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());
+                    error.Should().BeOfType<AuthenticationException>();
+                    error.Message.Should().StartWith("blabla");
                 }
             }
         }

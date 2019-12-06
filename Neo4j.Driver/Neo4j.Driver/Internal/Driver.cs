@@ -116,6 +116,11 @@ namespace Neo4j.Driver.Internal
             return _connectionProvider.VerifyConnectivityAsync();
         }
 
+        public Task<bool> SupportsMultiDbAsync()
+        {
+            return _connectionProvider.SupportsMultiDbAsync();
+        }
+
         public void Dispose()
         {
             Dispose(true);

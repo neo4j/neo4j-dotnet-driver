@@ -48,5 +48,7 @@ namespace Neo4j.Driver.Internal.Protocol
         Task ResetAsync(IConnection connection);
 
         Task LogoutAsync(IConnection connection);
+
+        int Version();
     }
 }
