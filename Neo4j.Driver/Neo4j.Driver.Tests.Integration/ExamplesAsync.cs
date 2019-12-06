@@ -39,9 +39,9 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
-            public async Task<List<string>> AutocommitTransactionExample()
+            // tag::async-autocommit-transaction[]
+            public async Task<List<string>> ReadProductTitles()
             {
-                // tag::async-autocommit-transaction[]
                 var records = new List<string>();
                 var session = Driver.AsyncSession();
 
@@ -70,23 +70,23 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
 
-                // end::async-autocommit-transaction[]
                 return records;
             }
+            // end::async-autocommit-transaction[]
 
-            public async Task<List<string>> TransactionFunctionExample()
+            // tag::async-transaction-function[]
+            public async Task<List<string>> PrintAllProducts()
             {
                 List<string> result = null;
-                // tag::async-transaction-function[]
                 var session = Driver.AsyncSession();
 
                 try
                 {
-                    // Wrap whole operation into an implicit transaction and
+                    // Wrap whole operation into an managed transaction and
                     // get the results back.
                     result = await session.ReadTransactionAsync(async tx =>
                     {
-                        var records = new List<string>();
+                        var products = new List<string>();
 
                         // Send cypher query to the database
                         var reader = await tx.RunAsync(
@@ -98,10 +98,10 @@ namespace Neo4j.Driver.ExamplesAsync
                         while (await reader.FetchAsync())
                         {
                             // Each current read in buffer can be reached via Current
-                            records.Add(reader.Current[0].ToString());
+                            products.Add(reader.Current[0].ToString());
                         }
 
-                        return records;
+                        return products;
                     });
                 }
                 finally
@@ -110,14 +110,14 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
 
-                // end::async-transaction-function[]
                 return result;
             }
+            // end::async-transaction-function[]
 
-            public async Task<List<string>> ExplicitTransactionExample()
+            // tag::async-explicit-transaction[]
+            public async Task<string> PrintSingleProduct()
             {
-                // tag::async-explicit-transaction[]
-                var records = new List<string>();
+                string product = null;
                 var session = Driver.AsyncSession();
 
                 try
@@ -133,11 +133,8 @@ namespace Neo4j.Driver.ExamplesAsync
                     );
 
                     // Loop through the records asynchronously
-                    while (await reader.FetchAsync())
-                    {
-                        // Each current read in buffer can be reached via Current
-                        records.Add(reader.Current[0].ToString());
-                    }
+                    var single = await reader.SingleAsync();
+                    product = single[0].ToString();
 
                     // Commit the transaction
                     await tx.CommitAsync();
@@ -148,9 +145,9 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
 
-                // end::async-explicit-transaction[]
-                return records;
+                return product;
             }
+            // end::async-explicit-transaction[]
 
             [RequireServerFact]
             public async void TestAutocommitTransactionExample()
@@ -158,7 +155,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
                     new {id = 0, title = "Product-0"});
 
-                var results = await AutocommitTransactionExample();
+                var results = await ReadProductTitles();
 
                 results.Should().NotBeNull();
                 results.Should().HaveCount(1);
@@ -171,7 +168,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
                     new {id = 0, title = "Product-0"});
 
-                var results = await TransactionFunctionExample();
+                var results = await PrintAllProducts();
 
                 results.Should().NotBeNull();
                 results.Should().HaveCount(1);
@@ -184,11 +181,10 @@ namespace Neo4j.Driver.ExamplesAsync
                 await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
                     new {id = 0, title = "Product-0"});
 
-                var results = await ExplicitTransactionExample();
+                var result = await PrintSingleProduct();
 
-                results.Should().NotBeNull();
-                results.Should().HaveCount(1);
-                results.Should().Contain("Product-0");
+                result.Should().NotBeNull();
+                result.Should().Contain("Product-0");
             }
         }
 
@@ -641,6 +637,7 @@ namespace Neo4j.Driver.ExamplesAsync
             {
             }
 
+            // tag::async-result-consume[]
             public async Task<List<string>> GetPeopleAsync()
             {
                 var session = Driver.AsyncSession();
@@ -658,6 +655,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     await session.CloseAsync();
                 }
             }
+            // end::async-result-consume[]
 
             [RequireServerFact]
             public async Task TestResultConsumeExample()
@@ -943,15 +941,6 @@ namespace Neo4j.Driver.ExamplesAsync
             {
                 await session.CloseAsync();
             }
-        }
-    }
-
-    // TODO Remove it after we figure out a way to solve the naming problem
-    internal static class ValueExtensions
-    {
-        public static T As<T>(this object value)
-        {
-            return Neo4j.Driver.ValueExtensions.As<T>(value);
         }
     }
 }
