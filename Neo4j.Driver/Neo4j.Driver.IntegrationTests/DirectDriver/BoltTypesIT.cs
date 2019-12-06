@@ -144,7 +144,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             using (var session = Driver.Session())
             {
-                var record = session.Run("RETURN {x} as y", new Dictionary<string, object> {{"x", input}}).Single();
+                var record = session.Run("RETURN $x as y", new Dictionary<string, object> {{"x", input}}).Single();
                 AssertEqual(record["y"], input);
             }
         }

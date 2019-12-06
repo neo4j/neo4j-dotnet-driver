@@ -28,6 +28,7 @@ namespace Neo4j.Driver.IntegrationTests
     [Collection(CCIntegrationCollection.CollectionName)]
     public abstract class RoutingDriverTestBase : IDisposable
     {
+        protected static Config NoEncryption = new Config {EncryptionLevel = EncryptionLevel.None};
         protected ITestOutputHelper Output { get; }
         protected CausalCluster Cluster { get; }
         protected IAuthToken AuthToken { get; }
@@ -44,7 +45,8 @@ namespace Neo4j.Driver.IntegrationTests
 
             var config = new Config
             {
-                DriverLogger = new TestDriverLogger(output)
+                DriverLogger = new TestDriverLogger(output),
+                EncryptionLevel = EncryptionLevel.None
             };
             Driver = GraphDatabase.Driver(RoutingServer, AuthToken, config);
         }

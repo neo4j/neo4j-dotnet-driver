@@ -27,6 +27,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public const string MaxThreadPoolSize = "dbms.connector.bolt.thread_pool_max_size";
         public const string Pool500 = "500";
 
+        public const string BoltTlsLevel = "dbms.connector.bolt.tls_level";
+        public const string BoltTlsOptional = "OPTIONAL";
+
         /// <summary>
         ///     Updates the settings of the Neo4j server
         /// </summary>

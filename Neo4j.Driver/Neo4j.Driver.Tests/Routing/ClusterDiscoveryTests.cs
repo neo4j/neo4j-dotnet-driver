@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var statement = discovery.DiscoveryProcedure(mock.Object);
                 // Then
                 statement.Text.Should()
-                    .Be("CALL dbms.cluster.routing.getRoutingTable({context})");
+                    .Be("CALL dbms.cluster.routing.getRoutingTable($context)");
                 statement.Parameters["context"].Should().Be(context);
             }
         }
@@ -336,7 +336,7 @@ namespace Neo4j.Driver.Tests.Routing
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
-                MessagePair(new RunMessage("CALL dbms.cluster.routing.getRoutingTable({context})",
+                MessagePair(new RunMessage("CALL dbms.cluster.routing.getRoutingTable($context)",
                         new Dictionary<string, object> {{"context", routingContext}}),
                     SuccessMessage(new List<object> {"ttl", "servers"})),
                 MessagePair(new RecordMessage(recordFields)),

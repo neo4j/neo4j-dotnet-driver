@@ -199,7 +199,7 @@ namespace Neo4j.Driver.IntegrationTests.DirectDriver
             }
         }
 
-        [RequireServerFact]
+        [RequireServerVersionLessThanFact("4.0.0")] // jmx procedure is not accessible
         public void ShouldHandleCallingProcedures()
         {
             using (var session = Driver.Session())

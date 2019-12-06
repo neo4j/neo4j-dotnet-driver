@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             if (ServerVersion.Version(connection.Server.Version) >= ServerVersion.V3_2_0)
             {
-                return new Statement($"CALL {GetRoutingTableProcedure}({{context}})",
+                return new Statement($"CALL {GetRoutingTableProcedure}($context)",
                     new Dictionary<string, object> {{"context", _context}});
             }
             else

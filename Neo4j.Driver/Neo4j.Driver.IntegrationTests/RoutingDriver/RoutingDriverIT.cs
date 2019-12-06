@@ -38,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldFailWithAuthenticationError()
         {
             Exception exception = null;
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake")))
+            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
             using(var session = driver.Session())
             {
                 exception = Record.Exception(() => session.Run("RETURN 1"));
@@ -51,8 +51,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public void ShouldConnectClusterWithRoutingScheme()
         {
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
-            using (var session = driver.Session())
+            using (var session = Driver.Session())
             {
                 var result = session.Run("UNWIND range(1,10000) AS x RETURN sum(x)");
                 result.Single()[0].ValueAs<int>().Should().Be(10001 * 10000 / 2);
@@ -62,22 +61,21 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public void ShouldLoadBalanceBetweenServers()
         {
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
+            string addr1, addr2;
+            for (int i = 0; i < 10; i++)
             {
-                string addr1, addr2;
-                for (int i = 0; i < 10; i++)
+                using (var session = Driver.Session(AccessMode.Read))
                 {
-                    using (var session = driver.Session(AccessMode.Read))
-                    {
-                        var result = session.Run("RETURN 1");
-                        addr1 = result.Summary.Server.Address;
-                    }
-                    using (var session = driver.Session(AccessMode.Read))
-                    {
-                        addr2 = session.Run("RETURN 2").Summary.Server.Address;
-                    }
-                    addr1.Should().NotBe(addr2);
+                    var result = session.Run("RETURN 1");
+                    addr1 = result.Summary.Server.Address;
                 }
+
+                using (var session = Driver.Session(AccessMode.Read))
+                {
+                    addr2 = session.Run("RETURN 2").Summary.Server.Address;
+                }
+
+                addr1.Should().NotBe(addr2);
             }
         }
 
@@ -85,7 +83,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldThrowServiceUnavailableExceptionIfNoServer()
         {
             Exception error = null;
-            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake")))
+            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
             using (var session = driver.Session())
             {
                 error = Record.Exception(() => session.Run("RETURN 1"));
@@ -97,7 +95,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public void ShouldDisallowMoreStatementAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
 
@@ -110,7 +108,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public void ShouldDisallowMoreConnectionsAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
 
@@ -132,7 +130,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 MetricsFactory = new DefaultMetricsFactory(),
                 ConnectionTimeout = Config.InfiniteInterval,
-                EncryptionLevel = EncryptionLevel.Encrypted,
+                EncryptionLevel = EncryptionLevel.None,
                 MaxConnectionPoolSize = 100,
                 ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
             });

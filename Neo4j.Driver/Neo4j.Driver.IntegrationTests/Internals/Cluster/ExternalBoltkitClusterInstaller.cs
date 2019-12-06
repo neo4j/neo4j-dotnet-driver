@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Neo4j.Driver.Internal.Routing;
+using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
@@ -40,7 +42,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             if (Directory.Exists(ClusterDir))
             {
                 _commandRunner.Debug($"Found and using cluster installed at `{ClusterDir}`.");
-                // no need to redownload and change the password if already downloaded locally
+                // no need to re-download and change the password if already downloaded locally
                 return;
             }
 

@@ -46,7 +46,7 @@ namespace Neo4j.Driver.IntegrationTests
             using (var session = Server.Driver.Session())
             {
                 var result = session.Run(
-                    "CREATE (a {value:{value}}) RETURN a.value", new Dictionary<string, object> {{"value", byteArray}});
+                    "CREATE (a {value:$value}) RETURN a.value", new Dictionary<string, object> {{"value", byteArray}});
                 // Then
                 foreach (var record in result)
                 {

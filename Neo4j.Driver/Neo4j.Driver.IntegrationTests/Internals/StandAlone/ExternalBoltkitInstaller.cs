@@ -73,6 +73,14 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     {MaxThreadPoolSize, Pool500}
                 });
             }
+            // 4.0 servers by default have encryption off.
+            if (ServerVersion.Version(BoltkitHelper.ServerVersion()) >= ServerVersion.V4_0_0)
+            {
+                UpdateSettings(new Dictionary<string, string>
+                {
+                    {BoltTlsLevel, BoltTlsOptional}
+                });
+            }
         }
 
         public ISet<ISingleInstance> Start()

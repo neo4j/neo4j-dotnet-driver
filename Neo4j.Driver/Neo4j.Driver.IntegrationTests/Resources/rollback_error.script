@@ -1,11 +1,10 @@
-!: AUTO INIT
+!: BOLT 3
+!: AUTO HELLO
 !: AUTO RESET
 
-C: RUN "BEGIN" {}
-   PULL_ALL
+C: BEGIN {}
 S: SUCCESS {}
-   SUCCESS {}
-C: RUN "CREATE (n {name:'Alice'}) RETURN n.name AS name" {}
+C: RUN "CREATE (n {name:'Alice'}) RETURN n.name AS name" {} {}
    PULL_ALL
 S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Unable to run any"}
    IGNORED
