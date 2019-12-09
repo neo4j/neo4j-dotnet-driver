@@ -891,13 +891,4 @@ namespace Neo4j.Driver.Examples
             }
         }
     }
-
-    // TODO Remove it after we figure out a way to solve the naming problem
-    internal static class ValueExtensions
-    {
-        public static T As<T>(this object value)
-        {
-            return Neo4j.Driver.ValueExtensions.As<T>(value);
-        }
-    }
 }
