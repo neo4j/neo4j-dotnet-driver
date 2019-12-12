@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var rxTxc = new InternalRxTransaction(Mock.Of<IInternalAsyncTransaction>());
 
-                rxTxc.Run("RETURN 1").Should().BeOfType<InternalRxResult>();
+                rxTxc.Run("RETURN 1").Should().BeOfType<RxResult>();
             }
 
             [Fact]

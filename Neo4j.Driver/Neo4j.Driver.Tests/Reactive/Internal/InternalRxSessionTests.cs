@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var rxSession = new InternalRxSession(Mock.Of<IInternalAsyncSession>(), Mock.Of<IRxRetryLogic>());
 
-                rxSession.Run("RETURN 1").Should().BeOfType<InternalRxResult>();
+                rxSession.Run("RETURN 1").Should().BeOfType<RxResult>();
             }
 
             [Fact]

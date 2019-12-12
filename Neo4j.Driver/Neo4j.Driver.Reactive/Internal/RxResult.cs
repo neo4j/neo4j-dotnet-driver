@@ -26,7 +26,7 @@ using static Neo4j.Driver.Internal.ErrorExtensions;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class InternalRxResult : IRxResult
+    internal class RxResult : IRxResult
     {
         private enum StreamingState
         {
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal
         private volatile int _streaming = (int) StreamingState.Ready;
         private readonly ILogger _logger;
 
-        public InternalRxResult(IObservable<IInternalResultCursor> resultCursor,
+        public RxResult(IObservable<IInternalResultCursor> resultCursor,
             ILogger logger = null)
         {
             _resultCursor = resultCursor.Replay().AutoConnect();
