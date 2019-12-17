@@ -26,10 +26,10 @@ namespace Neo4j.Driver.Internal.Result
 {
     internal class ResultCursorBuilder : IResultStreamBuilder, IResultStream
     {
-        private readonly long _batchSize;
+        private readonly long _fetchSize;
         private readonly Func<Task> _advanceFunction;
-        private readonly Func<ResultCursorBuilder, long, long, Task> _moreFunction;
-        private readonly Func<ResultCursorBuilder, long, Task> _cancelFunction;
+        private readonly Func<IResultStreamBuilder, long, long, Task> _moreFunction;
+        private readonly Func<IResultStreamBuilder, long, Task> _cancelFunction;
         private readonly CancellationTokenSource _cancellationSource;
         private readonly IResultResourceHandler _resourceHandler;
         private readonly SummaryBuilder _summaryBuilder;
@@ -41,11 +41,12 @@ namespace Neo4j.Driver.Internal.Result
         private string[] _fields;
 
         private IResponsePipelineError _pendingError;
+        private readonly IAutoPullHandler _autoPullHandler;
 
         public ResultCursorBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
-            Func<ResultCursorBuilder, long, long, Task> moreFunction,
-            Func<ResultCursorBuilder, long, Task> cancelFunction, IResultResourceHandler resourceHandler,
-            long batchSize = Config.Infinite, bool reactive = false)
+            Func<IResultStreamBuilder, long, long, Task> moreFunction,
+            Func<IResultStreamBuilder, long, Task> cancelFunction, IResultResourceHandler resourceHandler,
+            long fetchSize = Config.Infinite, bool reactive = false)
         {
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
             _advanceFunction =
@@ -60,7 +61,67 @@ namespace Neo4j.Driver.Internal.Result
             _state = (int) (reactive ? State.RunRequested : State.RunAndRecordsRequested);
             _queryId = NoQueryId;
             _fields = null;
-            _batchSize = batchSize;
+            _fetchSize = fetchSize;
+            _autoPullHandler = new AutoPullHandler(_fetchSize);
+        }
+
+        /// <summary>
+        /// Auto pull is disabled when there is too few records, and re-enabled when there is too many records.
+        /// The auto pull state will be checked when the record is consumed.
+        /// </summary>
+        private interface IAutoPullHandler
+        {
+            bool TryDisableAutoPull(int recordCount);
+            bool TryEnableAutoPull(int recordCount);
+
+            bool AutoPull { get; }
+        }
+
+        internal class AutoPullHandler : IAutoPullHandler
+        {
+            private readonly long _lowWatermark;
+            private readonly long _highWatermark;
+            private bool _autoPull = true;
+
+            public AutoPullHandler(long fetchSize)
+            {
+                if (fetchSize == Config.Infinite)
+                {
+                    // All records would come in one batch.
+                    // We will not turn off auto pull for this case.
+                    _lowWatermark = long.MaxValue; // we will always be lower than this to turn on auto pull.
+                    _highWatermark = long.MaxValue; // we can never go higher than this to turn off auto pull
+                }
+                else
+                {
+                    _lowWatermark = (long) (fetchSize * 0.3);
+                    _highWatermark = (long) (fetchSize * 0.7);
+                }
+            }
+
+            public bool TryDisableAutoPull(int recordCount)
+            {
+                if (_autoPull && recordCount > _highWatermark)
+                {
+                    _autoPull = false;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool TryEnableAutoPull(int recordCount)
+            {
+                if (!_autoPull && recordCount <= _lowWatermark)
+                {
+                    _autoPull = true;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool AutoPull => _autoPull;
         }
 
         internal State CurrentState
@@ -93,8 +154,15 @@ namespace Neo4j.Driver.Internal.Result
                 // Stop populate records immediately once the cancellation is requested.
                 ClearRecords();
             }
+
             if (_records.TryDequeue(out var record))
             {
+                _autoPullHandler.TryEnableAutoPull(_records.Count);
+                if (CurrentState < State.Completed && _autoPullHandler.AutoPull)
+                {
+                    await _advanceFunction().ConfigureAwait(false);
+                }
+
                 return record;
             }
 
@@ -151,6 +219,7 @@ namespace Neo4j.Driver.Internal.Result
         public void PushRecord(object[] fieldValues)
         {
             _records.Enqueue(new Record(_fields, fieldValues));
+            _autoPullHandler.TryDisableAutoPull(_records.Count);
 
             UpdateState(State.RecordsStreaming);
         }
@@ -167,7 +236,7 @@ namespace Neo4j.Driver.Internal.Result
                     }
                     else
                     {
-                        await _moreFunction(this, _queryId, _batchSize).ConfigureAwait(false);
+                        await _moreFunction(this, _queryId, _fetchSize).ConfigureAwait(false);
                     }
                 }
 

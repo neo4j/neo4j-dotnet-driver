@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Reactive.Internal
             public void ShouldReturnKeys()
             {
                 var cursor = CreateResultCursor(3, 0);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyKeys(result, "key01", "key02", "key03");
             }
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 0);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecords(result, keys, 0);
                 VerifyKeys(result, keys);
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 0);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifySummary(result);
                 VerifyKeys(result, keys);
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Reactive.Internal
             public void ShouldReturnKeysRepeatable()
             {
                 var cursor = CreateResultCursor(3, 0);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyKeys(result, "key01", "key02", "key03");
                 VerifyKeys(result, "key01", "key02", "key03");
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecords(result, keys, 5);
             }
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecords(result, keys, 5);
                 VerifyResultConsumedError(result.Records());
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Reactive.Internal
             public void ShouldReturnSummary()
             {
                 var cursor = CreateResultCursor(3, 0, "my query");
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifySummary(result, "my query");
             }
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Reactive.Internal
             public void ShouldNotReturnRecordsIfSummaryIsObserved()
             {
                 var cursor = CreateResultCursor(3, 0, "my query");
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifySummary(result, "my query");
                 VerifyResultConsumedError(result.Records());
@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Reactive.Internal
             public void ShouldReturnSummaryRepeatable()
             {
                 var cursor = CreateResultCursor(3, 0, "my query");
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifySummary(result, "my query");
                 VerifySummary(result, "my query");
@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 5, "my query");
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyKeys(result, keys);
                 VerifyRecords(result, keys, 5);
@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 5, "my query");
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecords(result, keys, 5);
                 VerifySummary(result, "my query");
@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var keys = new[] {"key01", "key02", "key03"};
                 var cursor = CreateResultCursor(3, 5, "my query");
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyKeys(result, keys);
                 VerifySummary(result, "my query");
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Reactive.Internal
             public void ShouldNotAllowConcurrentRecordObservers()
             {
                 var cursor = CreateResultCursor(3, 20, "my query", 1000);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 result.Records()
                     .Merge(result.Records())
@@ -196,7 +196,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Keys(), exc);
             }
@@ -206,7 +206,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Keys(), exc);
                 VerifyError(result.Keys(), exc);
@@ -218,7 +218,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Records(), exc);
             }
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxResult(Observable.Return(cursor), new TestLogger(Output.WriteLine));
+                var result = new RxResult(Observable.Return(cursor), new TestLogger(Output.WriteLine));
 
                 VerifyError(result.Records(), exc);
 
@@ -241,7 +241,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Consume(), exc);
             }
@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Consume(), exc);
                 VerifyError(result.Consume(), exc);
@@ -263,7 +263,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Keys(), exc);
                 VerifyError(result.Records(), exc);
@@ -278,7 +278,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var failure = new AuthenticationException("unauthenticated");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyKeys(result, "key01", "key02");
             }
@@ -289,7 +289,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var keys = new[] {"key01", "key02"};
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecordsAndError(result, keys, 5, failure);
             }
@@ -300,7 +300,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var keys = new[] {"key01", "key02"};
                 var failure1 = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure1, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecordsAndError(result, keys, 5, failure1);
                 VerifyResultConsumedError(result.Records());
@@ -312,7 +312,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Consume(), failure);
             }
@@ -322,7 +322,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Consume(), failure);
                 VerifyError(result.Consume(), failure);
@@ -335,7 +335,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var keys = new[] {"key01", "key02"};
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecordsAndError(result, keys, 5, failure);
                 VerifyNoError(result.Consume());
@@ -349,7 +349,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var failure = new AuthenticationException("unauthenticated");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyKeys(result, "key01", "key02");
             }
@@ -360,7 +360,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var keys = new[] {"key01", "key02"};
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyRecordsAndError(result, keys, 5, failure);
             }
@@ -370,7 +370,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var failure = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Consume(), failure);
             }
@@ -380,7 +380,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var failure = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Consume(), failure);
                 VerifyError(result.Consume(), failure);
@@ -391,7 +391,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var failure = new AuthenticationException("unauthenticated");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
-                var result = new InternalRxResult(Observable.Return(cursor));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Consume(), failure);
                 VerifyKeys(result, "key01", "key02");

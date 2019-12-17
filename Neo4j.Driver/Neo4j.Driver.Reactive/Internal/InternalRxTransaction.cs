@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Internal
 
         public IRxResult Run(Query query)
         {
-            return new InternalRxResult(Observable.FromAsync(() => _transaction.RunAsync(query))
+            return new RxResult(Observable.FromAsync(() => _transaction.RunAsync(query))
                 .Cast<IInternalResultCursor>());
         }
 

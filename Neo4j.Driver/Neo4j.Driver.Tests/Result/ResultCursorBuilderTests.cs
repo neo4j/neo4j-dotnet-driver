@@ -155,6 +155,57 @@ namespace Neo4j.Driver.Tests
             resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Once);
         }
 
+        [Fact]
+        public async Task ShouldPauseAndResumeStreamingWithWatermarks()
+        {
+            var actions = new Queue<Action>();
+            var resourceHandler = new Mock<IResultResourceHandler>();
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(),
+                    CreateMoreTaskQueue(actions),
+                    null,
+                    resourceHandler.Object, 2);
+
+            var counter = 0;
+            builder.RunCompleted(0, new[] {"a"}, null);
+            builder.PullCompleted(true, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
+            actions.Enqueue(() =>
+            {
+                builder.PushRecord(new object[] {1});
+                counter++;
+                builder.PushRecord(new object[] {2});
+                counter++;
+                builder.PullCompleted(true, null);
+            });
+            actions.Enqueue(() =>
+            {
+                builder.PushRecord(new object[] {3});
+                counter++;
+                builder.PullCompleted(false, null);
+            });
+
+            var cursor = builder.CreateCursor();
+
+            var hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
+            counter.Should().Be(2);
+
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Once);
+            counter.Should().Be(3);
+
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            counter.Should().Be(3);
+
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeFalse();
+            counter.Should().Be(3);
+        }
+
         public class Reactive
         {
             private int moreCallCount;
@@ -289,7 +340,7 @@ namespace Neo4j.Driver.Tests
                 cancelCallCount.Should().Be(1);
             }
 
-            private Func<ResultCursorBuilder, long, long, Task> MoreFunction()
+            private Func<IResultStreamBuilder, long, long, Task> MoreFunction()
             {
                 return (cursorBuilder, id, n) =>
                 {
@@ -298,7 +349,7 @@ namespace Neo4j.Driver.Tests
                 };
             }
 
-            private Func<ResultCursorBuilder, long, Task> CancelFunction()
+            private Func<IResultStreamBuilder, long, Task> CancelFunction()
             {
                 return (cursorBuilder, id) =>
                 {
@@ -330,5 +381,19 @@ namespace Neo4j.Driver.Tests
                 return Task.CompletedTask;
             };
         }
+
+        private static Func<IResultStreamBuilder, long, long, Task> CreateMoreTaskQueue(Queue<Action> actions)
+        {
+            return (b, id, n) =>
+            {
+                if (actions.TryDequeue(out var action))
+                {
+                    action();
+                }
+
+                return Task.CompletedTask;
+            };
+        }
+
     }
 }
