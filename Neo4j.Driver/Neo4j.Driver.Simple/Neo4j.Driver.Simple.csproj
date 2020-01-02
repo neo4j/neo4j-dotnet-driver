@@ -5,7 +5,7 @@
     <PackageId>Neo4j.Driver.Simple$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
     <Description>Synchronous extensions for the official .NET driver.</Description>
-    <Copyright>Copyright 2002-2019</Copyright>
+    <Copyright>Copyright 2002-2020</Copyright>
     <PackageTags>Cypher NoSql Graph Bolt Neo4j</PackageTags>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
