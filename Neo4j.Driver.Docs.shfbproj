@@ -47,7 +47,7 @@
     <Preliminary>False</Preliminary>
     <NamingMethod>Guid</NamingMethod>
     <HelpTitle>Neo4j Bolt Driver $(DriverVersion) for .NET</HelpTitle>
-    <CopyrightText>Copyright %28c%29 2002-2019 Neo4j</CopyrightText>
+    <CopyrightText>Copyright %28c%29 2002-2020 Neo4j</CopyrightText>
     <CopyrightHref>http://neo4j.com</CopyrightHref>
     <ContentPlacement>AboveNamespaces</ContentPlacement>
     <NamespaceSummaries>
