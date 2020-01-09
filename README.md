@@ -10,18 +10,47 @@ Resources to get you started:
 ## For Application Developers
 This section is prepared for application developers who would like to use this driver in application projects for connecting to a Neo4j instance or a Neo4j cluster.
 
+### What's New
+* Upcoming version is now named as 4.0.0 instead of 2.0.0 to better align with server versions.
+* Bolt V4.0 is implemented in the 4.0.0 driver.
+* Reactive API is available under namespace `Neo4j.Driver.Reactive` when using together with Neo4j 4.0 databases.
+* Multi-databases support is added. Database can be selected for each session on creation with `SessionConfig#ForDatabase`.
+* A new feature detection method `IDriver#SupportsMultiDbAsync` is added for querying if the remote database supports multi-databases.
+* A new `IDriver#VerifyConnectivityAsync` method is introduced for verify the availability of remote DBMS.
+### Breaking Changes
+* Encrypted is turned off by default. When encryption is explicitly enabled, the default trust mode is to trust the certificates that are trusted by underlying operating system, and hostname verification is enforced by default.
+* v1 is removed from drivers' package name. All public APIs are under the namespace `Neo4j.Driver` instead of the old `Neo4j.Driver.V1`.
+* The `Neo4j.Driver` package contains only the asynchronous API. Synchronous session API has been moved to the namespace `Neo4j.Driver.Simple`.
+* A new `neo4j` scheme is added and designed to work with all possible 4.0 server deployments. `bolt` scheme is still available for explicit direct connections with a single instance and/or a single member in a cluster. For 3.x servers, `neo4j` replaces `bolt+routing`.
+* Asynchronous methods have been extracted out and put in interfaces prefixed with `IAsync`, whereas synchronous methods are kept under the old interface but live in package `Neo4j.Driver.Simple`. This change ensures that blocking and no-blocking APIs can never be mixed together.
+* `IDriver#Session` methods now make use of a session option builder rather than method arguments.
+* Bookmark has changed from a `string` and/or a list of strings to a `Bookmark` object.
+* `ITransaction#Success` is replaced with `ITransaction#Commit`.
+However unlike `ITransaction#Success` which only marks the transaction to be successful and then waits for `ITransaction#Dispose` to actually perform the real commit, `ITransaction#Commit` commits the transaction immediately.
+ Similarly, `ITransaction#Failure` is replaced with `ITransaction#Rollback`. A transaction in 4.0 can only be committed OR rolled back once.
+ If a transaction is not committed explicitly using `ITransaction#Commit`, `ITransaction#Dispose` will roll back the transaction.
+* `Statement` has been renamed to `Query`. `IStatementResult` has been simplified to `IResult`. Similarly, `IStatementResultCursor` has been renamed to `IResultCursor`.
+* A result can only be consumed once. A result is consumed if either the query result has been discarded by invoking `IResult#Consume` and/or the outer scope where the result is created, such as a transaction or a session, has been closed.
+Attempts to access consumed results will be responded with a `ResultConsumedException`.
+* `LoadBalancingStrategy` is removed from `Config` class and the drivers always default to `LeastConnectedStrategy`.
+* The `IDriverLogger` has been renamed to `ILogger`.
+* `TrustStrategy` is replaced with `TrustManager`.
+
 ### Getting the Driver
 
-The Neo4j Driver is distributed exclusively via [Nuget](https://www.nuget.org/packages/Neo4j.Driver). 
+The Neo4j driver is distributed under three packages:
+* [Neo4j.Driver](https://www.nuget.org/packages/Neo4j.Driver/) provides an independent asynchronous driver.
+* [Neo4j.Driver.Simple](https://www.nuget.org/packages/Neo4j.Driver.Simple/) for accessing Neo4j via synchronous API.
+* [Neo4j.Driver.Reactive](https://www.nuget.org/packages/Neo4j.Driver.Reactive/) for accessing Neo4j via reactive API.
 
-Add the driver to your project using the Nuget Package Manager:
+Add the asynchronous driver to your project using the Nuget Package Manager:
 ```posh
 PM> Install-Package Neo4j.Driver
 ```
 
-There is also a strong named version of the driver available on Nuget as [Neo4j.Driver.Signed](https://www.nuget.org/packages/Neo4j.Driver.Signed). Both packages contain the same version of the driver, only the latter is strong named. _Consider using the strong named version only if your project is strong named and/or you are forced to use strong named dependencies._
+There is also a strong named version of each driver package available on Nuget such as [Neo4j.Driver.Signed](https://www.nuget.org/packages/Neo4j.Driver.Signed). Both packages contain the same version of the driver, only the latter is strong named. _Consider using the strong named version only if your project is strong named and/or you are forced to use strong named dependencies._
 
-Add the strong named version of the driver to your project using the Nuget Package Manager:
+Add the strong named version of the asynchronous driver to your project using the Nuget Package Manager:
 ```posh
 PM> Install-Package Neo4j.Driver.Signed
 ```
