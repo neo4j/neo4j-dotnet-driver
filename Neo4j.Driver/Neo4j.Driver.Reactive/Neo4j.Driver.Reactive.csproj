@@ -5,10 +5,8 @@
     <AssemblyName>Neo4j.Driver.Reactive</AssemblyName>
     <PackageId>Neo4j.Driver.Reactive$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
-    <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
     <Description>Reactive extensions for the official .NET driver.</Description>
     <Copyright>Copyright 2002-2020</Copyright>
-    <PackageIconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</PackageIconUrl>
     <PackageTags>Cypher NoSql Graph Bolt Neo4j Reactive</PackageTags>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
@@ -20,11 +18,16 @@
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Reactive.xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RootNamespace>Neo4j.Driver</RootNamespace>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Reactive" Version="4.1.5" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
