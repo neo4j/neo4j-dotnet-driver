@@ -36,7 +36,7 @@
     <ApiFilter>
     </ApiFilter>
     <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected, ProtectedInternalAsProtected</VisibleItems>
-    <DriverVersion Condition="'$(DriverVersion)' == ''">1.7</DriverVersion>
+    <DriverVersion Condition="'$(DriverVersion)' == ''">4.0</DriverVersion>
     <HelpFileVersion>$(DriverVersion).0.0</HelpFileVersion>
     <MaximumGroupParts>2</MaximumGroupParts>
     <NamespaceGrouping>False</NamespaceGrouping>
