@@ -27,15 +27,6 @@
     <ProjectReference Include="..\Neo4j.Driver.Tests\Neo4j.Driver.Tests.csproj" />
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
-    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
-    <PackageReference Include="System.Net.Security" Version="4.3.2" />
-    <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
-    <PackageReference Include="System.Threading.Tasks" Version="4.3.0" />
-    <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
-    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-  </ItemGroup>
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
