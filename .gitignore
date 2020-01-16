@@ -260,3 +260,6 @@ paket-files/
 # Test artifacts
 Target/
 Build/
+
+# Ionide
+.ionide/
