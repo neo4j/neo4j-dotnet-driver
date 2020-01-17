@@ -286,7 +286,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             public ClusterAddresses(IEnumerable<string> followers, IEnumerable<string> readReplicas)
             {
                 Followers = followers.ToHashSet();
-                ReadReplicas = followers.ToHashSet();
+                ReadReplicas = readReplicas.ToHashSet();
             }
 
             public ISet<string> Followers { get; }
