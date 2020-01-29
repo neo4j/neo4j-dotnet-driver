@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Globalization;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver
@@ -83,14 +84,17 @@ namespace Neo4j.Driver
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
+            var xStr = X.ToString(NumberFormatInfo.InvariantInfo);
+            var yStr = Y.ToString(NumberFormatInfo.InvariantInfo);
+            var zStr = Z.ToString(NumberFormatInfo.InvariantInfo);
             switch (Dimension)
             {
                 case TwoD:
-                    return $"Point{{srId={SrId}, x={X}, y={Y}}}";
+                    return $"Point{{srId={SrId}, x={xStr}, y={yStr}}}";
                 case ThreeD:
-                    return $"Point{{srId={SrId}, x={X}, y={Y}, z={Z}}}";
+                    return $"Point{{srId={SrId}, x={xStr}, y={yStr}, z={zStr}}}";
                 default:
-                    return $"Point{{dimension={Dimension}, srId={SrId}, x={X}, y={Y}, z={Z}}}";
+                    return $"Point{{dimension={Dimension}, srId={SrId}, x={xStr}, y={yStr}, z={zStr}}}";
             }
         }
 
