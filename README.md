@@ -10,31 +10,7 @@ Resources to get you started:
 ## For Application Developers
 This section is prepared for application developers who would like to use this driver in application projects for connecting to a Neo4j instance or a Neo4j cluster.
 
-### What's New
-* Upcoming version is now named as 4.0.0 instead of 2.0.0 to better align with server versions.
-* Bolt V4.0 is implemented in the 4.0.0 driver.
-* Reactive API is available under namespace `Neo4j.Driver.Reactive` when using together with Neo4j 4.0 databases.
-* Multi-databases support is added. Database can be selected for each session on creation with `SessionConfig#ForDatabase`.
-* A new feature detection method `IDriver#SupportsMultiDbAsync` is added for querying if the remote database supports multi-databases.
-* A new `IDriver#VerifyConnectivityAsync` method is introduced for verify the availability of remote DBMS.
-### Breaking Changes
-* Encrypted is turned off by default. When encryption is explicitly enabled, the default trust mode is to trust the certificates that are trusted by underlying operating system, and hostname verification is enforced by default.
-* v1 is removed from drivers' package name. All public APIs are under the namespace `Neo4j.Driver` instead of the old `Neo4j.Driver.V1`.
-* The `Neo4j.Driver` package contains only the asynchronous API. Synchronous session API has been moved to the namespace `Neo4j.Driver.Simple`.
-* A new `neo4j` scheme is added and designed to work with all possible 4.0 server deployments. `bolt` scheme is still available for explicit direct connections with a single instance and/or a single member in a cluster. For 3.x servers, `neo4j` replaces `bolt+routing`.
-* Asynchronous methods have been extracted out and put in interfaces prefixed with `IAsync`, whereas synchronous methods are kept under the old interface but live in package `Neo4j.Driver.Simple`. This change ensures that blocking and no-blocking APIs can never be mixed together.
-* `IDriver#Session` methods now make use of a session option builder rather than method arguments.
-* Bookmark has changed from a `string` and/or a list of strings to a `Bookmark` object.
-* `ITransaction#Success` is replaced with `ITransaction#Commit`.
-However unlike `ITransaction#Success` which only marks the transaction to be successful and then waits for `ITransaction#Dispose` to actually perform the real commit, `ITransaction#Commit` commits the transaction immediately.
- Similarly, `ITransaction#Failure` is replaced with `ITransaction#Rollback`. A transaction in 4.0 can only be committed OR rolled back once.
- If a transaction is not committed explicitly using `ITransaction#Commit`, `ITransaction#Dispose` will roll back the transaction.
-* `Statement` has been renamed to `Query`. `IStatementResult` has been simplified to `IResult`. Similarly, `IStatementResultCursor` has been renamed to `IResultCursor`.
-* A result can only be consumed once. A result is consumed if either the query result has been discarded by invoking `IResult#Consume` and/or the outer scope where the result is created, such as a transaction or a session, has been closed.
-Attempts to access consumed results will be responded with a `ResultConsumedException`.
-* `LoadBalancingStrategy` is removed from `Config` class and the drivers always default to `LeastConnectedStrategy`.
-* The `IDriverLogger` has been renamed to `ILogger`.
-* `TrustStrategy` is replaced with `TrustManager`.
+For users who wish to migrate from 1.7 series to 4.0, checkout our [migration guide](#migrating-from-17-to-40).
 
 ### Getting the Driver
 
@@ -195,6 +171,36 @@ public class DriverLogger : ILogger
 }
 ```
 
+### Migrating from 1.7 to 4.0
+This section is for users who would like to migrate their 1.7 driver to 4.0.
+The following sections serve as a quick look at what have been added and/or changed in 4.0 .NET driver.
+For more information, also checkout our [Driver Migration Guide](https://neo4j.com/docs/migration-guide/4.0/upgrade-driver/).
+#### What's New
+* Upcoming version is now named as 4.0.0 instead of 2.0.0 to better align with server versions.
+* Bolt V4.0 is implemented in the 4.0.0 driver.
+* Reactive API is available under namespace `Neo4j.Driver.Reactive` when using together with Neo4j 4.0 databases.
+* Multi-databases support is added. Database can be selected for each session on creation with `SessionConfig#ForDatabase`.
+* A new feature detection method `IDriver#SupportsMultiDbAsync` is added for querying if the remote database supports multi-databases.
+* A new `IDriver#VerifyConnectivityAsync` method is introduced for verify the availability of remote DBMS.
+#### Breaking Changes
+* Encrypted is turned off by default. When encryption is explicitly enabled, the default trust mode is to trust the certificates that are trusted by underlying operating system, and hostname verification is enforced by default.
+* v1 is removed from drivers' package name. All public APIs are under the namespace `Neo4j.Driver` instead of the old `Neo4j.Driver.V1`.
+* The `Neo4j.Driver` package contains only the asynchronous API. Synchronous session API has been moved to the namespace `Neo4j.Driver.Simple`.
+* A new `neo4j` scheme is added and designed to work with all possible 4.0 server deployments. `bolt` scheme is still available for explicit direct connections with a single instance and/or a single member in a cluster. For 3.x servers, `neo4j` replaces `bolt+routing`.
+* Asynchronous methods have been extracted out and put in interfaces prefixed with `IAsync`, whereas synchronous methods are kept under the old interface but live in package `Neo4j.Driver.Simple`. This change ensures that blocking and no-blocking APIs can never be mixed together.
+* `IDriver#Session` methods now make use of a session option builder rather than method arguments.
+* Bookmark has changed from a `string` and/or a list of strings to a `Bookmark` object.
+* `ITransaction#Success` is replaced with `ITransaction#Commit`.
+However unlike `ITransaction#Success` which only marks the transaction to be successful and then waits for `ITransaction#Dispose` to actually perform the real commit, `ITransaction#Commit` commits the transaction immediately.
+ Similarly, `ITransaction#Failure` is replaced with `ITransaction#Rollback`. A transaction in 4.0 can only be committed OR rolled back once.
+ If a transaction is not committed explicitly using `ITransaction#Commit`, `ITransaction#Dispose` will roll back the transaction.
+* `Statement` has been renamed to `Query`. `IStatementResult` has been simplified to `IResult`. Similarly, `IStatementResultCursor` has been renamed to `IResultCursor`.
+* A result can only be consumed once. A result is consumed if either the query result has been discarded by invoking `IResult#Consume` and/or the outer scope where the result is created, such as a transaction or a session, has been closed.
+Attempts to access consumed results will be responded with a `ResultConsumedException`.
+* `LoadBalancingStrategy` is removed from `Config` class and the drivers always default to `LeastConnectedStrategy`.
+* The `IDriverLogger` has been renamed to `ILogger`.
+* `TrustStrategy` is replaced with `TrustManager`.
+
 ## For Driver Developers
 This section targets at people who would like to compile the source code on their own machines for the purpose of, for example,
 contributing a PR to this repository.
@@ -207,7 +213,7 @@ Snapshot builds are available at our [MyGet feed](https://www.myget.org/gallery/
 
 * [https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json](https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json)
 
-### Building the Source Code
+### Building the Source Code on Windows
 
 #### Visual Studio Version
 
@@ -233,3 +239,11 @@ The simplest way to run all tests from command line is to run `runTests.ps1` pow
 Any parameter to this powershell script will be used to reset environment variable `NEOCTRL_ARGS`:
 
 	.\Neo4j.Driver\runTests.ps1 -e 4.0.0
+
+### Building the Source Code on MacOS and/or Linux
+
+The driver targets at .NET Standard 2.0.
+As a result, it can be compiled and run on linux machines after installing for example .NET Core 2.0 library.
+As for IDE, we recommend Rider for daily development.
+The integration tests require [boltkit](https://github.com/neo4j-contrib/boltkit) to be installed and accessible via command line.
+If any problem to start a Neo4j Server on your machine, you can start the test Bolt Server yourself at `localhost:7687` and then set environment variable `DOTNET_DRIVER_USING_LOCAL_SERVER=true`
