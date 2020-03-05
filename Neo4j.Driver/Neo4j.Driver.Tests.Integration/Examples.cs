@@ -24,6 +24,7 @@ using FluentAssertions;
 using Neo4j.Driver;
 using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
+using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -704,6 +705,77 @@ namespace Neo4j.Driver.Examples
                 AddPerson("Alice");
                 // Then
                 CountPerson("Alice").Should().Be(1);
+            }
+        }
+        
+        public class DatabaseSelectionExampleTest : BaseExample
+        {
+            public DatabaseSelectionExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            [RequireEnterpriseEdition("4.0.0", VersionComparison.GreaterThanOrEqualTo)]
+            public async void TestUseAnotherDatabaseExample()
+            {
+                await DropDatabase(Driver, "examples");
+                await CreateDatabase(Driver, "examples");
+                
+                // Given
+                using (var example = new DatabaseSelectionExample(Uri, User, Password))
+                {
+                    // When
+                    example.UseAnotherDatabaseExample();
+                    
+                    // Then
+                    var greetingCount = ReadInt("examples", "MATCH (a:Greeting) RETURN count(a)");
+                    greetingCount.Should().Be(1);
+                }
+            }
+
+            private int ReadInt(string database, string query)
+            {
+                using (var session = Driver.Session(SessionConfigBuilder.ForDatabase(database)))
+                {
+                    return session.Run(query).Single()[0].As<int>();
+                }
+            }
+
+            private class DatabaseSelectionExample : IDisposable
+            {
+                private readonly IDriver _driver;
+
+                public DatabaseSelectionExample(string uri, string user, string password)
+                {
+                    _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+                }
+
+                public void UseAnotherDatabaseExample()
+                {
+                    // tag::database-selection[]
+                    using (var session = _driver.Session(SessionConfigBuilder.ForDatabase("examples")))
+                    {
+                        session.Run("CREATE (a:Greeting {message: 'Hello, Example-Database'}) RETURN a").Consume();
+                    }
+
+                    void SessionConfig(SessionConfigBuilder configBuilder) =>
+                        configBuilder.WithDatabase("examples")
+                            .WithDefaultAccessMode(AccessMode.Read)
+                            .Build();
+
+                    using (var session = _driver.Session(SessionConfig))
+                    {
+                        var result = session.Run("MATCH (a:Greeting) RETURN a.message as msg");
+                        var msg = result.Single()[0].As<string>();
+                        Console.WriteLine(msg);
+                    }
+                    // end::database-selection[]
+                }
+
+                public void Dispose()
+                {
+                    _driver?.Dispose();
+                }
             }
         }
 
