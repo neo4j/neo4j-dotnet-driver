@@ -18,6 +18,7 @@
 using System;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Connector.Trust;
 
 namespace Neo4j.Driver.Internal
 {
@@ -26,44 +27,84 @@ namespace Neo4j.Driver.Internal
     /// </summary>
     internal class EncryptionManager
     {
-        private readonly EncryptionLevel _encryptionLevel;
-
         public EncryptionManager()
         {
         } // for test
 
-        public EncryptionManager(EncryptionLevel level, TrustManager trustManager, ILogger logger)
+        public EncryptionManager(bool useTls, TrustManager trustManager)
         {
-            _encryptionLevel = level;
+            UseTls = useTls;
+            TrustManager = trustManager;
+        }
 
-            if (_encryptionLevel == EncryptionLevel.Encrypted)
+        public static EncryptionManager Create(Uri uri, EncryptionLevel? level, TrustManager trustManager,
+            ILogger logger)
+        {
+            var configured = level.HasValue || trustManager != null;
+            if (configured)
             {
-                if (trustManager == null)
-                {
-                    trustManager = TrustManager.CreateChainTrust();
-                }
+                AssertSimpleUriScheme(uri, level, trustManager);
+                return CreateFromConfig(level, trustManager, logger);
+            }
+            return CreateFromUriScheme(uri, logger);
 
-                trustManager.Logger = logger;
+        }
 
-                TrustManager = trustManager;
+        private static EncryptionManager CreateFromUriScheme(Uri uri, ILogger logger)
+        {
+            // let the uri scheme to decide
+            return uri.ParseUriSchemeToEncryptionManager(logger);
+        }
+
+        private static void AssertSimpleUriScheme(Uri uri, EncryptionLevel? encryptionLevel, TrustManager trustManager)
+        {
+            if (!uri.IsSimpleUriScheme())
+            {
+                throw new ArgumentException(
+                    "The encryption and trust settings cannot both be set via uri scheme and driver configuration. " +
+                    $"uri scheme = {uri.Scheme}, encryption = {encryptionLevel}, trust = {trustManager}");
             }
         }
 
-        public bool UseTls
+        public static EncryptionManager CreateFromConfig(EncryptionLevel? nullableLevel, TrustManager trustManager,
+            ILogger logger)
         {
-            get
+            var encrypted = ParseEncrypted(nullableLevel);
+            if (encrypted && trustManager == null)
             {
-                switch (_encryptionLevel)
-                {
-                    case EncryptionLevel.Encrypted:
-                        return true;
-                    case EncryptionLevel.None:
-                        return false;
-                    default:
-                        throw new NotSupportedException($"Unknown encryption level: {_encryptionLevel}");
-                }
+                return new EncryptionManager(true, CreateSecureTrustManager(logger));
+            }
+            return new EncryptionManager(encrypted, trustManager);
+        }
+
+        private static bool ParseEncrypted(EncryptionLevel? nullableLevel)
+        {
+            var level = nullableLevel.GetValueOrDefault(EncryptionLevel.None);
+            switch (level)
+            {
+                case EncryptionLevel.Encrypted:
+                    return true;
+                case EncryptionLevel.None:
+                    return false;
+                default:
+                    throw new NotSupportedException($"Unknown encryption level: {level}");
             }
         }
+
+        public static TrustManager CreateSecureTrustManager(ILogger logger)
+        {
+            var trustManager = TrustManager.CreateChainTrust();
+            trustManager.Logger = logger;
+            return trustManager;
+        }
+
+        public static TrustManager CreateInsecureTrustManager(ILogger logger)
+        {
+            var trustManager = TrustManager.CreateInsecure();
+            trustManager.Logger = logger;
+            return trustManager;
+        }
+        public bool UseTls { get; }
 
         public TrustManager TrustManager { get; }
     }

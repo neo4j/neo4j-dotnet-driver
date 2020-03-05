@@ -593,7 +593,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 Logger = new StressTestLogger(_output, LoggingEnabled)
             };
 
-            var connectionSettings = new ConnectionSettings(_authToken, config);
+            var connectionSettings = new ConnectionSettings(_databaseUri, _authToken, config);
             var bufferSettings = new BufferSettings(config);
             var connectionFactory = new MonitoredPooledConnectionFactory(
                 new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger));

@@ -55,6 +55,28 @@ namespace Neo4j.Driver.Tests
                 config.MaxConnectionPoolSize.Should().Be(50);
                 config.MaxIdleConnectionPoolSize.Should().Be(20);
             }
+
+            [Fact]
+            public void ShouldDefaultToNoEncryptionAndNoTrust()
+            {
+                var config = Config.Default;
+                config.NullableEncryptionLevel.Should().BeNull();
+                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.TrustManager.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldSetEncryptionAndTrust()
+            {
+                var config = new Config
+                {
+                    EncryptionLevel = EncryptionLevel.None,
+                    TrustManager = null
+                };
+                config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.TrustManager.Should().BeNull();
+            }
         }
 
         public class ConfigBuilderTests
@@ -107,10 +129,11 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void WithEncryptionLevelShouldModifyTheSingleValue()
+            public void WithEncryptionLevelShouldModifyTheNullableValue()
             {
                 var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(500);

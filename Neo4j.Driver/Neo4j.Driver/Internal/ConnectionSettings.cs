@@ -28,9 +28,9 @@ namespace Neo4j.Driver.Internal
         public string UserAgent { get; }
         public SocketSettings SocketSettings { get; }
 
-        public ConnectionSettings(IAuthToken auth, Config config)
-        : this(auth, new EncryptionManager(config.EncryptionLevel, config.TrustManager, config.Logger),
-              config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled)
+        public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
+            : this(auth, EncryptionManager.Create(uri, config.NullableEncryptionLevel, config.TrustManager, config.Logger),
+                config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled)
         {
         }
 

@@ -74,7 +74,13 @@ namespace Neo4j.Driver
         /// <summary>
         /// The use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
-        public EncryptionLevel EncryptionLevel { get; internal set; } = EncryptionLevel.None;
+        public EncryptionLevel EncryptionLevel
+        {
+            get => NullableEncryptionLevel.GetValueOrDefault(EncryptionLevel.None);
+            internal set => NullableEncryptionLevel = value;
+        }
+
+        internal EncryptionLevel? NullableEncryptionLevel { get; set; }
 
         /// <summary>
         /// Specifies which <see cref="TrustManager"/> implementation should be used while establishing trust via TLS.
@@ -147,7 +153,7 @@ namespace Neo4j.Driver
         public TimeSpan ConnectionIdleTimeout { get; internal set; } = InfiniteInterval;
 
         /// <summary>
-        /// The maximum connection lifetime on pooled connecitons.
+        /// The maximum connection lifetime on pooled connections.
         /// A connection that has been created for longer than the given time will be closed once it is seen.
         /// Use <see cref="InfiniteInterval"/> to disable connection lifetime checking.
         /// </summary>

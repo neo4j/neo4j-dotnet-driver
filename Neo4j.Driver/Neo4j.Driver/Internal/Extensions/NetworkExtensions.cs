@@ -27,7 +27,62 @@ namespace Neo4j.Driver.Internal
 {
     internal static class NetworkExtensions
     {
-        
+        public static bool IsSimpleUriScheme(this Uri uri)
+        {
+            var scheme = uri.Scheme.ToLower();
+            switch (scheme)
+            {
+                case "bolt+s":
+                case "bolt+ssc":
+                case "neo4j+s":
+                case "neo4j+ssc":
+                    return false;
+                case "bolt":
+                case "neo4j":
+                    return true;
+                default:
+                    throw new NotSupportedException($"Unsupported URI scheme: {scheme}");
+            }
+        }
+        public static bool IsRoutingUri(this Uri uri)
+        {
+            var scheme = uri.Scheme.ToLower();
+            switch (scheme)
+            {
+                case "bolt":
+                case "bolt+s":
+                case "bolt+ssc":
+                    return false;
+                case "neo4j":
+                case "neo4j+s":
+                case "neo4j+ssc":
+                    return true;
+                default:
+                    throw new NotSupportedException($"Unsupported URI scheme: {scheme}");
+            }
+        }
+
+        public static EncryptionManager ParseUriSchemeToEncryptionManager(this Uri uri, ILogger logger)
+        {
+            var scheme = uri.Scheme.ToLower();
+            switch (scheme)
+            {
+                case "bolt":
+                case "neo4j":
+                    // no encryption, no trust
+                    return new EncryptionManager(false, null);
+                case "bolt+s":
+                case "neo4j+s":
+                    // encryption with chain trust
+                    return new EncryptionManager(true, EncryptionManager.CreateSecureTrustManager(logger));
+                case "bolt+ssc":
+                case "neo4j+ssc":
+                    return new EncryptionManager(true, EncryptionManager.CreateInsecureTrustManager(logger));
+                default:
+                    throw new NotSupportedException($"Unsupported URI scheme: {scheme}");
+            }
+        }
+
         public static Uri ParseBoltUri(this Uri uri, int defaultPort)
         {
             var port = defaultPort;

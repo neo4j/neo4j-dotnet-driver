@@ -21,7 +21,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector.Trust;
 using Xunit;
 using static Neo4j.Driver.Internal.NetworkExtensions;
 
@@ -86,6 +88,139 @@ namespace Neo4j.Driver.Tests
                 var exception = Record.Exception(() => raw.ParseRoutingContext());
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Duplicated query parameters with key 'name'");
+            }
+        }
+
+        public class IsSimpleUriSchemeMethod
+        {
+            [Theory]
+            [InlineData("bolt")]
+            [InlineData("neo4j")]
+            public void ShouldBeSimpleUri(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var isSimple = raw.IsSimpleUriScheme();
+
+                isSimple.Should().BeTrue();
+            }
+
+            [Theory]
+            [InlineData("bolt+s")]
+            [InlineData("bolt+ssc")]
+            [InlineData("neo4j+s")]
+            [InlineData("neo4j+ssc")]
+            public void ShouldNotBeSimpleUri(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var isSimple = raw.IsSimpleUriScheme();
+
+                isSimple.Should().BeFalse();
+            }
+
+            [Theory]
+            [InlineData("bolt+ss")]
+            [InlineData("bolts")]
+            [InlineData("neo4js")]
+            [InlineData("neo4j-ssc")]
+            public void ShouldErrorForUnknownBoltUri(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var ex = Record.Exception(() => raw.IsSimpleUriScheme());
+                ex.Should().BeOfType<NotSupportedException>();
+            }
+        }
+
+        public class IsRoutingUriMethod
+        {
+            [Theory]
+            [InlineData("neo4j")]
+            [InlineData("neo4j+s")]
+            [InlineData("neo4j+ssc")]
+            public void ShouldBeRoutingUri(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var isRoutingUri = raw.IsRoutingUri();
+
+                isRoutingUri.Should().BeTrue();
+            }
+
+            [Theory]
+            [InlineData("bolt")]
+            [InlineData("bolt+s")]
+            [InlineData("bolt+ssc")]
+            public void ShouldNotBeRoutingUri(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var isRoutingUri = raw.IsRoutingUri();
+
+                isRoutingUri.Should().BeFalse();
+            }
+
+            [Theory]
+            [InlineData("bolt+ss")]
+            [InlineData("bolts")]
+            [InlineData("neo4js")]
+            [InlineData("neo4j-ssc")]
+            public void ShouldErrorForUnknownBoltUri(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var ex = Record.Exception(() => raw.IsRoutingUri());
+                ex.Should().BeOfType<NotSupportedException>();
+            }
+        }
+
+        public class ParseUriSchemeToEncryptionManagerMethod
+        {
+            [Theory]
+            [InlineData("bolt")]
+            [InlineData("neo4j")]
+            public void ShouldBeNoEncryptionNoTrust(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var manager = raw.ParseUriSchemeToEncryptionManager(null);
+
+                manager.UseTls.Should().BeFalse();
+                manager.TrustManager.Should().BeNull();
+            }
+
+            [Theory]
+            [InlineData("bolt+s")]
+            [InlineData("neo4j+s")]
+            public void ShouldBeEncryptionWithChainTrust(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var log = new Mock<ILogger>().Object;
+                var manager = raw.ParseUriSchemeToEncryptionManager(log);
+
+                manager.UseTls.Should().BeTrue();
+                manager.TrustManager.Should().BeOfType<ChainTrustManager>();
+                manager.TrustManager.Logger.Should().Be(log);
+            }
+
+            [Theory]
+            [InlineData("bolt+ssc")]
+            [InlineData("neo4j+ssc")]
+            public void ShouldBeEncryptionWithInsecureTrust(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var log = new Mock<ILogger>().Object;
+                var manager = raw.ParseUriSchemeToEncryptionManager(log);
+
+                manager.UseTls.Should().BeTrue();
+                manager.TrustManager.Should().BeOfType<InsecureTrustManager>();
+                manager.TrustManager.Logger.Should().Be(log);
+            }
+
+            [Theory]
+            [InlineData("bolt+ss")]
+            [InlineData("bolts")]
+            [InlineData("neo4js")]
+            [InlineData("neo4j-ssc")]
+            public void ShouldErrorForUnknownBoltUri(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var ex = Record.Exception(() => raw.ParseUriSchemeToEncryptionManager(null));
+                ex.Should().BeOfType<NotSupportedException>();
             }
         }
     }

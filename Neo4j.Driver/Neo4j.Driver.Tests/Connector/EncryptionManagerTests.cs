@@ -30,31 +30,135 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class EncryptionManagerTests
     {
-        [Fact]
-        public void ShouldNotCreateTrustManagerIfEncryptionDisabled()
+        public class CreateFromConfigMethod
         {
-            var encryption =
-                new EncryptionManager(EncryptionLevel.None, null, null);
+            [Fact]
+            public void ShouldNotCreateTrustManagerIfNotEncrypted()
+            {
+                var encryption =
+                    EncryptionManager.CreateFromConfig(EncryptionLevel.None, null, null);
 
-            encryption.TrustManager.Should().BeNull();
+                encryption.UseTls.Should().BeFalse();
+                encryption.TrustManager.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldNotCreateTrustManagerIfEncryptedIsNull()
+            {
+                var encryption =
+                    EncryptionManager.CreateFromConfig(null, null, null);
+
+                encryption.UseTls.Should().BeFalse();
+                encryption.TrustManager.Should().BeNull();
+            }
+
+            [Fact]
+            public void ShouldCreateDefaultTrustManagerIfEncrypted()
+            {
+                var encryption =
+                    EncryptionManager.CreateFromConfig(EncryptionLevel.Encrypted, null, null);
+
+                encryption.UseTls.Should().BeTrue();
+                encryption.TrustManager.Should().NotBeNull().And.BeOfType<ChainTrustManager>();
+            }
+
+            [Fact]
+            public void ShouldUseProvidedTrustManager()
+            {
+                var encryption =
+                    EncryptionManager.CreateFromConfig(null, new CustomTrustManager(), null);
+
+                encryption.UseTls.Should().BeFalse();
+                encryption.TrustManager.Should().NotBeNull().And.BeOfType<CustomTrustManager>();
+            }
+
         }
 
-        [Fact]
-        public void ShouldCreateDefaulTrustManagerIfEncrypted()
+        public class CreateMethod
         {
-            var encryption =
-                new EncryptionManager(EncryptionLevel.Encrypted, null, null);
+            [Theory]
+            [InlineData("bolt")]
+            [InlineData("neo4j")]
+            public void ShouldCreateDefaultWithoutConfig(string scheme)
+            {
+                var uri = new Uri($"{scheme}://localhost/?");
+                var encryption =
+                    EncryptionManager.Create(uri, null, null, null);
 
-            encryption.TrustManager.Should().NotBeNull().And.BeOfType<ChainTrustManager>();
-        }
+                encryption.UseTls.Should().BeFalse();
+                encryption.TrustManager.Should().BeNull();
+            }
 
-        [Fact]
-        public void ShouldUseProvidedTrustManager()
-        {
-            var encryption =
-                new EncryptionManager(EncryptionLevel.Encrypted, new CustomTrustManager(), null);
+            [Theory]
+            [InlineData("bolt")]
+            [InlineData("neo4j")]
+            public void ShouldCreateFromConfig(string scheme)
+            {
+                var uri = new Uri($"{scheme}://localhost/?");
+                var encryption =
+                    EncryptionManager.Create(uri, EncryptionLevel.Encrypted, null, null);
 
-            encryption.TrustManager.Should().NotBeNull().And.BeOfType<CustomTrustManager>();
+                encryption.UseTls.Should().BeTrue();
+                encryption.TrustManager.Should().BeOfType<ChainTrustManager>();
+            }
+
+            [Theory]
+            [InlineData("bolt+s")]
+            [InlineData("neo4j+s")]
+            public void ShouldCreateChainTrustFromUri(string scheme)
+            {
+                var uri = new Uri($"{scheme}://localhost/?");
+                var encryption =
+                    EncryptionManager.Create(uri, null, null, null);
+
+                encryption.UseTls.Should().BeTrue();
+                encryption.TrustManager.Should().BeOfType<ChainTrustManager>();
+            }
+
+            [Theory]
+            [InlineData("bolt+ssc")]
+            [InlineData("neo4j+ssc")]
+            public void ShouldCreateInsecureTrustFromUri(string scheme)
+            {
+                var uri = new Uri($"{scheme}://localhost/?");
+                var encryption =
+                    EncryptionManager.Create(uri, null, null, null);
+
+                encryption.UseTls.Should().BeTrue();
+                encryption.TrustManager.Should().BeOfType<InsecureTrustManager>();
+            }
+
+            [Theory]
+            [InlineData("bolt+s", EncryptionLevel.None)]
+            [InlineData("neo4j+s", EncryptionLevel.None)]
+            [InlineData("bolt+ssc", EncryptionLevel.None)]
+            [InlineData("neo4j+ssc", EncryptionLevel.None)]
+            [InlineData("bolt+s", EncryptionLevel.Encrypted)]
+            [InlineData("neo4j+s", EncryptionLevel.Encrypted)]
+            [InlineData("bolt+ssc", EncryptionLevel.Encrypted)]
+            [InlineData("neo4j+ssc", EncryptionLevel.Encrypted)]
+            public void ShouldErrorIfEncryptionLevelNotNull(string scheme, EncryptionLevel level)
+            {
+                var uri = new Uri($"{scheme}://localhost/?");
+                var ex = Record.Exception(() => EncryptionManager.Create(uri, level, null, null));
+
+                ex.Should().BeOfType<ArgumentException>();
+                ex.Message.Should().Contain("cannot both be set via uri scheme and driver configuration");
+            }
+
+            [Theory]
+            [InlineData("bolt+s")]
+            [InlineData("neo4j+s")]
+            [InlineData("bolt+ssc")]
+            [InlineData("neo4j+ssc")]
+            public void ShouldErrorIfTrustManagerNotNull(string scheme)
+            {
+                var uri = new Uri($"{scheme}://localhost/?");
+                var ex = Record.Exception(() => EncryptionManager.Create(uri, null, new CustomTrustManager(), null));
+
+                ex.Should().BeOfType<ArgumentException>();
+                ex.Message.Should().Contain("cannot both be set via uri scheme and driver configuration");
+            }
         }
 
         private class CustomTrustManager : TrustManager
