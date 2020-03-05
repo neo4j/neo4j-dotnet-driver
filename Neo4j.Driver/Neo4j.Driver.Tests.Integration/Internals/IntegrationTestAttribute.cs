@@ -107,6 +107,23 @@ namespace Neo4j.Driver.IntegrationTests
             Skip = skipText.ToString();
         }
     }
+    
+    public class RequireEnterpriseEdition : RequireServerFactAttribute
+    {
+        public RequireEnterpriseEdition(string versionText = null,
+            VersionComparison versionCompare = VersionComparison.EqualTo)
+            : base(versionText, versionCompare)
+        {
+            if (string.IsNullOrEmpty(Skip))
+            {
+
+                if (!BoltkitHelper.IsEnterprise())
+                {
+                    Skip = "Test requires Neo4j enterprise edition.";
+                }
+            }
+        }
+    }
 
     public class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
     {
