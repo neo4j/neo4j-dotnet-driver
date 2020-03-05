@@ -163,7 +163,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return BoltkitStatus.Installed;
         }
 
-        private static bool IsEnterprise()
+        public static bool IsEnterprise()
         {
             var strings = BoltkitArgs.Split(null);
             return strings.Contains("-e");
