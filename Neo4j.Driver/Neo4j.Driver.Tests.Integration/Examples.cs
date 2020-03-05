@@ -718,7 +718,15 @@ namespace Neo4j.Driver.Examples
             [RequireEnterpriseEdition("4.0.0", VersionComparison.GreaterThanOrEqualTo)]
             public async void TestUseAnotherDatabaseExample()
             {
-                await DropDatabase(Driver, "examples");
+                try
+                {
+                    await DropDatabase(Driver, "examples");
+                }
+                catch (FatalDiscoveryException ex)
+                {
+                    // Its a new server instance, the database didn't exist yet
+                }
+
                 await CreateDatabase(Driver, "examples");
                 
                 // Given
