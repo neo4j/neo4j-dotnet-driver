@@ -50,7 +50,7 @@ namespace Neo4j.Driver
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
         public ConfigBuilder WithEncryptionLevel(EncryptionLevel level)
         {
-            _config.EncryptionLevel = level;
+            _config.NullableEncryptionLevel = level;
             return this;
         }
 

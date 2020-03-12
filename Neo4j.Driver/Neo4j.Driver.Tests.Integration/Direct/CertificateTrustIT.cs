@@ -148,7 +148,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)
         {
-            var connectionSettings = new ConnectionSettings(Server.AuthToken, config);
+            var connectionSettings = new ConnectionSettings(overridenUri, Server.AuthToken, config);
             connectionSettings.SocketSettings.HostResolver =
                 new CustomHostResolver(Server.BoltUri, connectionSettings.SocketSettings.HostResolver);
             var bufferSettings = new BufferSettings(config);
