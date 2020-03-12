@@ -35,7 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private readonly ExternalBoltkitInstaller _installer = new ExternalBoltkitInstaller();
         public IDriver Driver { private set; get; }
 
-        private readonly ISingleInstance _delegator;
+        private ISingleInstance _delegator;
 
         public Uri HttpUri => _delegator?.HttpUri;
         public Uri BoltUri => _delegator?.BoltUri;
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             try
             {
                 _installer.Install();
-                _delegator = _installer.Start().Single();
+                RetryIfFailToStart();
             }
             catch
             {
@@ -58,13 +58,26 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             NewBoltDriver();
         }
 
+        private void RetryIfFailToStart()
+        {
+            try
+            {
+                _delegator = _installer.Start().Single();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                _delegator = _installer.Start().Single();
+            }
+        }
+
         public StandAlone(Pkcs12Store store)
         {
             try
             {
                 _installer.Install();
                 UpdateCertificate(store);
-                _delegator = _installer.Start().Single();
+                RetryIfFailToStart();
             }
             catch
             {

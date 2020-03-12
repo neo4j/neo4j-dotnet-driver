@@ -116,11 +116,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 supported = false;
                 message = TestRequireEnterprise;
             }
-            else if (!(From(ServerVersion()) >= V3_1_0))
-            {
-                supported = false;
-                message = $"Server {ServerVersion()} does not support causal cluster";
-            }
 
             _isClusterSupported = new Tuple<bool, string>(supported, message);
             return _isClusterSupported;

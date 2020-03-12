@@ -58,16 +58,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var serverInfo = summary.Server;
 
                 serverInfo.Address.Should().Be("localhost:7687");
-                if (ServerVersion.From(serverInfo.Version) >= ServerVersion.V3_1_0)
-                {
-                    summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
-                    summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
-                }
-                else
-                {
-                    summary.ResultAvailableAfter.Should().BeLessThan(TimeSpan.Zero);
-                    summary.ResultConsumedAfter.Should().BeLessThan(TimeSpan.Zero);
-                }
+                summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
+                summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
             }
             finally
             {

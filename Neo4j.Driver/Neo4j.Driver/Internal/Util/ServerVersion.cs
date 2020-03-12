@@ -28,10 +28,6 @@ namespace Neo4j.Driver.Internal.Util
 
         public static IComparer<ServerVersion> Comparer { get; } = new ServerVersionRelationalComparer();
         public static readonly ServerVersion VInDev = new ServerVersion(int.MaxValue, int.MaxValue, int.MaxValue);
-        public static readonly ServerVersion V3_1_0 = new ServerVersion(3, 1, 0);
-        public static readonly ServerVersion V3_2_0 = new ServerVersion(3, 2, 0);
-        public static readonly ServerVersion V3_3_0 = new ServerVersion(3, 3, 0);
-        public static readonly ServerVersion V3_4_0 = new ServerVersion(3, 4, 0);
         public static readonly ServerVersion V4_0_0 = new ServerVersion(4, 0, 0);
 
         private static readonly Regex VersionRegex =

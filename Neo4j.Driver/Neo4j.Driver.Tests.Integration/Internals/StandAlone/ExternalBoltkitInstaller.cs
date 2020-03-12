@@ -40,6 +40,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {"dbms.connectors.http_listen_address", "localhost:7474"},
             {"dbms.memory.pagecache.size", "512m"},
             {"dbms.connector.bolt.tls_level", "OPTIONAL"},
+
+            // This is added because current default for `dbms.connector.bolt.thread_pool_max_size` is `400`
+            // which is lower than Driver's default max pool size setting of `500`. This is added because
+            // soak tests were failing
+            {"dbms.connector.bolt.thread_pool_max_size", "500"}
         };
 
         private readonly IShellCommandRunner _commandRunner;
@@ -69,27 +74,12 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             _commandRunner.RunCommand("neoctrl-create-user", $"\"{HomeDir}\"", "neo4j", Password);
 
-            UpdateSettings(DefaultConfig);
-
             if (BoltkitHelper.IPV6Available() && BoltkitHelper.IPV6Enabled())
             {
-                UpdateSettings(new Dictionary<string, string>
-                {
-                    {ListenAddr, Ipv6EnabledAddr}
-                });
+                DefaultConfig[ListenAddr] = Ipv6EnabledAddr;
             }
 
-            // This is added because current default for `dbms.connector.bolt.thread_pool_max_size` is `400`
-            // which is lower than Driver's default max pool size setting of `500`. This is added because
-            // soak tests were failing
-            // TODO: Remove/Revise after 3.4.0 config defaults are finalised.
-            if (ServerVersion.From(BoltkitHelper.ServerVersion()) >= ServerVersion.V3_4_0)
-            {
-                UpdateSettings(new Dictionary<string, string>
-                {
-                    {MaxThreadPoolSize, Pool500}
-                });
-            }
+            UpdateSettings(DefaultConfig);
         }
 
         public ISet<ISingleInstance> Start()
