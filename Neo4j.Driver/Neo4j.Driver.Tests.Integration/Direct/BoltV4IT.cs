@@ -15,12 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
-using static Neo4j.Driver.SessionConfigBuilder;
+using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
@@ -222,34 +221,6 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 summary.Database.Should().NotBeNull();
                 summary.Database.Name.Should().Be(expected);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        private static async Task CreateDatabase(IDriver driver, string name)
-        {
-            var session = driver.AsyncSession(ForDatabase("system"));
-            try
-            {
-                var cursor = await session.RunAsync($"CREATE DATABASE {name}");
-                await cursor.ConsumeAsync();
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        private static async Task DropDatabase(IDriver driver, string name)
-        {
-            var session = driver.AsyncSession(ForDatabase("system"));
-            try
-            {
-                var cursor = await session.RunAsync($"DROP DATABASE {name}");
-                await cursor.ConsumeAsync();
             }
             finally
             {
