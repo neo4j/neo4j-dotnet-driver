@@ -149,5 +149,10 @@ namespace Neo4j.Driver
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A stream of result values and associated metadata.</returns>
         IResult Run(Query query, Action<TransactionConfigBuilder> action);
+
+        /// <summary>
+        /// Gets the session configuration back
+        /// </summary>
+        SessionConfig SessionConfig { get; }
     }
 }

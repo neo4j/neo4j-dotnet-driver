@@ -187,5 +187,10 @@ namespace Neo4j.Driver
         /// </param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
         Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action);
+
+        /// <summary>
+        /// Gets the session configurations back
+        /// </summary>
+        SessionConfig SessionConfig { get; }
     }
 }

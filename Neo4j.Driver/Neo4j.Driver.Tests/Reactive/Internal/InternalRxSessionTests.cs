@@ -230,5 +230,33 @@ namespace Neo4j.Driver.Reactive.Internal
                 asyncSession.Verify(x => x.CloseAsync(), Times.Once);
             }
         }
+
+        public class LastBookmark
+        {
+            [Fact]
+            public void ShouldDelegateToAsyncSession()
+            {
+                var asyncSession = new Mock<IInternalAsyncSession>();
+                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+
+                var bookmark = rxSession.LastBookmark;
+
+                asyncSession.Verify(x => x.LastBookmark, Times.Once);
+            }
+        }
+
+        public class SessionConfig
+        {
+            [Fact]
+            public void ShouldDelegateToAsyncSession()
+            {
+                var asyncSession = new Mock<IInternalAsyncSession>();
+                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+
+                var bookmark = rxSession.SessionConfig;
+
+                asyncSession.Verify(x => x.SessionConfig, Times.Once);
+            }
+        }
     }
 }

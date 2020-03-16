@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver;
 using Xunit;
-using static Neo4j.Driver.Tests.SessionTests;
+using static Neo4j.Driver.Tests.AsyncSessionTests;
 using static Xunit.Record;
 
 namespace Neo4j.Driver.Tests

@@ -50,15 +50,15 @@ namespace Neo4j.Driver.Internal
         private readonly long _fetchSize;
 
         public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
-            AccessMode defaultMode = AccessMode.Write, string database = null, Bookmark bookmark = null,
-            bool reactive = false, long fetchSize = Config.Infinite)
+            string database = null, AccessMode defaultMode = AccessMode.Write,
+            Bookmark bookmark = null, long fetchSize = Config.Infinite, bool reactive = false)
         {
-            _logger = logger;
             _connectionProvider = provider;
+            _logger = logger;
             _retryLogic = retryLogic;
             _reactive = reactive;
-            _database = database;
 
+            _database = database;
             _defaultMode = defaultMode;
             _fetchSize = fetchSize;
             UpdateBookmark(bookmark);
@@ -68,6 +68,9 @@ namespace Neo4j.Driver.Internal
         {
             return RunAsync(query, action, true);
         }
+
+        public SessionConfig SessionConfig { internal set; get; }
+
         public Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action)
         {
             return RunAsync(new Query(query), action);

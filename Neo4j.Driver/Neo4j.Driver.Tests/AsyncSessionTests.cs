@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -25,32 +26,25 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    public class SessionTests
+    public class AsyncSessionTests
     {
-        internal static AsyncSession NewSession(IConnection connection, ILogger logger = null,
-            IAsyncRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null)
+        internal static AsyncSession NewSession(IConnection connection, ILogger logger = null)
         {
-            return new AsyncSession(new TestConnectionProvider(connection), logger, retryLogic, mode, null,
-                Bookmark.From(bookmark));
+            return new AsyncSession(new TestConnectionProvider(connection), logger);
         }
 
-        internal static AsyncSession NewSession(IBoltProtocol protocol, ILogger logger = null,
-            IAsyncRetryLogic retryLogic = null, AccessMode mode = AccessMode.Write, string bookmark = null,
-            bool reactive = false)
+        internal static AsyncSession NewSession(IBoltProtocol protocol, bool reactive = false)
         {
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
-            return new AsyncSession(new TestConnectionProvider(mockConn.Object), logger, retryLogic, mode, null,
-                Bookmark.From(bookmark), reactive);
+            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, reactive: reactive);
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
@@ -103,7 +97,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldDelegateToProtocolRunAutoCommitTxAsync(bool reactive)
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
-                var session = NewSession(mockProtocol.Object, reactive: reactive);
+                var session = NewSession(mockProtocol.Object, reactive);
                 await session.RunAsync("lalalal");
 
                 mockProtocol.Verify(
@@ -159,7 +153,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldClosePreviousRunConnectionWhenRunMoreQuerys()
+            public async void ShouldClosePreviousRunConnectionWhenRunMoreQueries()
             {
                 var mockConn = MockedConnectionWithSuccessResponse();
                 var session = NewSession(mockConn.Object);
@@ -182,7 +176,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldDisposeConnectionOnRunIfBeginTxFailed()
+            public async void ShouldCloseConnectionOnRunIfBeginTxFailed()
             {
                 // Given
                 var mockProtocol = new Mock<IBoltProtocol>();
@@ -204,7 +198,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldDisposeConnectionOnNewBeginTxIfBeginTxFailed()
+            public async void ShouldCloseConnectionOnNewBeginTxIfBeginTxFailed()
             {
                 // Given
                 var mockProtocol = new Mock<IBoltProtocol>();
@@ -235,10 +229,10 @@ namespace Neo4j.Driver.Tests
             }
         }
 
-        public class DisposeMethodOnAsync
+        public class CloseAsyncMethod
         {
             [Fact]
-            public async void ShouldDisposeConnectionIfBeginTxFailed()
+            public async void ShouldCloseConnectionIfBeginTxFailed()
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
@@ -255,7 +249,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldDisposeTxOnDispose()
+            public async void ShouldCloseTxOnCloseAsync()
             {
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol.Object);
@@ -268,7 +262,7 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async void ShouldDisposeConnectionOnDispose()
+            public async void ShouldCloseConnectionOnCloseAsync()
             {
                 var mockConn = NewMockedConnection();
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
@@ -280,6 +274,39 @@ namespace Neo4j.Driver.Tests
                 await session.CloseAsync();
 
                 mockConn.Verify(x => x.CloseAsync(), Times.Once);
+            }
+        }
+
+        public class SessionConfig
+        {
+
+            [Fact]
+            public void ShouldReturnSessionConfigAsItIs()
+            {
+                var driver = NewDriver();
+                {
+                    var session = driver.AsyncSession(b =>
+                        b.WithDatabase("molly").WithDefaultAccessMode(AccessMode.Read).WithFetchSize(17)
+                            .WithBookmarks(Bookmark.From("bookmark1")));
+                    var config = session.SessionConfig;
+
+                    config.Database.Should().Be("molly");
+                    config.FetchSize.Should().Be(17L);
+                    config.DefaultAccessMode.Should().Be(AccessMode.Read);
+
+                    var bookmarks = config.Bookmarks.ToList();
+                    bookmarks.Count.Should().Be(1);
+                    bookmarks[0].Values.Length.Should().Be(1);
+                    bookmarks[0].Values[0].Should().Be("bookmark1");
+                }
+            }
+
+            private static Internal.Driver NewDriver()
+            {
+                var driver = new Internal.Driver(new Uri("neo4j://myTest.org"),
+                    new TestConnectionProvider(Mock.Of<IConnection>()),
+                    null, null, null, Config.Default);
+                return driver;
             }
         }
 
