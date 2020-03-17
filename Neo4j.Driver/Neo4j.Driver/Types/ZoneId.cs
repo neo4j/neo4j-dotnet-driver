@@ -33,7 +33,7 @@ namespace Neo4j.Driver
             Id = id;
         }
 
-        /// <returns>The time zone identifier.</returns>
+        /// <summary>The time zone identifier.</summary>
         public string Id { get; }
 
         internal override int OffsetSecondsAt(DateTime dateTime)

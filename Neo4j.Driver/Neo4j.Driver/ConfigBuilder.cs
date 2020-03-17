@@ -60,7 +60,7 @@ namespace Neo4j.Driver
         /// encryption on the connections.
         /// </summary>
         /// <param name="manager">A <see cref="TrustManager"/> instance.</param>
-        /// <returns></returns>
+        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
         public ConfigBuilder WithTrustManager(TrustManager manager)
         {
             _config.TrustManager = manager;

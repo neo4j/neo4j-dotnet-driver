@@ -32,6 +32,7 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets the keys in the result.
         /// </summary>
+        /// <returns>A task of an array of keys.</returns>
         Task<string[]> KeysAsync();
 
         /// <summary>
