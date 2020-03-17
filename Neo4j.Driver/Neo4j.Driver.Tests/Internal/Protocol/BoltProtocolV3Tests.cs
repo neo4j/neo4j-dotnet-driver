@@ -213,7 +213,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldSyncIfValidBookmarkGiven()
             {
                 var mockConn = NewConnectionWithMode();
-                var bookmark = Bookmark.From(SessionTests.FakeABookmark(234));
+                var bookmark = Bookmark.From(AsyncSessionTests.FakeABookmark(234));
 
                 await BoltV3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
 
@@ -296,7 +296,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldRunPullAllSync()
             {
-                var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
+                var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
 
                 await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, query, true);
@@ -312,7 +312,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
+                var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
 
                 await BoltV3.RunInExplicitTransactionAsync(mockConn.Object, query, true);

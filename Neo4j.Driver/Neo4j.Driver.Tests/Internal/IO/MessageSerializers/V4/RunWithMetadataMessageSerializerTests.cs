@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
             });
 
             writer.Write(new RunWithMetadataMessage(query, "my-database",
-                Bookmark.From(SessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+                Bookmark.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
                 new Dictionary<string, object>
                 {
                     {"username", "MollyMostlyWhite"}

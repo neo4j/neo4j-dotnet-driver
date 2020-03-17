@@ -22,7 +22,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver;
 using Xunit;
-using static Neo4j.Driver.Tests.SessionTests;
+using static Neo4j.Driver.Tests.AsyncSessionTests;
 
 namespace Neo4j.Driver.Tests
 {

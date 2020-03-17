@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new BeginMessage(null, Bookmark.From(SessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            writer.Write(new BeginMessage(null, Bookmark.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
                 new Dictionary<string, object>
                 {
                     {"username", "MollyMostlyWhite"}

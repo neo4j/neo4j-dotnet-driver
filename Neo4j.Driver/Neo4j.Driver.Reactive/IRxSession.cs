@@ -154,5 +154,10 @@ namespace Neo4j.Driver
         /// <typeparam name="T">the desired return type</typeparam>
         /// <returns>an empty reactive stream</returns>
         IObservable<T> Close<T>();
+
+        /// <summary>
+        /// Gets the session configuration
+        /// </summary>
+        SessionConfig SessionConfig { get; }
     }
 }

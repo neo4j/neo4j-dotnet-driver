@@ -157,7 +157,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldRunPullAllSync()
             {
-                var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
+                var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
 
                 await BoltV4.RunInExplicitTransactionAsync(mockConn.Object, query, true);
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ResultBuilderShouldObtainServerInfoFromConnection()
             {
-                var mockConn = SessionTests.MockedConnectionWithSuccessResponse();
+                var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
 
                 await BoltV4.RunInExplicitTransactionAsync(mockConn.Object, query, true);
