@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.Routing
             var multiDb = connection.SupportsMultidatabase();
             var sessionAccessMode = multiDb ? AccessMode.Read : AccessMode.Write;
             var sessionDb = multiDb ? "system" : null;
-            var session = new AsyncSession(provider, _logger, null, sessionDb, sessionAccessMode, bookmark);
+            var session = new AsyncSession(provider, _logger, null, sessionAccessMode, sessionDb, bookmark);
             try
             {
                 var stmt = DiscoveryProcedure(connection, database);

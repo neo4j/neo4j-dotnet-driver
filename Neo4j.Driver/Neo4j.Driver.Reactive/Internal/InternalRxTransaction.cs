@@ -32,6 +32,7 @@ namespace Neo4j.Driver.Internal
         }
 
         public bool IsOpen => _transaction.IsOpen;
+        public TransactionConfig TransactionConfig => _transaction.TransactionConfig;
 
         #region Run Methods
 

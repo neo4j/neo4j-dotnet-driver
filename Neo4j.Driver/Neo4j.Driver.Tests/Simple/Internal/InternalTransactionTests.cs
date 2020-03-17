@@ -31,35 +31,19 @@ using static Neo4j.Driver.Tests.Assertions;
 
 namespace Neo4j.Driver.Simple.Internal
 {
-    public static class InternalSessionTests
+    public static class InternalTransactionTests
     {
-        public class LastBookmark
+        public class TransactionConfig
         {
             [Fact]
-            public void ShouldDelegateToAsyncSession()
+            public void ShouldDelegateToAsyncTransaction()
             {
-                var asyncSession = new Mock<IInternalAsyncSession>();
-                var session = new InternalSession(asyncSession.Object, Mock.Of<IRetryLogic>(),
-                    Mock.Of<BlockingExecutor>());
+                var asyncTx = new Mock<IInternalAsyncTransaction>();
+                var tx = new InternalTransaction(asyncTx.Object, Mock.Of<BlockingExecutor>());
 
-                var bookmark = session.LastBookmark;
+                var config = tx.TransactionConfig;
 
-                asyncSession.Verify(x => x.LastBookmark, Times.Once);
-            }
-        }
-
-        public class SessionConfig
-        {
-            [Fact]
-            public void ShouldDelegateToAsyncSession()
-            {
-                var asyncSession = new Mock<IInternalAsyncSession>();
-                var session = new InternalSession(asyncSession.Object, Mock.Of<IRetryLogic>(),
-                    Mock.Of<BlockingExecutor>());
-
-                var config = session.SessionConfig;
-
-                asyncSession.Verify(x => x.SessionConfig, Times.Once);
+                asyncTx.Verify(x => x.TransactionConfig, Times.Once);
             }
         }
     }

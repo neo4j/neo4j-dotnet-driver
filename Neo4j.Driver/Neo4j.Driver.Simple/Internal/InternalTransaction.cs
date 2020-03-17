@@ -32,6 +32,7 @@ namespace Neo4j.Driver.Internal
         }
 
         public bool IsOpen => _txc.IsOpen;
+        public TransactionConfig TransactionConfig => _txc.TransactionConfig;
 
         public IResult Run(string query)
         {

@@ -50,8 +50,9 @@ namespace Neo4j.Driver.Internal
         private readonly long _fetchSize;
 
         public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
-            string database = null, AccessMode defaultMode = AccessMode.Write,
-            Bookmark bookmark = null, long fetchSize = Config.Infinite, bool reactive = false)
+            AccessMode defaultMode = AccessMode.Write,
+            string database = null,
+            Bookmark bookmark = null, bool reactive = false, long fetchSize = Config.Infinite)
         {
             _connectionProvider = provider;
             _logger = logger;
@@ -216,12 +217,12 @@ namespace Neo4j.Driver.Internal
         private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
             Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
         {
-            var options = BuildTransactionConfig(action);
+            var config = BuildTransactionConfig(action);
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, _bookmark).ConfigureAwait(false);
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize);
-            await tx.BeginTransactionAsync(options).ConfigureAwait(false);
+            await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
         }
