@@ -40,5 +40,10 @@ namespace Neo4j.Driver
         /// Marking a transaction as failed is irreversible and guarantees that subsequent calls to <see cref="Commit"/> will not change it's status.
         /// </summary>
         void Rollback();
+
+        /// <summary>
+        /// Gets the transaction configuration.
+        /// </summary>
+        TransactionConfig TransactionConfig { get; }
     }
 }

@@ -65,9 +65,10 @@ namespace Neo4j.Driver.Internal
 
         public bool IsOpen => _state == Active;
 
-        public Task BeginTransactionAsync(TransactionConfig configBuilder)
+        public Task BeginTransactionAsync(TransactionConfig config)
         {
-            return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, configBuilder);
+            TransactionConfig = config;
+            return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, config);
         }
 
         public override Task<IResultCursor> RunAsync(Query query)
@@ -105,6 +106,8 @@ namespace Neo4j.Driver.Internal
                 await DisposeTransaction().ConfigureAwait(false);
             }
         }
+
+        public TransactionConfig TransactionConfig { get; private set; }
 
         public async Task MarkToClose()
         {

@@ -33,5 +33,10 @@ namespace Neo4j.Driver
         /// Asynchronously roll back this transaction.
         /// </summary>
         Task RollbackAsync();
+
+        /// <summary>
+        /// Gets the transaction configuration back.
+        /// </summary>
+        TransactionConfig TransactionConfig { get; }
     }
 }

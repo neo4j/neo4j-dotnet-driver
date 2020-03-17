@@ -43,5 +43,10 @@ namespace Neo4j.Driver
         /// <typeparam name="T">the desired return type</typeparam>
         /// <returns>an empty reactive stream</returns>
         IObservable<T> Rollback<T>();
+
+        /// <summary>
+        /// Gets the transaction configuration.
+        /// </summary>
+        TransactionConfig TransactionConfig { get; }
     }
 }

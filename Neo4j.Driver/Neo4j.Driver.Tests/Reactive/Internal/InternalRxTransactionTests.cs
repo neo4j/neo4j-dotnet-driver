@@ -121,5 +121,18 @@ namespace Neo4j.Driver.Reactive.Internal
                 asyncTxc.Verify(x => x.RollbackAsync(), Times.Once);
             }
         }
+
+        public class TransactionConfig
+        {
+            [Fact]
+            public void ShouldDelegateToAsyncTransaction()
+            {
+                var asyncTxc = new Mock<IInternalAsyncTransaction>();
+                var rxTxc = new InternalRxTransaction(asyncTxc.Object);
+
+                var config = rxTxc.TransactionConfig;
+                asyncTxc.Verify(x => x.TransactionConfig, Times.Once);
+            }
+        }
     }
 }

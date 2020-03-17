@@ -75,10 +75,8 @@ namespace Neo4j.Driver.Internal
 
             var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
 
-            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic,
-                sessionConfig.Database, sessionConfig.DefaultAccessMode,
-                Bookmark.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmark>()),
-                ParseFetchSize(sessionConfig.FetchSize), reactive) {SessionConfig = sessionConfig};
+            var session = new AsyncSession(_connectionProvider, _logger, _retryLogic, sessionConfig.DefaultAccessMode,
+                sessionConfig.Database, Bookmark.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmark>()), reactive, ParseFetchSize(sessionConfig.FetchSize)) {SessionConfig = sessionConfig};
 
             if (IsClosed)
             {
