@@ -74,7 +74,7 @@ namespace Neo4j.Driver
         /// <summary>
         /// Print the query.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A string representation of the query.</returns>
         public override string ToString()
         {
             return $"`{Text}`, {Parameters.ToContentString()}";

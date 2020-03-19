@@ -203,7 +203,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is less than another, otherwise <code>false</code>.</returns>
         public static bool operator <(Duration left, Duration right)
         {
             return left.CompareTo(right) < 0;
@@ -215,7 +215,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is greater than another, otherwise <code>false</code>.</returns>
         public static bool operator >(Duration left, Duration right)
         {
             return left.CompareTo(right) > 0;
@@ -227,7 +227,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is less than and equal to another, otherwise <code>false</code>. </returns>
         public static bool operator <=(Duration left, Duration right)
         {
             return left.CompareTo(right) <= 0;
@@ -239,7 +239,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is greater and equal to another, otherwise <code>false</code>.</returns>
         public static bool operator >=(Duration left, Duration right)
         {
             return left.CompareTo(right) >= 0;

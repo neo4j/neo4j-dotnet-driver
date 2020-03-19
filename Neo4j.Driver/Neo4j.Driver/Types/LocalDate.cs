@@ -79,6 +79,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <value>Equivalent <see cref="DateTime"/> value</value>
         /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
+        /// <returns>A <see cref="DateTime"/> instance.</returns>
         public DateTime ToDateTime()
         {
             TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
@@ -176,7 +177,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is earlier than another, otherwise <code>false</code>.</returns>
         public static bool operator <(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) < 0;
@@ -188,7 +189,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is later than another, otherwise <code>false</code>.</returns>
         public static bool operator >(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) > 0;
@@ -200,7 +201,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is the same as or later than another.</returns>
         public static bool operator <=(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) <= 0;
@@ -212,7 +213,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is the same or earlier than another, otherwise <code>false</code>.</returns>
         public static bool operator >=(LocalDate left, LocalDate right)
         {
             return left.CompareTo(right) >= 0;

@@ -27,11 +27,13 @@ namespace Neo4j.Driver
         /// <summary>
         /// Asynchronously commit this transaction.
         /// </summary>
+        /// <returns>A task of transaction commit.</returns>
         Task CommitAsync();
 
         /// <summary>
         /// Asynchronously roll back this transaction.
         /// </summary>
+        /// <returns>A task of transaction rollback.</returns>
         Task RollbackAsync();
 
         /// <summary>

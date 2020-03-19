@@ -109,6 +109,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <value>Equivalent <see cref="TimeSpan"/> value</value>
         /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
+        /// <returns>A <see cref="TimeSpan"/> instance.</returns>
         public TimeSpan ToTimeSpan()
         {
             TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
@@ -210,7 +211,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code>if one is earlier than another, otherwise <code>false</code>.</returns>
         public static bool operator <(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) < 0;
@@ -222,7 +223,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is later than another, otherwise <code>false</code>.</returns>
         public static bool operator >(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) > 0;
@@ -234,7 +235,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is the same as or later than another, otherwise <code>false</code>.</returns>
         public static bool operator <=(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) <= 0;
@@ -246,7 +247,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
-        /// <returns></returns>
+        /// <returns><code>true</code> if one is the same as or later than another, otherwise <code>false</code>.</returns>
         public static bool operator >=(LocalTime left, LocalTime right)
         {
             return left.CompareTo(right) >= 0;

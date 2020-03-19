@@ -34,10 +34,10 @@ namespace Neo4j.Driver
             OffsetSeconds = offsetSeconds;
         }
 
-        /// <returns>The offset (in seconds) from UTC.</returns>
+        /// <summary>The offset (in seconds) from UTC.</summary>
         public int OffsetSeconds { get; }
 
-        /// <returns>The offset from UTC as a <see cref="TimeSpan"/> instance.</returns>
+        /// <summary>The offset from UTC as a <see cref="TimeSpan"/> instance.</summary>
         public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
 
         internal override int OffsetSecondsAt(DateTime dateTime)

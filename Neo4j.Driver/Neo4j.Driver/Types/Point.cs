@@ -65,16 +65,24 @@ namespace Neo4j.Driver
 
         internal int Dimension { get; }
 
-        /// <returns>The coordinate reference system identifier</returns>
+        /// <summary>
+        /// Gets the coordinate reference system identifier.
+        /// </summary>
         public int SrId { get; }
 
-        /// <returns>X coordinate of the point</returns>
+        /// <summary>
+        /// Gets X coordinate of the point.
+        /// </summary>
         public double X { get; }
 
-        /// <returns>Y coordinate of the point</returns>
+        /// <summary>
+        /// Gets Y coordinate of the point.
+        /// </summary>
         public double Y { get; }
 
-        /// <returns>Z coordinate of the point</returns>
+        /// <summary>
+        /// Gets Z coordinate of the point.
+        /// </summary>
         public double Z { get; }
 
 

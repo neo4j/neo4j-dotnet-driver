@@ -39,12 +39,14 @@ namespace Neo4j.Driver
             return SingleAsync(result, record => record);
         }
 
+
         /// <summary>
         /// Return the only record in the result stream.
         /// </summary>
         /// <param name="result">The result stream</param>
         /// <param name="operation">The operation to carry out on each record.</param>
-        /// <returns>The only record in the result stream.</returns>
+        /// <typeparam name="T">The type of the record after specified operation.</typeparam>
+        /// <returns>The only record after specified operation in the result stream.</returns>
         /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
         /// if the result contains more than one record or the result is empty.</remarks>
         public static async Task<T> SingleAsync<T>(this IResultCursor result, Func<IRecord, T> operation)

@@ -30,6 +30,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="host">The host name of the server address.</param>
         /// <param name="port">The port number of the server address.</param>
+        /// <returns>An address.</returns>
         public static ServerAddress From(string host, int port)
         {
             return new ServerAddress(host, port);
@@ -40,6 +41,7 @@ namespace Neo4j.Driver
         /// Fields <see cref="Uri.Host"/> and <see cref="Uri.Port"/> will be used to create the server address.
         /// </summary>
         /// <param name="uri">The input uri to read host name and port number from.</param>
+        /// <returns>An address.</returns>
         public static ServerAddress From(Uri uri)
         {
             return new ServerAddress(uri.Host, uri.Port);
