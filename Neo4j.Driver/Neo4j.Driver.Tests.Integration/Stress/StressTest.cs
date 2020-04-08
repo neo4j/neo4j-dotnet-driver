@@ -56,16 +56,23 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         protected readonly IDriver _driver;
         private readonly IAuthToken _authToken;
         private readonly Uri _databaseUri;
+        private readonly Action<ConfigBuilder> _configure;
 
-        protected StressTest(ITestOutputHelper output, Uri databaseUri, IAuthToken authToken)
+        protected StressTest(ITestOutputHelper output, Uri databaseUri, IAuthToken authToken, Action<ConfigBuilder> configure = null)
         {
             _output = output ?? throw new ArgumentNullException(nameof(output));
             _databaseUri = databaseUri;
             _authToken = authToken;
-            _driver = GraphDatabase.Driver(databaseUri, authToken,
-                o=> o
+            _configure = configure;
+
+            _driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
+            {
+                builder
                     .WithLogger(new StressTestLogger(_output, LoggingEnabled))
-                    .WithMaxConnectionPoolSize(100).WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1)));
+                    .WithMaxConnectionPoolSize(100)
+                    .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1));
+                configure?.Invoke(builder);
+            });
 
             CleanupDatabase();
         }
@@ -584,14 +591,14 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private (IDriver, ConcurrentQueue<IPooledConnection>) SetupMonitoredDriver()
         {
-            var config = new Config
-            {
-                MetricsEnabled = true,
-                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
-                ConnectionTimeout = Config.InfiniteInterval,
-                MaxConnectionPoolSize = 100,
-                Logger = new StressTestLogger(_output, LoggingEnabled)
-            };
+            var configBuilder = Config.Builder
+                .WithMetricsEnabled(true)
+                .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(5))
+                .WithConnectionTimeout(Config.InfiniteInterval)
+                .WithMaxConnectionPoolSize(100)
+                .WithLogger(new StressTestLogger(_output, LoggingEnabled));
+            _configure?.Invoke(configBuilder);
+            var config = configBuilder.Build();
 
             var connectionSettings = new ConnectionSettings(_databaseUri, _authToken, config);
             var bufferSettings = new BufferSettings(config);
