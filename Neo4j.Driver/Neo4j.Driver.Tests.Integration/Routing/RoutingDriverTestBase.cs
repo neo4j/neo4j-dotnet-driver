@@ -27,10 +27,10 @@ namespace Neo4j.Driver.IntegrationTests.Routing
     public abstract class RoutingDriverTestBase : IDisposable
     {
         protected ITestOutputHelper Output { get; }
-        protected CausalCluster Cluster { get; }
+        protected ICausalCluster Cluster { get; }
         protected IAuthToken AuthToken { get; }
 
-        protected string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
+        protected string RoutingServer => Cluster.BoltRoutingUri.ToString();
         protected string WrongServer => "neo4j://localhost:1234";
         protected IDriver Driver { get; }
 
@@ -41,7 +41,11 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             AuthToken = Cluster.AuthToken;
 
             Driver = GraphDatabase.Driver(RoutingServer, AuthToken,
-                o => o.WithLogger(new TestLogger(output)));
+                builder =>
+                {
+                    builder.WithLogger(TestLogger.Create(output));
+                    Cluster.Configure(builder);
+                });
         }
 
         public virtual void Dispose()

@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         private readonly CausalClusterIntegrationTestFixture _cluster;
 
         public CausalClusterStressTests(ITestOutputHelper output, CausalClusterIntegrationTestFixture cluster) :
-            base(output, cluster.Cluster.AnyCore().BoltRoutingUri, cluster.Cluster.AuthToken)
+            base(output, cluster.Cluster.BoltRoutingUri, cluster.Cluster.AuthToken, cluster.Cluster.Configure)
         {
             _cluster = cluster;
         }
