@@ -21,13 +21,19 @@ using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class CausalCluster : IDisposable
+    public class CausalCluster : ICausalCluster
     {
         private readonly ExternalBoltkitClusterInstaller _installer = new ExternalBoltkitClusterInstaller();
-        public ISet<ISingleInstance> Members { get; }
+        private ISet<ISingleInstance> Members { get; }
+        public Uri BoltRoutingUri => AnyCore()?.BoltRoutingUri;
 
         // Assume the whole cluster use exact the same authToken
-        public IAuthToken AuthToken => Members?.First().AuthToken;
+        public IAuthToken AuthToken => AnyCore()?.AuthToken;
+
+        public void Configure(IConfigBuilder builder)
+        {
+            builder.WithEncryptionLevel(EncryptionLevel.None);
+        }
 
         public CausalCluster()
         {
@@ -51,9 +57,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             }
         }
 
-        public ISingleInstance AnyCore()
+        private ISingleInstance AnyCore()
         {
-            return Members.First();
+            return Members?.First();
         }
 
         public bool IsRunning()

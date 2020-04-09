@@ -236,7 +236,7 @@ namespace Neo4j.Driver.V1
                     throw new NotSupportedException($"Unsupported URI scheme: {parsedUri.Scheme}");
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics);
+            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics, config);
         }
 
         private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)

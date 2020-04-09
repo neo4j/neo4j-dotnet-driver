@@ -26,13 +26,10 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public IStandAlone StandAlone { get; }
 
-        private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
-
         public StandAloneIntegrationTestFixture()
         {
             // If a system flag is set, then we use the local single server instead
-            if (bool.TryParse(GetEnvironmentVariable(UsingLocalServer), out var usingLocalServer) &&
-                usingLocalServer)
+            if (LocalStandAloneInstance.IsServerProvided())
             {
                 StandAlone = new LocalStandAloneInstance();
             }
@@ -63,24 +60,31 @@ namespace Neo4j.Driver.IntegrationTests
 
     public class CausalClusterIntegrationTestFixture : IDisposable
     {
-        public CausalCluster Cluster { get; }
+        public ICausalCluster Cluster { get; }
 
         public CausalClusterIntegrationTestFixture()
         {
-            var isClusterSupported = BoltkitHelper.IsClusterSupported();
-            if (!isClusterSupported.Item1)
+            if (ExistingCluster.IsClusterProvided())
             {
-                return;
+                Cluster = new ExistingCluster();
             }
+            else
+            {
+                var isClusterSupported = BoltkitHelper.IsClusterSupported();
+                if (!isClusterSupported.Item1)
+                {
+                    return;
+                }
 
-            try
-            {
-                Cluster = new CausalCluster();
-            }
-            catch (Exception)
-            {
-                Dispose();
-                throw;
+                try
+                {
+                    Cluster = new CausalCluster();
+                }
+                catch (Exception)
+                {
+                    Dispose();
+                    throw;
+                }
             }
         }
 

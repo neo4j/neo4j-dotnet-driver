@@ -28,14 +28,16 @@ namespace Neo4j.Driver.IntegrationTests
     [Collection(CCIntegrationCollection.CollectionName)]
     public abstract class RoutingDriverTestBase : IDisposable
     {
-        protected static Config NoEncryption = new Config {EncryptionLevel = EncryptionLevel.None};
         protected ITestOutputHelper Output { get; }
-        protected CausalCluster Cluster { get; }
+        protected ICausalCluster Cluster { get; }
         protected IAuthToken AuthToken { get; }
 
-        protected string RoutingServer => Cluster.AnyCore().BoltRoutingUri.ToString();
+        protected string RoutingServer => Cluster.BoltRoutingUri.ToString();
         protected string WrongServer => "bolt+routing://localhost:1234";
+
         protected IDriver Driver { get; }
+
+        protected Config Config => ((Internal.Driver)Driver)?.Config;
 
         public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
         {
@@ -43,12 +45,10 @@ namespace Neo4j.Driver.IntegrationTests
             Cluster = fixture.Cluster;
             AuthToken = Cluster.AuthToken;
 
-            var config = new Config
-            {
-                DriverLogger = new TestDriverLogger(output),
-                EncryptionLevel = EncryptionLevel.None
-            };
-            Driver = GraphDatabase.Driver(RoutingServer, AuthToken, config);
+            var builder = Config.Builder;
+            builder.WithDriverLogger(new TestDriverLogger(output));
+            Cluster.Configure(builder);
+            Driver = GraphDatabase.Driver(RoutingServer, AuthToken, builder.ToConfig());
         }
 
         public virtual void Dispose()

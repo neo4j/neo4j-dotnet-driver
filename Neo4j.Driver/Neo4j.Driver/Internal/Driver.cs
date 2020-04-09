@@ -33,11 +33,13 @@ namespace Neo4j.Driver.Internal
         private readonly IMetrics _metrics;
         public Uri Uri { get; }
 
+        public Config Config { get; }
+
         private const AccessMode DefaultAccessMode = AccessMode.Write;
         private const string NullBookmark = null;
 
         internal Driver(Uri uri, IConnectionProvider connectionProvider, IRetryLogic retryLogic, IDriverLogger logger,
-            IMetrics metrics=null)
+            IMetrics metrics = null, Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
 
@@ -46,6 +48,7 @@ namespace Neo4j.Driver.Internal
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
             _metrics = metrics;
+            Config = config;
         }
 
         private bool IsClosed => _closedMarker > 0;

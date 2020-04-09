@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests
         public async Task ShouldFailWithAuthenticationError()
         {
             Exception exception = null;
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
+            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake"), Config))
             {
                 var session = driver.Session();
                 try
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.IntegrationTests
         public async Task ShouldThrowServiceUnavailableExceptionIfNoServer()
         {
             Exception error = null;
-            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
+            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake"), Config))
             {
                 var session = driver.Session();
                 try
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public async Task ShouldDisallowMoreStatementAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, Config);
             var session = driver.Session();
             var result = await session.RunAsync("RETURN 1");
             await result.FetchAsync();
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public async Task ShouldDisallowMoreConnectionsAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, Config);
             var session = driver.Session();
             var result = await session.RunAsync("RETURN 1");
             await result.FetchAsync();
@@ -134,14 +134,17 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(5000)]
         public async void SoakRunAsync(int threadCount)
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
-            {
-                MetricsFactory = new DefaultMetricsFactory(),
-                ConnectionTimeout = Config.InfiniteInterval,
-                EncryptionLevel = EncryptionLevel.None,
-                MaxConnectionPoolSize = 100,
-                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5)
-            });
+            var builder = Config.Builder
+                .WithConnectionTimeout(Config.InfiniteInterval)
+                .WithMaxConnectionPoolSize(100)
+                .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(5));
+            Cluster.Configure(builder);
+            var config = builder.ToConfig();
+
+            // enable metrics too
+            config.MetricsFactory = new DefaultMetricsFactory();
+
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, config);
             try
             {
                 var startTime = DateTime.Now;
