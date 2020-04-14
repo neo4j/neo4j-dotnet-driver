@@ -53,6 +53,23 @@ namespace Neo4j.Driver.IntegrationTests
         }
 
         [RequireBoltStubServerFact]
+        public void ShouldSupportNeo4jScheme()
+        {
+            using (BoltStubServer.Start("get_routing_table_with_context", 9001))
+            {
+                var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
+                using (var driver = GraphDatabase.Driver(uri, Config))
+                using (var session = driver.Session())
+                {
+                    var records = session.Run("MATCH (n) RETURN n.name AS name").ToList();
+                    records.Count.Should().Be(2);
+                    records[0]["name"].ValueAs<string>().Should().Be("Alice");
+                    records[1]["name"].ValueAs<string>().Should().Be("Bob");
+                }
+            }
+        }
+
+        [RequireBoltStubServerFact]
         public void ShouldLogServerAddress()
         {
             var logs = new List<string>();
