@@ -38,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldFailWithAuthenticationError()
         {
             Exception exception = null;
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
+            using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake"), Config))
             using(var session = driver.Session())
             {
                 exception = Record.Exception(() => session.Run("RETURN 1"));
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.IntegrationTests
         public void ShouldThrowServiceUnavailableExceptionIfNoServer()
         {
             Exception error = null;
-            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake"), NoEncryption))
+            using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake"), Config))
             using (var session = driver.Session())
             {
                 error = Record.Exception(() => session.Run("RETURN 1"));
@@ -95,7 +95,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public void ShouldDisallowMoreStatementAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, Config);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
 
@@ -108,7 +108,7 @@ namespace Neo4j.Driver.IntegrationTests
         [RequireClusterFact]
         public void ShouldDisallowMoreConnectionsAfterDriverDispose()
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, NoEncryption);
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, Config);
             var session = driver.Session(AccessMode.Write);
             session.Run("RETURN 1").Single()[0].ValueAs<int>().Should().Be(1);
 
@@ -126,14 +126,17 @@ namespace Neo4j.Driver.IntegrationTests
         [InlineData(1000)]
         public void SoakRunTests(int threadCount)
         {
-            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, new Config
-            {
-                MetricsFactory = new DefaultMetricsFactory(),
-                ConnectionTimeout = Config.InfiniteInterval,
-                EncryptionLevel = EncryptionLevel.None,
-                MaxConnectionPoolSize = 100,
-                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
-            });
+            var builder = Config.Builder
+                .WithConnectionTimeout(Config.InfiniteInterval)
+                .WithMaxConnectionPoolSize(100)
+                .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(2));
+            Cluster.Configure(builder);
+            var config = builder.ToConfig();
+
+            // enable metrics too
+            config.MetricsFactory = new DefaultMetricsFactory();
+
+            var driver = GraphDatabase.Driver(RoutingServer, AuthToken, config);
             try
             {
                 var startTime = DateTime.Now;

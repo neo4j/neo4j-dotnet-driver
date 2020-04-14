@@ -15,12 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Neo4j.Driver.V1;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class LocalStandAloneInstance : SingleInstance, IStandAlone
     {
+        private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
         public LocalStandAloneInstance() :
             base(Neo4jDefaultInstallation.HttpUri, Neo4jDefaultInstallation.BoltUri, null, Neo4jDefaultInstallation.Password)
         {
@@ -33,5 +35,12 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         }
 
         public IDriver Driver { get; }
+
+        public static bool IsServerProvided()
+        {
+            // If a system flag is set, then we use the local single server instead
+            return bool.TryParse(Environment.GetEnvironmentVariable(UsingLocalServer), out var usingLocalServer) &&
+                   usingLocalServer;
+        }
     }
 }
