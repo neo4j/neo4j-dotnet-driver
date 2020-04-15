@@ -100,20 +100,24 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             var supported = true;
             var message = "All good to go";
 
-            if (!IsBoltkitAvailable())
+            if (!ExistingCluster.IsClusterProvided())
             {
-                supported = false;
-                message = TestRequireBoltkit;
-            }
-            else if (!IsEnterprise())
-            {
-                supported = false;
-                message = TestRequireEnterprise;
-            }
-            else if (!(Version(ServerVersion()) >= V3_1_0))
-            {
-                supported = false;
-                message = $"Server {ServerVersion()} does not support causal cluster";
+                // verify if a local cluster can be started
+                if (!IsBoltkitAvailable())
+                {
+                    supported = false;
+                    message = TestRequireBoltkit;
+                }
+                else if (!IsEnterprise())
+                {
+                    supported = false;
+                    message = TestRequireEnterprise;
+                }
+                else if (!(Version(ServerVersion()) >= V3_1_0))
+                {
+                    supported = false;
+                    message = $"Server {ServerVersion()} does not support causal cluster";
+                }
             }
 
             _isClusterSupported = new Tuple<bool, string>(supported, message);
