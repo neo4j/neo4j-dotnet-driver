@@ -124,15 +124,14 @@ namespace Neo4j.Driver.IntegrationTests
 
         private void SetupMonitoredDriver()
         {
-            var config = new Config
-            {
-                MetricsFactory = new DefaultMetricsFactory(),
-                ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(5),
-                ConnectionTimeout = Config.InfiniteInterval,
-                MaxConnectionPoolSize = 100,
-                DriverLogger = new TestDriverLogger(Output),
-                EncryptionLevel = EncryptionLevel.None
-            };
+            var builder = Config.Builder;
+            builder.WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(5));
+            builder.WithConnectionTimeout(Config.InfiniteInterval);
+            builder.WithMaxConnectionPoolSize(100);
+            builder.WithDriverLogger(new TestDriverLogger(Output));
+            Cluster.Configure(builder);
+            var config = builder.ToConfig();
+            config.MetricsFactory = new DefaultMetricsFactory();
 
             var connectionSettings = new ConnectionSettings(AuthToken, config);
             var bufferSettings = new BufferSettings(config);
