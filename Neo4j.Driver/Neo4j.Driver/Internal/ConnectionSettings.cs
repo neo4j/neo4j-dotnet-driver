@@ -15,15 +15,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Reflection;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
+
 
 namespace Neo4j.Driver.Internal
 {
     internal class ConnectionSettings
-    {
-        internal const string DefaultUserAgent = "neo4j-dotnet/1.7";
-
+    { 
+        internal static string DefaultUserAgent
+        {
+            get
+            {
+                Version version = Assembly.GetExecutingAssembly().GetName().Version;
+                return "neo4j-dotnet/" + version.Major.ToString() + "." + version.Minor.ToString();
+            }            
+        }
+        
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
         public SocketSettings SocketSettings { get; }
@@ -43,7 +52,7 @@ namespace Neo4j.Driver.Internal
 
             AuthToken = authToken;
             UserAgent = userAgent ?? DefaultUserAgent;
-
+            
             IHostResolver systemResolver = new SystemHostResolver();
             if (RuntimeHelper.IsDotnetCore())
             {
