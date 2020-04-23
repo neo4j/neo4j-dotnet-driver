@@ -48,8 +48,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
             else if(version.Equals(4, 1))
             {
-                // TODO: update to new bolt version V4_1 once it is created.
-                return BoltProtocolV4.BoltV4;
+                return BoltProtocolV4_1.BoltV4_1;
             }
             else if(version.Equals(0, 0))
             {
