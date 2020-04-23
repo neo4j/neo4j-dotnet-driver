@@ -124,9 +124,9 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        public override int Version()
+        public override BoltProtocolVersion Version()
         {
-            return BoltProtocolFactory.ProtocolVersion.Version4;
+            return new BoltProtocolVersion(4, 0);
         }
 
         private static Func<IResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,

@@ -167,7 +167,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private IBoltProtocol SelectBoltProtocol(int version)
         {
-            var boltProtocol = BoltProtocolFactory.ForVersion(version);
+            var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.FromPackedInt(version));
             Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger);
             Writer = boltProtocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger);
             return boltProtocol;
