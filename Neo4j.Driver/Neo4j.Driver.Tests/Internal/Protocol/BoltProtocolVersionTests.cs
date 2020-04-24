@@ -165,12 +165,12 @@ namespace Neo4j.Driver.Internal.Protocol
         [Fact]
         public void PackAndUnpackSuccess()
         {   
-            const int    packedIntVersion = 260,
+            const int    packedIntVersion = 65540,
                          majorVersion = 4,
                          minorVersion = 1;
-            const ushort packedShortVersion = 20;
+            const ushort packedShortVersion = 260;
             const byte   packedByteVersion = 20;
-
+                        
             var bv = new BoltProtocolVersion(majorVersion, minorVersion);
 
             (bv.PackToInt() == packedIntVersion).Should().BeTrue();

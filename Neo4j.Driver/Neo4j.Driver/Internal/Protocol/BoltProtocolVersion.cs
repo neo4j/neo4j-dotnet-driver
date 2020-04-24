@@ -21,6 +21,8 @@ namespace Neo4j.Driver.Internal.Protocol
             MinorVersion = minorVersion;
         }
 
+
+
         public static BoltProtocolVersion FromPackedInt(int rawVersion)
         {
             int major = rawVersion & PackingIntValue;
@@ -28,8 +30,6 @@ namespace Neo4j.Driver.Internal.Protocol
 
             return new BoltProtocolVersion(major, minor);
         }
-
-
 
         public int PackToInt()
         {

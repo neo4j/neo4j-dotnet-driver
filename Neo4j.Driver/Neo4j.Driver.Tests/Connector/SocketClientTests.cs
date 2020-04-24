@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Tests
                 var bufferSettings = new BufferSettings(Config.Default);
                 var version = new BoltProtocolVersion(4, 1);
                 var connMock = new Mock<ITcpSocketClient>();
-                //TcpSocketClientTestSetup.CreateReadStreamMock(connMock, new byte[] { 0, 0, 0x14, 0});
+                
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock, PackStreamBitConverter.GetBytes(version.PackToInt()));
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 
