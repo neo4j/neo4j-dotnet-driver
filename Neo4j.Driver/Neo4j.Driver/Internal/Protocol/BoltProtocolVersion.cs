@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Neo4j.Driver.Internal.Protocol
-{
-    // TODO: Write the unit tests.
+{   
     // TODO: Document this
 
     class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
@@ -12,7 +11,9 @@ namespace Neo4j.Driver.Internal.Protocol
         public int MajorVersion { get; set; }
         public int MinorVersion { get; set; }
 
-        private const int PackingValue = 0x000000FF;
+        private const int PackingIntValue = 0xFFFF;
+        private const ushort PackingUShortValue = 0x00FF;
+        private const byte PackingByteValue = 0x000F;
 
         public BoltProtocolVersion(int majorVersion, int minorVersion)
         {
@@ -22,17 +23,47 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public static BoltProtocolVersion FromPackedInt(int rawVersion)
         {
-            int major = rawVersion & PackingValue;
-            int minor = (rawVersion >> 8) & PackingValue;
+            int major = rawVersion & PackingIntValue;
+            int minor = (rawVersion >> 16) & PackingIntValue;
 
             return new BoltProtocolVersion(major, minor);
         }
 
+
+
         public int PackToInt()
         {
-            return (MinorVersion << 8) | MajorVersion;
+            return (MinorVersion << 16) | MajorVersion;
         }
 
+        public static BoltProtocolVersion FromPackedUShort(ushort rawVersion)
+        {
+            int major = rawVersion & PackingUShortValue;
+            int minor = (rawVersion >> 8) & PackingUShortValue;
+
+            return new BoltProtocolVersion(major, minor);
+        }
+        
+        public ushort PackToUShort()
+        {
+            return (ushort)((MinorVersion << 8) | MajorVersion);
+        }
+
+        public static BoltProtocolVersion FromPackedByte(byte rawVersion)
+        {
+            int major = rawVersion & PackingByteValue;
+            int minor = (rawVersion >> 4) & PackingByteValue;
+
+            return new BoltProtocolVersion(major, minor);
+        }
+
+        public byte PackToByte()
+        {
+            return (byte)((MinorVersion << 4) | MajorVersion);
+        }
+
+        
+        
         public override bool Equals(object obj)
         {
             return this.Equals(obj as BoltProtocolVersion);
@@ -64,6 +95,8 @@ namespace Neo4j.Driver.Internal.Protocol
             //Return if the fields match
             return (MajorVersion == rhs.MajorVersion)  &&  (MinorVersion == rhs.MinorVersion);
         }
+
+
 
         public static bool operator==(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
         {

@@ -164,15 +164,26 @@ namespace Neo4j.Driver.Internal.Protocol
 
         [Fact]
         public void PackAndUnpackSuccess()
-        {
-            const int packedVersion = 260,
-                      majorVersion = 4,
-                      minorVersion = 1;
+        {   
+            const int    packedIntVersion = 260,
+                         majorVersion = 4,
+                         minorVersion = 1;
+            const ushort packedShortVersion = 20;
+            const byte   packedByteVersion = 20;
+
             var bv = new BoltProtocolVersion(majorVersion, minorVersion);
 
-            (bv.PackToInt() == packedVersion).Should().BeTrue();
+            (bv.PackToInt() == packedIntVersion).Should().BeTrue();
+            (bv.PackToUShort() == packedShortVersion).Should().BeTrue();
+            (bv.PackToByte() == packedByteVersion).Should().BeTrue();
 
-            bv = BoltProtocolVersion.FromPackedInt(packedVersion);
+            bv = BoltProtocolVersion.FromPackedInt(packedIntVersion);
+            (bv.MajorVersion == majorVersion && bv.MinorVersion == minorVersion).Should().BeTrue();
+
+            bv = BoltProtocolVersion.FromPackedUShort(packedShortVersion);
+            (bv.MajorVersion == majorVersion && bv.MinorVersion == minorVersion).Should().BeTrue();
+
+            bv = BoltProtocolVersion.FromPackedByte(packedByteVersion);
             (bv.MajorVersion == majorVersion && bv.MinorVersion == minorVersion).Should().BeTrue();
         }
     }
