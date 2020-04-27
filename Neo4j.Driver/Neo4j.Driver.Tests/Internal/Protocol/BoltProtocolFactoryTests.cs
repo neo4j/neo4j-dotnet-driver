@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(3);
+                var boltProtocol = BoltProtocolFactory.ForVersion(new BoltProtocolVersion(3, 0));
                 boltProtocol.Should().BeOfType<BoltProtocolV3>();
             }
 
@@ -44,18 +44,38 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(4);
+                var boltProtocol = BoltProtocolFactory.ForVersion(new BoltProtocolVersion(4, 0));
                 boltProtocol.Should().BeOfType<BoltProtocolV4>();
             }
 
-            [Theory]
-            [InlineData(0, "The Neo4j server does not support any of the protocol versions supported by this client")]
-            [InlineData(1, "Protocol error, server suggested unexpected protocol version: 1")]
-            [InlineData(2, "Protocol error, server suggested unexpected protocol version: 2")]
-            [InlineData(1024, "Protocol error, server suggested unexpected protocol version: 1024")]
-            [InlineData(1213486160 /*HTTP*/, "Server responded HTTP.")]
-            public void ShouldThrowExceptionIfVersionIsNotSupported(int version, string errorMessage)
+            [Fact]
+            public void ShouldCreateBoltProtocolV4_1()
             {
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                var boltProtocol = BoltProtocolFactory.ForVersion(new BoltProtocolVersion(4, 1));
+                boltProtocol.Should().BeOfType<BoltProtocolV4_1>();
+            }
+
+            [Theory]
+            [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client")]
+            [InlineData(1, 0, "Protocol error, server suggested unexpected protocol version: 1.0")]
+            [InlineData(2, 0, "Protocol error, server suggested unexpected protocol version: 2.0")]            
+            [InlineData(15, 0, "Protocol error, server suggested unexpected protocol version: 15.0")]            
+            public void ShouldThrowExceptionIfVersionIsNotSupported(int majorVersion, int minorVersion, string errorMessage)
+            {
+                var version = new BoltProtocolVersion(majorVersion, minorVersion);
+                var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
+                exception.Should().BeOfType<NotSupportedException>();
+                exception.Message.Should().StartWith(errorMessage);
+            }
+
+            [Theory]
+            [InlineData(1213486160 /*HTTP*/, "Server responded HTTP.")]
+            public void ShouldThrowExceptionIfSpecialVersionIsNotSupported(int largeVersion, string errorMessage)
+            {
+                var version = new BoltProtocolVersion(largeVersion);
                 var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
                 exception.Should().BeOfType<NotSupportedException>();
                 exception.Message.Should().StartWith(errorMessage);

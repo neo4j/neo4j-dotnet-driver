@@ -49,6 +49,6 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task LogoutAsync(IConnection connection);
 
-        int Version();
+        BoltProtocolVersion Version();
     }
 }

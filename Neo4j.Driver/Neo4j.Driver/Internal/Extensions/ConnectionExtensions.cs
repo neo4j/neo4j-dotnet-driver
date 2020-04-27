@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal
             var serverVersion = ServerVersion.From(connection.Server.Version);
             var protocol = connection.BoltProtocol;
             return serverVersion >= ServerVersion.V4_0_0 &&
-                   protocol.Version() >= BoltProtocolFactory.ProtocolVersion.Version4;
+                   protocol.Version() >= new BoltProtocolVersion(4, 0);
         }
     }
 }
