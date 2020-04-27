@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Protocol
     {
         //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
         private const int BoltIdentifier = 0x6060B017;
-        private const int BoltHTTPIdentifier = 1213486160;
+        private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
 
         private static readonly BoltProtocolVersion[] SupportedVersions = { new BoltProtocolVersion(4, 1),
                                                                             new BoltProtocolVersion(4, 0),
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "The Neo4j server does not support any of the protocol versions supported by this client. " +
                         "Ensure that you are using driver and server versions that are compatible with one another.");
             }
-            else if (version.Equals(BoltHTTPIdentifier, 0))
+            else if (version == new BoltProtocolVersion(BoltHTTPIdentifier)) 
             {
                 throw new NotSupportedException(
                     "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +

@@ -186,5 +186,36 @@ namespace Neo4j.Driver.Internal.Protocol
             bv = BoltProtocolVersion.FromPackedByte(packedByteVersion);
             (bv.MajorVersion == majorVersion && bv.MinorVersion == minorVersion).Should().BeTrue();
         }
+
+        [Theory]
+        [InlineData(-1, 0)]
+        [InlineData(256, 0)]
+        [InlineData(1, 256)]
+        [InlineData(1, -1)]
+        public void ProtocolBoundsTest(int majorVersion, int minorVersion)
+        {
+            string errorMessage = "Attempting to create a BoltProtocolVersion with out of bounds major: " + majorVersion + " or minor: " + minorVersion;
+            var exception = Record.Exception(() => new BoltProtocolVersion(majorVersion, minorVersion));
+            exception.Should().BeOfType<NotSupportedException>();
+            exception.Message.Should().StartWith(errorMessage);
+        }
+
+        [Fact]
+        public void ProtocolLargeBoundsTest()
+        {
+            int successLargeNumber = 1213486160;    ////0x‭48 54 54 50 - or HTTP in ascii codes...
+            const int majorVersion = 21584,
+                      minorVersion = 18516;
+            var bv = new BoltProtocolVersion(successLargeNumber);
+            (bv.MajorVersion == majorVersion && bv.MinorVersion == minorVersion).Should().BeTrue();
+            
+            int failureLargeNumber = 15728881;
+            string errorMessage = "Attempting to create a BoltProtocolVersion with a large (error code) version number.  Resulting Major and Minor are in range of valid versions, which is not allowed: ";
+
+            var exception = Record.Exception(() => new BoltProtocolVersion(failureLargeNumber));
+            exception.Should().BeOfType<NotSupportedException>();
+            exception.Message.Should().StartWith(errorMessage);
+        }
+
     }
 }

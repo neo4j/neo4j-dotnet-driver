@@ -62,11 +62,20 @@ namespace Neo4j.Driver.Internal.Protocol
             [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client")]
             [InlineData(1, 0, "Protocol error, server suggested unexpected protocol version: 1.0")]
             [InlineData(2, 0, "Protocol error, server suggested unexpected protocol version: 2.0")]            
-            [InlineData(1024, 0, "Protocol error, server suggested unexpected protocol version: 1024")]
-            [InlineData(1213486160, 0 /*HTTP*/, "Server responded HTTP.")]
+            [InlineData(15, 0, "Protocol error, server suggested unexpected protocol version: 15.0")]            
             public void ShouldThrowExceptionIfVersionIsNotSupported(int majorVersion, int minorVersion, string errorMessage)
             {
                 var version = new BoltProtocolVersion(majorVersion, minorVersion);
+                var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
+                exception.Should().BeOfType<NotSupportedException>();
+                exception.Message.Should().StartWith(errorMessage);
+            }
+
+            [Theory]
+            [InlineData(1213486160 /*HTTP*/, "Server responded HTTP.")]
+            public void ShouldThrowExceptionIfSpecialVersionIsNotSupported(int largeVersion, string errorMessage)
+            {
+                var version = new BoltProtocolVersion(largeVersion);
                 var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
                 exception.Should().BeOfType<NotSupportedException>();
                 exception.Message.Should().StartWith(errorMessage);

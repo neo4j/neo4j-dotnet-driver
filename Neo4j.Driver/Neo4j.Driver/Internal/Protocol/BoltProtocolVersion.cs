@@ -17,18 +17,41 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public BoltProtocolVersion(int majorVersion, int minorVersion)
         {
+            if(majorVersion > Byte.MaxValue  ||  minorVersion > Byte.MaxValue  ||  majorVersion < 0  ||  minorVersion < 0  )
+            {
+                throw new NotSupportedException("Attempting to create a BoltProtocolVersion with out of bounds major: "+ majorVersion + " or minor: " + minorVersion);
+            }
+
             MajorVersion = majorVersion;
             MinorVersion = minorVersion;
         }
 
+        public BoltProtocolVersion(int largeVersion)
+        {   
+            //This version of the constructor is only to be used to handle error codes that come in that are not strictly containing packed values. 
+            MajorVersion = UnpackMajor(largeVersion);
+            MinorVersion = UnpackMinor(largeVersion);
+
+            if ((MajorVersion <= Byte.MaxValue  && MajorVersion >= 0) && (MinorVersion <= Byte.MaxValue && MinorVersion >= 0))
+            {
+                throw new NotSupportedException("Attempting to create a BoltProtocolVersion with a large (error code) version number.  Resulting Major and Minor are in range of valid versions, which is not allowed: " + MajorVersion + " or minor: " + MinorVersion);
+            }
+        }
+
+        private static int UnpackMajor(int rawVersion)
+        {
+            return (rawVersion & PackingIntValue);
+        }
+
+        private static int UnpackMinor(int rawVersion)
+        {
+            return (rawVersion >> 16) & PackingIntValue;
+        }
 
 
         public static BoltProtocolVersion FromPackedInt(int rawVersion)
         {
-            int major = rawVersion & PackingIntValue;
-            int minor = (rawVersion >> 16) & PackingIntValue;
-
-            return new BoltProtocolVersion(major, minor);
+            return new BoltProtocolVersion(UnpackMajor(rawVersion), UnpackMinor(rawVersion));
         }
 
         public int PackToInt()
