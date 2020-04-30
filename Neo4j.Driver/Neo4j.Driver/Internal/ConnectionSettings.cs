@@ -23,16 +23,16 @@ using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
 namespace Neo4j.Driver.Internal
 {
     internal class ConnectionSettings
-    { 
+    {
         internal static string DefaultUserAgent
         {
             get
             {
                 Version version = Assembly.GetExecutingAssembly().GetName().Version;
                 return "neo4j-dotnet/" + version.Major.ToString() + "." + version.Minor.ToString();
-            }            
+            }
         }
-        
+
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
         public SocketSettings SocketSettings { get; }
