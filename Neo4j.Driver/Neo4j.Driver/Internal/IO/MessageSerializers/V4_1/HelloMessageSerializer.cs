@@ -16,22 +16,22 @@
 // limitations under the License.
 
 using System;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Messaging.V4_1;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_1
 {
-    internal interface IConnectionProvider
+    internal class HelloMessageSerializer : WriteOnlySerializer
     {
-        Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark);
-        Task CloseAsync();
-        Task VerifyConnectivityAsync();
-        Task<bool> SupportsMultiDbAsync();
-    }
+        public override IEnumerable<Type> WritableTypes => new[] { typeof(HelloMessage) };
 
-    internal interface IConnectionProviderWithRoutingContext : IConnectionProvider
-    {   
-        RoutingSettings RoutingSetting { get; set; }
+        public override void Serialize(IPackStreamWriter writer, object value)
+        {
+            var msg = value.CastOrThrow<HelloMessage>();
+
+            writer.WriteStructHeader(1, BoltProtocolV4_1MessageFormat.MsgHello);
+            writer.Write(msg.MetaData);
+        }
     }
 }

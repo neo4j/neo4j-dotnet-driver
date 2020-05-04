@@ -92,6 +92,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task InitAsync()
         {
+            await InitAsync(new Dictionary<string, string>());
+        }
+
+        public async Task InitAsync(IDictionary<string, string> routingContext)
+        {
             _sendLock.Wait();
             try
             {

@@ -794,8 +794,9 @@ namespace Neo4j.Driver.Tests
                     Config.InfiniteInterval);
                 var logger = new Mock<ILogger>().Object;
                 var connFactory = new MockedConnectionFactory();
+                var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
 
-                var pool = new ConnectionPool(uri, connFactory, poolSettings, logger);
+                var pool = new ConnectionPool(uri, connFactory, poolSettings, routingSetting, logger);
 
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
@@ -1527,8 +1528,11 @@ namespace Neo4j.Driver.Tests
             ConnectionPoolSettings poolSettings = null,
             bool isConnectionValid = true)
         {
+
+            var routingSetting = new RoutingSettings(new Uri("bolt://123:456"), new Dictionary<string, string>(), Config.Default);
+
             return new ConnectionPool(new MockedConnectionFactory(), idleConnections, inUseConnections,
-                poolSettings, new TestConnectionValidator(isConnectionValid));
+                poolSettings, routingSetting, new TestConnectionValidator(isConnectionValid));
         }
 
         private static ConnectionPool NewConnectionPoolWithConnectionTimeoutCheckDisabled(

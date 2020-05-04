@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
-using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling.V4_1;
+using Neo4j.Driver.Internal.Messaging.V4_1;
 
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -14,6 +16,14 @@ namespace Neo4j.Driver.Internal.Protocol
         public override BoltProtocolVersion Version()
         {
             return new BoltProtocolVersion(4, 1);
+        }
+
+        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        {
+            await connection
+                .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
+                    new HelloResponseHandler(connection)).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
         }
 
     }

@@ -41,9 +41,10 @@ namespace Neo4j.Driver.Internal.Routing
         public ClusterConnectionPool(
             IEnumerable<Uri> initUris,
             IPooledConnectionFactory connectionFactory,
+            RoutingSettings routingSetting,
             ConnectionPoolSettings poolSettings,
             ILogger logger
-        ) : this(initUris, new ConnectionPoolFactory(connectionFactory, poolSettings, logger), logger)
+        ) : this(initUris, new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting, logger), logger)
         {
         }
 

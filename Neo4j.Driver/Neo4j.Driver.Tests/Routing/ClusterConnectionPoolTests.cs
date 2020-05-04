@@ -37,10 +37,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldEnsureInitialRouter()
             {
-                var uris = new HashSet<Uri> {new Uri("bolt://123:456")};
+                var uri = new Uri("bolt://123:456");
+                var uris = new HashSet<Uri> {uri};
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
                 var poolSettings = new ConnectionPoolSettings(Config.Default);
-                var pool = new ClusterConnectionPool(uris, connFactory, poolSettings, null);
+                var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
+                var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null);
 
                 pool.ToString().Should().Contain(
                     "bolt://123:456/");

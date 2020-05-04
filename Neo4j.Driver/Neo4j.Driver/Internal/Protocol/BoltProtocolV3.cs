@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
         }
 
-        public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             await connection
                 .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),

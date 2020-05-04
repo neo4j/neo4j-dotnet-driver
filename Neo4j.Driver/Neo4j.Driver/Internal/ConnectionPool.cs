@@ -94,10 +94,13 @@ namespace Neo4j.Driver.Internal
             internal set => Interlocked.Exchange(ref _poolStatus, value);
         }
 
+        public RoutingSettings RoutingSetting { get; set; }
+
         public ConnectionPool(
             Uri uri,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
+            RoutingSettings routingSettings,
             ILogger logger)
         {
             _uri = uri;
@@ -115,6 +118,8 @@ namespace Neo4j.Driver.Internal
 
             var metrics = connectionPoolSettings.Metrics;
             _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
+
+            RoutingSetting = routingSettings;
         }
 
         // Used in test only
@@ -123,16 +128,26 @@ namespace Neo4j.Driver.Internal
             BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentHashSet<IPooledConnection> inUseConnections = null,
             ConnectionPoolSettings poolSettings = null,
+            RoutingSettings routingSettings = null,
             IConnectionValidator validator = null,
             ILogger logger = null)
             : this(new Uri("bolt://localhost:7687"), connectionFactory,
-                poolSettings ?? new ConnectionPoolSettings(Config.Default), logger)
+                poolSettings ?? new ConnectionPoolSettings(Config.Default), routingSettings, logger)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
             if (validator != null)
             {
                 _connectionValidator = validator;
+            }
+
+            if (routingSettings != null)
+            {
+                RoutingSetting = routingSettings;
+            }
+            else
+            {
+                RoutingSetting = new RoutingSettings(new Uri("bolt://localhost:7687"), new Dictionary<string, string>(), Config.Default);
             }
         }
 
@@ -144,7 +159,7 @@ namespace Neo4j.Driver.Internal
                 conn = NewPooledConnection();
                 if (conn != null)
                 {
-                    await conn.InitAsync().ConfigureAwait(false);
+                    await conn.InitAsync(RoutingSetting.RoutingContext).ConfigureAwait(false);
                     _poolMetricsListener?.ConnectionCreated();
                     return conn;
                 }

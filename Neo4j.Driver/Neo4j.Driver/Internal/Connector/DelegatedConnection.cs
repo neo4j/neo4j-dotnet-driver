@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Util;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -69,7 +70,12 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task InitAsync()
         {
-            return TaskWithErrorHandling(() => Delegate.InitAsync());
+            return InitAsync(new Dictionary<string, string>());
+        }
+
+        public Task InitAsync(IDictionary<string, string> routingContext)
+        {
+            return TaskWithErrorHandling(() => Delegate.InitAsync(routingContext));
         }
 
         public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,

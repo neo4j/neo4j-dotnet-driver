@@ -35,7 +35,7 @@ using Neo4j.Driver.Internal.Util;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
-using static Neo4j.Driver.Tests.Routing.MockedMessagingClient;
+using static Neo4j.Driver.Tests.Routing.MockedMessagingClientV3;
 using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests.Routing

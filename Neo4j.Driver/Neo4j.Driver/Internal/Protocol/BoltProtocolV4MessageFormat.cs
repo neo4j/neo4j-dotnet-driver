@@ -21,6 +21,7 @@ using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
 using Neo4j.Driver.Internal.IO.MessageSerializers.V4;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 
+
 namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV4MessageFormat : BoltProtocolV3MessageFormat

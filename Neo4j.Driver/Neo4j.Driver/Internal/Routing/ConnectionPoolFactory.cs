@@ -29,8 +29,9 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IPooledConnectionFactory _connectionFactory;
         private readonly ConnectionPoolSettings _poolSettings;
         private readonly ILogger _logger;
+        RoutingSettings RoutingSetting { get; set; }
 
-        public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings,
+        public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings, RoutingSettings routingSetting,
             ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionFactory, nameof(connectionFactory));
@@ -38,11 +39,12 @@ namespace Neo4j.Driver.Internal.Routing
             _connectionFactory = connectionFactory;
             _poolSettings = poolSettings;
             _logger = logger;
+            RoutingSetting = routingSetting;
         }
 
         public IConnectionPool Create(Uri uri)
         {
-            return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger);
+            return new ConnectionPool(uri, _connectionFactory, _poolSettings, RoutingSetting, _logger);
         }
     }
 }

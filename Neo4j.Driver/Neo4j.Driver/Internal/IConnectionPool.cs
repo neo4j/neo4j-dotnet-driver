@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
-    internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
+    internal interface IConnectionPool : IConnectionProviderWithRoutingContext, IConnectionReleaseManager
     {
         int NumberOfInUseConnections { get; }
         int NumberOfIdleConnections { get; }
