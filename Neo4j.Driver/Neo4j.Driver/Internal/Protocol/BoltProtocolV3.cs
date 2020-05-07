@@ -34,7 +34,11 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV3 : IBoltProtocol
     {
-        public static readonly BoltProtocolV3 BoltV3 = new BoltProtocolV3();
+        public BoltProtocolV3()
+        {
+
+        }
+
 
         public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
             ILogger logger = null)

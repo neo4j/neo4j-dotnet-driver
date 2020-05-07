@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.Messaging.V4_1;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
+
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_1
 {
     public class HelloMessageSerializerTests : PackStreamSerializerTests
@@ -43,18 +44,15 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_1
         [Fact]
         public void ShouldSerialize()
         {
-            //TODO: This should be updated when new hellomessage with routing context is setup fully
-            //There is a routing version as well.  Maybe that can handle it and this is the non routing test...?
-
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
+            var authToken = new Dictionary<string, object> { {"scheme", "basic"},
+                                                             {"principal", "username"},
+                                                             {"credentials", "password"} };
+            var routingContext = new Dictionary<string, string> { { "contextKey", "contextValue" } };
 
-            writer.Write(new HelloMessage("Client-Version/1.0", new Dictionary<string, object>
-            {
-                {"scheme", "basic"},
-                {"principal", "username"},
-                {"credentials", "password"}
-            }));
+
+            writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -62,25 +60,32 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_1
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
             reader.ReadStructSignature().Should().Be(BoltProtocolV4_1MessageFormat.MsgHello);
-            reader.ReadMap().Should().HaveCount(4).And.Contain(
+
+            var readMap = reader.ReadMap();
+            readMap.Should().HaveCount(5).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
                     new KeyValuePair<string, object>("scheme", "basic"),
                     new KeyValuePair<string, object>("principal", "username"),
-                    new KeyValuePair<string, object>("credentials", "password"),
+                    new KeyValuePair<string, object>("credentials", "password")                    
                 });
+
+            
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            dic.ToDictionary().Should().HaveCount(1).And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
         }
 
         [Fact]
         public void ShouldSerializeEmptyMapWhenAuthTokenIsNull()
         {
-            //TODO: This should be updated when new hellomessage with routing context is setup fully
-
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
+            var routingContext = new Dictionary<string, string> { { "contextKey", "contextValue" } };
 
-            writer.Write(new HelloMessage("Client-Version/1.0", null));
+            writer.Write(new HelloMessage("Client-Version/1.0", null, routingContext));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -88,37 +93,74 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_1
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
             reader.ReadStructSignature().Should().Be(BoltProtocolV4_1MessageFormat.MsgHello);
-            reader.ReadMap().Should().NotBeNull().And.HaveCount(1).And.Contain(
+
+            var readMap = reader.ReadMap();
+            readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
                 });
+
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            dic.ToDictionary().Should().HaveCount(1).And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
         }
 
-        //TODO: Need tests of the reuting context in the hello message.
-        /*[Fact]
-        public void ShouldSerializeWithRoutingContext()
+        [Fact]
+        public void ShouldSerializeWithNullRoutingContext()
         {
-            var helloMessage = new HelloMessage("Client-Version/1.0", null);
-
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(helloMessage);
+            writer.Write(new HelloMessage("Client-Version/1.0", null, null));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
-            reader.ReadMap().Should().NotBeNull().And.HaveCount(1).And.Contain(
+            reader.ReadStructSignature().Should().Be(BoltProtocolV4_1MessageFormat.MsgHello);
+
+            var readMap = reader.ReadMap();
+            readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
                 });
 
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            (dic == null).Should().BeTrue();
         }
-        */
+
+        [Fact]
+        public void ShouldSerializeWithEmptyRoutingContext()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer();
+
+            writer.Write(new HelloMessage("Client-Version/1.0", null, new Dictionary<string, string>()));
+
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+
+            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.ReadStructHeader().Should().Be(1);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV4_1MessageFormat.MsgHello);
+
+            var readMap = reader.ReadMap();
+            readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
+                new[]
+                {
+                    new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
+                });
+
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            dic.ToDictionary().Should().HaveCount(0);
+        }
     }
 }

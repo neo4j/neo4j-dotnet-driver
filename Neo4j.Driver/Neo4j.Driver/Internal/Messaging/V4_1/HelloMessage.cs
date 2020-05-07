@@ -22,11 +22,16 @@ namespace Neo4j.Driver.Internal.Messaging.V4_1
 {
     internal class HelloMessage : IRequestMessage
     {
-        // TODO: Expand this with new routing context parameters...
         public IDictionary<string, object> MetaData { get; }
         private const string UserAgentMetadataKey = "user_agent";
 
-        public HelloMessage(string userAgent, IDictionary<string, object> authToken)
+        public HelloMessage(string userAgent, IDictionary<string, object> authToken) : 
+            this(userAgent, authToken, null)
+        {
+
+        }
+
+        public HelloMessage(string userAgent, IDictionary<string, object> authToken, IDictionary<string, string> routingContext)
         {
             if (authToken == null || authToken.Count == 0)
             {
@@ -36,6 +41,8 @@ namespace Neo4j.Driver.Internal.Messaging.V4_1
             {
                 MetaData = new Dictionary<string, object>(authToken) { { UserAgentMetadataKey, userAgent } };
             }
+          
+            MetaData.Add("routing", routingContext);
         }
         
         public override string ToString()

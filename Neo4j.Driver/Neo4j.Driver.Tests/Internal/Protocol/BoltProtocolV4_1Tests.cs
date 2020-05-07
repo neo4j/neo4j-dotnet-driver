@@ -18,18 +18,42 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     public class BoltProtocolV4_1Tests
     {
-
-        [Fact]
-        public async Task ShouldEnqueueHelloAndSync()
+        private async Task EnqueAndSync(IBoltProtocol V4_1)
         {
             var mockConn = new Mock<IConnection>();
+
             mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-            await BoltV4_1.LoginAsync(mockConn.Object, "user-andy", AuthTokens.None);
+            await V4_1.LoginAsync(mockConn.Object, "user-andy", AuthTokens.None);
 
             mockConn.Verify(
                 x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<V4_1.HelloResponseHandler>(), null, null),
                 Times.Once);
             mockConn.Verify(x => x.SyncAsync());
         }
+
+        [Fact]
+        public async Task ShouldEnqueueHelloAndSync()
+        {            
+            var V4_1 = new BoltProtocolV4_1(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
+
+            await EnqueAndSync(V4_1);
+        }
+
+        [Fact]
+        public async Task ShouldEnqueueHelloAndSyncEmptyContext()
+        {
+            var V4_1 = new BoltProtocolV4_1(new Dictionary<string, string>());
+
+            await EnqueAndSync(V4_1);
+        }
+
+        [Fact]
+        public async void ShouldEnqueueHelloAndSyncNullContext()
+        {
+            var V4_1 =  new BoltProtocolV4_1(null);
+
+            await EnqueAndSync(V4_1);
+        }
+
     }
 }

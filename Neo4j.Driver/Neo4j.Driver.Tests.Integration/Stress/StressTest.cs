@@ -773,9 +773,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 _delegate = factory;
             }
 
-            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
+            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IDictionary<string, string> routingContext)
             {
-                var pooledConnection = _delegate.Create(uri, releaseManager);
+                var pooledConnection = _delegate.Create(uri, releaseManager, routingContext);
                 Connections.Enqueue(pooledConnection);
                 return pooledConnection;
             }

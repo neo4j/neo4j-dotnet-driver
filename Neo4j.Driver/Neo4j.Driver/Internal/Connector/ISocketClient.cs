@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface ISocketClient
     {
-        Task<IBoltProtocol> ConnectAsync();
+        Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext);
         Task SendAsync(IEnumerable<IRequestMessage> messages);
         Task ReceiveAsync(IResponsePipeline responsePipeline);
         Task ReceiveOneAsync(IResponsePipeline responsePipeline);

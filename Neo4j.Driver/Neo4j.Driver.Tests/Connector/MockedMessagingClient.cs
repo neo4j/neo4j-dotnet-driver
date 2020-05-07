@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             ClientMock = clientMock ?? new Mock<ISocketClient>();
-            ClientMock.Setup(x => x.ConnectAsync()).Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
+            ClientMock.Setup(x => x.ConnectAsync(null)).Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
             ClientMock.Setup(x => x.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()))
                 .Callback<IEnumerable<IRequestMessage>>(msg =>
                 {
@@ -144,7 +144,7 @@ namespace Neo4j.Driver.Tests.Routing
         internal new static V4_1.HelloMessage LoginMessage(IAuthToken auth = null)
         {
             auth = auth ?? AuthTokens.None;
-            return new V4_1.HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary());
+            return new V4_1.HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary(), null);
         }
     }
 }

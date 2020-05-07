@@ -16,10 +16,11 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal
 {
-    internal interface IConnectionPool : IConnectionProviderWithRoutingContext, IConnectionReleaseManager
+    internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
     {
         int NumberOfInUseConnections { get; }
         int NumberOfIdleConnections { get; }

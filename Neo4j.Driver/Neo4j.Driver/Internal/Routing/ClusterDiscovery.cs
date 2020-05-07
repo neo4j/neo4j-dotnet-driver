@@ -143,12 +143,12 @@ namespace Neo4j.Driver.Internal.Routing
         private class SingleConnectionBasedConnectionProvider : IConnectionProvider
         {
             private IConnection _connection;
-
-            public RoutingSettings RoutingSetting { get { return null; }  set { } }
+            public IDictionary<string, string> RoutingContext { get; set; }
 
             public SingleConnectionBasedConnectionProvider(IConnection connection)
             {
-                _connection = connection;                
+                _connection = connection;
+                RoutingContext = connection.RoutingContext;
             }
 
             public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)

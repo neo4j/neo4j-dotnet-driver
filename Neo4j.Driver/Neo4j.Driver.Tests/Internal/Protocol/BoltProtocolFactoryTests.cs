@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
@@ -54,7 +55,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(new BoltProtocolVersion(4, 1));
+                var boltProtocol = BoltProtocolFactory.ForVersion(new BoltProtocolVersion(4, 1), new Dictionary<string, string>());
                 boltProtocol.Should().BeOfType<BoltProtocolV4_1>();
             }
 

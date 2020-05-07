@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Routing
             RoutingSettings routingSetting,
             ConnectionPoolSettings poolSettings,
             ILogger logger
-        ) : this(initUris, new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting, logger), logger)
+        ) : this(initUris, new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting.RoutingContext, logger), logger)
         {
         }
 

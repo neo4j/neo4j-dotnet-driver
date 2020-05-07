@@ -31,7 +31,7 @@ using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal.Routing
 {
-    internal class LoadBalancer : IConnectionProviderWithRoutingContext, IClusterErrorHandler, IClusterConnectionPoolManager
+    internal class LoadBalancer : IConnectionProvider, IClusterErrorHandler, IClusterConnectionPoolManager
     {
         private readonly IRoutingTableManager _routingTableManager;
         private readonly ILoadBalancingStrategy _loadBalancingStrategy;
@@ -42,6 +42,7 @@ namespace Neo4j.Driver.Internal.Routing
         private IInitialServerAddressProvider _initialServerAddressProvider;
 
         public RoutingSettings RoutingSetting { get; set; }
+        public IDictionary<string, string> RoutingContext { get; set; }
 
         public LoadBalancer(
             IPooledConnectionFactory connectionFactory,
@@ -50,11 +51,11 @@ namespace Neo4j.Driver.Internal.Routing
             ILogger logger)
         {
             RoutingSetting = routingSettings;
+            RoutingContext = RoutingSetting.RoutingContext;
 
             _logger = logger;
 
-            _clusterConnectionPool =
-                new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, RoutingSetting,  poolSettings, logger);
+            _clusterConnectionPool = new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, RoutingSetting,  poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
             _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
             _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;

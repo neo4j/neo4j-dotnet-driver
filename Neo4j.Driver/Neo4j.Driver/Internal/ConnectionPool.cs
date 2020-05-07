@@ -64,29 +64,30 @@ namespace Neo4j.Driver.Internal
         private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
         private bool IsInactiveOrClosed => AtomicRead(ref _poolStatus) != Active;
 
-        private readonly object _poolSizeSync = new object();
         private int _poolSize = 0;
+        public int NumberOfInUseConnections => _inUseConnections.Count;
+        public int NumberOfIdleConnections => _idleConnections.Count;
+        internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
+
         private readonly int _maxPoolSize;
         private readonly int _maxIdlePoolSize;
+
+        private readonly object _poolSizeSync = new object();
         private readonly TimeSpan _connAcquisitionTimeout;
 
         private readonly IConnectionValidator _connectionValidator;
         private readonly IPooledConnectionFactory _connectionFactory;
 
-        private readonly BlockingCollection<IPooledConnection> _idleConnections =
-            new BlockingCollection<IPooledConnection>();
-
-        private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections =
-            new ConcurrentHashSet<IPooledConnection>();
+        private readonly BlockingCollection<IPooledConnection> _idleConnections = new BlockingCollection<IPooledConnection>();
+        private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new ConcurrentHashSet<IPooledConnection>();
 
         private readonly IConnectionPoolListener _poolMetricsListener;
 
-        public int NumberOfInUseConnections => _inUseConnections.Count;
-        public int NumberOfIdleConnections => _idleConnections.Count;
-        internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
         private readonly string _id;
 
         private readonly ILogger _logger;
+
+        public IDictionary<string, string> RoutingContext { get; set; }
 
         public ConnectionPoolStatus Status
         {
@@ -94,14 +95,12 @@ namespace Neo4j.Driver.Internal
             internal set => Interlocked.Exchange(ref _poolStatus, value);
         }
 
-        public RoutingSettings RoutingSetting { get; set; }
-
         public ConnectionPool(
             Uri uri,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
-            RoutingSettings routingSettings,
-            ILogger logger)
+            ILogger logger,
+            IDictionary<string, string> routingContext)
         {
             _uri = uri;
             _id = $"pool-{_uri.Host}:{_uri.Port}";
@@ -119,7 +118,7 @@ namespace Neo4j.Driver.Internal
             var metrics = connectionPoolSettings.Metrics;
             _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
-            RoutingSetting = routingSettings;
+            RoutingContext = routingContext;
         }
 
         // Used in test only
@@ -128,26 +127,16 @@ namespace Neo4j.Driver.Internal
             BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentHashSet<IPooledConnection> inUseConnections = null,
             ConnectionPoolSettings poolSettings = null,
-            RoutingSettings routingSettings = null,
             IConnectionValidator validator = null,
             ILogger logger = null)
             : this(new Uri("bolt://localhost:7687"), connectionFactory,
-                poolSettings ?? new ConnectionPoolSettings(Config.Default), routingSettings, logger)
+                poolSettings ?? new ConnectionPoolSettings(Config.Default), logger, null)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
             if (validator != null)
             {
                 _connectionValidator = validator;
-            }
-
-            if (routingSettings != null)
-            {
-                RoutingSetting = routingSettings;
-            }
-            else
-            {
-                RoutingSetting = new RoutingSettings(new Uri("bolt://localhost:7687"), new Dictionary<string, string>(), Config.Default);
             }
         }
 
@@ -159,7 +148,7 @@ namespace Neo4j.Driver.Internal
                 conn = NewPooledConnection();
                 if (conn != null)
                 {
-                    await conn.InitAsync(RoutingSetting.RoutingContext).ConfigureAwait(false);
+                    await conn.InitAsync().ConfigureAwait(false);
                     _poolMetricsListener?.ConnectionCreated();
                     return conn;
                 }
@@ -182,7 +171,7 @@ namespace Neo4j.Driver.Internal
             {
                 _poolMetricsListener?.ConnectionCreating();
 
-                return _connectionFactory.Create(_uri, this);
+                return _connectionFactory.Create(_uri, this, RoutingContext);
             }
 
             return null;

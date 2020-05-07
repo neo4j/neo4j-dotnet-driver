@@ -30,7 +30,6 @@ namespace Neo4j.Driver.Internal.Connector
     internal interface IConnection
     {
         Task InitAsync();
-        Task InitAsync(IDictionary<string, string> routingContext);
 
         // send all and receive all
         Task SyncAsync();
@@ -85,5 +84,7 @@ namespace Neo4j.Driver.Internal.Connector
         void UpdateId(string newConnId);
 
         void UpdateVersion(ServerVersion newVersion);
+
+        IDictionary<string, string> RoutingContext { get; set; }
     }
 }

@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Tests
 
                 var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
-                var ex = await Record.ExceptionAsync(() => client.ConnectAsync());
+                var ex = await Record.ExceptionAsync(() => client.ConnectAsync(new Dictionary<string, string>()));
 
                 ex.Should().NotBeNull().And.BeOfType<IOException>();
             }
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests
 
                 var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
-                await client.ConnectAsync();
+                await client.ConnectAsync(new Dictionary<string, string>());
 
                 // Then
                 connMock.Verify(x => x.ConnectAsync(FakeUri), Times.Once);

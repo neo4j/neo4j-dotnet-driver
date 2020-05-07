@@ -34,6 +34,7 @@ namespace Neo4j.Driver.Internal.Connector
         protected DelegatedConnection(IConnection connection)
         {
             Delegate = connection;
+            RoutingContext = connection.RoutingContext;
         }
 
         public AccessMode? Mode
@@ -47,6 +48,8 @@ namespace Neo4j.Driver.Internal.Connector
             get => Delegate.Database;
             set => Delegate.Database = value;
         }
+
+        public IDictionary<string, string> RoutingContext { get; set; }
         
         public virtual Task OnErrorAsync(Exception error)
         {
@@ -70,12 +73,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task InitAsync()
         {
-            return InitAsync(new Dictionary<string, string>());
-        }
-
-        public Task InitAsync(IDictionary<string, string> routingContext)
-        {
-            return TaskWithErrorHandling(() => Delegate.InitAsync(routingContext));
+            return TaskWithErrorHandling(() => Delegate.InitAsync());
         }
 
         public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
