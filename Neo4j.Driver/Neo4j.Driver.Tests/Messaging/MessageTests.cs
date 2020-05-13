@@ -18,8 +18,9 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Messaging.V3;
-using Neo4j.Driver.Internal.Messaging.V4;
+using V3 = Neo4j.Driver.Internal.Messaging.V3;
+using V4 = Neo4j.Driver.Internal.Messaging.V4;
+using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
@@ -34,8 +35,10 @@ namespace Neo4j.Driver.Tests
             public static IEnumerable<object[]> MessageData => new[]
             {
                 new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
-                new object[]
-                    {new HelloMessage("mydriver", new Dictionary<string, object>()), "HELLO [{user_agent, mydriver}]"},
+                new object[] {new V4_1.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+                new object[] {new V4_1.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
+                new object[] {new V4_1.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
+                new object[] {new V3.HelloMessage("mydriver", null), "HELLO [{user_agent, mydriver}]"},
                 new object[] {new SuccessMessage(new Dictionary<string, object>()), "SUCCESS []"},
                 new object[] {DiscardAll, "DISCARDALL"},
                 new object[] {Ignored, "IGNORED"},
@@ -48,17 +51,17 @@ namespace Neo4j.Driver.Tests
                 new object[] {ResetMessage.Reset, "RESET"},
                 new object[]
                 {
-                    new RunWithMetadataMessage(new Query("A query", new Dictionary<string, object>
+                    new V3.RunWithMetadataMessage(new Query("A query", new Dictionary<string, object>
                     {
                         {"key1", 1},
                         {"key2", new[] {2, 4}}
                     }), "my-database", Bookmark.From("bookmark-1"), TransactionConfig.Default, AccessMode.Read),
                     "RUN `A query`, [{key1, 1}, {key2, [2, 4]}] [{bookmarks, [bookmark-1]}, {mode, r}, {db, my-database}]"
                 },
-                new object[] {new PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},
-                new object[] {new PullMessage(2), "PULL [{n, 2}]"},
-                new object[] {new DiscardMessage(1, 2), "DISCARD [{n, 2}, {qid, 1}]"},
-                new object[] {new DiscardMessage(2), "DISCARD [{n, 2}]"},
+                new object[] {new V4.PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},
+                new object[] {new V4.PullMessage(2), "PULL [{n, 2}]"},
+                new object[] {new V4.DiscardMessage(1, 2), "DISCARD [{n, 2}, {qid, 1}]"},
+                new object[] {new V4.DiscardMessage(2), "DISCARD [{n, 2}]"},
             };
 
             [Theory, MemberData(nameof(MessageData))]

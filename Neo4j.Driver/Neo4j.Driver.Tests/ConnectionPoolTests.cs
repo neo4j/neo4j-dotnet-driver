@@ -795,7 +795,7 @@ namespace Neo4j.Driver.Tests
                 var logger = new Mock<ILogger>().Object;
                 var connFactory = new MockedConnectionFactory();
 
-                var pool = new ConnectionPool(uri, connFactory, poolSettings, logger);
+                var pool = new ConnectionPool(uri, connFactory, poolSettings, logger, null);
 
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
@@ -1515,7 +1515,7 @@ namespace Neo4j.Driver.Tests
                 _connection = conn ?? new Mock<IConnection>().Object;
             }
 
-            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
+            public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IDictionary<string, string> routingContext)
             {
                 return new PooledConnection(_connection, releaseManager);
             }

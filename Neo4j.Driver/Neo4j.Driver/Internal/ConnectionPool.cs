@@ -64,29 +64,30 @@ namespace Neo4j.Driver.Internal
         private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
         private bool IsInactiveOrClosed => AtomicRead(ref _poolStatus) != Active;
 
-        private readonly object _poolSizeSync = new object();
         private int _poolSize = 0;
+        public int NumberOfInUseConnections => _inUseConnections.Count;
+        public int NumberOfIdleConnections => _idleConnections.Count;
+        internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
+
         private readonly int _maxPoolSize;
         private readonly int _maxIdlePoolSize;
+
+        private readonly object _poolSizeSync = new object();
         private readonly TimeSpan _connAcquisitionTimeout;
 
         private readonly IConnectionValidator _connectionValidator;
         private readonly IPooledConnectionFactory _connectionFactory;
 
-        private readonly BlockingCollection<IPooledConnection> _idleConnections =
-            new BlockingCollection<IPooledConnection>();
-
-        private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections =
-            new ConcurrentHashSet<IPooledConnection>();
+        private readonly BlockingCollection<IPooledConnection> _idleConnections = new BlockingCollection<IPooledConnection>();
+        private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new ConcurrentHashSet<IPooledConnection>();
 
         private readonly IConnectionPoolListener _poolMetricsListener;
 
-        public int NumberOfInUseConnections => _inUseConnections.Count;
-        public int NumberOfIdleConnections => _idleConnections.Count;
-        internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
         private readonly string _id;
 
         private readonly ILogger _logger;
+
+        public IDictionary<string, string> RoutingContext { get; set; }
 
         public ConnectionPoolStatus Status
         {
@@ -98,7 +99,8 @@ namespace Neo4j.Driver.Internal
             Uri uri,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
-            ILogger logger)
+            ILogger logger,
+            IDictionary<string, string> routingContext)
         {
             _uri = uri;
             _id = $"pool-{_uri.Host}:{_uri.Port}";
@@ -115,6 +117,8 @@ namespace Neo4j.Driver.Internal
 
             var metrics = connectionPoolSettings.Metrics;
             _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
+
+            RoutingContext = routingContext;
         }
 
         // Used in test only
@@ -126,7 +130,7 @@ namespace Neo4j.Driver.Internal
             IConnectionValidator validator = null,
             ILogger logger = null)
             : this(new Uri("bolt://localhost:7687"), connectionFactory,
-                poolSettings ?? new ConnectionPoolSettings(Config.Default), logger)
+                poolSettings ?? new ConnectionPoolSettings(Config.Default), logger, null)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
             _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
@@ -167,7 +171,7 @@ namespace Neo4j.Driver.Internal
             {
                 _poolMetricsListener?.ConnectionCreating();
 
-                return _connectionFactory.Create(_uri, this);
+                return _connectionFactory.Create(_uri, this, RoutingContext);
             }
 
             return null;

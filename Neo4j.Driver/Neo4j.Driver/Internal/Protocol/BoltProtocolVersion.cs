@@ -4,8 +4,6 @@ using System.Text;
 
 namespace Neo4j.Driver.Internal.Protocol
 {   
-    // TODO: Document this
-
     class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     {
         public int MajorVersion { get; set; }

@@ -35,19 +35,19 @@ namespace Neo4j.Driver.Internal.Protocol
                                                                             new BoltProtocolVersion(3, 0),
                                                                             new BoltProtocolVersion(0, 0)};
 
-        public static IBoltProtocol ForVersion(BoltProtocolVersion version)
+        public static IBoltProtocol ForVersion(BoltProtocolVersion version, IDictionary<string, string> routingContext = null)
         {
             if(version.Equals(3, 0))
             {
-                return BoltProtocolV3.BoltV3;
+                return new BoltProtocolV3();
             }
             else if(version.Equals(4, 0))
             {
-                return BoltProtocolV4.BoltV4;
+                return new BoltProtocolV4();
             }
             else if(version.Equals(4, 1))
             {
-                return BoltProtocolV4_1.BoltV4_1;
+                return new BoltProtocolV4_1(routingContext);
             }
             else if(version.Equals(0, 0))
             {

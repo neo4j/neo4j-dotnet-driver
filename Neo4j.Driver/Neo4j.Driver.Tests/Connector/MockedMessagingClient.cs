@@ -25,7 +25,8 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Messaging.V3;
+using V3 = Neo4j.Driver.Internal.Messaging.V3;
+using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
 
 namespace Neo4j.Driver.Tests.Routing
 {
@@ -38,7 +39,7 @@ namespace Neo4j.Driver.Tests.Routing
     /// When sending a request message via this client, it verifies that the message to send is the same as expected.
     /// Then when the driver wants to consume a response from the server, the response message specified at the initialization will be replied in order.
     /// </summary>
-    internal class MockedMessagingClient
+    internal class MockedMessagingClientV3
     {
         private readonly IList<IRequestMessage> _requestMessages = new List<IRequestMessage>();
         private int _requestCount;
@@ -61,7 +62,7 @@ namespace Neo4j.Driver.Tests.Routing
         /// In case of no matched value for a request (or receive) message, use <c>null</c> as a place holder.
         /// </param>
         /// <param name="clientMock">Set this parameter if you want to pass in the mocked client yourself.</param>
-        public MockedMessagingClient(IList<Tuple<IRequestMessage, IResponseMessage>> requestAndResponsePairs,
+        public MockedMessagingClientV3(IList<Tuple<IRequestMessage, IResponseMessage>> requestAndResponsePairs,
             Mock<ISocketClient> clientMock = null)
         {
             foreach (var pair in requestAndResponsePairs)
@@ -78,7 +79,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             ClientMock = clientMock ?? new Mock<ISocketClient>();
-            ClientMock.Setup(x => x.ConnectAsync()).Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
+            ClientMock.Setup(x => x.ConnectAsync(null)).Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
             ClientMock.Setup(x => x.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()))
                 .Callback<IEnumerable<IRequestMessage>>(msg =>
                 {
@@ -106,10 +107,10 @@ namespace Neo4j.Driver.Tests.Routing
             ClientMock.Setup(x => x.IsOpen).Returns(() => _responseCount < _responseMessages.Count);
         }
 
-        internal static HelloMessage LoginMessage(IAuthToken auth = null)
+        internal static V3.HelloMessage LoginMessage(IAuthToken auth = null)
         {
             auth = auth ?? AuthTokens.None;
-            return new HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary());
+            return new V3.HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary());
         }
 
         internal static SuccessMessage SuccessMessage(IList<object> fields = null)
@@ -128,6 +129,22 @@ namespace Neo4j.Driver.Tests.Routing
         internal static Tuple<IRequestMessage, IResponseMessage> MessagePair(IResponseMessage response)
         {
             return MessagePair(null, response);
+        }
+    }
+
+
+
+    internal class MockedMessagingClientV4_1 : MockedMessagingClientV3
+    {
+        public MockedMessagingClientV4_1(IList<Tuple<IRequestMessage, IResponseMessage>> requestAndResponsePairs, Mock<ISocketClient> clientMock = null)
+            : base(requestAndResponsePairs, clientMock)
+        {
+        }
+
+        internal new static V4_1.HelloMessage LoginMessage(IAuthToken auth = null)
+        {
+            auth = auth ?? AuthTokens.None;
+            return new V4_1.HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary(), null);
         }
     }
 }

@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
         public bool IsOpen => _closedMarker == 0;
         private bool IsClosed => _closedMarker > 0;
 
-        public async Task<IBoltProtocol> ConnectAsync()
+        public async Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext)
         {
             await _tcpSocketClient.ConnectAsync(_uri).ConfigureAwait(false);
 
@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var version = await DoHandshakeAsync().ConfigureAwait(false);
-            return SelectBoltProtocol(version);
+            return SelectBoltProtocol(version, routingContext);
         }
 
         public async Task SendAsync(IEnumerable<IRequestMessage> messages)
@@ -166,9 +166,9 @@ namespace Neo4j.Driver.Internal.Connector
             return agreedVersion;
         }
 
-        private IBoltProtocol SelectBoltProtocol(BoltProtocolVersion version)
+        private IBoltProtocol SelectBoltProtocol(BoltProtocolVersion version, IDictionary<string, string> routingContext)
         {
-            var boltProtocol = BoltProtocolFactory.ForVersion(version);
+            var boltProtocol = BoltProtocolFactory.ForVersion(version, routingContext);
             Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger);
             Writer = boltProtocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger);
             return boltProtocol;

@@ -239,7 +239,7 @@ namespace Neo4j.Driver
             {
                 EnsureNoRoutingContext(uri, routingContext);
                 connectionProvider =
-                    new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
+                    new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null);
             }
 
             return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics, config);

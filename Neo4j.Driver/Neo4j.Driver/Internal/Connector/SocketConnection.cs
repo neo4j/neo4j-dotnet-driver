@@ -52,7 +52,9 @@ namespace Neo4j.Driver.Internal.Connector
         private string _id;
         private readonly string _idPrefix;
 
-        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogger logger = null)
+        public IDictionary<string, string> RoutingContext { get; set; }
+
+        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings, IDictionary<string, string> routingContext, ILogger logger = null)
         {
             _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -64,6 +66,7 @@ namespace Neo4j.Driver.Internal.Connector
             Server = new ServerInfo(uri);
 
             _responsePipeline = new ResponsePipeline(_logger);
+            RoutingContext = routingContext;
         }
 
         // for test only
@@ -80,10 +83,11 @@ namespace Neo4j.Driver.Internal.Connector
             _authToken = authToken;
             _userAgent = userAgent;
             Server = server;
+            RoutingContext = null;
 
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
-            _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
+            _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);            
         }
 
         public AccessMode? Mode { get; set; }
@@ -95,7 +99,7 @@ namespace Neo4j.Driver.Internal.Connector
             _sendLock.Wait();
             try
             {
-                _boltProtocol = await _client.ConnectAsync().ConfigureAwait(false);
+                _boltProtocol = await _client.ConnectAsync(RoutingContext).ConfigureAwait(false);
             }
             finally
             {

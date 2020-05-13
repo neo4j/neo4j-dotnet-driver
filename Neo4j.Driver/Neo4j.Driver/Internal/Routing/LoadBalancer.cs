@@ -41,19 +41,26 @@ namespace Neo4j.Driver.Internal.Routing
         private int _closedMarker = 0;
         private IInitialServerAddressProvider _initialServerAddressProvider;
 
+        public RoutingSettings RoutingSetting { get; set; }
+        public IDictionary<string, string> RoutingContext { get; set; }
+
         public LoadBalancer(
             IPooledConnectionFactory connectionFactory,
             RoutingSettings routingSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger)
         {
+            RoutingSetting = routingSettings;
+            RoutingContext = RoutingSetting.RoutingContext;
+
             _logger = logger;
 
-            _clusterConnectionPool =
-                new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, poolSettings, logger);
+            _clusterConnectionPool = new ClusterConnectionPool(Enumerable.Empty<Uri>(), connectionFactory, RoutingSetting,  poolSettings, logger);
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
             _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
             _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
+
+            
         }
 
         // for test only

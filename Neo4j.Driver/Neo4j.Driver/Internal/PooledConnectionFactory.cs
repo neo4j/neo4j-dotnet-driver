@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver;
@@ -23,7 +24,7 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IPooledConnectionFactory
     {
-        IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager);
+        IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IDictionary<string, string> routingContext);
     }
     internal class PooledConnectionFactory : IPooledConnectionFactory
     {
@@ -40,10 +41,10 @@ namespace Neo4j.Driver.Internal
             _logger = logger;
         }
 
-        public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager)
+        public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IDictionary<string, string> routingContext)
         {
             Throw.ArgumentNullException.IfNull(releaseManager, nameof(releaseManager));
-            return new PooledConnection(new SocketConnection(uri, _connectionSettings, _bufferSettings, _logger),
+            return new PooledConnection(new SocketConnection(uri, _connectionSettings, _bufferSettings, routingContext, _logger),
                 releaseManager);
         }
     }

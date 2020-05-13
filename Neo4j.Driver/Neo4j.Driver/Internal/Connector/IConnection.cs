@@ -84,5 +84,7 @@ namespace Neo4j.Driver.Internal.Connector
         void UpdateId(string newConnId);
 
         void UpdateVersion(ServerVersion newVersion);
+
+        IDictionary<string, string> RoutingContext { get; set; }
     }
 }

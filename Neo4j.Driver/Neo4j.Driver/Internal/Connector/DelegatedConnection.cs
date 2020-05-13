@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Util;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -33,6 +34,7 @@ namespace Neo4j.Driver.Internal.Connector
         protected DelegatedConnection(IConnection connection)
         {
             Delegate = connection;
+            RoutingContext = connection.RoutingContext;
         }
 
         public AccessMode? Mode
@@ -46,6 +48,8 @@ namespace Neo4j.Driver.Internal.Connector
             get => Delegate.Database;
             set => Delegate.Database = value;
         }
+
+        public IDictionary<string, string> RoutingContext { get; set; }
         
         public virtual Task OnErrorAsync(Exception error)
         {

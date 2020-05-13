@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Routing
@@ -29,20 +30,22 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IPooledConnectionFactory _connectionFactory;
         private readonly ConnectionPoolSettings _poolSettings;
         private readonly ILogger _logger;
+        private IDictionary<string, string> _routingContext;
 
-        public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings,
-            ILogger logger)
+        public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings, 
+                                     IDictionary<string, string> routingContext, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionFactory, nameof(connectionFactory));
             Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
             _connectionFactory = connectionFactory;
             _poolSettings = poolSettings;
             _logger = logger;
+            _routingContext = routingContext;
         }
 
         public IConnectionPool Create(Uri uri)
         {
-            return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger);
+            return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger, _routingContext);
         }
     }
 }
