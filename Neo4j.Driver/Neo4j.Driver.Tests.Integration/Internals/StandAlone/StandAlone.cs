@@ -60,15 +60,19 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void RetryIfFailToStart()
         {
-            try
+            const int RetryCount = 2;
+
+            for(int i = 0; i < RetryCount; i++)
             {
-                _delegator = _installer.Start().Single();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                _delegator = _installer.Start().Single();
-            }
+                try
+                {
+                    _delegator = _installer.Start().Single();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);   //Notify of the failure error message
+                }
+            }           
         }
 
         public StandAlone(Pkcs12Store store)
