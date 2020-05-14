@@ -66,7 +66,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 try
                 {
-                    _delegator = _installer.Start().Single();
+                    _delegator = _installer.Start().Single();                    
+                    break;
                 }
                 catch (Exception e)
                 {
