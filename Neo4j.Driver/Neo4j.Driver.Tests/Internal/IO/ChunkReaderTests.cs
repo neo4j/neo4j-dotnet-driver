@@ -33,6 +33,8 @@ namespace Neo4j.Driver.Internal.IO
     {
         private const string CompactingArgumentRegEx = "bytes left in chunk buffer.*compacting\\.$";
 
+        //TODO: Add in NOOP chunk tests...
+
         [Fact]
         public void ShouldThrowWhenConstructedUsingNullStream()
         {

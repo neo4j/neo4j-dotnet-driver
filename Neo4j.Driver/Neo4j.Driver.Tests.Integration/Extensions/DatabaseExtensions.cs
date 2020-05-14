@@ -28,10 +28,6 @@ namespace Neo4j.Driver.IntegrationTests
 
             try
             {
-                //TODO: Remove - test for teamcity build only.
-                await driver.VerifyConnectivityAsync(); // - Test only  
-                //System.Threading.Thread.Sleep(2000); // - Test only
-
                 var cursor = await session.RunAsync($"CREATE DATABASE {name}");
                 await cursor.ConsumeAsync();
             }
@@ -46,10 +42,6 @@ namespace Neo4j.Driver.IntegrationTests
             var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
-                //TODO: Remove - test for teamcity build only.
-                await driver.VerifyConnectivityAsync(); // - Test only
-                //System.Threading.Thread.Sleep(2000); // - Test only
-
                 var cursor = await session.RunAsync($"DROP DATABASE {name}");
                 await cursor.ConsumeAsync();
             }
