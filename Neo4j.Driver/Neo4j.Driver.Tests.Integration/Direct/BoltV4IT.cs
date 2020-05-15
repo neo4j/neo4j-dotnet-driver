@@ -72,16 +72,13 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldReturnDatabaseInfoForDatabaseInTx()
         {
-            Console.WriteLine("Creating Database");
             await CreateDatabase(Server.Driver, "foo");
             try
             {
-                Console.WriteLine("Verifying Database");
                 await VerifyDatabaseNameOnSummaryTx("foo", "foo");
             }
             finally
             {
-                Console.WriteLine("Dropping Database");
                 await DropDatabase(Server.Driver, "foo");
             }
         }
