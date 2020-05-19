@@ -40,17 +40,14 @@ namespace Neo4j.Driver.IntegrationTests
 
         public static async Task DropDatabase(IDriver driver, string name)
         {
-            Console.WriteLine("Async Session created");
             var session = driver.AsyncSession(ForDatabase("system"));
             try
-            {
-                Console.WriteLine("Run Async Drop DB");
+            {   
                 var cursor = await session.RunAsync($"DROP DATABASE {name}");
                 await cursor.ConsumeAsync();
             }
             finally
             {
-                Console.WriteLine("Close Async session");
                 await session.CloseAsync();
             }
         }

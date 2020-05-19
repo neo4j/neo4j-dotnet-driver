@@ -33,8 +33,6 @@ namespace Neo4j.Driver.Internal.IO
     {
         private const string CompactingArgumentRegEx = "bytes left in chunk buffer.*compacting\\.$";
 
-        //TODO: Add in NOOP chunk tests...
-
         [Fact]
         public void ShouldThrowWhenConstructedUsingNullStream()
         {
@@ -66,10 +64,24 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Theory]
-        [InlineData(new byte[] { 0x00, 0x00 }, new byte[] { }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
+        [InlineData(new byte[] { 0x00, 0x00 }, 
+                                 new byte[] { }, 0)]
+        [InlineData(new byte[] { 0x00, 0x01, 0x00, 
+                                 0x00, 0x02, 0x01, 0x02, 
+                                 0x00, 0x00 }, 
+                                 new byte[] { 0x00, 0x01, 0x02 }, 1)]
+        [InlineData(new byte[] { 0x00, 0x01, 0x00, 
+                                 0x00, 0x01, 0x01, 
+                                 0x00, 0x01, 0x02, 
+                                 0x00, 0x00 }, 
+                                 new byte[] { 0x00, 0x01, 0x02 }, 1)]
+        [InlineData(new byte[] { 0x00, 0x01, 0x00, 
+                                 0x00, 0x01, 0x01, 
+                                 0x00, 0x01, 0x02, 
+                                 0x00, 0x00, 
+                                 0x00, 0x03, 0x00, 0x01, 0x02, 
+                                 0x00, 0x00 }, 
+                                 new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
         public void ShouldReadMessageSpanningMultipleChunks(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
         {
             var reader = new ChunkReader(new MemoryStream(input));
@@ -83,10 +95,24 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Theory]
-        [InlineData(new byte[] { 0x00, 0x00 }, new byte[] { }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02 }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x01, 0x01, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x01, 0x02, 0x00, 0x00 }, new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
+        [InlineData(new byte[] { 0x00, 0x00 }, 
+                                 new byte[] { }, 0)]
+        [InlineData(new byte[] { 0x00, 0x01, 0x00,      
+                                 0x00, 0x02, 0x01, 0x02,     
+                                 0x00, 0x00 }, 
+                                 new byte[] { 0x00, 0x01, 0x02 }, 1)]
+        [InlineData(new byte[] { 0x00, 0x01, 0x00,      
+                                 0x00, 0x01, 0x01,           
+                                 0x00, 0x01, 0x02,       
+                                 0x00, 0x00 }, 
+                                 new byte[] { 0x00, 0x01, 0x02 }, 1)]
+        [InlineData(new byte[] { 0x00, 0x01, 0x00,      
+                                 0x00, 0x01, 0x01,           
+                                 0x00, 0x01, 0x02,       
+                                 0x00, 0x00,         
+                                 0x00, 0x03, 0x00, 0x01, 0x02,       
+                                 0x00, 0x00 }, 
+                                 new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
         public async void ShouldReadMessageSpanningMultipleChunksAsync(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
         {
             var reader = new ChunkReader(new MemoryStream(input));
@@ -132,165 +158,29 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Theory]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00 })]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02 })]
-        public void ShouldThrowWhenEndOfMessageMarkerNotPresent(byte[] input)
+        [InlineData(new byte[] { 0x00, 0x00,                    //NOOP
+                                 0x00, 0x01, 0x00,              //Message multichunk
+                                 0x00, 0x01, 0x01,
+                                 0x00, 0x01, 0x02,
+                                 0x00, 0x00,                    //End of message
+                                 0x00, 0x00,                    //NOOP
+                                 0x00, 0x00,                    //NOOP
+                                 0x00, 0x03, 0x00, 0x01, 0x02,  //Message single chunk
+                                 0x00, 0x00,                    //End of message
+                                 0x00, 0x00, },                 //NOOP
+                                 new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
+        public void ShouldReadNoopsBetweenMessages(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
         {
             var reader = new ChunkReader(new MemoryStream(input));
 
             var targetStream = new MemoryStream();
-            var ex = Record.Exception(() => reader.ReadNextMessages(targetStream));
+            var count = reader.ReadNextMessages(targetStream);
+            var messageBuffers = targetStream.ToArray();
 
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<IOException>().Which.Message.Should().StartWith("Unexpected end of stream");
+            count.Should().Be(expectedCount);
+            messageBuffers.Should().Equal(expectedMessageBuffers);
         }
 
-        [Theory]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00 })]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02 })]
-        public async void ShouldThrowWhenEndOfMessageMarkerNotPresentAsync(byte[] input)
-        {
-            var reader = new ChunkReader(new MemoryStream(input));
-
-            var targetStream = new MemoryStream();
-            var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(targetStream));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<IOException>().Which.Message.Should().StartWith("Unexpected end of stream");
-        }
-
-        [Fact]
-        public void ShouldNotResetInternalBufferPositionsWhenWritableBufferIsLargerThanSetWatermark()
-        {
-            var input = GenerateMessageChunk(Constants.ChunkBufferSize -
-                                             (Constants.ChunkBufferResetPositionsWatermark + 10));
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = reader.ReadNextMessages(new MemoryStream());
-
-            count.Should().Be(1);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Never);
-        }
-
-        [Fact]
-        public async void ShouldNotResetInternalBufferPositionsWhenWritableBufferIsLargerThanSetWatermarkAsync()
-        {
-            var input = GenerateMessageChunk(Constants.ChunkBufferSize -
-                                             (Constants.ChunkBufferResetPositionsWatermark + 10));
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = await reader.ReadNextMessagesAsync(new MemoryStream());
-
-            count.Should().Be(1);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Never);
-        }
-
-        [Fact]
-        public void ShouldResetInternalBufferPositionsWhenWritableBufferIsSmallerThanSetWatermark()
-        {
-            var input = GenerateMessageChunk(Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark);
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = reader.ReadNextMessages(new MemoryStream());
-
-            count.Should().Be(1);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Once);
-        }
-
-        [Fact]
-        public async void ShouldResetInternalBufferPositionsWhenWritableBufferIsSmallerThanSetWatermarkAsync()
-        {
-            var input = GenerateMessageChunk(Constants.ChunkBufferSize - Constants.ChunkBufferResetPositionsWatermark);
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = await reader.ReadNextMessagesAsync(new MemoryStream());
-
-            count.Should().Be(1);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Once);
-        }
-
-        [Fact]
-        public void ShouldNotResetInternalBufferPositionsWhenWritableBufferIsLargerThanSetWatermarkWithConsecutiveMessages()
-        {
-            const int messageSizePerChunk = 1000;
-            const int maxBytes = Constants.ChunkBufferSize - (Constants.ChunkBufferResetPositionsWatermark + 10);
-
-            var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = reader.ReadNextMessages(new MemoryStream());
-
-            count.Should().BeGreaterOrEqualTo(maxBytes / messageSizePerChunk);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Never);
-        }
-
-        [Fact]
-        public async void ShouldNotResetInternalBufferPositionsWhenWritableBufferIsLargerThanSetWatermarkWithConsecutiveMessagesAsync()
-        {
-            const int messageSizePerChunk = 1000;
-            const int maxBytes = Constants.ChunkBufferSize - (Constants.ChunkBufferResetPositionsWatermark + 10);
-
-            var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = await reader.ReadNextMessagesAsync(new MemoryStream());
-
-            count.Should().BeGreaterOrEqualTo(maxBytes / messageSizePerChunk);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Never);
-        }
-
-        [Fact]
-        public void ShouldResetInternalBufferPositionsWhenWritableBufferIsSmallerThanSetWatermarkWithConsecutiveMessages()
-        {
-            const int messageSizePerChunk = 1000;
-            const int maxBytes = Constants.ChunkBufferSize;
-
-            var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = reader.ReadNextMessages(new MemoryStream());
-
-            count.Should().BeGreaterOrEqualTo(maxBytes / messageSizePerChunk);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Once);
-        }
-
-        [Fact]
-        public async void ShouldResetInternalBufferPositionsWhenWritableBufferIsSmallerThanSetWatermarkWithConsecutiveMessagesAsync()
-        {
-            const int messageSizePerChunk = 1000;
-            const int maxBytes = Constants.ChunkBufferSize;
-
-            var input = GenerateMessages(messageSizePerChunk, maxBytes);
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = await reader.ReadNextMessagesAsync(new MemoryStream());
-
-            count.Should().BeGreaterOrEqualTo(maxBytes / messageSizePerChunk);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.Once);
-        }
-
-        [Fact]
-        public void ShouldResetInternalBufferPositionsWhenAMessageOfNChunks()
-        {
-            var size = 3 * Constants.MaxChunkSize;
-            var input = GenerateMessageChunk(3 * Constants.MaxChunkSize);
-            var logger = LoggingHelper.GetTraceEnabledLogger();
-            var reader = new ChunkReader(new MemoryStream(input), logger.Object);
-
-            var count = reader.ReadNextMessages(new MemoryStream());
-
-            count.Should().Be(1);
-            logger.Verify(l => l.Trace(It.IsRegex(CompactingArgumentRegEx), It.IsAny<object[]>()), Times.AtLeast(size / Constants.ChunkBufferSize));
-        }
-        
         [Fact]
         public void ShouldResetBufferStreamPosition()
         {
@@ -312,7 +202,10 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public async void ShouldThrowCancellationWhenReadAsyncIsCancelled()
         {
-            var reader = new ChunkReader(AsyncTestStream.CreateCancellingStream());
+            var testStream = AsyncTestStream.CreateCancellingStream();
+            testStream.SetLength(4);
+            testStream.Position = 0;
+            var reader = new ChunkReader(testStream);
 
             var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
 
@@ -323,7 +216,10 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public async void ShouldThrowIOExceptionWhenReadAsyncIsFaultedSynchronously()
         {
-            var reader = new ChunkReader(AsyncTestStream.CreateSyncFailingStream(new IOException("some error")));
+            var testStream = AsyncTestStream.CreateSyncFailingStream(new IOException("some error"));
+            testStream.SetLength(4);
+            testStream.Position = 0;
+            var reader = new ChunkReader(testStream);
 
             var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
 
@@ -334,25 +230,15 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public async void ShouldThrowIOExceptionWhenReadAsyncIsFaulted()
         {
-            var reader = new ChunkReader(AsyncTestStream.CreateFailingStream(new IOException("some error")));
+            var testStream = AsyncTestStream.CreateFailingStream(new IOException("some error"));
+            testStream.SetLength(4);
+            testStream.Position = 0;
+            var reader = new ChunkReader(testStream);
 
             var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
 
             ex.Should().NotBeNull();
             ex.Should().BeAssignableTo<IOException>().Which.Message.Should().Be("some error");
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        public async void ShouldThrowIOExceptionWhenReadAsyncReturnsZeroOrLess(int returnValue)
-        {
-            var reader = new ChunkReader(AsyncTestStream.CreateStream(Task.FromResult(returnValue)));
-
-            var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeAssignableTo<IOException>().Which.Message.Should().StartWith("Unexpected end of stream, read returned");
         }
 
         [Fact]
@@ -371,6 +257,63 @@ namespace Neo4j.Driver.Internal.IO
             var count = await reader.ReadNextMessagesAsync(bufferStream);
 
             bufferStream.Position.Should().Be(bufferPosition);
+        }
+
+
+        [Fact]
+        public async void ShouldReadSingleMessageStreamLargerThanBufferSizeAsync()
+        {
+            const int messageSizeByte = 22 * 1024;
+            const int totalStreamSizeByte = (messageSizeByte + 4);
+            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
+            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var reader = new ChunkReader(inputStream);
+            
+            var count = await reader.ReadNextMessagesAsync(resultStream);
+
+            count.Should().Be(1);
+        }
+
+        [Fact]
+        public void ShouldReadSingleMessageStreamLargerThanBufferSize()
+        {
+            const int messageSizeByte = 22 * 1024;
+            const int totalStreamSizeByte = (messageSizeByte + 4);
+            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
+            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var reader = new ChunkReader(inputStream);
+            
+            var count = reader.ReadNextMessages(resultStream);
+
+            count.Should().Be(1);
+        }
+
+        [Fact]
+        public async void ShouldReadMultipleMessageStreamLargerThanBufferSizeAsync()
+        {
+            const int messageSizeByte = 11 * 1024;
+            const int totalStreamSizeByte = 2 * (messageSizeByte + 4);
+            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
+            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var reader = new ChunkReader(inputStream);
+            
+            var count = await reader.ReadNextMessagesAsync(resultStream);
+
+            count.Should().Be(2);
+        }
+
+        [Fact]
+        public void ShouldReadMultipleMessageStreamLargerThanBufferSize()
+        {
+            const int messageSizeByte = 11 * 1024;
+            const int totalStreamSizeByte = 2 * (messageSizeByte + 4);
+            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
+            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var reader = new ChunkReader(inputStream);
+            
+            var count = reader.ReadNextMessages(resultStream);
+
+            count.Should().Be(2);
         }
 
 
