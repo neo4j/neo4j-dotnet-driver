@@ -41,10 +41,7 @@ namespace Neo4j.Driver.IntegrationTests
             var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
-                //TODO: Fix ready for testing once TeamCity is configured and working for 4.0 against 4.1 server
-                //var cursor = await session.RunAsync($"DROP DATABASE {name} IF EXISTS");
-
-                var cursor = await session.RunAsync($"DROP DATABASE {name}");
+                var cursor = await session.RunAsync($"DROP DATABASE {name} IF EXISTS");
                 await cursor.ConsumeAsync();
             }
             finally

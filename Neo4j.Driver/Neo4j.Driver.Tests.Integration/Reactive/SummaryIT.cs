@@ -193,21 +193,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldReturnNotifications()
             {
                 VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n", null,
-                   MatchesSummary(new
-                   {
-                       Notifications = new[]
-                           {
-                                new Notification("Neo.ClientNotification.Statement.UnknownLabelWarning",
-                                    "The provided label is not in the database.",
-                                    "One of the labels in your query is not available in the database, make sure you didn\'t misspell it or that the label is available when you run this statement in your application (the missing label name is: ThisLabelDoesNotExist)",
-                                    null, "WARNING")
-                           }
-                   },
-                       options => options.ExcludingMissingMembers()
-                           .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")));
-
-                /* TODO: Fix ready for testing once TeamCity is configured and working for 4.0 against 4.1 server
-                VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n", null,
                     MatchesSummary(new
                         {
                             Notifications = new[]
@@ -223,7 +208,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                             .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")
                             .Excluding(x => x.SelectedMemberPath == "Notifications[0].Title")
                             .Excluding(x => x.SelectedMemberPath == "Notifications[0].Description")));
-                */
             }
 
             private void VerifySummaryQueryTextAndParams(string query, object parameters)
