@@ -198,13 +198,16 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                             Notifications = new[]
                             {
                                 new Notification("Neo.ClientNotification.Statement.UnknownLabelWarning",
-                                    "The provided label is not in the database.",
-                                    "One of the labels in your query is not available in the database, make sure you didn\'t misspell it or that the label is available when you run this statement in your application (the missing label name is: ThisLabelDoesNotExist)",
-                                    null, "WARNING")
+                                    null,
+                                    null,
+                                    null, 
+                                    "WARNING")
                             }
                         },
                         options => options.ExcludingMissingMembers()
-                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")));
+                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")
+                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Title")
+                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Description")));
             }
 
             private void VerifySummaryQueryTextAndParams(string query, object parameters)

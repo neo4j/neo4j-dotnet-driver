@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests
             var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
-                var cursor = await session.RunAsync($"DROP DATABASE {name}");
+                var cursor = await session.RunAsync($"DROP DATABASE {name} IF EXISTS");
                 await cursor.ConsumeAsync();
             }
             finally
