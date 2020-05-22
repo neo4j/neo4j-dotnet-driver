@@ -73,6 +73,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                     // When
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
                     var session = Server.Driver.AsyncSession();
+                    
                     try
                     {
                         var error = await Record.ExceptionAsync(() =>
@@ -81,6 +82,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                         // Then
                         error.Should().BeOfType<TransientException>().Which.Message.Should().Contain("terminated");
+
+                        var result = (error.GetType().Equals(typeof(TransientException)) || error.GetType().Equals(typeof(ClientException)));
+                        result.Should().BeTrue();
+                        error.Message.Should().Contain("terminated");
                     }
                     finally
                     {
