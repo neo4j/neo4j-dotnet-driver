@@ -162,10 +162,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(
                         new
                         {
-                            HasPlan = true, Plan = new Plan("ProduceResults", null, new[] {"n"}, null),
-                            HasProfile = false, Profile = default(IProfiledPlan)
-                        }, opts => opts.Excluding(x => x.SelectedMemberPath == "Plan.Arguments")
-                            .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
+                            HasPlan = true, 
+                            Plan = new Plan("ProduceResults", null, new[] {"n"}, null),
+                            HasProfile = false, 
+                            Profile = default(IProfiledPlan)
+                        }, 
+                        opts => opts.Excluding(x => x.SelectedMemberPath == "Plan.OperatorType") 
+                                    .Excluding(x => x.SelectedMemberPath == "Plan.Arguments")
+                                    .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -175,11 +179,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(
                         new
                         {
-                            HasPlan = true, HasProfile = true,
+                            HasPlan = true, 
+                            HasProfile = true,
                             Profile = new ProfiledPlan("ProduceResults", null, new[] {"n"}, null, 0, 1, 0, 0, 0, 0)
                         },
-                        opts => opts.Excluding(x => x.SelectedMemberPath == "Profile.Arguments")
-                            .Excluding(x => x.SelectedMemberPath == "Profile.Children")));
+                        opts => opts.Excluding(x => x.SelectedMemberPath == "Profile.OperatorType")
+                                    .Excluding(x => x.SelectedMemberPath == "Profile.Arguments")
+                                    .Excluding(x => x.SelectedMemberPath == "Profile.Children")));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
