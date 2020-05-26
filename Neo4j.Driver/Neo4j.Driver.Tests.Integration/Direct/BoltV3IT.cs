@@ -80,9 +80,6 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                             session.RunAsync("MATCH (n:Node) SET n.prop = 2",
                                              o => { o.WithTimeout(TimeSpan.FromMilliseconds(1)); }).ContinueWith(c => c.Result.ConsumeAsync()).Unwrap());
 
-                        // Then
-                        error.Should().BeOfType<TransientException>().Which.Message.Should().Contain("terminated");
-
                         var result = (error.GetType().Equals(typeof(TransientException)) || error.GetType().Equals(typeof(ClientException)));
                         result.Should().BeTrue();
                         error.Message.Should().Contain("terminated");
