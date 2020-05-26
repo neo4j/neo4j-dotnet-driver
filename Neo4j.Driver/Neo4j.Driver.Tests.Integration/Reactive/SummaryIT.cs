@@ -198,7 +198,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnNotifications()
             {
-                VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n", null,
+                VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExistReactive) RETURN n", null,
                     MatchesSummary(new
                         {
                             Notifications = new[]
