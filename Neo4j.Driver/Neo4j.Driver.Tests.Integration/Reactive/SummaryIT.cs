@@ -239,16 +239,16 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 using (var session = Server.Driver.Session())
                 {
                     foreach (var drop in session.Run("CALL db.constraints()").ToList())
-                    {  
-                        if(drop.Values.TryGetValue("name", out var name))
-                        {   
+                    {
+                        if (drop.Values.TryGetValue("name", out var name))
+                        {
                             session.Run($"DROP CONSTRAINT {name}").Consume();
                         }
                     }
 
                     foreach (var drop in session.Run("CALL db.indexes()").ToList())
                     {
-                        if(drop.Values.TryGetValue("name", out var name))
+                        if (drop.Values.TryGetValue("name", out var name))
                         {
                             session.Run($"DROP INDEX {name}").Consume();
                         }
