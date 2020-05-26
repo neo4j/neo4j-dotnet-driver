@@ -122,7 +122,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceive(Point point)
         {
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             try
             {
                 var cursor = await
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceiveList(IList<Point> points)
         {
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             try
             {
                 var cursor =
