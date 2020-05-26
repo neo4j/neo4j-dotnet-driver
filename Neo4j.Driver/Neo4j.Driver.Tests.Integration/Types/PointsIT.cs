@@ -74,7 +74,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSend()
         {
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             try
             {
                 var point1 = new Point(Wgs84SrId, 51.5044585, -0.105658);
