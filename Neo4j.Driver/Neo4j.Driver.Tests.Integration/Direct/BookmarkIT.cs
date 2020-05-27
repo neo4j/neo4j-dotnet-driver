@@ -113,77 +113,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
-        public async Task ShouldThrowForUnreachableBookmark()
-        {
-            Bookmark bookmark;
-            var session = Driver.AsyncSession();
-            try
-            {
-                await CreateNodeInTx(session, 1);
-                bookmark = session.LastBookmark;
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-
-            // Config the default server bookmark_ready_timeout to be something smaller than 30s to speed up this test
-            session = Driver.AsyncSession(o => o.WithBookmarks(Bookmark.From(BookmarkValue(bookmark) + "0")));
-            try
-            {
-                var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
-
-                exc.Should().BeOfType<TransientException>().Which
-                    .Message.Should().Contain("not up to the requested version:");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
-        public async Task ShouldWaitOnBookmark()
-        {
-            var session = Driver.AsyncSession();
-            try
-            {
-                // get a bookmark
-                session.LastBookmark.Should().BeNull();
-                await CreateNodeInTx(session, 1);
-
-                session.LastBookmark.Should().NotBeNull();
-                session.LastBookmark.Values.Should().NotBeEmpty();
-                var lastBookmarkNum = BookmarkNum(session.LastBookmark);
-
-                // start a thread to create lastBookmark + 1 tx 
-#pragma warning disable 4014
-                Task.Factory.StartNew(async () =>
-#pragma warning restore 4014
-                {
-                    await Task.Delay(500);
-                    var anotherSession = Driver.AsyncSession();
-                    try
-                    {
-                        await CreateNodeInTx(anotherSession, 2);
-                    }
-                    finally
-                    {
-                        await anotherSession.CloseAsync();
-                    }
-                });
-
-                // wait for lastBookmark + 1
-                var waitForBookmark = BookmarkNumOverride(session.LastBookmark, lastBookmarkNum + 1);
-                var count = await CountNodeInTx(Driver, 2, waitForBookmark);
-                count.Should().Be(1);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+       
 
         private static async Task CreateNodeInTx(IAsyncSession session, int id)
         {
@@ -208,7 +138,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var tx = await session.BeginTransactionAsync();
                 try
                 {
-                    var cursor = await tx.RunAsync("MATCH (a:Person {id: $id}) RETURN a", new {id});
+                    var cursor = await tx.RunAsync("MATCH (a:Person {id: $id}) RETURN a", new { id });
                     var records = await cursor.ToListAsync();
                     await tx.CommitAsync();
                     return records.Count;
@@ -223,35 +153,6 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             {
                 await session.CloseAsync();
             }
-        }
-
-        private static long BookmarkNum(Bookmark bookmark)
-        {
-            return LastBookmarkValue(bookmark).seq;
-        }
-
-        private static string BookmarkValue(Bookmark bookmark)
-        {
-            return LastBookmarkValue(bookmark).value;
-        }
-
-        private static Bookmark BookmarkNumOverride(Bookmark bookmark, long newSeq)
-        {
-            var (value, seq) = LastBookmarkValue(bookmark);
-            var prefix = value.Substring(0, value.Length - seq.ToString().Length);
-
-            return Bookmark.From(prefix + newSeq);
-        }
-
-        private static (string value, long seq) LastBookmarkValue(Bookmark bookmark)
-        {
-            return bookmark.Values.Select(v => (value: v, seq: Convert.ToInt64(ExtractNumber(v))))
-                .OrderByDescending(v => v.seq).First();
-        }
-
-        private static string ExtractNumber(string value)
-        {
-            return Regex.Match(value, @"\D+(\d+)$").Groups[1].Value;
         }
     }
 }
