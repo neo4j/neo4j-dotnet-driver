@@ -16,12 +16,9 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Sockets;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.IO
@@ -30,39 +27,52 @@ namespace Neo4j.Driver.Internal.IO
     {
         private class StreamBuffer
         {
-            private readonly byte[] _streamBuffer = new byte[Constants.ChunkBufferSize];
-            private byte[] Buffer { get { return _streamBuffer; } }
-            
+            private byte[] Buffer { get; } = new byte[Constants.ChunkBufferSize];
+
             public byte this[int index]
             {
                 get
                 {
-                    return _streamBuffer[index];
+                    return Buffer[index];
                 }
                 set
                 {
-                    _streamBuffer[index] = value;
+                    Buffer[index] = value;
                 }
             }
             public int Position { get; set; } = 0;
-            public int Length { get { return _streamBuffer.Length; } }
+            public int Length { get { return Buffer.Length; } }
             public int Size { get; set; }
             
-            public int Write(Stream inputStream, int offset = 0)
+            private bool CheckStreamHasData(Stream inputStream)
             {
-                Position = offset;
-                Size = inputStream.Read(Buffer, Position, Length);
+                if(inputStream is NetworkStream networkStream)
+                {
+                    return networkStream.DataAvailable;
+                }
+                
+                if(inputStream.Length <= 0)
+                    throw new IOException($"Unexpected end of stream - empty stream");
+            
+                return true;                
+            }
+
+
+            public int ReadFrom(Stream inputStream, int offset = 0)
+            {   
+                Position = 0;
+                Size = CheckStreamHasData(inputStream) ? inputStream.Read(Buffer, offset, Length) : 0;
                 return Size;
             }
 
-            public async Task<int> WriteAsync(Stream inputStream, int offset = 0)
+            public async Task<int> ReadFromAsync(Stream inputStream, int offset = 0)
             {
-                Position = offset; 
-                Size = await inputStream.ReadAsync(Buffer, Position, Length).ConfigureAwait(false);
+                Position = 0;
+                Size = CheckStreamHasData(inputStream) ? await inputStream.ReadAsync(Buffer, offset, Length).ConfigureAwait(false) : 0;                                
                 return Size;
             }
 
-            public int Read(byte[] target, int offset, int readSize)
+            public int WriteInto(byte[] target, int offset, int readSize)
             {
                 if (readSize <= 0) return 0;
 
@@ -72,7 +82,7 @@ namespace Neo4j.Driver.Internal.IO
                 return readSize;
             }
 
-            public int Read(Stream targetStream, int readSize)
+            public int WriteInto(Stream targetStream, int readSize)
             {
                 if (readSize <= 0) return 0;
 
@@ -98,7 +108,6 @@ namespace Neo4j.Driver.Internal.IO
         private int RemainingReadSize { get; set; } = 0;
         private bool IsMessageOpen { get; set; } = false;
         private int MessageCount { get; set; } = 0;
-        private bool DataRead { get; set; } = false;
 
         const int ChunkHeaderSize = 2;
         private readonly byte[] _chunkSizeBuffer = new byte[ChunkHeaderSize];
@@ -122,11 +131,11 @@ namespace Neo4j.Driver.Internal.IO
 
         public int ReadNextMessages(Stream outputMessageStream)
         {
+            MessageCount = 0;
             var previousStreamPosition = outputMessageStream.Position;
             
-            while (DataStreamBuffer.Write(InputStream) > 0)
+            while (DataStreamBuffer.ReadFrom(InputStream) > 0)
             {
-                DataRead = true;
                 DataStreamBuffer.LogBuffer(Logger);
                 MessageCount += ExtractMessages(outputMessageStream);
             }
@@ -138,13 +147,12 @@ namespace Neo4j.Driver.Internal.IO
         }
         
         public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
-        {   
+        {
             MessageCount = 0;
             var previousStreamPosition = outputMessageStream.Position;            
 
-            while(await DataStreamBuffer.WriteAsync(InputStream) > 0)
+            while(await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false) > 0)
             {
-                DataRead = true;
                 DataStreamBuffer.LogBuffer(Logger);
                 MessageCount += ExtractMessages(outputMessageStream);
             }
@@ -169,7 +177,7 @@ namespace Neo4j.Driver.Internal.IO
                 
                 if (chunkSize > 0) OpenMessage();   //Zero chunksize is a NOOP so don't open a message
                 
-                RemainingReadSize = chunkSize - DataStreamBuffer.Read(outputMessageStream, chunkSize);
+                RemainingReadSize = chunkSize - DataStreamBuffer.WriteInto(outputMessageStream, chunkSize);
 
                 if (previousChunkSize > 0 && chunkSize == 0)   //This is the NOOP at the end of a message
                 {
@@ -183,7 +191,7 @@ namespace Neo4j.Driver.Internal.IO
 
         private int ReadChunkSize()
         {
-            var sizeRead = DataStreamBuffer.Read(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
+            var sizeRead = DataStreamBuffer.WriteInto(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
             
             if(sizeRead < _chunkSizeBuffer.Length)
             {
@@ -200,9 +208,6 @@ namespace Neo4j.Driver.Internal.IO
 
             if (IsMessageOpen) //This is the end of the stream, and we still have an open message
                 throw new IOException($"Unexpected end of stream, still have an unterminated message");
-
-            if(!DataRead)
-                throw new IOException($"Unexpected end of stream - empty stream");
         }
 
         private void OpenMessage()
@@ -216,8 +221,5 @@ namespace Neo4j.Driver.Internal.IO
         }
     }
 }
-
-
-
 
 
