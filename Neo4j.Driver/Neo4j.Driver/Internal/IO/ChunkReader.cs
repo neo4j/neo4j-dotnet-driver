@@ -16,30 +16,106 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Sockets;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class ChunkReader : IChunkReader
     {
-        private readonly Stream _downStream;
-        private readonly ILogger _logger;
+        private class StreamBuffer
+        {
+            private byte[] Buffer { get; } = new byte[Constants.ChunkBufferSize];
 
-        private readonly byte[] _chunkSizeBuffer = new byte[2];
-        private readonly byte[] _buffer = new byte[Constants.ChunkBufferSize];
-        private int _lastWritePosition = 0;
-        private int _lastReadPosition = 0;
-        private int _currentChunkSize = -1;
+            public byte this[int index]
+            {
+                get
+                {
+                    return Buffer[index];
+                }
+                set
+                {
+                    Buffer[index] = value;
+                }
+            }
+            public int Position { get; set; } = 0;
+            public int Length { get { return Buffer.Length; } }
+            public int Size { get; set; }
+            
+            private bool CheckStreamHasData(Stream inputStream)
+            {
+                if(inputStream is NetworkStream networkStream)
+                {
+                    return networkStream.DataAvailable;
+                }
+                
+                if(inputStream.Length <= 0)
+                    throw new IOException($"Unexpected end of stream - empty stream");
+            
+                return true;                
+            }
+
+
+            public int ReadFrom(Stream inputStream, int offset = 0)
+            {   
+                Position = 0;
+                Size = CheckStreamHasData(inputStream) ? inputStream.Read(Buffer, offset, Length) : 0;
+                return Size;
+            }
+
+            public async Task<int> ReadFromAsync(Stream inputStream, int offset = 0)
+            {
+                Position = 0;
+                Size = CheckStreamHasData(inputStream) ? await inputStream.ReadAsync(Buffer, offset, Length).ConfigureAwait(false) : 0;                                
+                return Size;
+            }
+
+            public int WriteInto(byte[] target, int offset, int readSize)
+            {
+                if (readSize <= 0) return 0;
+
+                readSize = Math.Min(readSize, Size - Position);                
+                System.Buffer.BlockCopy(Buffer, Position, target, offset, readSize);
+                Position += readSize;
+                return readSize;
+            }
+
+            public int WriteInto(Stream targetStream, int readSize)
+            {
+                if (readSize <= 0) return 0;
+
+                readSize = Math.Min(readSize, Size - Position);
+                targetStream.Write(Buffer, Position, readSize);
+                Position += readSize;
+                return readSize;
+            }
+                        
+            public void LogBuffer(ILogger logger)
+            {
+                if (logger != null && logger.IsTraceEnabled())
+                {
+                    logger?.Trace("S: {0}", Buffer.ToHexString(0, Size));
+                }
+            }
+        }
+
+
+        private Stream InputStream { get; set; }
+        private ILogger Logger { get; set; }        
+        private StreamBuffer DataStreamBuffer{ get; set; }
+        private int RemainingReadSize { get; set; } = 0;
+        private bool IsMessageOpen { get; set; } = false;
+        private int MessageCount { get; set; } = 0;
+
+        const int ChunkHeaderSize = 2;
+        private readonly byte[] _chunkSizeBuffer = new byte[ChunkHeaderSize];
+
 
         public ChunkReader(Stream downStream)
             : this(downStream, null)
-        {
+        {   
         }
 
         internal ChunkReader(Stream downStream, ILogger logger)
@@ -47,217 +123,103 @@ namespace Neo4j.Driver.Internal.IO
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
             Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream));
 
-            _downStream = downStream;
-            _logger = logger;
-        }
-
-        private bool TryReadOneCompleteMessageFromBuffer(Stream messageStream)
-        {
-            while (true)
-            {
-                // First try to retrieve the chunk size.
-                if (_currentChunkSize == -1 && HasBytesAvailable(_chunkSizeBuffer.Length))
-                {
-                    _currentChunkSize = ReadChunkSize();
-
-                    // If this is the zero-length message boundary chunk, cleanup and return true.
-                    if (_currentChunkSize == 0)
-                    {
-                        Cleanup();
-
-                        return true;
-                    }
-                }
-
-                // As long as we know the chunk size and some bytes available in the buffers, write those
-                // to the target stream.
-                if (_currentChunkSize != -1 && HasBytesAvailable())
-                {
-                    var count = Math.Min(_currentChunkSize, _lastWritePosition - _lastReadPosition);
-
-                    CopyFromBuffer(messageStream, count);
-
-                    _currentChunkSize -= count;
-
-                    if (_currentChunkSize == 0)
-                    {
-                        Cleanup();
-                    }
-
-                    // Just reset the position trackers to not to run over our fixed size buffer.
-                    ResetPositions();
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            // Otherwise we need some more data.
-            return false;
-        }
-
-        public int ReadNextMessages(Stream messageStream)
-        {
-            var messages = 0;
-
-            var previousPosition = messageStream.Position;
-            try
-            {
-                messageStream.Position = messageStream.Length;
-
-                while (true)
-                {
-                    // Read next available bytes from the down stream and process it.
-                    var read = _downStream.Read(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition);
-                    if (read <= 0)
-                    {
-                        throw new IOException($"Unexpected end of stream, read returned {read}");
-                    }
-
-                    LogBuffer(_buffer, _lastWritePosition, read);
-
-                    _lastWritePosition += read;
-
-                    // Can we read a whole message from what we have?
-                    if (TryReadOneCompleteMessageFromBuffer(messageStream))
-                    {
-                        messages += 1;
-
-                        break;
-                    }
-                }
-
-                // Try to consume more messages from the left-over data in the buffer
-                var readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
-                while (readFromBuffer)
-                {
-                    messages += 1;
-
-                    readFromBuffer = TryReadOneCompleteMessageFromBuffer(messageStream);
-                }
-            }
-            finally
-            {
-                messageStream.Position = previousPosition;
-            }
-
-            return messages;
+            InputStream = downStream;
+            Logger = logger;
+            DataStreamBuffer = new StreamBuffer();
         }
 
 
-        public async Task<int> ReadNextMessagesAsync(Stream messageStream)
+        public int ReadNextMessages(Stream outputMessageStream)
         {
-            var count = 0;
-
-            var previousPosition = messageStream.Position;
-            messageStream.Position = messageStream.Length;
-
-            try
+            MessageCount = 0;
+            var previousStreamPosition = outputMessageStream.Position;
+            
+            while (DataStreamBuffer.ReadFrom(InputStream) > 0)
             {
-                while (count == 0)
-                {
-                    var bytes = await _downStream
-                        .ReadAsync(_buffer, _lastWritePosition, _buffer.Length - _lastWritePosition)
-                        .ConfigureAwait(false);
-
-                    if (bytes <= 0)
-                    {
-                        throw new IOException($"Unexpected end of stream, read returned {bytes}.");
-                    }
-
-                    // Otherwise process it.
-                    LogBuffer(_buffer, _lastWritePosition, bytes);
-
-                    _lastWritePosition += bytes;
-
-                    if (TryReadOneCompleteMessageFromBuffer(messageStream))
-                    {
-                        count++;
-                    }
-                }
-
-                while (TryReadOneCompleteMessageFromBuffer(messageStream))
-                {
-                    count++;
-                }
-            }
-            finally
-            {
-                messageStream.Position = previousPosition;
+                DataStreamBuffer.LogBuffer(Logger);
+                MessageCount += ExtractMessages(outputMessageStream);
             }
 
-            return count;
+            CheckEndOfStreamValidity();
+
+            outputMessageStream.Position = previousStreamPosition;
+            return MessageCount;
+        }
+        
+        public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
+        {
+            MessageCount = 0;
+            var previousStreamPosition = outputMessageStream.Position;            
+
+            while(await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false) > 0)
+            {
+                DataStreamBuffer.LogBuffer(Logger);
+                MessageCount += ExtractMessages(outputMessageStream);
+            }
+
+            CheckEndOfStreamValidity();
+
+            outputMessageStream.Position = previousStreamPosition;
+            return MessageCount;
         }
 
-        private bool HasBytesAvailable()
+        
+        private int ExtractMessages(Stream outputMessageStream)
         {
-            return _lastWritePosition > _lastReadPosition;
-        }
+            int chunkSize = 0,
+                previousChunkSize = 0,
+                messageCount = 0;
 
-        private bool HasBytesAvailable(int count)
-        {
-            return count <= (_lastWritePosition - _lastReadPosition);
+            while (DataStreamBuffer.Position < DataStreamBuffer.Size)
+            {
+                previousChunkSize = chunkSize;
+                chunkSize = RemainingReadSize > 0 ?  RemainingReadSize : ReadChunkSize();
+                
+                if (chunkSize > 0) OpenMessage();   //Zero chunksize is a NOOP so don't open a message
+                
+                RemainingReadSize = chunkSize - DataStreamBuffer.WriteInto(outputMessageStream, chunkSize);
+
+                if (previousChunkSize > 0 && chunkSize == 0)   //This is the NOOP at the end of a message
+                {
+                    messageCount++;
+                    CloseMessage();
+                }
+            }
+            
+            return messageCount;
         }
 
         private int ReadChunkSize()
         {
-            Array.ConstrainedCopy(_buffer, _lastReadPosition, _chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
-
-            _lastReadPosition += _chunkSizeBuffer.Length;
-
-            return PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
-        }
-
-        private void CopyFromBuffer(Stream target, int count)
-        {
-            target.Write(_buffer, _lastReadPosition, count);
-
-            _lastReadPosition += count;
-        }
-
-        private void Cleanup()
-        {
-            _currentChunkSize = -1;
-
-            ResetPositions();
-        }
-
-        private void ResetPositions()
-        {
-            var leftWritableBytes = _buffer.Length - _lastWritePosition;
-
-            if (leftWritableBytes < Constants.ChunkBufferResetPositionsWatermark)
+            var sizeRead = DataStreamBuffer.WriteInto(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
+            
+            if(sizeRead < _chunkSizeBuffer.Length)
             {
-                var leftOverBytes = _lastWritePosition - _lastReadPosition;
-
-                LogTrace("{0} bytes left in chunk buffer [lastWritePosition: {1}, lastReadPosition: {2}], compacting.",
-                    leftWritableBytes, _lastWritePosition, _lastReadPosition);
-
-                if (leftOverBytes > 0)
-                {
-                    Array.Copy(_buffer, _lastReadPosition, _buffer, 0, leftOverBytes);
-                }
-
-                _lastWritePosition = leftOverBytes;
-                _lastReadPosition = 0;
+                throw new IOException($"Unexpected end of stream, read returned {sizeRead}. Read less than {_chunkSizeBuffer.Length} bytes when attempting to read chunk size");
             }
+
+            return PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);            
         }
 
-        private void LogBuffer(byte[] bytes, int start, int size)
+        private void CheckEndOfStreamValidity()
         {
-            if (_logger != null && _logger.IsTraceEnabled())
-            {
-                _logger?.Trace("S: {0}", bytes.ToHexString(start, size));
-            }
+            if(RemainingReadSize > 0)
+                throw new IOException($"Unexpected end of stream, {RemainingReadSize} bytes still expected to be read");
+
+            if (IsMessageOpen) //This is the end of the stream, and we still have an open message
+                throw new IOException($"Unexpected end of stream, still have an unterminated message");
         }
 
-        private void LogTrace(string message, params object[] args)
+        private void OpenMessage()
         {
-            if (_logger != null && _logger.IsTraceEnabled())
-            {
-                _logger?.Trace(message, args);
-            }
+            IsMessageOpen = true;
+        }
+
+        private void CloseMessage()
+        {
+            IsMessageOpen = false;
         }
     }
 }
+
+

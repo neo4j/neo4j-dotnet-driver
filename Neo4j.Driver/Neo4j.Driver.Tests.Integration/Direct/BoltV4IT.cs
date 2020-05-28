@@ -20,6 +20,7 @@ using FluentAssertions;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
+using System;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {

@@ -162,10 +162,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(
                         new
                         {
-                            HasPlan = true, Plan = new Plan("ProduceResults", null, new[] {"n"}, null),
-                            HasProfile = false, Profile = default(IProfiledPlan)
-                        }, opts => opts.Excluding(x => x.SelectedMemberPath == "Plan.Arguments")
-                            .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
+                            HasPlan = true, 
+                            Plan = new Plan("ProduceResults", null, new[] {"n"}, null),
+                            HasProfile = false, 
+                            Profile = default(IProfiledPlan)
+                        }, 
+                        opts => opts.Excluding(x => x.SelectedMemberPath == "Plan.OperatorType") 
+                                    .Excluding(x => x.SelectedMemberPath == "Plan.Arguments")
+                                    .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -175,11 +179,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(
                         new
                         {
-                            HasPlan = true, HasProfile = true,
+                            HasPlan = true, 
+                            HasProfile = true,
                             Profile = new ProfiledPlan("ProduceResults", null, new[] {"n"}, null, 0, 1, 0, 0, 0, 0)
                         },
-                        opts => opts.Excluding(x => x.SelectedMemberPath == "Profile.Arguments")
-                            .Excluding(x => x.SelectedMemberPath == "Profile.Children")));
+                        opts => opts.Excluding(x => x.SelectedMemberPath == "Profile.OperatorType")
+                                    .Excluding(x => x.SelectedMemberPath == "Profile.Arguments")
+                                    .Excluding(x => x.SelectedMemberPath == "Profile.Children")));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -192,19 +198,22 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnNotifications()
             {
-                VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n", null,
+                VerifySummary("EXPLAIN MATCH (n:ThisLabelDoesNotExistReactive) RETURN n", null,
                     MatchesSummary(new
                         {
                             Notifications = new[]
                             {
                                 new Notification("Neo.ClientNotification.Statement.UnknownLabelWarning",
-                                    "The provided label is not in the database.",
-                                    "One of the labels in your query is not available in the database, make sure you didn\'t misspell it or that the label is available when you run this statement in your application (the missing label name is: ThisLabelDoesNotExist)",
-                                    null, "WARNING")
+                                    null,
+                                    null,
+                                    null, 
+                                    "WARNING")
                             }
                         },
                         options => options.ExcludingMissingMembers()
-                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")));
+                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")
+                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Title")
+                            .Excluding(x => x.SelectedMemberPath == "Notifications[0].Description")));
             }
 
             private void VerifySummaryQueryTextAndParams(string query, object parameters)

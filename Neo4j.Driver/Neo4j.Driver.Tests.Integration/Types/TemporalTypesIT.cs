@@ -574,7 +574,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceiveData(string query, object toBeSent, object[] expectedValues)
         {
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             try
             {
                 var cursor = await session.RunAsync(query, new {x = toBeSent});
@@ -594,7 +594,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceive(object value)
         {
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             try
             {
                 var cursor = await session.RunAsync("CREATE (n:Node {value: $value}) RETURN n.value", new {value});
@@ -611,7 +611,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceiveWithType<TSent, TRecv>(TSent value, TRecv actual)
         {
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
 
             try
             {
@@ -632,7 +632,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             var list = array.ToList();
 
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             try
             {
                 var cursor =
@@ -654,7 +654,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             var valueAsList = value.ToList();
             var actualAsList = actual.ToList();
 
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
             try
             {
                 var cursor = await session.RunAsync("CREATE (n:Node {value: $value}) RETURN n.value",
