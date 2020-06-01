@@ -34,7 +34,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_1
         public HelloResponseHandler(IConnection connection, BoltProtocolVersion version)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            Version = version;
+            Version = version ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v4.1 with a null BoltProtocolVersion object");
+
+            if (Version < new BoltProtocolVersion(4, 1))
+                throw new ArgumentOutOfRangeException("Attempting to initialise a v4.1 HelloResponseHandler with a protocol version less than 4.1");
 
             AddMetadata<ServerVersionCollector, ServerVersion>();
             AddMetadata<ConnectionIdCollector, string>();
