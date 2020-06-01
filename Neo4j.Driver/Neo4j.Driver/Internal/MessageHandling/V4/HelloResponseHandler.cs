@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_1
+namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
     internal class HelloResponseHandler : MetadataCollectingResponseHandler
     {

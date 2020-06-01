@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             await connection
                 .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
-                    new HelloResponseHandler(connection)).ConfigureAwait(false);
+                    new HelloResponseHandler(connection, Version())).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 

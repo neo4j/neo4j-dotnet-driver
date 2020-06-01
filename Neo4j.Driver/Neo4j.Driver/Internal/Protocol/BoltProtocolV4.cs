@@ -156,5 +156,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 await connection.SendAsync().ConfigureAwait(false);
             };
         }
+
+        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        {
+            await connection
+                .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
+                    new V4.HelloResponseHandler(connection, Version())).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
+        }
     }
 }
