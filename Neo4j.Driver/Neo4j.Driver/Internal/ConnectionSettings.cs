@@ -39,13 +39,13 @@ namespace Neo4j.Driver.Internal
 
         public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
             : this(auth, EncryptionManager.Create(uri, config.NullableEncryptionLevel, config.TrustManager, config.Logger),
-                config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled)
+                config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled, config.UserAgent)
         {
         }
 
         private ConnectionSettings(IAuthToken authToken,
             EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
-            bool socketKeepAlive, bool ipv6Enabled, string userAgent = null)
+            bool socketKeepAlive, bool ipv6Enabled, string userAgent)
         {
             IfNull(authToken, nameof(authToken));
             IfNull(encryptionManager, nameof(encryptionManager));

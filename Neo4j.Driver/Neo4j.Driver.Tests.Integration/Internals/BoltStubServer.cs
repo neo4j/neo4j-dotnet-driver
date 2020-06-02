@@ -42,7 +42,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private BoltStubServer(string script, int port)
         {
             _commandRunner = ShellCommandRunnerFactory.Create();
-            _commandRunner.BeginRunCommand("bolt stub", "-l", "localhost:" + port.ToString(), script);
+            _commandRunner.BeginRunCommand("bolt", "stub", "-l", "localhost:" + port.ToString(), script);
             WaitForServer(port);
         }
 
