@@ -66,7 +66,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 try
                 {
-                    _delegator = _installer.Start().Single();                    
+                    _delegator = _installer.Start().Single() ?? throw new ArgumentNullException("Started a StandAlone BoltKit but were returned a null object with no exception thrown");
                     break;
                 }
                 catch (Exception e)
