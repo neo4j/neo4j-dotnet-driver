@@ -94,7 +94,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void NewBoltDriver()
         {
-            Driver = Neo4jDefaultInstallation.NewBoltDriver(new Uri(Neo4jDefaultInstallation.BoltUri), AuthToken);
+            Driver = Neo4jDefaultInstallation.NewBoltDriver(new Uri("bolt://localhost:7687"), AuthToken);
         }
 
         private void DisposeBoltDriver()
