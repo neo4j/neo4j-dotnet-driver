@@ -85,9 +85,9 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
                 "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68"
             };
-            using (BoltStubServer.Start("V4/multiple_bookmarks", 9001))
+            using (BoltStubServer.Start("V4/multiple_bookmarks", 1786))
             {
-                var uri = new Uri("bolt://127.0.0.1:9001");
+                var uri = new Uri("bolt://127.0.0.1:1786");
                 using (var driver = GraphDatabase.Driver(uri, SetupConfig))
                 {
                     var session = driver.AsyncSession(o => o.WithBookmarks(Bookmark.From(bookmarks)));

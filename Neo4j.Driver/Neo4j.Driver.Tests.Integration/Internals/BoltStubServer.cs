@@ -84,7 +84,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
         {
-            var waitingTimeInSeconds = 15;
+            var waitingTimeInSeconds = 40;
             var waitingTime = TimeSpan.FromSeconds(waitingTimeInSeconds).TotalMilliseconds;
             var stopwatch = Stopwatch.StartNew();
             do
