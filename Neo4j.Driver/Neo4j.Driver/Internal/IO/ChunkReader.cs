@@ -46,21 +46,23 @@ namespace Neo4j.Driver.Internal.IO
             
             private bool CheckStreamHasData(Stream inputStream)
             {
-                if (inputStream is NetworkStream networkStream)
-                {
-                    return networkStream.DataAvailable;
-                }
-                else if(inputStream.CanSeek)
+                if (inputStream.CanSeek)
                 {
                     if (inputStream.Length <= 0)
                         throw new IOException($"Unexpected end of stream - empty stream");
-
                 }
                 else
                 {
-                    throw new IOException($"Unexpected end of stream - incompatible stream of type {inputStream.GetType()}");
+                    if (inputStream is NetworkStream networkStream)
+                    {
+                        return networkStream.DataAvailable;
+                    }
+                    else
+                    {
+                        throw new IOException($"Incompatible stream of type {inputStream.GetType()}");
+                    }
                 }
-
+                
                 return true;                
             }
 
