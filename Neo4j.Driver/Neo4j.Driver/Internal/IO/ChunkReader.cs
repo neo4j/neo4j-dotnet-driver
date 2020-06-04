@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal.IO
                 }
                 else
                 {
-                    throw new IOException($"Unexpected end of stream - incompatible stream");
+                    throw new IOException($"Unexpected end of stream - incompatible stream of type {inputStream.GetType()}");
                 }
 
                 return true;                
