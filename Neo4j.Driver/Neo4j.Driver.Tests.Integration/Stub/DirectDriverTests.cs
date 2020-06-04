@@ -156,7 +156,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
             {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
                 {
                     await driver.VerifyConnectivityAsync();
                 }
