@@ -51,7 +51,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
 
             using (BoltStubServer.Start("V4/accessmode_reader_implicit", 9001))
             {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
                 {
                     var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
                     try
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             {
                 if (log.StartsWith("[Debug]:[conn-"))
                 {
-                    log.Should().Contain("localhost:9001");
+                    log.Should().Contain("127.0.0.1:9001");
                 }
             }
         }
@@ -163,7 +163,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
             {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
                 {
                     await driver.VerifyConnectivityAsync();
                 }
@@ -177,7 +177,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
             {
-                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
                 {
                     var error = await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());
                     error.Should().BeOfType<AuthenticationException>();
