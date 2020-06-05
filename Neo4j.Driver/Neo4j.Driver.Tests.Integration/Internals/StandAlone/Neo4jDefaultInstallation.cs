@@ -26,8 +26,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
         public const string User = "neo4j";
         public const string Password = "neo4j";
-        public const string HttpUri = "http://localhost:7474";
-        public const string BoltUri = "bolt://localhost:7687";
+        public const string HttpUri = "http://127.0.0.1:7474";
+        public const string BoltUri = "bolt://127.0.0.1:7687";
 
         public static IDriver NewBoltDriver(Uri boltUri, IAuthToken authToken)
         {
