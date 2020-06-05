@@ -94,11 +94,12 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [RequireBoltStubServerTheory]
         [InlineData("V3")]
         [InlineData("V4")]
+        [InlineData("V4_1")]
         public async Task ShouldVerifyConnectivity(string boltVersion)
         {
             using (BoltStubServer.Start($"{boltVersion}/verify_connectivity", 9001))
             {
-                using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, SetupConfig))
                 {
                     await driver.VerifyConnectivityAsync();
                 }

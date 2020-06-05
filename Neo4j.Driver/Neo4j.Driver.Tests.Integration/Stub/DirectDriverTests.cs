@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
@@ -105,6 +106,11 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                             throw;
                         }
                     }
+                    catch(Exception ex)
+                    {
+                        string var = ex.Message;
+                        
+                    }
                     finally
                     {
                         await session.CloseAsync();
@@ -152,11 +158,12 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [RequireBoltStubServerTheory]
         [InlineData("V3")]
         [InlineData("V4")]
+        [InlineData("V4_1")]
         public async Task ShouldVerifyConnectivity(string boltVersion)
         {
             using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
             {
-                using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, SetupConfig))
                 {
                     await driver.VerifyConnectivityAsync();
                 }

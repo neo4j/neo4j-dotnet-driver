@@ -20,6 +20,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using Neo4j.Driver;
+using System.Diagnostics;
+using System.Text;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -42,14 +44,17 @@ namespace Neo4j.Driver.Internal.IO
             }
             public int Position { get; set; } = 0;
             public int Length { get { return Buffer.Length; } }
-            public int Size { get; set; }
+            public int Size { get; set; } = 0;
             
-            private bool CheckStreamHasData(Stream inputStream)
+            public bool CheckStreamHasData(Stream inputStream)
             {
                 if (inputStream.CanSeek)
                 {
                     if (inputStream.Length <= 0)
                         throw new IOException($"Unexpected end of stream - empty stream");
+
+                    if (inputStream.Position >= inputStream.Length)
+                        return false;
                 }
                 else
                 {
@@ -58,7 +63,7 @@ namespace Neo4j.Driver.Internal.IO
                         return networkStream.DataAvailable;
                     }
                     else
-                    {
+                    {   
                         throw new IOException($"Incompatible stream of type {inputStream.GetType()}");
                     }
                 }
@@ -68,37 +73,37 @@ namespace Neo4j.Driver.Internal.IO
 
 
             public int ReadFrom(Stream inputStream, int offset = 0)
-            {   
+            {
                 Position = 0;
-                Size = CheckStreamHasData(inputStream) ? inputStream.Read(Buffer, offset, Length) : 0;
+                Size = inputStream.Read(Buffer, offset, Length - offset);
                 return Size;
             }
 
             public async Task<int> ReadFromAsync(Stream inputStream, int offset = 0)
-            {
+            {   
                 Position = 0;
-                Size = CheckStreamHasData(inputStream) ? await inputStream.ReadAsync(Buffer, offset, Length).ConfigureAwait(false) : 0;                                
+                Size = await inputStream.ReadAsync(Buffer, offset, Length - offset).ConfigureAwait(false);                
                 return Size;
             }
 
-            public int WriteInto(byte[] target, int offset, int readSize)
+            public int WriteInto(byte[] target, int offset, int writeSize)
             {
-                if (readSize <= 0) return 0;
+                if (writeSize <= 0) return 0;
 
-                readSize = Math.Min(readSize, Size - Position);                
-                System.Buffer.BlockCopy(Buffer, Position, target, offset, readSize);
-                Position += readSize;
-                return readSize;
+                writeSize = Math.Min(writeSize, Size - Position);                
+                System.Buffer.BlockCopy(Buffer, Position, target, offset, writeSize);
+                Position += writeSize;
+                return writeSize;
             }
 
-            public int WriteInto(Stream targetStream, int readSize)
+            public int WriteInto(Stream targetStream, int writeSize)
             {
-                if (readSize <= 0) return 0;
+                if (writeSize <= 0) return 0;
 
-                readSize = Math.Min(readSize, Size - Position);
-                targetStream.Write(Buffer, Position, readSize);
-                Position += readSize;
-                return readSize;
+                writeSize = Math.Min(writeSize, Size - Position);
+                targetStream.Write(Buffer, Position, writeSize);
+                Position += writeSize;
+                return writeSize;
             }
                         
             public void LogBuffer(ILogger logger)
@@ -108,15 +113,23 @@ namespace Neo4j.Driver.Internal.IO
                     logger?.Trace("S: {0}", Buffer.ToHexString(0, Size));
                 }
             }
+
+            public void Reset()
+            {
+                Size = 0;
+                Position = 0;
+            }
         }
 
 
         private Stream InputStream { get; set; }
-        private ILogger Logger { get; set; }        
-        private StreamBuffer DataStreamBuffer{ get; set; }
+        private ILogger Logger { get; set; }
+        private StreamBuffer DataStreamBuffer { get; set; }
         private int RemainingReadSize { get; set; } = 0;
         private bool IsMessageOpen { get; set; } = false;
         private int MessageCount { get; set; } = 0;
+        private int CurrentChunkSize { get; set; } = 0;
+        private bool DataProcessed { get; set; } = false;
 
         const int ChunkHeaderSize = 2;
         private readonly byte[] _chunkSizeBuffer = new byte[ChunkHeaderSize];
@@ -126,6 +139,7 @@ namespace Neo4j.Driver.Internal.IO
             : this(downStream, null)
         {   
         }
+
 
         internal ChunkReader(Stream downStream, ILogger logger)
         {
@@ -139,64 +153,98 @@ namespace Neo4j.Driver.Internal.IO
 
 
         public int ReadNextMessages(Stream outputMessageStream)
-        {
+        {   
             MessageCount = 0;
             var previousStreamPosition = outputMessageStream.Position;
-            
-            while (DataStreamBuffer.ReadFrom(InputStream) > 0)
+            outputMessageStream.Position = outputMessageStream.Length;
+
+            try
             {
-                DataStreamBuffer.LogBuffer(Logger);
-                MessageCount += ExtractMessages(outputMessageStream);
+                do
+                {
+                    DataStreamBuffer.ReadFrom(InputStream);
+                    DataStreamBuffer.LogBuffer(Logger);
+                    //MessageCount += ExtractMessages(outputMessageStream);
+
+                    if (ExtractMessages(outputMessageStream, out int count))
+                        MessageCount += count;
+                    else
+                        break;
+                }
+                while (DataStreamBuffer.CheckStreamHasData(InputStream) || IsMessageOpen);
+
+                CheckEndOfStreamValidity();
+            }
+            finally
+            {
+                outputMessageStream.Position = previousStreamPosition;
+                DataStreamBuffer.Reset();
             }
 
-            CheckEndOfStreamValidity();
-
-            outputMessageStream.Position = previousStreamPosition;
             return MessageCount;
         }
-        
+
+
         public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
         {
+            
             MessageCount = 0;
-            var previousStreamPosition = outputMessageStream.Position;            
+            var previousStreamPosition = outputMessageStream.Position;
+            outputMessageStream.Position = outputMessageStream.Length;
 
-            while(await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false) > 0)
+            try
             {
-                DataStreamBuffer.LogBuffer(Logger);
-                MessageCount += ExtractMessages(outputMessageStream);
+                do
+                {   
+                    await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false);
+
+                    DataStreamBuffer.LogBuffer(Logger);
+                    
+                    if (ExtractMessages(outputMessageStream, out int count))
+                        MessageCount += count;
+                    else
+                        break;
+                }
+                while (DataStreamBuffer.CheckStreamHasData(InputStream) || IsMessageOpen);
+
+                CheckEndOfStreamValidity();
+            }
+            finally
+            {
+                outputMessageStream.Position = previousStreamPosition;
+                DataStreamBuffer.Reset();
             }
 
-            CheckEndOfStreamValidity();
-
-            outputMessageStream.Position = previousStreamPosition;
             return MessageCount;
         }
 
         
-        private int ExtractMessages(Stream outputMessageStream)
+        private bool ExtractMessages(Stream outputMessageStream, out int count)
         {
-            int chunkSize = 0,
-                previousChunkSize = 0,
-                messageCount = 0;
+            int previousChunkSize = 0;
+            DataProcessed = false;
+            count = 0;
 
             while (DataStreamBuffer.Position < DataStreamBuffer.Size)
             {
-                previousChunkSize = chunkSize;
-                chunkSize = RemainingReadSize > 0 ?  RemainingReadSize : ReadChunkSize();
-                
-                if (chunkSize > 0) OpenMessage();   //Zero chunksize is a NOOP so don't open a message
-                
-                RemainingReadSize = chunkSize - DataStreamBuffer.WriteInto(outputMessageStream, chunkSize);
+                DataProcessed = true;
+                previousChunkSize = CurrentChunkSize;
+                CurrentChunkSize = RemainingReadSize > 0 ?  RemainingReadSize : ReadChunkSize();
 
-                if (previousChunkSize > 0 && chunkSize == 0)   //This is the NOOP at the end of a message
+                if (CurrentChunkSize > 0) OpenMessage();   //Zero chunksize is a NOOP so don't open a message
+                
+                RemainingReadSize = CurrentChunkSize - DataStreamBuffer.WriteInto(outputMessageStream, CurrentChunkSize);
+
+                if (previousChunkSize > 0 && CurrentChunkSize == 0)   //This is the NOOP at the end of a message
                 {
-                    messageCount++;
+                    count++;
                     CloseMessage();
                 }
             }
-            
-            return messageCount;
+                        
+            return DataProcessed;
         }
+
 
         private int ReadChunkSize()
         {
@@ -210,6 +258,7 @@ namespace Neo4j.Driver.Internal.IO
             return PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);            
         }
 
+
         private void CheckEndOfStreamValidity()
         {
             if(RemainingReadSize > 0)
@@ -217,12 +266,17 @@ namespace Neo4j.Driver.Internal.IO
 
             if (IsMessageOpen) //This is the end of the stream, and we still have an open message
                 throw new IOException($"Unexpected end of stream, still have an unterminated message");
+
+            if (!DataProcessed)
+                throw new IOException($"Unexpected end of stream, possibly an empty stream");
         }
+
 
         private void OpenMessage()
         {
             IsMessageOpen = true;
         }
+
 
         private void CloseMessage()
         {

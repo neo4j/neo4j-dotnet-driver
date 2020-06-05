@@ -266,7 +266,7 @@ namespace Neo4j.Driver.Internal.IO
             const int messageSizeByte = 22 * 1024;
             const int totalStreamSizeByte = (messageSizeByte + 4);
             var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = await reader.ReadNextMessagesAsync(resultStream);
@@ -280,7 +280,7 @@ namespace Neo4j.Driver.Internal.IO
             const int messageSizeByte = 22 * 1024;
             const int totalStreamSizeByte = (messageSizeByte + 4);
             var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = reader.ReadNextMessages(resultStream);
@@ -294,7 +294,7 @@ namespace Neo4j.Driver.Internal.IO
             const int messageSizeByte = 11 * 1024;
             const int totalStreamSizeByte = 2 * (messageSizeByte + 4);
             var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = await reader.ReadNextMessagesAsync(resultStream);
@@ -308,7 +308,7 @@ namespace Neo4j.Driver.Internal.IO
             const int messageSizeByte = 11 * 1024;
             const int totalStreamSizeByte = 2 * (messageSizeByte + 4);
             var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = reader.ReadNextMessages(resultStream);
