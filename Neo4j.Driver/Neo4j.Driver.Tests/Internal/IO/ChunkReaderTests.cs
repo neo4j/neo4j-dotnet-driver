@@ -126,7 +126,6 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Theory]
-        [InlineData(new byte[] { })]
         [InlineData(new byte[] { 0x00, 0x01 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01 })]
@@ -143,6 +142,31 @@ namespace Neo4j.Driver.Internal.IO
 
         [Theory]
         [InlineData(new byte[] { })]
+        public void ShouldHandleEmptyStreamGracefully(byte[] input)
+        {
+            var reader = new ChunkReader(new MemoryStream(input));
+            var targetStream = new MemoryStream();
+            int numMessages = 0;
+            var ex = Record.Exception(() => numMessages = reader.ReadNextMessages(targetStream));
+
+            ex.Should().BeNull();
+            numMessages.Should().Be(0);           
+        }
+
+        [Theory]
+        [InlineData(new byte[] { })]
+        public async void ShouldHandleEmptyStreamGracefullyAsync(byte[] input)
+        {
+            var reader = new ChunkReader(new MemoryStream(input));
+            var targetStream = new MemoryStream();
+            int numMessages = 0;
+            var ex = await Record.ExceptionAsync(async () => numMessages = await reader.ReadNextMessagesAsync(targetStream));
+
+            ex.Should().BeNull();
+            numMessages.Should().Be(0);
+        }
+
+        [Theory]
         [InlineData(new byte[] { 0x00, 0x01 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01 })]

@@ -164,7 +164,6 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     DataStreamBuffer.ReadFrom(InputStream);
                     DataStreamBuffer.LogBuffer(Logger);
-                    //MessageCount += ExtractMessages(outputMessageStream);
 
                     if (ExtractMessages(outputMessageStream, out int count))
                         MessageCount += count;
@@ -266,9 +265,6 @@ namespace Neo4j.Driver.Internal.IO
 
             if (IsMessageOpen) //This is the end of the stream, and we still have an open message
                 throw new IOException($"Unexpected end of stream, still have an unterminated message");
-
-            if (!DataProcessed)
-                throw new IOException($"Unexpected end of stream, possibly an empty stream");
         }
 
 
