@@ -45,6 +45,7 @@ namespace Neo4j.Driver.Internal.IO
             public int Position { get; set; } = 0;
             public int Length { get { return Buffer.Length; } }
             public int Size { get; set; } = 0;
+            public int RemainingData { get { return Size - Position; } }
             
             public bool CheckStreamHasData(Stream inputStream)
             {
@@ -70,7 +71,6 @@ namespace Neo4j.Driver.Internal.IO
                 
                 return true;                
             }
-
 
             public int ReadFrom(Stream inputStream, int offset = 0)
             {
@@ -131,7 +131,8 @@ namespace Neo4j.Driver.Internal.IO
         private int CurrentChunkSize { get; set; } = 0;
         private bool DataProcessed { get; set; } = false;
 
-        const int ChunkHeaderSize = 2;
+        private const int ChunkHeaderSize = 2;
+        private int ChunkBytesRead { get; set; } = 0;
         private readonly byte[] _chunkSizeBuffer = new byte[ChunkHeaderSize];
 
 
@@ -151,6 +152,12 @@ namespace Neo4j.Driver.Internal.IO
             DataStreamBuffer = new StreamBuffer();
         }
 
+        private bool StillProcessingToDo()
+        {
+            //If the input stream still has data in it
+            //If there is an open message then we are waiting for further data to arrive on the stream
+            return DataStreamBuffer.CheckStreamHasData(InputStream) || IsMessageOpen;
+        }
 
         public int ReadNextMessages(Stream outputMessageStream)
         {   
@@ -170,7 +177,7 @@ namespace Neo4j.Driver.Internal.IO
                     else
                         break;
                 }
-                while (DataStreamBuffer.CheckStreamHasData(InputStream) || IsMessageOpen);
+                while (StillProcessingToDo());
 
                 CheckEndOfStreamValidity();
             }
@@ -204,7 +211,7 @@ namespace Neo4j.Driver.Internal.IO
                     else
                         break;
                 }
-                while (DataStreamBuffer.CheckStreamHasData(InputStream) || IsMessageOpen);
+                while (StillProcessingToDo());
 
                 CheckEndOfStreamValidity();
             }
@@ -228,10 +235,12 @@ namespace Neo4j.Driver.Internal.IO
             {
                 DataProcessed = true;
                 previousChunkSize = CurrentChunkSize;
-                CurrentChunkSize = RemainingReadSize > 0 ?  RemainingReadSize : ReadChunkSize();
-
-                if (CurrentChunkSize > 0) OpenMessage();   //Zero chunksize is a NOOP so don't open a message
                 
+                if (!ReadChunkSize())
+                        break;
+                
+                if (CurrentChunkSize > 0) OpenMessage();   //Zero chunksize is a NOOP or a partially read chunk, so don't open a message, 
+
                 RemainingReadSize = CurrentChunkSize - DataStreamBuffer.WriteInto(outputMessageStream, CurrentChunkSize);
 
                 if (previousChunkSize > 0 && CurrentChunkSize == 0)   //This is the NOOP at the end of a message
@@ -245,16 +254,27 @@ namespace Neo4j.Driver.Internal.IO
         }
 
 
-        private int ReadChunkSize()
+        private bool ReadChunkSize()
         {
-            var sizeRead = DataStreamBuffer.WriteInto(_chunkSizeBuffer, 0, _chunkSizeBuffer.Length);
-            
-            if(sizeRead < _chunkSizeBuffer.Length)
+            if (RemainingReadSize > 0)
             {
-                throw new IOException($"Unexpected end of stream, read returned {sizeRead}. Read less than {_chunkSizeBuffer.Length} bytes when attempting to read chunk size");
+                CurrentChunkSize = RemainingReadSize;
+                return true;
             }
 
-            return PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);            
+            ChunkBytesRead = DataStreamBuffer.WriteInto(_chunkSizeBuffer, ChunkBytesRead, _chunkSizeBuffer.Length - ChunkBytesRead);            
+            
+            //We have not read a full chunksize
+            if(ChunkBytesRead < _chunkSizeBuffer.Length)
+            {
+                CurrentChunkSize = 0;
+                return false;
+            }
+
+            //We have read a full chunksize
+            CurrentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
+            ChunkBytesRead = 0;
+            return true;
         }
 
 
