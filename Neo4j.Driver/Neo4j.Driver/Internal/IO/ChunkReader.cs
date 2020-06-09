@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.IO
             public async Task<int> ReadFromAsync(Stream inputStream, int offset = 0)
             {   
                 Position = 0;
-                Size = await inputStream.ReadAsync(Buffer, offset, Length - offset).ConfigureAwait(false);                
+                Size = await inputStream.ReadAsync(Buffer, offset, Length - offset).ConfigureAwait(false);
                 return Size;
             }
 
@@ -125,7 +125,7 @@ namespace Neo4j.Driver.Internal.IO
         private Stream InputStream { get; set; }
         private ILogger Logger { get; set; }
         private StreamBuffer DataStreamBuffer { get; set; }
-        private int RemainingReadSize { get; set; } = 0;
+        private int RemainingSize { get; set; } = 0;
         private bool IsMessageOpen { get; set; } = false;
         private int MessageCount { get; set; } = 0;
         private int CurrentChunkSize { get; set; } = 0;
@@ -134,6 +134,13 @@ namespace Neo4j.Driver.Internal.IO
         private const int ChunkHeaderSize = 2;
         private int ChunkBytesRead { get; set; } = 0;
         private readonly byte[] _chunkSizeBuffer = new byte[ChunkHeaderSize];
+
+        enum ChunkType
+        {     
+            ZeroChunk = 0,
+            NonZeroChunk = 1,
+            NumChunkTypes = 2
+        }
 
 
         public ChunkReader(Stream downStream)
@@ -152,32 +159,44 @@ namespace Neo4j.Driver.Internal.IO
             DataStreamBuffer = new StreamBuffer();
         }
 
-        private bool StillProcessingToDo()
+
+        private ChunkType ReadAndParseChunkSize()
         {
-            //If the input stream still has data in it
-            //If there is an open message then we are waiting for further data to arrive on the stream
-            return DataStreamBuffer.CheckStreamHasData(InputStream) || IsMessageOpen;
+            CurrentChunkSize = ReadChunkSize();
+                
+            if (CurrentChunkSize == 0) //Either a message terminator or a NOOP.
+                return ChunkType.ZeroChunk;
+            
+            return ChunkType.NonZeroChunk;
         }
 
+
         public int ReadNextMessages(Stream outputMessageStream)
-        {   
+        {
             MessageCount = 0;
+            RemainingSize = 0;
+
             var previousStreamPosition = outputMessageStream.Position;
             outputMessageStream.Position = outputMessageStream.Length;
 
             try
-            {
-                do
+            {   
+                while(true)     
                 {
-                    DataStreamBuffer.ReadFrom(InputStream);
-                    DataStreamBuffer.LogBuffer(Logger);
+                    DataStreamBuffer.ReadFrom(InputStream);  //Populate the buffer
+                    if (DataStreamBuffer.Size == 0)  //No data so stop
+                    {
+                        throw new IOException($"Unexpected end of stream, read returned 0");
+                        //break;
+                    }
 
-                    if (ExtractMessages(outputMessageStream, out int count))
-                        MessageCount += count;
-                    else
+                    ParseMessages(outputMessageStream);
+
+                    //If we have consumed all the expected data then break...
+                    if (RemainingSize == 0  &&  !IsMessageOpen)
                         break;
+
                 }
-                while (StillProcessingToDo());
 
                 CheckEndOfStreamValidity();
             }
@@ -193,25 +212,30 @@ namespace Neo4j.Driver.Internal.IO
 
         public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
         {
-            
             MessageCount = 0;
+            RemainingSize = 0;
+
             var previousStreamPosition = outputMessageStream.Position;
             outputMessageStream.Position = outputMessageStream.Length;
 
             try
-            {
-                do
-                {   
-                    await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false);
+            {   
+                while (true)
+                {
+                    await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false);  //Populate the buffer
+                    if (DataStreamBuffer.Size == 0)  //No data so stop
+                    {
+                        throw new IOException($"Unexpected end of stream, read returned 0");
+                        //break;
+                    }
 
-                    DataStreamBuffer.LogBuffer(Logger);
-                    
-                    if (ExtractMessages(outputMessageStream, out int count))
-                        MessageCount += count;
-                    else
+                    ParseMessages(outputMessageStream);                    
+
+                    //If we have consumed all the expected data then break...
+                    if (RemainingSize == 0  &&  !IsMessageOpen)
                         break;
+
                 }
-                while (StillProcessingToDo());
 
                 CheckEndOfStreamValidity();
             }
@@ -224,64 +248,45 @@ namespace Neo4j.Driver.Internal.IO
             return MessageCount;
         }
 
-        
-        private bool ExtractMessages(Stream outputMessageStream, out int count)
+
+        void ParseMessages(Stream outputMessageStream)
         {
-            int previousChunkSize = 0;
-            DataProcessed = false;
-            count = 0;
-
-            while (DataStreamBuffer.Position < DataStreamBuffer.Size)
+            while (DataStreamBuffer.RemainingData > 0)
             {
-                DataProcessed = true;
-                previousChunkSize = CurrentChunkSize;
-                
-                if (!ReadChunkSize())
-                        break;
-                
-                if (CurrentChunkSize > 0) OpenMessage();   //Zero chunksize is a NOOP or a partially read chunk, so don't open a message, 
-
-                RemainingReadSize = CurrentChunkSize - DataStreamBuffer.WriteInto(outputMessageStream, CurrentChunkSize);
-
-                if (previousChunkSize > 0 && CurrentChunkSize == 0)   //This is the NOOP at the end of a message
+                if (RemainingSize == 0)
                 {
-                    count++;
-                    CloseMessage();
+                    if (ReadAndParseChunkSize() == ChunkType.ZeroChunk)
+                    {
+                        if (IsMessageOpen)
+                        {
+                            CloseMessage();
+                            MessageCount++;
+                        }
+
+                        continue;
+                    }
+
+                    OpenMessage();
                 }
+
+                var writeLength = Math.Min(RemainingSize, DataStreamBuffer.RemainingData);
+                DataStreamBuffer.WriteInto(outputMessageStream, writeLength);
+                RemainingSize -= writeLength;
             }
-                        
-            return DataProcessed;
         }
 
 
-        private bool ReadChunkSize()
+        private int ReadChunkSize()
         {
-            if (RemainingReadSize > 0)
-            {
-                CurrentChunkSize = RemainingReadSize;
-                return true;
-            }
-
-            ChunkBytesRead = DataStreamBuffer.WriteInto(_chunkSizeBuffer, ChunkBytesRead, _chunkSizeBuffer.Length - ChunkBytesRead);            
-            
-            //We have not read a full chunksize
-            if(ChunkBytesRead < _chunkSizeBuffer.Length)
-            {
-                CurrentChunkSize = 0;
-                return false;
-            }
-
-            //We have read a full chunksize
-            CurrentChunkSize = PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
-            ChunkBytesRead = 0;
-            return true;
+            DataStreamBuffer.WriteInto(_chunkSizeBuffer, 0, ChunkHeaderSize);
+            return PackStreamBitConverter.ToUInt16(_chunkSizeBuffer);
         }
 
-
+        
         private void CheckEndOfStreamValidity()
         {
-            if(RemainingReadSize > 0)
-                throw new IOException($"Unexpected end of stream, {RemainingReadSize} bytes still expected to be read");
+            if(DataStreamBuffer.Size > 0  &&  DataStreamBuffer.Size < ChunkHeaderSize)
+                throw new IOException($"Unexpected end of stream, unable to read next chunk size");
 
             if (IsMessageOpen) //This is the end of the stream, and we still have an open message
                 throw new IOException($"Unexpected end of stream, still have an unterminated message");
@@ -291,6 +296,7 @@ namespace Neo4j.Driver.Internal.IO
         private void OpenMessage()
         {
             IsMessageOpen = true;
+            RemainingSize = CurrentChunkSize;
         }
 
 

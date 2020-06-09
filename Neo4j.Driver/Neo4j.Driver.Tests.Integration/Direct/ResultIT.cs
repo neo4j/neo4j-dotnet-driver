@@ -57,7 +57,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 var serverInfo = summary.Server;
 
-                serverInfo.Address.Should().Be("localhost:7687");
+                serverInfo.Address.Should().Be("127.0.0.1:7687");
                 summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
                 summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
             }
@@ -176,7 +176,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
-                summary.Server.Address.Should().Contain("localhost:7687");
+                summary.Server.Address.Should().Contain("127.0.0.1:7687");
             }
             finally
             {
@@ -195,7 +195,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
-                summary.Server.Address.Should().Contain("localhost:7687");
+                summary.Server.Address.Should().Contain("127.0.0.1:7687");
 
                 await AssertCannotAccessRecords(cursor);
                 await CanAccessSummary(cursor);
