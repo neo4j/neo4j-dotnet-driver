@@ -285,7 +285,7 @@ namespace Neo4j.Driver.Examples
                     {
                         using (var driver =
                             CreateDriverWithCustomResolver("neo4j://x.acme.com", AuthTokens.None,
-                                ServerAddress.From("localhost", 9001)))
+                                ServerAddress.From("127.0.0.1", 9001)))
                         {
                             using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))
                             {

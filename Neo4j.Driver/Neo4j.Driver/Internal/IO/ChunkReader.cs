@@ -185,8 +185,11 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     DataStreamBuffer.ReadFrom(InputStream);  //Populate the buffer
                     if (DataStreamBuffer.Size == 0)  //No data so stop
-                        break;
-                    
+                    {
+                        throw new IOException($"Unexpected end of stream, read returned 0");
+                        //break;
+                    }
+
                     ParseMessages(outputMessageStream);
 
                     //If we have consumed all the expected data then break...
@@ -221,8 +224,11 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false);  //Populate the buffer
                     if (DataStreamBuffer.Size == 0)  //No data so stop
-                        break;
-                    
+                    {
+                        throw new IOException($"Unexpected end of stream, read returned 0");
+                        //break;
+                    }
+
                     ParseMessages(outputMessageStream);                    
 
                     //If we have consumed all the expected data then break...
