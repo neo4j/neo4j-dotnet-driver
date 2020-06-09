@@ -59,23 +59,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         }
 
         private void RetryIfFailToStart()
-        {
-            /*
-            const int RetryCount = 2;
-
-            for(int i = 0; i < RetryCount; i++)
-            {
-                try
-                {
-                    _delegator = _installer.Start().Single() ?? throw new ArgumentNullException("Started a StandAlone BoltKit but were returned a null object with no exception thrown");
-                    break;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);   //Notify of the failure error message
-                }
-            }
-            */
+        {   
             try
             {
                 _delegator = _installer.Start().Single();
