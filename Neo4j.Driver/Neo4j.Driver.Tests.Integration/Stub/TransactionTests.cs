@@ -68,7 +68,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
+                        GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
@@ -107,7 +107,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
+                        GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
                         var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write));
                         try
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
                 {
                     using (var driver =
-                        GraphDatabase.Driver("bolt://localhost:9001", AuthTokens.None, NoEncryptionAndShortRetry))
+                        GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry))
                     {
                         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
 

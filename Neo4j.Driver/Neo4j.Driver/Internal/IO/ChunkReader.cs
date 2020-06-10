@@ -54,22 +54,8 @@ namespace Neo4j.Driver.Internal.IO
 
             public async Task<int> ReadFromAsync(Stream inputStream, int offset = 0)
             {
-                var timeout = TimeSpan.FromSeconds(0.25);
-                using var cts = new CancellationTokenSource(timeout);
                 Position = 0;
-
-                using (cts.Token.Register(() => inputStream.Close()))
-                {
-                    try
-                    {
-                        Size = await inputStream.ReadAsync(Buffer, offset, Length - offset, cts.Token).ConfigureAwait(false);
-                    }
-                    catch(TimeoutException)
-                    {
-                        Size = 0;
-                    }
-                }
-                    
+                Size = await inputStream.ReadAsync(Buffer, offset, Length - offset).ConfigureAwait(false);
                 return Size;
             }
 

@@ -226,7 +226,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
             {
-                using (var driver = GraphDatabase.Driver($"{scheme}://localhost:9001", AuthTokens.None, _setupConfig))
+                using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9001", AuthTokens.None, _setupConfig))
                 {
                     var support = await driver.SupportsMultiDbAsync();
                     if (boltVersion.Equals("V3"))
@@ -246,7 +246,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [InlineData("bolt")]
         public async Task ShouldFailToDetectMultiDatabasesFeature(string scheme)
         {
-            using (var driver = GraphDatabase.Driver($"{scheme}://localhost:9099", AuthTokens.None, _setupConfig))
+            using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9099", AuthTokens.None, _setupConfig))
             {
                 var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
                 error.Should().BeOfType<ServiceUnavailableException>();
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
             {
-                using (var driver = GraphDatabase.Driver($"{scheme}://localhost:9001", AuthTokens.None, _setupConfig))
+                using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9001", AuthTokens.None, _setupConfig))
                 {
                     var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
                     error.Should().BeOfType<AuthenticationException>();
