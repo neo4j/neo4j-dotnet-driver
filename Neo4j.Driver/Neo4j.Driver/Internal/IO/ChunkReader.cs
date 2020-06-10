@@ -17,11 +17,9 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Sockets;
-using Neo4j.Driver;
-using System.Diagnostics;
-using System.Text;
+
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -46,31 +44,6 @@ namespace Neo4j.Driver.Internal.IO
             public int Length { get { return Buffer.Length; } }
             public int Size { get; set; } = 0;
             public int RemainingData { get { return Size - Position; } }
-            
-            public bool CheckStreamHasData(Stream inputStream)
-            {
-                if (inputStream.CanSeek)
-                {
-                    if (inputStream.Length <= 0)
-                        throw new IOException($"Unexpected end of stream - empty stream");
-
-                    if (inputStream.Position >= inputStream.Length)
-                        return false;
-                }
-                else
-                {
-                    if (inputStream is NetworkStream networkStream)
-                    {
-                        return networkStream.DataAvailable;
-                    }
-                    else
-                    {   
-                        throw new IOException($"Incompatible stream of type {inputStream.GetType()}");
-                    }
-                }
-                
-                return true;                
-            }
 
             public int ReadFrom(Stream inputStream, int offset = 0)
             {
@@ -80,9 +53,23 @@ namespace Neo4j.Driver.Internal.IO
             }
 
             public async Task<int> ReadFromAsync(Stream inputStream, int offset = 0)
-            {   
+            {
+                var timeout = TimeSpan.FromSeconds(0.25);
+                using var cts = new CancellationTokenSource(timeout);
                 Position = 0;
-                Size = await inputStream.ReadAsync(Buffer, offset, Length - offset).ConfigureAwait(false);
+
+                using (cts.Token.Register(() => inputStream.Close()))
+                {
+                    try
+                    {
+                        Size = await inputStream.ReadAsync(Buffer, offset, Length - offset, cts.Token).ConfigureAwait(false);
+                    }
+                    catch(TimeoutException)
+                    {
+                        Size = 0;
+                    }
+                }
+                    
                 return Size;
             }
 
@@ -186,7 +173,7 @@ namespace Neo4j.Driver.Internal.IO
                     DataStreamBuffer.ReadFrom(InputStream);  //Populate the buffer
                     if (DataStreamBuffer.Size == 0)  //No data so stop
                     {
-                        throw new IOException($"Unexpected end of stream, read returned 0");
+                        throw new IOException($"Unexpected end of stream, read returned 0.  RemainingMessageDataSize = {RemainingMessageDataSize}, MessageCount = {MessageCount}");
                         //break;
                     }
 
@@ -225,7 +212,7 @@ namespace Neo4j.Driver.Internal.IO
                     await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false);  //Populate the buffer
                     if (DataStreamBuffer.Size == 0)  //No data so stop
                     {
-                        throw new IOException($"Unexpected end of stream, read returned 0");
+                        throw new IOException($"Unexpected end of stream, read returned 0.  RemainingMessageDataSize = {RemainingMessageDataSize}, MessageCount = {MessageCount}");
                         //break;
                     }
 
