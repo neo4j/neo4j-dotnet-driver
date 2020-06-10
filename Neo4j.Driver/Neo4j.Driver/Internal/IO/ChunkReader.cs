@@ -125,7 +125,7 @@ namespace Neo4j.Driver.Internal.IO
         private Stream InputStream { get; set; }
         private ILogger Logger { get; set; }
         private StreamBuffer DataStreamBuffer { get; set; }
-        private int RemainingSize { get; set; } = 0;
+        private int RemainingMessageDataSize { get; set; } = 0;
         private bool IsMessageOpen { get; set; } = false;
         private int MessageCount { get; set; } = 0;
         private int CurrentChunkSize { get; set; } = 0;
@@ -174,7 +174,7 @@ namespace Neo4j.Driver.Internal.IO
         public int ReadNextMessages(Stream outputMessageStream)
         {
             MessageCount = 0;
-            RemainingSize = 0;
+            RemainingMessageDataSize = 0;
 
             var previousStreamPosition = outputMessageStream.Position;
             outputMessageStream.Position = outputMessageStream.Length;
@@ -193,7 +193,7 @@ namespace Neo4j.Driver.Internal.IO
                     ParseMessages(outputMessageStream);
 
                     //If we have consumed all the expected data then break...
-                    if (RemainingSize == 0  &&  !IsMessageOpen)
+                    if (RemainingMessageDataSize == 0  &&  !IsMessageOpen)
                         break;
 
                 }
@@ -213,7 +213,7 @@ namespace Neo4j.Driver.Internal.IO
         public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
         {
             MessageCount = 0;
-            RemainingSize = 0;
+            RemainingMessageDataSize = 0;
 
             var previousStreamPosition = outputMessageStream.Position;
             outputMessageStream.Position = outputMessageStream.Length;
@@ -232,7 +232,7 @@ namespace Neo4j.Driver.Internal.IO
                     ParseMessages(outputMessageStream);                    
 
                     //If we have consumed all the expected data then break...
-                    if (RemainingSize == 0  &&  !IsMessageOpen)
+                    if (RemainingMessageDataSize == 0  &&  !IsMessageOpen)
                         break;
 
                 }
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             while (DataStreamBuffer.RemainingData > 0)
             {
-                if (RemainingSize == 0)
+                if (RemainingMessageDataSize == 0)
                 {
                     if (ReadAndParseChunkSize() == ChunkType.ZeroChunk)
                     {
@@ -269,9 +269,9 @@ namespace Neo4j.Driver.Internal.IO
                     OpenMessage();
                 }
 
-                var writeLength = Math.Min(RemainingSize, DataStreamBuffer.RemainingData);
+                var writeLength = Math.Min(RemainingMessageDataSize, DataStreamBuffer.RemainingData);
                 DataStreamBuffer.WriteInto(outputMessageStream, writeLength);
-                RemainingSize -= writeLength;
+                RemainingMessageDataSize -= writeLength;
             }
         }
 
@@ -296,7 +296,7 @@ namespace Neo4j.Driver.Internal.IO
         private void OpenMessage()
         {
             IsMessageOpen = true;
-            RemainingSize = CurrentChunkSize;
+            RemainingMessageDataSize = CurrentChunkSize;
         }
 
 
