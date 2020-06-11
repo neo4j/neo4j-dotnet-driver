@@ -144,6 +144,23 @@ namespace Neo4j.Driver.Internal.IO
         }
 
 
+        private bool ProcessStream(Stream outputMessageStream)
+        {
+            if (DataStreamBuffer.Size == 0)  //No data so stop
+            {
+                throw new IOException($"Unexpected end of stream, read returned 0.  RemainingMessageDataSize = {RemainingMessageDataSize}, MessageCount = {MessageCount}");
+            }
+
+            ParseMessages(outputMessageStream);
+
+            //If we have consumed all the expected data then break...
+            if (RemainingMessageDataSize == 0 && !IsMessageOpen)
+                return false;
+
+            return true;
+        }
+
+
         public int ReadNextMessages(Stream outputMessageStream)
         {
             MessageCount = 0;
@@ -157,18 +174,7 @@ namespace Neo4j.Driver.Internal.IO
                 while(true)     
                 {
                     DataStreamBuffer.ReadFrom(InputStream);  //Populate the buffer
-                    if (DataStreamBuffer.Size == 0)  //No data so stop
-                    {
-                        throw new IOException($"Unexpected end of stream, read returned 0.  RemainingMessageDataSize = {RemainingMessageDataSize}, MessageCount = {MessageCount}");
-                        //break;
-                    }
-
-                    ParseMessages(outputMessageStream);
-
-                    //If we have consumed all the expected data then break...
-                    if (RemainingMessageDataSize == 0  &&  !IsMessageOpen)
-                        break;
-
+                    if (!ProcessStream(outputMessageStream)) break;
                 }
 
                 CheckEndOfStreamValidity();
@@ -196,18 +202,7 @@ namespace Neo4j.Driver.Internal.IO
                 while (true)
                 {
                     await DataStreamBuffer.ReadFromAsync(InputStream).ConfigureAwait(false);  //Populate the buffer
-                    if (DataStreamBuffer.Size == 0)  //No data so stop
-                    {
-                        throw new IOException($"Unexpected end of stream, read returned 0.  RemainingMessageDataSize = {RemainingMessageDataSize}, MessageCount = {MessageCount}");
-                        //break;
-                    }
-
-                    ParseMessages(outputMessageStream);                    
-
-                    //If we have consumed all the expected data then break...
-                    if (RemainingMessageDataSize == 0  &&  !IsMessageOpen)
-                        break;
-
+                    if (!ProcessStream(outputMessageStream)) break;
                 }
 
                 CheckEndOfStreamValidity();
