@@ -1,0 +1,20 @@
+!: BOLT 4.1
+!: AUTO HELLO
+!: AUTO RESET
+!: AUTO GOODBYE
+
+C: RUN "UNWIND range(1, 10) AS n RETURN n" {} {}
+   PULL {"n": -1}
+S: SUCCESS {"fields": []}
+   RECORD [1]
+   RECORD [2]
+   RECORD [3]
+   RECORD [4]
+   RECORD [5]
+   <NOOP>
+   RECORD [6]
+   RECORD [7]
+   RECORD [8]
+   RECORD [9]
+   RECORD [10]
+   SUCCESS {}

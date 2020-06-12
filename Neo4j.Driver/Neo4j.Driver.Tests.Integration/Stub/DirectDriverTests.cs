@@ -184,5 +184,18 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 }
             }
         }
+
+        [RequireBoltStubServerTheory]
+        [InlineData("V4_1")]
+        public async Task ShouldNotThrowOnNoopMessages(string boltVersion)
+        {
+            using (BoltStubServer.Start($"{boltVersion}/noop", 9001))
+            {
+                using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
+                {
+                    await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());                    
+                }
+            }
+        }
     }
 }
