@@ -158,7 +158,6 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [RequireBoltStubServerTheory]
         [InlineData("V3")]
         [InlineData("V4")]
-        [InlineData("V4_1")]
         public async Task ShouldVerifyConnectivity(string boltVersion)
         {
             using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
