@@ -43,7 +43,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         public async Task CertificateTrustManager_ShouldTrust()
         {
             await VerifySuccess(Server.BoltUri,
-                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
+                                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}), 
+                                EncryptionLevel.None);
         }
 
         [Fact]
