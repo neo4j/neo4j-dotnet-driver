@@ -193,7 +193,16 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             {
                 using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
                 {
-                    await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());                    
+                    //await driver.VerifyConnectivityAsync();                    
+                    var session = driver.AsyncSession();
+                    try
+                    {
+                        var cursor = await session.RunAsync("MATCH (N) RETURN n.name");                        
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
                 }
             }
         }
