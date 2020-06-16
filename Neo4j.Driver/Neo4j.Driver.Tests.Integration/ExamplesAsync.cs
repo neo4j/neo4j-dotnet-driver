@@ -716,12 +716,12 @@ namespace Neo4j.Driver.ExamplesAsync
                 await WriteAsync("CREATE (a:Person {name: 'Alice'})");
                 await WriteAsync("CREATE (a:Person {name: 'Bob'})");
                 // When & Then
-                int count = await AddEmployeesAsync("Acme");
+                int count = await AddEmployeesAsync("Example");
                 count.Should().Be(2);
 
                 var records =
                     await ReadAsync(
-                        "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
+                        "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Example' RETURN count(emp)");
 
                 var record = records.Single();
                 record[0].As<int>().Should().Be(2);
