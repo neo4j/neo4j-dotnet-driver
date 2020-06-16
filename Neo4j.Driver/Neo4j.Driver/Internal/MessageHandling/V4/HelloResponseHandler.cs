@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_1
+namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
     internal class HelloResponseHandler : MetadataCollectingResponseHandler
     {
@@ -34,10 +34,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_1
         public HelloResponseHandler(IConnection connection, BoltProtocolVersion version)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            Version = version ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v4.1 with a null BoltProtocolVersion object");
-
-            if (Version < new BoltProtocolVersion(4, 1))
-                throw new ArgumentOutOfRangeException("Attempting to initialise a v4.1 HelloResponseHandler with a protocol version less than 4.1");
+            
+            Version = version ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v4 with a null BoltProtocolVersion object");
+            
+            if (Version < new BoltProtocolVersion(4, 0))
+                throw new ArgumentOutOfRangeException("Attempting to initialise a v4 HelloResponseHandler with a protocol version less than 4.0");
+                     
 
             AddMetadata<ServerVersionCollector, ServerVersion>();
             AddMetadata<ConnectionIdCollector, string>();

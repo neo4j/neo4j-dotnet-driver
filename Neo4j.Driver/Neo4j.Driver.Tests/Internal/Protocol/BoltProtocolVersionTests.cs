@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Internal.Protocol
         [Fact]
         public void PackAndUnpackSuccess()
         {   
-            const int    packedIntVersion = 65540,
+            const int    packedIntVersion = 260,
                          majorVersion = 4,
                          minorVersion = 1;
             const ushort packedShortVersion = 260;
@@ -204,14 +204,15 @@ namespace Neo4j.Driver.Internal.Protocol
         public void ProtocolLargeBoundsTest()
         {
             int successLargeNumber = 1213486160;    ////0x‭48 54 54 50 - or HTTP in ascii codes...
-            const int majorVersion = 21584,
-                      minorVersion = 18516;
+            const int majorVersion = 80,
+                      minorVersion = 84;
             var bv = new BoltProtocolVersion(successLargeNumber);
             (bv.MajorVersion == majorVersion && bv.MinorVersion == minorVersion).Should().BeTrue();
             
-            int failureLargeNumber = 15728881;
+            
             string errorMessage = "Attempting to create a BoltProtocolVersion with a large (error code) version number.  Resulting Major and Minor are in range of valid versions, which is not allowed: ";
 
+            int failureLargeNumber = new BoltProtocolVersion(majorVersion - 1, minorVersion - 1).PackToInt();
             var exception = Record.Exception(() => new BoltProtocolVersion(failureLargeNumber));
             exception.Should().BeOfType<NotSupportedException>();
             exception.Message.Should().StartWith(errorMessage);

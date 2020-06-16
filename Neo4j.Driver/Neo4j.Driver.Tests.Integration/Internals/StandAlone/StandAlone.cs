@@ -59,21 +59,17 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         }
 
         private void RetryIfFailToStart()
-        {
-            const int RetryCount = 2;
-
-            for(int i = 0; i < RetryCount; i++)
+        {   
+            try
             {
-                try
-                {
-                    _delegator = _installer.Start().Single();                    
-                    break;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);   //Notify of the failure error message
-                }
-            }           
+                _delegator = _installer.Start().Single();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                _delegator = _installer.Start().Single();
+            }
+
         }
 
         public StandAlone(Pkcs12Store store)
@@ -93,8 +89,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         }
 
         private void NewBoltDriver()
-        {
-            Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
+        {   
+            Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);            
         }
 
         private void DisposeBoltDriver()

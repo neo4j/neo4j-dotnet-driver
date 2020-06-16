@@ -43,7 +43,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         public async Task CertificateTrustManager_ShouldTrust()
         {
             await VerifySuccess(Server.BoltUri,
-                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
+                                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}), 
+                                EncryptionLevel.None);
         }
 
         [Fact]
@@ -95,7 +96,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [Fact]
         public async Task InsecureTrustManager_ShouldTrust()
         {
-            await VerifySuccess(Server.BoltUri, new InsecureTrustManager(true));
+            await VerifySuccess(Server.BoltUri, new InsecureTrustManager(true), EncryptionLevel.None);
         }
 
         [Fact]
@@ -107,7 +108,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [Fact]
         public async Task InsecureTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
         {
-            await VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false));
+            await VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false), EncryptionLevel.None);
         }
 
         private async Task VerifyFailure(Uri target, TrustManager trustManager)
@@ -119,10 +120,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 .Contain("Failed to establish encrypted connection with server");
         }
 
-        private async Task VerifySuccess(Uri target, TrustManager trustManager)
+        private async Task VerifySuccess(Uri target, TrustManager trustManager, EncryptionLevel encryptionLevel = EncryptionLevel.Encrypted)
         {
             var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
-                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).Build()
+                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(encryptionLevel).Build()
             ));
             ex.Should().BeNull();
         }

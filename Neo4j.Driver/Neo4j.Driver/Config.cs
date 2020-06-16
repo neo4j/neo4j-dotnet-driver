@@ -213,5 +213,11 @@ namespace Neo4j.Driver
             get => _fetchSize;
             internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
         }
+
+        /// <summary>
+        /// Used to get and set the User Agent string. If not used the default will be "neo4j-dotnet/x.y" 
+        /// where x is the major version and y is the minor version.
+        /// </summary>
+        public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
     }
 }

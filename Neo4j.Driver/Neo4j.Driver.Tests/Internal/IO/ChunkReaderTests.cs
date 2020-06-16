@@ -127,6 +127,7 @@ namespace Neo4j.Driver.Internal.IO
 
         [Theory]
         [InlineData(new byte[] { })]
+        [InlineData(new byte[] { 0x00 })]   //Half chunk
         [InlineData(new byte[] { 0x00, 0x01 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01 })]
@@ -143,6 +144,7 @@ namespace Neo4j.Driver.Internal.IO
 
         [Theory]
         [InlineData(new byte[] { })]
+        [InlineData(new byte[] { 0x00 })]   //Half chunk
         [InlineData(new byte[] { 0x00, 0x01 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01 })]
@@ -156,6 +158,7 @@ namespace Neo4j.Driver.Internal.IO
             ex.Should().NotBeNull();
             ex.Should().BeOfType<IOException>().Which.Message.Should().StartWith("Unexpected end of stream");
         }
+
 
         [Theory]
         [InlineData(new byte[] { 0x00, 0x00,                    //NOOP
@@ -263,10 +266,10 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public async void ShouldReadSingleMessageStreamLargerThanBufferSizeAsync()
         {
-            const int messageSizeByte = 22 * 1024;
-            const int totalStreamSizeByte = (messageSizeByte + 4);
-            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            const int chunkSize = 22 * 1024;
+            const int totalStreamSizeByte = 2 * chunkSize;
+            var inputStream = new MemoryStream(GenerateMessages(chunkSize, totalStreamSizeByte));  // Will create a message of two 11k chunks, these will straddle the 16k internal buffer size...
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = await reader.ReadNextMessagesAsync(resultStream);
@@ -277,10 +280,10 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public void ShouldReadSingleMessageStreamLargerThanBufferSize()
         {
-            const int messageSizeByte = 22 * 1024;
-            const int totalStreamSizeByte = (messageSizeByte + 4);
-            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            const int chunkSize = 22 * 1024;
+            const int totalStreamSizeByte = 2 * chunkSize;
+            var inputStream = new MemoryStream(GenerateMessages(chunkSize, totalStreamSizeByte));  // Will create a message of two 11k chunks, these will straddle the 16k internal buffer size...
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = reader.ReadNextMessages(resultStream);
@@ -288,13 +291,18 @@ namespace Neo4j.Driver.Internal.IO
             count.Should().Be(1);
         }
 
+        
         [Fact]
         public async void ShouldReadMultipleMessageStreamLargerThanBufferSizeAsync()
         {
-            const int messageSizeByte = 11 * 1024;
-            const int totalStreamSizeByte = 2 * (messageSizeByte + 4);
-            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+            const int chunkSize = 11 * 1024;
+            const int totalStreamSizeByte = 2 * chunkSize;
+            var inputStream = new MemoryStream();
+            inputStream.Write(GenerateMessages(chunkSize, totalStreamSizeByte));    //Add a message made of two 11k chunks.
+            inputStream.Write(GenerateMessages(chunkSize, totalStreamSizeByte));    //Add another message made of two 11k chunks.
+            inputStream.Position = 0;
+            
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = await reader.ReadNextMessagesAsync(resultStream);
@@ -302,13 +310,18 @@ namespace Neo4j.Driver.Internal.IO
             count.Should().Be(2);
         }
 
+        
         [Fact]
         public void ShouldReadMultipleMessageStreamLargerThanBufferSize()
         {
-            const int messageSizeByte = 11 * 1024;
-            const int totalStreamSizeByte = 2 * (messageSizeByte + 4);
-            var inputStream = new MemoryStream(GenerateMessages(messageSizeByte, totalStreamSizeByte));  // Will create a stream of two 11k messages, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream(GenerateMessageChunk(totalStreamSizeByte));
+             const int chunkSize = 11 * 1024;
+            const int totalStreamSizeByte = 2 * chunkSize;
+            var inputStream = new MemoryStream();
+            inputStream.Write(GenerateMessages(chunkSize, totalStreamSizeByte));    //Add a message made of two 11k chunks.
+            inputStream.Write(GenerateMessages(chunkSize, totalStreamSizeByte));    //Add another message made of two 11k chunks.
+            inputStream.Position = 0;
+
+            var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
             var count = reader.ReadNextMessages(resultStream);

@@ -126,6 +126,9 @@ namespace Neo4j.Driver.Tests.Connector
 
                 encryption.UseTls.Should().BeTrue();
                 encryption.TrustManager.Should().BeOfType<InsecureTrustManager>();
+
+                if (encryption.TrustManager is InsecureTrustManager insecureTrustManager)
+                    insecureTrustManager.VerifyHostName.Should().BeFalse();
             }
 
             [Theory]

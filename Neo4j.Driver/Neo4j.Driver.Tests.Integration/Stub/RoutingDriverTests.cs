@@ -98,7 +98,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start($"{boltVersion}/verify_connectivity", 9001))
             {
-                using (var driver = GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig))
                 {
                     await driver.VerifyConnectivityAsync();
                 }
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         {
             using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
             {
-                using (var driver = GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig))
                 {
                     var error = await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());
                     error.Should().BeOfType<AuthenticationException>();

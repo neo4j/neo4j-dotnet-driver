@@ -248,10 +248,10 @@ namespace Neo4j.Driver.Examples
 
             public void AddPerson(string name)
             {
-                using (var driver = CreateDriverWithCustomResolver("neo4j://x.acme.com",
+                using (var driver = CreateDriverWithCustomResolver("neo4j://x.example.com",
                     AuthTokens.Basic(Username, Password),
-                    ServerAddress.From("a.acme.com", 7687), ServerAddress.From("b.acme.com", 7877),
-                    ServerAddress.From("c.acme.com", 9092)))
+                    ServerAddress.From("a.example.com", 7687), ServerAddress.From("b.example.com", 7877),
+                    ServerAddress.From("c.example.com", 9092)))
                 {
                     using (var session = driver.Session())
                     {
@@ -284,8 +284,8 @@ namespace Neo4j.Driver.Examples
                     using (var server2 = BoltStubServer.Start("V4/return_1", 9002))
                     {
                         using (var driver =
-                            CreateDriverWithCustomResolver("neo4j://x.acme.com", AuthTokens.None,
-                                ServerAddress.From("localhost", 9001)))
+                            CreateDriverWithCustomResolver("neo4j://x.example.com", AuthTokens.None,
+                                ServerAddress.From("127.0.0.1", 9001)))
                         {
                             using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))
                             {
@@ -595,8 +595,8 @@ namespace Neo4j.Driver.Examples
                 Write("CREATE (a:Person {name: 'Alice'})");
                 Write("CREATE (a:Person {name: 'Bob'})");
                 // When & Then
-                AddEmployees("Acme").Should().Be(2);
-                Read("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)")
+                AddEmployees("Example").Should().Be(2);
+                Read("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Example' RETURN count(emp)")
                     .Single()[0].As<int>().Should().Be(2);
             }
         }
