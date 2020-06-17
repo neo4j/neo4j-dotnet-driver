@@ -528,6 +528,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
+        // tag::hello-world-import[]
         public class HelloWorldExampleTest : BaseAsyncExample
         {
             public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -584,6 +585,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 }
             }
         }
+        // end::hello-world-import[]
 
         public class ReadWriteTransactionExample : BaseAsyncExample
         {
