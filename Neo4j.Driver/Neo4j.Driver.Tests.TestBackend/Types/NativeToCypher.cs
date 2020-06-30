@@ -1,11 +1,8 @@
 ﻿using Microsoft.VisualBasic.CompilerServices;
-using Neo4j.Driver;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text.Json;
+using Neo4j.Driver.Internal.Types;
+using System.IO;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -25,75 +22,74 @@ namespace Neo4j.Driver.Tests.TestBackend
         //Mapping of object type to a cypher type name string that will be used in the JSON.
         private static Dictionary<Type, string> TypeMap { get; set; } = new Dictionary<Type, string>() 
         {
-            { typeof(List<object>),                 "CypherList" },
-            { typeof(Dictionary<string, object>),   "CypherMap" },
+            { typeof(List<object>),                     "CypherList" },
+            { typeof(Dictionary<string, object>),       "CypherMap" },
 
-            { typeof(bool),                         "CypherBool" },
-            { typeof(long),                         "CypherInt" },
-            { typeof(double),                       "CypherFloat" },
-            { typeof(string),                       "CypherString" },           
-            { typeof(byte[]),                       "CypherByteArray" },
+            { typeof(bool),                             "CypherBool" },
+            { typeof(long),                             "CypherInt" },
+            { typeof(double),                           "CypherFloat" },
+            { typeof(string),                           "CypherString" },           
+            { typeof(byte[]),                           "CypherByteArray" },
 
-            { typeof(LocalDate),                    "CypherDate" },
-            { typeof(OffsetTime),                   "CypherTime" },
-            { typeof(LocalTime),                    "CypherLocalTime" },
-            { typeof(ZonedDateTime),                "CypherDateTime" },
-            { typeof(LocalDateTime),                "CypherLocalDateTime" },
-            { typeof(Duration),                     "CypherDuration" },
-            { typeof(Point),                        "CypherPoint" },
+            { typeof(LocalDate),                        "CypherDate" },
+            { typeof(OffsetTime),                       "CypherTime" },
+            { typeof(LocalTime),                        "CypherLocalTime" },
+            { typeof(ZonedDateTime),                    "CypherDateTime" },
+            { typeof(LocalDateTime),                    "CypherLocalDateTime" },
+            { typeof(Duration),                         "CypherDuration" },
+            { typeof(Point),                            "CypherPoint" },
 
-            { typeof(INode),                        "CypherNode" },
-            { typeof(IRelationship),                "CypherRelationship" },
-            { typeof(IPath),                        "CypherPath" }
+            { typeof(Node),                             "CypherNode" },
+            { typeof(Relationship),                     "CypherRelationship" },
+            { typeof(Neo4j.Driver.Internal.Types.Path), "CypherPath" }
         };
         
         //Mapping of object type to a converstion delegate that will return a CypherObject that can be serialized to JSON.
         private static Dictionary<Type, Func<string, object, CypherObject>> FunctionMap { get; set; } = new Dictionary<Type, Func<string, object, CypherObject>>()
         {
-            { typeof(List<object>),                 CypherList },
-            { typeof(Dictionary<string, object>),   CypherMap },
+            { typeof(List<object>),                     CypherList },
+            { typeof(Dictionary<string, object>),       CypherMap },
 
-            { typeof(bool),                         CypherSimple },
-            { typeof(long),                         CypherSimple },
-            { typeof(double),                       CypherSimple },
-            { typeof(string),                       CypherSimple },
-            { typeof(byte[]),                       CypherSimple },
+            { typeof(bool),                             CypherSimple },
+            { typeof(long),                             CypherSimple },
+            { typeof(double),                           CypherSimple },
+            { typeof(string),                           CypherSimple },
+            { typeof(byte[]),                           CypherSimple },
 
-            { typeof(LocalDate),                    CypherTODO },
-            { typeof(OffsetTime),                   CypherTODO },
-            { typeof(LocalTime),                    CypherTODO },
-            { typeof(ZonedDateTime),                CypherTODO },
-            { typeof(LocalDateTime),                CypherTODO },
-            { typeof(Duration),                     CypherTODO },
-            { typeof(Point),                        CypherTODO },
+            { typeof(LocalDate),                        CypherTODO },
+            { typeof(OffsetTime),                       CypherTODO },
+            { typeof(LocalTime),                        CypherTODO },
+            { typeof(ZonedDateTime),                    CypherTODO },
+            { typeof(LocalDateTime),                    CypherTODO },
+            { typeof(Duration),                         CypherTODO },
+            { typeof(Point),                            CypherTODO },
 
-            { typeof(INode),                        CypherNode },   //TODO... Needs to be of type Node.
-            { typeof(IRelationship),                CypherTODO },
-            { typeof(IPath),                        CypherTODO }
+            { typeof(Node),                             CypherNode },   
+            { typeof(Relationship),                     CypherTODO },
+            { typeof(Neo4j.Driver.Internal.Types.Path), CypherTODO }
 
 
         };
 
 
-        public static CypherObject Convert(IReadOnlyDictionary<string, object> collection)
-        {
-            Dictionary<string, object> simpleDictionary = new Dictionary<string, object>(collection);
-
-            return InternalConvert(simpleDictionary);            
-        }
-
-        public static CypherObject InternalConvert(object sourceObject)
+        public static CypherObject Convert(object sourceObject)
         {
             if (sourceObject is null)
             {
-                return new CypherObject { name = "NullRecord", data = {} };
+                return new CypherObject { name = "CypherNull", data = {} };
             }
 
-            
-            string cypherType = TypeMap[sourceObject.GetType()];
-            var function = FunctionMap[sourceObject.GetType()];
+            try
+            {
+                string cypherType = TypeMap[sourceObject.GetType()];
+                var function = FunctionMap[sourceObject.GetType()];
 
-            return function(cypherType, sourceObject);
+                return function(cypherType, sourceObject);
+            }
+            catch(Exception ex)
+            {
+                throw new IOException($"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
+            }
         }
 
 
@@ -108,7 +104,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             
             foreach(KeyValuePair<string, object> pair in (Dictionary<string, object>)obj)
             {
-                result[pair.Key] = InternalConvert(pair.Value);
+                result[pair.Key] = Convert(pair.Value);
             }
 
             return new CypherObject { name = cypherType, data = { value = result } };
@@ -120,7 +116,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             foreach (object item in (List<object>)obj)
             {
-                result.Add(InternalConvert(item));
+                result.Add(Convert(item));
             }
 
             return new CypherObject { name = cypherType, data = { value = result } };
@@ -133,12 +129,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public static CypherObject CypherNode(string cypherType, object obj)
         {
-            var node = (INode)obj;
+            var node = (Node)obj;
             var cypherNode = new Dictionary<string, object>
             {
-                ["id"] = InternalConvert(node.Id),
-                ["labels"] = InternalConvert(new List<string>(node.Labels)),
-                ["props"] = InternalConvert(new Dictionary<string, object>(node.Properties))
+                ["id"] = Convert(node.Id),
+                ["labels"] = Convert(new List<object>(node.Labels)),
+                ["props"] = Convert(new Dictionary<string, object>(node.Properties))
             };
 
             return new CypherObject() { name = "Node", data = { value = cypherNode } };

@@ -26,6 +26,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                 if (await results.FetchAsync().ConfigureAwait(false))
                     Records = results.Current;
+                else
+                    Records = null;
             }
             catch (Exception ex)
             {
@@ -35,10 +37,16 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Response()
         {
-            //var values = Records.Values.Values.Select(v => NativeToCypher.InternalConvert(v));
-            //return new Response("Record", new { values = values }).Encode();
-            var translatedResults = NativeToCypher.Convert(Records.Values);
-            return new Response("Record", translatedResults).Encode();
+            if (!(Records is null))
+            {
+                //Generate list of ordered records
+                var valuesList = Records.Keys.Select(v => NativeToCypher.Convert(Records[v]));
+                return new Response("Record", new { values = valuesList }).Encode();
+            }
+            else
+            {
+                return new Response("NullRecord", new {}).Encode();
+            }
         }
     }
 }
