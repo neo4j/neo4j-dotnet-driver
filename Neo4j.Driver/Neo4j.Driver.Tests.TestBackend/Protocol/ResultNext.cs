@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
             else
             {
-                return new Response("NullRecord", new {}).Encode();
+                return new Response("NullRecord", null).Encode();
             }
         }
     }
