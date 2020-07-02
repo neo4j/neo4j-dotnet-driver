@@ -38,7 +38,9 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV4 : BoltProtocolV3
     {
-        public static readonly BoltProtocolV4 BoltV4 = new BoltProtocolV4();
+        public BoltProtocolV4()
+        {
+        }
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
             ILogger logger = null)
@@ -124,9 +126,9 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        public override int Version()
+        public override BoltProtocolVersion Version()
         {
-            return BoltProtocolFactory.ProtocolVersion.Version4;
+            return new BoltProtocolVersion(4, 0);
         }
 
         private static Func<IResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
@@ -153,6 +155,14 @@ namespace Neo4j.Driver.Internal.Protocol
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };
+        }
+
+        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        {
+            await connection
+                .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
+                    new V4.HelloResponseHandler(connection, Version())).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
         }
     }
 }

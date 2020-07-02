@@ -33,6 +33,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketClient : ISocketClient
     {
+        private const int NumSupportedVersions = 4;
         private const string MessagePattern = "C: {0}";
         private readonly Uri _uri;
         private readonly BufferSettings _bufferSettings;
@@ -146,9 +147,9 @@ namespace Neo4j.Driver.Internal.Connector
             return Task.CompletedTask;
         }
 
-        private async Task<int> DoHandshakeAsync()
+        private async Task<BoltProtocolVersion> DoHandshakeAsync()
         {
-            var data = BoltProtocolFactory.PackSupportedVersions();
+            var data = BoltProtocolFactory.PackSupportedVersions(NumSupportedVersions);
             await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
             await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
             _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
@@ -161,11 +162,11 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
-            _logger?.Debug("S: [HANDSHAKE] {0}", agreedVersion);
+            _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
             return agreedVersion;
         }
 
-        private IBoltProtocol SelectBoltProtocol(int version)
+        private IBoltProtocol SelectBoltProtocol(BoltProtocolVersion version)
         {
             var boltProtocol = BoltProtocolFactory.ForVersion(version);
             Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger);

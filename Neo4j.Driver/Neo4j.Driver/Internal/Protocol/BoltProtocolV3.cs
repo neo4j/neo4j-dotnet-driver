@@ -34,7 +34,11 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV3 : IBoltProtocol
     {
-        public static readonly BoltProtocolV3 BoltV3 = new BoltProtocolV3();
+        public BoltProtocolV3()
+        {
+
+        }
+
 
         public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
             ILogger logger = null)
@@ -50,7 +54,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
         }
 
-        public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             await connection
                 .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
@@ -135,9 +139,9 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.SendAsync().ConfigureAwait(false);
         }
 
-        public virtual int Version()
+        public virtual BoltProtocolVersion Version()
         {
-            return BoltProtocolFactory.ProtocolVersion.Version3;
+            return new BoltProtocolVersion(3, 0);
         }
 
         private void AssertNullDatabase(string database)
