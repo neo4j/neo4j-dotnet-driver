@@ -528,7 +528,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-        // tag::hello-world-import[]
+        
         public class HelloWorldExampleTest : BaseAsyncExample
         {
             public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -547,6 +547,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 }
             }
 
+            // tag::hello-world[]
             public class HelloWorldExample : IDisposable
             {
                 private readonly IDriver _driver;
@@ -584,8 +585,9 @@ namespace Neo4j.Driver.ExamplesAsync
                     _driver?.Dispose();
                 }
             }
+            // end::hello-world
         }
-        // end::hello-world-import[]
+        
 
         public class ReadWriteTransactionExample : BaseAsyncExample
         {
