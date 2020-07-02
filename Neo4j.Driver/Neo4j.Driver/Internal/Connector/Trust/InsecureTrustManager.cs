@@ -22,9 +22,10 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Connector.Trust
 {
-    internal sealed class InsecureTrustManager: TrustManager
+    internal sealed class InsecureTrustManager : TrustManager
     {
         private readonly bool _verifyHostname;
+        public bool VerifyHostName { get{return _verifyHostname;} }
 
         public InsecureTrustManager(bool verifyHostname)
         {
