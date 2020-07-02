@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
-                mock.Setup(m => m.BoltProtocol).Returns(BoltProtocolV3.BoltV3);
+                mock.Setup(m => m.BoltProtocol).Returns(new BoltProtocolV3());
                 // When
                 var query = discovery.DiscoveryProcedure(mock.Object, null);
                 // Then
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var serverInfoMock = new Mock<IServerInfo>();
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
-                mock.Setup(m => m.BoltProtocol).Returns(BoltProtocolV4.BoltV4);
+                mock.Setup(m => m.BoltProtocol).Returns(new BoltProtocolV4());
                 // When
                 var query = discovery.DiscoveryProcedure(mock.Object, "foo");
                 // Then
@@ -363,12 +363,12 @@ namespace Neo4j.Driver.Tests.Routing
 
                 _mockConn.Setup(x => x.IsOpen).Returns(() => _responseCount < _responseMessages.Count);
                 _mockConn.Setup(x => x.Mode).Returns(mode);
-                var protocol = BoltProtocolV3.BoltV3;
+                var protocol = new BoltProtocolV3();
                 if (serverInfo != null)
                 {
                     if (ServerVersion.From(serverInfo.Version) >= ServerVersion.V4_0_0)
                     {
-                        protocol = BoltProtocolV4.BoltV4;
+                        protocol = new BoltProtocolV4();
                     }
 
                     _mockConn.Setup(x => x.Server).Returns(serverInfo);
