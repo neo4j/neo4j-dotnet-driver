@@ -49,16 +49,6 @@ namespace Neo4j.Driver.Internal.Protocol
                 boltProtocol.Should().BeOfType<BoltProtocolV4>();
             }
 
-            [Fact]
-            public void ShouldCreateBoltProtocolV4_1()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(new BoltProtocolVersion(4, 1), new Dictionary<string, string>());
-                boltProtocol.Should().BeOfType<BoltProtocolV4_1>();
-            }
-
             [Theory]
             [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client")]
             [InlineData(1, 0, "Protocol error, server suggested unexpected protocol version: 1.0")]
