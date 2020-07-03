@@ -11,6 +11,11 @@ namespace Neo4j.Driver.Tests.TestBackend
         bool Connected { get; }
         NetworkStream ConnectionStream { get; }
         Task Open();
+        void Close();
+        void StartServer();
+        void StopServer();
+        bool DataAvailable();
+        int TimeOut { get; }
     }
 
     internal class Connection : IConnection, IDisposable
@@ -22,6 +27,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         private int port { get; set; }
         public void Dispose() => Dispose(true);
         public bool Connected { get { return ClientConnection.Connected; } }
+        public int TimeOut { get { return 1000; } }
 
         public NetworkStream ConnectionStream { get; set; }
 
@@ -29,18 +35,43 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             Trace.WriteLine("Creating Server");
             IPAddress localAddr = IPAddress.Parse(address);
-            Server = new TcpListener(localAddr, (int)port);
+            Server = new TcpListener(localAddr, (int)port);   
+            Server.
+            StartServer();
+        }
+
+        public void StartServer()
+        {
+            Trace.WriteLine("Starting TCP server");
+            Server.Start();     //Start listening for connection requests
+        }
+
+        public void StopServer()
+        {
+            Trace.WriteLine("Stopping TCP server");
+            Server.Stop();
+        }
+
+        public bool DataAvailable()
+        {
+            return ClientConnection.Available > 0;
         }
 
         public async Task Open()
         {
             try
-            {
-                Trace.WriteLine("Starting TCP server");
-                Server.Start();     //Start listening for connection requests
+            {   
                 Trace.WriteLine("Starting to listen for Connections");
+                
                 ClientConnection = await Server.AcceptTcpClientAsync().ConfigureAwait(false);
+                ClientConnection.LingerState.Enabled = false;
+                ClientConnection.LingerState.LingerTime = 0;
+                ClientConnection.ReceiveTimeout = TimeOut;
+
                 ConnectionStream = ClientConnection.GetStream();
+                ConnectionStream.ReadTimeout = TimeOut;
+                ConnectionStream.WriteTimeout = TimeOut;
+
                 Trace.WriteLine("Connected");
             }
             catch (SocketException e)
@@ -50,11 +81,10 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
         }
 
-        private void Close()
+        public void Close()
         {
-            ConnectionStream.Dispose();
             ClientConnection.Close();
-            Server.Stop();
+            ConnectionStream.Dispose();
         }
 
         protected virtual void Dispose(bool disposing)
@@ -65,6 +95,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (disposing)
             {
                 Close();
+                StopServer();
             }
 
             Disposed = true;

@@ -24,46 +24,31 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public async Task<IProtocolObject> ParseNextRequest()
         {
+            Trace.WriteLine("Listening for request");
+
             CurrentObjectData = string.Empty;
 
             while (await ParseObjectData().ConfigureAwait(false)) { }
+
+            if(string.IsNullOrEmpty(CurrentObjectData))
+            {
+                return null;
+            }
 
             Trace.WriteLine($"\nRequest recieved: {CurrentObjectData}");
             return CreateObjectFromData();
         }
 
-        /*
-        private async Task<bool> ParseObjectData()
-        {
-            var input = await InputReader.Read().ConfigureAwait(false);
-            
-            if (string.IsNullOrEmpty(input))
-                return false;
-
-            input = input.TrimStart();
-            input = input.TrimEnd();
-
-            if (IsOpenTag(input))
-                return true;
-
-            if (IsCloseTag(input))
-                return false;
-
-            CurrentObjectData += input;
-            return true;
-        }
-        */
-
         private async Task<bool> ParseObjectData()
         {
             var input = await InputReader.Read().ConfigureAwait(false) ?? "";
 
+            if (string.IsNullOrEmpty(input))
+                return false;
+
             input = input.TrimStart();
             input = input.TrimEnd();
             
-            if (string.IsNullOrEmpty(input))
-                return true;
-
             if (IsOpenTag(input))
                 return true;
 
