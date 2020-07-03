@@ -94,15 +94,19 @@ namespace Neo4j.Driver.Internal
             return builder.Uri;
         }
 
-        public static IDictionary<string, string> ParseRoutingContext(this Uri uri)
+        public static IDictionary<string, string> ParseRoutingContext(this Uri uri, int defaultPort)
         {
-            string query = uri.Query;
-            if (string.IsNullOrEmpty(query))
-            {
+            if(!uri.IsRoutingUri())
                 return new Dictionary<string, string>();
-            }
 
+            string query = uri.Query;
             IDictionary<string, string> context = new Dictionary<string, string>();
+
+            //First add in the address and port the client used to contact the server
+            const string addressKey = "address";
+            string addressValue = (uri.Port == -1) ? uri.Authority + ":" + defaultPort : uri.Authority;
+            context.Add(addressKey, addressValue);
+
             foreach (var pair in query.Split(new[] {'?', '&'}, StringSplitOptions.RemoveEmptyEntries))
             {
                 var keyValue = pair.Split(new []{'='}, StringSplitOptions.RemoveEmptyEntries);
@@ -116,8 +120,10 @@ namespace Neo4j.Driver.Internal
                 var value = keyValue[1];
                 if (context.ContainsKey(key))
                 {
-                    throw new ArgumentException(
-                        $"Duplicated query parameters with key '{key}' in URI '{uri}'.", key);
+                    if (key == addressKey)
+                        throw new ArgumentException($"The key {addressKey} is reserved for routing context.");
+                    else
+                        throw new ArgumentException($"Duplicated query parameters with key '{key}' in URI '{uri}'.", key);
                 }
                 context.Add(key, value);
             }

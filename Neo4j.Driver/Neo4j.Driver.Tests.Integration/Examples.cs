@@ -284,7 +284,7 @@ namespace Neo4j.Driver.Examples
                     using (var server2 = BoltStubServer.Start("V4/return_1", 9002))
                     {
                         using (var driver =
-                            CreateDriverWithCustomResolver("neo4j://x.acme.com", AuthTokens.None,
+                            CreateDriverWithCustomResolver("neo4j://example.com", AuthTokens.None,
                                 ServerAddress.From("localhost", 9001)))
                         {
                             using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))

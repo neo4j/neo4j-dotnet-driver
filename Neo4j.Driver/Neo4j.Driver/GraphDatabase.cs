@@ -221,13 +221,15 @@ namespace Neo4j.Driver
             var logger = config.Logger;
 
             var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
-            var routingContext = uri.ParseRoutingContext();
+            var routingContext = uri.ParseRoutingContext(DefaultBoltPort);
             var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
 
             var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
             var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
 
             var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
+
+            EnsureNoRoutingContextOnBolt(uri, routingContext);
 
             IConnectionProvider connectionProvider = null;
             if (parsedUri.IsRoutingUri())
@@ -236,8 +238,7 @@ namespace Neo4j.Driver
                     new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
             }
             else
-            {
-                EnsureNoRoutingContext(uri, routingContext);
+            {   
                 connectionProvider =
                     new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger);
             }
@@ -245,9 +246,9 @@ namespace Neo4j.Driver
             return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics, config);
         }
 
-        private static void EnsureNoRoutingContext(Uri uri, IDictionary<string, string> routingContext)
+        private static void EnsureNoRoutingContextOnBolt(Uri uri, IDictionary<string, string> routingContext)
         {
-            if (routingContext.Count != 0)
+            if (!uri.IsRoutingUri() && !String.IsNullOrEmpty(uri.Query))
             {
                 throw new ArgumentException(
                     $"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");

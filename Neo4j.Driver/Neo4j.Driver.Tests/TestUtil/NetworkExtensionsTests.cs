@@ -33,61 +33,84 @@ namespace Neo4j.Driver.Tests
     {
         public class ParseRoutingContextMethod
         {
+            private const int DefaultBoltPort = 7687;
+
             [Theory]
-            [InlineData("bolt")]
-            [InlineData("neo4j")]
+            [InlineData("bolt")]            
             public void ShouldParseEmptyRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var routingContext = raw.ParseRoutingContext();
+                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
 
                 routingContext.Should().BeEmpty();
             }
 
             [Theory]
-            [InlineData("bolt")]
+            [InlineData("neo4j")]
+            public void ShouldParseDefaultEntryRoutingContext(string scheme)
+            {
+                var raw = new Uri($"{scheme}://localhost/?");
+                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
+
+                routingContext.Should().HaveCount(1);
+                routingContext["address"].Should().Be("localhost:7687");
+            }
+
+            [Theory]
             [InlineData("neo4j")]
             public void ShouldParseMultipleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&age=1&color=white");
-                var routingContext = raw.ParseRoutingContext();
+                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
 
                 routingContext["name"].Should().Be("molly");
                 routingContext["age"].Should().Be("1");
                 routingContext["color"].Should().Be("white");
+                routingContext["address"].Should().Be("localhost:7687");
             }
 
             [Theory]
-            [InlineData("bolt")]
             [InlineData("neo4j")]
             public void ShouldParseSingleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly");
-                var routingContext = raw.ParseRoutingContext();
+                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
 
                 routingContext["name"].Should().Be("molly");
             }
 
             [Theory]
-            [InlineData("bolt")]
             [InlineData("neo4j")]
             public void ShouldErrorIfMissingValue(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=");
-                var exception = Record.Exception(()=> raw.ParseRoutingContext());
+                var exception = Record.Exception(()=> raw.ParseRoutingContext(DefaultBoltPort));
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Invalid parameters: 'name=' in URI");
             }
 
             [Theory]
-            [InlineData("bolt")]
             [InlineData("neo4j")]
             public void ShouldErrorIfDuplicateKey(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&name=mostly_white");
-                var exception = Record.Exception(() => raw.ParseRoutingContext());
+                var exception = Record.Exception(() => raw.ParseRoutingContext(DefaultBoltPort));
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Duplicated query parameters with key 'name'");
+            }
+
+            [Theory]            
+            [InlineData("neo4j", "localhost:1234",      "localhost:1234")]
+            [InlineData("neo4j", "g.example.com",       "g.example.com:7687")]
+            [InlineData("neo4j", "203.0.113.254",       "203.0.113.254:7687")]
+            [InlineData("neo4j", "[2001:DB8::]",        "[2001:db8::]:7687")]
+            [InlineData("neo4j", "localhost", "localhost:7687")]
+            public void ShouldContainAddressContext(string scheme, string address, string expectedAddress)
+            {
+                var raw = new Uri($"{scheme}://{address}");
+                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
+
+                routingContext["address"].Should().Be(expectedAddress);
             }
         }
 
