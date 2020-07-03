@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [InlineData("V4")]
         public async Task SendRoutingContextToServer(string boltVersion)
         {
-            using (BoltStubServer.Start($"{boltVersion}/get_routing_table_with_context", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/get_routing_table_with_context", 9010))
             {
                 var uri = new Uri("neo4j://127.0.0.1:9010/?policy=my_policy&region=china");
                 using (var driver = GraphDatabase.Driver(uri, SetupConfig))
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [InlineData("V4")]
         public async Task InvokeProcedureGetRoutingTableWhenServerVersionPermits(string boltVersion)
         {
-            using (BoltStubServer.Start($"{boltVersion}/get_routing_table", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/get_routing_table", 9010))
             {
                 var uri = new Uri("neo4j://127.0.0.1:9010");
                 using (var driver = GraphDatabase.Driver(uri, SetupConfig))
@@ -96,9 +96,9 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [InlineData("V4")]
         public async Task ShouldVerifyConnectivity(string boltVersion)
         {
-            using (BoltStubServer.Start($"{boltVersion}/verify_connectivity", 9001))
+            using (BoltStubServer.Start($"{boltVersion}/verify_connectivity", 9010))
             {
-                using (var driver = GraphDatabase.Driver("neo4j://localhost:9001", AuthTokens.None, SetupConfig))
+                using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9010", AuthTokens.None, SetupConfig))
                 {
                     await driver.VerifyConnectivityAsync();
                 }
