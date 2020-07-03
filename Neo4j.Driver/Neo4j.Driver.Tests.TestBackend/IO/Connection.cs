@@ -25,11 +25,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public NetworkStream ConnectionStream { get; set; }
 
-        public Connection(string address, int port)
+        public Connection(string address, uint port)
         {
             Trace.WriteLine("Creating Server");
             IPAddress localAddr = IPAddress.Parse(address);
-            Server = new TcpListener(localAddr, port);
+            Server = new TcpListener(localAddr, (int)port);
         }
 
         public async Task Open()

@@ -1,12 +1,19 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Reflection;
 using System.Threading.Tasks;
+
 
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
     public class Program
     {
+        private static IPAddress Address = null;
+        private static uint Port = 0;
+        
         static async Task Main(string[] args)
         {
             ConsoleTraceListener consoleTraceListener = new ConsoleTraceListener();
@@ -15,13 +22,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             try
             {
-                //TODO... arg error checking required.
+                
+                ArgumentsValidation(args);
 
-                Trace.WriteLine($"Starting NutKitDotNet on {args[0]}:{args[1]}");
-                var address = args[0];
-                var port = Convert.ToInt32(args[1]);
-
-                using var connection = new Connection(address, port);
+                using var connection = new Connection(Address.ToString(), Port);
                 Controller controller = new Controller(connection);
                 await controller.Process().ConfigureAwait(false);
             }
@@ -37,6 +41,26 @@ namespace Neo4j.Driver.Tests.TestBackend
                 consoleTraceListener.Close();
                 Trace.Close();
             }
+        }
+
+        private static void ArgumentsValidation(string[] args)
+        {
+            if (args.Length != 2)
+            {
+                throw new IOException($"Incorrect number of arguments passed in. Expecting Address Port, but got {args.Length} arguments");
+            }
+            
+            if(!uint.TryParse(args[1], out Port))
+            {
+                throw new IOException($"Invalid port passed in parameter 2.  Should be unsigned integer but was: {args[1]}.");
+            }
+
+            if(!IPAddress.TryParse(args[0], out Address))
+            {
+                throw new IOException($"Invalid IPAddress passed in parameter 1. {args[0]}");
+            }
+
+            Trace.WriteLine($"Starting NutKitDotNet on {Address}:{Port}");
         }
     }
 }
