@@ -22,25 +22,18 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            try
-            {
-                var transaction = ((SessionReadTransaction)ObjManager.GetObject(data.txId)).Transaction;
+            var transaction = ((SessionReadTransaction)ObjManager.GetObject(data.txId)).Transaction;
+
+            IResultCursor cursor = await transaction.RunAsync(data.cypher, data.parameters);
                 
-                IResultCursor cursor = await transaction.RunAsync(data.cypher, data.parameters);
-                
-                var result = new Result() { Results = cursor };
-                ObjManager.AddProtocolObject(result);
-                ResultId = result.uniqueId;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to Process TransactionRun protocol object, failed with - {ex.Message}");
-            }
+            var result = new Result() { Results = cursor };
+            ObjManager.AddProtocolObject(result);
+            ResultId = result.uniqueId;
         }
 
-        public override string Response()
+        public override string Respond()
         {   
-            return ((Result)ObjManager.GetObject(ResultId)).Response();
+            return ((Result)ObjManager.GetObject(ResultId)).Respond();
         }
     }
 }

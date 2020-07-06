@@ -22,14 +22,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             try
             {
-                
+
                 ArgumentsValidation(args);
 
                 using var connection = new Connection(Address.ToString(), Port);
                 Controller controller = new Controller(connection);
                 await controller.Process().ConfigureAwait(false);
             }
-            catch(Exception ex)
+            catch(System.Exception ex)
             {
                 Trace.WriteLine(ex.Message);
                 Trace.WriteLine($"Exception Details: \n {ex.StackTrace}");
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 throw new IOException($"Invalid IPAddress passed in parameter 1. {args[0]}");
             }
 
-            Trace.WriteLine($"Starting NutKitDotNet on {Address}:{Port}");
+            Trace.WriteLine($"Starting TestBackend on {Address}:{Port}");
         }
     }
 }

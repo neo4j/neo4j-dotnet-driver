@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -50,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
 
             if (newObject is null)
-                throw new System.Exception("Trying to create a none supported object in the ProtocolObjectFactory");
+                throw new Exception($"Trying to create a none supported object in the ProtocolObjectFactory of type {objectType}");
 
             newObject.SetObjectManager(ObjManager);
             ObjManager.AddProtocolObject(newObject);

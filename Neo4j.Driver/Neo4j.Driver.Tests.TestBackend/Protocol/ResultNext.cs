@@ -19,23 +19,15 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            try
-            {
+            var results = ((Result)ObjManager.GetObject(data.resultId)).Results;
 
-                var results = ((Result)ObjManager.GetObject(data.resultId)).Results;
-
-                if (await results.FetchAsync().ConfigureAwait(false))
-                    Records = results.Current;
-                else
-                    Records = null;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to Process NewDriver protocol object, failed with - {ex.Message}");
-            }
+            if (await results.FetchAsync().ConfigureAwait(false))
+                Records = results.Current;
+            else
+                Records = null;            
         }
 
-        public override string Response()
+        public override string Respond()
         {
             if (!(Records is null))
             {

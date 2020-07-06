@@ -21,18 +21,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            try
-            {
-                //Currently does nothing
-                await AysncVoidReturn();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to Process TransactionRun protocol object, failed with - {ex.Message}");
-            }
+            //Currently does nothing
+            await AysncVoidReturn();
         }
 
-        public override string Response()
+        public override string Respond()
         {
             return new Response("Result", uniqueId).Encode();
         }

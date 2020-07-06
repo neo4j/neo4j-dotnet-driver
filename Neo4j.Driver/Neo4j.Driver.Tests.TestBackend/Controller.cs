@@ -45,25 +45,32 @@ namespace Neo4j.Driver.Tests.TestBackend
                     {
                         IProtocolObject protocolObject = null;
                         while ((protocolObject = await requestReader.ParseNextRequest().ConfigureAwait(false)) != null)
-                        { 
+                        {
                             await protocolObject.Process().ConfigureAwait(false);
 
                             await responseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
-                        }                        
+                        }
                     }
-                    catch (Exception ex)
+                    catch(Exception ex)
                     {
-                        Trace.WriteLine($"Exception thrown {ex.Message}\n{ex.StackTrace}");             
-                        //TODO: Maybe return errors to frontend from here, both backend and driver.
+                        Trace.WriteLine($"Exception thrown {ex.Message}\n{ex.StackTrace}");
+                        
+                        await responseWriter.WriteResponseAsync(ExceptionExtensions.GenerateExceptionResponse(ex));
+                    }                    
+                    finally
+                    {
+                        Trace.WriteLine("Closing Connection");
+                        Connection.Close();
                     }
-
-                    Trace.WriteLine("Closing Connection");
-                    Connection.Close();
                 }                
             }
             catch(SocketException ex)
             {
                 Trace.WriteLine($"Socket exception detected: {ex.Message}");
+            }
+            catch(Exception ex)
+            {
+                Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
             }
             finally
             {

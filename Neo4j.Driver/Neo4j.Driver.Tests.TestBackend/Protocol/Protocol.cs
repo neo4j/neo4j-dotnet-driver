@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests.TestBackend
            return JsonSerializer.Serialize<object>(this); 
         }
 
-        public virtual string Response()
+        public virtual string Respond()
         {
             return Encode();
         }
