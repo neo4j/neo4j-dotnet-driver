@@ -36,7 +36,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             Trace.WriteLine("Creating Server");
             IPAddress localAddr = IPAddress.Parse(address);
             Server = new TcpListener(localAddr, (int)port);   
-            Server.
             StartServer();
         }
 
