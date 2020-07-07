@@ -10,15 +10,13 @@ namespace Neo4j.Driver.Tests.TestBackend
         private IConnection Connection { get; }
         private Reader ConnectionReader { get; set; }
         private Writer ConnectionWriter { get; set; }
-        private ProtocolObjectFactory ProtocolFactory { get; set; }
-        private ProtocolObjectManager ObjManager { get; set; } = new ProtocolObjectManager();       
-        
+        private ProtocolObjectManager ObjManager { get; set; } = new ProtocolObjectManager();          
 
         public Controller(IConnection conn)
         {
             Trace.WriteLine("Controller initialising");
-            Connection = conn;            
-            ProtocolFactory = new ProtocolObjectFactory(ObjManager);
+            Connection = conn;
+            ProtocolObjectFactory.ObjManager = ObjManager;
         }
 
         public async Task Process()
@@ -36,7 +34,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                     Trace.WriteLine("Connection open");
 
-                    RequestReader requestReader = new RequestReader(ConnectionReader, ProtocolFactory);
+                    RequestReader requestReader = new RequestReader(ConnectionReader);
                     ResponseWriter responseWriter = new ResponseWriter(ConnectionWriter);
 
                     Trace.WriteLine("Starting to listen for requests");
@@ -55,7 +53,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     {
                         Trace.WriteLine($"Exception thrown {ex.Message}\n{ex.StackTrace}");
                         
-                        await responseWriter.WriteResponseAsync(ExceptionExtensions.GenerateExceptionResponse(ex));
+                        await responseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                     }                    
                     finally
                     {

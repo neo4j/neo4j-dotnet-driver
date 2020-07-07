@@ -14,8 +14,8 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
 
             for (int i = 0; i < count; i++)
             {
-                var objectFactory = new ProtocolObjectFactory(objManager);
-                var newObject = objectFactory.CreateObject(Protocol.Types.NewDriver);
+                ProtocolObjectFactory.ObjManager = objManager;
+                var newObject = ProtocolObjectFactory.CreateObject(Protocol.Types.NewDriver);
 
                 newObject.Should().BeOfType<NewDriver>();
                 var newDriver = (NewDriver)newObject;
@@ -30,11 +30,11 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
         {   
             const int count = 2;
             var objManager = new ProtocolObjectManager();
-            var objectFactory = new ProtocolObjectFactory(objManager);
+            ProtocolObjectFactory.ObjManager = objManager;
 
             for (int i = 0; i < count; i++)
             {  
-                var newObject = objectFactory.CreateObject(Protocol.Types.NewSession);
+                var newObject = ProtocolObjectFactory.CreateObject(Protocol.Types.NewSession);
 
                 newObject.Should().BeOfType<NewSession>();
                 var newSession = (NewSession)newObject;
@@ -47,16 +47,16 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
         [Fact]
         public void ShouldCreateAuthorizationTokenNoThrow()
         {
-            var objectFactory = new ProtocolObjectFactory(new ProtocolObjectManager());
-            var newObject = objectFactory.CreateObject(Protocol.Types.AuthorizationToken);
+            ProtocolObjectFactory.ObjManager = new ProtocolObjectManager();
+            var newObject = ProtocolObjectFactory.CreateObject(Protocol.Types.AuthorizationToken);
             newObject.Should().BeOfType<AuthorizationToken>();
         }
 
         [Fact]
         public void ShouldCreateSessionRunNoThrow()
         {
-            var objectFactory = new ProtocolObjectFactory(new ProtocolObjectManager());
-            var newObject = objectFactory.CreateObject(Protocol.Types.SessionRun);
+            ProtocolObjectFactory.ObjManager = new ProtocolObjectManager();
+            var newObject = ProtocolObjectFactory.CreateObject(Protocol.Types.SessionRun);
             newObject.Should().BeOfType<SessionRun>();
         }
 

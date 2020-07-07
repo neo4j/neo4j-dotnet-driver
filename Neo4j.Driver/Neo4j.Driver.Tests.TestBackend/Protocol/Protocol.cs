@@ -20,11 +20,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             DriverClose,
             SessionClose,
             ResultNext,
+            RetryablePositive,
+            RetryableNegative,
+            ProtocolException,
 
             NumTypes
         }
 
-        private static readonly Dictionary<Types, string> TypeNames = 
+        private static readonly Dictionary<Types, string> TypeNames =
                     new Dictionary<Types, string> { { Types.NewDriver, "NewDriver" },
                                                     { Types.NewSession, "NewSession" },
                                                     { Types.AuthorizationToken, "AuthorizationToken" },
@@ -34,7 +37,10 @@ namespace Neo4j.Driver.Tests.TestBackend
                                                     { Types.SessionReadTransaction, "SessionReadTransaction" },
                                                     { Types.DriverClose, "DriverClose" },
                                                     { Types.SessionClose, "SessionClose" },
-                                                    { Types.ResultNext, "ResultNext" }};
+                                                    { Types.ResultNext, "ResultNext" },
+                                                    { Types.RetryablePositive, "RetryablePositive" },
+                                                    { Types.RetryableNegative, "RetryableNegative" },
+                                                    { Types.ProtocolException, "ProtocolException" } };
 
         public static string Type(Types t) { return TypeNames[t]; }
         public static Types Type(string t) { return TypeNames.First(x => x.Value == t).Key; }

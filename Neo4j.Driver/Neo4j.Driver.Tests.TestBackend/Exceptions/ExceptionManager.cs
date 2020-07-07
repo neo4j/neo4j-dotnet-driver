@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    public static class ExceptionExtensions
+    internal static class ExceptionManager
     {
         private static Dictionary<Type, string> TypeMap { get; set; } = new Dictionary<Type, string>()
         {
@@ -24,10 +25,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(FatalDiscoveryException),          "FatalDiscoveryError" },
             { typeof(ResultConsumedException),          "ResultConsumedError" }
         };
+             
 
         internal static Response GenerateExceptionResponse(Exception ex)
-        {   
-            return new Response(TypeMap[ex.GetType()], new { msg = ex.Message } );
+        {
+            ProtocolException newError = (ProtocolException)ProtocolObjectFactory.CreateObject(Protocol.Types.ProtocolException);
+            newError.ExceptionObj = ex;
+
+            return new Response(TypeMap[ex.GetType()], new { id = newError.uniqueId, msg = ex.Message } );
         }
     }    
 }

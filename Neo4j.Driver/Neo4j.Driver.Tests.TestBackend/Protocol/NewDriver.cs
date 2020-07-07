@@ -25,8 +25,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             Driver = GraphDatabase.Driver(data.uri, authToken);
             await AysncVoidReturn();
-
-            throw new TransientException("Woah there steady", "again");
         }
 
         public override string Respond()

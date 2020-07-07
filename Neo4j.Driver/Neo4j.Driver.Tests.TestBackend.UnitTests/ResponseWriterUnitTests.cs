@@ -26,8 +26,8 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
             var moqWriter = new Mock<Writer>(moqStream.Object);
 
             var responseWriter = new ResponseWriter(moqWriter.Object);
-            var objFactory = new ProtocolObjectFactory(new ProtocolObjectManager());
-            IProtocolObject protocolObject = objFactory.CreateObject(objectType);
+            ProtocolObjectFactory.ObjManager = new ProtocolObjectManager();
+            IProtocolObject protocolObject = ProtocolObjectFactory.CreateObject(objectType);
 
             var resultString = await responseWriter.WriteResponseAsync(protocolObject);
 
