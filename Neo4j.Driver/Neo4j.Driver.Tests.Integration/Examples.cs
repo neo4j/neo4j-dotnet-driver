@@ -449,7 +449,7 @@ namespace Neo4j.Driver.Examples
                 }
             }
 
-            // tag::hello-world[]
+
             public class HelloWorldExample : IDisposable
             {
                 private readonly IDriver _driver;
@@ -488,8 +488,6 @@ namespace Neo4j.Driver.Examples
                     }
                 }
             }
-
-            // end::hello-world[]
         }
 
         public class ReadWriteTransactionExample : BaseExample

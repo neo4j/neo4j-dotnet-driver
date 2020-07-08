@@ -9,61 +9,43 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         private Reader InputReader { get; }
         private bool MessageOpen { get; set; }
-        private ProtocolObjectFactory ProtocolFactory { get; set; }
-
         private const string OpenTag = "#request begin";
         private const string CloseTag = "#request end";
 
         public string CurrentObjectData { get; set; }
 
-        public RequestReader(Reader reader, ProtocolObjectFactory factory)
+        public RequestReader(Reader reader)
         {
-            InputReader = reader;
-            ProtocolFactory = factory;
+            InputReader = reader;            
         }
 
         public async Task<IProtocolObject> ParseNextRequest()
         {
+            Trace.WriteLine("Listening for request");
+
             CurrentObjectData = string.Empty;
 
             while (await ParseObjectData().ConfigureAwait(false)) { }
+
+            if(string.IsNullOrEmpty(CurrentObjectData))
+            {
+                return null;
+            }
 
             Trace.WriteLine($"\nRequest recieved: {CurrentObjectData}");
             return CreateObjectFromData();
         }
 
-        /*
-        private async Task<bool> ParseObjectData()
-        {
-            var input = await InputReader.Read().ConfigureAwait(false);
-            
-            if (string.IsNullOrEmpty(input))
-                return false;
-
-            input = input.TrimStart();
-            input = input.TrimEnd();
-
-            if (IsOpenTag(input))
-                return true;
-
-            if (IsCloseTag(input))
-                return false;
-
-            CurrentObjectData += input;
-            return true;
-        }
-        */
-
         private async Task<bool> ParseObjectData()
         {
             var input = await InputReader.Read().ConfigureAwait(false) ?? "";
 
+            if (string.IsNullOrEmpty(input))
+                return false;
+
             input = input.TrimStart();
             input = input.TrimEnd();
             
-            if (string.IsNullOrEmpty(input))
-                return true;
-
             if (IsOpenTag(input))
                 return true;
 
@@ -108,7 +90,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public IProtocolObject CreateObjectFromData()
         {
-            return ProtocolFactory.CreateObject(GetObjectType(), CurrentObjectData);
+            return ProtocolObjectFactory.CreateObject(GetObjectType(), CurrentObjectData);
         }
 
         private string GetObjectTypeName()

@@ -1,18 +1,15 @@
 ﻿using System.Text.Json;
+using System;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class ProtocolObjectFactory
+    internal static class ProtocolObjectFactory
     {
         
-        private ProtocolObjectManager ObjManager { get; set; }
+        public static ProtocolObjectManager ObjManager { get; set; }
+       
 
-        public ProtocolObjectFactory(ProtocolObjectManager manager)
-        {
-            ObjManager = manager;
-        }
-
-        public IProtocolObject CreateObject(Protocol.Types objectType, string jsonString = null)
+        public static IProtocolObject CreateObject(Protocol.Types objectType, string jsonString = null)
         {
             IProtocolObject newObject = null;
             switch (objectType)
@@ -33,7 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     newObject = string.IsNullOrEmpty(jsonString) ? new TransactionRun() : JsonSerializer.Deserialize<TransactionRun>(jsonString);
                     break;
                 case Protocol.Types.Result:
-                    //not used in requests so should not be produced by factory.
+                    newObject = string.IsNullOrEmpty(jsonString) ? new Result() : JsonSerializer.Deserialize<Result>(jsonString);
                     break;
                 case Protocol.Types.SessionReadTransaction:
                     newObject = string.IsNullOrEmpty(jsonString) ? new SessionReadTransaction() : JsonSerializer.Deserialize<SessionReadTransaction>(jsonString);
@@ -47,10 +44,19 @@ namespace Neo4j.Driver.Tests.TestBackend
                 case Protocol.Types.ResultNext:
                     newObject = string.IsNullOrEmpty(jsonString) ? new ResultNext() : JsonSerializer.Deserialize<ResultNext>(jsonString);
                     break;
+                case Protocol.Types.RetryablePositive:
+                    newObject = string.IsNullOrEmpty(jsonString) ? new RetryablePositive() : JsonSerializer.Deserialize<RetryablePositive>(jsonString);
+                    break;
+                case Protocol.Types.RetryableNegative:
+                    newObject = string.IsNullOrEmpty(jsonString) ? new RetryableNegative() : JsonSerializer.Deserialize<RetryableNegative>(jsonString);
+                    break;
+                case Protocol.Types.ProtocolException:
+                    newObject = string.IsNullOrEmpty(jsonString) ? new ProtocolException() : JsonSerializer.Deserialize<ProtocolException>(jsonString);
+                    break;
             }
 
             if (newObject is null)
-                throw new System.Exception("Trying to create a none supported object in the ProtocolObjectFactory");
+                throw new Exception($"Trying to create a none supported object in the ProtocolObjectFactory of type {objectType}");
 
             newObject.SetObjectManager(ObjManager);
             ObjManager.AddProtocolObject(newObject);

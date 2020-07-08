@@ -14,19 +14,12 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
         public override async Task Process()
-        {
-            try
-            {
-                IAsyncSession session = ((NewSession)ObjManager.GetObject(data.sessionId)).Session;
-                await session.CloseAsync();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to Process NewDriver protocol object, failed with - {ex.Message}");
-            }
+        {   
+            IAsyncSession session = ((NewSession)ObjManager.GetObject(data.sessionId)).Session;
+            await session.CloseAsync();
         }
 
-        public override string Response()
+        public override string Respond()
         {  
             return new Response("Session", uniqueId).Encode();
         }

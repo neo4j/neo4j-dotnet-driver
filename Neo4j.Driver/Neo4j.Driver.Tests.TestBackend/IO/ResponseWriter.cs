@@ -18,18 +18,20 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public async Task<string> WriteResponseAsync(IProtocolObject protocolObject)
         {
-            var response = protocolObject.Response();
+            return await WriteResponseAsync(protocolObject.Respond());
+        }
+
+        public async Task<string> WriteResponseAsync(Response response)
+        {
+            return await WriteResponseAsync(response.Encode());
+        }
+
+        private async Task<string> WriteResponseAsync(string response)
+        {
             Trace.WriteLine($"Sending response: {response}\n");
 
             var message = EncapsulateString(response);
             await WriterTarget.WriteAsync(message).ConfigureAwait(false);
-            return message;
-        }
-
-        public string WriteResponse(IProtocolObject protocolObject)
-        {
-            var message = EncapsulateString(protocolObject.Response());
-            WriterTarget.Write(message);
             return message;
         }
 

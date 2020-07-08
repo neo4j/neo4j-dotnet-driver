@@ -40,8 +40,8 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
                     memStream.Seek(0, SeekOrigin.Begin);
 
                     var reader = new Reader(memStream);
-                    var objFactory = new ProtocolObjectFactory(new ProtocolObjectManager());
-                    RequestReader parser = new RequestReader(reader, objFactory);
+                    ProtocolObjectFactory.ObjManager = new ProtocolObjectManager();
+                    RequestReader parser = new RequestReader(reader);
 
                     await parser.ParseNextRequest();
 
@@ -102,8 +102,8 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
             var moqMemoryStream = new Mock<MemoryStream>();
             moqMemoryStream.Setup(x => x.CanRead).Returns(true);
             var moqReader = new Mock<Reader>(moqMemoryStream.Object);
-            var objFactory = new ProtocolObjectFactory(new ProtocolObjectManager());
-            var requestReader = new RequestReader(moqReader.Object, objFactory);
+            ProtocolObjectFactory.ObjManager = new ProtocolObjectManager();
+            var requestReader = new RequestReader(moqReader.Object);
 
             requestReader.CurrentObjectData = jsonString;
             var createdObject = requestReader.CreateObjectFromData();            

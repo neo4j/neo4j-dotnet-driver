@@ -22,26 +22,19 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            try
-            {
-                var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
+            var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
 
-                IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, data.parameters).ConfigureAwait(false);
-                
-                var result = new Result() { Results = cursor };
-                ObjManager.AddProtocolObject(result);
-                ResultId = result.uniqueId;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to Process SessionRun protocol object, failed with - {ex.Message}");
-            }
+            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, data.parameters).ConfigureAwait(false);
 
+            var result = (Result)ProtocolObjectFactory.CreateObject(Protocol.Types.Result);
+            result.Results = cursor;
+            
+            ResultId = result.uniqueId;
         }
 
-        public override string Response()
+        public override string Respond()
         {   
-            return ((Result)ObjManager.GetObject(ResultId)).Response();
+            return ((Result)ObjManager.GetObject(ResultId)).Respond();
         }
     }
 }

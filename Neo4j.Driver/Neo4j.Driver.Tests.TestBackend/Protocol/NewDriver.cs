@@ -2,6 +2,7 @@
 using Neo4j.Driver;
 using System.Threading.Tasks;
 using System.Text.Json.Serialization;
+using System.IO;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -18,22 +19,15 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
         public override async Task Process()
-        {
-            try
-            {
-                var authTokenData = data.authorizationToken.data;
-                var authToken = AuthTokens.Custom(authTokenData.principal, authTokenData.credentials, authTokenData.realm, authTokenData.scheme);
+        {   
+            var authTokenData = data.authorizationToken.data;
+            var authToken = AuthTokens.Custom(authTokenData.principal, authTokenData.credentials, authTokenData.realm, authTokenData.scheme);
 
-                Driver = GraphDatabase.Driver(data.uri, authToken);
-                await AysncVoidReturn();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to Process NewDriver protocol object, failed with - {ex.Message}");
-            }
+            Driver = GraphDatabase.Driver(data.uri, authToken);
+            await AysncVoidReturn();
         }
 
-        public override string Response()
+        public override string Respond()
         {
             return new Response("Driver", uniqueId).Encode();
         }
