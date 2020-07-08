@@ -23,10 +23,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 Transaction = t;
                 await AysncVoidReturn();
-            });
-
-            //TODO.... it looks like the go backend  processes further messages to handle a retryable state
-            //then returns a RetryableDone in amoungst the other returns....talk to peter.            
+            });        
         }
 
         public override string Respond()
