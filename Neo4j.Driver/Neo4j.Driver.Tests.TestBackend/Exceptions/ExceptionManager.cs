@@ -27,12 +27,12 @@ namespace Neo4j.Driver.Tests.TestBackend
         };
              
 
-        internal static Response GenerateExceptionResponse(Exception ex)
+        internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
         {
             ProtocolException newError = (ProtocolException)ProtocolObjectFactory.CreateObject(Protocol.Types.ProtocolException);
             newError.ExceptionObj = ex;
 
-            return new Response(TypeMap[ex.GetType()], new { id = newError.uniqueId, msg = ex.Message } );
+            return new ProtocolResponse(TypeMap[ex.GetType()], new { id = newError.uniqueId, msg = ex.Message } );
         }
     }    
 }

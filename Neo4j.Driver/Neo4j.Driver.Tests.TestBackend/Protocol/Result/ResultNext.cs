@@ -33,11 +33,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 //Generate list of ordered records
                 var valuesList = Records.Keys.Select(v => NativeToCypher.Convert(Records[v]));
-                return new Response("Record", new { values = valuesList }).Encode();
+                return new ProtocolResponse("Record", new { values = valuesList }).Encode();
             }
             else
             {
-                return new Response("NullRecord", null).Encode();
+                return new ProtocolResponse("NullRecord", null).Encode();
             }
         }
     }

@@ -35,6 +35,12 @@ namespace Neo4j.Driver.Tests.TestBackend
                 case Protocol.Types.SessionReadTransaction:
                     newObject = string.IsNullOrEmpty(jsonString) ? new SessionReadTransaction() : JsonSerializer.Deserialize<SessionReadTransaction>(jsonString);
                     break;
+                case Protocol.Types.SessionWriteTransaction:
+                    newObject = string.IsNullOrEmpty(jsonString) ? new SessionWriteTransaction() : JsonSerializer.Deserialize<SessionWriteTransaction>(jsonString);
+                    break;
+                case Protocol.Types.SessionBeginTransaction:
+                    newObject = string.IsNullOrEmpty(jsonString) ? new SessionBeginTransaction() : JsonSerializer.Deserialize<SessionBeginTransaction>(jsonString);
+                    break;
                 case Protocol.Types.DriverClose:
                     newObject = string.IsNullOrEmpty(jsonString) ? new DriverClose() : JsonSerializer.Deserialize<DriverClose>(jsonString);
                     break;

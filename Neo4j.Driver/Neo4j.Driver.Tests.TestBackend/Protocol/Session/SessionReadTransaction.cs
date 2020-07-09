@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new Response("RetryableTry", uniqueId).Encode();
+            return new ProtocolResponse("RetryableTry", uniqueId).Encode();
         }
     }
 }

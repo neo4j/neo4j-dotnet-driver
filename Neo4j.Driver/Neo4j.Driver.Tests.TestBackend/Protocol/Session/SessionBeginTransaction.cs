@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new Response("Transaction", uniqueId).Encode();
+            return new ProtocolResponse("Transaction", uniqueId).Encode();
         }
     }
 }

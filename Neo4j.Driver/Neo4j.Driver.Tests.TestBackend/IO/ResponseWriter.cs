@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             return await WriteResponseAsync(protocolObject.Respond());
         }
 
-        public async Task<string> WriteResponseAsync(Response response)
+        public async Task<string> WriteResponseAsync(ProtocolResponse response)
         {
             return await WriteResponseAsync(response.Encode());
         }
