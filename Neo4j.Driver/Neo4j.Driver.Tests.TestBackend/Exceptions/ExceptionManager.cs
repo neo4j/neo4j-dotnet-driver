@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
-using System.Text;
+using System.Diagnostics;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -10,7 +8,6 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         private static Dictionary<Type, string> TypeMap { get; set; } = new Dictionary<Type, string>()
         {
-            { typeof(Exception),                        "BackendError" },
             { typeof(Neo4jException),                   "Neo4jError" },
             { typeof(ClientException),                  "ClientError" },
             { typeof(TransientException),               "DriverError" },        //Should maybe Transient error, talk to Peter or Martin
@@ -28,11 +25,21 @@ namespace Neo4j.Driver.Tests.TestBackend
              
 
         internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
-        {
+        {   
+            string exceptionName;
+            string exceptionMessage = (ex.InnerException != null) ? ex.InnerException.Message : ex.Message;
+
+            if (!TypeMap.ContainsKey(ex.GetType()))
+                exceptionName = "BackendError";             //This handles all system exceptions.
+            else
+                exceptionName = TypeMap[ex.GetType()];
+
             ProtocolException newError = (ProtocolException)ProtocolObjectFactory.CreateObject(Protocol.Types.ProtocolException);
             newError.ExceptionObj = ex;
 
-            return new ProtocolResponse(TypeMap[ex.GetType()], new { id = newError.uniqueId, msg = ex.Message } );
+            Trace.WriteLine($"Exception thrown {exceptionMessage}\n{ex.StackTrace}");
+
+            return new ProtocolResponse(exceptionName, new { id = newError.uniqueId, msg = exceptionMessage } );
         }
     }    
 }

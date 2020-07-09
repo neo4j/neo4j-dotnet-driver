@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Linq;
@@ -11,17 +12,18 @@ namespace Neo4j.Driver.Tests.TestBackend
         public enum Types
         {
             NewDriver,
+            DriverClose,
             NewSession,
+            SessionClose,
             AuthorizationToken,
             SessionRun,
             TransactionRun,
             TransactionCommit,
-            Result,
+            TransactionRollback,            
             SessionReadTransaction,
             SessionWriteTransaction,
             SessionBeginTransaction,
-            DriverClose,
-            SessionClose,
+            Result,
             ResultNext,
             RetryablePositive,
             RetryableNegative,
@@ -32,24 +34,38 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         private static readonly Dictionary<Types, string> TypeNames =
                     new Dictionary<Types, string> { { Types.NewDriver, "NewDriver" },
+                                                    { Types.DriverClose, "DriverClose" },
                                                     { Types.NewSession, "NewSession" },
+                                                    { Types.SessionClose, "SessionClose" },
                                                     { Types.AuthorizationToken, "AuthorizationToken" },
                                                     { Types.SessionRun, "SessionRun" },
                                                     { Types.TransactionRun, "TransactionRun" },
                                                     { Types.TransactionCommit, "TransactionCommit" },
-                                                    { Types.Result, "Result" },
+                                                    { Types.TransactionRollback, "TransactionRollback" },
                                                     { Types.SessionReadTransaction, "SessionReadTransaction" },
-                                                    { Types.SessionReadTransaction, "SessionWriteTransaction" },
-                                                    { Types.SessionReadTransaction, "SessionBeginTransaction" },
-                                                    { Types.DriverClose, "DriverClose" },
-                                                    { Types.SessionClose, "SessionClose" },
+                                                    { Types.SessionWriteTransaction, "SessionWriteTransaction" },
+                                                    { Types.SessionBeginTransaction, "SessionBeginTransaction" },
+                                                    { Types.Result, "Result" },
                                                     { Types.ResultNext, "ResultNext" },
                                                     { Types.RetryablePositive, "RetryablePositive" },
                                                     { Types.RetryableNegative, "RetryableNegative" },
                                                     { Types.ProtocolException, "ProtocolException" } };
 
-        public static string Type(Types t) { return TypeNames[t]; }
-        public static Types Type(string t) { return TypeNames.First(x => x.Value == t).Key; }
+        static Protocol()
+        {
+            if (TypeNames.Count != (int)Types.NumTypes) throw new Exception("Failure initialising Protocol Types. Mismatch in enum and dictionary counts.");
+        }
+
+        public static string Type(Types t) 
+        {
+            if (!ValidType(t)) throw new Exception($"Attempting to use an unrecognized type: {t.ToString()}");
+            return TypeNames[t]; 
+        }
+        public static Types Type(string t) 
+        {
+            if (!ValidType(t)) throw new Exception($"Attempting to use an unrecognized type: {t.ToString()}");
+            return TypeNames.First(x => x.Value == t).Key; 
+        }
         public static bool ValidType(string typeName) { return TypeNames.ContainsValue(typeName); }
         public static bool ValidType(Types t) { return TypeNames.ContainsKey(t); }
 
