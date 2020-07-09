@@ -29,6 +29,9 @@ namespace Neo4j.Driver.Tests.TestBackend
                 case Protocol.Types.TransactionRun:
                     newObject = string.IsNullOrEmpty(jsonString) ? new TransactionRun() : JsonSerializer.Deserialize<TransactionRun>(jsonString);
                     break;
+                case Protocol.Types.TransactionCommit:
+                    newObject = string.IsNullOrEmpty(jsonString) ? new TransactionCommit() : JsonSerializer.Deserialize<TransactionCommit>(jsonString);
+                    break;
                 case Protocol.Types.Result:
                     newObject = string.IsNullOrEmpty(jsonString) ? new Result() : JsonSerializer.Deserialize<Result>(jsonString);
                     break;
