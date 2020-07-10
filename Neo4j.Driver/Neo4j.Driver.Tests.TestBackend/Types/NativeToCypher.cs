@@ -9,7 +9,7 @@ namespace Neo4j.Driver.Tests.TestBackend
     internal class CypherObject
     {
         public string name { get; set; }
-        public DataType data { get; set; } = new DataType();
+        public object data { get; set; }
 
         public class DataType
         {
@@ -95,7 +95,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public static CypherObject CypherSimple(string cypherType, object obj)
         {
-            return new CypherObject { name = cypherType, data = { value = obj } };
+            return new CypherObject { name = cypherType, data = new CypherObject.DataType { value = obj } };
         }
 
         public static CypherObject CypherMap(string cypherType, object obj)
@@ -107,7 +107,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 result[pair.Key] = Convert(pair.Value);
             }
 
-            return new CypherObject { name = cypherType, data = { value = result } };
+            return new CypherObject { name = cypherType, data = new CypherObject.DataType{ value = result } };
         }
 
         public static CypherObject CypherList(string cypherType, object obj)
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 result.Add(Convert(item));
             }
 
-            return new CypherObject { name = cypherType, data = { value = result } };
+            return new CypherObject { name = cypherType, data = new CypherObject.DataType { value = result } };
         }
 
         public static CypherObject CypherTODO(string name, object obj)
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 ["props"] = Convert(new Dictionary<string, object>(node.Properties))
             };
 
-            return new CypherObject() { name = "Node", data = { value = cypherNode } };
+            return new CypherObject() { name = "Node",  data = cypherNode };
         }
     }
 }

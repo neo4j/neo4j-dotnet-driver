@@ -2,7 +2,7 @@
     
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class Response
+    internal class ProtocolResponse
     {
         public string name { get; }
         public object data { get; set; }
@@ -12,14 +12,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string id { get; set; }
         }
 
-        public Response(string newName, string newId)
+        public ProtocolResponse(string newName, string newId)
         {
             data = new ResponseType();
             name = newName;
             ((ResponseType)data).id = newId;
         }
 
-        public Response(string newName, object dataType)
+        public ProtocolResponse(string newName, object dataType)
         {
             name = newName;
             data = dataType;

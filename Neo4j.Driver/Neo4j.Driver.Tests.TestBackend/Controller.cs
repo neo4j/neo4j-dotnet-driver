@@ -50,9 +50,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                         }
                     }
                     catch(Exception ex)
-                    {
-                        Trace.WriteLine($"Exception thrown {ex.Message}\n{ex.StackTrace}");
-                        
+                    {   
                         await responseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                     }                    
                     finally
