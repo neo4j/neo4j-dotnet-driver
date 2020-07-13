@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices.ComTypes;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
@@ -25,13 +26,6 @@ namespace Neo4j.Driver
     /// </summary>
     public class Query
     {
-        private static IDictionary<string, object> NoParameter { get; }
-
-        static Query()
-        {
-            NoParameter = new Dictionary<string, object>();
-        }
-
         /// <summary>
         /// Gets the query's text.
         /// </summary>
@@ -68,7 +62,7 @@ namespace Neo4j.Driver
         public Query(string text, IDictionary<string, object> parameters)
         {
             Text = text;
-            Parameters = parameters ?? NoParameter;
+            Parameters = parameters ?? new Dictionary<string, object>();
         }
 
         /// <summary>
