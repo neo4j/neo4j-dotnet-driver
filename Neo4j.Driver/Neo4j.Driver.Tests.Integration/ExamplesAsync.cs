@@ -585,7 +585,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     _driver?.Dispose();
                 }
             }
-            // end::hello-world
+            // end::hello-world[]
         }
         
 
