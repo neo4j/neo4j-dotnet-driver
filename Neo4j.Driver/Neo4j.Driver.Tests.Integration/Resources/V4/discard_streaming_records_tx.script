@@ -6,8 +6,8 @@
 C: BEGIN { "mode": "r" }
    RUN "UNWIND [1,2,3,4] AS n RETURN n" {} {}
 S: SUCCESS {}
-   SUCCESS {"t_first": 110, "fields": ["n"], "qid": 0}
-C: DISCARD {"qid": 0, "n": -1}
+   SUCCESS {"t_first": 110, "fields": ["n"]}
+C: DISCARD {"n": -1}
 S: SUCCESS {"type": "r", "t_last": 3, "db": "neo4j"}
 C: COMMIT
 S: SUCCESS {"bookmark": "e57085e2-727f-43f3-b632-7ec57978806e:117"}
