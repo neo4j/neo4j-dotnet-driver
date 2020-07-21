@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     }
                     catch (IOException ex)
                     {
-                        Trace.WriteLine($"Socket exception detected: {ex.Message}");
+                        Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
                     }
                     catch (Exception ex)
                     {   
