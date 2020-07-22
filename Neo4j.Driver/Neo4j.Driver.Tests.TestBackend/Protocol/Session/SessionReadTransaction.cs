@@ -9,26 +9,33 @@ namespace Neo4j.Driver.Tests.TestBackend
     {   
         public SessionReadTransactionType data { get; set; } = new SessionReadTransactionType();
         [JsonIgnore]
-        public IAsyncTransaction Transaction { get; set; }
+        private string ResultId { get; set; }
+        //[JsonIgnore]
+        //public IAsyncTransaction Transaction { get; set; }    //TODO: Remove as just here for notes as I figure out the retry system.
 
         public class SessionReadTransactionType
         {
-            public string sessionId { get; set; }            
+            public string sessionId { get; set; }  
+            public string query { get; set; }
         }
 
         public override async Task Process()
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
-            await sessionContainer.Session.ReadTransactionAsync(async t =>
-            {
-                Transaction = t;
-                await AysncVoidReturn();
+            await sessionContainer.Session.ReadTransactionAsync(async tx =>
+            {   
+                IResultCursor cursor = await tx.RunAsync(data.query);
+
+                var result = new Result() { Results = cursor };
+                ObjManager.AddProtocolObject(result);
+                ResultId = result.uniqueId;
             });        
         }
 
         public override string Respond()
         {
-            return new ProtocolResponse("RetryableTry", uniqueId).Encode();
+            //return new ProtocolResponse("RetryableTry", uniqueId).Encode(); //TODO: remove as just here for notes as I figure out the retry system.
+            return ((Result)ObjManager.GetObject(ResultId)).Respond();
         }
     }
 }
