@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Net.Sockets;
+using System.IO;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {  
@@ -49,7 +49,11 @@ namespace Neo4j.Driver.Tests.TestBackend
                             await responseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
                         }
                     }
-                    catch(Exception ex)
+                    catch (IOException ex)
+                    {
+                        Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
+                    }
+                    catch (Exception ex)
                     {   
                         await responseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                     }                    
@@ -59,11 +63,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                         Connection.Close();
                     }
                 }                
-            }
-            catch(SocketException ex)
-            {
-                Trace.WriteLine($"Socket exception detected: {ex.Message}");
-            }
+            }            
             catch(Exception ex)
             {
                 Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");

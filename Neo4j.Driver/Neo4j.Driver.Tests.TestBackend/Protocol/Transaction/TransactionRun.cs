@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            var transaction = ((SessionReadTransaction)ObjManager.GetObject(data.txId)).Transaction;
+            var transaction = ((SessionBeginTransaction)ObjManager.GetObject(data.txId)).Transaction;
 
             IResultCursor cursor = await transaction.RunAsync(data.cypher, data.parameters);
                 
