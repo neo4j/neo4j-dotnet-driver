@@ -720,7 +720,7 @@ namespace Neo4j.Driver.Examples
                 {
                     await DropDatabase(Driver, "examples");
                 }
-                catch (FatalDiscoveryException ex)
+                catch (FatalDiscoveryException)
                 {
                     // Its a new server instance, the database didn't exist yet
                 }
