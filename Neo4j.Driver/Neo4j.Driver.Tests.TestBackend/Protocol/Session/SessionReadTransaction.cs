@@ -16,7 +16,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public class SessionReadTransactionType
         {
             public string sessionId { get; set; }  
-            public string query { get; set; }
+            public string cypher { get; set; }
         }
 
         public override async Task Process()
@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
             await sessionContainer.Session.ReadTransactionAsync(async tx =>
             {   
-                IResultCursor cursor = await tx.RunAsync(data.query);
+                IResultCursor cursor = await tx.RunAsync(data.cypher);
 
                 var result = new Result() { Results = cursor };
                 ObjManager.AddProtocolObject(result);
