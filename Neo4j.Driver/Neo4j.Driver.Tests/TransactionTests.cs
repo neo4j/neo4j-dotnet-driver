@@ -166,28 +166,28 @@ namespace Neo4j.Driver.Tests
         public class MarkToClosedMethod
         {
             [Fact]
-            public void ShouldNotEnqueueMoreMessagesAfterMarkToClosed()
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosed()
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
 
-                tx.MarkToClose();
+                await tx.MarkToClose();
 
                 protocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }
 
             [Fact]
-            public void ShouldThrowExceptionToRunAfterMarkToClosed()
+            public async Task ShouldThrowExceptionToRunAfterMarkToClosed()
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
 
-                tx.MarkToClose();
+                await tx.MarkToClose();
 
                 tx.Awaiting(t => t.RunAsync("should not run")).Should().Throw<ClientException>().Which.Message.Should()
                     .StartWith("Cannot run query in this transaction");
@@ -196,14 +196,14 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldNotEnqueueMoreMessagesAfterMarkToClosedInCommitAsync()
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInCommitAsync()
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
 
-                tx.MarkToClose();
+                await tx.MarkToClose();
                 tx.Awaiting(t => t.CommitAsync()).Should().Throw<ClientException>().Which.Message.Should()
                     .Contain("Cannot commit this transaction");
                 protocol.Verify(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), tx), Times.Never);
@@ -211,14 +211,14 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public void ShouldNotEnqueueMoreMessagesAfterMarkToClosedInRollbackAsync()
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInRollbackAsync()
             {
                 var protocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(protocol.Object);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
 
-                tx.MarkToClose();
+                await tx.MarkToClose();
                 tx.Awaiting(t => t.RollbackAsync()).Should().NotThrow();
                 protocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
