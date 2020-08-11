@@ -51,7 +51,7 @@ namespace Neo4j.Driver.ExamplesAsync
                     // The existing IResult interface implements IEnumerable
                     // and does not play well with asynchronous use cases. The replacement
                     // IResultCursor interface is returned from the RunAsync
-                    // family of methods instead and provides async capable methods. 
+                    // family of methods instead and provides async capable methods.
                     var reader = await session.RunAsync(
                         "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
                         new {id = 0} // Parameters in the query, if any
@@ -528,7 +528,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-        
+
         public class HelloWorldExampleTest : BaseAsyncExample
         {
             public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -587,7 +587,7 @@ namespace Neo4j.Driver.ExamplesAsync
             }
             // end::hello-world[]
         }
-        
+
 
         public class ReadWriteTransactionExample : BaseAsyncExample
         {
