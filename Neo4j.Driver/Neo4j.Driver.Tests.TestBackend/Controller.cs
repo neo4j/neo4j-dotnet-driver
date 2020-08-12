@@ -34,8 +34,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                     Trace.WriteLine("Connection open");
 
-                    RequestReader requestReader = new RequestReader(connectionReader);
-                    ResponseWriter responseWriter = new ResponseWriter(connectionWriter);
+                    var requestReader = new RequestReader(connectionReader);
+                    var responseWriter = new ResponseWriter(connectionWriter);
 
                     Trace.WriteLine("Starting to listen for requests");
 

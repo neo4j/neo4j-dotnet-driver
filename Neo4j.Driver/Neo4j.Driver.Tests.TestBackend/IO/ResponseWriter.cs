@@ -31,10 +31,10 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             Trace.WriteLine($"Sending response: {response}\n");
 
-            WriterTarget.WriteLine(OpenTag);
-            WriterTarget.WriteLine(response);
-            WriterTarget.WriteLine(CloseTag);
-            WriterTarget.Flush();
+            await WriterTarget.WriteLineAsync(OpenTag);
+            await WriterTarget.WriteLineAsync(response);
+            await WriterTarget.WriteLineAsync(CloseTag);
+            await WriterTarget.FlushAsync();
 
             return response;
         }
