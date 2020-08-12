@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend.UnitTests
 {
+/*
     public class ResponseWriterUnitTests
     {
         [Theory]
@@ -34,4 +35,5 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
             resultString.Should().Be("#response begin\n" + protocolObject.Respond() + "\n#response end");
         }
     }
+*/
 }

@@ -5,6 +5,7 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.Tests.TestBackend.UnitTests
 {
+/*
     public class ReaderWriterUnitTests
     {
         [Fact]
@@ -47,7 +48,7 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
             }
         }
     }
-
+*/
 
 
 }
