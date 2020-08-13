@@ -24,10 +24,6 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal interface IChunkReader
     {
-
-        int ReadNextMessages(Stream messageStream);
-
         Task<int> ReadNextMessagesAsync(Stream messageStream);
-
     }
 }

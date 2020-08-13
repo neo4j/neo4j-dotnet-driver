@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,9 +28,36 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal class ChunkReader : IChunkReader
     {
+        private class Chunk
+		{
+            public enum Type
+			{
+                DataChunk = 0,
+                NoopChunk = 1,
+                EmptyChunk = 2
+			}
+
+            public byte[] ChunkData { get; set; }
+            public Type ChunkType { get; set; } 
+
+            public Chunk(byte[] data)
+			{
+                ChunkData = data;
+
+                if (data != null)
+                {
+                    if (data.Length > 0)
+                        ChunkType = Type.DataChunk;
+                    else
+                        ChunkType = Type.NoopChunk;
+                }
+                else
+                    ChunkType = Type.EmptyChunk;
+			}
+        }
+
         private Stream InputStream { get; set; }
         private ILogger Logger { get; set; }
-
         
         private const int ChunkHeaderSize = 2;
 
@@ -39,7 +67,6 @@ namespace Neo4j.Driver.Internal.IO
         {   
         }
 
-
         internal ChunkReader(Stream downStream, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
@@ -48,63 +75,61 @@ namespace Neo4j.Driver.Internal.IO
             InputStream = downStream;
             Logger = logger;
         }
-
         
         private async Task<byte[]> ReadDataOfSize(int requiredSize)
 		{
-            byte[] data = new byte[requiredSize];
+            var data = new byte[requiredSize];
             int readSize = await InputStream.ReadAsync(data, 0, requiredSize).ConfigureAwait(false);
 
             if (readSize == 0)
                 return null;
-            if(readSize != requiredSize)
+            else if (readSize != requiredSize)
                 throw new IOException($"Unexpected end of stream, unable to read required data size");
             
             return data;
 		}
 
-        private async Task<byte[]> ReadChunk()
+        private async Task<Chunk> ReadChunk()
 		{
-            var chunkHeaderData = await ReadDataOfSize(ChunkHeaderSize);
+            var chunkHeader = new Chunk(await ReadDataOfSize(ChunkHeaderSize));
             
-            if (chunkHeaderData != null)    //if it is null there is no more data to read
+            if (chunkHeader.ChunkType == Chunk.Type.DataChunk)    //if it contains data, then we have a chunk to read
             {
-                var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeaderData);
+                var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeader.ChunkData);
 
                 if (chunkSize != 0)
                 {   
-                    var chunkData = await ReadDataOfSize(chunkSize);
+                    var chunk = new Chunk(await ReadDataOfSize(chunkSize));
 
-                    if (chunkData == null)
+                    if (chunk.ChunkType == Chunk.Type.EmptyChunk)
                         throw new IOException("Unexpected end of stream, still have an unterminated message");
 
-                    return chunkData;
+                    return chunk;
                 }
 
-                //return new byte[0];  //TODO Not sure if I should return an empty array or null when it is a zero chunk size (NOOP).
-                //or maybe some kind of open message -> close message system like before.
+                return new Chunk(new byte[0]);  //Create a no-op chunk
             }
              
-            return null;
+            return new Chunk(null); //Create an empty chunk
         }
 
-        private async Task<List<byte[]>> ReadMessage()
+        private async Task<Chunk.Type> ReadMessage(List<byte[]> messageChunkList)
 		{
-            List<byte[]> messageChunkData = new List<byte[]>();
+            Chunk chunk = null;
 
             while(true)
 			{
-                var chunk = await ReadChunk();
+                chunk = await ReadChunk();
 
-                if (chunk != null)      //There was chunk data to read
+                if (chunk.ChunkType == Chunk.Type.DataChunk)      //There was chunk data to read
                 {
-                    messageChunkData.Add(chunk);   //Add the data chunk to the message we are building
+                    messageChunkList.Add(chunk.ChunkData);   //Add the data chunk to the message we are building
                 }
                 else
-                    break;  //Zero chunk size                
+                    break;             
 			}
 
-            return messageChunkData;            
+            return chunk.ChunkType;
 		}
 
         public int ReadNextMessages(Stream outputMessageStream)
@@ -120,20 +145,26 @@ namespace Neo4j.Driver.Internal.IO
 
             while (true)
 			{
-                var messageData = await ReadMessage();
+                var messageData = new List<byte[]>();
+                var chunkType = await ReadMessage(messageData);
 
-                if (messageData.Count > 0)  //There are chunks to construct a message from
+                if (chunkType != Chunk.Type.EmptyChunk)  //There was data of some kind
                 {
-                    messageCount++;   //There were chunks read so we have a message, no count means a NOOP.
-
-                    //Loop through the chunk data writing it out into the message stream
-                    foreach (var element in messageData)
+                    if (messageData.Count > 0) //There are chunks to construct a message from
                     {
-                        await outputMessageStream.WriteAsync(element, 0, element.Length);
+                        messageCount++;   
+
+                        //Loop through the chunk data writing it out into the message stream
+                        foreach (var element in messageData)
+                        {
+                            await outputMessageStream.WriteAsync(element, 0, element.Length);
+                        }
                     }
                 }
-                else
-                    break;  //No more messages                
+                else //No more data available, so we've got all the messages.
+                {
+                    break;
+                }
             }
 
             outputMessageStream.Position = previousStreamPosition;
