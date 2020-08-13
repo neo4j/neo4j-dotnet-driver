@@ -29,15 +29,9 @@ namespace Neo4j.Driver.Internal.IO
     {
         private Stream InputStream { get; set; }
         private ILogger Logger { get; set; }
+
         
         private const int ChunkHeaderSize = 2;
-
-        enum ChunkType
-        {     
-            ZeroChunk = 0,
-            NonZeroChunk = 1,
-            NumChunkTypes = 2
-        }
 
 
         public ChunkReader(Stream downStream)
@@ -71,20 +65,24 @@ namespace Neo4j.Driver.Internal.IO
 
         private async Task<byte[]> ReadChunk()
 		{
-            var chunkData = await ReadDataOfSize(ChunkHeaderSize);
-            if(chunkData == null)
-                throw new IOException($"Unexpected end of stream, unable to read required data size");
-
-            var chunkSize = PackStreamBitConverter.ToUInt16(chunkData);
-
-            if (chunkSize != 0)
+            var chunkHeaderData = await ReadDataOfSize(ChunkHeaderSize);
+            
+            if (chunkHeaderData != null)    //if it is null there is no more data to read
             {
-                chunkData = await ReadDataOfSize(chunkSize);
+                var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeaderData);
 
-                if (chunkData == null)
-                    throw new IOException("Unexpected end of stream, still have an unterminated message");
+                if (chunkSize != 0)
+                {   
+                    var chunkData = await ReadDataOfSize(chunkSize);
 
-                return chunkData;
+                    if (chunkData == null)
+                        throw new IOException("Unexpected end of stream, still have an unterminated message");
+
+                    return chunkData;
+                }
+
+                //return new byte[0];  //TODO Not sure if I should return an empty array or null when it is a zero chunk size (NOOP).
+                //or maybe some kind of open message -> close message system like before.
             }
              
             return null;
@@ -92,19 +90,21 @@ namespace Neo4j.Driver.Internal.IO
 
         private async Task<List<byte[]>> ReadMessage()
 		{
-            var messageData = new List<byte[]>();
+            List<byte[]> messageChunkData = new List<byte[]>();
 
             while(true)
 			{
                 var chunk = await ReadChunk();
 
-                if (chunk != null)
-                    messageData.Add(chunk);
+                if (chunk != null)      //There was chunk data to read
+                {
+                    messageChunkData.Add(chunk);   //Add the data chunk to the message we are building
+                }
                 else
-                    break;
+                    break;  //Zero chunk size                
 			}
 
-            return messageData;            
+            return messageChunkData;            
 		}
 
         public int ReadNextMessages(Stream outputMessageStream)
@@ -115,22 +115,28 @@ namespace Neo4j.Driver.Internal.IO
         public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
         {
             int messageCount = 0;
+            var previousStreamPosition = outputMessageStream.Position;
+            outputMessageStream.Position = outputMessageStream.Length;
 
             while (true)
 			{
                 var messageData = await ReadMessage();
-                if (messageData.Count > 0)
+
+                if (messageData.Count > 0)  //There are chunks to construct a message from
                 {
-                    foreach(var element in messageData)
-					{
+                    messageCount++;   //There were chunks read so we have a message, no count means a NOOP.
+
+                    //Loop through the chunk data writing it out into the message stream
+                    foreach (var element in messageData)
+                    {
                         await outputMessageStream.WriteAsync(element, 0, element.Length);
-					}
-                    messageCount++;
+                    }
                 }
                 else
-                    break;
+                    break;  //No more messages                
             }
 
+            outputMessageStream.Position = previousStreamPosition;
             return messageCount;
         }
     }

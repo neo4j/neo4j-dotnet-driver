@@ -126,7 +126,6 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Theory]
-        [InlineData(new byte[] { })]
         [InlineData(new byte[] { 0x00 })]   //Half chunk
         [InlineData(new byte[] { 0x00, 0x01 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
@@ -143,7 +142,6 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Theory]
-        [InlineData(new byte[] { })]
         [InlineData(new byte[] { 0x00 })]   //Half chunk
         [InlineData(new byte[] { 0x00, 0x01 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
@@ -172,12 +170,12 @@ namespace Neo4j.Driver.Internal.IO
                                  0x00, 0x00,                    //End of message
                                  0x00, 0x00, },                 //NOOP
                                  new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
-        public void ShouldReadNoopsBetweenMessages(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
+        public async void ShouldReadNoopsBetweenMessagesAsync(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
         {
             var reader = new ChunkReader(new MemoryStream(input));
 
             var targetStream = new MemoryStream();
-            var count = reader.ReadNextMessages(targetStream);
+            var count = await reader.ReadNextMessagesAsync(targetStream);
             var messageBuffers = targetStream.ToArray();
 
             count.Should().Be(expectedCount);
