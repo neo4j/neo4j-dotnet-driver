@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
 
-        private async Task PopulateChunkBuffer(int requiredSize = Constants.ChunkBufferSize)
+        private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
 		{
             //If we are expecting further data in the buffer but it isn't there, then attempt to get more from the network input stream
             if (ChunkBufferRemaining < requiredSize)
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.IO
 
                 while ((numBytesRead = await InputStream.ReadAsync(data, 0, Constants.ChunkBufferSize).ConfigureAwait(false)) > 0)
                 {
-                    await ChunkBuffer.WriteAsync(data, 0, numBytesRead);
+                    await ChunkBuffer.WriteAsync(data, 0, numBytesRead).ConfigureAwait(false);
 
                     if (numBytesRead < requiredSize)   //If we've read everything that is available
                         break;
@@ -82,9 +82,9 @@ namespace Neo4j.Driver.Internal.IO
             }
         }
         
-        private async Task<byte[]> ReadDataOfSize(int requiredSize)
+        private async Task<byte[]> ReadDataOfSizeAsync(int requiredSize)
 		{      
-            await PopulateChunkBuffer(requiredSize);
+            await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
 
             var data = new byte[requiredSize];
             int readSize = await ChunkBuffer.ReadAsync(data, 0, requiredSize).ConfigureAwait(false);
@@ -95,12 +95,12 @@ namespace Neo4j.Driver.Internal.IO
             return data;
 		}
 
-        private async Task<bool> ConstructMessage(Stream outputMessageStream)
+        private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
         {
             int rawChunkDataSize = 0;
             while (ChunkBuffer.Position < ChunkBuffer.Length)   //There is data to dechunk
             {
-                var chunkHeader = await ReadDataOfSize(ChunkHeaderSize);
+                var chunkHeader = await ReadDataOfSizeAsync(ChunkHeaderSize).ConfigureAwait(false);
                 var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeader);
 
                 if (chunkSize == 0) //NOOP or end of message
@@ -111,9 +111,9 @@ namespace Neo4j.Driver.Internal.IO
                     continue;   //Its a NOOP so skip it
                 }
 
-                var rawChunkData = await ReadDataOfSize(chunkSize);
+                var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
                 rawChunkDataSize = rawChunkData.Length;
-                await outputMessageStream.WriteAsync(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the outputstream
+                await outputMessageStream.WriteAsync(rawChunkData, 0, chunkSize).ConfigureAwait(false);    //Put the raw chunk data into the outputstream
             }
 
             return (rawChunkDataSize > 0);    //Return if a message was constructed
@@ -130,11 +130,11 @@ namespace Neo4j.Driver.Internal.IO
             using (ChunkBuffer = new MemoryStream())
             {
                 ChunkBuffer.Position = 0;
-                await PopulateChunkBuffer();
+                await PopulateChunkBufferAsync().ConfigureAwait(false);
 
                 while (ChunkBuffer.Position < ChunkBuffer.Length)   //We have not finished parsing the chunkbuffer, so further messages to dechunk
                 {
-                    if (await ConstructMessage(outputMessageStream))
+                    if (await ConstructMessageAsync(outputMessageStream).ConfigureAwait(false))
                     {
                         messageCount++;
                     }
