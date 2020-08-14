@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
 
-        private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
+        /*private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
 		{
             //If we are expecting further data in the buffer but it isn't there, then attempt to get more from the network input stream
             if (ChunkBufferRemaining < requiredSize)
@@ -80,8 +80,34 @@ namespace Neo4j.Driver.Internal.IO
                     throw new IOException($"Unexpected end of stream, ChunkBuffer was not populated with any data");
                 }
             }
+        }*/
+
+        private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
+        {
+            if (ChunkBufferRemaining >= requiredSize)
+                return;
+
+            int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
+            var data = new byte[bufferSize]; //We will read in batches of this many bytes.
+            long storedPosition = ChunkBuffer.Position;
+            int numBytesRead = 0;
+
+            while ((numBytesRead = await InputStream.ReadAsync(data, 0, bufferSize).ConfigureAwait(false)) > 0)
+            {
+                ChunkBuffer.Write(data, 0, numBytesRead);
+
+                if (numBytesRead < bufferSize)
+                    break;
+            }
+
+            ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
+
+            if (ChunkBuffer.Length == 0)  //No data so stop
+            {
+                throw new IOException($"Unexpected end of stream, ChunkBuffer was not populated with any data");
+            }
         }
-        
+
         private async Task<byte[]> ReadDataOfSizeAsync(int requiredSize)
 		{      
             await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
