@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.IO
 
                 while ((numBytesRead = await InputStream.ReadAsync(data, 0, Constants.ChunkBufferSize).ConfigureAwait(false)) > 0)
                 {
-                    await ChunkBuffer.WriteAsync(data, 0, numBytesRead).ConfigureAwait(false);
+                    ChunkBuffer.Write(data, 0, numBytesRead);
 
                     if (numBytesRead < requiredSize)   //If we've read everything that is available
                         break;
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal.IO
             await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
 
             var data = new byte[requiredSize];
-            int readSize = await ChunkBuffer.ReadAsync(data, 0, requiredSize).ConfigureAwait(false);
+            int readSize = ChunkBuffer.Read(data, 0, requiredSize);
 
             if (readSize != requiredSize)
                 throw new IOException($"Unexpected end of stream, unable to read required data size");
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Internal.IO
 
                 var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
                 rawChunkDataSize = rawChunkData.Length;
-                await outputMessageStream.WriteAsync(rawChunkData, 0, chunkSize).ConfigureAwait(false);    //Put the raw chunk data into the outputstream
+                outputMessageStream.Write(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the outputstream
             }
 
             return (rawChunkDataSize > 0);    //Return if a message was constructed
