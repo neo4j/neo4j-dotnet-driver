@@ -30,7 +30,8 @@ namespace Neo4j.Driver.Internal.IO
     {   
         private Stream InputStream { get; set; }
         private ILogger Logger { get; set; }
-        MemoryStream ChunkBuffer { get; set; }
+        private MemoryStream ChunkBuffer { get; set; }
+        private long ChunkBufferRemaining { get { return ChunkBuffer.Length - ChunkBuffer.Position; } }
 
         private const int ChunkHeaderSize = 2;
 
@@ -50,31 +51,40 @@ namespace Neo4j.Driver.Internal.IO
         }
 
 
-        private async Task PopulateChunkBuffer()
-		{  
-            int numBytesRead = 0;
-            var data = new byte[Constants.ChunkBufferSize]; //We will read in batches of this many bytes.
-
-            //We could be in the middle of reading from the chunk buffer, so store it's state and ensure we add to the end of it.
-            long storedPosition = ChunkBuffer.Position;     
-            ChunkBuffer.Position = ChunkBuffer.Length;      
-
-            while ((numBytesRead = await InputStream.ReadAsync(data, 0, Constants.ChunkBufferSize).ConfigureAwait(false)) > 0)
+        private async Task PopulateChunkBuffer(int requiredSize = Constants.ChunkBufferSize)
+		{
+            //If we are expecting further data in the buffer but it isn't there, then attempt to get more from the network input stream
+            if (ChunkBufferRemaining < requiredSize)
             {
-                await ChunkBuffer.WriteAsync(data, 0, numBytesRead);
+                var data = new byte[Constants.ChunkBufferSize]; //We will read in batches of this many bytes.
+                long storedPosition = ChunkBuffer.Position;
+                int numBytesRead = 0;
 
-                if (numBytesRead < Constants.ChunkBufferSize)
-                    break;
+                //We could be in the middle of reading from the chunk buffer, so store it's state and ensure we add to the end of it.
+                ChunkBuffer.Position = ChunkBuffer.Length;
+
+                while ((numBytesRead = await InputStream.ReadAsync(data, 0, Constants.ChunkBufferSize).ConfigureAwait(false)) > 0)
+                {
+                    await ChunkBuffer.WriteAsync(data, 0, numBytesRead);
+
+                    if (numBytesRead < requiredSize)   //If we've read everything that is available
+                        break;
+                    if (ChunkBufferRemaining >= requiredSize)  //if we have read enough to meet the required amount of data
+                        break;                    
+                }
+
+                ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
+
+                if (ChunkBuffer.Length == 0)  //No data so stop
+                {
+                    throw new IOException($"Unexpected end of stream, ChunkBuffer was not populated with any data");
+                }
             }
-
-            ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
         }
         
         private async Task<byte[]> ReadDataOfSize(int requiredSize)
-		{
-            //If we are expecting further data in the buffer but it isn't there, then attempt to get more from the network input buffer
-            if (ChunkBuffer.Length - ChunkBuffer.Position < requiredSize)   
-                await PopulateChunkBuffer();
+		{      
+            await PopulateChunkBuffer(requiredSize);
 
             var data = new byte[requiredSize];
             int readSize = await ChunkBuffer.ReadAsync(data, 0, requiredSize).ConfigureAwait(false);
