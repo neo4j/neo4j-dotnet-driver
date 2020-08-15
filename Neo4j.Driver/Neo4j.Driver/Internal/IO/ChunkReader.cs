@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -50,53 +51,34 @@ namespace Neo4j.Driver.Internal.IO
             Logger = logger;
         }
 
-
-        /*private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
+        private void ChunkBufferTrimUsedData()
 		{
-            //If we are expecting further data in the buffer but it isn't there, then attempt to get more from the network input stream
-            if (ChunkBufferRemaining < requiredSize)
-            {
-                var data = new byte[Constants.ChunkBufferSize]; //We will read in batches of this many bytes.
-                long storedPosition = ChunkBuffer.Position;
-                int numBytesRead = 0;
-
-                //We could be in the middle of reading from the chunk buffer, so store it's state and ensure we add to the end of it.
-                ChunkBuffer.Position = ChunkBuffer.Length;
-
-                while ((numBytesRead = await InputStream.ReadAsync(data, 0, Constants.ChunkBufferSize).ConfigureAwait(false)) > 0)
-                {
-                    ChunkBuffer.Write(data, 0, numBytesRead);
-
-                    if (numBytesRead < requiredSize)   //If we've read everything that is available
-                        break;
-                    if (ChunkBufferRemaining >= requiredSize)  //if we have read enough to meet the required amount of data
-                        break;                    
-                }
-
-                ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
-
-                if (ChunkBuffer.Length == 0)  //No data so stop
-                {
-                    throw new IOException($"Unexpected end of stream, ChunkBuffer was not populated with any data");
-                }
-            }
-        }*/
+            //Remove 'used' data from memory stream, that is everything before it's current position
+            byte[] internalBuffer = ChunkBuffer.GetBuffer();
+            Buffer.BlockCopy(internalBuffer, (int)ChunkBuffer.Position, internalBuffer, 0, (int)ChunkBufferRemaining);
+            ChunkBuffer.SetLength((int)ChunkBufferRemaining);
+            ChunkBuffer.Position = 0;
+        }
 
         private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
         {
             if (ChunkBufferRemaining >= requiredSize)
                 return;
 
-            int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
+            //ChunkBufferTrimUsedData();
+
+            int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize - (int)ChunkBufferRemaining);
             var data = new byte[bufferSize]; //We will read in batches of this many bytes.
             long storedPosition = ChunkBuffer.Position;
             int numBytesRead = 0;
+
+            ChunkBuffer.Position = ChunkBuffer.Length;
 
             while ((numBytesRead = await InputStream.ReadAsync(data, 0, bufferSize).ConfigureAwait(false)) > 0)
             {
                 ChunkBuffer.Write(data, 0, numBytesRead);
 
-                if (numBytesRead < bufferSize)
+                if (numBytesRead <= bufferSize)
                     break;
             }
 
@@ -123,26 +105,30 @@ namespace Neo4j.Driver.Internal.IO
 
         private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
         {
-            int rawChunkDataSize = 0;
-            while (ChunkBuffer.Position < ChunkBuffer.Length)   //There is data to dechunk
+            bool dataRead = false;
+            
+            while(true) 
             {
                 var chunkHeader = await ReadDataOfSizeAsync(ChunkHeaderSize).ConfigureAwait(false);
                 var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeader);
 
                 if (chunkSize == 0) //NOOP or end of message
                 {
-                    if(rawChunkDataSize > 0)    //We have been reading data so this is the end of a message
+                    //We have been reading data so this is the end of a message zero chunk
+                    //Or there is no data remaining after this NOOP
+                    if (dataRead  || ChunkBufferRemaining <= 0)    
 					    break;
-					
-                    continue;   //Its a NOOP so skip it
+
+                    //Its a NOOP so skip it
+                    continue;                    
                 }
 
                 var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
-                rawChunkDataSize = rawChunkData.Length;
+                dataRead = true;
                 outputMessageStream.Write(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the outputstream
             }
 
-            return (rawChunkDataSize > 0);    //Return if a message was constructed
+            return dataRead;    //Return if a message was constructed
                 
         }
 
