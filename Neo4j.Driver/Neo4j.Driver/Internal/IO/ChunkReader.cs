@@ -28,10 +28,10 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.IO
 {
     internal class ChunkReader : IChunkReader
-    {   
+    {
         private Stream InputStream { get; set; }
-        private ILogger Logger { get; set; }
         private MemoryStream ChunkBuffer { get; set; }
+        private ILogger Logger { get; set; }
         private long ChunkBufferRemaining { get { return ChunkBuffer.Length - ChunkBuffer.Position; } }
 
         private const int ChunkHeaderSize = 2;
@@ -60,74 +60,30 @@ namespace Neo4j.Driver.Internal.IO
             ChunkBuffer.Position = 0;
         }
 
-        private async Task<int> ReadAsyncWithTimeout(byte[] buffer, int offset, int count)
-		{
-            int numBytesRead = 0;
-            var timeSpan = TimeSpan.FromSeconds(5);
-            var tokenSource = new CancellationTokenSource();
-            var token = tokenSource.Token;
-
-            var timeoutTask = Task.Delay(timeSpan);
-            var readTask = Task.Run(async () => { numBytesRead = await InputStream.ReadAsync(buffer, offset, count, token); }, token); ;
-            
-            await Task.WhenAny(readTask, timeoutTask);
-            if(!readTask.IsCompleted)
-			{
-                tokenSource.Cancel();
-			}
-
-            return numBytesRead;
-		}
-
-
-
-
-
-
-        long _ChunkBufferStartLength = 0;
-        long _ChunkBufferStartPosition = 0;
-        long _ChunkBufferRemainging = 0;
-        long _requiredSize = 0;
-        long _totalBytesRead = 0;
-        List<int> _requiredSizeArray = new List<int>();
         private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
         {
-            _ChunkBufferStartLength = ChunkBuffer.Length;
-            _ChunkBufferStartPosition = ChunkBuffer.Position;
-            _ChunkBufferRemainging = ChunkBufferRemaining;
-            _requiredSize = requiredSize;
-            _totalBytesRead = 0;
-            _requiredSizeArray.Add(requiredSize);
-
-
             if (ChunkBufferRemaining >= requiredSize)
                 return;
 
-            //ChunkBufferTrimUsedData();
+            ChunkBufferTrimUsedData();
 
-            int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize - (int)ChunkBufferRemaining);
-            var data = new byte[bufferSize]; //We will read in batches of this many bytes.
             long storedPosition = ChunkBuffer.Position;
             int numBytesRead = 0;
-            
+            requiredSize = requiredSize - (int)ChunkBufferRemaining;
+            int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
+            byte[] data = new byte[bufferSize];
+
             ChunkBuffer.Position = ChunkBuffer.Length;
 
-            /*
-            int totalBytesRead = 0; 
+            while ( requiredSize > 0)
+			{
+                numBytesRead = await InputStream.ReadAsync(data, 0, bufferSize).ConfigureAwait(false);
+                
+                if (numBytesRead <= 0) break;
 
-            //while ((numBytesRead = await InputStream.ReadAsync(data, 0, bufferSize).ConfigureAwait(false)) > 0)
-            while ((numBytesRead = await ReadAsyncWithTimeout(data, 0, bufferSize).ConfigureAwait(false)) > 0)
-            {
                 ChunkBuffer.Write(data, 0, numBytesRead);
-
-                totalBytesRead += numBytesRead;
-                if(totalBytesRead >= requiredSize) //use this if I want it to keep trying
-                    break;
+                requiredSize -= numBytesRead;
             }
-            */
-
-            numBytesRead = await InputStream.ReadAsync(data, 0, bufferSize).ConfigureAwait(false);
-            ChunkBuffer.Write(data, 0, numBytesRead);
 
             ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
 
@@ -189,7 +145,7 @@ namespace Neo4j.Driver.Internal.IO
             using (ChunkBuffer = new MemoryStream())
             {
                 long chunkBufferPosition = -1;   //Use this as we need an initial state < ChunkBuffer.Length
-                
+
                 while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunkbuffer, so further messages to dechunk
                 {
                     if (await ConstructMessageAsync(outputMessageStream).ConfigureAwait(false))
@@ -200,7 +156,7 @@ namespace Neo4j.Driver.Internal.IO
                     chunkBufferPosition = ChunkBuffer.Position;
                 }
             }
-
+            
             //restore output streams state.
             outputMessageStream.Position = previousStreamPosition;
             return messageCount;
