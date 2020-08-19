@@ -431,6 +431,7 @@ namespace Neo4j.Driver.Examples
             }
         }
 
+        // tag::hello-world[]
         public class HelloWorldExampleTest : BaseExample
         {
             public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -489,6 +490,7 @@ namespace Neo4j.Driver.Examples
                 }
             }
         }
+        // end::hello-world[]
 
         public class ReadWriteTransactionExample : BaseExample
         {
