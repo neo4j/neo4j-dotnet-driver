@@ -431,7 +431,6 @@ namespace Neo4j.Driver.Examples
             }
         }
 
-        // tag::hello-world[]
         public class HelloWorldExampleTest : BaseExample
         {
             public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -450,7 +449,7 @@ namespace Neo4j.Driver.Examples
                 }
             }
 
-
+            // tag::hello-world[]
             public class HelloWorldExample : IDisposable
             {
                 private readonly IDriver _driver;
@@ -489,8 +488,8 @@ namespace Neo4j.Driver.Examples
                     }
                 }
             }
+            // end::hello-world[]
         }
-        // end::hello-world[]
 
         public class ReadWriteTransactionExample : BaseExample
         {
@@ -722,7 +721,7 @@ namespace Neo4j.Driver.Examples
                 {
                     await DropDatabase(Driver, "examples");
                 }
-                catch (FatalDiscoveryException)
+                catch (FatalDiscoveryException ex)
                 {
                     // Its a new server instance, the database didn't exist yet
                 }

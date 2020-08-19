@@ -43,7 +43,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             _commandRunner = ShellCommandRunnerFactory.Create();
             //_commandRunner.BeginRunCommand("bolt", "stub", "-l", "127.0.0.1:" + port.ToString(), "-v", script);
-            _commandRunner.BeginRunCommand("boltstub", "-v", port.ToString(), script);
+            _commandRunner.BeginRunCommand("boltstub", "-v", port.ToString(), "-v", script);
             WaitForServer(port);
         }
 

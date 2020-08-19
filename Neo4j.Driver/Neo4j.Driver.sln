@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30204.135
+# Visual Studio 15
+VisualStudioVersion = 15.0.26114.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver", "Neo4j.Driver\Neo4j.Driver.csproj", "{F5E54582-C024-4B99-AFEB-CA9638617BA0}"
 EndProject
@@ -11,22 +11,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.Integrat
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{622A94AD-BC4D-4162-AE43-A5CA055F24FC}"
 	ProjectSection(SolutionItems) = preProject
-		common.props = common.props
 		..\LICENSE = ..\LICENSE
 		..\Neo4j.Driver.Docs.shfbproj = ..\Neo4j.Driver.Docs.shfbproj
 		..\NOTICE = ..\NOTICE
 		..\README.md = ..\README.md
+		common.props = common.props
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Reactive", "Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj", "{FC537A38-3DD9-4C6D-8127-003F59E405AC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Simple", "Neo4j.Driver.Simple\Neo4j.Driver.Simple.csproj", "{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend", "Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj", "{D68071A7-6012-43BD-9C65-146D1D22B931}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend.UnitTests", "Neo4j.Driver.Tests.TestBackend.UnitTests\Neo4j.Driver.Tests.TestBackend.UnitTests.csproj", "{5996D115-9E3A-4A56-8658-6FBE0A865A94}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend.UnitTests.Client", "Neo4j.Driver.Tests.TestBackend.UnitTests.Client\Neo4j.Driver.Tests.TestBackend.UnitTests.Client.csproj", "{E90357AA-FFFD-4E78-9B65-233A2A70833C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neo4j.Driver.Simple", "Neo4j.Driver.Simple\Neo4j.Driver.Simple.csproj", "{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,30 +70,6 @@ Global
 		{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
 		{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.DebugDelaySigned|Any CPU.ActiveCfg = Debug|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.DebugDelaySigned|Any CPU.Build.0 = Debug|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.DebugDelaySigned|Any CPU.ActiveCfg = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.DebugDelaySigned|Any CPU.Build.0 = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.DebugDelaySigned|Any CPU.ActiveCfg = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.DebugDelaySigned|Any CPU.Build.0 = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
