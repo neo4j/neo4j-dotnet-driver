@@ -259,5 +259,6 @@ namespace Neo4j.Driver.Internal.IO
                 _logger?.Trace(message, args);
             }
         }
+
     }
 }
