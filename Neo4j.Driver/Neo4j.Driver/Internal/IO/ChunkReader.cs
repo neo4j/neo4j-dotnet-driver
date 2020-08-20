@@ -162,6 +162,7 @@ namespace Neo4j.Driver.Internal.IO
             return messageCount;
         }
     }
+
 }
 
 
