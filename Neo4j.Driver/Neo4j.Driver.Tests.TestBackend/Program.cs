@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         private static void ArgumentsValidation(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length < 2)
             {
                 throw new IOException($"Incorrect number of arguments passed in. Expecting Address Port, but got {args.Length} arguments");
             }
@@ -58,6 +58,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             if(!IPAddress.TryParse(args[0], out Address))
             {
                 throw new IOException($"Invalid IPAddress passed in parameter 1. {args[0]}");
+            }
+
+            if (args.Length > 2) {
+                Trace.Listeners.Add(new TextWriterTraceListener(args[2]));
+                Trace.WriteLine("Logging to file: " + args[2]);
             }
 
             Trace.WriteLine($"Starting TestBackend on {Address}:{Port}");

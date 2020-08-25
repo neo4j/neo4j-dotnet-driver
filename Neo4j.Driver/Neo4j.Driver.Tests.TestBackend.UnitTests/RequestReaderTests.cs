@@ -7,6 +7,7 @@ using Moq;
 
 namespace Neo4j.Driver.Tests.TestBackend.UnitTests
 {
+/*
     public class StreamParserTests
     {
         [Theory]
@@ -109,4 +110,5 @@ namespace Neo4j.Driver.Tests.TestBackend.UnitTests
             var createdObject = requestReader.CreateObjectFromData();            
         }
     }
+*/
 }

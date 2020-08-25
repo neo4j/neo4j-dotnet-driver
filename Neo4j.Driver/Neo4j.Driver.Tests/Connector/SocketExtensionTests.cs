@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Tests.Connector
     {
         public class ReadMethod
         {
-            [Fact]
+            [Fact (Skip = "Appears not to test anything in Neo4j, Just the mock framework!?")]
             public void ShouldReadAll()
             {
                 var input = new byte[] {1, 2, 3, 4, 5};
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests.Connector
                 actual.Should().Equal(input);
             }
 
-            [Fact]
+            [Fact(Skip = "Appears not to test anything in Neo4j, Just the mock framework!?")]
             public void ShouldThrowExceptionIfNoDataInStream()
             {
                 var input = new byte[] {1, 2, 3, 4, 5};

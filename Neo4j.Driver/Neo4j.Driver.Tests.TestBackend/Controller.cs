@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
@@ -8,8 +9,6 @@ namespace Neo4j.Driver.Tests.TestBackend
     internal class Controller
     {
         private IConnection Connection { get; }
-        private Reader ConnectionReader { get; set; }
-        private Writer ConnectionWriter { get; set; }
         private ProtocolObjectManager ObjManager { get; set; } = new ProtocolObjectManager();          
 
         public Controller(IConnection conn)
@@ -29,13 +28,14 @@ namespace Neo4j.Driver.Tests.TestBackend
                 {
                     await Connection.Open();
 
-                    ConnectionReader = new Reader(Connection.ConnectionStream);
-                    ConnectionWriter = new Writer(Connection.ConnectionStream);
+                    var connectionReader = new StreamReader(Connection.ConnectionStream, new UTF8Encoding(false));
+                    var connectionWriter = new StreamWriter(Connection.ConnectionStream, new UTF8Encoding(false));
+                    connectionWriter.NewLine = "\n";
 
                     Trace.WriteLine("Connection open");
 
-                    RequestReader requestReader = new RequestReader(ConnectionReader);
-                    ResponseWriter responseWriter = new ResponseWriter(ConnectionWriter);
+                    var requestReader = new RequestReader(connectionReader);
+                    var responseWriter = new ResponseWriter(connectionWriter);
 
                     Trace.WriteLine("Starting to listen for requests");
 
@@ -47,6 +47,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                             await protocolObject.Process().ConfigureAwait(false);
 
                             await responseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
+                            Trace.Flush();
                         }
                     }
                     catch (IOException ex)
@@ -62,6 +63,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                         Trace.WriteLine("Closing Connection");
                         Connection.Close();
                     }
+                    Trace.Flush();
                 }                
             }            
             catch(Exception ex)

@@ -7,14 +7,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 {
     internal class RequestReader
     {
-        private Reader InputReader { get; }
+        private StreamReader InputReader { get; }
         private bool MessageOpen { get; set; }
         private const string OpenTag = "#request begin";
         private const string CloseTag = "#request end";
 
         public string CurrentObjectData { get; set; }
 
-        public RequestReader(Reader reader)
+        public RequestReader(StreamReader reader)
         {
             InputReader = reader;            
         }
@@ -38,14 +38,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         private async Task<bool> ParseObjectData()
         {
-            var input = await InputReader.Read().ConfigureAwait(false) ?? "";
+            var input = InputReader.ReadLine();
 
             if (string.IsNullOrEmpty(input))
                 return false;
 
-            input = input.TrimStart();
-            input = input.TrimEnd();
-            
             if (IsOpenTag(input))
                 return true;
 
