@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Tests.TestBackend
@@ -16,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             public string sessionId { get; set; }
             public string cypher { get; set; }
-            [JsonPropertyName("params")]
+            [JsonProperty("params")]
             public Dictionary<string, object> parameters { get; set; } = new Dictionary<string, object>();
         }
 

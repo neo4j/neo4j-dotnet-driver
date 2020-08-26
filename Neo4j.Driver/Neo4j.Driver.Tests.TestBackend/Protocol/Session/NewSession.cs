@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 using Neo4j.Driver;
 
 namespace Neo4j.Driver.Tests.TestBackend
