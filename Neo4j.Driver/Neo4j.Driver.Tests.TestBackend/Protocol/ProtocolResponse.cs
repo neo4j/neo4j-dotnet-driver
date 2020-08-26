@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using Newtonsoft.Json;
     
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -26,8 +26,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
         public string Encode()
-        {  
-            return JsonSerializer.Serialize<object>(this);
+        {
+            return JsonConvert.SerializeObject(this);
         }
     }
 }
