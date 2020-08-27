@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public string Encode()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(this, Formatting.Indented);
         }
     }
 }

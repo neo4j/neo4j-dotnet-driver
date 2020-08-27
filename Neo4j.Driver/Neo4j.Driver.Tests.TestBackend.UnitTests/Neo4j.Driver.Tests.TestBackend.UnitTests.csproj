@@ -3,12 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RootNamespace>Neo4j.Driver.Tests.TestBackend.UnitTests</RootNamespace>
-
-    <IsPackable>false</IsPackable>
+	<RuntimeFrameworkVersion>2.0.0</RuntimeFrameworkVersion>
+	<IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="5.10.3" />
+    <PackageReference Include="FluentAssertions" Version="5.0.0" />
     <PackageReference Include="Moq" Version="4.14.2" />
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
@@ -17,5 +17,5 @@
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj" />
   </ItemGroup>
-
+	
 </Project>
