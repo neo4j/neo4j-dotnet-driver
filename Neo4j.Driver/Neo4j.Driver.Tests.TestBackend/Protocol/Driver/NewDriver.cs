@@ -1,7 +1,7 @@
 ﻿using System;
 using Neo4j.Driver;
 using System.Threading.Tasks;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 using System.IO;
 
 namespace Neo4j.Driver.Tests.TestBackend

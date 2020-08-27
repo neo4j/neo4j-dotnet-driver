@@ -16,8 +16,9 @@ namespace Neo4j.Driver.Tests.TestBackend
         
         static async Task Main(string[] args)
         {
-            ConsoleTraceListener consoleTraceListener = new ConsoleTraceListener();
-            consoleTraceListener.Name = "Main output";
+            //ConsoleTraceListener consoleTraceListener = new ConsoleTraceListener();
+            //consoleTraceListener.Name = "Main output";
+            var consoleTraceListener = new TextWriterTraceListener(Console.Out);
             Trace.Listeners.Add(consoleTraceListener);
 
             try
@@ -25,9 +26,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                 ArgumentsValidation(args);
 
-                using var connection = new Connection(Address.ToString(), Port);
-                Controller controller = new Controller(connection);
-                await controller.Process().ConfigureAwait(false);
+                using (var connection = new Connection(Address.ToString(), Port))
+                {
+                    Controller controller = new Controller(connection);
+                    await controller.Process().ConfigureAwait(false);
+                }
             }
             catch(System.Exception ex)
             {

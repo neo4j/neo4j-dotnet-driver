@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
-using System.Text.Json;
+using Newtonsoft.Json;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -75,7 +74,7 @@ namespace Neo4j.Driver.Tests.TestBackend
     internal abstract class IProtocolObject
     {
         public string name { get; set; }
-        [JsonPropertyName("id")]
+        [JsonProperty("id")]
         public string uniqueId { get; internal set; }    //Only exposes the get option so that the serializer will output it.  Don't want to read in on deserialization.
         protected ProtocolObjectManager ObjManager { get; set; }
 
@@ -90,7 +89,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public string Encode()      
         {
-           return JsonSerializer.Serialize<object>(this); 
+            return JsonConvert.SerializeObject(this, Formatting.Indented);
         }
 
         public virtual string Respond()

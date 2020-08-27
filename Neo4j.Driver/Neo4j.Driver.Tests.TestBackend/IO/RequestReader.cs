@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
-using System.Text.Json;
 using System.Diagnostics;
+using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         private async Task<bool> ParseObjectData()
         {
-            var input = InputReader.ReadLine();
+            var input = await InputReader.ReadLineAsync();
 
             if (string.IsNullOrEmpty(input))
                 return false;
@@ -92,9 +92,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         private string GetObjectTypeName()
         {
-            using var jsonDoc = JsonDocument.Parse(CurrentObjectData);
-            var root = jsonDoc.RootElement;
-            return root.GetProperty("name").GetString();
+            JObject jsonObject = JObject.Parse(CurrentObjectData);
+            return (string)jsonObject["name"];
         }
 
         private Protocol.Types GetObjectType()
