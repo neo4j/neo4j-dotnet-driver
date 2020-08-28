@@ -30,6 +30,7 @@
   </Target>
 -->
    <PropertyGroup>
+      <Copyright>Copyright © 2002-2020</Copyright>
       <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
       <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
       <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
