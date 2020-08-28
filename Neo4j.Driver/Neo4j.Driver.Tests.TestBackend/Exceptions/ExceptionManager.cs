@@ -10,7 +10,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             string exceptionMessage = (ex.InnerException != null) ? ex.InnerException.Message : ex.Message;
 
-            if (ex is Neo4jException) {
+            if (ex is Neo4jException || ex is NotSupportedException) {
                 ProtocolException newError = (ProtocolException)ProtocolObjectFactory.CreateObject(Protocol.Types.ProtocolException);
                 newError.ExceptionObj = ex;
                 return new ProtocolResponse("DriverError", new { id = newError.uniqueId, msg = exceptionMessage } );
