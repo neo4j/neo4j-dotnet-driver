@@ -44,28 +44,31 @@ namespace Neo4j.Driver.Tests.TestBackend
                         IProtocolObject protocolObject = null;
                         while ((protocolObject = await requestReader.ParseNextRequest().ConfigureAwait(false)) != null)
                         {
-                            await protocolObject.Process().ConfigureAwait(false);
-
-                            await responseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
-                            Trace.Flush();
+                            try
+                            {
+                                await protocolObject.Process().ConfigureAwait(false);
+                                await responseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
+                                Trace.Flush();
+                            }
+                            catch (Neo4jException ex)
+                            {
+                                // Generate "driver" exception something happened within the driver
+                                await responseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                            }
                         }
                     }
                     catch (IOException ex)
                     {
                         Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
                     }
-                    catch (Exception ex)
-                    {   
-                        await responseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    }                    
                     finally
                     {
                         Trace.WriteLine("Closing Connection");
                         Connection.Close();
                     }
                     Trace.Flush();
-                }                
-            }            
+                }
+            }
             catch(Exception ex)
             {
                 Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
