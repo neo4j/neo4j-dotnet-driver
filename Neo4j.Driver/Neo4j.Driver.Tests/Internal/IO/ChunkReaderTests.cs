@@ -63,36 +63,6 @@ namespace Neo4j.Driver.Internal.IO
             ex.Should().BeOfType<ArgumentOutOfRangeException>();
         }
 
-        [Theory]
-        [InlineData(new byte[] { 0x00, 0x00 }, 
-                                 new byte[] { }, 0)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 
-                                 0x00, 0x02, 0x01, 0x02, 
-                                 0x00, 0x00 }, 
-                                 new byte[] { 0x00, 0x01, 0x02 }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 
-                                 0x00, 0x01, 0x01, 
-                                 0x00, 0x01, 0x02, 
-                                 0x00, 0x00 }, 
-                                 new byte[] { 0x00, 0x01, 0x02 }, 1)]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 
-                                 0x00, 0x01, 0x01, 
-                                 0x00, 0x01, 0x02, 
-                                 0x00, 0x00, 
-                                 0x00, 0x03, 0x00, 0x01, 0x02, 
-                                 0x00, 0x00 }, 
-                                 new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
-        public void ShouldReadMessageSpanningMultipleChunks(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
-        {
-            var reader = new ChunkReader(new MemoryStream(input));
-
-            var targetStream = new MemoryStream();
-            var count = reader.ReadNextMessages(targetStream);
-            var messageBuffers = targetStream.ToArray();
-
-            count.Should().Be(expectedCount);
-            messageBuffers.Should().Equal(expectedMessageBuffers);
-        }
 
         [Theory]
         [InlineData(new byte[] { 0x00, 0x00 }, 
@@ -126,24 +96,6 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Theory]
-        [InlineData(new byte[] { })]
-        [InlineData(new byte[] { 0x00 })]   //Half chunk
-        [InlineData(new byte[] { 0x00, 0x01 })]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
-        [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02, 0x01 })]
-        public void ShouldThrowWhenEndOfStreamIsDetected(byte[] input)
-        {
-            var reader = new ChunkReader(new MemoryStream(input));
-
-            var targetStream = new MemoryStream();
-            var ex = Record.Exception(() => reader.ReadNextMessages(targetStream));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<IOException>().Which.Message.Should().StartWith("Unexpected end of stream");
-        }
-
-        [Theory]
-        [InlineData(new byte[] { })]
         [InlineData(new byte[] { 0x00 })]   //Half chunk
         [InlineData(new byte[] { 0x00, 0x01 })]
         [InlineData(new byte[] { 0x00, 0x01, 0x00, 0x00, 0x02 })]
@@ -172,12 +124,12 @@ namespace Neo4j.Driver.Internal.IO
                                  0x00, 0x00,                    //End of message
                                  0x00, 0x00, },                 //NOOP
                                  new byte[] { 0x00, 0x01, 0x02, 0x00, 0x01, 0x02 }, 2)]
-        public void ShouldReadNoopsBetweenMessages(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
+        public async void ShouldReadNoopsBetweenMessagesAsync(byte[] input, byte[] expectedMessageBuffers, int expectedCount)
         {
             var reader = new ChunkReader(new MemoryStream(input));
 
             var targetStream = new MemoryStream();
-            var count = reader.ReadNextMessages(targetStream);
+            var count = await reader.ReadNextMessagesAsync(targetStream);
             var messageBuffers = targetStream.ToArray();
 
             count.Should().Be(expectedCount);
@@ -185,7 +137,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Fact]
-        public void ShouldResetBufferStreamPosition()
+        public async void ShouldResetBufferStreamPosition()
         {
             var data = GenerateMessages(1000, 128 * 1024);
 
@@ -197,7 +149,7 @@ namespace Neo4j.Driver.Internal.IO
 
             var bufferPosition = bufferStream.Position;
 
-            var count = reader.ReadNextMessages(bufferStream);
+            var count = await reader.ReadNextMessagesAsync(bufferStream);
 
             bufferStream.Position.Should().Be(bufferPosition);
         }
@@ -277,20 +229,6 @@ namespace Neo4j.Driver.Internal.IO
             count.Should().Be(1);
         }
 
-        [Fact]
-        public void ShouldReadSingleMessageStreamLargerThanBufferSize()
-        {
-            const int chunkSize = 22 * 1024;
-            const int totalStreamSizeByte = 2 * chunkSize;
-            var inputStream = new MemoryStream(GenerateMessages(chunkSize, totalStreamSizeByte));  // Will create a message of two 11k chunks, these will straddle the 16k internal buffer size...
-            var resultStream = new MemoryStream();
-            var reader = new ChunkReader(inputStream);
-            
-            var count = reader.ReadNextMessages(resultStream);
-
-            count.Should().Be(1);
-        }
-
         
         [Fact]
         public async void ShouldReadMultipleMessageStreamLargerThanBufferSizeAsync()
@@ -311,24 +249,6 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         
-        [Fact]
-        public void ShouldReadMultipleMessageStreamLargerThanBufferSize()
-        {
-             const int chunkSize = 11 * 1024;
-            const int totalStreamSizeByte = 2 * chunkSize;
-            var inputStream = new MemoryStream();
-            inputStream.Write(GenerateMessages(chunkSize, totalStreamSizeByte));    //Add a message made of two 11k chunks.
-            inputStream.Write(GenerateMessages(chunkSize, totalStreamSizeByte));    //Add another message made of two 11k chunks.
-            inputStream.Position = 0;
-
-            var resultStream = new MemoryStream();
-            var reader = new ChunkReader(inputStream);
-            
-            var count = reader.ReadNextMessages(resultStream);
-
-            count.Should().Be(2);
-        }
-
 
         private static byte[] GenerateMessageChunk(int messageSize)
         {

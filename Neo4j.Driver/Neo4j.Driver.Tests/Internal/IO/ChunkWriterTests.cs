@@ -22,6 +22,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -96,7 +97,7 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(Constants.ChunkBufferSize)]
         [InlineData(Constants.MaxChunkSize)]
         [InlineData(Constants.MaxChunkSize * 3)]
-        public void ShouldCloseTheChunkWithCorrectSize(int chunkSize)
+        public async void ShouldCloseTheChunkWithCorrectSize(int chunkSize)
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
@@ -114,7 +115,7 @@ namespace Neo4j.Driver.Internal.IO
             // Write To Underlying Stream
             writer.Send();
 
-            var constructed = ConstructMessage(stream.ToArray());
+            var constructed = await ConstructMessage(stream.ToArray());
 
             constructed.Should().HaveCount(chunkSize);
             constructed.Should().Equal(buffer);
@@ -144,7 +145,7 @@ namespace Neo4j.Driver.Internal.IO
             // Write To Underlying Stream
             await writer.SendAsync();
 
-            var constructed = ConstructMessage(stream.ToArray());
+            var constructed = await ConstructMessage(stream.ToArray());
 
             constructed.Should().HaveCount(chunkSize);
             constructed.Should().Equal(buffer);
@@ -314,12 +315,12 @@ namespace Neo4j.Driver.Internal.IO
             logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Exactly(2));
         }
 
-        private static byte[] ConstructMessage(byte[] buffer)
+        private static async Task<byte[]> ConstructMessage(byte[] buffer)
         {
             var stream = new MemoryStream();
             var reader = new ChunkReader(new MemoryStream(buffer));
 
-            reader.ReadNextMessages(stream);
+            await reader.ReadNextMessagesAsync(stream);
 
             return stream.ToArray();
         }
