@@ -55,6 +55,13 @@ namespace Neo4j.Driver.Tests.TestBackend
                                 // Generate "driver" exception something happened within the driver
                                 await responseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                             }
+                            catch (NotSupportedException ex)
+                            {
+                                // Get this sometimes during protocol handshake, like when connectiong with bolt:// on server
+                                // with TLS. Could be a dirty read in the driver or a write from TLS server that causes strange
+                                // version received..
+                                await responseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                            }
                         }
                     }
                     catch (IOException ex)
