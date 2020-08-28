@@ -156,9 +156,9 @@ namespace Neo4j.Driver.Internal.Connector
 
             data = new byte[4];
             var read = await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
-            if (read <= 0)
+            if (read < data.Length)
             {
-                throw new IOException($"Unexpected end of stream, read returned {read}");
+                throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
             }
 
             var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
