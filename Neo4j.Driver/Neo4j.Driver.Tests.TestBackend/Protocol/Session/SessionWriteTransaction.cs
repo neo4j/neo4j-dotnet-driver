@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return string.Empty;
+            return new ProtocolResponse("RetryableDone", new { }).Encode();
         }
     }
 }

@@ -31,13 +31,13 @@ namespace Neo4j.Driver.Tests.TestBackend
                 //Start another message processing loop to handle the retry mechanism.
                 await controller.ProcessStreamObjects().ConfigureAwait(false);
 
-                controller.TransactionManagager.RemoveTransaction(TransactionId);
-            });        
+                controller.TransactionManagager.RemoveTransaction(TransactionId);                
+            });
         }
 
         public override string Respond()
         {
-            return string.Empty;            
+            return new ProtocolResponse("RetryableDone", new { }).Encode();
         }
     }
 }

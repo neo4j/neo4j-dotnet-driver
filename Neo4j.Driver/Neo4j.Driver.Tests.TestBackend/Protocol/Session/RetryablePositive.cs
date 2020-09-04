@@ -26,8 +26,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new ProtocolResponse("RetryableDone", new { }).Encode();
-            //return JsonConvert.SerializeObject(new { name = "RetryableDone" }); 
+            return string.Empty;            
         }
     }
 }

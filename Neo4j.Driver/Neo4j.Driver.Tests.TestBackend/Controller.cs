@@ -32,24 +32,9 @@ namespace Neo4j.Driver.Tests.TestBackend
                 var protocolObject = ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
                 protocolObject.ProtocolEvent += BreakLoopEvent;
 
-                try
-                {
-                    await protocolObject.Process(this).ConfigureAwait(false);
-                    await SendResponse(protocolObject).ConfigureAwait(false);
-                    Trace.Flush();
-                }
-                catch (Neo4jException ex)
-                {
-                    // Generate "driver" exception something happened within the driver
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                }
-                catch (NotSupportedException ex)
-                {
-                    // Get this sometimes during protocol handshake, like when connectiong with bolt:// on server
-                    // with TLS. Could be a dirty read in the driver or a write from TLS server that causes strange
-                    // version received..
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                }
+                await protocolObject.Process(this).ConfigureAwait(false);
+                await SendResponse(protocolObject).ConfigureAwait(false);
+                Trace.Flush();                
             }
 
             BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
@@ -79,6 +64,18 @@ namespace Neo4j.Driver.Tests.TestBackend
                     try
                     {
                         await ProcessStreamObjects().ConfigureAwait(false);
+                    }
+                    catch (Neo4jException ex)
+                    {
+                        // Generate "driver" exception something happened within the driver
+                        await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                    }
+                    catch (NotSupportedException ex)
+                    {
+                        // Get this sometimes during protocol handshake, like when connectiong with bolt:// on server
+                        // with TLS. Could be a dirty read in the driver or a write from TLS server that causes strange
+                        // version received..
+                        await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                     }
                     catch (IOException ex)
                     {
