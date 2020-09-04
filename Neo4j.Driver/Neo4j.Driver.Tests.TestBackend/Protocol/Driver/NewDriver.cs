@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             var authToken = AuthTokens.Custom(authTokenData.principal, authTokenData.credentials, authTokenData.realm, authTokenData.scheme);
 
             Driver = GraphDatabase.Driver(data.uri, authToken);
-            await AysncVoidReturn();
+            await AsyncVoidReturn();
         }
 
         public override string Respond()

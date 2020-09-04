@@ -5,7 +5,7 @@ using System.Text;
 namespace Neo4j.Driver.Tests.TestBackend.Types
 {
     internal class CypherToNative
-    {
+    {   
         //TODO: Implement
     }
 }

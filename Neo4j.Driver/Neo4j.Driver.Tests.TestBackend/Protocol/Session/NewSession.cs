@@ -12,7 +12,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public NewSessionType data { get; set; } = new NewSessionType();
         [JsonIgnore]
         public IAsyncSession Session { get; set; }
-
+        
         public class NewSessionType
         {
             public string driverId { get; set; }
@@ -23,8 +23,9 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override async Task Process()
         {
             IDriver driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
-            Session = driver.AsyncSession();    //TODO: Use config builder to take into account bookmarks and accessmode.
-            await AysncVoidReturn();
+            //TODO: Use config builder to take into account bookmarks and accessmode.
+            Session = driver.AsyncSession();    
+            await AsyncVoidReturn();
         }
 
         public override string Respond()

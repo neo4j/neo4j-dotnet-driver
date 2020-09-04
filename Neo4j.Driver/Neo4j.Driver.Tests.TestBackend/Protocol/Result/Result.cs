@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override async Task Process()
         {
             //Currently does nothing
-            await AysncVoidReturn();
+            await AsyncVoidReturn();
         }
 
         public override string Respond()

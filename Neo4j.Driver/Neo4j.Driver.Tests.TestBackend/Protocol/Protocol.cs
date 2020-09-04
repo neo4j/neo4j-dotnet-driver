@@ -76,7 +76,9 @@ namespace Neo4j.Driver.Tests.TestBackend
         public string name { get; set; }
         [JsonProperty("id")]
         public string uniqueId { get; internal set; }    //Only exposes the get option so that the serializer will output it.  Don't want to read in on deserialization.
-        protected ProtocolObjectManager ObjManager { get; set; }
+        [JsonIgnore]
+        protected ProtocolObjectManager ObjManager { get; set; }        
+        public event EventHandler ProtocolEvent;
 
         public void SetObjectManager(ProtocolObjectManager objManager)
         {
@@ -85,7 +87,16 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public void SetUniqueId(string id) { uniqueId = id; }
 
-        public abstract Task Process();        
+
+        public virtual async Task Process()
+		{
+            await AsyncVoidReturn();
+		}
+
+        public virtual async Task Process(Controller controller)    //Default is to not use the controller object. But option to override this method and use it if necessary.
+		{
+            await Process();
+        }
 
         public string Encode()      
         {
@@ -97,9 +108,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             return Encode();
         }
 
-        protected async Task AysncVoidReturn()
+        protected async Task AsyncVoidReturn()
         {
             await Task.Run(() => { });
+        }
+
+        protected void TriggerEvent()
+		{
+            ProtocolEvent?.Invoke(this, EventArgs.Empty);
         }
     }
 }

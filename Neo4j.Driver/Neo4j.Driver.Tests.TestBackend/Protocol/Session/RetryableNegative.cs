@@ -11,12 +11,17 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public class RetryableNegativeType
         {
+            public string sessionId { get; set; }
             public string errorId { get; set; }
         }
 
         public override async Task Process()
         {
-            await AysncVoidReturn();
+            //Client failed in some way.
+            //Notify any subscribers.
+            TriggerEvent();
+
+            await AsyncVoidReturn();
         }
 
         public override string Respond()
@@ -24,7 +29,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             Exception ex = null;
             if (string.IsNullOrEmpty(data.errorId))
             {
-                ex = new ClientException("Error from client");
+                ex = new ClientException("Error from client in retryable tx");
             }
             else
             {

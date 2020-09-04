@@ -9,26 +9,32 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         public SessionWriteTransactionType data { get; set; } = new SessionWriteTransactionType();
         [JsonIgnore]
-        public IAsyncTransaction Transaction { get; set; }
+        public string TransactionId { get; set; }
 
         public class SessionWriteTransactionType
         {
             public string sessionId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task Process(Controller controller)
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
-            await sessionContainer.Session.WriteTransactionAsync(async t =>
+            await sessionContainer.Session.WriteTransactionAsync(async tx =>
             {
-                Transaction = t;
-                await AysncVoidReturn();
+                TransactionId = controller.TransactionManagager.AddTransaction(tx);
+
+                await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
+
+                //Start another message processing loop to handle the retry mechanism.
+                await controller.ProcessStreamObjects().ConfigureAwait(false);
+
+                controller.TransactionManagager.RemoveTransaction(TransactionId);
             });
         }
 
         public override string Respond()
         {
-            return new ProtocolResponse("RetryableTry", uniqueId).Encode();
+            return string.Empty;
         }
     }
 }

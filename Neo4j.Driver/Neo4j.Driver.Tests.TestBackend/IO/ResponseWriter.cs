@@ -27,8 +27,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             return await WriteResponseAsync(response.Encode());
         }
 
-        private async Task<string> WriteResponseAsync(string response)
+        public async Task<string> WriteResponseAsync(string response)
         {
+            if (string.IsNullOrEmpty(response))
+                return string.Empty;
+
             Trace.WriteLine($"Sending response: {response}\n");
 
             await WriterTarget.WriteLineAsync(OpenTag);

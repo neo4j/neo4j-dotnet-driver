@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -16,12 +17,17 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            await AysncVoidReturn();
+            //Client succeded and wants to commit. 
+            //Notify any subscribers.
+            TriggerEvent();
+
+            await AsyncVoidReturn();
         }
 
         public override string Respond()
         {
             return new ProtocolResponse("RetryableDone", new { }).Encode();
+            //return JsonConvert.SerializeObject(new { name = "RetryableDone" }); 
         }
     }
 }

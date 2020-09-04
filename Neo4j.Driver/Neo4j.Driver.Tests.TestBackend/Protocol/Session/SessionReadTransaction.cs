@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Neo4j.Driver;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -9,9 +10,7 @@ namespace Neo4j.Driver.Tests.TestBackend
     {   
         public SessionReadTransactionType data { get; set; } = new SessionReadTransactionType();
         [JsonIgnore]
-        private string ResultId { get; set; }
-        //[JsonIgnore]
-        //public IAsyncTransaction Transaction { get; set; }    //TODO: Remove as just here for notes as I figure out the retry system.
+        private string TransactionId { get; set; }
 
         public class SessionReadTransactionType
         {
@@ -19,23 +18,26 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string cypher { get; set; }
         }
 
-        public override async Task Process()
+
+        public override async Task Process(Controller controller)
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
             await sessionContainer.Session.ReadTransactionAsync(async tx =>
-            {   
-                IResultCursor cursor = await tx.RunAsync(data.cypher);
+            {
+                TransactionId = controller.TransactionManagager.AddTransaction(tx);
 
-                var result = new Result() { Results = cursor };
-                ObjManager.AddProtocolObject(result);
-                ResultId = result.uniqueId;
+                await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);                
+                
+                //Start another message processing loop to handle the retry mechanism.
+                await controller.ProcessStreamObjects().ConfigureAwait(false);
+
+                controller.TransactionManagager.RemoveTransaction(TransactionId);
             });        
         }
 
         public override string Respond()
         {
-            //return new ProtocolResponse("RetryableTry", uniqueId).Encode(); //TODO: remove as just here for notes as I figure out the retry system.
-            return ((Result)ObjManager.GetObject(ResultId)).Respond();
+            return string.Empty;            
         }
     }
 }

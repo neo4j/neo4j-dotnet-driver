@@ -16,8 +16,6 @@ namespace Neo4j.Driver.Tests.TestBackend
         
         static async Task Main(string[] args)
         {
-            //ConsoleTraceListener consoleTraceListener = new ConsoleTraceListener();
-            //consoleTraceListener.Name = "Main output";
             var consoleTraceListener = new TextWriterTraceListener(Console.Out);
             Trace.Listeners.Add(consoleTraceListener);
 

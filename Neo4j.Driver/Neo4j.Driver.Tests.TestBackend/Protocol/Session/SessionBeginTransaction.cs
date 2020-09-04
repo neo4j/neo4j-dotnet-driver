@@ -9,22 +9,23 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         public SessionBeginTransactionType data { get; set; } = new SessionBeginTransactionType();
         [JsonIgnore]
-        public IAsyncTransaction Transaction { get; set; }
+        public string TransactionId { get; set; }
 
         public class SessionBeginTransactionType
         {
             public string sessionId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task Process(Controller controller)
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
-            Transaction = await sessionContainer.Session.BeginTransactionAsync();
+            var transaction = await sessionContainer.Session.BeginTransactionAsync();
+            TransactionId = controller.TransactionManagager.AddTransaction(transaction);
         }
 
         public override string Respond()
         {
-            return new ProtocolResponse("Transaction", uniqueId).Encode();
+            return new ProtocolResponse("Transaction", TransactionId).Encode();
         }
     }
 }

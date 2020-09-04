@@ -20,11 +20,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             public Dictionary<string, object> parameters { get; set; } = new Dictionary<string, object>();
         }
 
-        public override async Task Process()
+        public override async Task Process(Controller controller)
         {
-            var transaction = ((SessionBeginTransaction)ObjManager.GetObject(data.txId)).Transaction;
+            var transaction = controller.TransactionManagager.FindTransaction(data.txId);
 
-            IResultCursor cursor = await transaction.RunAsync(data.cypher, data.parameters);
+            IResultCursor cursor = await transaction.RunAsync(data.cypher, data.parameters).ConfigureAwait(false);
                 
             var result = new Result() { Results = cursor };
             ObjManager.AddProtocolObject(result);

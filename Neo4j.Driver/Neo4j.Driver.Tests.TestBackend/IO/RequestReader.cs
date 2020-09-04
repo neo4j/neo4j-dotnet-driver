@@ -19,21 +19,17 @@ namespace Neo4j.Driver.Tests.TestBackend
             InputReader = reader;            
         }
 
-        public async Task<IProtocolObject> ParseNextRequest()
+        public async Task<bool> ParseNextRequest()
         {
             Trace.WriteLine("Listening for request");
 
             CurrentObjectData = string.Empty;
 
-            while (await ParseObjectData().ConfigureAwait(false)) { }
-
-            if(string.IsNullOrEmpty(CurrentObjectData))
-            {
-                return null;
-            }
+            while (await ParseObjectData().ConfigureAwait(false)) ;
 
             Trace.WriteLine($"\nRequest recieved: {CurrentObjectData}");
-            return CreateObjectFromData();
+
+            return !string.IsNullOrEmpty(CurrentObjectData);
         }
 
         private async Task<bool> ParseObjectData()
@@ -96,7 +92,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             return (string)jsonObject["name"];
         }
 
-        private Protocol.Types GetObjectType()
+        public Protocol.Types GetObjectType()
         {
             var name = GetObjectTypeName();
             return Protocol.Type(name);

@@ -12,9 +12,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string txId { get; set; }            
         }
 
-        public override async Task Process()
+        public override async Task Process(Controller controller)
         {
-            var transaction = ((SessionBeginTransaction)ObjManager.GetObject(data.txId)).Transaction;
+            var transaction = controller.TransactionManagager.FindTransaction(data.txId);
             await transaction.CommitAsync();
         }
 
