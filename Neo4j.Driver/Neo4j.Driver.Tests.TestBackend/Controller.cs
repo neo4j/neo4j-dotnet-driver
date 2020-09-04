@@ -40,35 +40,43 @@ namespace Neo4j.Driver.Tests.TestBackend
             BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
         }
 
+        private async Task InitialiseCommunicationLayer()
+		{
+            await Connection.Open();
+
+            var connectionReader = new StreamReader(Connection.ConnectionStream, new UTF8Encoding(false));
+            var connectionWriter = new StreamWriter(Connection.ConnectionStream, new UTF8Encoding(false));
+            connectionWriter.NewLine = "\n";
+
+            Trace.WriteLine("Connection open");
+
+            RequestReader = new RequestReader(connectionReader);
+            ResponseWriter = new ResponseWriter(connectionWriter);
+
+            Trace.WriteLine("Starting to listen for requests");
+        }
+
         public async Task Process()
         {
+            bool restartConnection = true;
             try
             {
                 Trace.WriteLine("Starting Controller.Process");
 
                 while (true)
                 {
-                    await Connection.Open();
-
-                    var connectionReader = new StreamReader(Connection.ConnectionStream, new UTF8Encoding(false));
-                    var connectionWriter = new StreamWriter(Connection.ConnectionStream, new UTF8Encoding(false));
-                    connectionWriter.NewLine = "\n";
-
-                    Trace.WriteLine("Connection open");
-
-                    RequestReader = new RequestReader(connectionReader);
-                    ResponseWriter = new ResponseWriter(connectionWriter);
-
-                    Trace.WriteLine("Starting to listen for requests");
+                    if (restartConnection) await InitialiseCommunicationLayer();
 
                     try
                     {
                         await ProcessStreamObjects().ConfigureAwait(false);
+                        restartConnection = true;
                     }
                     catch (Neo4jException ex)
                     {
                         // Generate "driver" exception something happened within the driver
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                        restartConnection = false;
                     }
                     catch (NotSupportedException ex)
                     {
@@ -76,15 +84,18 @@ namespace Neo4j.Driver.Tests.TestBackend
                         // with TLS. Could be a dirty read in the driver or a write from TLS server that causes strange
                         // version received..
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                        restartConnection = false;
                     }
                     catch (IOException ex)
                     {
                         Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
+                        restartConnection = true;
                     }
                     finally
                     {
                         Trace.WriteLine("Closing Connection");
-                        Connection.Close();
+                        
+                        if(restartConnection) Connection.Close();
                     }
                     Trace.Flush();
                 }
