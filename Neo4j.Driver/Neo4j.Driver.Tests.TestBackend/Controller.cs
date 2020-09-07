@@ -93,9 +93,11 @@ namespace Neo4j.Driver.Tests.TestBackend
                     }
                     finally
                     {
-                        Trace.WriteLine("Closing Connection");
-                        
-                        if(restartConnection) Connection.Close();
+                        if (restartConnection)
+                        {
+                            Trace.WriteLine("Closing Connection");
+                            Connection.Close();
+                        }
                     }
                     Trace.Flush();
                 }

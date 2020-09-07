@@ -18,14 +18,29 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string sessionId { get; set; }
             public string cypher { get; set; }
             [JsonProperty("params")]
-            public Dictionary<string, object> parameters { get; set; } = new Dictionary<string, object>();
+            public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
         }
+
+        private Dictionary<string, object> ConvertParameters()
+		{
+            if (data.parameters == null)
+                return null;
+
+            Dictionary<string, object> newParams = new Dictionary<string, object>();
+
+            foreach(KeyValuePair<string, CypherToNativeObject> element in data.parameters)
+			{
+                newParams.Add(element.Key, CypherToNative.Convert(element.Value));
+			}
+
+            return newParams;
+		}
 
         public override async Task Process()
         {
             var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
 
-            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, data.parameters).ConfigureAwait(false);
+            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters()).ConfigureAwait(false);
 
             var result = (Result)ProtocolObjectFactory.CreateObject(Protocol.Types.Result);
             result.Results = cursor;

@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
             else
             {
-                return new ProtocolResponse("NullRecord", null).Encode();
+                return new ProtocolResponse("NullRecord", (object)null).Encode();
             }
         }
     }

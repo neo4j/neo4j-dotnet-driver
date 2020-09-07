@@ -6,7 +6,7 @@ using System.IO;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class CypherObject
+    internal class NativeToCypherObject
     {
         public string name { get; set; }
         public object data { get; set; }
@@ -44,8 +44,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(Neo4j.Driver.Internal.Types.Path), "CypherPath" }
         };
         
-        //Mapping of object type to a converstion delegate that will return a CypherObject that can be serialized to JSON.
-        private static Dictionary<Type, Func<string, object, CypherObject>> FunctionMap { get; set; } = new Dictionary<Type, Func<string, object, CypherObject>>()
+        //Mapping of object type to a conversion delegate that will return a NativeToCypherObject that can be serialized to JSON.
+        private static Dictionary<Type, Func<string, object, NativeToCypherObject>> FunctionMap { get; set; } = new Dictionary<Type, Func<string, object, NativeToCypherObject>>()
         {
             { typeof(List<object>),                     CypherList },
             { typeof(Dictionary<string, object>),       CypherMap },
@@ -67,16 +67,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(Node),                             CypherNode },   
             { typeof(Relationship),                     CypherTODO },
             { typeof(Neo4j.Driver.Internal.Types.Path), CypherTODO }
-
-
         };
 
 
-        public static CypherObject Convert(object sourceObject)
+        public static NativeToCypherObject Convert(object sourceObject)
         {
             if (sourceObject is null)
             {
-                return new CypherObject { name = "CypherNull", data = {} };
+                return new NativeToCypherObject { name = "CypherNull", data = {} };
             }
 
             try
@@ -93,12 +91,12 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
 
-        public static CypherObject CypherSimple(string cypherType, object obj)
+        public static NativeToCypherObject CypherSimple(string cypherType, object obj)
         {
-            return new CypherObject { name = cypherType, data = new CypherObject.DataType { value = obj } };
+            return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = obj } };
         }
 
-        public static CypherObject CypherMap(string cypherType, object obj)
+        public static NativeToCypherObject CypherMap(string cypherType, object obj)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
             
@@ -107,10 +105,10 @@ namespace Neo4j.Driver.Tests.TestBackend
                 result[pair.Key] = Convert(pair.Value);
             }
 
-            return new CypherObject { name = cypherType, data = new CypherObject.DataType{ value = result } };
+            return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType{ value = result } };
         }
 
-        public static CypherObject CypherList(string cypherType, object obj)
+        public static NativeToCypherObject CypherList(string cypherType, object obj)
         {
             List<object> result = new List<object>();
 
@@ -119,15 +117,15 @@ namespace Neo4j.Driver.Tests.TestBackend
                 result.Add(Convert(item));
             }
 
-            return new CypherObject { name = cypherType, data = new CypherObject.DataType { value = result } };
+            return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = result } };
         }
 
-        public static CypherObject CypherTODO(string name, object obj)
+        public static NativeToCypherObject CypherTODO(string name, object obj)
         {
             throw new NotImplementedException($"NativeToCypher : {name} conversion is not implemented yet");
         }
 
-        public static CypherObject CypherNode(string cypherType, object obj)
+        public static NativeToCypherObject CypherNode(string cypherType, object obj)
         {
             var node = (Node)obj;
             var cypherNode = new Dictionary<string, object>
@@ -137,7 +135,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 ["props"] = Convert(new Dictionary<string, object>(node.Properties))
             };
 
-            return new CypherObject() { name = "Node",  data = cypherNode };
+            return new NativeToCypherObject() { name = "Node",  data = cypherNode };
         }
     }
 }

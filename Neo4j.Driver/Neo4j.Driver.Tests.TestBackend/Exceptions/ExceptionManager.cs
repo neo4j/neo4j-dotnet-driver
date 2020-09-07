@@ -4,6 +4,27 @@ using System.Diagnostics;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
+    //TransientException = DriverError
+    //ClientException = ClientError
+    //All others = BackendError
+
+
+    /*
+    neo4jException
+    |  ClientException
+    |  |   ValueTruncationException
+    |  |   ValueOverflowException
+    |  |   FatalDiscoveryException
+    |  |   ResultConsumedException
+    |  TransientException
+    |  DatabaseException
+    |  ServiceUnavailableException
+    |  SessionExpiredException
+    |  ProtocolException
+    |  SecurityException
+    |  |   AuthenticationException
+    */
+
     internal static class ExceptionManager
     {
         internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
@@ -18,5 +39,5 @@ namespace Neo4j.Driver.Tests.TestBackend
             Trace.WriteLine($"Exception thrown {exceptionMessage}\n{ex.StackTrace}");
             return new ProtocolResponse("BackendError", new { msg = exceptionMessage } );
         }
-    }
+    }    
 }
