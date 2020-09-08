@@ -4,6 +4,8 @@ using Neo4j.Driver.Internal.Types;
 using System.IO;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using System.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {    
@@ -49,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         //Mapping of object type to a conversion delegate that will return a NativeToCypherObject that can be serialized to JSON.
         private static Dictionary<Type, Func<Type, CypherToNativeObject, object>> FunctionMap { get; set; } = new Dictionary<Type, Func<Type, CypherToNativeObject, object>>()
         {
-            { typeof(List<object>),                     CypherTODO },
+            { typeof(List<object>),                     CypherList },
             { typeof(Dictionary<string, object>),       CypherTODO },
 
             { typeof(bool),                             CypherSimple },
@@ -105,34 +107,55 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
 
-
-        /*public static NativeToCypherObject CypherMap(string objectType, object obj)
+        public static object CypherList(Type objectType, CypherToNativeObject obj)
         {
-            Dictionary<string, object> result = new Dictionary<string, object>();
+            var result = new List<object>();
 
-            foreach (KeyValuePair<string, object> pair in (Dictionary<string, object>)obj)
+            foreach (JObject item in (JArray)obj.data.value)
             {
-                result[pair.Key] = Convert(pair.Value);
+                result.Add(Convert(item.ToObject<CypherToNativeObject>()));
             }
 
-            return new NativeToCypherObject { name = objectType, data = new NativeToCypherObject.DataType { value = result } };
+            return result;
         }
 
-        public static NativeToCypherObject CypherList(string objectType, object obj)
+        
+        /*
         {
-            List<object> result = new List<object>();
+            name: "Record",
+            data: {
+                values: [
+                    { name: "CypherNull", data: {}},
+                    { name: "CypherInt", data: { value: 1 }},
+                ]
+            }
+        }
 
-            foreach (object item in (List<object>)obj)
-            {
-                result.Add(Convert(item));
+
+        
+            { "name":"CypherList", "data": { 
+                                                "value": [
+                                                    { "name":"CypherInt", "data": { "value":1 } },
+                                                    { "name":"CypherString", "data": { "value":"a" } }
+                                                ]
+                                            } 
             }
 
-            return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = result } };
-        }*/
+        */
 
 
 
-        /*public static NativeToCypherObject CypherNode(string cypherType, object obj)
+
+        /*
+        public static object CypherMap(Type objectType, CypherToNativeObject obj)
+        {
+            var result = new Dictionary<string, object>();
+
+            return result
+           
+        }
+
+        public static NativeToCypherObject CypherNode(string cypherType, object obj)
         {
             var node = (Node)obj;
             var cypherNode = new Dictionary<string, object>

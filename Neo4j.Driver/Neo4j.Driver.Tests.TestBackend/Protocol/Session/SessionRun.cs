@@ -19,6 +19,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string cypher { get; set; }
             [JsonProperty("params")]
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
+            
         }
 
         private Dictionary<string, object> ConvertParameters()
