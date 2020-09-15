@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         private static Dictionary<Type, Func<Type, CypherToNativeObject, object>> FunctionMap { get; set; } = new Dictionary<Type, Func<Type, CypherToNativeObject, object>>()
         {
             { typeof(List<object>),                     CypherList },
-            { typeof(Dictionary<string, object>),       CypherTODO },
+            { typeof(Dictionary<string, object>),       CypherMap },
 
             { typeof(bool),                             CypherSimple },
             { typeof(long),                             CypherSimple },
@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var result = new List<object>();
 
-            foreach (JObject item in (JArray)obj.data.value)
+            foreach(JObject item in (JArray)obj.data.value)
             {
                 result.Add(Convert(item.ToObject<CypherToNativeObject>()));
             }
@@ -119,42 +119,19 @@ namespace Neo4j.Driver.Tests.TestBackend
             return result;
         }
 
-        
-        /*
-        {
-            name: "Record",
-            data: {
-                values: [
-                    { name: "CypherNull", data: {}},
-                    { name: "CypherInt", data: { value: 1 }},
-                ]
-            }
-        }
-
-
-        
-            { "name":"CypherList", "data": { 
-                                                "value": [
-                                                    { "name":"CypherInt", "data": { "value":1 } },
-                                                    { "name":"CypherString", "data": { "value":"a" } }
-                                                ]
-                                            } 
-            }
-
-        */
-
-
-
-
-        /*
         public static object CypherMap(Type objectType, CypherToNativeObject obj)
         {
             var result = new Dictionary<string, object>();
+            var dictionaryElements = JObject.FromObject(obj.data.value).ToObject<Dictionary<string, CypherToNativeObject>>();
 
-            return result
-           
+            foreach(var item in dictionaryElements)
+			{
+                result.Add(item.Key, Convert(item.Value));
+			}
+
+            return result;           
         }
-
+        /*
         public static NativeToCypherObject CypherNode(string cypherType, object obj)
         {
             var node = (Node)obj;
