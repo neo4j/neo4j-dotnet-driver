@@ -173,22 +173,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldReturnPlanAndProfile()
-            {
-                VerifySummary("PROFILE CREATE (n) RETURN n", null,
-                    MatchesSummary(
-                        new
-                        {
-                            HasPlan = true, 
-                            HasProfile = true,
-                            Profile = new ProfiledPlan("ProduceResults", null, new[] {"n"}, null, 0, 1, 0, 0, 0, 0)
-                        },
-                        opts => opts.Excluding(x => x.SelectedMemberPath == "Profile.OperatorType")
-                                    .Excluding(x => x.SelectedMemberPath == "Profile.Arguments")
-                                    .Excluding(x => x.SelectedMemberPath == "Profile.Children")));
-            }
-
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldNotReturnNotifications()
             {
                 VerifySummary("CREATE (n) RETURN n", null,
