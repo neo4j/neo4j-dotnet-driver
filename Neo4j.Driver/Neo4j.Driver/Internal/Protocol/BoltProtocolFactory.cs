@@ -30,18 +30,19 @@ namespace Neo4j.Driver.Internal.Protocol
         private const int BoltIdentifier = 0x6060B017;
         private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
 
-        private static readonly BoltProtocolVersion[] SupportedVersions = { new BoltProtocolVersion(4, 1),
+        private static readonly BoltProtocolVersion[] SupportedVersions = { new BoltProtocolVersion(4, 2),
+                                                                            new BoltProtocolVersion(4, 1),
                                                                             new BoltProtocolVersion(4, 0),
                                                                             new BoltProtocolVersion(3, 0),
                                                                             new BoltProtocolVersion(0, 0)};
 
         public static IBoltProtocol ForVersion(BoltProtocolVersion version, IDictionary<string, string> routingContext = null)
         {
-            if(version.Equals(3, 0))
+            if (version.Equals(3, 0))
             {
                 return new BoltProtocolV3();
             }
-            else if(version.Equals(4, 0))
+            else if (version.Equals(4, 0))
             {
                 return new BoltProtocolV4();
             }
@@ -49,8 +50,12 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 return new BoltProtocolV4_1(routingContext);
             }
-            else if(version.Equals(0, 0))
+            else if(version.Equals(4, 2))
             {
+                return new BoltProtocolV4_2(routingContext);
+            }
+            else if(version.Equals(0, 0))
+			{
                 throw new NotSupportedException(
                         "The Neo4j server does not support any of the protocol versions supported by this client. " +
                         "Ensure that you are using driver and server versions that are compatible with one another.");

@@ -21,6 +21,7 @@ using Neo4j.Driver.Internal.Messaging;
 using V3 = Neo4j.Driver.Internal.Messaging.V3;
 using V4 = Neo4j.Driver.Internal.Messaging.V4;
 using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
+using V4_2 = Neo4j.Driver.Internal.Messaging.V4_2;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
@@ -35,6 +36,9 @@ namespace Neo4j.Driver.Tests
             public static IEnumerable<object[]> MessageData => new[]
             {
                 new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
+                new object[] {new V4_2.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+                new object[] {new V4_2.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
+                new object[] {new V4_2.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
                 new object[] {new V4_1.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
                 new object[] {new V4_1.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
                 new object[] {new V4_1.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},

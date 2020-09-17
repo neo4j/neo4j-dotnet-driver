@@ -26,12 +26,12 @@ using Neo4j.Driver.Internal.Util;
 using Xunit;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_1
+namespace Neo4j.Driver.Internal.MessageHandling.V4_2
 {
     public class HelloResponseHandlerTests
     {
         const int MajorVersion = 4;
-        const int MinorVersion = 1;
+        const int MinorVersion = 2;
         [Fact]
         public void ShouldThrowIfConnectionIsNull()
         {
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_1
             responseHandler.OnSuccess(new[] { ServerVersionCollectorTests.TestMetadata, ConnectionIdCollectorTests.TestMetadata }.ToDictionary());
 
             //Ensure it is using the protocol version and not the version sent in the metadata
-            conn.Server.Version.Should().ContainAll("Neo4j/"+ MajorVersion + "." + MinorVersion + ".0");
+            conn.Server.Version.Should().ContainAll("Neo4j/" + MajorVersion + "." + MinorVersion + ".0");
         }
     }
 }
