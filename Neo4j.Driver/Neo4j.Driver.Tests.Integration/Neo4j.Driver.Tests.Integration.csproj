@@ -52,6 +52,9 @@
     <None Update="Resources\V4_1\noop.script">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Resources\V4_2\noop.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -173,5 +176,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Remove="Shared\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\V4_2\" />
   </ItemGroup>
 </Project>
