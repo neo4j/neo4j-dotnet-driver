@@ -24,8 +24,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             IDriver driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
             //TODO: Use config builder to take into account bookmarks and accessmode.
-            Session = driver.AsyncSession();    
-            await AsyncVoidReturn();
+            Session = driver.AsyncSession();
+            await Task.CompletedTask;
         }
 
         public override string Respond()

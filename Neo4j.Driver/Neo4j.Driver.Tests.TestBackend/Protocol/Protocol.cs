@@ -90,8 +90,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public virtual async Task Process()
 		{
-            await AsyncVoidReturn();
-		}
+            await Task.CompletedTask;
+        }
 
         public virtual async Task Process(Controller controller)    //Default is to not use the controller object. But option to override this method and use it if necessary.
 		{
@@ -106,11 +106,6 @@ namespace Neo4j.Driver.Tests.TestBackend
         public virtual string Respond()
         {
             return Encode();
-        }
-
-        protected async Task AsyncVoidReturn()
-        {
-            await Task.Run(() => { });
         }
 
         protected void TriggerEvent()

@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             //TODO: Add in config builder functionality in driver creation.
             Driver = GraphDatabase.Driver(data.uri, authToken);
-            await AsyncVoidReturn();
+            await Task.CompletedTask;
         }
 
         public override string Respond()

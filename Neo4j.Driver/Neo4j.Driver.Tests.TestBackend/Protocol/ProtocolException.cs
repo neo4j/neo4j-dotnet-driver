@@ -19,7 +19,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            await AsyncVoidReturn();
+            await Task.CompletedTask;
         }
     }
 }

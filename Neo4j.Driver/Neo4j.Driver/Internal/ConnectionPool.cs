@@ -476,7 +476,7 @@ namespace Neo4j.Driver.Internal
         {
             // change to the same value,
             // a.k.a. do nothing but return the original value
-            return Interlocked.CompareExchange(ref value, Active, Active);
+            return Interlocked.CompareExchange(ref value, value, value);
         }
 
         public override string ToString()

@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             //Notify any subscribers.
             TriggerEvent();
 
-            await AsyncVoidReturn();
+            await Task.CompletedTask;
         }
 
         public override string Respond()
