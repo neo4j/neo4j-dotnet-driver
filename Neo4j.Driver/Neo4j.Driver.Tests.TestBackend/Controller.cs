@@ -16,6 +16,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         private ResponseWriter ResponseWriter { get; set; }
         public TransactionManager TransactionManagager { get; set; } = new TransactionManager();
 
+
         public Controller(IConnection conn)
         {
             Trace.WriteLine("Controller initialising");
