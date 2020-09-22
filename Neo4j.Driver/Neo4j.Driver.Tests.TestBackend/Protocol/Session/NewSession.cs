@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string database { get; set; }
             
             [JsonProperty(Required = Required.AllowNull)]
-            public long fetchSize { get; set; } = -1;
+            public long fetchSize { get; set; } = Constants.DefaultFetchSize;
         }
 
         [JsonIgnore]
