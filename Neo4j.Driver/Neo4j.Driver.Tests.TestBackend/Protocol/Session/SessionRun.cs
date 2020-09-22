@@ -16,9 +16,17 @@ namespace Neo4j.Driver.Tests.TestBackend
         public class SessionRunType
         {
             public string sessionId { get; set; }
+            
             public string cypher { get; set; }
+            
             [JsonProperty("params")]
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
+
+            [JsonProperty(Required = Required.AllowNull)]
+            public string txMeta { get; set; }
+
+            [JsonProperty(Required = Required.AllowNull)]
+            public int timeout { get; set; } = -1;
             
         }
 

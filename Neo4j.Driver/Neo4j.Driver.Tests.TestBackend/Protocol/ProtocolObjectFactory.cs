@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     newObject = string.IsNullOrEmpty(jsonString) ? new DriverClose() : JsonConvert.DeserializeObject<DriverClose>(jsonString);
                     break;
                 case Protocol.Types.NewSession:
-                    newObject = string.IsNullOrEmpty(jsonString) ? new NewSession() : JsonConvert.DeserializeObject<NewSession>(jsonString);
+                    newObject = string.IsNullOrEmpty(jsonString) ? new NewSession() : JsonConvert.DeserializeObject<NewSession>(jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
                     break;
                 case Protocol.Types.SessionClose:
                     newObject = string.IsNullOrEmpty(jsonString) ? new SessionClose() : JsonConvert.DeserializeObject<SessionClose>(jsonString);
@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     newObject = string.IsNullOrEmpty(jsonString) ? new AuthorizationToken() : JsonConvert.DeserializeObject<AuthorizationToken>(jsonString);
                     break;
                 case Protocol.Types.SessionRun:
-                    newObject = string.IsNullOrEmpty(jsonString) ? new SessionRun() : JsonConvert.DeserializeObject<SessionRun>(jsonString);
+                    newObject = string.IsNullOrEmpty(jsonString) ? new SessionRun() : JsonConvert.DeserializeObject<SessionRun>(jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
                     break;                    
                 case Protocol.Types.TransactionRun:
                     newObject = string.IsNullOrEmpty(jsonString) ? new TransactionRun() : JsonConvert.DeserializeObject<TransactionRun>(jsonString);
