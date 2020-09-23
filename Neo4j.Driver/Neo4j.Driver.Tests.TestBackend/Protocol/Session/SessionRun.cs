@@ -23,21 +23,21 @@ namespace Neo4j.Driver.Tests.TestBackend
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
 
             [JsonProperty(Required = Required.AllowNull)]
-            public string txMeta { get; set; }
+            public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
 
             [JsonProperty(Required = Required.AllowNull)]
             public int timeout { get; set; } = -1;
             
         }
 
-        private Dictionary<string, object> ConvertParameters()
+        private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
 		{
             if (data.parameters == null)
                 return null;
 
             Dictionary<string, object> newParams = new Dictionary<string, object>();
 
-            foreach(KeyValuePair<string, CypherToNativeObject> element in data.parameters)
+            foreach(KeyValuePair<string, CypherToNativeObject> element in source)
 			{
                 newParams.Add(element.Key, CypherToNative.Convert(element.Value));
 			}
@@ -45,11 +45,26 @@ namespace Neo4j.Driver.Tests.TestBackend
             return newParams;
 		}
 
+        void TransactionConfig(TransactionConfigBuilder configBuilder)
+        {
+            if (data.timeout != -1)
+            {
+                var time = TimeSpan.FromMilliseconds(data.timeout);
+                configBuilder.WithTimeout(time);
+            }
+
+            if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
+
+            configBuilder.Build();
+        }
+
         public override async Task Process()
         {
             var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
 
-            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters()).ConfigureAwait(false);
+            //IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters()).ConfigureAwait(false);
+            
+            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
 
             var result = (Result)ProtocolObjectFactory.CreateObject(Protocol.Types.Result);
             result.Results = cursor;
