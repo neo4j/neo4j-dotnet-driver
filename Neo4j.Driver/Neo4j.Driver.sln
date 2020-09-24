@@ -24,10 +24,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Simple", "Neo4
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend", "Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj", "{D68071A7-6012-43BD-9C65-146D1D22B931}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend.UnitTests", "Neo4j.Driver.Tests.TestBackend.UnitTests\Neo4j.Driver.Tests.TestBackend.UnitTests.csproj", "{5996D115-9E3A-4A56-8658-6FBE0A865A94}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend.UnitTests.Client", "Neo4j.Driver.Tests.TestBackend.UnitTests.Client\Neo4j.Driver.Tests.TestBackend.UnitTests.Client.csproj", "{E90357AA-FFFD-4E78-9B65-233A2A70833C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,22 +80,6 @@ Global
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.DebugDelaySigned|Any CPU.ActiveCfg = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.DebugDelaySigned|Any CPU.Build.0 = Debug|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
-		{5996D115-9E3A-4A56-8658-6FBE0A865A94}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.DebugDelaySigned|Any CPU.ActiveCfg = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.DebugDelaySigned|Any CPU.Build.0 = Debug|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
-		{E90357AA-FFFD-4E78-9B65-233A2A70833C}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

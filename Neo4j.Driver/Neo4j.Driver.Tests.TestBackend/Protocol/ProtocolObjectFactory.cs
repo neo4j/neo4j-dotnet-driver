@@ -65,6 +65,9 @@ namespace Neo4j.Driver.Tests.TestBackend
                 case Protocol.Types.ProtocolException:
                     newObject = string.IsNullOrEmpty(jsonString) ? new ProtocolException() : JsonConvert.DeserializeObject<ProtocolException>(jsonString);
                     break;
+                case Protocol.Types.SessionLastBookmarks:
+                    newObject = string.IsNullOrEmpty(jsonString) ? new SessionLastBookmarks() : JsonConvert.DeserializeObject<SessionLastBookmarks>(jsonString);
+                    break;
             }
 
             if (newObject is null)

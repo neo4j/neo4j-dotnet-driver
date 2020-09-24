@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             RetryablePositive,
             RetryableNegative,
             ProtocolException,
+            SessionLastBookmarks,
 
             NumTypes
         }
@@ -48,7 +49,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                                                     { Types.ResultNext, "ResultNext" },
                                                     { Types.RetryablePositive, "RetryablePositive" },
                                                     { Types.RetryableNegative, "RetryableNegative" },
-                                                    { Types.ProtocolException, "ProtocolException" } };
+                                                    { Types.ProtocolException, "ProtocolException" },
+                                                    { Types.SessionLastBookmarks, "SessionLastBookmarks" } };
 
         static Protocol()
         {
