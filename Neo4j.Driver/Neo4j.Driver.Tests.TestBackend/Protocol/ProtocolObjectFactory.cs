@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     newObject = string.IsNullOrEmpty(jsonString) ? new SessionWriteTransaction() : JsonConvert.DeserializeObject<SessionWriteTransaction>(jsonString);
                     break;
                 case Protocol.Types.SessionBeginTransaction:
-                    newObject = string.IsNullOrEmpty(jsonString) ? new SessionBeginTransaction() : JsonConvert.DeserializeObject<SessionBeginTransaction>(jsonString);
+                    newObject = string.IsNullOrEmpty(jsonString) ? new SessionBeginTransaction() : JsonConvert.DeserializeObject<SessionBeginTransaction>(jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
                     break;
                 case Protocol.Types.Result:
                     newObject = string.IsNullOrEmpty(jsonString) ? new Result() : JsonConvert.DeserializeObject<Result>(jsonString);
