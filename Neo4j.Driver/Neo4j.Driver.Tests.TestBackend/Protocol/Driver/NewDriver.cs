@@ -16,6 +16,18 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             public string uri { get; set; }
             public AuthorizationToken authorizationToken { get; set; } = new AuthorizationToken();
+            public string userAgent { get; set; }
+        }
+
+        void DriverConfig(ConfigBuilder configBuilder)
+        {
+            if (!string.IsNullOrEmpty(data.userAgent)) configBuilder.WithUserAgent(data.userAgent);
+
+            //Test code...
+            //configBuilder.WithConnectionTimeout(TimeSpan.FromSeconds(1));
+            //configBuilder.WithConnectionIdleTimeout(TimeSpan.FromSeconds(1));
+
+            configBuilder.Build();
         }
 
         public override async Task Process()
@@ -24,7 +36,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             var authToken = AuthTokens.Custom(authTokenData.principal, authTokenData.credentials, authTokenData.realm, authTokenData.scheme);
 
             //TODO: Add in config builder functionality in driver creation.
-            Driver = GraphDatabase.Driver(data.uri, authToken);
+            Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
+            
             await Task.CompletedTask;
         }
 

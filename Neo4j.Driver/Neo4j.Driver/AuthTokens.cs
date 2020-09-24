@@ -133,13 +133,12 @@ namespace Neo4j.Driver
         public static IAuthToken Custom(string principal, string credentials, string realm, string scheme,
             Dictionary<string, object> parameters)
         {
-            var token = new Dictionary<string, object>
-            {
-                {SchemeKey, scheme},
-                {PrincipalKey, principal},
-                {CredentialsKey, credentials},
-                {RealmKey, realm}
-            };
+            var token = new Dictionary<string, object>();
+            if (!string.IsNullOrEmpty(principal)) token.Add(PrincipalKey, principal);
+            if (!string.IsNullOrEmpty(scheme)) token.Add(SchemeKey, scheme);
+            if (!string.IsNullOrEmpty(credentials)) token.Add(CredentialsKey, credentials);
+            if (!string.IsNullOrEmpty(realm)) token.Add(RealmKey, realm);
+            
             if (parameters != null)
             {
                 token.Add(ParametersKey, parameters);

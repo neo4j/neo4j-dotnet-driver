@@ -269,5 +269,11 @@ namespace Neo4j.Driver
             _config.MetricsEnabled = enabled;
             return this;
         }
+
+        internal ConfigBuilder WithUserAgent(string userAgent)
+		{
+            _config.UserAgent = userAgent;
+            return this;
+		}
     }
 }
