@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Neo4j.Driver.IntegrationTests.Internals;
 using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
@@ -36,7 +37,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact]
         public async Task ServiceUnavailableErrorWhenFailedToConn()
         {
-            using (var driver = GraphDatabase.Driver("bolt://localhost:123"))
+            var uri = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltPort, "123");
+            
+            using (var driver = GraphDatabase.Driver(uri))
             {
                 var session = driver.AsyncSession();
                 try

@@ -22,7 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerWithIPv6Fact]
         public async Task ShouldConnectIPv4AddressIfIpv6Enabled()
         {
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken,
+            using (var driver = GraphDatabase.Driver(Neo4jDefaultInstallation.BoltUri, AuthToken,
                 o => o.WithIpv6Enabled(true)))
             {
                 var session = driver.AsyncSession();
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         public async Task ShouldCloseAgedIdleConnections(int sessionCount)
         {
             // Given
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthToken, o=>
+            using (var driver = GraphDatabase.Driver(Neo4jDefaultInstallation.BoltUri, AuthToken, o=>
             {
                 o.WithMetricsEnabled(true);
                 o.WithConnectionIdleTimeout(TimeSpan.Zero); // enable but always timeout idle connections

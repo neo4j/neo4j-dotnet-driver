@@ -18,6 +18,7 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -102,7 +103,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact]
         public async Task ShouldFailToConnectIncorrectPort()
         {
-            using (var driver = GraphDatabase.Driver("bolt://localhost:1234"))
+            var uri = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltPort, "1234");
+
+            using (var driver = GraphDatabase.Driver(uri))
             {
                 var session = driver.AsyncSession();
                 try

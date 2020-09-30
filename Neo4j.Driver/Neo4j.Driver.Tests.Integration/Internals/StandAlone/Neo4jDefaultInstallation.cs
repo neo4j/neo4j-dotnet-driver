@@ -29,8 +29,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public static string HttpUri = "http://127.0.0.1:7474";
         public static string BoltUri { get { return BoltHost + ":" + BoltPort; } }
 
-        private static string BoltHost = "bolt://127.0.0.1";
-        private static string BoltPort = "7687"; 
+        public static string BoltHost = "bolt://127.0.0.1";
+        public static string BoltPort = "7687"; 
 
         static Neo4jDefaultInstallation()
 		{
