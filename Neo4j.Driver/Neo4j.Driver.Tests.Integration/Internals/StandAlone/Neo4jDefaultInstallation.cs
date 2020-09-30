@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 		{
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_USER"))) User =     Environment.GetEnvironmentVariable("TEST_NEO4J_USER");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_PASS"))) Password = Environment.GetEnvironmentVariable("TEST_NEO4J_PASS");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_HOST"))) BoltHost = Environment.GetEnvironmentVariable("TEST_NEO4J_HOST");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_HOST"))) BoltHost = "bolt://" + Environment.GetEnvironmentVariable("TEST_NEO4J_HOST");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_PORT"))) BoltPort = Environment.GetEnvironmentVariable("TEST_NEO4J_PORT");
         }
 
