@@ -174,9 +174,9 @@ namespace Neo4j.Driver.ExamplesAsync
     public abstract class BaseRxExample : AbstractRxTest, IDisposable
     {
         protected IDriver Driver { set; get; }
-        protected const string Uri = Neo4jDefaultInstallation.BoltUri;
-        protected const string User = Neo4jDefaultInstallation.User;
-        protected const string Password = Neo4jDefaultInstallation.Password;
+        protected string Uri = Neo4jDefaultInstallation.BoltUri;
+        protected string User = Neo4jDefaultInstallation.User;
+        protected string Password = Neo4jDefaultInstallation.Password;
 
         protected BaseRxExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
