@@ -23,6 +23,7 @@ using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.SessionConfigBuilder;
 using static Neo4j.Driver.Tests.ConsumableCursorTests;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Record = Xunit.Record;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
@@ -57,7 +58,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 var serverInfo = summary.Server;
 
-                serverInfo.Address.Should().Be("127.0.0.1:7687");
+                var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace("bolt://", string.Empty);
+                serverInfo.Address.Should().Be(boltAddress);
                 summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
                 summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
             }
@@ -174,9 +176,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 var summary = await cursor.ConsumeAsync();
 
+                var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltHeader, string.Empty);
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
-                summary.Server.Address.Should().Contain("127.0.0.1:7687");
+                summary.Server.Address.Should().Contain(boltAddress);
             }
             finally
             {
@@ -193,9 +196,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var cursor = await session.RunAsync("unwind range(1,3) as n return n");
                 var summary = await cursor.ConsumeAsync();
 
+                var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltHeader, string.Empty);
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
-                summary.Server.Address.Should().Contain("127.0.0.1:7687");
+                summary.Server.Address.Should().Contain(boltAddress);
 
                 await AssertCannotAccessRecords(cursor);
                 await CanAccessSummary(cursor);

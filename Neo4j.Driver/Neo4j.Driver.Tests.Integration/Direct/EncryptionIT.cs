@@ -32,7 +32,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         {
         }
 
-        [RequireServerFact]
+        [ShouldNotRunInTestKit_RequireServerFactAttribute]
         public async Task ShouldBeAbleToConnectWithInsecureConfig()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken,
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        [RequireServerFact]
+        [ShouldNotRunInTestKit_RequireServerFactAttribute]
         public async Task ShouldBeAbleToConnectUsingInsecureUri()
         {
             var builder = new UriBuilder("bolt+ssc", ServerEndPoint.Host, ServerEndPoint.Port);

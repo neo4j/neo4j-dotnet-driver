@@ -27,16 +27,17 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public static string User = "neo4j";
         public static string Password = "neo4j";
         public static string HttpUri = "http://127.0.0.1:7474";
-        public static string BoltUri { get { return BoltHost + ":" + BoltPort; } }
+        public static string BoltUri { get { return BoltHeader + BoltHost + ":" + BoltPort; } }
 
-        public static string BoltHost = "bolt://127.0.0.1";
+        public static string BoltHeader = "bolt://";
+        public static string BoltHost = "127.0.0.1";
         public static string BoltPort = "7687"; 
 
         static Neo4jDefaultInstallation()
 		{
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_USER"))) User =     Environment.GetEnvironmentVariable("TEST_NEO4J_USER");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_PASS"))) Password = Environment.GetEnvironmentVariable("TEST_NEO4J_PASS");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_HOST"))) BoltHost = "bolt://" + Environment.GetEnvironmentVariable("TEST_NEO4J_HOST");
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_HOST"))) BoltHost = Environment.GetEnvironmentVariable("TEST_NEO4J_HOST");
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_PORT"))) BoltPort = Environment.GetEnvironmentVariable("TEST_NEO4J_PORT");
         }
 

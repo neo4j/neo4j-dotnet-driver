@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
@@ -23,7 +24,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
         public class RunCommandMethod
         {
-            [Fact]
+            [ShouldNotRunInTestKitFact]
             public void ShouldRunCommand()
             {
                 // first we got a local command runner

@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             Pkcs12 = fixture.Pkcs12;
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task CertificateTrustManager_ShouldTrust()
         {
             await VerifySuccess(Server.BoltUri,
@@ -47,14 +47,14 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                                 EncryptionLevel.None);
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task CertificateTrustManager_ShouldNotTrustIfHostnameDiffers()
         {
             await VerifyFailure(new Uri("bolt://another.host.domain:7687"),
                 new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task
             CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
         {
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 new CertificateTrustManager(false, new[] {Pkcs12.GetDotnetCertificate()}));
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task CertificateTrustManager_ShouldNotTrustIfNotValid()
         {
             try
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task CertificateTrustManager_ShouldNotTrustIfCertificateIsNotTrusted()
         {
             var pkcs12Untrusted = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
@@ -93,19 +93,19 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 new CertificateTrustManager(true, new[] {pkcs12Untrusted.GetDotnetCertificate()}));
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task InsecureTrustManager_ShouldTrust()
         {
             await VerifySuccess(Server.BoltUri, new InsecureTrustManager(true), EncryptionLevel.None);
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task InsecureTrustManager_ShouldNotTrustIfHostnameDiffers()
         {
             await VerifyFailure(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(true));
         }
 
-        [Fact]
+        [ShouldNotRunInTestKitFact]
         public async Task InsecureTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
         {
             await VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false), EncryptionLevel.None);

@@ -65,7 +65,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!BoltkitHelper.IsBoltkitAvailable())
+            if (Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT") == null  &&  !BoltkitHelper.IsBoltkitAvailable())
             {
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
@@ -262,6 +262,30 @@ namespace Neo4j.Driver.IntegrationTests
             if (!isClusterSupported.Item1)
             {
                 Skip = isClusterSupported.Item2;
+            }
+        }
+    }
+
+	public class ShouldNotRunInTestKitFact : FactAttribute 
+    {
+        public ShouldNotRunInTestKitFact()
+		{
+            string envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
+            if (!string.IsNullOrEmpty(envVariable)  &&  envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))
+			{
+                Skip = "Test is not run in TestKit";                
+			}
+		}
+    }
+
+    public class ShouldNotRunInTestKit_RequireServerFactAttribute : RequireServerFactAttribute
+	{
+        public ShouldNotRunInTestKit_RequireServerFactAttribute()
+		{
+            string envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
+            if (!string.IsNullOrEmpty(envVariable) && envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                Skip = "Test is not run in TestKit";
             }
         }
     }
