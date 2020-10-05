@@ -74,8 +74,7 @@ namespace Neo4j.Driver.IntegrationTests
             {
                 var version = ServerVersion.From(versionText);
                 var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
-                Console.WriteLine($"available version = {availableVersion}");
-
+                
                 var satisfy = false;
                 switch (versionCompare)
                 {

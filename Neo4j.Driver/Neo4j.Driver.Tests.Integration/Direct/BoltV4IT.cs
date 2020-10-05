@@ -14,13 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
-using System;
+using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.IntegrationTests.Internals;
+
+
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
@@ -92,6 +95,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldReturnDatabaseInfoForDefaultDatabaseWhenSpecifiedInTxFunc()
         {
+            Console.WriteLine($"Version = {ServerVersion.From(BoltkitHelper.ServerVersion())}");
             await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
         }
 
