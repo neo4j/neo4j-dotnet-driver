@@ -6,6 +6,8 @@
 	<RuntimeFrameworkVersion>2.0.0</RuntimeFrameworkVersion>
 	<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
 	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+	<Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

@@ -78,8 +78,8 @@ Global
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.DebugDelaySigned|Any CPU.Build.0 = Debug|Any CPU
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
-		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
+		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
+		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
