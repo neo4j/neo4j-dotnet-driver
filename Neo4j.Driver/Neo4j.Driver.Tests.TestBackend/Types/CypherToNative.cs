@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                 return function(objectType, sourceObject);
             }
-            catch(Exception ex)
+            catch
             {
                 throw new IOException($"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
             }

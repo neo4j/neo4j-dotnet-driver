@@ -27,10 +27,9 @@ namespace Neo4j.Driver.Tests.TestBackend
                 using (var connection = new Connection(Address.ToString(), Port))
                 {
                     Controller controller = new Controller(connection);
-                    
+
                     //await controller.Process().ConfigureAwait(false); //This requires C# 7.1 or later, TeamCity build and packaging is not using this yet.
-                    controller.Process().Wait(); 
-                    
+                    controller.Process().Wait();
                 }
             }
             catch(System.Exception ex)
