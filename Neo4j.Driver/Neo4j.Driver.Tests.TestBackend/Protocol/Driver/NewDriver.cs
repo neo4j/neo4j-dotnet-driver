@@ -26,8 +26,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             //Test code...
             //configBuilder.WithConnectionTimeout(TimeSpan.FromSeconds(1));
             //configBuilder.WithConnectionIdleTimeout(TimeSpan.FromSeconds(1));
-
-            configBuilder.Build();
         }
 
         public override async Task Process()
