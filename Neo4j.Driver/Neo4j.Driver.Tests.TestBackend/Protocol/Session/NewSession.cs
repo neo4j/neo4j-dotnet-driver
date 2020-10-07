@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string database { get; set; }
             
             [JsonProperty(Required = Required.AllowNull)]
-            public long fetchSize { get; set; } = -1;
+            public long fetchSize { get; set; } = 1000;
         }
 
         [JsonIgnore]
@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             if(!string.IsNullOrEmpty(data.database)) configBuilder.WithDatabase(data.database);            
             if(!string.IsNullOrEmpty(data.accessMode)) configBuilder.WithDefaultAccessMode(GetAccessMode);
             if(data.bookmarks.Count > 0) configBuilder.WithBookmarks(Bookmark.From(data.bookmarks.ToArray()));
-            if(data.fetchSize != -1) configBuilder.WithFetchSize(data.fetchSize);
+            configBuilder.WithFetchSize(data.fetchSize);
         }
 
         public override async Task Process()
