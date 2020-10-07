@@ -270,7 +270,14 @@ namespace Neo4j.Driver
             return this;
         }
 
-        internal ConfigBuilder WithUserAgent(string userAgent)
+        /// <summary>
+        /// Sets the userAgent.
+        /// Used to get and set the User Agent string. If not used the default will be "neo4j-dotnet/x.y" 
+        /// where x is the major version and y is the minor version.
+        /// </summary>
+        /// <param name="userAgent">The user agent string</param>
+        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        public ConfigBuilder WithUserAgent(string userAgent)
 		{
             _config.UserAgent = userAgent;
             return this;

@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Types;
 using System.IO;
-using Newtonsoft.Json;
-using System.ComponentModel;
-using System.Linq;
 using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
@@ -43,9 +39,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             {"CypherDuration",           typeof(Duration)                        },
             {"CypherPoint",              typeof(Point)                           },
 
-            {"CypherNode",               typeof(Node)                            },
-            {"CypherRelationship",       typeof(Relationship)                    },
-            {"CypherPath",               typeof(Neo4j.Driver.Internal.Types.Path)}
+            {"CypherNode",               typeof(INode)                            },
+            {"CypherRelationship",       typeof(IRelationship)                    },
+            {"CypherPath",               typeof(IPath)}
         };
 
         //Mapping of object type to a conversion delegate that will return a NativeToCypherObject that can be serialized to JSON.
@@ -68,9 +64,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(Duration),                         CypherTODO },
             { typeof(Point),                            CypherTODO },
 
-            { typeof(Node),                             CypherTODO },
-            { typeof(Relationship),                     CypherTODO },
-            { typeof(Neo4j.Driver.Internal.Types.Path), CypherTODO }
+            { typeof(INode),                             CypherTODO },
+            { typeof(IRelationship),                     CypherTODO },
+            { typeof(IPath), CypherTODO }
         };
 
 
@@ -94,7 +90,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 throw new IOException($"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
             }
         }
-
+        
 
         public static object CypherSimple(Type objectType, CypherToNativeObject cypherObject)
         {

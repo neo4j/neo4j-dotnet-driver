@@ -54,8 +54,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
 
             if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
-
-            configBuilder.Build();
         }
 
         public override async Task Process()
