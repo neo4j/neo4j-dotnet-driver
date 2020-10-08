@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.IO;
+
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
