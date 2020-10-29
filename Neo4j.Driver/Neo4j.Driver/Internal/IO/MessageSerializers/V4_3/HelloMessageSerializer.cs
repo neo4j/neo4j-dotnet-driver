@@ -15,20 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.IO;
+using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Messaging.V4_3;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 {
-    internal static class BoltProtocolMessageFormat
+    internal class HelloMessageSerializer : WriteOnlySerializer
     {
-        public static readonly IMessageFormat V3 = new BoltProtocolV3MessageFormat();
+        public override IEnumerable<Type> WritableTypes => new[] { typeof(HelloMessage) };
 
-        public static readonly IMessageFormat V4 = new BoltProtocolV4MessageFormat();
+        public override void Serialize(IPackStreamWriter writer, object value)
+        {
+            var msg = value.CastOrThrow<HelloMessage>();
 
-        public static readonly IMessageFormat V4_1 = new BoltProtocolV4_1MessageFormat();
-
-        public static readonly IMessageFormat V4_2 = new BoltProtocolV4_2MessageFormat();
-
-        public static readonly IMessageFormat V4_3 = new BoltProtocolV4_3MessageFormat();
+            writer.WriteStructHeader(1, BoltProtocolV4_3MessageFormat.MsgHello);
+            writer.Write(msg.MetaData);
+        }
     }
 }

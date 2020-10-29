@@ -188,6 +188,7 @@ namespace Neo4j.Driver.IntegrationTests.Stub
         [RequireBoltStubServerTheory]
         [InlineData("V4_1")]
         [InlineData("V4_2")]
+        [InlineData("V4_3")]
         public async Task ShouldNotThrowOnNoopMessages(string boltVersion)
         {
             using (BoltStubServer.Start($"{boltVersion}/noop", 9001))
