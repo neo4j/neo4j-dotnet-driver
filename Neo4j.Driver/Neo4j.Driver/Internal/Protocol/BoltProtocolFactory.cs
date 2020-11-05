@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Protocol
         private static readonly BoltProtocolVersion[] SupportedVersions = { new BoltProtocolVersion(4, 3),
                                                                             new BoltProtocolVersion(4, 2),
                                                                             new BoltProtocolVersion(4, 1),
-                                                                            new BoltProtocolVersion(4, 0),
+                                                                            //new BoltProtocolVersion(4, 0),    // Currently support only 4 versions. so latest 3 and last minor version of the last major release.
                                                                             new BoltProtocolVersion(3, 0),
                                                                             new BoltProtocolVersion(0, 0)};
 
