@@ -31,11 +31,10 @@ namespace Neo4j.Driver.Internal.Protocol
         private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
 
         private static readonly BoltProtocolVersion[] SupportedVersions = { new BoltProtocolVersion(4, 3),
-                                                                            new BoltProtocolVersion(4, 2),
+                                                                            //new BoltProtocolVersion(4, 2),    //Same as 4.1 so not used.
                                                                             new BoltProtocolVersion(4, 1),
-                                                                            //new BoltProtocolVersion(4, 0),    // Currently support only 4 versions. so latest 3 and last minor version of the last major release.
-                                                                            new BoltProtocolVersion(3, 0),
-                                                                            new BoltProtocolVersion(0, 0)};
+                                                                            new BoltProtocolVersion(4, 0), 
+                                                                            new BoltProtocolVersion(3, 0)};
 
         public static IBoltProtocol ForVersion(BoltProtocolVersion version, IDictionary<string, string> routingContext = null)
         {
@@ -47,14 +46,15 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 return new BoltProtocolV4();
             }
-            else if(version.Equals(4, 1))
+            //NOTE: Protocols 4.1 and 4.2 are identical. So revert to using 4.
+            else if (version.Equals(4, 1) )
             {
                 return new BoltProtocolV4_1(routingContext);
             }
-            else if(version.Equals(4, 2))
-            {
+            else if (version.Equals(4, 2))
+			{
                 return new BoltProtocolV4_2(routingContext);
-            }
+			}
             else if (version.Equals(4, 3))
             {
                 return new BoltProtocolV4_3(routingContext);
