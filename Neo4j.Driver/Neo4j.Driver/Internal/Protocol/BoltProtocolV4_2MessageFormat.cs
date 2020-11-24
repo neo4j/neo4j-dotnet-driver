@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using V3 = Neo4j.Driver.Internal.IO.MessageSerializers.V3;
+using V4_1 = Neo4j.Driver.Internal.IO.MessageSerializers.V4_1;
 using V4_2 = Neo4j.Driver.Internal.IO.MessageSerializers.V4_2;
 
 
@@ -16,7 +16,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         internal BoltProtocolV4_2MessageFormat()
         {
-            RemoveHandler<V3.HelloMessageSerializer>();
+            RemoveHandler<V4_1.HelloMessageSerializer>();
             AddHandler<V4_2.HelloMessageSerializer>();
         }
     }

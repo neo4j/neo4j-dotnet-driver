@@ -32,8 +32,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
 
-        private const string GetRoutingTableForDatabaseProcedure =
-            "CALL dbms.routing.getRoutingTable($context, $database)";
+        private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
 
         public ClusterDiscovery(IDictionary<string, string> context, ILogger logger)
@@ -42,7 +41,7 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
         }
 
-        internal Query DiscoveryProcedure(IConnection connection, string database)
+        internal Query DiscoveryProcedure(IConnection connection, string database)  //TODO: ROUTE - Replace with route call and response  for 4.3 and up
         {
             if (connection.SupportsMultidatabase())
             {
@@ -69,7 +68,7 @@ namespace Neo4j.Driver.Internal.Routing
             try
             {
                 var stmt = DiscoveryProcedure(connection, database);
-                var result = await session.RunAsync(stmt).ConfigureAwait(false);
+                var result = await session.RunAsync(stmt).ConfigureAwait(false);    //TODO: ROUTE - Message should go here I think...
                 var record = await result.SingleAsync().ConfigureAwait(false);
 
                 table = ParseDiscoveryResult(database, record);
