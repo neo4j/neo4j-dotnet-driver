@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var discovery = new ClusterDiscovery(context, null);
                 var mock = new Mock<IConnection>();
                 var serverInfoMock = new Mock<IServerInfo>();
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
 
                 serverInfoMock.Setup(m => m.Version).Returns(version);
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
@@ -370,7 +370,7 @@ namespace Neo4j.Driver.Tests.Routing
                 {
                     if (ServerVersion.From(serverInfo.Version) >= ServerVersion.V4_0_0)
                     {
-                        protocol = new BoltProtocolV4();
+                        protocol = new BoltProtocolV4_0();
                     }                    
 
                     _mockConn.Setup(x => x.Server).Returns(serverInfo);

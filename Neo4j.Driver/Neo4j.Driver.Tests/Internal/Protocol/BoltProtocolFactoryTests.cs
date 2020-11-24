@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
                 var boltProtocol = BoltProtocolFactory.ForVersion(new BoltProtocolVersion(4, 0));
-                boltProtocol.Should().BeOfType<BoltProtocolV4>();
+                boltProtocol.Should().BeOfType<BoltProtocolV4_0>();
             }
 
             [Fact]

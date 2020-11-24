@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
         {
             var discardN = value.CastOrThrow<DiscardMessage>();
 
-            writer.WriteStructHeader(1, BoltProtocolV4MessageFormat.MsgDiscardN);
+            writer.WriteStructHeader(1, BoltProtocolV4_0MessageFormat.MsgDiscardN);
             writer.Write(discardN.Metadata);
         }
     }

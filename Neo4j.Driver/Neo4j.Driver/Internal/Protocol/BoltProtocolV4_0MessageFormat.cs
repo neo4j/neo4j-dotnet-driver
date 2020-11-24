@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.IO.ValueSerializers;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV4MessageFormat : BoltProtocolV3MessageFormat
+    internal class BoltProtocolV4_0MessageFormat : BoltProtocolV3MessageFormat
     {
         #region Message Constants
 
@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         #endregion
 
-        internal BoltProtocolV4MessageFormat()
+        internal BoltProtocolV4_0MessageFormat()
         {
             RemoveHandler<PullAllMessageSerializer>();
             AddHandler<PullMessageSerializer>();

@@ -28,7 +28,7 @@ using Neo4j.Driver.Internal.Messaging.V4;
 using Neo4j.Driver.Tests;
 using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV4;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV4_0;
 using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Result;
 
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullAllMessage>(), It.IsAny<V4.PullResponseHandler>()))
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarkTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
@@ -164,7 +164,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
 
                 await V4.RunInExplicitTransactionAsync(mockConn.Object, query, true);
 
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
 
                 await V4.RunInExplicitTransactionAsync(mockConn.Object, query, true);
 
@@ -206,7 +206,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task ShouldEnqueueHelloAndSync()
             {
-                var V4 = new BoltProtocolV4();
+                var V4 = new BoltProtocolV4_0();
                 await EnqueAndSync(V4);
             }
         }

@@ -7,7 +7,7 @@ using V4_1 =  Neo4j.Driver.Internal.IO.MessageSerializers.V4_1;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    class BoltProtocolV4_1MessageFormat : BoltProtocolV4MessageFormat
+    class BoltProtocolV4_1MessageFormat : BoltProtocolV4_0MessageFormat
     {
 
         #region Message Constants

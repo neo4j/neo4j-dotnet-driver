@@ -36,9 +36,9 @@ using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV4 : BoltProtocolV3
+    internal class BoltProtocolV4_0 : BoltProtocolV3
     {
-        public BoltProtocolV4()
+        public BoltProtocolV4_0()
         {
         }
 

@@ -10,7 +10,7 @@ using Neo4j.Driver.Internal.Messaging.V4_1;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    class BoltProtocolV4_1 : BoltProtocolV4
+    class BoltProtocolV4_1 : BoltProtocolV4_0
     {
         private IDictionary<string, string> RoutingContext { get; set; }
 

@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
             var handler = SerializerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV4MessageFormat.MsgPullN, 0));
+                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV4_0MessageFormat.MsgPullN, 0));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV4MessageFormat.MsgPullN);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV4_0MessageFormat.MsgPullN);
             reader.ReadMap().Should().HaveCount(2).And.Contain("n", 5L).And.Contain("qid", 2L);
         }
 
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV4MessageFormat.MsgPullN);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV4_0MessageFormat.MsgPullN);
             reader.ReadMap().Should().HaveCount(1).And.Contain("n", 5L);
         }
     }

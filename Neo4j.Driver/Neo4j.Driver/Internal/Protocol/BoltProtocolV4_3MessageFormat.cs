@@ -11,7 +11,9 @@ namespace Neo4j.Driver.Internal.Protocol
     {
 
         #region Message Constants
-
+        
+        public const byte MsgRoute = 0x66 ;
+        
         #endregion
 
         internal BoltProtocolV4_3MessageFormat()
