@@ -153,5 +153,21 @@ namespace Neo4j.Driver.Internal.Protocol
                     "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
             }
         }
+
+        public virtual Task<IResultCursor> GetRoutingTable(bool supportsMultiDb, string database)
+		{
+            if (supportsMultiDb)
+            {
+
+                //return new Query(GetRoutingTableForDatabaseProcedure,
+                //    new Dictionary<string, object>
+                //        {{"context", _context}, {"database", string.IsNullOrEmpty(database) ? null : database}});
+            }
+
+            //return new Query(GetRoutingTableProcedure,
+            //    new Dictionary<string, object> { { "context", _context } });
+
+            return null;
+        }
     }
 }

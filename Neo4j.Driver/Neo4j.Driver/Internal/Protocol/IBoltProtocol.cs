@@ -50,5 +50,7 @@ namespace Neo4j.Driver.Internal.Protocol
         Task LogoutAsync(IConnection connection);
 
         BoltProtocolVersion Version();
+
+        Task<IResultCursor> GetRoutingTable(bool supportsMultiDb, string database); 
     }
 }
