@@ -57,6 +57,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task<IResultCursor> GetRoutingTable(IConnection connection,
                                             string database,
+                                            string sessionDb,
                                             IResultResourceHandler resourceHandler,
                                             IBookmarkTracker bookmarkTracker,
                                             Bookmark bookmark); 

@@ -168,13 +168,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         protected internal override void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)
         {
-            base.GetProcedureAndParameters(connection, database, out procedure, out parameters);
-
-            if (connection.SupportsMultidatabase())
-            {
-                procedure = GetRoutingTableForDatabaseProcedure;
-                parameters.Add("database", string.IsNullOrEmpty(database) ? null : database);
-            }
+            procedure = GetRoutingTableForDatabaseProcedure;
+            parameters = new Dictionary<string, object> { { "context", connection.RoutingContext }, { "database", string.IsNullOrEmpty(database) ? null : database } };                     
         }
     }
 }

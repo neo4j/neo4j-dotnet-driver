@@ -48,51 +48,12 @@ namespace Neo4j.Driver.Internal.Routing
         {
             var bookmarkTracker = new BookmarkTracker(bookmark);
             var resourceHandler = new ConnectionResourceHandler(connection);
-
-            var result = await connection.BoltProtocol.GetRoutingTable(connection, database, resourceHandler, bookmarkTracker, bookmark);   //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
+            var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
+            var result = await connection.BoltProtocol.GetRoutingTable(connection, database, sessionDb, resourceHandler, bookmarkTracker, bookmark);   //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
             var record = await result.SingleAsync().ConfigureAwait(false);
             
             return ParseDiscoveryResult(database, record);
         }
-
-        //TODO: REMOVE AS ONLY FOR REFERENCE
-        /*public async Task<IRoutingTable> DiscoverAsync1(IConnection connection, string database, Bookmark bookmark)
-        {
-            RoutingTable table;
-
-            var provider = new SingleConnectionBasedConnectionProvider(connection);
-            var multiDb = connection.SupportsMultidatabase();
-            var sessionAccessMode = multiDb ? AccessMode.Read : AccessMode.Write;
-            var sessionDb = multiDb ? "system" : null;
-            var session = new AsyncSession(provider, _logger, null, sessionAccessMode, sessionDb, bookmark);
-            try
-            {
-                var stmt = DiscoveryProcedure(connection, database);
-                var result = await session.RunAsync(stmt).ConfigureAwait(false);    
-                var record = await result.SingleAsync().ConfigureAwait(false);
-
-                table = ParseDiscoveryResult(database, record);
-            }
-            finally
-            {
-                try
-                {
-                    await session.CloseAsync().ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // ignore any exception
-                }
-
-                await provider.CloseAsync().ConfigureAwait(false);
-            }
-            var result = await connection.BoltProtocol.GetRoutingTable(connection, database);       
-            var record = await result.SingleAsync().ConfigureAwait(false);
- 
-            return table;
-            return ParseDiscoveryResult(database, record);
-        }
-        */
 
         private static RoutingTable ParseDiscoveryResult(string database, IRecord record)
         {

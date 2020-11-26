@@ -152,18 +152,18 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public virtual async Task<IResultCursor> GetRoutingTable(IConnection connection, 
                                                                  string database, 
+                                                                 string sessionDb,
                                                                  IResultResourceHandler resourceHandler, 
                                                                  IBookmarkTracker bookmarkTracker,
                                                                  Bookmark bookmark)
-		{
-            AssertNullDatabase(database);
+		{   
             string procedure;
             var parameters = new Dictionary<string, object>();
 
             GetProcedureAndParameters(connection, database, out procedure, out parameters);            
             var query = new Query(procedure, parameters);
 
-            return await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, database, bookmark, null).ConfigureAwait(false); ;
+            return await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null).ConfigureAwait(false); ;
         }
     }
 }
