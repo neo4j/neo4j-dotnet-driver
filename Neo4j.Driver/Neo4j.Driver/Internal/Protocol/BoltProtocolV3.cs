@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
@@ -34,6 +35,8 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV3 : IBoltProtocol
     {
+        private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
+        
         public BoltProtocolV3()
         {
 
@@ -43,73 +46,60 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
             ILogger logger = null)
         {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
-                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V3);
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V3);
         }
 
         public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
             ILogger logger = null)
         {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
-                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
         }
 
         public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            await connection
-                .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
-                    new V3.HelloResponseHandler(connection)).ConfigureAwait(false);
+            await connection.EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()), new V3.HelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
         public virtual async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Query query, bool reactive, IBookmarkTracker bookmarkTracker,
-            IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionConfig config, long fetchSize = Config.Infinite)
+                                                                                 Query query, 
+                                                                                 bool reactive, 
+                                                                                 IBookmarkTracker bookmarkTracker,
+                                                                                 IResultResourceHandler resultResourceHandler,
+                                                                                 string database, 
+                                                                                 Bookmark bookmark, 
+                                                                                 TransactionConfig config, 
+                                                                                 long fetchSize = Config.Infinite)
         {
             AssertNullDatabase(database);
 
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
-            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
-                resultResourceHandler);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, resultResourceHandler);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
-            await connection
-                .EnqueueAsync(
-                    new RunWithMetadataMessage(query, bookmark, config, connection.GetEnforcedAccessMode()),
-                    runHandler,
-                    PullAll, pullAllHandler)
-                .ConfigureAwait(false);
+            await connection.EnqueueAsync(new RunWithMetadataMessage(query, bookmark, config, connection.GetEnforcedAccessMode()), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
-        public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
-            TransactionConfig config)
+        public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
         {
             AssertNullDatabase(database);
 
-            await connection.EnqueueAsync(
-                    new BeginMessage(bookmark, config, connection.GetEnforcedAccessMode()),
-                    new V3.BeginResponseHandler())
-                .ConfigureAwait(false);
+            await connection.EnqueueAsync(new BeginMessage(bookmark, config, connection.GetEnforcedAccessMode()), new V3.BeginResponseHandler()).ConfigureAwait(false);
             if (bookmark != null && bookmark.Values.Any())
             {
                 await connection.SyncAsync().ConfigureAwait(false);
             }
         }
 
-        public virtual async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Query query, bool reactive, long fetchSize = Config.Infinite)
+        public virtual async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
-            var streamBuilder =
-                new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, null);
-            await connection.EnqueueAsync(new RunWithMetadataMessage(query),
-                    runHandler, PullAll, pullAllHandler)
-                .ConfigureAwait(false);
+            await connection.EnqueueAsync(new RunWithMetadataMessage(query), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
@@ -154,20 +144,26 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public virtual Task<IResultCursor> GetRoutingTable(bool supportsMultiDb, string database)
+        protected internal virtual void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)
 		{
-            if (supportsMultiDb)
-            {
+            procedure = GetRoutingTableProcedure;
+            parameters = new Dictionary<string, object> { { "context", connection.RoutingContext } };
+        }
 
-                //return new Query(GetRoutingTableForDatabaseProcedure,
-                //    new Dictionary<string, object>
-                //        {{"context", _context}, {"database", string.IsNullOrEmpty(database) ? null : database}});
-            }
+        public virtual async Task<IResultCursor> GetRoutingTable(IConnection connection, 
+                                                                 string database, 
+                                                                 IResultResourceHandler resourceHandler, 
+                                                                 IBookmarkTracker bookmarkTracker,
+                                                                 Bookmark bookmark)
+		{
+            AssertNullDatabase(database);
+            string procedure;
+            var parameters = new Dictionary<string, object>();
 
-            //return new Query(GetRoutingTableProcedure,
-            //    new Dictionary<string, object> { { "context", _context } });
+            GetProcedureAndParameters(connection, database, out procedure, out parameters);            
+            var query = new Query(procedure, parameters);
 
-            return null;
+            return await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, database, bookmark, null).ConfigureAwait(false); ;
         }
     }
 }

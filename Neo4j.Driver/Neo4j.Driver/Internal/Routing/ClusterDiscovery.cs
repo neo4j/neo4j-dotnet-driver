@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -41,22 +42,21 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
         }
 
-        internal Query DiscoveryProcedure(IConnection connection, string database)  //TODO: ROUTE - Replace with route call and response  for 4.3 and up
-        {
-            if (connection.SupportsMultidatabase())
-            {
-                return new Query(GetRoutingTableForDatabaseProcedure,
-                    new Dictionary<string, object>
-                        {{"context", _context}, {"database", string.IsNullOrEmpty(database) ? null : database}});
-            }
-
-            return new Query(GetRoutingTableProcedure,
-                new Dictionary<string, object> {{"context", _context}});
-        }
-
         /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
         /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
         public async Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, Bookmark bookmark)
+        {
+            var bookmarkTracker = new BookmarkTracker(bookmark);
+            var resourceHandler = new ConnectionResourceHandler(connection);
+
+            var result = await connection.BoltProtocol.GetRoutingTable(connection, database, resourceHandler, bookmarkTracker, bookmark);   //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
+            var record = await result.SingleAsync().ConfigureAwait(false);
+            
+            return ParseDiscoveryResult(database, record);
+        }
+
+        //TODO: REMOVE AS ONLY FOR REFERENCE
+        /*public async Task<IRoutingTable> DiscoverAsync1(IConnection connection, string database, Bookmark bookmark)
         {
             RoutingTable table;
 
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal.Routing
             try
             {
                 var stmt = DiscoveryProcedure(connection, database);
-                var result = await session.RunAsync(stmt).ConfigureAwait(false);    //TODO: ROUTE - Message should go here I think...
+                var result = await session.RunAsync(stmt).ConfigureAwait(false);    
                 var record = await result.SingleAsync().ConfigureAwait(false);
 
                 table = ParseDiscoveryResult(database, record);
@@ -86,9 +86,13 @@ namespace Neo4j.Driver.Internal.Routing
 
                 await provider.CloseAsync().ConfigureAwait(false);
             }
-
+            var result = await connection.BoltProtocol.GetRoutingTable(connection, database);       
+            var record = await result.SingleAsync().ConfigureAwait(false);
+ 
             return table;
+            return ParseDiscoveryResult(database, record);
         }
+        */
 
         private static RoutingTable ParseDiscoveryResult(string database, IRecord record)
         {
@@ -179,5 +183,43 @@ namespace Neo4j.Driver.Internal.Routing
                 throw new NotSupportedException();
             }
         }
+
+        private class ConnectionResourceHandler : IResultResourceHandler
+        {
+            IConnection Connection { get; }
+            public ConnectionResourceHandler(IConnection conn)
+            {
+                Connection = conn;
+            }
+
+            public Task OnResultConsumedAsync()
+            {
+                return CloseConnection();
+            }
+
+            private async Task CloseConnection()
+            {
+                await Connection.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+		private class BookmarkTracker : IBookmarkTracker
+        {
+            private Bookmark InternalBookmark { get; set; }
+
+            public BookmarkTracker(Bookmark bookmark)
+			{
+                InternalBookmark = bookmark;
+            }
+
+            public void UpdateBookmark(Bookmark bookmark)
+            {
+                if (InternalBookmark != null && InternalBookmark.Values.Any())
+                {
+                    InternalBookmark = bookmark;
+                }
+            }
+        }
+
     }
 }

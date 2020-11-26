@@ -28,7 +28,6 @@ using Neo4j.Driver.Internal.Messaging.V4;
 using Neo4j.Driver.Tests;
 using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV4_0;
 using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Result;
 
@@ -208,6 +207,44 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var V4 = new BoltProtocolV4_0();
                 await EnqueAndSync(V4);
+            }
+        }
+
+        public class RoutingTableProcedure
+        {
+
+            [Theory]
+            [InlineData("Neo4j/4.0.0-alpha01")]
+            [InlineData("4.0.0-alpha01")]
+            [InlineData("Neo4j/4.0.0")]
+            [InlineData("4.0.0")]
+            [InlineData("Neo4j/4.0.1")]
+            [InlineData("4.0.1")]
+            public void ShouldUseGetRoutingTableForDatabaseProcedure(string version)
+            {
+                var V4 = new BoltProtocolV4_0();
+
+                // Given
+                var context = new Dictionary<string, string> { { "context", string.Empty } };
+                string db = "foo";
+                var mockConnection = new Mock<IConnection>();
+                var serverInfoMock = new Mock<IServerInfo>();
+
+                serverInfoMock.Setup(m => m.Version).Returns(version);
+                mockConnection.Setup(m => m.Server).Returns(serverInfoMock.Object);
+                mockConnection.Setup(m => m.BoltProtocol).Returns(V4);
+                mockConnection.Setup(m => m.RoutingContext).Returns(context);
+
+                // When
+                //var query = discovery.DiscoveryProcedure(mockConnection.Object, "foo");
+                string procedure;
+                var parameters = new Dictionary<string, object>();
+                V4.GetProcedureAndParameters(mockConnection.Object, db, out procedure, out parameters);
+
+                // Then
+                procedure.Should().Be("CALL dbms.routing.getRoutingTable($context, $database)");
+                parameters["context"].Should().Be(context);
+                parameters["database"].Should().Be(db);
             }
         }
     }

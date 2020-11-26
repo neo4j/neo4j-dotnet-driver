@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests.Routing
 {
     public class ClusterDiscoveryTests
     {
-        public class Constructor
+        /*public class Constructor
         {
             [Theory]
             [InlineData("Neo4j/3.2.0-alpha01")]
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests.Routing
                 mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
                 mock.Setup(m => m.BoltProtocol).Returns(new BoltProtocolV3());
                 // When
-                var query = discovery.DiscoveryProcedure(mock.Object, null);
+                var query = discovery.GetProcedureAndParameters(mock.Object, null);
                 // Then
                 query.Text.Should()
                     .Be("CALL dbms.cluster.routing.getRoutingTable($context)");
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests.Routing
                 query.Parameters["context"].Should().Be(context);
                 query.Parameters["database"].Should().Be("foo");
             }
-        }
+        }*/
 
         public class RediscoveryMethod
         {
@@ -120,6 +120,7 @@ namespace Neo4j.Driver.Tests.Routing
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var mockConn = Setup32SocketConnection(routingContext, recordFields);
+                mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
@@ -155,8 +156,8 @@ namespace Neo4j.Driver.Tests.Routing
                     {"color", "white"}
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
-                var mockConn =
-                    Setup40SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
+                var mockConn = Setup40SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
+                mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When

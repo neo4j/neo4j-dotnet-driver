@@ -337,5 +337,37 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.Server, Times.Once);
             }
         }
+
+        public class RoutingTableProcedure
+        {
+            [Theory]
+            [InlineData("Neo4j/3.2.0-alpha01")]
+            [InlineData("3.2.0-alpha01")]
+            [InlineData("Neo4j/3.2.1")]
+            [InlineData("3.2.1")]
+            public void ShouldUseGetRoutingTableProcedure(string version)
+            {
+                var V3 = new BoltProtocolV3();
+
+                // Given
+                var context = new Dictionary<string, string> { { "context", string.Empty } };
+                var mockConnection = new Mock<IConnection>();
+                var serverInfoMock = new Mock<IServerInfo>();
+                
+                serverInfoMock.Setup(m => m.Version).Returns(version);
+                mockConnection.Setup(m => m.Server).Returns(serverInfoMock.Object);
+                mockConnection.Setup(m => m.BoltProtocol).Returns(V3);
+                mockConnection.Setup(m => m.RoutingContext).Returns(context);
+
+                // When
+                string procedure;
+                var parameters = new Dictionary<string, object>();
+                V3.GetProcedureAndParameters(mockConnection.Object, "database", out procedure, out parameters);
+
+                // Then
+                procedure.Should().Be("CALL dbms.cluster.routing.getRoutingTable($context)");
+                parameters["context"].Should().Be(context);
+            }
+        }
     }
 }
