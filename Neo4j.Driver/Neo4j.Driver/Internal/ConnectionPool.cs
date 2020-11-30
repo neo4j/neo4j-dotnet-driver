@@ -344,7 +344,7 @@ namespace Neo4j.Driver.Internal
 
         private bool IsConnectionPoolFull()
         {
-            return _maxPoolSize != Config.Infinite && _poolSize >= _maxPoolSize;
+            return _maxPoolSize != Config.Infinite && PoolSize >= _maxPoolSize;
         }
 
         private bool IsIdlePoolFull()
@@ -362,7 +362,6 @@ namespace Neo4j.Driver.Internal
                     return;
                 }
 
-                // Remove from idle
                 if (!_inUseConnections.TryRemove(connection))
                 {
                     // pool already disposed
