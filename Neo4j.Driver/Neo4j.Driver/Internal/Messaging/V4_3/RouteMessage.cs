@@ -15,27 +15,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.Messaging.V3;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_3
 {
-	internal class RouteMessage : IRequestMessage
+	internal class RouteMessage : TransactionStartingMessage
     {
-        public IDictionary<string, object> MetaData { get; }
         public string DatabaseParam { get; }
         
-
-        public RouteMessage(IDictionary<string, string> routingContext, string db)
+        public RouteMessage(IDictionary<string, string> routingContext, string db, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Read)
+            : base(db, bookmark, config?.Timeout, config?.Metadata, mode)
         {
-            MetaData.Add("routing", routingContext);
+            Metadata.Add("routing", routingContext);
             DatabaseParam = db;
         }
 
         public override string ToString()
         {
-            return "ROUTE " + MetaData.ToContentString() + " " + DatabaseParam;
+            return "ROUTE " + Metadata.ToContentString() + " " + DatabaseParam;            
         }
     }
 }

@@ -24,27 +24,21 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_3
 {
-	class RouteResponseHandler : MetadataCollectingResponseHandler
+    class RouteResponseHandler : MetadataCollectingResponseHandler
     {
-        private readonly IConnection _connection;
-        private BoltProtocolVersion Version { get; set; }
+        public IDictionary<string, object> RoutingInformation { get; set; }
 
 
         public RouteResponseHandler()
-        {   
-            //AddMetadata<ServerVersionCollector, ServerVersion>();
-            //AddMetadata<ConnectionIdCollector, string>();
+        {
+            AddMetadata<RoutingTableCollector, IDictionary<string, object>>();
         }
 
         public override void OnSuccess(IDictionary<string, object> metadata)
         {
             base.OnSuccess(metadata);
 
-            // From Server V4 extracting server from metadata in the success message is unreliable.
-            // The server version is now tied to the protocol version.
-            //_connection.UpdateVersion(new ServerVersion(Version.MajorVersion, Version.MinorVersion, 0));
-
-            //_connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
+            RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
         }
     }
 	

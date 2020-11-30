@@ -21,8 +21,7 @@ namespace Neo4j.Driver.Internal.Protocol
             RemoveHandler<V4_2.HelloMessageSerializer>();
             AddHandler<V4_3.HelloMessageSerializer>();
 
-            //TODO: ROUTE - Add message serializer here...
-            //AddHandler<V4_3.RouteMessageSerializer>();
+            AddHandler<V4_3.RouteMessageSerializer>();
         }
     }
 }

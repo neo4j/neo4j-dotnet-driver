@@ -66,6 +66,5 @@ namespace Neo4j.Driver.Internal.Protocol
 
             await EnqueAndSync(V4_3);
         }
-
     }
 }

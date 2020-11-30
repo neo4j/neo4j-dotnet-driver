@@ -6,7 +6,8 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling.V4_3;
 using Neo4j.Driver.Internal.Messaging.V4_3;
-
+using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -44,6 +45,22 @@ namespace Neo4j.Driver.Internal.Protocol
                 .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
                     new HelloResponseHandler(connection, Version())).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
+        }
+
+        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
+                                                                                        string database,
+                                                                                        string sessionDb,
+                                                                                        IResultResourceHandler resourceHandler,
+                                                                                        IBookmarkTracker bookmarkTracker,
+                                                                                        Bookmark bookmark)
+        {
+            var responseHandler = new RouteResponseHandler();
+
+            await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, database, bookmark, TransactionConfig.Default, connection.GetEnforcedAccessMode()), 
+                                          responseHandler).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
+
+            return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;            
         }
 
     }

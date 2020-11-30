@@ -28,7 +28,8 @@ namespace Neo4j.Driver.Internal.Util
 
         public static IComparer<ServerVersion> Comparer { get; } = new ServerVersionRelationalComparer();
         public static readonly ServerVersion VInDev = new ServerVersion(int.MaxValue, int.MaxValue, int.MaxValue);
-        public static readonly ServerVersion V4_0_0 = new ServerVersion(4, 0, 0);
+        
+        
 
         private static readonly Regex VersionRegex =
             new Regex($@"({Neo4jProduct}/)?(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?",

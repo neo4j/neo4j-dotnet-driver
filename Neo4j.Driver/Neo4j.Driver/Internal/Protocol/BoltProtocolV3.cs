@@ -150,7 +150,7 @@ namespace Neo4j.Driver.Internal.Protocol
             parameters = new Dictionary<string, object> { { "context", connection.RoutingContext } };
         }
 
-        public virtual async Task<IResultCursor> GetRoutingTable(IConnection connection, 
+        public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, 
                                                                  string database, 
                                                                  string sessionDb,
                                                                  IResultResourceHandler resourceHandler, 
@@ -163,7 +163,10 @@ namespace Neo4j.Driver.Internal.Protocol
             GetProcedureAndParameters(connection, database, out procedure, out parameters);            
             var query = new Query(procedure, parameters);
 
-            return await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null).ConfigureAwait(false); ;
+            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null).ConfigureAwait(false);
+            var record = await result.SingleAsync();
+
+            return record.Values;
         }
     }
 }

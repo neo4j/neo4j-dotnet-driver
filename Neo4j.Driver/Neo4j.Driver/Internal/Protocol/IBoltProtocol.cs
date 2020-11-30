@@ -17,6 +17,7 @@
 
 using System.IO;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver;
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         BoltProtocolVersion Version();
 
-        Task<IResultCursor> GetRoutingTable(IConnection connection,
+        Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
                                             string database,
                                             string sessionDb,
                                             IResultResourceHandler resourceHandler,
