@@ -151,14 +151,15 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, 
-                                                                 string database, 
-                                                                 string sessionDb,
-                                                                 IResultResourceHandler resourceHandler, 
-                                                                 IBookmarkTracker bookmarkTracker,
+                                                                 string database,
                                                                  Bookmark bookmark)
 		{   
             string procedure;
             var parameters = new Dictionary<string, object>();
+
+            var bookmarkTracker = new BookmarkTracker(bookmark);
+            var resourceHandler = new ConnectionResourceHandler(connection);
+            var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
 
             GetProcedureAndParameters(connection, database, out procedure, out parameters);            
             var query = new Query(procedure, parameters);
@@ -167,6 +168,47 @@ namespace Neo4j.Driver.Internal.Protocol
             var record = await result.SingleAsync();
 
             return record.Values;
+        }
+
+
+
+
+
+        private class ConnectionResourceHandler : IResultResourceHandler
+        {
+            IConnection Connection { get; }
+            public ConnectionResourceHandler(IConnection conn)
+            {
+                Connection = conn;
+            }
+
+            public Task OnResultConsumedAsync()
+            {
+                return CloseConnection();
+            }
+
+            private async Task CloseConnection()
+            {
+                await Connection.CloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        private class BookmarkTracker : IBookmarkTracker
+        {
+            private Bookmark InternalBookmark { get; set; }
+
+            public BookmarkTracker(Bookmark bookmark)
+            {
+                InternalBookmark = bookmark;
+            }
+
+            public void UpdateBookmark(Bookmark bookmark)
+            {
+                if (InternalBookmark != null && InternalBookmark.Values.Any())
+                {
+                    InternalBookmark = bookmark;
+                }
+            }
         }
     }
 }

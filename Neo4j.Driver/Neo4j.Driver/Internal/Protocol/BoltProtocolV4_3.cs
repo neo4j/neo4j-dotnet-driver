@@ -49,16 +49,15 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
                                                                                         string database,
-                                                                                        string sessionDb,
-                                                                                        IResultResourceHandler resourceHandler,
-                                                                                        IBookmarkTracker bookmarkTracker,
                                                                                         Bookmark bookmark)
         {
             var responseHandler = new RouteResponseHandler();
 
             await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, database, bookmark, TransactionConfig.Default, connection.GetEnforcedAccessMode()), 
                                           responseHandler).ConfigureAwait(false);
+
             await connection.SyncAsync().ConfigureAwait(false);
+            await connection.CloseAsync().ConfigureAwait(false);
 
             return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;            
         }

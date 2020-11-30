@@ -46,10 +46,7 @@ namespace Neo4j.Driver.Internal.Routing
         /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
         public async Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, Bookmark bookmark)
         {
-            var bookmarkTracker = new BookmarkTracker(bookmark);
-            var resourceHandler = new ConnectionResourceHandler(connection);
-            var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
-            var routingTable = await connection.BoltProtocol.GetRoutingTable(connection, database, sessionDb, resourceHandler, bookmarkTracker, bookmark);   //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
+            var routingTable = await connection.BoltProtocol.GetRoutingTable(connection, database, bookmark);   //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
                         
             return ParseDiscoveryResult(database, routingTable);
         }
@@ -143,43 +140,5 @@ namespace Neo4j.Driver.Internal.Routing
                 throw new NotSupportedException();
             }
         }
-
-        private class ConnectionResourceHandler : IResultResourceHandler
-        {
-            IConnection Connection { get; }
-            public ConnectionResourceHandler(IConnection conn)
-            {
-                Connection = conn;
-            }
-
-            public Task OnResultConsumedAsync()
-            {
-                return CloseConnection();
-            }
-
-            private async Task CloseConnection()
-            {
-                await Connection.CloseAsync().ConfigureAwait(false);
-            }
-        }
-
-		private class BookmarkTracker : IBookmarkTracker
-        {
-            private Bookmark InternalBookmark { get; set; }
-
-            public BookmarkTracker(Bookmark bookmark)
-			{
-                InternalBookmark = bookmark;
-            }
-
-            public void UpdateBookmark(Bookmark bookmark)
-            {
-                if (InternalBookmark != null && InternalBookmark.Values.Any())
-                {
-                    InternalBookmark = bookmark;
-                }
-            }
-        }
-
     }
 }

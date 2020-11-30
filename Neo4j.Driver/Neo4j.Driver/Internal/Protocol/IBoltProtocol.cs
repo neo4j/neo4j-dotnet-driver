@@ -58,9 +58,6 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
                                             string database,
-                                            string sessionDb,
-                                            IResultResourceHandler resourceHandler,
-                                            IBookmarkTracker bookmarkTracker,
                                             Bookmark bookmark); 
     }
 }
