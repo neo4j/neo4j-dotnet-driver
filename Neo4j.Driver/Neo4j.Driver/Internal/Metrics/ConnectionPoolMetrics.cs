@@ -22,6 +22,7 @@ namespace Neo4j.Driver.Internal.Metrics
 {
     internal class ConnectionPoolMetrics : IInternalConnectionPoolMetrics
     {
+        private bool _disposed = false;
         private int _creating;
         private long _created;
         private long _failedToCreate;
@@ -108,9 +109,27 @@ namespace Neo4j.Driver.Internal.Metrics
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                //dispose managed resources
+            }
+
+            //dispose of unmanaged resources
             _pool = null;
             _metrics.RemovePoolMetrics(Id);
             _metrics = null;
+
+            //Mark as disposed
+            _disposed = true;
         }
 
         public override string ToString()

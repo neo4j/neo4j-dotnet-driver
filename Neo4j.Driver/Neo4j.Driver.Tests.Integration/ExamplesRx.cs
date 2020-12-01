@@ -173,6 +173,7 @@ namespace Neo4j.Driver.ExamplesAsync
     [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class BaseRxExample : AbstractRxTest, IDisposable
     {
+        private bool _disposed = false;
         protected IDriver Driver { set; get; }
         protected string Uri = Neo4jDefaultInstallation.BoltUri;
         protected string User = Neo4jDefaultInstallation.User;
@@ -183,20 +184,29 @@ namespace Neo4j.Driver.ExamplesAsync
             Driver = fixture.StandAlone.Driver;
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        public void Dispose()
         {
-            if (!isDisposing)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
                 return;
 
+            if (disposing)
+            {
+                //Dispose managed state (managed objects).
+            }
+
+            //Do your thing...
             using (var session = Driver.Session())
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
-        }
 
-        public void Dispose()
-        {
-            Dispose(true);
+            _disposed = true;
         }
 
         protected async Task WriteAsync(string query, object parameters)

@@ -39,6 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
     public abstract class StressTest<TContext> : IDisposable
         where TContext : StressTestContext
     {
+        private bool _disposed = false;
         private const bool LoggingEnabled = false;
 
         private const int StressTestThreadCount = 8;
@@ -824,7 +825,25 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                //dispose managed resources
+            }
+
+            //dispose of unmanaged resources
             CleanupDatabase();
+
+            //Mark as disposed
+            _disposed = true;
         }
 
         private void CleanupDatabase()

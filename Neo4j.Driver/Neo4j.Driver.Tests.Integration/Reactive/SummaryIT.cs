@@ -35,6 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
     {
         public abstract class Specs : AbstractRxIT
         {
+            private bool _disposed = false;
             protected Specs(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
             {
@@ -218,8 +219,17 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     );
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
+                if (_disposed)
+                    return;
+
+                if (disposing)
+                {
+                    //dispose managed resources
+                }
+
+                //dispose of unmanaged resources
                 using (var session = Server.Driver.Session())
                 {
                     foreach (var drop in session.Run("CALL db.constraints()").ToList())
@@ -239,12 +249,16 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     }
                 }
 
-                base.Dispose();
+                //Mark as disposed
+                _disposed = true;
+
+                base.Dispose(disposing);
             }
         }
 
         public class Session : Specs
         {
+            private bool _disposed = false;
             private readonly IRxSession rxSession;
 
             public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
@@ -258,16 +272,30 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 return rxSession;
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
+                if (_disposed)
+                    return;
+
+                if (disposing)
+                {
+                    //dispose managed resources
+                }
+
+                //dispose of unmanaged resources
                 rxSession.Close<int>().WaitForCompletion();
 
-                base.Dispose();
+                //Mark as disposed
+                _disposed = true;
+
+                base.Dispose(disposing);
             }
+
         }
 
         public class Transaction : Specs
         {
+            private bool _disposed = false;
             private readonly IRxSession rxSession;
             private readonly IRxTransaction rxTransaction;
 
@@ -283,12 +311,24 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 return rxTransaction;
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
+                if (_disposed)
+                    return;
+
+                if (disposing)
+                {
+                    //dispose managed resources
+                }
+
+                //dispose of unmanaged resources
                 rxTransaction.Commit<int>().WaitForCompletion();
                 rxSession.Close<int>().WaitForCompletion();
 
-                base.Dispose();
+                //Mark as disposed
+                _disposed = true;
+
+                base.Dispose(disposing);
             }
         }
     }

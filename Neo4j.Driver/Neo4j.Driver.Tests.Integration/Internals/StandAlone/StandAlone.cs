@@ -32,6 +32,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
     public class StandAlone : IStandAlone
     {
+        private bool _disposed = false;
+
         private readonly ExternalBoltkitInstaller _installer = new ExternalBoltkitInstaller();
         public IDriver Driver { private set; get; }
 
@@ -93,14 +95,25 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);            
         }
 
-        private void DisposeBoltDriver()
-        {
-            Driver?.Dispose();
-        }
-
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                //Dispose managed state (managed objects).
+            }
+
+            //Do your thing...
             DisposeBoltDriver();
+
             try
             {
                 _installer.Stop();
@@ -116,7 +129,15 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                     // ignored
                 }
             }
+
+            _disposed = true;
         }
+
+        private void DisposeBoltDriver()
+        {
+            Driver?.Dispose();
+        }
+
 
         public override string ToString()
         {

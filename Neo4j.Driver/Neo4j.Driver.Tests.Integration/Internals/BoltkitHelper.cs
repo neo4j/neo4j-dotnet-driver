@@ -145,7 +145,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private static BoltkitStatus TestBoltkitAvailability()
         {
-            try
+            /*try
             {
                 var commandRunner = ShellCommandRunnerFactory.Create();
                 commandRunner.RunCommand("neoctrl-cluster", "--help");
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             catch
             {
                 return BoltkitStatus.Unavailable;
-            }
+            }*/
 
             return BoltkitStatus.Installed;
         }

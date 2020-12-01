@@ -208,10 +208,28 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 }
             }
 
+
+            private bool _disposed = false;
             public void Dispose()
             {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+			{
+                if (_disposed)
+                    return;
+
+                if(disposing)
+				{
+                    //Dispose managed state (managed objects).
+                }
+
                 StandAlone?.Dispose();
                 StandAlone?.UpdateCertificate(Pkcs12);
+
+                _disposed = true;
             }
         }
     }

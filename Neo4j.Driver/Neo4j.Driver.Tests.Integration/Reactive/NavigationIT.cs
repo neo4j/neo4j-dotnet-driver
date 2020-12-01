@@ -440,6 +440,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
         public class Session : Specs
         {
+            private bool _disposed = false;
             private readonly IRxSession rxSession;
 
             public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
@@ -453,16 +454,31 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 return rxSession;
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
+                if (_disposed)
+                    return;
+
+                if (disposing)
+                {
+                    //dispose managed resources
+                }
+
+                //dispose of unmanaged resources
+                // clean database after each test run
                 rxSession.Close<int>().WaitForCompletion();
 
-                base.Dispose();
+                //Mark as disposed
+                _disposed = true;
+
+                base.Dispose(disposing);
             }
+
         }
 
         public class Transaction : Specs
         {
+            private bool _disposed = false;
             private readonly IRxSession rxSession;
             private readonly IRxTransaction rxTransaction;
 
@@ -478,12 +494,25 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 return rxTransaction;
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
+                if (_disposed)
+                    return;
+
+                if (disposing)
+                {
+                    //dispose managed resources
+                }
+
+                //dispose of unmanaged resources
+                // clean database after each test run
                 rxTransaction.Commit<int>().WaitForCompletion();
                 rxSession.Close<int>().WaitForCompletion();
 
-                base.Dispose();
+                //Mark as disposed
+                _disposed = true;
+
+                base.Dispose(disposing);
             }
         }
     }

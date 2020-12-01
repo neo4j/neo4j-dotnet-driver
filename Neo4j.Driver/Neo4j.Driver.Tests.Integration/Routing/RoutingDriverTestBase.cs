@@ -26,6 +26,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
     [Collection(CCIntegrationCollection.CollectionName)]
     public abstract class RoutingDriverTestBase : IDisposable
     {
+        private bool _disposed = false;
         protected ITestOutputHelper Output { get; }
         protected ICausalCluster Cluster { get; }
         protected IAuthToken AuthToken { get; }
@@ -48,10 +49,27 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 });
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                //dispose managed resources
+            }
+
+            //dispose of unmanaged resources
             Driver.Dispose();
-            // put some code that you want to run after each unit test
+
+            //Mark as disposed
+            _disposed = true;
         }
     }
 }

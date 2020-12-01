@@ -494,6 +494,7 @@ namespace Neo4j.Driver.ExamplesAsync
 
             public class DriverLifecycleExample : IDisposable
             {
+                private bool _disposed = false;
                 public IDriver Driver { get; }
 
                 public DriverLifecycleExample(string uri, string user, string password)
@@ -503,7 +504,24 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 public void Dispose()
                 {
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
+                }
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        //Dispose managed state (managed objects).
+                    }
+
+                    //Do your thing...
                     Driver?.Dispose();
+
+                    _disposed = true;
                 }
             }
 
@@ -551,6 +569,7 @@ namespace Neo4j.Driver.ExamplesAsync
             
             public class HelloWorldExample : IDisposable
             {
+                private bool _disposed = false;
                 private readonly IDriver _driver;
 
                 public HelloWorldExample(string uri, string user, string password)
@@ -583,7 +602,24 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 public void Dispose()
                 {
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
+                }
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        //Dispose managed state (managed objects).
+                    }
+
+                    //Do your thing...
                     _driver?.Dispose();
+
+                    _disposed = true;
                 }
             }
             
@@ -611,6 +647,7 @@ namespace Neo4j.Driver.ExamplesAsync
             // tag::driver-introduction-example[]
             public class DriverIntroductionExample : IDisposable
             {
+                private bool _disposed = false;
                 private readonly IDriver _driver;
 
                 public DriverIntroductionExample(string uri, string user, string password)
@@ -690,13 +727,28 @@ namespace Neo4j.Driver.ExamplesAsync
                     }
                 }
 
-
                 public void Dispose()
                 {
-                    // Don't forget to close the driver connection when you are finished with it                
-                    _driver?.Dispose();
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
                 }
-                
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        //Dispose managed state (managed objects).
+                    }
+
+                    //Do your thing...
+                    _driver?.Dispose();
+
+                    _disposed = true;
+                }
+
                 public static async Task Main(string[] args)
                 {
                     // Aura queries use an encrypted connection using the "neo4j+s" protocol
@@ -983,6 +1035,7 @@ namespace Neo4j.Driver.ExamplesAsync
     [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class BaseAsyncExample : IDisposable
     {
+        private bool _disposed = false;
         protected ITestOutputHelper Output { get; }
         protected IDriver Driver { set; get; }
         protected string Uri = Neo4jDefaultInstallation.BoltUri;
@@ -995,20 +1048,29 @@ namespace Neo4j.Driver.ExamplesAsync
             Driver = fixture.StandAlone.Driver;
         }
 
-        protected virtual void Dispose(bool isDisposing)
+        public void Dispose()
         {
-            if (!isDisposing)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
                 return;
 
+            if (disposing)
+            {
+                //Dispose managed state (managed objects).
+            }
+
+            //Do your thing...
             using (var session = Driver.Session())
             {
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
-        }
 
-        public void Dispose()
-        {
-            Dispose(true);
+            _disposed = true;
         }
 
         protected async Task<int> CountPersonAsync(string name)

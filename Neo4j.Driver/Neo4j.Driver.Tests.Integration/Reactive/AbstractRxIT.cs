@@ -57,7 +57,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             return session;
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
