@@ -25,6 +25,8 @@ namespace Neo4j.Driver.Internal
         private readonly IInternalAsyncTransaction _txc;
         private readonly BlockingExecutor _executor;
 
+        ~InternalTransaction() => Dispose(false);
+
         public InternalTransaction(IInternalAsyncTransaction txc, BlockingExecutor executor)
         {
             _txc = txc ?? throw new ArgumentNullException(nameof(txc));

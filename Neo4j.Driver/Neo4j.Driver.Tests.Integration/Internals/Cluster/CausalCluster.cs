@@ -29,6 +29,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     public class CausalCluster : ICausalCluster
     {
+        private bool _disposed = false;
         private static readonly TimeSpan ClusterOnlineTimeout = TimeSpan.FromMinutes(2);
 
         private readonly ExternalBoltkitClusterInstaller _installer = new ExternalBoltkitClusterInstaller();
@@ -42,6 +43,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         {
             // no special modification to driver config
         }
+
+        ~CausalCluster() => Dispose(false);
 
         public CausalCluster()
         {
@@ -162,25 +165,38 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Dispose()
         {
-            // shut down the whole cluster
-            try
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
             {
-                _installer.Stop();
-            }
-            catch
-            {
-                // if failed to stop properly, then we kill
                 try
                 {
-                    Kill();
+                    _installer.Stop();
                 }
                 catch
                 {
+                    // if failed to stop properly, then we kill
+                    try
+                    {
+                        Kill();
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+
                     // ignored
                 }
+            }            
 
-                // ignored
-            }
+            _disposed = true;
         }
     }
 }

@@ -30,6 +30,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
+        ~DirectDriverTestBase() => Dispose(false);
+
         protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
@@ -38,13 +40,27 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             AuthToken = Server.AuthToken;
         }
 
+        private bool _disposed = false;
         public void Dispose()
         {
-            // clean database after each test run
-            using (var session = Server.Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {   
+                using (var session = Server.Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
             }
+
+            _disposed = true;
         }
     }
 }

@@ -26,7 +26,10 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 {
     internal class BoltStubServer : IDisposable
     {
+        private bool _disposed = false;
         private static readonly string ScriptSourcePath;
+
+        ~BoltStubServer() => Dispose(false);
 
         static BoltStubServer()
         {
@@ -54,16 +57,30 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public void Dispose()
         {
-            try
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
             {
-                Disconnect(_testTcpClient);
-            }
-            catch (Exception)
-            {
-                // ignored
+                try
+                {
+                    Disconnect(_testTcpClient);
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
             }
 
             _commandRunner.EndRunCommand();
+
+            _disposed = true;
         }
 
         private static string Source(string script)

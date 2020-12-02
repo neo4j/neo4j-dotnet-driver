@@ -26,6 +26,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
     [Collection(CCIntegrationCollection.CollectionName)]
     public abstract class RoutingDriverTestBase : IDisposable
     {
+        private bool _disposed = false;
         protected ITestOutputHelper Output { get; }
         protected ICausalCluster Cluster { get; }
         protected IAuthToken AuthToken { get; }
@@ -33,6 +34,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         protected string RoutingServer => Cluster.BoltRoutingUri.ToString();
         protected string WrongServer => "neo4j://localhost:1234";
         protected IDriver Driver { get; }
+
+        ~RoutingDriverTestBase() => Dispose(false);
 
         public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
         {
@@ -48,10 +51,24 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 });
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
-            Driver.Dispose();
-            // put some code that you want to run after each unit test
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                Driver.Dispose();
+            }
+
+            //Mark as disposed
+            _disposed = true;
         }
     }
 }

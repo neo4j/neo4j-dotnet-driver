@@ -33,11 +33,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
     [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class AbstractRxIT : AbstractRxTest, IDisposable
     {
+        private bool _disposed = false;
         private readonly List<IRxSession> _sessions = new List<IRxSession>();
 
         protected IStandAlone Server { get; }
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
+
+        ~AbstractRxIT() => Dispose(false);
 
         protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output)
@@ -54,16 +57,31 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             return session;
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
-            _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
-            _sessions.Clear();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            // clean database after each test run
-            using (var session = Server.Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+        protected virtual void Dispose(bool disposing)
+		{
+            if (_disposed)
+                return;
+
+            if(disposing)
+			{  
+                _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
+                _sessions.Clear();
+
+                // clean database after each test run
+                using (var session = Server.Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
             }
+
+            //Mark as disposed
+            _disposed = true;
         }
     }
 }
