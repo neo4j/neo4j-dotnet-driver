@@ -24,13 +24,35 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    public class ProcessBasedCommandRunner : ShellCommandRunner
+    public class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
     {
         private const int DefaultTimeOut = 4 * 60 * 1000; // 4 minutes
 
         private List<string> _stdOut;
         private StringBuilder _stdErr;
         private Process _process;
+        private bool _disposed = false;
+
+        ~ProcessBasedCommandRunner() => Dispose(false);
+
+        public void Dispose()
+		{
+            Dispose(true);
+            GC.SuppressFinalize(this);
+		}
+
+        protected virtual void Dispose(bool disposing)
+		{
+            if (_disposed)
+                return;
+
+            if(disposing)
+			{
+                _process?.Dispose();
+			}
+
+            _disposed = true;
+		}
 
         private static Process CreateProcess(string command, string[] arguments, List<string> captureStdOut,
             StringBuilder captureStdErr)

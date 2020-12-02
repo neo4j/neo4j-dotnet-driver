@@ -32,6 +32,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
     public class StandAlone : IStandAlone
     {
+        private bool _disposed = false;
+
         private readonly ExternalBoltkitInstaller _installer = new ExternalBoltkitInstaller();
         public IDriver Driver { private set; get; }
 
@@ -42,6 +44,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public Uri BoltRoutingUri => _delegator?.BoltRoutingUri;
         public string HomePath => _delegator?.HomePath;
         public IAuthToken AuthToken => _delegator?.AuthToken;
+
+        ~StandAlone() => Dispose(false);
 
         public StandAlone()
         {
@@ -93,30 +97,46 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);            
         }
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                DisposeBoltDriver();
+
+                try
+                {
+                    _installer.Stop();
+                }
+                catch
+                {
+                    try
+                    {
+                        _installer.Kill();
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+            }
+
+            _disposed = true;
+        }
+
         private void DisposeBoltDriver()
         {
             Driver?.Dispose();
         }
 
-        public void Dispose()
-        {
-            DisposeBoltDriver();
-            try
-            {
-                _installer.Stop();
-            }
-            catch
-            {
-                try
-                {
-                    _installer.Kill();
-                }
-                catch
-                {
-                    // ignored
-                }
-            }
-        }
 
         public override string ToString()
         {

@@ -39,6 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
     public abstract class StressTest<TContext> : IDisposable
         where TContext : StressTestContext
     {
+        private bool _disposed = false;
         private const bool LoggingEnabled = false;
 
         private const int StressTestThreadCount = 8;
@@ -57,6 +58,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         private readonly IAuthToken _authToken;
         private readonly Uri _databaseUri;
         private readonly Action<ConfigBuilder> _configure;
+
+        ~StressTest() => Dispose(false);
 
         protected StressTest(ITestOutputHelper output, Uri databaseUri, IAuthToken authToken, Action<ConfigBuilder> configure = null)
         {
@@ -824,7 +827,22 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         public void Dispose()
         {
-            CleanupDatabase();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                CleanupDatabase();
+            }
+
+            //Mark as disposed
+            _disposed = true;
         }
 
         private void CleanupDatabase()

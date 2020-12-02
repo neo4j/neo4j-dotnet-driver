@@ -23,7 +23,10 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class StandAloneIntegrationTestFixture : IDisposable
     {
+        bool _disposed = false;
         public IStandAlone StandAlone { get; }
+
+        ~StandAloneIntegrationTestFixture() => Dispose(false);
 
         public StandAloneIntegrationTestFixture()
         {
@@ -52,13 +55,30 @@ namespace Neo4j.Driver.IntegrationTests
 
         public void Dispose()
         {
-            StandAlone?.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {  
+                StandAlone?.Dispose();
+            }
+
+            _disposed = true;
         }
     }
 
     public class CausalClusterIntegrationTestFixture : IDisposable
     {
+        private bool _disposed = false;
         public ICausalCluster Cluster { get; }
+
+        ~CausalClusterIntegrationTestFixture() => Dispose(false);
 
         public CausalClusterIntegrationTestFixture()
         {
@@ -88,7 +108,22 @@ namespace Neo4j.Driver.IntegrationTests
 
         public void Dispose()
         {
-            Cluster?.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                //Dispose managed state (managed objects).                
+                Cluster?.Dispose();
+            }
+
+            _disposed = true;
         }
     }
 

@@ -494,7 +494,10 @@ namespace Neo4j.Driver.ExamplesAsync
 
             public class DriverLifecycleExample : IDisposable
             {
+                private bool _disposed = false;
                 public IDriver Driver { get; }
+
+                ~DriverLifecycleExample() => Dispose(false);
 
                 public DriverLifecycleExample(string uri, string user, string password)
                 {
@@ -503,7 +506,21 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 public void Dispose()
                 {
-                    Driver?.Dispose();
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
+                }
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        Driver?.Dispose();
+                    }
+                   
+                    _disposed = true;
                 }
             }
 
@@ -551,7 +568,10 @@ namespace Neo4j.Driver.ExamplesAsync
             
             public class HelloWorldExample : IDisposable
             {
+                private bool _disposed = false;
                 private readonly IDriver _driver;
+
+                ~HelloWorldExample() => Dispose(false);
 
                 public HelloWorldExample(string uri, string user, string password)
                 {
@@ -583,7 +603,21 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 public void Dispose()
                 {
-                    _driver?.Dispose();
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
+                }
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        _driver?.Dispose();
+                    }
+
+                    _disposed = true;
                 }
             }
             
@@ -611,7 +645,10 @@ namespace Neo4j.Driver.ExamplesAsync
             // tag::driver-introduction-example[]
             public class DriverIntroductionExample : IDisposable
             {
+                private bool _disposed = false;
                 private readonly IDriver _driver;
+
+                ~DriverIntroductionExample() => Dispose(false);
 
                 public DriverIntroductionExample(string uri, string user, string password)
                 {
@@ -690,13 +727,25 @@ namespace Neo4j.Driver.ExamplesAsync
                     }
                 }
 
-
                 public void Dispose()
                 {
-                    // Don't forget to close the driver connection when you are finished with it                
-                    _driver?.Dispose();
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
                 }
-                
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        _driver?.Dispose();
+                    }
+
+                    _disposed = true;
+                }
+
                 public static async Task Main(string[] args)
                 {
                     // Aura queries use an encrypted connection using the "neo4j+s" protocol
@@ -983,11 +1032,14 @@ namespace Neo4j.Driver.ExamplesAsync
     [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class BaseAsyncExample : IDisposable
     {
+        private bool _disposed = false;
         protected ITestOutputHelper Output { get; }
         protected IDriver Driver { set; get; }
         protected string Uri = Neo4jDefaultInstallation.BoltUri;
         protected string User = Neo4jDefaultInstallation.User;
         protected string Password = Neo4jDefaultInstallation.Password;
+
+        ~BaseAsyncExample() => Dispose(false);
 
         protected BaseAsyncExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
@@ -995,20 +1047,26 @@ namespace Neo4j.Driver.ExamplesAsync
             Driver = fixture.StandAlone.Driver;
         }
 
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
-            using (var session = Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
-            }
-        }
-
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
+            }
+
+            _disposed = true;
         }
 
         protected async Task<int> CountPersonAsync(string name)

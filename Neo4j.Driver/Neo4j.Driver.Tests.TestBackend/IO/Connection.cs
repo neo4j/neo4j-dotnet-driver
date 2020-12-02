@@ -25,11 +25,12 @@ namespace Neo4j.Driver.Tests.TestBackend
         private bool Disposed { get; set; } = false;
         private string Uri { get; set; }
         private int port { get; set; }
-        public void Dispose() => Dispose(true);
         public bool Connected { get { return ClientConnection.Connected; } }
         public int TimeOut { get { return 1000; } }
 
         public NetworkStream ConnectionStream { get; set; }
+
+        ~Connection() => Dispose(false);
 
         public Connection(string address, uint port)
         {
@@ -85,6 +86,12 @@ namespace Neo4j.Driver.Tests.TestBackend
             ClientConnection.Close();
             ConnectionStream.Dispose();
         }
+
+        public void Dispose()
+		{
+            Dispose(true);
+            GC.SuppressFinalize(this);
+		}
 
         protected virtual void Dispose(bool disposing)
         {

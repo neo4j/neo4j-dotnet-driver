@@ -28,6 +28,8 @@ namespace Neo4j.Driver.Internal
 
         private bool _disposed;
 
+        ~InternalSession() => Dispose(false);
+
         public InternalSession(IInternalAsyncSession session, IRetryLogic retryLogic, BlockingExecutor executor)
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));

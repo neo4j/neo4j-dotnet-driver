@@ -440,7 +440,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
         public class Session : Specs
         {
+            private bool _disposed = false;
             private readonly IRxSession rxSession;
+
+            ~Session() => Dispose(false);
 
             public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
@@ -453,18 +456,32 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 return rxSession;
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
-                rxSession.Close<int>().WaitForCompletion();
+                if (_disposed)
+                    return;
 
-                base.Dispose();
+                if (disposing)
+                {
+                    // clean database after each test run
+                    rxSession.Close<int>().WaitForCompletion();
+                }
+
+                //Mark as disposed
+                _disposed = true;
+
+                base.Dispose(disposing);
             }
+
         }
 
         public class Transaction : Specs
         {
+            private bool _disposed = false;
             private readonly IRxSession rxSession;
             private readonly IRxTransaction rxTransaction;
+
+            ~Transaction() => Dispose(false);
 
             public Transaction(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
@@ -478,12 +495,22 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 return rxTransaction;
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
-                rxTransaction.Commit<int>().WaitForCompletion();
-                rxSession.Close<int>().WaitForCompletion();
+                if (_disposed)
+                    return;
 
-                base.Dispose();
+                if (disposing)
+                {
+                    // clean database after each test run
+                    rxTransaction.Commit<int>().WaitForCompletion();
+                    rxSession.Close<int>().WaitForCompletion();
+                }
+
+                //Mark as disposed
+                _disposed = true;
+
+                base.Dispose(disposing);
             }
         }
     }
