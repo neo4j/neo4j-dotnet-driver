@@ -59,6 +59,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         private readonly Uri _databaseUri;
         private readonly Action<ConfigBuilder> _configure;
 
+        ~StressTest() => Dispose(false);
+
         protected StressTest(ITestOutputHelper output, Uri databaseUri, IAuthToken authToken, Action<ConfigBuilder> configure = null)
         {
             _output = output ?? throw new ArgumentNullException(nameof(output));
@@ -836,11 +838,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             if (disposing)
             {
-                //dispose managed resources
+                CleanupDatabase();
             }
-
-            //dispose of unmanaged resources
-            CleanupDatabase();
 
             //Mark as disposed
             _disposed = true;

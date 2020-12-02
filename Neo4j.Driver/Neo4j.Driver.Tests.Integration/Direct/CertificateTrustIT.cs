@@ -187,6 +187,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             public StandAlone StandAlone { get; }
             public Pkcs12Store Pkcs12 { get; }
 
+            ~CertificateTrustIntegrationTestFixture() => Dispose(false);
+
             public CertificateTrustIntegrationTestFixture()
             {
                 if (!BoltkitHelper.IsBoltkitAvailable())
@@ -224,10 +226,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 if(disposing)
 				{
                     //Dispose managed state (managed objects).
+                    StandAlone?.Dispose();
+                    StandAlone?.UpdateCertificate(Pkcs12);
                 }
-
-                StandAlone?.Dispose();
-                StandAlone?.UpdateCertificate(Pkcs12);
 
                 _disposed = true;
             }

@@ -443,6 +443,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             private bool _disposed = false;
             private readonly IRxSession rxSession;
 
+            ~Session() => Dispose(false);
+
             public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
             {
@@ -461,12 +463,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 if (disposing)
                 {
-                    //dispose managed resources
+                    // clean database after each test run
+                    rxSession.Close<int>().WaitForCompletion();
                 }
-
-                //dispose of unmanaged resources
-                // clean database after each test run
-                rxSession.Close<int>().WaitForCompletion();
 
                 //Mark as disposed
                 _disposed = true;
@@ -481,6 +480,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             private bool _disposed = false;
             private readonly IRxSession rxSession;
             private readonly IRxTransaction rxTransaction;
+
+            ~Transaction() => Dispose(false);
 
             public Transaction(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
@@ -501,13 +502,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 if (disposing)
                 {
-                    //dispose managed resources
+                    // clean database after each test run
+                    rxTransaction.Commit<int>().WaitForCompletion();
+                    rxSession.Close<int>().WaitForCompletion();
                 }
-
-                //dispose of unmanaged resources
-                // clean database after each test run
-                rxTransaction.Commit<int>().WaitForCompletion();
-                rxSession.Close<int>().WaitForCompletion();
 
                 //Mark as disposed
                 _disposed = true;

@@ -407,6 +407,8 @@ namespace Neo4j.Driver.Examples
                 private bool _disposed = false;
                 public IDriver Driver { get; }
 
+                ~DriverLifecycleExample() => Dispose(false);
+
                 public DriverLifecycleExample(string uri, string user, string password)
                 {
                     Driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
@@ -425,11 +427,8 @@ namespace Neo4j.Driver.Examples
 
                     if (disposing)
                     {
-                        //Dispose managed state (managed objects).
+                        Driver?.Dispose();
                     }
-
-                    //Do your thing...
-                    Driver?.Dispose();
 
                     _disposed = true;
                 }
@@ -473,6 +472,8 @@ namespace Neo4j.Driver.Examples
                 private bool _disposed = false;
                 private readonly IDriver _driver;
 
+                ~HelloWorldExample() => Dispose(false);
+
                 public HelloWorldExample(string uri, string user, string password)
                 {
                     _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
@@ -507,11 +508,8 @@ namespace Neo4j.Driver.Examples
 
                     if (disposing)
                     {
-                        //Dispose managed state (managed objects).
+                        _driver?.Dispose();
                     }
-
-                    //Do your thing...
-                    _driver?.Dispose();
 
                     _disposed = true;
                 }
@@ -789,6 +787,8 @@ namespace Neo4j.Driver.Examples
                 private bool _disposed = false;
                 private readonly IDriver _driver;
 
+                ~DatabaseSelectionExample() => Dispose(false);
+
                 public DatabaseSelectionExample(string uri, string user, string password)
                 {
                     _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
@@ -829,11 +829,8 @@ namespace Neo4j.Driver.Examples
 
                     if (disposing)
                     {
-                        //Dispose managed state (managed objects).
+                        _driver?.Dispose();
                     }
-
-                    //Do your thing...
-                    _driver?.Dispose();
 
                     _disposed = true;
                 }
@@ -970,28 +967,12 @@ namespace Neo4j.Driver.Examples
         protected string User = Neo4jDefaultInstallation.User;
         protected string Password = Neo4jDefaultInstallation.Password;
 
+        ~BaseExample() => Dispose(false);
+
         protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
             Driver = fixture.StandAlone.Driver;
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-
-            if(disposing)
-			{
-                //Dispose managed state (managed objects).
-            }
-
-            using (var session = Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
-            }
-
-            _disposed = true;
         }
 
         public void Dispose()
@@ -1000,7 +981,21 @@ namespace Neo4j.Driver.Examples
             GC.SuppressFinalize(this);
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
 
+            if (disposing)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
+            }
+
+            _disposed = true;
+        }
 
         protected int CountNodes(string label, string property, string value)
         {

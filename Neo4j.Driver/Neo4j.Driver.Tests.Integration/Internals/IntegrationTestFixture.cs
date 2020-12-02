@@ -26,6 +26,8 @@ namespace Neo4j.Driver.IntegrationTests
         bool _disposed = false;
         public IStandAlone StandAlone { get; }
 
+        ~StandAloneIntegrationTestFixture() => Dispose(false);
+
         public StandAloneIntegrationTestFixture()
         {
             if (LocalStandAloneInstance.IsServerProvided())
@@ -63,12 +65,9 @@ namespace Neo4j.Driver.IntegrationTests
                 return;
 
             if (disposing)
-            {
-                //Dispose managed state (managed objects).
+            {  
+                StandAlone?.Dispose();
             }
-
-            //Do your thing...
-            StandAlone?.Dispose();
 
             _disposed = true;
         }
@@ -118,11 +117,9 @@ namespace Neo4j.Driver.IntegrationTests
 
             if (disposing)
             {
-                //Dispose managed state (managed objects).
+                //Dispose managed state (managed objects).                
+                Cluster?.Dispose();
             }
-
-            //Do your thing...
-            Cluster?.Dispose();
 
             _disposed = true;
         }

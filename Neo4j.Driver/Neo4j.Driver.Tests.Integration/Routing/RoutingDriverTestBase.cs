@@ -35,6 +35,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         protected string WrongServer => "neo4j://localhost:1234";
         protected IDriver Driver { get; }
 
+        ~RoutingDriverTestBase() => Dispose(false);
+
         public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
         {
             Output = output;
@@ -62,11 +64,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 
             if (disposing)
             {
-                //dispose managed resources
+                Driver.Dispose();
             }
-
-            //dispose of unmanaged resources
-            Driver.Dispose();
 
             //Mark as disposed
             _disposed = true;

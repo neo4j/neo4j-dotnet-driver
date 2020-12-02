@@ -40,7 +40,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
-        //~AbstractRxIT() => Dispose(false);
+        ~AbstractRxIT() => Dispose(false);
 
         protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output)
@@ -69,18 +69,15 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 return;
 
             if(disposing)
-			{
-                //dispose managed resources
-			}
+			{  
+                _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
+                _sessions.Clear();
 
-            //dispose of unmanaged resources
-            _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
-            _sessions.Clear();
-
-            // clean database after each test run
-            using (var session = Server.Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+                // clean database after each test run
+                using (var session = Server.Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
             }
 
             //Mark as disposed

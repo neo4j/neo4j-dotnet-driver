@@ -24,6 +24,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
         private bool _disposed = false;
         private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
+
+        ~LocalStandAloneInstance() => Dispose(false);
+
         public LocalStandAloneInstance() :
             base(Neo4jDefaultInstallation.HttpUri, Neo4jDefaultInstallation.BoltUri, null,
                 Neo4jDefaultInstallation.Password)
@@ -44,11 +47,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             if (disposing)
             {
-                //Dispose managed state (managed objects).
+                Driver.Dispose();
             }
-
-            //Do your thing...
-            Driver.Dispose();
 
             _disposed = true;
         }

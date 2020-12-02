@@ -45,6 +45,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         public string HomePath => _delegator?.HomePath;
         public IAuthToken AuthToken => _delegator?.AuthToken;
 
+        ~StandAlone() => Dispose(false);
+
         public StandAlone()
         {
             try
@@ -108,25 +110,22 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             if (disposing)
             {
-                //Dispose managed state (managed objects).
-            }
+                DisposeBoltDriver();
 
-            //Do your thing...
-            DisposeBoltDriver();
-
-            try
-            {
-                _installer.Stop();
-            }
-            catch
-            {
                 try
                 {
-                    _installer.Kill();
+                    _installer.Stop();
                 }
                 catch
                 {
-                    // ignored
+                    try
+                    {
+                        _installer.Kill();
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
                 }
             }
 

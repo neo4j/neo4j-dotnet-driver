@@ -30,6 +30,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
+        ~DirectDriverTestBase() => Dispose(false);
+
         protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
@@ -51,14 +53,11 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 return;
 
             if (disposing)
-            {
-                //Dispose managed state (managed objects).
-            }
-
-            //Do your thing...
-            using (var session = Server.Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+            {   
+                using (var session = Server.Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
             }
 
             _disposed = true;

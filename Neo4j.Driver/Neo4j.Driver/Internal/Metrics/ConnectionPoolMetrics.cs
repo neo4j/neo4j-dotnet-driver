@@ -51,6 +51,9 @@ namespace Neo4j.Driver.Internal.Metrics
         private IInternalMetrics _metrics;
         public int InUse => _pool?.NumberOfInUseConnections ?? 0;
         public int Idle => _pool?.NumberOfIdleConnections ?? 0;
+
+        ~ConnectionPoolMetrics() => Dispose(false);
+
         public ConnectionPoolMetrics(string poolId, IConnectionPool pool, IInternalMetrics metrics)
         {
             Id = poolId;
@@ -120,14 +123,12 @@ namespace Neo4j.Driver.Internal.Metrics
 
             if (disposing)
             {
-                //dispose managed resources
+                _pool = null;
+                _metrics.RemovePoolMetrics(Id);
+                _metrics = null;
             }
 
-            //dispose of unmanaged resources
-            _pool = null;
-            _metrics.RemovePoolMetrics(Id);
-            _metrics = null;
-
+            
             //Mark as disposed
             _disposed = true;
         }

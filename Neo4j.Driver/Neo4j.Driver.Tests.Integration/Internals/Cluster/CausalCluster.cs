@@ -44,6 +44,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             // no special modification to driver config
         }
 
+        ~CausalCluster() => Dispose(false);
+
         public CausalCluster()
         {
             // start a cluster
@@ -174,28 +176,25 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             if (disposing)
             {
-                //Dispose managed state (managed objects).
-            }
-
-            //Do your thing...
-            try
-            {
-                _installer.Stop();
-            }
-            catch
-            {
-                // if failed to stop properly, then we kill
                 try
                 {
-                    Kill();
+                    _installer.Stop();
                 }
                 catch
                 {
+                    // if failed to stop properly, then we kill
+                    try
+                    {
+                        Kill();
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+
                     // ignored
                 }
-
-                // ignored
-            }
+            }            
 
             _disposed = true;
         }

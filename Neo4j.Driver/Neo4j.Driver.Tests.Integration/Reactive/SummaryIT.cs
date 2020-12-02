@@ -36,6 +36,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         public abstract class Specs : AbstractRxIT
         {
             private bool _disposed = false;
+
+            ~Specs() => Dispose(false);
+
             protected Specs(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
             {
@@ -226,25 +229,22 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 if (disposing)
                 {
-                    //dispose managed resources
-                }
-
-                //dispose of unmanaged resources
-                using (var session = Server.Driver.Session())
-                {
-                    foreach (var drop in session.Run("CALL db.constraints()").ToList())
+                    using (var session = Server.Driver.Session())
                     {
-                        if (drop.Values.TryGetValue("name", out var name))
+                        foreach (var drop in session.Run("CALL db.constraints()").ToList())
                         {
-                            session.Run($"DROP CONSTRAINT {name}").Consume();
+                            if (drop.Values.TryGetValue("name", out var name))
+                            {
+                                session.Run($"DROP CONSTRAINT {name}").Consume();
+                            }
                         }
-                    }
 
-                    foreach (var drop in session.Run("CALL db.indexes()").ToList())
-                    {
-                        if (drop.Values.TryGetValue("name", out var name))
+                        foreach (var drop in session.Run("CALL db.indexes()").ToList())
                         {
-                            session.Run($"DROP INDEX {name}").Consume();
+                            if (drop.Values.TryGetValue("name", out var name))
+                            {
+                                session.Run($"DROP INDEX {name}").Consume();
+                            }
                         }
                     }
                 }
@@ -260,6 +260,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         {
             private bool _disposed = false;
             private readonly IRxSession rxSession;
+
+            ~Session() => Dispose(false);
 
             public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
@@ -279,11 +281,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 if (disposing)
                 {
-                    //dispose managed resources
+                    rxSession.Close<int>().WaitForCompletion();
                 }
-
-                //dispose of unmanaged resources
-                rxSession.Close<int>().WaitForCompletion();
 
                 //Mark as disposed
                 _disposed = true;
@@ -298,6 +297,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             private bool _disposed = false;
             private readonly IRxSession rxSession;
             private readonly IRxTransaction rxTransaction;
+
+            ~Transaction() => Dispose(false);
 
             public Transaction(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
                 : base(output, standAlone)
@@ -318,12 +319,9 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 if (disposing)
                 {
-                    //dispose managed resources
+                    rxTransaction.Commit<int>().WaitForCompletion();
+                    rxSession.Close<int>().WaitForCompletion();
                 }
-
-                //dispose of unmanaged resources
-                rxTransaction.Commit<int>().WaitForCompletion();
-                rxSession.Close<int>().WaitForCompletion();
 
                 //Mark as disposed
                 _disposed = true;

@@ -29,6 +29,8 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         private bool _disposed = false;
         private static readonly string ScriptSourcePath;
 
+        ~BoltStubServer() => Dispose(false);
+
         static BoltStubServer()
         {
             Uri assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.CodeBase);
@@ -66,17 +68,14 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             if (disposing)
             {
-                //Dispose managed state (managed objects).
-            }
-
-            //Do your thing...
-            try
-            {
-                Disconnect(_testTcpClient);
-            }
-            catch (Exception)
-            {
-                // ignored
+                try
+                {
+                    Disconnect(_testTcpClient);
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
             }
 
             _commandRunner.EndRunCommand();

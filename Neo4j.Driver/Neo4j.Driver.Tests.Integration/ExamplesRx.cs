@@ -179,6 +179,8 @@ namespace Neo4j.Driver.ExamplesAsync
         protected string User = Neo4jDefaultInstallation.User;
         protected string Password = Neo4jDefaultInstallation.Password;
 
+        ~BaseRxExample() => Dispose(false);
+
         protected BaseRxExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Driver = fixture.StandAlone.Driver;
@@ -197,13 +199,10 @@ namespace Neo4j.Driver.ExamplesAsync
 
             if (disposing)
             {
-                //Dispose managed state (managed objects).
-            }
-
-            //Do your thing...
-            using (var session = Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+                using (var session = Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
             }
 
             _disposed = true;

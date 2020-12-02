@@ -30,6 +30,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public NetworkStream ConnectionStream { get; set; }
 
+        ~Connection() => Dispose(false);
+
         public Connection(string address, uint port)
         {
             Trace.WriteLine("Creating Server");
