@@ -187,6 +187,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             public StandAlone StandAlone { get; }
             public Pkcs12Store Pkcs12 { get; }
 
+            ~CertificateTrustIntegrationTestFixture() => Dispose(false);
+
             public CertificateTrustIntegrationTestFixture()
             {
                 if (!BoltkitHelper.IsBoltkitAvailable())
@@ -208,10 +210,27 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 }
             }
 
+
+            private bool _disposed = false;
             public void Dispose()
             {
-                StandAlone?.Dispose();
-                StandAlone?.UpdateCertificate(Pkcs12);
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+			{
+                if (_disposed)
+                    return;
+
+                if(disposing)
+				{
+                    //Dispose managed state (managed objects).
+                    StandAlone?.Dispose();
+                    StandAlone?.UpdateCertificate(Pkcs12);
+                }
+
+                _disposed = true;
             }
         }
     }

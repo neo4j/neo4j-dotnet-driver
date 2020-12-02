@@ -404,16 +404,33 @@ namespace Neo4j.Driver.Examples
             // tag::driver-lifecycle[]
             public class DriverLifecycleExample : IDisposable
             {
+                private bool _disposed = false;
                 public IDriver Driver { get; }
+
+                ~DriverLifecycleExample() => Dispose(false);
 
                 public DriverLifecycleExample(string uri, string user, string password)
                 {
                     Driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
                 }
-
+                
                 public void Dispose()
                 {
-                    Driver?.Dispose();
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
+                }
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        Driver?.Dispose();
+                    }
+
+                    _disposed = true;
                 }
             }
             // end::driver-lifecycle[]
@@ -452,7 +469,10 @@ namespace Neo4j.Driver.Examples
             // tag::hello-world[]
             public class HelloWorldExample : IDisposable
             {
+                private bool _disposed = false;
                 private readonly IDriver _driver;
+
+                ~HelloWorldExample() => Dispose(false);
 
                 public HelloWorldExample(string uri, string user, string password)
                 {
@@ -477,7 +497,21 @@ namespace Neo4j.Driver.Examples
 
                 public void Dispose()
                 {
-                    _driver?.Dispose();
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
+                }
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        _driver?.Dispose();
+                    }
+
+                    _disposed = true;
                 }
 
                 public static void Main()
@@ -750,7 +784,10 @@ namespace Neo4j.Driver.Examples
 
             private class DatabaseSelectionExample : IDisposable
             {
+                private bool _disposed = false;
                 private readonly IDriver _driver;
+
+                ~DatabaseSelectionExample() => Dispose(false);
 
                 public DatabaseSelectionExample(string uri, string user, string password)
                 {
@@ -781,7 +818,21 @@ namespace Neo4j.Driver.Examples
 
                 public void Dispose()
                 {
-                    _driver?.Dispose();
+                    Dispose(true);
+                    GC.SuppressFinalize(this);
+                }
+
+                protected virtual void Dispose(bool disposing)
+                {
+                    if (_disposed)
+                        return;
+
+                    if (disposing)
+                    {
+                        _driver?.Dispose();
+                    }
+
+                    _disposed = true;
                 }
             }
         }
@@ -909,11 +960,14 @@ namespace Neo4j.Driver.Examples
     [Collection(SAIntegrationCollection.CollectionName)]
     public abstract class BaseExample : IDisposable
     {
+        private bool _disposed = false;
         protected ITestOutputHelper Output { get; }
         protected IDriver Driver { set; get; }
         protected string Uri = Neo4jDefaultInstallation.BoltUri;
         protected string User = Neo4jDefaultInstallation.User;
         protected string Password = Neo4jDefaultInstallation.Password;
+
+        ~BaseExample() => Dispose(false);
 
         protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
@@ -921,20 +975,26 @@ namespace Neo4j.Driver.Examples
             Driver = fixture.StandAlone.Driver;
         }
 
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (!isDisposing)
-                return;
-
-            using (var session = Driver.Session())
-            {
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
-            }
-        }
-
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.Run("MATCH (n) DETACH DELETE n").Consume();
+                }
+            }
+
+            _disposed = true;
         }
 
         protected int CountNodes(string label, string property, string value)
