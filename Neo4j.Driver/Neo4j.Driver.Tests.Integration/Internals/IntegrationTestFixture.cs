@@ -78,6 +78,8 @@ namespace Neo4j.Driver.IntegrationTests
         private bool _disposed = false;
         public ICausalCluster Cluster { get; }
 
+        ~CausalClusterIntegrationTestFixture() => Dispose(false);
+
         public CausalClusterIntegrationTestFixture()
         {
             if (ExistingCluster.IsClusterProvided())
