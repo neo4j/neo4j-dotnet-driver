@@ -13,9 +13,10 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
         public override void Serialize(IPackStreamWriter writer, object value)
         {
             var msg = value.CastOrThrow<RouteMessage>();
-
-            writer.WriteStructHeader(1, BoltProtocolV4_3MessageFormat.MsgRoute);
-            writer.Write(msg.Metadata);
+            
+            writer.WriteStructHeader(2, BoltProtocolV4_3MessageFormat.MsgRoute);
+            writer.Write(msg.Routing);
+            writer.Write(msg.DatabaseParam);
         }
     }
 }

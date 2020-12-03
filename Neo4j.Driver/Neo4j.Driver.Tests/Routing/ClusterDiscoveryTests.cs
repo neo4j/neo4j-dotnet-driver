@@ -137,9 +137,9 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var routingContext = new Dictionary<string, string>
                 {
-                    {"name", "molly"},
-                    {"age", "1"},
-                    {"color", "white"}
+                    {"address", "127.0.0.1:9001"},
+                    {"region", "china"},
+                    {"policy", "myp_policy"}
                 };
                 var recordFields = CreateGetServersDictionary(routerCount, writerCount, readerCount);
                 var mockConn = Setup43SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
@@ -323,9 +323,7 @@ namespace Neo4j.Driver.Tests.Routing
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
-                MessagePair(new RouteMessage(routingContext, database, bookmark, TransactionConfig.Default, AccessMode.Read),
-                            SuccessMessage(recordFields))
-                            
+                MessagePair(new RouteMessage(routingContext, database), SuccessMessage(recordFields))                            
             };
 
             var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Version = "Neo4j/4.3.0" };

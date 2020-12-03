@@ -47,14 +47,11 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
-        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-                                                                                        string database,
-                                                                                        Bookmark bookmark)
+        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, Bookmark bookmark)
         {
             var responseHandler = new RouteResponseHandler();
 
-            await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, database, bookmark, TransactionConfig.Default, connection.GetEnforcedAccessMode()), 
-                                          responseHandler).ConfigureAwait(false);
+            await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, database), responseHandler).ConfigureAwait(false);
 
             await connection.SyncAsync().ConfigureAwait(false);
             await connection.CloseAsync().ConfigureAwait(false);

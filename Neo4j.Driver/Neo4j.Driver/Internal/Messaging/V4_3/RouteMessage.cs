@@ -22,20 +22,32 @@ using System.Text;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_3
 {
-	internal class RouteMessage : TransactionStartingMessage
-    {
-        public string DatabaseParam { get; }
-        
-        public RouteMessage(IDictionary<string, string> routingContext, string db, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Read)
-            : base(db, bookmark, config?.Timeout, config?.Metadata, mode)
-        {
-            Metadata.Add("routing", routingContext);
-            DatabaseParam = db;
-        }
+	internal class RouteMessage : IRequestMessage
+	{	
+        public IDictionary<string, string> Routing { get; set; }
+        public string DatabaseParam { get; set; }
 
-        public override string ToString()
-        {
-            return "ROUTE " + Metadata.ToContentString() + " " + DatabaseParam;            
+
+        public RouteMessage(IDictionary<string, string> routingContext, string db)
+		{
+            Routing = routingContext;
+            DatabaseParam = db;            
+		}
+
+		public override string ToString()   
+		{
+            string message = "{";
+
+            foreach(var data in Routing)
+			{
+                message += $" \'{data.Key}\':\'{data.Value}\'";
+            }
+
+            message += "}";
+
+            message += (DatabaseParam != null) ? " \'" + DatabaseParam + "\'" : "";
+
+            return message;
         }
-    }
+	}
 }
