@@ -150,9 +150,7 @@ namespace Neo4j.Driver.Internal.Protocol
             parameters = new Dictionary<string, object> { { "context", connection.RoutingContext } };
         }
 
-        public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, 
-                                                                 string database,
-                                                                 Bookmark bookmark)
+        public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, Bookmark bookmark)
 		{   
             string procedure;
             var parameters = new Dictionary<string, object>();
