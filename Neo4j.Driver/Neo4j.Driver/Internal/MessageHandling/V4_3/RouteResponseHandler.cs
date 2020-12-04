@@ -37,7 +37,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
         public override void OnSuccess(IDictionary<string, object> metadata)
         {
             base.OnSuccess(metadata);
-
             RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
         }
     }

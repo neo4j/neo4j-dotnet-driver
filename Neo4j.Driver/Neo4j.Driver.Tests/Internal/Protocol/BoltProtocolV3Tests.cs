@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -338,7 +339,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
 
-        public class RoutingTableProcedure
+        public class RoutingTable
         {
             [Theory]
             [InlineData("Neo4j/3.2.0-alpha01")]
@@ -368,8 +369,20 @@ namespace Neo4j.Driver.Internal.Protocol
                 procedure.Should().Be("CALL dbms.cluster.routing.getRoutingTable($context)");
                 parameters["context"].Should().Be(context);
             }
+
+            [Fact]
+            public async Task GetRoutingTableShouldThrowOnNullConnectionObject()
+			{
+                var v3 = new BoltProtocolV3();
+
+                var ex = await Xunit.Record.ExceptionAsync(async () => await v3.GetRoutingTable(null, "adb", null));
+
+                ex.Should().BeOfType<ProtocolException>().Which
+                    .Message.Should()
+                    .Contain("Attempting to get a routing table on a null connection");
+            }
         }
 
-        
+
     }
 }

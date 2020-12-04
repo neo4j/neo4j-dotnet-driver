@@ -151,7 +151,9 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, Bookmark bookmark)
-		{   
+		{
+            connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+
             string procedure;
             var parameters = new Dictionary<string, object>();
 
@@ -167,10 +169,6 @@ namespace Neo4j.Driver.Internal.Protocol
 
             return record.Values;
         }
-
-
-
-
 
         private class ConnectionResourceHandler : IResultResourceHandler
         {

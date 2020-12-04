@@ -30,20 +30,20 @@ namespace Neo4j.Driver.Internal.Messaging.V4_3
 
         public RouteMessage(IDictionary<string, string> routingContext, string db)
 		{
-            Routing = routingContext;
+            Routing = routingContext ?? new Dictionary<string,string>();
             DatabaseParam = db;            
 		}
 
 		public override string ToString()   
 		{
-            string message = "{";
+            string message = "ROUTE {";
 
             foreach(var data in Routing)
 			{
                 message += $" \'{data.Key}\':\'{data.Value}\'";
             }
 
-            message += "}";
+            message += " }";
 
             message += (DatabaseParam != null) ? " \'" + DatabaseParam + "\'" : "";
 

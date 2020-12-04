@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 				}
 				else
 				{
-                    throw new ProtocolException($"Expected '{RoutingTableKey}' metadata to be of type 'Dictionary<string, object>, but got '{routingTable?.GetType().Name}'.");
+                    throw new ProtocolException($"Expected '{RoutingTableKey}' metadata to be of type 'Dictionary<string, object>', but got '{routingTable?.GetType().Name}'.");
 				}
 			}
 		}

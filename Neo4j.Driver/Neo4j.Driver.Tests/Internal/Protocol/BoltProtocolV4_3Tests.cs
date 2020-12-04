@@ -66,5 +66,18 @@ namespace Neo4j.Driver.Internal.Protocol
 
             await EnqueAndSync(V4_3);
         }
+
+        [Fact]
+        public async Task GetRoutingTableShouldThrowOnNullConnectionObject()
+        {
+            var v4_3 = new BoltProtocolV4_3(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
+
+            var ex = await Xunit.Record.ExceptionAsync(async () => await v4_3.GetRoutingTable(null, "adb", null));
+
+            ex.Should().BeOfType<ProtocolException>().Which
+                .Message.Should()
+                .Contain("Attempting to get a routing table on a null connection");
+        }
+
     }
 }
