@@ -132,8 +132,6 @@ namespace Neo4j.Driver.Tests.Routing
         }
     }
 
-
-
     internal class MockedMessagingClientV4_1 : MockedMessagingClientV3
     {
         public MockedMessagingClientV4_1(IList<Tuple<IRequestMessage, IResponseMessage>> requestAndResponsePairs, Mock<ISocketClient> clientMock = null)
@@ -145,6 +143,21 @@ namespace Neo4j.Driver.Tests.Routing
         {
             auth = auth ?? AuthTokens.None;
             return new V4_1.HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary(), null);
+        }
+    }
+
+    internal class MockedMessagingClientV4_3 : MockedMessagingClientV4_1
+    {
+        public MockedMessagingClientV4_3(IList<Tuple<IRequestMessage, IResponseMessage>> requestAndResponsePairs, Mock<ISocketClient> clientMock = null)
+            : base(requestAndResponsePairs, clientMock)
+        {
+        }
+
+        internal static SuccessMessage SuccessMessage(IDictionary<string, object> fields = null)
+        {
+            return fields == null
+                ? new SuccessMessage(new Dictionary<string, object>())
+                : new SuccessMessage(fields);
         }
     }
 }

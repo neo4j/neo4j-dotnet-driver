@@ -36,66 +36,14 @@ using Xunit;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using static Neo4j.Driver.Tests.Routing.MockedMessagingClientV3;
+using static Neo4j.Driver.Tests.Routing.MockedMessagingClientV4_3;
 using Record = Xunit.Record;
+using Neo4j.Driver.Internal.Messaging.V4_3;
 
 namespace Neo4j.Driver.Tests.Routing
 {
     public class ClusterDiscoveryTests
     {
-        public class Constructor
-        {
-            [Theory]
-            [InlineData("Neo4j/3.2.0-alpha01")]
-            [InlineData("3.2.0-alpha01")]
-            [InlineData("Neo4j/3.2.1")]
-            [InlineData("3.2.1")]
-            public void ShouldUseGetRoutingTableProcedure(string version)
-            {
-                // Given
-                var context = new Dictionary<string, string> {{"context", string.Empty}};
-                var discovery = new ClusterDiscovery(context, null);
-                var mock = new Mock<IConnection>();
-                var serverInfoMock = new Mock<IServerInfo>();
-                serverInfoMock.Setup(m => m.Version).Returns(version);
-                mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
-                mock.Setup(m => m.BoltProtocol).Returns(new BoltProtocolV3());
-                // When
-                var query = discovery.DiscoveryProcedure(mock.Object, null);
-                // Then
-                query.Text.Should()
-                    .Be("CALL dbms.cluster.routing.getRoutingTable($context)");
-                query.Parameters["context"].Should().Be(context);
-            }
-
-            [Theory]
-            [InlineData("Neo4j/4.0.0-alpha01")]
-            [InlineData("4.0.0-alpha01")]
-            [InlineData("Neo4j/4.0.0")]
-            [InlineData("4.0.0")]
-            [InlineData("Neo4j/4.0.1")]
-            [InlineData("4.0.1")]
-            public void ShouldUseGetRoutingTableForDatabaseProcedure(string version)
-            {
-                // Given
-                var context = new Dictionary<string, string> {{"context", string.Empty}};
-                var discovery = new ClusterDiscovery(context, null);
-                var mock = new Mock<IConnection>();
-                var serverInfoMock = new Mock<IServerInfo>();
-                var V4 = new BoltProtocolV4();
-
-                serverInfoMock.Setup(m => m.Version).Returns(version);
-                mock.Setup(m => m.Server).Returns(serverInfoMock.Object);
-                mock.Setup(m => m.BoltProtocol).Returns(V4);
-                // When
-                var query = discovery.DiscoveryProcedure(mock.Object, "foo");
-                // Then
-                query.Text.Should()
-                    .Be("CALL dbms.routing.getRoutingTable($context, $database)");
-                query.Parameters["context"].Should().Be(context);
-                query.Parameters["database"].Should().Be("foo");
-            }
-        }
-
         public class RediscoveryMethod
         {
             [Theory]
@@ -120,6 +68,7 @@ namespace Neo4j.Driver.Tests.Routing
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var mockConn = Setup32SocketConnection(routingContext, recordFields);
+                mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
@@ -155,8 +104,46 @@ namespace Neo4j.Driver.Tests.Routing
                     {"color", "white"}
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
-                var mockConn =
-                    Setup40SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
+                var mockConn = Setup40SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
+                mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
+                var manager = new ClusterDiscovery(routingContext, null);
+
+                // When
+                var table = await manager.DiscoverAsync(mockConn.Object, database, Bookmark.From(bookmarks));
+
+                // Then
+                table.Database.Should().Be(database ?? "");
+                table.Readers.Count().Should().Be(readerCount);
+                table.Writers.Count().Should().Be(writerCount);
+                table.Routers.Count().Should().Be(routerCount);
+                table.ExpireAfterSeconds.Should().Be(15000L);
+                mockConn.Verify(x => x.CloseAsync(), Times.Once);
+            }
+
+            [Theory]
+            [InlineData(1, 1, 1, null)]
+            [InlineData(2, 1, 1, null, "bookmark-1", "bookmark-2")]
+            [InlineData(1, 2, 1, "foo-db")]
+            [InlineData(2, 2, 1, "bar-db", "bookmark-3")]
+            [InlineData(1, 1, 2, "")]
+            [InlineData(2, 1, 2, "")]
+            [InlineData(1, 2, 2, "my-db", "bookmark-1", "bookmark-2", "bookmark-3")]
+            [InlineData(2, 2, 2, "my-db")]
+            [InlineData(3, 1, 2, "that-db")]
+            [InlineData(3, 2, 1, "another-db", "bookmark-6")]
+            public async Task ShouldCarryOutRediscoveryWith43Server(int routerCount, int writerCount, int readerCount,
+                string database, params string[] bookmarks)
+            {
+                // Given
+                var routingContext = new Dictionary<string, string>
+                {
+                    {"address", "127.0.0.1:9001"},
+                    {"region", "china"},
+                    {"policy", "myp_policy"}
+                };
+                var recordFields = CreateGetServersDictionary(routerCount, writerCount, readerCount);
+                var mockConn = Setup43SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
+                mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
@@ -251,6 +238,37 @@ namespace Neo4j.Driver.Tests.Routing
             };
         }
 
+        private static Dictionary<string, object> CreateGetServersDictionary(int routerCount, int writerCount, int readerCount)
+		{
+            return new Dictionary<string, object>
+            {
+                {"rt",  new Dictionary<string, object>
+                        {
+                            { "ttl", "15000" },
+                            { "servers", new List<object>
+                                         {
+                                             new Dictionary<string, object>
+                                             {
+                                                 {"addresses", GenerateServerList(routerCount)},
+                                                 {"role", "ROUTE"}
+                                             },
+                                             new Dictionary<string, object>
+                                             {
+                                                 {"addresses", GenerateServerList(writerCount)},
+                                                 {"role", "WRITE"}
+                                             },
+                                             new Dictionary<string, object>
+                                             {
+                                                 {"addresses", GenerateServerList(readerCount)},
+                                                 {"role", "READ"}
+                                             }
+                                         }
+                            }
+                        }
+                }
+            };
+        }
+
         private static IList<object> GenerateServerList(int count)
         {
             var list = new List<object>(count);
@@ -262,8 +280,7 @@ namespace Neo4j.Driver.Tests.Routing
             return list;
         }
 
-        private static Mock<IConnection> Setup32SocketConnection(IDictionary<string, string> routingContext,
-            object[] recordFields)
+        private static Mock<IConnection> Setup32SocketConnection(IDictionary<string, string> routingContext, object[] recordFields)
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
@@ -280,21 +297,19 @@ namespace Neo4j.Driver.Tests.Routing
             return new MockedConnection(AccessMode.Write, pairs, serverInfo).MockConn;
         }
 
-        private static Mock<IConnection> Setup40SocketConnection(IDictionary<string, string> routingContext,
-            string database, Bookmark bookmark, object[] recordFields)
+        private static Mock<IConnection> Setup40SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, object[] recordFields)
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
-                MessagePair(new RunWithMetadataMessage(new Query(
-                            "CALL dbms.routing.getRoutingTable($context, $database)",
-                            new Dictionary<string, object>
-                            {
-                                {"context", routingContext},
-                                {"database", string.IsNullOrEmpty(database) ? null : database},
-                            }),
-                        "system",
-                        bookmark, TransactionConfig.Default, AccessMode.Read),
-                    SuccessMessage(new List<object> {"ttl", "servers"})),
+                MessagePair(new RunWithMetadataMessage(new Query("CALL dbms.routing.getRoutingTable($context, $database)",
+                                                        new Dictionary<string, object>
+                                                        {
+                                                            {"context", routingContext},
+                                                            {"database", string.IsNullOrEmpty(database) ? null : database},
+                                                        }),
+                                                        "system",
+                                                        bookmark, TransactionConfig.Default, AccessMode.Read),
+                            SuccessMessage(new List<object> {"ttl", "servers"})),
                 MessagePair(new RecordMessage(recordFields)),
                 MessagePair(new PullMessage(PullMessage.All), SuccessMessage())
             };
@@ -302,6 +317,18 @@ namespace Neo4j.Driver.Tests.Routing
             var serverInfo = new ServerInfo(new Uri("bolt://123:456")) {Version = "Neo4j/4.0.0"};
 
             return new MockedConnection(AccessMode.Read, pairs, serverInfo).MockConn;
+        }
+
+        private static Mock<IConnection> Setup43SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, Dictionary<string, object> recordFields)
+        {
+            var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
+            {
+                MessagePair(new RouteMessage(routingContext, database), SuccessMessage(recordFields))                            
+            };
+
+            var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Version = "Neo4j/4.3.0" };
+
+            return new MockedConnection(AccessMode.Read, pairs, serverInfo, routingContext).MockConn;
         }
 
         internal class MockedConnection
@@ -315,7 +342,7 @@ namespace Neo4j.Driver.Tests.Routing
             private int _responseCount;
 
             public MockedConnection(AccessMode mode, List<Tuple<IRequestMessage, IResponseMessage>> messages,
-                ServerInfo serverInfo = null)
+                ServerInfo serverInfo = null, IDictionary<string, string> routingContext = null)
             {
                 foreach (var pair in messages)
                 {
@@ -347,6 +374,7 @@ namespace Neo4j.Driver.Tests.Routing
                                 _pipeline.Enqueue(msg2, handler2);
                             }
                         });
+
                 _mockConn.Setup(x => x.ReceiveOneAsync())
                     .Returns(() =>
                     {
@@ -363,15 +391,38 @@ namespace Neo4j.Driver.Tests.Routing
                         }
                     });
 
+                _mockConn.Setup(x => x.SyncAsync())
+                    .Returns(() =>
+                    {
+                        if (_responseCount < _responseMessages.Count)
+                        {
+                            _responseMessages[_responseCount].Dispatch(_pipeline);
+                            _responseCount++;
+                            _pipeline.AssertNoFailure();
+                            return Task.CompletedTask;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Not enough response message to provide");
+                        }
+                    });
+
+
                 _mockConn.Setup(x => x.IsOpen).Returns(() => _responseCount < _responseMessages.Count);
+
                 _mockConn.Setup(x => x.Mode).Returns(mode);
+
                 var protocol = new BoltProtocolV3();
                 if (serverInfo != null)
                 {
-                    if (ServerVersion.From(serverInfo.Version) >= ServerVersion.V4_0_0)
+                    if (ServerVersion.From(serverInfo.Version) >= new ServerVersion(4, 0, 0))                        
                     {
-                        protocol = new BoltProtocolV4();
-                    }                    
+                        protocol = new BoltProtocolV4_0();
+                    }
+                    if(ServerVersion.From(serverInfo.Version) >= new ServerVersion(4, 3, 0))
+					{
+                        protocol = new BoltProtocolV4_3(routingContext);
+                    }
 
                     _mockConn.Setup(x => x.Server).Returns(serverInfo);
                 }

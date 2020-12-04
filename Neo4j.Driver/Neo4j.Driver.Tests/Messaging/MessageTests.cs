@@ -36,6 +36,7 @@ namespace Neo4j.Driver.Tests
         {
             public static IEnumerable<object[]> MessageData => new[]
             {
+                new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Frank" } }, "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Frank\' } \'adb\'" },
                 new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},

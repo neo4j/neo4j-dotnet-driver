@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
             else if (version.Equals(4, 0))
             {
-                return new BoltProtocolV4();
+                return new BoltProtocolV4_0();
             }
             //NOTE: Protocols 4.1 and 4.2 are identical. So revert to using 4.
             else if (version.Equals(4, 1) )

@@ -17,21 +17,28 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging.V4;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
+namespace Neo4j.Driver.Internal.MessageHandling.V4_3
 {
-    internal class DiscardMessageSerializer : WriteOnlySerializer
+    class RouteResponseHandler : MetadataCollectingResponseHandler
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(DiscardMessage)};
+        public IDictionary<string, object> RoutingInformation { get; set; }
 
-        public override void Serialize(IPackStreamWriter writer, object value)
+
+        public RouteResponseHandler()
         {
-            var discardN = value.CastOrThrow<DiscardMessage>();
+            AddMetadata<RoutingTableCollector, IDictionary<string, object>>();
+        }
 
-            writer.WriteStructHeader(1, BoltProtocolV4_0MessageFormat.MsgDiscardN);
-            writer.Write(discardN.Metadata);
+        public override void OnSuccess(IDictionary<string, object> metadata)
+        {
+            base.OnSuccess(metadata);
+            RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
         }
     }
+	
 }

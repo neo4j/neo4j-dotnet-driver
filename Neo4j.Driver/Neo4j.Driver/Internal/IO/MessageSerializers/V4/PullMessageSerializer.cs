@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
         {
             var pullN = value.CastOrThrow<PullMessage>();
 
-            writer.WriteStructHeader(1, BoltProtocolV4MessageFormat.MsgPullN);
+            writer.WriteStructHeader(1, BoltProtocolV4_0MessageFormat.MsgPullN);
             writer.Write(pullN.Metadata);
         }
     }

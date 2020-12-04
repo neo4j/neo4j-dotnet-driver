@@ -16,11 +16,10 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -36,9 +35,11 @@ using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV4 : BoltProtocolV3
+    internal class BoltProtocolV4_0 : BoltProtocolV3
     {
-        public BoltProtocolV4()
+        private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
+
+        public BoltProtocolV4_0()
         {
         }
 
@@ -163,6 +164,12 @@ namespace Neo4j.Driver.Internal.Protocol
                 .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
                     new V4.HelloResponseHandler(connection, Version())).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
+        }
+
+        protected internal override void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)
+        {
+            procedure = GetRoutingTableForDatabaseProcedure;
+            parameters = new Dictionary<string, object> { { "context", connection.RoutingContext }, { "database", string.IsNullOrEmpty(database) ? null : database } };                     
         }
     }
 }

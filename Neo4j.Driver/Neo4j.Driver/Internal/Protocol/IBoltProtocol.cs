@@ -17,6 +17,7 @@
 
 using System.IO;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver;
@@ -31,15 +32,19 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
-        Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query,
-            bool reactive, IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionConfig config, long fetchSize);
+        Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, 
+                                                            Query query,
+                                                            bool reactive, 
+                                                            IBookmarkTracker bookmarkTracker, 
+                                                            IResultResourceHandler resultResourceHandler,
+                                                            string database, 
+                                                            Bookmark bookmark, 
+                                                            TransactionConfig config, 
+                                                            long fetchSize);
 
-        Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
-            TransactionConfig config);
+        Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config);
 
-        Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query,
-            bool reactive, long fetchSize);
+        Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
 
         Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker);
 
@@ -50,5 +55,9 @@ namespace Neo4j.Driver.Internal.Protocol
         Task LogoutAsync(IConnection connection);
 
         BoltProtocolVersion Version();
+
+        Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
+                                            string database,
+                                            Bookmark bookmark); 
     }
 }

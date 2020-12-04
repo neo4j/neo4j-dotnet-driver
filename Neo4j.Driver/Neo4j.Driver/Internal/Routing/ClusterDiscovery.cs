@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -32,8 +33,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
 
-        private const string GetRoutingTableForDatabaseProcedure =
-            "CALL dbms.routing.getRoutingTable($context, $database)";
+        private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
 
         public ClusterDiscovery(IDictionary<string, string> context, ILogger logger)
@@ -42,62 +42,22 @@ namespace Neo4j.Driver.Internal.Routing
             _logger = logger;
         }
 
-        internal Query DiscoveryProcedure(IConnection connection, string database)
-        {
-            if (connection.SupportsMultidatabase())
-            {
-                return new Query(GetRoutingTableForDatabaseProcedure,
-                    new Dictionary<string, object>
-                        {{"context", _context}, {"database", string.IsNullOrEmpty(database) ? null : database}});
-            }
-
-            return new Query(GetRoutingTableProcedure,
-                new Dictionary<string, object> {{"context", _context}});
-        }
-
         /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
         /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
         public async Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, Bookmark bookmark)
         {
-            RoutingTable table;
-
-            var provider = new SingleConnectionBasedConnectionProvider(connection);
-            var multiDb = connection.SupportsMultidatabase();
-            var sessionAccessMode = multiDb ? AccessMode.Read : AccessMode.Write;
-            var sessionDb = multiDb ? "system" : null;
-            var session = new AsyncSession(provider, _logger, null, sessionAccessMode, sessionDb, bookmark);
-            try
-            {
-                var stmt = DiscoveryProcedure(connection, database);
-                var result = await session.RunAsync(stmt).ConfigureAwait(false);
-                var record = await result.SingleAsync().ConfigureAwait(false);
-
-                table = ParseDiscoveryResult(database, record);
-            }
-            finally
-            {
-                try
-                {
-                    await session.CloseAsync().ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // ignore any exception
-                }
-
-                await provider.CloseAsync().ConfigureAwait(false);
-            }
-
-            return table;
+            var routingTable = await connection.BoltProtocol.GetRoutingTable(connection, database, bookmark);   //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
+                        
+            return ParseDiscoveryResult(database, routingTable);
         }
 
-        private static RoutingTable ParseDiscoveryResult(string database, IRecord record)
+        private static RoutingTable ParseDiscoveryResult(string database, IReadOnlyDictionary<string, object> routingTable)
         {
             var routers = default(Uri[]);
             var readers = default(Uri[]);
             var writers = default(Uri[]);
 
-            foreach (var servers in record["servers"].As<List<Dictionary<string, object>>>())
+            foreach (var servers in routingTable["servers"].As<List<Dictionary<string, object>>>())
             {
                 var addresses = servers["addresses"].As<List<string>>();
                 var role = servers["role"].As<string>();
@@ -124,7 +84,7 @@ namespace Neo4j.Driver.Internal.Routing
                     $"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
             }
 
-            return new RoutingTable(database, routers, readers, writers, record["ttl"].As<long>());
+            return new RoutingTable(database, routers, readers, writers, routingTable["ttl"].As<long>());
         }
 
         public static Uri BoltRoutingUri(string address)
