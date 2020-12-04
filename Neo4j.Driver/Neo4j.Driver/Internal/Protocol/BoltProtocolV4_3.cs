@@ -49,6 +49,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, Bookmark bookmark)
         {
+            connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+
             var responseHandler = new RouteResponseHandler();
 
             await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, database), responseHandler).ConfigureAwait(false);
