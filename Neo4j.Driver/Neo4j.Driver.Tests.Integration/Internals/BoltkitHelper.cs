@@ -96,16 +96,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return _boltkitAvailable == BoltkitStatus.Installed;
         }
 
-        public static bool BoltKitCanProceed()
+        public static bool Available()
 		{
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT")))
-                return true;
-
-            if (BoltkitHelper.IsBoltkitAvailable())
-                return true;
-
-            //Not running with testkit enabled and boltkit is not installed, so we fail the test
-            return false;            
+            return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT")) || BoltkitHelper.IsBoltkitAvailable();
         }
 
         public static Tuple<bool, string> IsClusterSupported()
@@ -118,7 +111,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             var supported = true;
             var message = "All good to go";
 
-            if (!IsBoltkitAvailable())
+            if (!Available())
             {
                 supported = false;
                 message = TestRequireBoltkit;
