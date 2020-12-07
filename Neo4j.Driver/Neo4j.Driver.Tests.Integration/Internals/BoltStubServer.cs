@@ -76,9 +76,9 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                 {
                     // ignored
                 }
-            }
 
-            _commandRunner.EndRunCommand();
+                _commandRunner.EndRunCommand();
+            }
 
             _disposed = true;
         }

@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
             else
             {
-                if (!BoltkitHelper.IsBoltkitAvailable())
+                if (!BoltkitHelper.BoltKitCanProceed())
                 {
                     return;
                 }

@@ -191,7 +191,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
             public CertificateTrustIntegrationTestFixture()
             {
-                if (!BoltkitHelper.IsBoltkitAvailable())
+                if (!BoltkitHelper.BoltKitCanProceed())
                 {
                     return;
                 }
