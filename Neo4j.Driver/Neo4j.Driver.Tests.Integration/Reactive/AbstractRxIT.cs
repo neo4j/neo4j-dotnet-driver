@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output)
         {
-            Server = fixture.StandAlone;
+            Server = fixture.StandAloneNewInstance;
             ServerEndPoint = Server.BoltUri;
             AuthToken = Server.AuthToken;
         }

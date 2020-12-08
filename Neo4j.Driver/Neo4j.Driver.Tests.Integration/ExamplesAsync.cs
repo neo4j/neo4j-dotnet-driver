@@ -1044,7 +1044,7 @@ namespace Neo4j.Driver.ExamplesAsync
         protected BaseAsyncExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
-            Driver = fixture.StandAlone.Driver;
+            Driver = fixture.StandAloneSharedInstance.Driver;
         }
 
         public void Dispose()
