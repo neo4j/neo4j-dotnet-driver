@@ -25,8 +25,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         bool _disposed = false;
         public IStandAlone StandAloneSharedInstance { get; }
-        public IStandAlone StandAloneNewInstance { get { return CreateInstance(); } }
-
+        
         ~StandAloneIntegrationTestFixture() => Dispose(false);
 
         public StandAloneIntegrationTestFixture()
