@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output)
         {
-            Server = fixture.StandAlone;
+            Server = fixture.StandAloneSharedInstance;
             ServerEndPoint = Server.BoltUri;
             AuthToken = Server.AuthToken;
         }
@@ -72,12 +72,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 			{  
                 _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
                 _sessions.Clear();
-
-                // clean database after each test run
-                using (var session = Server.Driver.Session())
-                {
-                    session.Run("MATCH (n) DETACH DELETE n").Consume();
-                }
             }
 
             //Mark as disposed

@@ -972,7 +972,7 @@ namespace Neo4j.Driver.Examples
         protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
-            Driver = fixture.StandAlone.Driver;
+            Driver = fixture.StandAloneSharedInstance.Driver;
         }
 
         public void Dispose()
