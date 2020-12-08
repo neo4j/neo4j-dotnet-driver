@@ -35,7 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         {
             Output = output;
-            Server = fixture.StandAlone;
+            Server = fixture.StandAloneSharedInstance;
             ServerEndPoint = Server.BoltUri;
             AuthToken = Server.AuthToken;
         }

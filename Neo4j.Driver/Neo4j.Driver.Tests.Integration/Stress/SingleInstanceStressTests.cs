@@ -32,14 +32,14 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         private readonly StandAloneIntegrationTestFixture _standalone;
 
         public SingleInstanceStressTests(ITestOutputHelper output, StandAloneIntegrationTestFixture standalone) :
-            base(output, standalone.StandAlone.BoltUri, standalone.StandAlone.AuthToken)
+            base(output, standalone.StandAloneSharedInstance.BoltUri, standalone.StandAloneSharedInstance.AuthToken)
         {
             _standalone = standalone;
         }
 
         protected override Context CreateContext()
         {
-            return new Context(_standalone.StandAlone.BoltUri.Authority);
+            return new Context(_standalone.StandAloneSharedInstance.BoltUri.Authority);
         }
 
         protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()
