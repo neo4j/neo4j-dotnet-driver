@@ -42,7 +42,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         public TransactionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
             : base(output, fixture)
         {
-            session = NewSession();
+            // clean database after each test run
+            using (var tmpSession = Server.Driver.Session())
+            {
+                tmpSession.Run("MATCH (n) DETACH DELETE n").Consume();
+            }
+
+            session = NewSession();           
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]

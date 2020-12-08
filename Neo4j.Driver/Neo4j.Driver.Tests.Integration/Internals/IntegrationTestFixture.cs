@@ -24,33 +24,13 @@ namespace Neo4j.Driver.IntegrationTests
     public class StandAloneIntegrationTestFixture : IDisposable
     {
         bool _disposed = false;
-        public IStandAlone StandAlone { get; }
-
+        public IStandAlone StandAloneSharedInstance { get; }
+        
         ~StandAloneIntegrationTestFixture() => Dispose(false);
 
         public StandAloneIntegrationTestFixture()
         {
-            if (LocalStandAloneInstance.IsServerProvided())
-            {
-                StandAlone = new LocalStandAloneInstance();
-            }
-            else
-            {
-                if (!BoltkitHelper.IsBoltkitAvailable())
-                {
-                    return;
-                }
-
-                try
-                {
-                    StandAlone = new StandAlone();
-                }
-                catch (Exception)
-                {
-                    Dispose();
-                    throw;
-                }
-            }
+            StandAloneSharedInstance = CreateInstance();
         }
 
         public void Dispose()
@@ -65,11 +45,36 @@ namespace Neo4j.Driver.IntegrationTests
                 return;
 
             if (disposing)
-            {  
-                StandAlone?.Dispose();
+            {
+                StandAloneSharedInstance?.Dispose();
             }
 
             _disposed = true;
+        }
+
+        private IStandAlone CreateInstance()
+        {
+            if (LocalStandAloneInstance.IsServerProvided())
+            {
+                return new LocalStandAloneInstance();
+            }
+            else
+            {
+                if (!BoltkitHelper.IsBoltkitAvailable())
+                {
+                    return null;
+                }
+
+                try
+                {
+                    return new StandAlone();
+                }
+                catch (Exception)
+                {
+                    Dispose();
+                    throw;
+                }
+            }
         }
     }
 
