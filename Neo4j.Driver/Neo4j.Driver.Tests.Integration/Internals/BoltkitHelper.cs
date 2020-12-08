@@ -154,7 +154,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
         }
 
         private static BoltkitStatus TestBoltkitAvailability()
-        {/*
+        {
             try
             {
                 var commandRunner = ShellCommandRunnerFactory.Create();
@@ -164,7 +164,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             {
                 return BoltkitStatus.Unavailable;
             }
-            */
+            
             return BoltkitStatus.Installed;
         }
 
