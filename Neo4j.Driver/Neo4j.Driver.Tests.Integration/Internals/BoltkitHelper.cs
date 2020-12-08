@@ -96,7 +96,12 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             return _boltkitAvailable == BoltkitStatus.Installed;
         }
 
-        public static bool Available()
+        public static bool StubServerAvailable()
+		{
+            return IsBoltkitAvailable();
+		}
+
+        public static bool ServerAvailable()
 		{
             return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT")) || BoltkitHelper.IsBoltkitAvailable();
         }
@@ -111,7 +116,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             var supported = true;
             var message = "All good to go";
 
-            if (!Available())
+            if (!ServerAvailable())
             {
                 supported = false;
                 message = TestRequireBoltkit;

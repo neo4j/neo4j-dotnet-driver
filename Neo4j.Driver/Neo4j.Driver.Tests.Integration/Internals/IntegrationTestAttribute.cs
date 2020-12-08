@@ -27,7 +27,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireBoltStubServerFactAttribute()
         {
-            if (!BoltkitHelper.Available())
+            if (!BoltkitHelper.StubServerAvailable())
             {
                 Skip = BoltkitHelper.TestRequireBoltkit;
             }
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireBoltStubServerTheoryAttribute()
         {
-            if (!BoltkitHelper.Available())
+            if (!BoltkitHelper.StubServerAvailable())
             {
                 Skip = BoltkitHelper.TestRequireBoltkit;
             }
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!BoltkitHelper.Available())
+            if (!BoltkitHelper.ServerAvailable())
             {
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!BoltkitHelper.Available())
+            if (!BoltkitHelper.ServerAvailable())
             {
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
@@ -208,7 +208,7 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!BoltkitHelper.Available())
+            if (!BoltkitHelper.ServerAvailable())
             {
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
