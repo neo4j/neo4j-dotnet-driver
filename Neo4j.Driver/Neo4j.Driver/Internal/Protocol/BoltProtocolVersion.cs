@@ -36,7 +36,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
             if ((MajorVersion < MaxMajorVersion && MajorVersion >= 0) && (MinorVersion < MaxMinorVersion && MinorVersion >= 0))
             {
-                throw new NotSupportedException("Attempting to create a BoltProtocolVersion with a large (error code) version number.  Resulting Major and Minor are in range of valid versions, which is not allowed: " + MajorVersion + " or minor: " + MinorVersion);
+                throw new NotSupportedException("Attempting to create a BoltProtocolVersion with a large (error code) version number.  " +
+                                                "Resulting Major and Minor are in range of valid versions, which is not allowed: " + MajorVersion + " or minor: " + MinorVersion);
             }
         }
 
@@ -50,10 +51,31 @@ namespace Neo4j.Driver.Internal.Protocol
             return (rawVersion >> 8) & PackingIntValue;
         }
 
-
         public static BoltProtocolVersion FromPackedInt(int rawVersion)
         {
             return new BoltProtocolVersion(UnpackMajor(rawVersion), UnpackMinor(rawVersion));
+        }
+
+        private void CheckVersionRange(BoltProtocolVersion minVersion)
+		{
+            if (MajorVersion != minVersion.MajorVersion)
+            {
+                throw new NotSupportedException("Versions should be from same major version" );
+            }
+            else if(MinorVersion < minVersion.MinorVersion)
+			{
+                throw new NotSupportedException("Max version should be newer than minimum version");
+            }
+
+
+        }
+
+        public int PackToIntRange(BoltProtocolVersion minVersion)
+        {
+            CheckVersionRange(minVersion);
+
+            int range = MinorVersion - minVersion.MinorVersion;
+            return (range << 16) | PackToInt();
         }
 
         public int PackToInt()
@@ -199,4 +221,5 @@ namespace Neo4j.Driver.Internal.Protocol
             return Tuple.Create(MajorVersion, MinorVersion).GetHashCode();
         }
     }
+
 }
