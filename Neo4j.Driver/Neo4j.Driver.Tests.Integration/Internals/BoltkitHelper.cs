@@ -176,7 +176,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         private static string DiscoverTargetDirectory()
         {
-            var codeBase = typeof(BoltkitHelper).GetTypeInfo().Assembly.CodeBase;
+            var codeBase = typeof(BoltkitHelper).GetTypeInfo().Assembly.Location;
             var localPath = new Uri(codeBase).LocalPath;
             var localFile = new FileInfo(localPath);
             var sourcePath = new DirectoryInfo(Path.Combine(localFile.DirectoryName,

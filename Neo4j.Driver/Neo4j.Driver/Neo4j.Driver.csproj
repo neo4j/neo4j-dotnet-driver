@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <AssemblyName>Neo4j.Driver</AssemblyName>
     <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
@@ -24,8 +24,10 @@
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <LangVersion>latest</LangVersion>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.xml</DocumentationFile>
+    <Version>4.3.0</Version>
+    <AssemblyVersion>4.3.0.0</AssemblyVersion>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
     <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />

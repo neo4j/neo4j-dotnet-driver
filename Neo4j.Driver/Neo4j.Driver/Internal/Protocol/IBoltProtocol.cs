@@ -22,11 +22,14 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using System;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
     internal interface IBoltProtocol
     {
+        static void StaticTestInterface(string myString) => Console.WriteLine(myString);
+
         IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null);
         IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null);
 
