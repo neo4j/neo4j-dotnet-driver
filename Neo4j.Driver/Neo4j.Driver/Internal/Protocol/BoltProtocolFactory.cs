@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.Protocol
         private const int BoltIdentifier = 0x6060B017;
         private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
 
-        private static readonly int[] SupportedVersions = { new BoltProtocolVersion(4, 3).PackToIntRange(new BoltProtocolVersion(4, 2)),
+        private static readonly int[] SupportedVersions = { new BoltProtocolVersion(4, 3).PackToIntRange(new BoltProtocolVersion(4, 1)),
                                                             new BoltProtocolVersion(4, 1).PackToInt(),
                                                             new BoltProtocolVersion(4, 0).PackToInt(),
                                                             new BoltProtocolVersion(3, 0).PackToInt()};

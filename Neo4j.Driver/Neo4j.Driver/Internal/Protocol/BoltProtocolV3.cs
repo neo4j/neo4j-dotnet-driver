@@ -36,12 +36,16 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV3 : IBoltProtocol
     {
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
-        
+
+        private static int _major = 3;
+        private static int _minor = 0;
+        public static BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
+        public virtual BoltProtocolVersion GetVersion() { return Version; }
+
         public BoltProtocolV3()
         {
 
         }
-
 
         public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
             ILogger logger = null)
@@ -127,11 +131,6 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             await connection.EnqueueAsync(GoodbyeMessage.Goodbye, new NoOpResponseHandler()).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
-        }
-
-        public virtual BoltProtocolVersion Version()
-        {
-            return new BoltProtocolVersion(3, 0);
         }
 
         private void AssertNullDatabase(string database)

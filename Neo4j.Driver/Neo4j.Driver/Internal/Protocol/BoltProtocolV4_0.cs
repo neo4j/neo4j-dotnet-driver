@@ -37,6 +37,11 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV4_0 : BoltProtocolV3
     {
+        private static int _major = 4;
+        private static int _minor = 0;
+        public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
+        public override BoltProtocolVersion GetVersion() { return Version; }
+
         private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
         public BoltProtocolV4_0()
@@ -127,11 +132,6 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        public override BoltProtocolVersion Version()
-        {
-            return new BoltProtocolVersion(4, 0);
-        }
-
         private static Func<IResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
@@ -162,7 +162,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             await connection
                 .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
-                    new V4.HelloResponseHandler(connection, Version())).ConfigureAwait(false);
+                    new V4.HelloResponseHandler(connection, Version)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 

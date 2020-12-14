@@ -56,18 +56,16 @@ namespace Neo4j.Driver.Internal.Protocol
             return new BoltProtocolVersion(UnpackMajor(rawVersion), UnpackMinor(rawVersion));
         }
 
-        private void CheckVersionRange(BoltProtocolVersion minVersion)
+        public void CheckVersionRange(BoltProtocolVersion minVersion)
 		{
             if (MajorVersion != minVersion.MajorVersion)
             {
-                throw new NotSupportedException("Versions should be from same major version" );
+                throw new NotSupportedException("Versions should be from same major version");
             }
             else if(MinorVersion < minVersion.MinorVersion)
 			{
                 throw new NotSupportedException("Max version should be newer than minimum version");
             }
-
-
         }
 
         public int PackToIntRange(BoltProtocolVersion minVersion)

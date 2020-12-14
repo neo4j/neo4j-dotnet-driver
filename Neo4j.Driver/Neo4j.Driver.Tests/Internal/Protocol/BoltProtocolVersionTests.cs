@@ -6,6 +6,8 @@ using Neo4j.Driver.Tests;
 using Moq;
 using FluentAssertions;
 
+
+
 namespace Neo4j.Driver.Internal.Protocol
 {
     public class BoltProtocolVersionTests
@@ -218,5 +220,54 @@ namespace Neo4j.Driver.Internal.Protocol
             exception.Message.Should().StartWith(errorMessage);
         }
 
+        [Theory]
+        [InlineData(4, 3, 4, 3)]
+        [InlineData(4, 3, 4, 1 )]
+        public void CheckVersionRangeTestSuccess(int major, int minor, int lowerMajor, int lowerMinor)
+		{
+            var version = new BoltProtocolVersion(major, minor);
+            var lowerVersion = new BoltProtocolVersion(lowerMajor, lowerMinor);
+
+            version.CheckVersionRange(lowerVersion);
+        }
+
+        [Theory]
+        [InlineData(4, 3, 3, 0)]
+        [InlineData(4, 3, 5, 3)]
+        public void CheckVersionRangeTestFailureOnMajorMismatch(int major, int minor, int lowerMajor, int lowerMinor)
+        {
+            var version = new BoltProtocolVersion(major, minor);
+            var lowerVersion = new BoltProtocolVersion(lowerMajor, lowerMinor);
+
+            var ex = Record.Exception(() => version.CheckVersionRange(lowerVersion));
+            ex.Should().BeOfType<NotSupportedException>();
+            ex.Message.Should().Be("Versions should be from same major version");
+        }
+
+        [Theory]
+        [InlineData(4, 2, 4, 3)]
+        [InlineData(4, 1, 4, 3)]
+        public void CheckVersionRangeTestFailureOnNewerMinorVersion(int major, int minor, int lowerMajor, int lowerMinor)
+        {
+            var version = new BoltProtocolVersion(major, minor);
+            var lowerVersion = new BoltProtocolVersion(lowerMajor, lowerMinor);
+
+            var ex = Record.Exception(() => version.CheckVersionRange(lowerVersion));
+            ex.Should().BeOfType<NotSupportedException>();
+            ex.Message.Should().Be("Max version should be newer than minimum version");
+        }
+
+        [Theory]
+        [InlineData(4, 3, 4, 1, 131844)]
+        [InlineData(4, 3, 4, 3, 772)]
+        [InlineData(4, 2, 4, 0, 131588)]
+        public void PackToRangeSuccess(int major, int minor, int lowerMajor, int lowerMinor, int expectedValue)
+		{
+            var version = new BoltProtocolVersion(major, minor);
+            var lowerVersion = new BoltProtocolVersion(lowerMajor, lowerMinor);
+
+            int packedValue = version.PackToIntRange(lowerVersion);
+            packedValue.Should().Equals(expectedValue);
+        }
     }
 }
