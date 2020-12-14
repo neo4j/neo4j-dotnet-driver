@@ -12,6 +12,11 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     class BoltProtocolV4_2 : BoltProtocolV4_1
     {
+        private static int _major = 4;
+        private static int _minor = 2;
+        public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
+        public override BoltProtocolVersion GetVersion() { return Version; }
+
         private IDictionary<string, string> RoutingContext { get; set; }
 
         protected BoltProtocolV4_2()
@@ -33,16 +38,11 @@ namespace Neo4j.Driver.Internal.Protocol
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4_2);
         }
 
-        public override BoltProtocolVersion Version()
-        {
-            return new BoltProtocolVersion(4, 2);
-        }
-
         public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             await connection
                 .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
-                    new HelloResponseHandler(connection, Version())).ConfigureAwait(false);
+                    new HelloResponseHandler(connection, Version)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 

@@ -30,11 +30,10 @@ namespace Neo4j.Driver.Internal.Protocol
         private const int BoltIdentifier = 0x6060B017;
         private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
 
-        private static readonly BoltProtocolVersion[] SupportedVersions = { new BoltProtocolVersion(4, 3),
-                                                                            //new BoltProtocolVersion(4, 2),    //Same as 4.1 so not used.
-                                                                            new BoltProtocolVersion(4, 1),
-                                                                            new BoltProtocolVersion(4, 0), 
-                                                                            new BoltProtocolVersion(3, 0)};
+        private static readonly int[] SupportedVersions = { new BoltProtocolVersion(4, 3).PackToIntRange(new BoltProtocolVersion(4, 1)),
+                                                            new BoltProtocolVersion(4, 1).PackToInt(),
+                                                            new BoltProtocolVersion(4, 0).PackToInt(),
+                                                            new BoltProtocolVersion(3, 0).PackToInt()};
 
         public static IBoltProtocol ForVersion(BoltProtocolVersion version, IDictionary<string, string> routingContext = null)
         {
@@ -46,7 +45,6 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 return new BoltProtocolV4_0();
             }
-            //NOTE: Protocols 4.1 and 4.2 are identical. So revert to using 4.
             else if (version.Equals(4, 1) )
             {
                 return new BoltProtocolV4_1(routingContext);
@@ -90,14 +88,14 @@ namespace Neo4j.Driver.Internal.Protocol
             return PackVersions(SupportedVersions.Take(numVersionsToPack));
         }
 
-        private static byte[] PackVersions(IEnumerable<BoltProtocolVersion> versions)
+        private static byte[] PackVersions(IEnumerable<int> versions)
         {
             var aLittleBitOfMagic = PackStreamBitConverter.GetBytes(BoltIdentifier);
 
             var bytes = new List<byte>(aLittleBitOfMagic);
             foreach (var version in versions)            
             {
-                bytes.AddRange(PackStreamBitConverter.GetBytes(version.PackToInt()));
+                bytes.AddRange(PackStreamBitConverter.GetBytes(version));
             }
 
             return bytes.ToArray();

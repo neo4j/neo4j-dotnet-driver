@@ -54,10 +54,11 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task LogoutAsync(IConnection connection);
 
-        BoltProtocolVersion Version();
+        BoltProtocolVersion GetVersion();
 
         Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
                                             string database,
                                             Bookmark bookmark); 
     }
+
 }
