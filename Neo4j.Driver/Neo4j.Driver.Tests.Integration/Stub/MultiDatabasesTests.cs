@@ -128,23 +128,25 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (var driver =
                     GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
                 {
-                    this.Awaiting(async _ =>
+                    Func<MultiDatabasesTests, Task> p = async _ =>
+                    {
+                        var session = driver.AsyncSession(o =>
+                            o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
+                        try
                         {
-                            var session = driver.AsyncSession(o =>
-                                o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
-                            try
-                            {
-                                var cursor =
-                                    await session.RunAsync("MATCH (n) RETURN n.name");
-                                var result = await cursor.ToListAsync(r => r[0].As<string>());
+                            var cursor =
+                                await session.RunAsync("MATCH (n) RETURN n.name");
+                            var result = await cursor.ToListAsync(r => r[0].As<string>());
 
-                                result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                            }
-                            finally
-                            {
-                                await session.CloseAsync();
-                            }
-                        })
+                            result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
+                        }
+                    };
+
+                    this.Awaiting(p)
                         .Should()
                         .Throw<ServiceUnavailableException>()
                         .WithMessage("Failed to connect to any routing server.*");
@@ -160,23 +162,25 @@ namespace Neo4j.Driver.IntegrationTests.Stub
                 using (var driver =
                     GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
                 {
-                    this.Awaiting(async _ =>
+                    Func<MultiDatabasesTests, Task> p = async _ =>
+                    {
+                        var session = driver.AsyncSession(o =>
+                            o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
+                        try
                         {
-                            var session = driver.AsyncSession(o =>
-                                o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
-                            try
-                            {
-                                var cursor =
-                                    await session.RunAsync("MATCH (n) RETURN n.name");
-                                var result = await cursor.ToListAsync(r => r[0].As<string>());
+                            var cursor =
+                                await session.RunAsync("MATCH (n) RETURN n.name");
+                            var result = await cursor.ToListAsync(r => r[0].As<string>());
 
-                                result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                            }
-                            finally
-                            {
-                                await session.CloseAsync();
-                            }
-                        })
+                            result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                        }
+                        finally
+                        {
+                            await session.CloseAsync();
+                        }
+                    };
+
+                    this.Awaiting(p)
                         .Should()
                         .Throw<FatalDiscoveryException>()
                         .WithMessage("database not found");

@@ -134,21 +134,21 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 .WithMessage("*database does not exist.*");
         }
 
-        [RequireServerFact("4.0.0", LessThan)]
+        [RequireServerFact("4.0.0", VersionComparison.LessThan)]
         public void ShouldThrowWhenDatabaseIsSpecified()
         {
             this.Awaiting(_ => VerifyDatabaseNameOnSummary("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*to a server that does not support multiple databases.*");
         }
 
-        [RequireServerFact("4.0.0", LessThan)]
+        [RequireServerFact("4.0.0", VersionComparison.LessThan)]
         public void ShouldThrowWhenDatabaseIsSpecifiedInTx()
         {
             this.Awaiting(_ => VerifyDatabaseNameOnSummaryTx("bar", "bar")).Should().Throw<ClientException>()
                 .WithMessage("*to a server that does not support multiple databases.*");
         }
 
-        [RequireServerFact("4.0.0", LessThan)]
+        [RequireServerFact("4.0.0", VersionComparison.LessThan)]
         public void ShouldThrowWhenDatabaseIsSpecifiedInTxFunc()
         {
             this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar")).Should().Throw<ClientException>()
