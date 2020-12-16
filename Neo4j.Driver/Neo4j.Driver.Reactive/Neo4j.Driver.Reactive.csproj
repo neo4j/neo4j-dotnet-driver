@@ -22,6 +22,7 @@
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Reactive.xml</DocumentationFile>
     <RootNamespace>Neo4j.Driver</RootNamespace>
+    <Version>4.3.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Reactive" Version="5.0.0" />

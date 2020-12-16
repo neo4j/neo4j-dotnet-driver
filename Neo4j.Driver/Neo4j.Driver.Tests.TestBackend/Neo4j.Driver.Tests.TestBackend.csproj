@@ -7,6 +7,8 @@
 	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
 	<Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+
+	<Version>4.3.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -19,6 +19,7 @@
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Simple.xml</DocumentationFile>
     <RootNamespace>Neo4j.Driver</RootNamespace>
+    <Version>4.3.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
