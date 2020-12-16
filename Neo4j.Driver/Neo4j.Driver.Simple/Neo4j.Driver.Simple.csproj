@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <PackageId>Neo4j.Driver.Simple$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
     <Description>Synchronous extensions for the official .NET driver.</Description>
@@ -19,6 +19,7 @@
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Simple.xml</DocumentationFile>
     <RootNamespace>Neo4j.Driver</RootNamespace>
+    <Version>4.3.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />

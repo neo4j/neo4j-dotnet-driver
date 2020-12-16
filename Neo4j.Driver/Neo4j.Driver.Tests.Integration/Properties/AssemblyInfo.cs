@@ -39,6 +39,7 @@ using Xunit;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("02f68df2-0047-4b04-93b6-521bd12b5d45")]
 
+//XUnit
 // The integration tests defined in this assembly require a database service running in the background.
 // The tests might rely on certain status of the database, therefore the tests should be executed sequentially.
 [assembly: CollectionBehavior(DisableTestParallelization = true)]

@@ -54,16 +54,17 @@ namespace Neo4j.Driver.Tests.Temporal
         [InlineData("Pacific/Pitcairn")]
         [InlineData("America/North_Dakota/New_Salem")]
         [InlineData("America/Port-au-Prince")]
-        [InlineData("Etc/UTC")]
-        [InlineData("Etc/GMT")]
+        [InlineData("Etc/UTC", "UTC")]
+        [InlineData("Etc/GMT", "UTC")]
         [InlineData("Etc/GMT-2")]
         [InlineData("Europe/Istanbul")]
-        public void ShouldFindIana(string ianaId)
+        public void ShouldFindIana(string ianaId, string expectedValue = null)
         {
             var tzInfo = TimeZoneMapping.Get(ianaId);
+            var testValue = expectedValue ?? ianaId;
 
             tzInfo.Should().NotBeNull();
-            tzInfo.Id.Should().Be(ianaId);
+            tzInfo.Id.Should().Be(testValue);
         }
 
         [UnixTheory]
