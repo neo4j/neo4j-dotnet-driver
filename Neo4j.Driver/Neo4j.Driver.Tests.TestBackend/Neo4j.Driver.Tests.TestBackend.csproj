@@ -2,12 +2,13 @@
   <Import Project="..\common.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-	<RuntimeFrameworkVersion>2.0.0</RuntimeFrameworkVersion>
+    <TargetFramework>net5.0</TargetFramework>
 	<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
 	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
 	<Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+
+	<Version>4.3.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

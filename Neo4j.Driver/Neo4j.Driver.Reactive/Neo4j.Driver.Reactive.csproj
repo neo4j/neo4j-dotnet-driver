@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <AssemblyName>Neo4j.Driver.Reactive</AssemblyName>
     <PackageId>Neo4j.Driver.Reactive$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
@@ -22,9 +22,10 @@
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.Reactive.xml</DocumentationFile>
     <RootNamespace>Neo4j.Driver</RootNamespace>
+    <Version>4.3.0</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="4.1.5" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />

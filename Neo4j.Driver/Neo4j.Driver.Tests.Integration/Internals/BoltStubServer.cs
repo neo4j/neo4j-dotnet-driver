@@ -33,7 +33,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         static BoltStubServer()
         {
-            Uri assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.CodeBase);
+            Uri assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.Location);
             string assemblyDirectory = new FileInfo(assemblyUri.AbsolutePath).Directory.FullName;
 
             ScriptSourcePath = Path.Combine(assemblyDirectory, "Resources");

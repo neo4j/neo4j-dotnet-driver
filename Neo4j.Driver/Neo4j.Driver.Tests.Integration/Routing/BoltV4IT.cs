@@ -69,7 +69,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 .WithMessage("*database does not exist*");
         }
 
-        [RequireClusterFact("4.0.0", LessThan)]
+        [RequireClusterFact("4.0.0", VersionComparison.LessThan)]
         public void ShouldThrowWhenDatabaseIsSpecifiedInTxFunc()
         {
             this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar")).Should().Throw<ClientException>()

@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using System;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
