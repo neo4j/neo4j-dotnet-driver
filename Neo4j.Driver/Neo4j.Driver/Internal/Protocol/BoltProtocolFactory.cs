@@ -74,8 +74,6 @@ namespace Neo4j.Driver.Internal.Protocol
                 throw new NotSupportedException(
                         "Protocol error, server suggested unexpected protocol version: " + version.MajorVersion + "." + version.MinorVersion);
             }
-
-
         }
         
         public static BoltProtocolVersion UnpackAgreedVersion(byte[] data)
