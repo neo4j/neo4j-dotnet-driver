@@ -19,24 +19,29 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             //Client failed in some way.
             //Notify any subscribers.
-            TriggerEvent();
+            TriggerException();
 
             await Task.CompletedTask;
         }
 
         public override string Respond()
         {
-            Exception ex = null;
-            if (string.IsNullOrEmpty(data.errorId))
-            {
-                ex = new ClientException("Error from client in retryable tx");
-            }
-            else
-            {
-                ex = ((ProtocolException)ObjManager.GetObject(data.errorId)).ExceptionObj;
-            }
-
-            return ExceptionManager.GenerateExceptionResponse(ex).Encode();
+			return string.Empty;
         }
+
+		private void TriggerException()
+		{
+			Exception ex = null;
+			if (string.IsNullOrEmpty(data.errorId))
+			{
+				ex = new ClientException("Error from client in retryable tx");
+			}
+			else
+			{
+				ex = ((ProtocolException)ObjManager.GetObject(data.errorId)).ExceptionObj;
+			}
+
+			throw ex;
+		}
     }
 }
