@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Internal
             try
             {
                 await DiscardUnconsumed().ConfigureAwait(false);
-                await _state.RollbackAsync(_connection, _protocol, this, out var nextState);
+                await _state.RollbackAsync(_connection, _protocol, this, out var nextState).ConfigureAwait(false);
                 _state = nextState;
             }
             finally
@@ -170,7 +170,7 @@ namespace Neo4j.Driver.Internal
 
             public override async Task OnErrorAsync(Exception error)
             {
-                await _transaction.MarkToClose();
+                await _transaction.MarkToClose().ConfigureAwait(false);
                 throw error;
             }
         }

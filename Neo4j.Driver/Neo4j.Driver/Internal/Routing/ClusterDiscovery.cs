@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.Routing
         /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
         public async Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, Bookmark bookmark)
         {
-            var routingTable = await connection.BoltProtocol.GetRoutingTable(connection, database, bookmark);   //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
+            var routingTable = await connection.BoltProtocol.GetRoutingTable(connection, database, bookmark).ConfigureAwait(false);  //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
                         
             return ParseDiscoveryResult(database, routingTable);
         }

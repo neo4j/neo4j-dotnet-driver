@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Internal
             EnsureNoOpenTransaction();
             if (disposeUnconsumedSessionResult)
             {
-                await DisposeSessionResultAsync();
+                await DisposeSessionResultAsync().ConfigureAwait(false);
             }
             else
             {
