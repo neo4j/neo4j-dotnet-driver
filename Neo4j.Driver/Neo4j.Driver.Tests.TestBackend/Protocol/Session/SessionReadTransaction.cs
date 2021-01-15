@@ -11,6 +11,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         public SessionReadTransactionType data { get; set; } = new SessionReadTransactionType();
         [JsonIgnore]
         private string TransactionId { get; set; }
+		[JsonIgnore]
+		private bool Success { get; set; } = true;
 
         public class SessionReadTransactionType
         {
@@ -21,15 +23,24 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
+			Success = true;
+
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
             await sessionContainer.Session.ReadTransactionAsync(async tx =>
             {
                 TransactionId = controller.TransactionManagager.AddTransaction(tx);
 
-                await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);                
-                
-                //Start another message processing loop to handle the retry mechanism.
-                await controller.ProcessStreamObjects().ConfigureAwait(false);
+                await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
+
+				try
+				{
+					//Start another message processing loop to handle the retry mechanism.
+					await controller.ProcessStreamObjects().ConfigureAwait(false);
+				}
+				catch 
+				{
+					Success = false;
+				}
 
                 controller.TransactionManagager.RemoveTransaction(TransactionId);                
             });
@@ -37,7 +48,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new ProtocolResponse("RetryableDone", new { }).Encode();
-        }
+			if (Success)
+			{
+				return new ProtocolResponse("RetryableDone", new { }).Encode();
+			}
+			else
+			{
+				return ExceptionManager.GenerateExceptionResponse(new ClientException("Error from client in retryable tx")).Encode();
+			}
+		}
     }
 }
