@@ -20,7 +20,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string cypher { get; set; }
         }
 
-
         public override async Task Process(Controller controller)
         {
 			Success = true;
