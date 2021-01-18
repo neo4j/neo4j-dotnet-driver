@@ -876,12 +876,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             public void Error(Exception cause, string message, params object[] args)
             {
-                Write(string.Format($"{message} - caused by{Environment.NewLine}{0}", cause), args);
+                Write(message, args);
             }
 
             public void Warn(Exception cause, string message, params object[] args)
             {
-                Write(string.Format($"{message} - caused by{Environment.NewLine}{0}", cause), args);
+                Write(message, args);
             }
 
             public void Info(string message, params object[] args)
