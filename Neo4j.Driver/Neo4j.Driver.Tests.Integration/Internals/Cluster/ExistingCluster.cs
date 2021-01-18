@@ -65,7 +65,6 @@ namespace Neo4j.Driver.IntegrationTests.Internals
             GetEnvOrThrow(ClusterPassword));
         public void Configure(ConfigBuilder builder)
         {
-            builder.WithEncryptionLevel(EncryptionLevel.Encrypted);
         }
     }
 }
