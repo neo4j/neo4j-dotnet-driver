@@ -96,12 +96,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         public abstract bool HandleWriteFailure(Exception error, TContext context);
 
-        #endregion
+		#endregion
 
-        #region Blocking Stress Test
+		#region Blocking Stress Test
 
-        [RequireServerFact]
-        public async Task Blocking()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public async Task Blocking()
         {
             await RunStressTest(LaunchBlockingWorkers);
         }
@@ -153,12 +153,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             }, TaskCreationOptions.LongRunning);
         }
 
-        #endregion
+		#endregion
 
-        #region Async Stress Test
+		#region Async Stress Test
 
-        [RequireServerFact]
-        public async Task Async()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public async Task Async()
         {
             await RunStressTest(LaunchAsyncWorkers);
         }
