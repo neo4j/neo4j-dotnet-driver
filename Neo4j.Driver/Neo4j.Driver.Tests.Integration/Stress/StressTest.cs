@@ -271,12 +271,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             }, TaskCreationOptions.LongRunning);
         }
 
-        #endregion
+		#endregion
 
-        #region Async Big Data Tests
+		#region Async Big Data Tests
 
-        [RequireServerFact]
-        public async Task AsyncBigData()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public async Task AsyncBigData()
         {
             var bookmark = await CreateNodesAsync(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
                 _driver);
@@ -375,12 +375,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _output.WriteLine("Reading nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
         }
 
-        #endregion
+		#endregion
 
-        #region Blocking Big Data Tests
+		#region Blocking Big Data Tests
 
-        [RequireServerFact]
-        public void BlockingBigData()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public void BlockingBigData()
         {
             var bookmark = CreateNodes(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
                 _driver);
@@ -527,12 +527,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _output.WriteLine("Reading nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
         }
 
-        #endregion
+		#endregion
 
-        #region Pooling Stress Tests
+		#region Pooling Stress Tests
 
-        [RequireServerFact]
-        public void Pool()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public void Pool()
         {
             var tokenSource = new CancellationTokenSource();
             var failure = new AtomicReference<Exception>(null);
