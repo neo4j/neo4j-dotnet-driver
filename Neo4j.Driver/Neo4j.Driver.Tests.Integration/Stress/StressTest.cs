@@ -165,21 +165,31 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private IList<IAsyncCommand<TContext>> CreateAsyncCommands()
         {
-            var result = new List<IAsyncCommand<TContext>>
-            {
-                new AsyncReadCommand<TContext>(_driver, false),
-                new AsyncReadCommand<TContext>(_driver, true),
-                new AsyncReadCommandInTx<TContext>(_driver, false),
-                new AsyncReadCommandInTx<TContext>(_driver, true),
-                new AsyncWriteCommand<TContext>(this, _driver, false),
-                new AsyncWriteCommand<TContext>(this, _driver, true),
-                new AsyncWriteCommandInTx<TContext>(this, _driver, false),
-                new AsyncWriteCommandInTx<TContext>(this, _driver, true),
-                new AsyncWrongCommand<TContext>(_driver),
-                new AsyncWrongCommandInTx<TContext>(_driver),
-                new AsyncFailingCommand<TContext>(_driver),
-                new AsyncFailingCommandInTx<TContext>(_driver)
-            };
+			/* 
+				Optional tests that can be run. Currenlty only want to run the transaction functions as these are what are used with Aura
+				AsyncReadCommand
+				AsyncReadCommandInTx
+				AsyncReadCommandTxFunc
+				AsyncWriteCommand
+				AsyncWriteCommandInTx
+				AsyncWriteCommandTxFunc
+				AsyncWrongCommand
+				AsyncWrongCommandInTx
+				AsyncWrongCommandTxFunc
+				AsyncFailingCommand
+				AsyncFailingCommandInTx
+				AsyncFailingCommandTxFunc
+			*/
+
+			var result = new List<IAsyncCommand<TContext>>
+			{
+				new AsyncReadCommandTxFunc<TContext>(_driver, false),
+				new AsyncReadCommandTxFunc<TContext>(_driver, true),
+				new AsyncWriteCommandTxFunc<TContext>(this, _driver, false),
+				new AsyncWriteCommandTxFunc<TContext>(this, _driver, true),
+				new AsyncWrongCommandTxFunc<TContext>(_driver),
+				new AsyncFailingCommandTxFunc<TContext>(_driver)
+			};
 
             result.AddRange(CreateTestSpecificAsyncCommands());
 
@@ -278,8 +288,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
 		public async Task AsyncBigData()
         {
-            var bookmark = await CreateNodesAsync(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
-                _driver);
+            var bookmark = await CreateNodesAsync(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
             await ReadNodesAsync(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
         }
 
@@ -382,8 +391,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
 		public void BlockingBigData()
         {
-            var bookmark = CreateNodes(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
-                _driver);
+            var bookmark = CreateNodes(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
             ReadNodes(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
         }
 
@@ -460,8 +468,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ReactiveBigData()
         {
-            var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
-                _driver);
+            var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
             ReadNodesRx(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
         }
 
