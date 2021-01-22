@@ -220,7 +220,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         #region Reactive Stress Test
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        //[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task Reactive()
         {
             await RunStressTest(LaunchRxWorkers);
