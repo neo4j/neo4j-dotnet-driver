@@ -110,18 +110,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             var result = new List<IBlockingCommand<TContext>>
             {
-                new BlockingReadCommand<TContext>(_driver, false),
-                new BlockingReadCommand<TContext>(_driver, true),
-                new BlockingReadCommandInTx<TContext>(_driver, false),
-                new BlockingReadCommandInTx<TContext>(_driver, true),
-                new BlockingWriteCommand<TContext>(this, _driver, false),
-                new BlockingWriteCommand<TContext>(this, _driver, true),
-                new BlockingWriteCommandInTx<TContext>(this, _driver, false),
-                new BlockingWriteCommandInTx<TContext>(this, _driver, true),
-                new BlockingWrongCommand<TContext>(_driver),
-                new BlockingWrongCommandInTx<TContext>(_driver),
-                new BlockingFailingCommand<TContext>(_driver),
-                new BlockingFailingCommandInTx<TContext>(_driver)
+                new BlockingReadCommandTxFunc<TContext>(_driver, false),
+                new BlockingReadCommandTxFunc<TContext>(_driver, true),                
+                new BlockingWriteCommandTxFunc<TContext>(this, _driver, false),
+                new BlockingWriteCommandTxFunc<TContext>(this, _driver, true),
+                new BlockingWrongCommandTxFunc<TContext>(_driver),
+                new BlockingFailingCommandTxFunc<TContext>(_driver)                
             };
 
             result.AddRange(CreateTestSpecificBlockingCommands());
@@ -236,18 +230,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             var result = new List<IRxCommand<TContext>>
             {
-                new RxReadCommand<TContext>(_driver, false),
-                new RxReadCommand<TContext>(_driver, true),
-                new RxReadCommandInTx<TContext>(_driver, false),
-                new RxReadCommandInTx<TContext>(_driver, true),
-                new RxWriteCommand<TContext>(this, _driver, false),
-                new RxWriteCommand<TContext>(this, _driver, true),
-                new RxWriteCommandInTx<TContext>(this, _driver, false),
-                new RxWriteCommandInTx<TContext>(this, _driver, true),
-                new RxWrongCommand<TContext>(_driver),
-                new RxWrongCommandInTx<TContext>(_driver),
-                new RxFailingCommand<TContext>(_driver),
-                new RxFailingCommandInTx<TContext>(_driver)
+                new RxReadCommandTxFunc<TContext>(_driver, false),
+                new RxReadCommandTxFunc<TContext>(_driver, true),                
+                new RxWriteCommandTxFunc<TContext>(this, _driver, false),
+                new RxWriteCommandTxFunc<TContext>(this, _driver, true),                
+                new RxWrongCommandTxFunc<TContext>(_driver),
+                new RxFailingCommandTxFunc<TContext>(_driver)               
             };
 
             result.AddRange(CreateTestSpecificRxCommands());
