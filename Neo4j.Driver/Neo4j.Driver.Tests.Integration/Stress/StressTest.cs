@@ -41,17 +41,18 @@ namespace Neo4j.Driver.IntegrationTests.Stress
     {
         private bool _disposed = false;
         private const bool LoggingEnabled = false;
+		private const int DefaultExecutionTime = 30;
 
         private const int StressTestThreadCount = 8;
         private const int StressTestAsyncBatchSize = 10;
-        private static readonly TimeSpan StressTestExecutionTime = TimeSpan.FromSeconds(30);
+		private static TimeSpan StressTestExecutionTime = TimeSpan.FromSeconds(DefaultExecutionTime);
 
-        private const int BigDataTestBatchCount = 3;
+		private const int BigDataTestBatchCount = 3;
         private const int BigDataTestBatchSize = 10_000;
         private const int BigDataTestBatchBuffer = 500;
 
         private const int PoolTestThreadCount = 50;
-        private static readonly TimeSpan PoolTestDuration = TimeSpan.FromSeconds(15);
+		private static readonly TimeSpan PoolTestDuration = TimeSpan.FromSeconds(15);
 
         protected readonly ITestOutputHelper _output;
         protected readonly IDriver _driver;
@@ -68,7 +69,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _authToken = authToken;
             _configure = configure;
 
-            _driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
+			var seconds = Environment.GetEnvironmentVariable("TEST_NEO4J_STRESS_DURATION");
+			if (!string.IsNullOrEmpty(seconds))
+				StressTestExecutionTime = TimeSpan.FromSeconds(Convert.ToDouble(seconds));
+				
+			_driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
             {
                 builder
                     .WithLogger(new StressTestLogger(_output, LoggingEnabled))
@@ -230,12 +235,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             var result = new List<IRxCommand<TContext>>
             {
-                new RxReadCommandTxFunc<TContext>(_driver, false),
-                new RxReadCommandTxFunc<TContext>(_driver, true),                
-                new RxWriteCommandTxFunc<TContext>(this, _driver, false),
-                new RxWriteCommandTxFunc<TContext>(this, _driver, true),                
-                new RxWrongCommandTxFunc<TContext>(_driver),
-                new RxFailingCommandTxFunc<TContext>(_driver)               
+                //new RxReadCommandTxFunc<TContext>(_driver, false),
+                //new RxReadCommandTxFunc<TContext>(_driver, true),                
+                //new RxWriteCommandTxFunc<TContext>(this, _driver, false),
+                //new RxWriteCommandTxFunc<TContext>(this, _driver, true),                
+                //new RxWrongCommandTxFunc<TContext>(_driver),
+                //new RxFailingCommandTxFunc<TContext>(_driver)               
             };
 
             result.AddRange(CreateTestSpecificRxCommands());
@@ -453,7 +458,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         #region Reactive Big Data Tests
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        //[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ReactiveBigData()
         {
             var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
@@ -788,7 +793,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             var context = CreateContext();
             var workers = launcher(context);
 
-            await Task.Delay(StressTestExecutionTime);
+            await Task.Delay(StressTestExecutionTime/3);	//Divide by three because there are three sets of tests
             context.Stop();
 
             await Task.WhenAll(workers);

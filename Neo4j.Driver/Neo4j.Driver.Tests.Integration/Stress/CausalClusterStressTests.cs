@@ -48,21 +48,17 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             return new List<IBlockingCommand<Context>>
             {
-                new BlockingWriteCommandUsingReadSession<Context>(_driver, false),
-                new BlockingWriteCommandUsingReadSession<Context>(_driver, true),
-                new BlockingWriteCommandUsingReadSessionInTx<Context>(_driver, false),
-                new BlockingWriteCommandUsingReadSessionInTx<Context>(_driver, true)
-            };
+				new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
+				new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
+			};
         }
 
         protected override IEnumerable<IAsyncCommand<Context>> CreateTestSpecificAsyncCommands()
         {
             return new List<IAsyncCommand<Context>>
             {
-                new AsyncWriteCommandUsingReadSession<Context>(_driver, false),
-                new AsyncWriteCommandUsingReadSession<Context>(_driver, true),
-                new AsyncWriteCommandUsingReadSessionInTx<Context>(_driver, false),
-                new AsyncWriteCommandUsingReadSessionInTx<Context>(_driver, true)
+                new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
+                new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
             };
         }
 
@@ -70,10 +66,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             return new List<IRxCommand<Context>>
             {
-                new RxWriteCommandUsingReadSession<Context>(_driver, false),
-                new RxWriteCommandUsingReadSession<Context>(_driver, true),
-                new RxWriteCommandUsingReadSessionInTx<Context>(_driver, false),
-                new RxWriteCommandUsingReadSessionInTx<Context>(_driver, true)
+
+                //new RxWriteCommandUsingReadSession<Context>(_driver, false),
+                //new RxWriteCommandUsingReadSession<Context>(_driver, true),
+                //new RxWriteCommandUsingReadSessionInTx<Context>(_driver, false),
+                //new RxWriteCommandUsingReadSessionInTx<Context>(_driver, true)
             };
         }
 
