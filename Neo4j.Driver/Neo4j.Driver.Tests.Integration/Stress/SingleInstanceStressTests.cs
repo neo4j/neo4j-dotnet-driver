@@ -54,7 +54,16 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         protected override IEnumerable<IRxCommand<Context>> CreateTestSpecificRxCommands()
         {
-            return Enumerable.Empty<IRxCommand<Context>>();
+			return new List<IRxCommand<Context>>
+			{
+				new RxReadCommandInTx<Context>(_driver, false),
+				new RxReadCommandInTx<Context>(_driver, true),
+				new RxWriteCommandInTx<Context>(this, _driver, false),
+				new RxWriteCommandInTx<Context>(this, _driver, true),
+				new RxWrongCommandInTx<Context>(_driver),
+				new RxFailingCommandInTx<Context>(_driver)
+			};
+			return new List<IRxCommand<Context>>();
         }
 
         protected override void PrintStats(Context context)

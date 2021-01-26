@@ -71,7 +71,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
 			var seconds = Environment.GetEnvironmentVariable("TEST_NEO4J_STRESS_DURATION");
 			if (!string.IsNullOrEmpty(seconds))
-				StressTestExecutionTime = TimeSpan.FromSeconds(Convert.ToDouble(seconds));
+				StressTestExecutionTime = TimeSpan.FromSeconds(Convert.ToDouble(seconds) / 3);	//There are three areas so divide by 3, async, blocking and reactive.
 				
 			_driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
             {
@@ -225,7 +225,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         #region Reactive Stress Test
 
-        //[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task Reactive()
         {
             await RunStressTest(LaunchRxWorkers);
@@ -233,30 +233,23 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private IList<IRxCommand<TContext>> CreateRxCommands()
         {
-            var result = new List<IRxCommand<TContext>>
-            {
-                //new RxReadCommandTxFunc<TContext>(_driver, false),
-                //new RxReadCommandTxFunc<TContext>(_driver, true),                
-                //new RxWriteCommandTxFunc<TContext>(this, _driver, false),
-                //new RxWriteCommandTxFunc<TContext>(this, _driver, true),                
-                //new RxWrongCommandTxFunc<TContext>(_driver),
-                //new RxFailingCommandTxFunc<TContext>(_driver)               
-            };
-
-            result.AddRange(CreateTestSpecificRxCommands());
-
-            return result;
-        }
+			var result = new List<IRxCommand<TContext>>();
+			result.AddRange(CreateTestSpecificRxCommands());
+			return result;
+		}
 
         private IEnumerable<Task> LaunchRxWorkers(TContext context)
         {
-            var commands = CreateRxCommands();
+			var commands = CreateRxCommands();
+			var tasks = new List<Task>();
 
-            var tasks = new List<Task>();
-            for (var i = 0; i < StressTestThreadCount; i++)
-            {
-                tasks.Add(LaunchRxWorkerThread(context, commands));
-            }
+			if (commands.Count > 0)
+			{
+				for (var i = 0; i < StressTestThreadCount; i++)
+				{
+					tasks.Add(LaunchRxWorkerThread(context, commands));
+				}
+			}
 
             return tasks;
         }
@@ -793,7 +786,10 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             var context = CreateContext();
             var workers = launcher(context);
 
-            await Task.Delay(StressTestExecutionTime/3);	//Divide by three because there are three sets of tests
+			if (!workers.Any())
+				return;
+
+            await Task.Delay(StressTestExecutionTime);	//Divide by three because there are three sets of tests
             context.Stop();
 
             await Task.WhenAll(workers);
