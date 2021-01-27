@@ -79,8 +79,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             VerifyServedReadQueries(context, clusterAddresses);
             VerifyServedSimilarAmountOfReadQueries(context, clusterAddresses);
         }
-
-        public override bool HandleWriteFailure(Exception error, Context context)
+		
+		public override bool HandleWriteFailure(Exception error, Context context)
         {
             switch (error)
             {

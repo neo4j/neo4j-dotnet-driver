@@ -47,9 +47,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         private const int StressTestAsyncBatchSize = 10;
 		private static TimeSpan StressTestExecutionTime = TimeSpan.FromSeconds(DefaultExecutionTime);
 
-		private const int BigDataTestBatchCount = 3;
-        private const int BigDataTestBatchSize = 10_000;
-        private const int BigDataTestBatchBuffer = 500;
+		protected const int BigDataTestBatchCount = 3;
+		protected const int BigDataTestBatchSize = 10_000;
+		protected const int BigDataTestBatchBuffer = 500;
 
         private const int PoolTestThreadCount = 50;
 		private static readonly TimeSpan PoolTestDuration = TimeSpan.FromSeconds(15);
@@ -98,6 +98,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         protected abstract void PrintStats(TContext context);
 
         protected abstract void VerifyReadQueryDistribution(TContext context);
+
+		protected virtual void RunReactiveBigData()
+		{
+			//Base implementation does nothing.
+		}
 
         public abstract bool HandleWriteFailure(Exception error, TContext context);
 
@@ -451,14 +456,13 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         #region Reactive Big Data Tests
 
-        //[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ReactiveBigData()
         {
-            var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
-            ReadNodesRx(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
+			RunReactiveBigData();            
         }
 
-        private Bookmark CreateNodesRx(int batchCount, int batchSize, int batchBuffer, IDriver driver)
+        protected Bookmark CreateNodesRx(int batchCount, int batchSize, int batchBuffer, IDriver driver)
         {
             var timer = Stopwatch.StartNew();
             var session = driver.RxSession();
@@ -478,7 +482,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             return session.LastBookmark;
         }
 
-        private void ReadNodesRx(IDriver driver, Bookmark bookmark, int expectedNodes)
+        protected void ReadNodesRx(IDriver driver, Bookmark bookmark, int expectedNodes)
         {
             var timer = Stopwatch.StartNew();
 

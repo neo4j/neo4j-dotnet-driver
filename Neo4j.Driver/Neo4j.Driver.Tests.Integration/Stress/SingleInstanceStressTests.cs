@@ -63,7 +63,6 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 				new RxWrongCommandInTx<Context>(_driver),
 				new RxFailingCommandInTx<Context>(_driver)
 			};
-			return new List<IRxCommand<Context>>();
         }
 
         protected override void PrintStats(Context context)
@@ -81,7 +80,13 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             return false;
         }
 
-        public class Context : StressTestContext
+		protected override void RunReactiveBigData()
+		{
+			var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
+			ReadNodesRx(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
+		}
+
+		public class Context : StressTestContext
         {
             private readonly string _expectedAddress;
             private long _readQueries;
