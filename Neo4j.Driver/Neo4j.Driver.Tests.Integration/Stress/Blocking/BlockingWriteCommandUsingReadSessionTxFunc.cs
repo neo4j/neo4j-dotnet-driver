@@ -34,19 +34,21 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 		{
 			var result = default(IResult);
 
-			using var session = NewSession(AccessMode.Read, context);
-			session.ReadTransaction(tx =>
+			using (var session = NewSession(AccessMode.Read, context))
 			{
-				var exc = Record.Exception(() =>
+				session.ReadTransaction(tx =>
 				{
-					result = tx.Run("CREATE ()");
-					result.Consume();
+					var exc = Record.Exception(() =>
+					{
+						result = tx.Run("CREATE ()");
+						result.Consume();
+						return result;
+					});
+
+					exc.Should().BeOfType<ClientException>();
 					return result;
 				});
-				
-				exc.Should().BeOfType<ClientException>();
-				return result;
-			});
+			}
 
 			result.Should().NotBeNull();
 			result.Consume().Counters.NodesCreated.Should().Be(0);

@@ -32,17 +32,18 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
 		public override void Execute(TContext context)
 		{
-			using var session = NewSession(AccessMode.Read, context);
-
-			session.ReadTransaction(txc =>
+			using (var session = NewSession(AccessMode.Read, context))
 			{
-				var result = txc.Run("RETURN");
-				var exc = Record.Exception(() => result.Consume());
+				session.ReadTransaction(txc =>
+				{
+					var result = txc.Run("RETURN");
+					var exc = Record.Exception(() => result.Consume());
 
-				exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Unexpected end of input");
+					exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Unexpected end of input");
 
-				return result;
-			});
+					return result;
+				});
+			}
 		}
 	}
 }

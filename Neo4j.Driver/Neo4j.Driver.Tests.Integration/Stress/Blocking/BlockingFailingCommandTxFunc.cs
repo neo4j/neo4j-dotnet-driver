@@ -32,16 +32,18 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
 		public override void Execute(TContext context)
 		{
-			using var session = NewSession(AccessMode.Read, context);
-			session.ReadTransaction(tx =>
+			using (var session = NewSession(AccessMode.Read, context))
 			{
-				var result = tx.Run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
-				var exc = Record.Exception(() => result.Consume());
+				session.ReadTransaction(tx =>
+				{
+					var result = tx.Run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
+					var exc = Record.Exception(() => result.Consume());
 
-				exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
+					exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
 
-				return result;
-			});
+					return result;
+				});
+			}
 		}
 	}
 }

@@ -30,19 +30,20 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
 		public override void Execute(TContext context)
 		{
-			using var session = NewSession(AccessMode.Read, context);
-
-			session.ReadTransaction(txc =>
+			using (var session = NewSession(AccessMode.Read, context))
 			{
-				var result = txc.Run("MATCH (n) RETURN n LIMIT 1");
-				var record = result.SingleOrDefault();
-				record?[0].Should().BeAssignableTo<INode>();
+				session.ReadTransaction(txc =>
+				{
+					var result = txc.Run("MATCH (n) RETURN n LIMIT 1");
+					var record = result.SingleOrDefault();
+					record?[0].Should().BeAssignableTo<INode>();
 
-				context.NodeRead(result.Consume());
+					context.NodeRead(result.Consume());
 
-				txc.Commit();
-				return record;
-			});
+					txc.Commit();
+					return record;
+				});
+			}
 		}
 	}
 }

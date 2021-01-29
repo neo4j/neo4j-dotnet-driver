@@ -41,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 				{
 					try
 					{
-						var exc = await Record.ExceptionAsync(async () =>
+						var ex = await Record.ExceptionAsync(async () =>
 						{
 							var cursor = await tx.RunAsync("UNWIND [10, 5, 0] AS x RETURN 10 / x").ConfigureAwait(false);
 							var exc = await Record.ExceptionAsync(async () => await cursor.ConsumeAsync().ConfigureAwait(false)).ConfigureAwait(false);

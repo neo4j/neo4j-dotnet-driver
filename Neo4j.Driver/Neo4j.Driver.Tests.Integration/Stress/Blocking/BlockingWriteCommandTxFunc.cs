@@ -39,16 +39,18 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
 			try
 			{
-				using var session = NewSession(AccessMode.Write, context);
-				session.WriteTransaction(txc =>
+				using (var session = NewSession(AccessMode.Write, context))
 				{
-					summary = txc.Run("CREATE ()").Consume();
-					txc.Commit();
+					session.WriteTransaction(txc =>
+					{
+						summary = txc.Run("CREATE ()").Consume();
+						txc.Commit();
 
-					return summary;
-				});
+						return summary;
+					});
 
-				context.Bookmark = session.LastBookmark;
+					context.Bookmark = session.LastBookmark;
+				}
 			}
 			catch (Exception exc)
 			{
